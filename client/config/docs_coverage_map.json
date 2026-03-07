@@ -1,0 +1,42 @@
+{
+  "version": "1.0",
+  "require_docs_touched": false,
+  "critical_paths": [
+    {
+      "path_prefix": "client/systems/autonomy/",
+      "required_docs": [
+        "client/docs/OPERATOR_RUNBOOK.md",
+        "client/docs/AUTOMATION_POLICY.md"
+      ]
+    },
+    {
+      "path_prefix": "client/systems/security/",
+      "required_docs": [
+        "client/docs/THREAT_MODEL_V1.md",
+        "client/docs/OPERATOR_RUNBOOK.md"
+      ]
+    },
+    {
+      "path_prefix": "client/systems/spine/",
+      "required_docs": [
+        "client/docs/ARCHITECTURE_OWNERSHIP.md",
+        "client/docs/OPERATOR_RUNBOOK.md"
+      ]
+    },
+    {
+      "path_prefix": "client/systems/ops/",
+      "required_docs": [
+        "client/docs/V2_OPERATIONS_GATES.md",
+        "client/docs/OPERATOR_RUNBOOK.md",
+        "client/docs/STATE_STREAM_POLICY.md"
+      ]
+    },
+    {
+      "path_prefix": "client/config/",
+      "required_docs": [
+        "client/docs/ARCHITECTURE_OWNERSHIP.md",
+        "client/docs/STATE_STREAM_POLICY.md"
+      ]
+    }
+  ]
+}

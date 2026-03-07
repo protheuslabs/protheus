@@ -1,0 +1,92 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "state": {
+    "status_path": "state/ops/mech_suit_mode/latest.json",
+    "history_path": "state/ops/mech_suit_mode/history.jsonl"
+  },
+  "spine": {
+    "heartbeat_hours": 4,
+    "manual_triggers_allowed": false,
+    "quiet_non_critical": true,
+    "silent_subprocess_output": true,
+    "critical_patterns": [
+      "critical",
+      "fail",
+      "failed",
+      "emergency",
+      "blocked",
+      "halt",
+      "violation",
+      "integrity",
+      "outage"
+    ]
+  },
+  "eyes": {
+    "push_attention_queue": true,
+    "quiet_non_critical": true,
+    "attention_queue_path": "state/attention/queue.jsonl",
+    "receipts_path": "state/attention/receipts.jsonl",
+    "latest_path": "state/attention/latest.json",
+    "attention_contract": {
+      "max_queue_depth": 2048,
+      "ttl_hours": 48,
+      "dedupe_window_hours": 24,
+      "backpressure_drop_below": "critical",
+      "escalate_levels": [
+        "critical"
+      ],
+      "priority_map": {
+        "critical": 100,
+        "warn": 60,
+        "info": 20
+      }
+    },
+    "push_event_types": [
+      "external_item",
+      "eye_run_failed",
+      "infra_outage_state",
+      "eye_health_quarantine_set",
+      "eye_auto_dormant",
+      "collector_proposal_added"
+    ],
+    "focus_warn_score": 0.7,
+    "critical_error_codes": [
+      "env_blocked",
+      "auth_denied",
+      "integrity_blocked",
+      "transport_blocked"
+    ]
+  },
+  "personas": {
+    "ambient_stance": true,
+    "auto_apply": true,
+    "full_reload": false,
+    "cache_path": "state/personas/ambient_stance/cache.json",
+    "latest_path": "state/personas/ambient_stance/latest.json",
+    "receipts_path": "state/personas/ambient_stance/receipts.jsonl",
+    "max_personas": 256,
+    "max_patch_bytes": 65536
+  },
+  "dopamine": {
+    "threshold_breach_only": true,
+    "surface_levels": [
+      "warn",
+      "critical"
+    ]
+  },
+  "memory": {
+    "rust_authoritative": true,
+    "push_attention_queue": true,
+    "quiet_non_critical": true,
+    "surface_levels": [
+      "warn",
+      "critical"
+    ],
+    "latest_path": "state/client/memory/ambient/latest.json",
+    "receipts_path": "state/client/memory/ambient/receipts.jsonl"
+  },
+  "receipts": {
+    "silent_unless_critical": true
+  }
+}

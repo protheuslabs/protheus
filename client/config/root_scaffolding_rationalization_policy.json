@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "scaffold_dirs": {
+    "drafts": "docs_required",
+    "notes": "docs_required",
+    "patches": "runtime_required",
+    "research": "runtime_required"
+  },
+  "internal_target_dir": ".internal/root_scaffolds",
+  "move_internal_on_apply": false,
+  "root_contract_script": "client/systems/ops/root_surface_contract.js",
+  "docs_contract_script": "client/systems/ops/docs_surface_contract.js",
+  "data_scope_doc_path": "client/docs/DATA_SCOPE_BOUNDARIES.md",
+  "require_data_scope_reference": ".internal/",
+  "paths": {
+    "latest_path": "state/ops/root_scaffolding_rationalization/latest.json",
+    "history_path": "state/ops/root_scaffolding_rationalization/history.jsonl"
+  }
+}

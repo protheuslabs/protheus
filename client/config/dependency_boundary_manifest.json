@@ -1,0 +1,37 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "layers": {
+    "core": ["client/lib", "client/bin"],
+    "config": ["client/config"],
+    "systems": ["client/systems"],
+    "adaptive": ["client/adaptive"],
+    "habits": ["client/habits"],
+    "memory": ["client/memory"],
+    "state": ["state"],
+    "docs": ["docs"],
+    "tests": ["client/tests", "client/memory/tools/tests"]
+  },
+  "allow_imports": {
+    "core": ["core", "config", "systems"],
+    "config": ["config", "core"],
+    "systems": ["core", "config", "systems", "adaptive", "state", "habits", "memory", "tests"],
+    "adaptive": ["core", "config", "systems", "adaptive", "state"],
+    "habits": ["core", "config", "systems", "adaptive", "habits", "state"],
+    "memory": ["core", "config", "systems", "memory", "state"],
+    "state": ["core", "config", "state"],
+    "docs": ["core", "config", "docs"],
+    "tests": ["core", "config", "systems", "adaptive", "habits", "memory", "state", "docs", "tests"]
+  },
+  "enforce_layers": ["core", "systems", "adaptive"],
+  "enforce_cycles": false,
+  "scan": {
+    "include_dirs": ["client/systems", "client/lib", "client/adaptive", "client/habits", "client/memory/tools", "client/tests"],
+    "include_ext": [".ts", ".js"],
+    "exclude_contains": [".bak.", ".tmp", "node_modules", "dist/"]
+  },
+  "paths": {
+    "latest_path": "state/ops/dependency_boundary_guard/latest.json",
+    "receipts_path": "state/ops/dependency_boundary_guard/receipts.jsonl"
+  }
+}

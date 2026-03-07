@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "items": [
+    { "id": "V4-OBS-011", "title": "Advanced protheus-top observability dashboard polish" },
+    { "id": "V4-ILLUSION-001", "title": "Optional subtle reinforcement layer" },
+    { "id": "V4-AESTHETIC-001", "title": "Alien technology aesthetic layer" },
+    { "id": "V4-AESTHETIC-002", "title": "Selective ethereal language layer" }
+  ],
+  "paths": {
+    "state_path": "state/ops/perception_polish_program/state.json",
+    "latest_path": "state/ops/perception_polish_program/latest.json",
+    "receipts_path": "state/ops/perception_polish_program/receipts.jsonl",
+    "history_path": "state/ops/perception_polish_program/history.jsonl",
+    "flags_path": "client/config/feature_flags/perception_flags.json",
+    "observability_panel_path": "state/ops/protheus_top/observability_panel.json",
+    "reasoning_footer_path": "state/ops/protheus_top/reasoning_mirror_footer.txt",
+    "tone_policy_path": "client/config/perception_tone_policy.json",
+    "post_reveal_easter_egg_path": "client/docs/blog/the_fort_was_empty_easter_egg.md"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "default_profile": "adaptive_memory_blank_slate",
+  "profiles": {
+    "adaptive_memory_blank_slate": {
+      "description": "Archive adaptive-state + memory artifacts for reversible blank-slate tests.",
+      "includes": [
+        "client/adaptive/sensory/eyes/catalog.json",
+        "client/adaptive/sensory/eyes/focus_triggers.json",
+        "client/adaptive/strategy/registry.json",
+        "state/client/adaptive/reflex/pool_state.json",
+        "state/client/adaptive/strategy/outcome_fitness.json",
+        "state/client/adaptive/strategy/outcome_fitness/*.json",
+        "state/client/adaptive/strategy/scorecards/*.json",
+        "state/client/adaptive/strategy/snapshots/*.json",
+        "state/client/adaptive/suggestions/*.json",
+        "MEMORY.md",
+        "MEMORY_INDEX.md",
+        "TAGS_INDEX.md",
+        "LEARNINGS_INDEX.md",
+        "client/memory/*.md",
+        "client/memory/*.md.backup.*",
+        "client/memory/heartbeat-state.json",
+        "client/memory/_archive",
+        "client/memory/_snapshots",
+        "client/memory/handoff",
+        "client/memory/reports",
+        "client/memory/state"
+      ],
+      "exclude_exact": [
+        "client/memory/README.md"
+      ],
+      "exclude_prefixes": [
+        "client/memory/tools"
+      ],
+      "exclude_suffixes": [
+        ".jsonl"
+      ]
+    }
+  }
+}

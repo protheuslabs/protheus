@@ -1,0 +1,64 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "adaptive.rsi.bootstrap_canonicalization"
+  },
+  "rsi_policy_path": "client/config/rsi_bootstrap_policy.json",
+  "rsi_script": "client/adaptive/rsi/rsi_bootstrap.js",
+  "commands": [
+    {
+      "id": "bootstrap",
+      "command": "bootstrap",
+      "args": ["--mock=1"],
+      "expect_type": "rsi_bootstrap",
+      "timeout_ms": 120000
+    },
+    {
+      "id": "contract_lane_status",
+      "command": "contract-lane-status",
+      "args": ["--mock=1"],
+      "expect_type": "rsi_contract_lane_status",
+      "timeout_ms": 120000
+    },
+    {
+      "id": "approve",
+      "command": "approve",
+      "args": ["--approver=canon_reviewer", "--reason=canon_test", "--ttl-hours=1"],
+      "expect_type": "rsi_approve",
+      "timeout_ms": 120000
+    },
+    {
+      "id": "step",
+      "command": "step",
+      "args": ["--mock=1", "--apply=0", "--target-path=client/systems/ops/protheusctl.ts", "--objective-id=canon_objective"],
+      "expect_type": "rsi_step",
+      "timeout_ms": 240000
+    },
+    {
+      "id": "status",
+      "command": "status",
+      "args": [],
+      "expect_type": "rsi_status",
+      "timeout_ms": 120000
+    },
+    {
+      "id": "hands_loop",
+      "command": "hands-loop",
+      "args": ["--mock=1", "--iterations=1", "--interval-sec=0"],
+      "expect_type": "rsi_hands_loop",
+      "timeout_ms": 240000
+    }
+  ],
+  "paths": {
+    "memory_dir": "client/memory/client/adaptive/rsi_bootstrap_canonicalization",
+    "adaptive_index_path": "client/adaptive/rsi/bootstrap_canonicalization/index.json",
+    "events_path": "state/client/adaptive/rsi_bootstrap_canonicalization/events.jsonl",
+    "latest_path": "state/client/adaptive/rsi_bootstrap_canonicalization/latest.json",
+    "receipts_path": "state/client/adaptive/rsi_bootstrap_canonicalization/receipts.jsonl",
+    "verification_state_path": "state/client/adaptive/rsi_bootstrap_canonicalization/state.json"
+  }
+}

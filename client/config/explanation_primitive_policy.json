@@ -1,0 +1,29 @@
+{
+  "schema_id": "explanation_primitive_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "shadow_only": false,
+  "require_event_id": true,
+  "require_proof_links": true,
+  "require_event_replayable": true,
+  "allow_latest_pointer": true,
+  "max_narrative_chars": 2000,
+  "max_summary_chars": 320,
+  "allowed_categories": [
+    "major_decision",
+    "policy_denial",
+    "self_modification"
+  ],
+  "passport_export": {
+    "enabled": true,
+    "source": "explanation_primitive"
+  },
+  "paths": {
+    "canonical_events": "state/runtime/canonical_events",
+    "causal_graph_state": "state/client/memory/causal_temporal_graph/state.json",
+    "index_path": "state/primitives/explanation_primitive/index.json",
+    "latest_path": "state/primitives/explanation_primitive/latest.json",
+    "artifacts_dir": "state/primitives/explanation_primitive/artifacts",
+    "receipts_path": "state/primitives/explanation_primitive/receipts.jsonl"
+  }
+}

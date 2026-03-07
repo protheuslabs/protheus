@@ -4,18 +4,18 @@ on:
   push:
     paths:
       - "SRS.md"
-      - "config/backlog_registry.json"
-      - "config/backlog_registry_policy.json"
-      - "docs/backlog_views/**"
-      - "crates/ops/src/backlog_registry.rs"
+      - "client/config/backlog_registry.json"
+      - "client/config/backlog_registry_policy.json"
+      - "client/docs/backlog_views/**"
+      - "core/layer0/ops/src/backlog_registry.rs"
       - ".github/workflows/backlog-consistency.yml"
   pull_request:
     paths:
       - "SRS.md"
-      - "config/backlog_registry.json"
-      - "config/backlog_registry_policy.json"
-      - "docs/backlog_views/**"
-      - "crates/ops/src/backlog_registry.rs"
+      - "client/config/backlog_registry.json"
+      - "client/config/backlog_registry_policy.json"
+      - "client/docs/backlog_views/**"
+      - "core/layer0/ops/src/backlog_registry.rs"
       - ".github/workflows/backlog-consistency.yml"
 
 jobs:
@@ -30,4 +30,4 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Strict Backlog Consistency Check
-        run: cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- backlog-registry check --strict=1
+        run: cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- backlog-registry check --strict=1

@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "backlog_path": "SRS.md",
+  "matrix_path": "client/config/requirement_conformance_matrix.json",
+  "required_external_ids": [
+    "ext_v3_race_016_open_platform_release_pack",
+    "ext_v3_race_017_authoritative_event_stream_cutover",
+    "ext_v3_race_018_trace_to_habit_autogenesis",
+    "ext_v3_race_019_persistent_fractal_meta_organ",
+    "ext_v3_race_020_soul_continuity_adapter",
+    "ext_v3_race_conf_001_platform_path_contract",
+    "ext_v3_race_conf_002_legacy_path_aliases"
+  ],
+  "outputs": {
+    "latest_path": "state/ops/requirement_conformance/latest.json",
+    "history_path": "state/ops/requirement_conformance/history.jsonl"
+  }
+}

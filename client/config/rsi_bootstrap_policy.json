@@ -1,0 +1,162 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "owner_default": "jay",
+  "objective_default": "rsi_recursive_self_improvement",
+  "risk_default": "medium",
+  "idle_interval_minutes": 15,
+  "hands_default_iterations": 1,
+  "timeouts_ms": {
+    "lane": 90000,
+    "heavy": 240000
+  },
+  "approvals": {
+    "enabled": true,
+    "ttl_hours": 24
+  },
+  "gating": {
+    "require_contract_lanes": true,
+    "require_venom_pass": true,
+    "require_constitution_status": true,
+    "require_mutation_safety": true,
+    "require_habit_lifecycle_status": true,
+    "require_chaos_pass": true,
+    "min_dopamine_score": 1
+  },
+  "paths": {
+    "state_path": "state/client/adaptive/rsi/state.json",
+    "latest_path": "state/client/adaptive/rsi/latest.json",
+    "receipts_path": "state/client/adaptive/rsi/receipts.jsonl",
+    "chain_path": "state/client/adaptive/rsi/chain.jsonl",
+    "merkle_path": "state/client/adaptive/rsi/merkle.json",
+    "approvals_path": "state/client/adaptive/rsi/approvals.json",
+    "step_artifacts_dir": "state/client/adaptive/rsi/steps"
+  },
+  "scripts": {
+    "event_stream": "client/systems/ops/event_sourced_control_plane.js",
+    "system3": "client/adaptive/executive/system3_executive_layer.js",
+    "strategy_learner": "client/systems/strategy/strategy_learner.js",
+    "model_catalog": "client/systems/autonomy/model_catalog_loop.js",
+    "memfs": "client/systems/memory/memfs_layer.js",
+    "sleep_reflection": "client/systems/memory/sleep_reflection_scheduler.js",
+    "hierarchical_memory": "client/systems/memory/hierarchical_memory_view_plane.js",
+    "agentic_memory": "client/systems/memory/agentic_memory_operation_controller.js",
+    "mcp_gateway": "client/skills/mcp/mcp_gateway.js",
+    "a2a_delegation": "client/systems/a2a/a2a_delegation_plane.js",
+    "gated_self_improvement": "client/systems/autonomy/gated_self_improvement_loop.js",
+    "red_team_harness": "client/systems/autonomy/red_team_harness.js",
+    "venom": "client/systems/security/venom_containment_layer.js",
+    "constitution": "client/systems/security/constitution_guardian.js",
+    "mutation_safety": "client/systems/autonomy/mutation_safety_kernel.js",
+    "reversion_drill": "client/systems/autonomy/self_mod_reversion_drill.js",
+    "dopamine": "client/habits/scripts/dopamine_engine.js",
+    "habit_lifecycle": "client/habits/scripts/reflex_habit_bridge.js",
+    "nursery": "client/systems/nursery/nursery_bootstrap.js",
+    "seed_lineage": "client/systems/spawn/seed_spawn_lineage.js",
+    "spawn_broker": "client/systems/spawn/spawn_broker.js",
+    "supply_chain_gate": "client/systems/security/supply_chain_provenance_gate.js",
+    "continuity_resurrection": "client/systems/continuity/resurrection_protocol.js",
+    "self_mod_patch_gate": "client/systems/security/rsi_git_patch_self_mod_gate.js"
+  },
+  "contract_lanes": [
+    {
+      "id": "RR-001",
+      "script": "client/systems/ops/config_flag_conflict_check.js",
+      "check_cmd": "check",
+      "status_cmd": "status",
+      "configure_cmd": "configure"
+    },
+    {
+      "id": "RR-002",
+      "script": "client/systems/ops/canonical_execution_path_check.js",
+      "check_cmd": "check",
+      "status_cmd": "status",
+      "configure_cmd": "configure"
+    },
+    {
+      "id": "RR-003",
+      "script": "client/systems/ops/schema_migration_n2_check.js",
+      "check_cmd": "check",
+      "status_cmd": "status",
+      "configure_cmd": "configure"
+    },
+    {
+      "id": "RR-004",
+      "script": "client/systems/ops/replay_parity_gate.js",
+      "check_cmd": "check",
+      "status_cmd": "status",
+      "configure_cmd": "configure"
+    },
+    {
+      "id": "RR-005",
+      "script": "client/systems/ops/complexity_budget_gate.js",
+      "check_cmd": "check",
+      "status_cmd": "status",
+      "configure_cmd": "configure"
+    },
+    {
+      "id": "RR-006",
+      "script": "client/systems/security/key_lifecycle_drill.js",
+      "check_cmd": "check",
+      "status_cmd": "status",
+      "configure_cmd": "configure"
+    },
+    {
+      "id": "RR-007",
+      "script": "client/systems/security/supply_chain_provenance_gate.js",
+      "check_cmd": "check",
+      "status_cmd": "status",
+      "configure_cmd": "configure"
+    },
+    {
+      "id": "RR-008",
+      "script": "client/systems/distributed/partition_quorum_simulator.js",
+      "check_cmd": "check",
+      "status_cmd": "status",
+      "configure_cmd": "configure"
+    },
+    {
+      "id": "RR-009",
+      "script": "client/systems/ops/data_retention_tiering.js",
+      "check_cmd": "check",
+      "status_cmd": "status",
+      "configure_cmd": "configure"
+    },
+    {
+      "id": "RR-010",
+      "script": "client/systems/ops/operator_override_drill.js",
+      "check_cmd": "check",
+      "status_cmd": "status",
+      "configure_cmd": "configure"
+    },
+    {
+      "id": "RR-011",
+      "script": "client/systems/ops/resurrection_protocol.js",
+      "check_cmd": "check",
+      "status_cmd": "status",
+      "configure_cmd": "configure"
+    },
+    {
+      "id": "RR-012",
+      "script": "client/systems/echo/value_anchor_renewal_loop.js",
+      "check_cmd": "check",
+      "status_cmd": "status",
+      "configure_cmd": "configure"
+    },
+    {
+      "id": "RR-013",
+      "script": "client/systems/ops/explainability_artifact_gate.js",
+      "check_cmd": "check",
+      "status_cmd": "status",
+      "configure_cmd": "configure"
+    },
+    {
+      "id": "RR-014",
+      "script": "client/systems/research/world_model_freshness_loop.js",
+      "check_cmd": "check",
+      "status_cmd": "status",
+      "configure_cmd": "configure"
+    }
+  ]
+}

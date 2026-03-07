@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "auto_rebuild_on_violation": true,
+  "thresholds": {
+    "max_index_age_hours": 168,
+    "max_daily_files_since_rebuild": 5
+  },
+  "paths": {
+    "memory_dir": "memory",
+    "memory_index_path": "client/memory/MEMORY_INDEX.md",
+    "tags_index_path": "client/memory/TAGS_INDEX.md",
+    "rebuild_script": "client/memory/tools/rebuild_exclusive.js",
+    "latest_path": "state/client/memory/index_freshness/latest.json",
+    "receipts_path": "state/client/memory/index_freshness/receipts.jsonl",
+    "rebuild_history_path": "state/client/memory/index_freshness/rebuild_history.jsonl",
+    "last_rebuild_state_path": "state/client/memory/index_freshness/last_rebuild.json"
+  }
+}

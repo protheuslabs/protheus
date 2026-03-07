@@ -1,0 +1,156 @@
+{
+  "schema_id": "narrow_agent_parity_harness",
+  "schema_version": "1.0",
+  "updated_at": "2026-03-07T04:39:19.101Z",
+  "date": "2026-03-07",
+  "week": {
+    "start": "2026-03-02",
+    "end": "2026-03-08",
+    "id": "2026-03-02"
+  },
+  "policy_version": "1.0",
+  "baseline_profile": "narrow-agent-v1",
+  "parity_pass": false,
+  "dimensions": {
+    "reliability": 0,
+    "latency_ms": null,
+    "cost_pressure": 0.8
+  },
+  "aggregate": {
+    "parity_pass": false,
+    "scenarios_total": 3,
+    "scenarios_passed": 0,
+    "pass_ratio": 0,
+    "weighted_score_avg": 0.1287,
+    "gates": {
+      "min_scenarios_passed": 2,
+      "min_pass_ratio": 0.66,
+      "min_weighted_score": 0.85
+    }
+  },
+  "scenarios": [
+    {
+      "id": "governed_execution",
+      "name": "Governed execution lane",
+      "metrics": {
+        "reliability": {
+          "key": "execution_success_rate",
+          "value": 0
+        },
+        "latency_ms": {
+          "key": "execution_latency_ms",
+          "value": 0
+        },
+        "cost_pressure": {
+          "key": "budget_used_ratio_avg",
+          "value": 1
+        }
+      },
+      "baselines": {
+        "reliability_min": 0.97,
+        "latency_ms_max": 120000,
+        "cost_pressure_max": 0.95
+      },
+      "weights": {
+        "reliability": 0.5,
+        "latency": 0.3,
+        "cost": 0.2
+      },
+      "checks": {
+        "reliability": false,
+        "latency_ms": false,
+        "cost_pressure": false
+      },
+      "scores": {
+        "reliability": 0,
+        "latency": 0,
+        "cost": 0.95,
+        "weighted": 0.19
+      },
+      "pass": false,
+      "notes": []
+    },
+    {
+      "id": "startup_responsiveness",
+      "name": "Startup responsiveness lane",
+      "metrics": {
+        "reliability": {
+          "key": "runtime_pass_ratio",
+          "value": 0
+        },
+        "latency_ms": {
+          "key": "boot_latency_ms",
+          "value": 0
+        },
+        "cost_pressure": {
+          "key": "budget_used_ratio_avg",
+          "value": 1
+        }
+      },
+      "baselines": {
+        "reliability_min": 0.95,
+        "latency_ms_max": 800,
+        "cost_pressure_max": 0.98
+      },
+      "weights": {
+        "reliability": 0.3,
+        "latency": 0.5,
+        "cost": 0.2
+      },
+      "checks": {
+        "reliability": false,
+        "latency_ms": false,
+        "cost_pressure": false
+      },
+      "scores": {
+        "reliability": 0,
+        "latency": 0,
+        "cost": 0.98,
+        "weighted": 0.196
+      },
+      "pass": false,
+      "notes": []
+    },
+    {
+      "id": "sustained_autonomy",
+      "name": "Sustained autonomy lane",
+      "metrics": {
+        "reliability": {
+          "key": "closure_pass_ratio",
+          "value": 0
+        },
+        "latency_ms": {
+          "key": "blended_latency_ms",
+          "value": 0
+        },
+        "cost_pressure": {
+          "key": "budget_autopause_deny_ratio",
+          "value": 0
+        }
+      },
+      "baselines": {
+        "reliability_min": 0.9,
+        "latency_ms_max": 60000,
+        "cost_pressure_max": 0.35
+      },
+      "weights": {
+        "reliability": 0.45,
+        "latency": 0.2,
+        "cost": 0.35
+      },
+      "checks": {
+        "reliability": false,
+        "latency_ms": false,
+        "cost_pressure": false
+      },
+      "scores": {
+        "reliability": 0,
+        "latency": 0,
+        "cost": 0,
+        "weighted": 0
+      },
+      "pass": false,
+      "notes": []
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "required_operator_docs": [
+    "README.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "client/docs/README.md",
+    "client/docs/OPERATOR_RUNBOOK.md"
+  ],
+  "required_public_docs": [
+    "client/docs/PUBLIC_OPERATOR_PROFILE.md"
+  ],
+  "readme_required_links": [
+    "client/docs/PUBLIC_OPERATOR_PROFILE.md"
+  ],
+  "readme_forbidden_root_internal_links": [
+    "AGENT-CONSTITUTION.md",
+    "SOUL.md",
+    "USER.md",
+    "MEMORY.md",
+    "codex.helix"
+  ],
+  "required_internal_namespace": [
+    "client/docs/internal/README.md",
+    "client/docs/internal/persona/AGENT-CONSTITUTION.md",
+    "client/docs/internal/persona/IDENTITY.md"
+  ],
+  "internal_aliases": {
+    "AGENT-CONSTITUTION.md": "client/docs/internal/persona/AGENT-CONSTITUTION.md",
+    "IDENTITY.md": "client/docs/internal/persona/IDENTITY.md",
+    "SOUL.md": "client/docs/internal/persona/SOUL.md",
+    "USER.md": "client/docs/internal/persona/USER.md",
+    "MEMORY.md": "client/docs/internal/persona/MEMORY.md",
+    "codex.helix": "client/docs/internal/persona/CODEX_HELIX.md"
+  },
+  "paths": {
+    "latest_path": "state/ops/docs_surface_contract/latest.json",
+    "receipts_path": "state/ops/docs_surface_contract/receipts.jsonl"
+  }
+}

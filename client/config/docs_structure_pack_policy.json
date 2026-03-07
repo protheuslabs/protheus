@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "required_sections": ["architecture", "runtime", "governance", "ops", "security", "compliance", "runbooks"],
+  "paths": {
+    "docs_hub_path": "client/docs/README.md",
+    "adr_root": "client/docs/adr",
+    "service_catalog_path": "client/config/service_catalog.json",
+    "interface_registry_path": "client/config/interface_contract_registry.json",
+    "control_evidence_matrix_path": "state/ops/docs_structure/control_evidence_matrix.json",
+    "release_templates_root": "client/docs/release/templates",
+    "data_governance_matrix_path": "client/docs/data_governance_matrix.md",
+    "environment_matrix_path": "client/docs/environment_matrix.md",
+    "latest_path": "state/ops/docs_structure/latest.json",
+    "receipts_path": "state/ops/docs_structure/receipts.jsonl",
+    "compliance_controls_map_path": "client/config/compliance_controls_map.json"
+  }
+}

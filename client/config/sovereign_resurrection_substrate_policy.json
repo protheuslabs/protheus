@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "continuity_identity_sources": [
+    "client/config/soul_token_guard_policy.json",
+    "client/config/session_continuity_vault_policy.json",
+    "client/config/helix_policy.json"
+  ],
+  "drill": {
+    "default_target_host": "resurrection_drill_host",
+    "default_bundle_prefix": "srs"
+  },
+  "commands": {
+    "cold_archive": ["node", "client/systems/memory/cryonics_tier.js", "run"],
+    "quantum_attest": ["node", "client/systems/security/post_quantum_migration_lane.js", "verify", "--strict=1"],
+    "resurrection_bundle": ["node", "client/systems/continuity/resurrection_protocol.js", "bundle"],
+    "resurrection_verify": ["node", "client/systems/continuity/resurrection_protocol.js", "verify"],
+    "resurrection_restore_preview": ["node", "client/systems/continuity/resurrection_protocol.js", "restore"]
+  },
+  "paths": {
+    "state_path": "state/continuity/sovereign_resurrection_substrate/state.json",
+    "latest_path": "state/continuity/sovereign_resurrection_substrate/latest.json",
+    "receipts_path": "state/continuity/sovereign_resurrection_substrate/receipts.jsonl",
+    "drills_path": "state/continuity/sovereign_resurrection_substrate/drills.jsonl"
+  }
+}

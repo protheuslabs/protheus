@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "targets": [
+    "client/config/contracts/proposal_admission.schema.json",
+    "client/config/contracts/system_budget.schema.json",
+    "client/config/contracts/autonomy_receipt.schema.json",
+    "client/config/contracts/adaptive_store.schema.json"
+  ],
+  "outputs": {
+    "latest_path": "state/contracts/adaptive_contract_version_governance_closure/latest.json",
+    "history_path": "state/contracts/adaptive_contract_version_governance_closure/history.jsonl"
+  }
+}

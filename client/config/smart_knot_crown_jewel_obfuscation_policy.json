@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "checks": [
+    {
+      "id": "knot_pipeline_present",
+      "description": "Knot build pipeline exists",
+      "file_must_exist": "client/build/knot/knot_pipeline_manifest.json"
+    },
+    {
+      "id": "crown_jewel_scope_enforced",
+      "description": "Scope excludes open platform/client/habits/skills"
+    },
+    {
+      "id": "capability_token_resolution",
+      "description": "Runtime capability-token resolution enabled"
+    },
+    {
+      "id": "perf_non_regression_guard",
+      "description": "Performance guard rails configured"
+    }
+  ],
+  "paths": {
+    "state_path": "state/security/smart_knot_crown_jewel_obfuscation/state.json",
+    "latest_path": "state/security/smart_knot_crown_jewel_obfuscation/latest.json",
+    "receipts_path": "state/security/smart_knot_crown_jewel_obfuscation/receipts.jsonl",
+    "history_path": "state/security/smart_knot_crown_jewel_obfuscation/history.jsonl"
+  }
+}

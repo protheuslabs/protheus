@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "required_bins": {
+    "protheus": "client/systems/ops/protheusctl.js",
+    "protheusctl": "client/systems/ops/protheusctl.js",
+    "protheusd": "client/systems/ops/protheusd.js",
+    "protheus-top": "client/systems/ops/protheus_top.js"
+  },
+  "paths": {
+    "package_json_path": "package.json",
+    "bin_dir": "bin",
+    "bootstrap_path": "client/lib/ts_bootstrap.js",
+    "latest_path": "state/ops/entrypoint_runtime_contract/latest.json",
+    "receipts_path": "state/ops/entrypoint_runtime_contract/receipts.jsonl"
+  }
+}

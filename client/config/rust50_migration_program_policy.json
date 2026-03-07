@@ -1,0 +1,177 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": false,
+  "docs_required": [
+    "client/docs/RUST50_MIGRATION_IMPLEMENTATION.md"
+  ],
+  "targets": {
+    "recall_ms_max": 3,
+    "memory_call_ms_p95_max": 5,
+    "memory_battery_pct_24h_max": 0.8,
+    "execution_step_ms_p95_max": 5,
+    "execution_battery_pct_24h_max": 1.2,
+    "crdt_merge_ms_p95_max": 2,
+    "crdt_idle_battery_pct_24h_max": 0.5,
+    "vault_seal_ms_p95_max": 4,
+    "vault_heap_growth_bytes_max": 0,
+    "telemetry_overhead_ms_max": 1,
+    "chaos_battery_pct_24h_max": 3,
+    "mobile_background_battery_pct_24h_max": 5,
+    "critical_weight_rust_min_pct": 50
+  },
+  "required_refs_by_lane": {
+    "V6-RUST50-001": [
+      "core/layer0/memory_runtime/Cargo.toml",
+      "core/layer0/memory_runtime/src/lib.rs",
+      "core/layer0/memory_runtime/src/main.rs",
+      "core/layer0/memory_runtime/src/sqlite_store.rs",
+      "client/systems/memory/memory_recall.ts",
+      "client/systems/memory/hybrid_memory_engine.ts",
+      "client/systems/memory/cross_cell_exchange_plane.ts",
+      "client/systems/memory/observational_compression_layer.ts"
+    ],
+    "V6-RUST50-002": [
+      "core/layer2/execution/Cargo.toml",
+      "core/layer2/execution/src/lib.rs",
+      "core/layer2/execution/src/main.rs",
+      "client/systems/execution/index.ts",
+      "client/systems/execution/legacy_runtime.ts",
+      "client/memory/tools/tests/execution_phase2_rust_parity.test.js"
+    ],
+    "V6-RUST50-003": [
+      "client/systems/hybrid/rust/src/crdt_merge.rs",
+      "client/systems/memory/cross_cell_exchange_plane.ts"
+    ],
+    "V6-RUST50-004": [
+      "core/layer0/vault/Cargo.toml",
+      "core/layer0/vault/src/lib.rs",
+      "core/layer0/vault/src/main.rs",
+      "client/systems/vault/index.ts",
+      "client/systems/vault/legacy_vault.ts",
+      "client/memory/tools/tests/vault_phase3_rust_parity.test.js",
+      "client/memory/tools/tests/vault_sovereignty_fail_closed.test.js"
+    ],
+    "V6-RUST50-005": [
+      "core/layer1/observability/Cargo.toml",
+      "core/layer1/observability/src/lib.rs",
+      "core/layer1/observability/src/main.rs",
+      "client/systems/observability/index.ts",
+      "client/systems/observability/legacy_observability.ts",
+      "client/memory/tools/tests/observability_phase5_rust_parity.test.js",
+      "client/memory/tools/tests/observability_chaos_resilience.test.js",
+      "client/memory/tools/tests/observability_sovereignty_index.test.js"
+    ],
+    "V6-RUST50-006": [
+      "client/systems/hybrid/mobile/protheus_mobile_adapter.ts",
+      "client/systems/hybrid/rust/src/wasm_bridge.rs",
+      "client/config/protheus_mobile_adapter_policy.json"
+    ],
+    "V6-RUST50-007": [
+      "client/systems/ops/rust50_migration_program.ts",
+      "client/config/rust50_migration_program_policy.json",
+      "client/docs/RUST50_MIGRATION_IMPLEMENTATION.md"
+    ]
+  },
+  "critical_weight_model": {
+    "ignore_dirs": [
+      ".git",
+      "node_modules",
+      "dist",
+      "state",
+      "tmp",
+      "target"
+    ],
+    "modules": [
+      {
+        "id": "memory",
+        "weight": 22,
+        "paths": [
+          "core/layer0/memory"
+        ]
+      },
+      {
+        "id": "execution",
+        "weight": 18,
+        "paths": [
+          "core/layer2/execution",
+          "client/systems/execution/index.ts",
+          "client/systems/execution/index.js",
+          "client/systems/hybrid/rust/src/execution_replay.rs"
+        ]
+      },
+      {
+        "id": "crdt",
+        "weight": 12,
+        "paths": [
+          "client/systems/memory/cross_cell_exchange_plane.ts",
+          "client/systems/hybrid/rust/src/crdt_merge.rs"
+        ]
+      },
+      {
+        "id": "security_vault",
+        "weight": 24,
+        "paths": [
+          "core/layer0/vault",
+          "client/systems/vault/index.ts",
+          "client/systems/vault/index.js"
+        ]
+      },
+      {
+        "id": "chaos_observability",
+        "weight": 14,
+        "paths": [
+          "core/layer1/observability",
+          "client/systems/observability/index.ts",
+          "client/systems/observability/index.js"
+        ]
+      },
+      {
+        "id": "mobile_adapter",
+        "weight": 10,
+        "paths": [
+          "client/systems/hybrid/mobile",
+          "client/systems/hybrid/rust/src/wasm_bridge.rs"
+        ]
+      }
+    ]
+  },
+  "items": [
+    {
+      "id": "V6-RUST50-001",
+      "title": "Memory 100 Percent Rust Core + WASM Mobile Bindings"
+    },
+    {
+      "id": "V6-RUST50-002",
+      "title": "Execution Deterministic Runtime Rust Cutover + Replay Proofs"
+    },
+    {
+      "id": "V6-RUST50-003",
+      "title": "Pinnacle CRDT Rust Engine Phone-First"
+    },
+    {
+      "id": "V6-RUST50-004",
+      "title": "Vault and Security Shared Rust Core (ZK/FHE Envelope)"
+    },
+    {
+      "id": "V6-RUST50-005",
+      "title": "Red Legion Chaos + Observability Rust Merge Core"
+    },
+    {
+      "id": "V6-RUST50-006",
+      "title": "Mobile Adapter Layer (WASM + Tauri iOS/Android Background Service)"
+    },
+    {
+      "id": "V6-RUST50-007",
+      "title": "50 Percent Rust Critical-Weight Enforcement Gate"
+    }
+  ],
+  "paths": {
+    "latest_path": "state/ops/rust50_migration_program/latest.json",
+    "receipts_path": "state/ops/rust50_migration_program/receipts.jsonl",
+    "history_path": "state/ops/rust50_migration_program/history.jsonl",
+    "state_dir": "state/ops/rust50_migration_program/items",
+    "artifact_dir": "state/ops/rust50_migration_program/artifacts",
+    "gate_state_path": "state/ops/rust50_migration_program/rust50_gate_state.json"
+  }
+}

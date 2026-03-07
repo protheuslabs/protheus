@@ -1,0 +1,67 @@
+{
+  "schema_id": "rust_enterprise_productivity_program_policy",
+  "schema_version": "1.0",
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "docs_required": [
+    "client/docs/RUST_ENTERPRISE_PRODUCTIVITY_REQUIREMENTS.md"
+  ],
+  "items": [
+    {
+      "id": "V5-RUST-PROD-001",
+      "title": "Rust Hotspot Baseline + ROI Prioritization Contract"
+    },
+    {
+      "id": "V5-RUST-PROD-002",
+      "title": "TS/Rust Boundary Contract + ABI/Schema Stability Gate"
+    },
+    {
+      "id": "V5-RUST-PROD-003",
+      "title": "Scheduler + Queue Worker Rust Migration (High-Contention Paths)"
+    },
+    {
+      "id": "V5-RUST-PROD-004",
+      "title": "Memory Retrieval/Index Hot Path Rust Cutover"
+    },
+    {
+      "id": "V5-RUST-PROD-005",
+      "title": "Transform/Scoring Pipeline Rust Offload (CPU-Bound Stages)"
+    },
+    {
+      "id": "V5-RUST-PROD-006",
+      "title": "Zero-Copy Serialization/Data Movement Contract"
+    },
+    {
+      "id": "V5-RUST-PROD-007",
+      "title": "Rust Perf Regression CI Gate (Latency/Throughput/Cost Budgets)"
+    },
+    {
+      "id": "V5-RUST-PROD-008",
+      "title": "Canary Rollout + Auto-Rollback for Rust Lanes"
+    },
+    {
+      "id": "V5-RUST-PROD-009",
+      "title": "Rust Observability + SRE Runbook Parity Pack"
+    },
+    {
+      "id": "V5-RUST-PROD-010",
+      "title": "Rust Supply-Chain + Reproducible Build Governance"
+    },
+    {
+      "id": "V5-RUST-PROD-011",
+      "title": "Rust Workspace DX + Standards Program (Enterprise Team Workflow)"
+    },
+    {
+      "id": "V5-RUST-PROD-012",
+      "title": "Rust-at-Scale Capacity + Unit Economics Validation"
+    }
+  ],
+  "paths": {
+    "latest_path": "state/ops/rust_enterprise_productivity_program/latest.json",
+    "receipts_path": "state/ops/rust_enterprise_productivity_program/receipts.jsonl",
+    "history_path": "state/ops/rust_enterprise_productivity_program/history.jsonl",
+    "state_dir": "state/ops/rust_enterprise_productivity_program/items",
+    "artifact_dir": "state/ops/rust_enterprise_productivity_program/artifacts"
+  }
+}

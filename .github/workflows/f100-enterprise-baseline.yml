@@ -21,7 +21,7 @@ jobs:
           node-version: '22'
 
       - name: Verify baseline contract
-        run: node systems/ops/f100_enterprise_baseline_gate.js run --strict=1 --write=0
+        run: node client/systems/ops/f100_enterprise_baseline_gate.js run --strict=1 --write=0
 
       - name: Upload baseline status
         if: always()

@@ -27,7 +27,7 @@ jobs:
 
       - name: Build release binaries
         run: |
-          cargo build --release --manifest-path crates/ops/Cargo.toml --bin protheus-ops
+          cargo build --release --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops
 
       - name: Create draft release
         uses: softprops/action-gh-release@v2

@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "risk": {
+    "default_tier": 2,
+    "require_explicit_approval_tier": 3
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "executive.system3_curriculum"
+  },
+  "scripts": {
+    "system3": "client/adaptive/executive/system3_executive_layer.js",
+    "strategy_learner": "client/systems/strategy/strategy_learner.js",
+    "model_catalog": "client/systems/autonomy/model_catalog_loop.js"
+  },
+  "paths": {
+    "memory_dir": "client/memory/executive/system3_meta_curriculum_bridge",
+    "adaptive_index_path": "client/adaptive/executive/system3_meta_curriculum_bridge/index.json",
+    "events_path": "state/executive/system3_meta_curriculum_bridge/events.jsonl",
+    "latest_path": "state/executive/system3_meta_curriculum_bridge/latest.json",
+    "receipts_path": "state/executive/system3_meta_curriculum_bridge/receipts.jsonl",
+    "curriculum_state_path": "state/executive/system3_meta_curriculum_bridge/state.json",
+    "curriculum_artifact_path": "state/executive/system3_meta_curriculum_bridge/curriculum_latest.json"
+  }
+}

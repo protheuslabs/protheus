@@ -1,0 +1,103 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "allow_apply": false,
+  "max_candidates_per_run": 3,
+  "trigger": {
+    "min_uses": 12,
+    "min_workflow_spread": 3,
+    "min_days_observed": 7,
+    "min_pain_score": 0.15,
+    "cooldown_after_failure_hours": 24,
+    "cooldown_after_rejection_hours": 12
+  },
+  "legal_gate": {
+    "fail_closed": true,
+    "require_license_check": true,
+    "require_tos_check": true,
+    "require_robots_check": true,
+    "require_data_rights": true,
+    "denied_licenses": [
+      "agpl-3.0",
+      "gpl-3.0"
+    ],
+    "allowed_licenses": [],
+    "blocked_domains": []
+  },
+  "anti_gaming": {
+    "hidden_eval_min_cases": 5,
+    "hidden_eval_max_cases": 13,
+    "retry_rate_limit_per_capability_per_day": 2
+  },
+  "risk_classes": {
+    "high_risk": [
+      "payments",
+      "auth",
+      "filesystem",
+      "shell",
+      "network-control"
+    ],
+    "require_explicit_human_approval": true
+  },
+  "ttl": {
+    "default_days": 14,
+    "permanent_promotion_stability_days": 30,
+    "min_success_receipts_for_permanent": 20
+  },
+  "assimilation_scope": {
+    "max_assimilation_depth": 2,
+    "approval_threshold_score": 0.7,
+    "resource_budget_gate": {
+      "enabled": true,
+      "max_load_per_cpu": 12,
+      "max_rss_mb": 8192,
+      "require_surface_budget_clear": false
+    },
+    "atrophy": {
+      "enabled": true,
+      "dormant_after_days": 30,
+      "compression": "zstd"
+    }
+  },
+  "research_probe": {
+    "min_confidence": 0.55
+  },
+  "forge": {
+    "sandbox_profile": "strict_isolated",
+    "max_build_steps": 8
+  },
+  "integration": {
+    "weaver_latest_path": "state/autonomy/weaver/latest.json",
+    "research_organ_enabled": true,
+    "nursery_shadow_only": true,
+    "adversarial_shadow_only": true,
+    "doctor_required": true,
+    "memory_evolution_enabled": true,
+    "context_navigation_enabled": true,
+    "generative_simulation_enabled": true,
+    "collective_reasoning_enabled": true,
+    "environment_evolution_enabled": true,
+    "test_time_memory_evolution_enabled": true,
+    "group_evolving_agents_enabled": true,
+    "generative_meta_model_enabled": true,
+    "self_teacher_distillation_enabled": true,
+    "adaptive_ensemble_routing_enabled": true,
+    "memory_evolution_policy_path": "client/config/memory_evolution_primitive_policy.json",
+    "context_navigation_policy_path": "client/config/context_navigation_primitive_policy.json",
+    "generative_simulation_policy_path": "client/config/generative_simulation_mode_policy.json",
+    "collective_reasoning_policy_path": "client/config/collective_reasoning_primitive_policy.json",
+    "environment_evolution_policy_path": "client/config/environment_evolution_layer_policy.json",
+    "test_time_memory_evolution_policy_path": "client/config/test_time_memory_evolution_primitive_policy.json",
+    "group_evolving_agents_policy_path": "client/config/group_evolving_agents_primitive_policy.json",
+    "generative_meta_model_policy_path": "client/config/generative_meta_model_primitive_policy.json",
+    "self_teacher_distillation_policy_path": "client/config/self_teacher_distillation_primitive_policy.json",
+    "adaptive_ensemble_routing_policy_path": "client/config/adaptive_ensemble_routing_primitive_policy.json",
+    "weaver_ensemble_profiles_path": "state/autonomy/weaver/adaptive_ensemble_profiles.jsonl"
+  },
+  "outputs": {
+    "emit_events": true,
+    "emit_ide_events": true,
+    "emit_obsidian_projection": true
+  }
+}

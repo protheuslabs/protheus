@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": false,
+  "require_doctor_approval_for_apply": true,
+  "require_codex_root_for_apply": false,
+  "manifest_update_on_apply": true,
+  "allowed_sources": [
+    "assimilation",
+    "forge",
+    "doctor"
+  ],
+  "paths": {
+    "admissions_path": "state/helix/admissions.jsonl",
+    "latest_path": "state/helix/admission_latest.json",
+    "manifest_path": "state/helix/manifest.json"
+  },
+  "helix": {
+    "policy_path": "client/config/helix_policy.json",
+    "codex_path": "codex.helix"
+  }
+}

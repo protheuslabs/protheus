@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-03-05T05:38:11.286Z",
+  "stack": {
+    "metrics": "prometheus",
+    "logs": "loki",
+    "traces": "otel_collector",
+    "dashboards": "grafana"
+  },
+  "one_command_bringup": "docker compose -f client/deploy/observability/docker-compose.yml up -d",
+  "contract_tests": [
+    "trace_contract",
+    "metrics_exporter",
+    "log_ingest"
+  ]
+}

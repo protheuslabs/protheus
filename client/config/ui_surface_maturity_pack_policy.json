@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "required_docs": [
+    "client/docs/UI_SURFACE_MATURITY_MATRIX.md",
+    "client/docs/UI_SURFACE_INVENTORY.md",
+    "client/docs/UI_DESIGN_TOKEN_STANDARD.md",
+    "client/docs/UI_ACCESSIBILITY_INTERACTION_CONTRACT.md"
+  ],
+  "readme_path": "README.md",
+  "readme_required_links": [
+    "client/docs/UI_SURFACE_MATURITY_MATRIX.md",
+    "client/docs/UI_SURFACE_INVENTORY.md",
+    "client/docs/UI_ACCESSIBILITY_INTERACTION_CONTRACT.md"
+  ],
+  "required_terms": ["keyboard", "focus", "contrast", "command palette", "responsive"],
+  "paths": {
+    "latest_path": "state/ops/ui_surface_maturity_pack/latest.json",
+    "history_path": "state/ops/ui_surface_maturity_pack/history.jsonl"
+  }
+}

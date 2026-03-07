@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "scientific_mode_v4": false,
+  "gates": {
+    "research": true,
+    "weaver": true,
+    "redteam": true
+  },
+  "strict_gate_enforcement": true,
+  "fallback_mode": "legacy_research_lane",
+  "meta_science": {
+    "enabled": true,
+    "strict": false,
+    "policy_path": "client/config/meta_science_active_learning_policy.json"
+  },
+  "advanced_stats": {
+    "enabled": true,
+    "strict": false,
+    "policy_path": "client/config/advanced_statistical_extensions_policy.json"
+  },
+  "enhanced_mirror": {
+    "enabled": true,
+    "strict": false,
+    "policy_path": "client/config/enhanced_reasoning_mirror_policy.json"
+  },
+  "paths": {
+    "latest_path": "state/science/scientific_mode_v4/latest.json",
+    "history_path": "state/science/scientific_mode_v4/history.jsonl"
+  }
+}

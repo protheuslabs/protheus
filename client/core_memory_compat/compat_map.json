@@ -1,0 +1,16 @@
+{
+  "schema_id": "core_memory_path_compat_map",
+  "schema_version": "1.0",
+  "alias_root": "core/memory",
+  "canonical_root": "client/systems/memory/rust",
+  "canonical_ts_runtime": "client/systems/memory/memory_recall.ts",
+  "crate_name_aliases": [
+    "protheus-memory-core",
+    "protheus-memory"
+  ],
+  "commands": {
+    "status": "node core/client/memory/compat_bridge.js status",
+    "canonical_build": "cd client/systems/memory/rust && cargo build --release",
+    "canonical_run": "cd client/systems/memory/rust && cargo run -- <args>"
+  }
+}

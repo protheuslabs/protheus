@@ -1,0 +1,220 @@
+{
+  "ok": false,
+  "type": "mech_suit_benchmark",
+  "ts": "2026-03-07T04:39:11.242Z",
+  "ambient_mode_active": false,
+  "benchmark_root": "/var/folders/f9/mhsd3dwj78l8418t9vnclbn80000gn/T/mech-suit-bench-klQUYk",
+  "cases": [
+    {
+      "name": "spine_live_status",
+      "baseline": {
+        "status": 1,
+        "stdout": "",
+        "stderr": "/Users/jay/.openclaw/workspace/client/lib/ts_bootstrap.js:244\n    throw new Error(`ts_bootstrap: missing_ts_source:${tsPath}`);\n    ^\n\nError: ts_bootstrap: missing_ts_source:/Users/jay/.openclaw/workspace/client/lib/ternary_belief_engine.ts\n    at Object.bootstrap (/Users/jay/.openclaw/workspace/client/lib/ts_bootstrap.js:244:11)\n    at Object.<anonymous> (/Users/jay/.openclaw/workspace/client/lib/ternary_belief_engine.js:4:27)\n    at Module._compile (node:internal/modules/cjs/loader:1706:14)\n    at Object..js (node:internal/modules/cjs/loader:1839:10)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\n    at require (node:internal/modules/helpers:147:16)\n\nNode.js v22.22.0\n",
+        "timed_out": false,
+        "signal": null,
+        "error": null,
+        "token_estimate": 239,
+        "char_count": 953
+      },
+      "ambient": {
+        "status": 1,
+        "stdout": "",
+        "stderr": "/Users/jay/.openclaw/workspace/client/lib/ts_bootstrap.js:244\n    throw new Error(`ts_bootstrap: missing_ts_source:${tsPath}`);\n    ^\n\nError: ts_bootstrap: missing_ts_source:/Users/jay/.openclaw/workspace/client/lib/ternary_belief_engine.ts\n    at Object.bootstrap (/Users/jay/.openclaw/workspace/client/lib/ts_bootstrap.js:244:11)\n    at Object.<anonymous> (/Users/jay/.openclaw/workspace/client/lib/ternary_belief_engine.js:4:27)\n    at Module._compile (node:internal/modules/cjs/loader:1706:14)\n    at Object..js (node:internal/modules/cjs/loader:1839:10)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\n    at require (node:internal/modules/helpers:147:16)\n\nNode.js v22.22.0\n",
+        "timed_out": false,
+        "signal": null,
+        "error": null,
+        "token_estimate": 239,
+        "char_count": 953
+      },
+      "token_burn_reduction_pct": 0,
+      "chars_reduction_pct": 0,
+      "ok": false
+    },
+    {
+      "name": "eyes_stub_run",
+      "baseline": {
+        "status": 1,
+        "stdout": "",
+        "stderr": "node:internal/modules/cjs/loader:1386\n  throw err;\n  ^\n\nError: Cannot find module '../../systems/sensory/focus_controller.js'\nRequire stack:\n- /Users/jay/.openclaw/workspace/client/habits/scripts/external_eyes.js\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\n    at require (node:internal/modules/helpers:147:16)\n    at Object.<anonymous> (/Users/jay/.openclaw/workspace/client/habits/scripts/external_eyes.js:32:5)\n    at Module._compile (node:internal/modules/cjs/loader:1706:14) {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: [\n    '/Users/jay/.openclaw/workspace/client/habits/scripts/external_eyes.js'\n  ]\n}\n\nNode.js v22.22.0\n",
+        "timed_out": false,
+        "signal": null,
+        "error": null,
+        "token_estimate": 266,
+        "char_count": 1062
+      },
+      "ambient": {
+        "status": 1,
+        "stdout": "",
+        "stderr": "node:internal/modules/cjs/loader:1386\n  throw err;\n  ^\n\nError: Cannot find module '../../systems/sensory/focus_controller.js'\nRequire stack:\n- /Users/jay/.openclaw/workspace/client/habits/scripts/external_eyes.js\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:328:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\n    at require (node:internal/modules/helpers:147:16)\n    at Object.<anonymous> (/Users/jay/.openclaw/workspace/client/habits/scripts/external_eyes.js:32:5)\n    at Module._compile (node:internal/modules/cjs/loader:1706:14) {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: [\n    '/Users/jay/.openclaw/workspace/client/habits/scripts/external_eyes.js'\n  ]\n}\n\nNode.js v22.22.0\n",
+        "timed_out": false,
+        "signal": null,
+        "error": null,
+        "token_estimate": 266,
+        "char_count": 1062
+      },
+      "attention_queue_lines": 0,
+      "attention_latest": {},
+      "token_burn_reduction_pct": 0,
+      "chars_reduction_pct": 0,
+      "ok": false
+    },
+    {
+      "name": "persona_ambient_stance",
+      "include_in_reduction": false,
+      "baseline": {
+        "status": 1,
+        "stdout": "{\"ok\":false,\"type\":\"persona_ambient_conduit_bridge_error\",\"reason\":\"conduit_stdio_timeout:30000\",\"routed_via\":\"conduit\"}\n",
+        "stderr": "conduit_stdio_timeout:30000\n",
+        "timed_out": false,
+        "signal": null,
+        "error": null,
+        "token_estimate": 38,
+        "char_count": 149
+      },
+      "ambient": {
+        "status": 1,
+        "stdout": "{\"ok\":false,\"type\":\"persona_ambient_conduit_bridge_error\",\"reason\":\"conduit_stdio_timeout:30000\",\"routed_via\":\"conduit\"}\n",
+        "stderr": "conduit_stdio_timeout:30000\n",
+        "timed_out": false,
+        "signal": null,
+        "error": null,
+        "token_estimate": 38,
+        "char_count": 149
+      },
+      "apply_status": 1,
+      "apply_payload": {
+        "ok": false,
+        "type": "persona_ambient_conduit_bridge_error",
+        "reason": "conduit_stdio_timeout:30000",
+        "routed_via": "conduit"
+      },
+      "ambient_status_payload": {
+        "ok": false,
+        "type": "persona_ambient_conduit_bridge_error",
+        "reason": "conduit_stdio_timeout:30000",
+        "routed_via": "conduit"
+      },
+      "token_burn_reduction_pct": 0,
+      "chars_reduction_pct": 0,
+      "ok": false
+    },
+    {
+      "name": "dopamine_ambient_threshold_gating",
+      "baseline": {
+        "status": 1,
+        "stdout": "{\"ok\":false,\"type\":\"dopamine_ambient_conduit_bridge_error\",\"reason\":\"conduit_stdio_timeout:30000\",\"routed_via\":\"conduit\"}\n",
+        "stderr": "conduit_stdio_timeout:30000\n",
+        "timed_out": false,
+        "signal": null,
+        "error": null,
+        "token_estimate": 38,
+        "char_count": 150
+      },
+      "ambient": {
+        "status": 1,
+        "stdout": "{\"ok\":false,\"type\":\"dopamine_ambient_conduit_bridge_error\",\"reason\":\"conduit_stdio_timeout:30000\",\"routed_via\":\"conduit\"}\n",
+        "stderr": "conduit_stdio_timeout:30000\n",
+        "timed_out": false,
+        "signal": null,
+        "error": null,
+        "token_estimate": 38,
+        "char_count": 150
+      },
+      "status_probe_status": 1,
+      "breach_eval_status": 1,
+      "baseline_eval_payload": {
+        "ok": false,
+        "type": "dopamine_ambient_conduit_bridge_error",
+        "reason": "conduit_stdio_timeout:30000",
+        "routed_via": "conduit"
+      },
+      "safe_eval_payload": {
+        "ok": false,
+        "type": "dopamine_ambient_conduit_bridge_error",
+        "reason": "conduit_stdio_timeout:30000",
+        "routed_via": "conduit"
+      },
+      "breach_eval_payload": {
+        "ok": false,
+        "type": "dopamine_ambient_conduit_bridge_error",
+        "reason": "conduit_stdio_timeout:30000",
+        "routed_via": "conduit"
+      },
+      "ambient_status_payload": {
+        "ok": false,
+        "type": "dopamine_ambient_conduit_bridge_error",
+        "reason": "conduit_stdio_timeout:30000",
+        "routed_via": "conduit"
+      },
+      "attention_queue_lines": 0,
+      "token_burn_reduction_pct": 0,
+      "chars_reduction_pct": 0,
+      "ok": false
+    },
+    {
+      "name": "memory_ambient_lane",
+      "ingest_status": 1,
+      "ingest_payload": {
+        "ok": false,
+        "type": "memory_ambient_conduit_bridge_error",
+        "reason": "conduit_stdio_timeout:30000",
+        "routed_via": "conduit"
+      },
+      "baseline": {
+        "status": 1,
+        "stdout": "{\"ok\":false,\"type\":\"memory_ambient_conduit_bridge_error\",\"reason\":\"conduit_stdio_timeout:30000\",\"routed_via\":\"conduit\"}\n",
+        "stderr": "conduit_stdio_timeout:30000\n",
+        "timed_out": false,
+        "signal": null,
+        "error": null,
+        "token_estimate": 38,
+        "char_count": 148
+      },
+      "ambient": {
+        "status": 1,
+        "stdout": "{\"ok\":false,\"type\":\"memory_ambient_conduit_bridge_error\",\"reason\":\"conduit_stdio_timeout:30000\",\"routed_via\":\"conduit\"}\n",
+        "stderr": "conduit_stdio_timeout:30000\n",
+        "timed_out": false,
+        "signal": null,
+        "error": null,
+        "token_estimate": 38,
+        "char_count": 148
+      },
+      "status_probe_status": 1,
+      "status_payload": {
+        "ok": false,
+        "type": "memory_ambient_conduit_bridge_error",
+        "reason": "conduit_stdio_timeout:30000",
+        "routed_via": "conduit"
+      },
+      "baseline_payload": {
+        "ok": false,
+        "type": "memory_ambient_conduit_bridge_error",
+        "reason": "conduit_stdio_timeout:30000",
+        "routed_via": "conduit"
+      },
+      "ambient_payload": {
+        "ok": false,
+        "type": "memory_ambient_conduit_bridge_error",
+        "reason": "conduit_stdio_timeout:30000",
+        "routed_via": "conduit"
+      },
+      "token_burn_reduction_pct": 0,
+      "chars_reduction_pct": 0,
+      "ok": false
+    }
+  ],
+  "host_fault": {
+    "timeout_detected": false,
+    "timed_out_cases": []
+  },
+  "summary": {
+    "token_burn_reduction_pct": 0,
+    "chars_reduction_pct": 0,
+    "persona_ambient_mode_active": false,
+    "persona_delta_applied": false,
+    "dopamine_threshold_only": false,
+    "memory_rust_authoritative": false
+  }
+}

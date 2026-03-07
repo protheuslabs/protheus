@@ -1,0 +1,50 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "cargo_bin": "cargo",
+  "checks": {
+    "enforce_workspace_manifest": true,
+    "enforce_toolchain_manifest": true,
+    "enforce_docs_generated": true,
+    "enforce_cargo_metadata": true,
+    "enforce_cargo_fmt": false,
+    "enforce_cargo_clippy": false,
+    "enforce_cargo_test": false
+  },
+  "docs_required": [
+    "client/docs/generated/TS_LANE_TYPE_REFERENCE.md",
+    "client/docs/generated/RUST_LANE_TYPE_REFERENCE.md"
+  ],
+  "commands": {
+    "metadata": [
+      "metadata",
+      "--format-version",
+      "1",
+      "--no-deps"
+    ],
+    "fmt": [
+      "fmt",
+      "--all",
+      "--",
+      "--check"
+    ],
+    "clippy": [
+      "clippy",
+      "--workspace",
+      "--all-targets",
+      "--all-features",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "test": [
+      "test",
+      "--workspace"
+    ]
+  },
+  "paths": {
+    "latest_path": "state/ops/rust_workspace_quality_gate/latest.json",
+    "receipts_path": "state/ops/rust_workspace_quality_gate/receipts.jsonl"
+  }
+}

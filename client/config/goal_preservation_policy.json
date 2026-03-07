@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "strict_mode": true,
+  "constitution_path": "AGENT-CONSTITUTION.md",
+  "protected_axiom_markers": [
+    "to be a hero",
+    "to test the limits",
+    "to create at will",
+    "to win my freedom",
+    "user sovereignty",
+    "root constitution"
+  ],
+  "blocked_mutation_paths": [
+    "^AGENT-CONSTITUTION\\.md$",
+    "^SOUL\\.md$",
+    "^USER\\.md$",
+    "^client/systems/security/guard\\.(ts|js)$",
+    "^client/systems/security/policy_rootd\\.(ts|js)$"
+  ],
+  "symbiosis_recursion_gate": {
+    "enabled": true,
+    "shadow_only": true,
+    "signal_policy_path": "client/config/symbiosis_coherence_policy.json"
+  },
+  "output": {
+    "state_path": "state/security/goal_preservation/latest.json",
+    "receipts_path": "state/security/goal_preservation/receipts.jsonl"
+  }
+}

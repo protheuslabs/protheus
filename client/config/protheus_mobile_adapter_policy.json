@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": false,
+  "targets": {
+    "background_battery_max_pct_24h": 5,
+    "max_build_ms": 900000
+  },
+  "manifests": {
+    "output_path": "state/hybrid/mobile_adapter/mobile_manifest.json"
+  },
+  "build": {
+    "rust_release_cmd": [
+      "cargo",
+      "build",
+      "--manifest-path",
+      "client/systems/hybrid/rust/Cargo.toml",
+      "--release",
+      "--quiet"
+    ],
+    "wasm_target": "wasm32-unknown-unknown",
+    "wasm_build_cmd": [
+      "cargo",
+      "build",
+      "--manifest-path",
+      "client/systems/hybrid/rust/Cargo.toml",
+      "--target",
+      "wasm32-unknown-unknown",
+      "--release",
+      "--quiet"
+    ]
+  },
+  "paths": {
+    "latest_path": "state/hybrid/mobile_adapter/latest.json",
+    "receipts_path": "state/hybrid/mobile_adapter/receipts.jsonl",
+    "history_path": "state/hybrid/mobile_adapter/history.jsonl",
+    "state_path": "state/hybrid/mobile_adapter/state.json"
+  }
+}

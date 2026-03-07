@@ -1,0 +1,64 @@
+{
+  "schema_id": "rust_hybrid_migration_program_policy",
+  "schema_version": "1.0",
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "docs_required": [
+    "client/docs/RUST_HYBRID_MIGRATION_IMPLEMENTATION.md"
+  ],
+  "targets": {
+    "rust_share_min_pct": 15,
+    "rust_share_max_pct": 25,
+    "chaos_cycles": 200000
+  },
+  "items": [
+    {
+      "id": "V5-RUST-HYB-001",
+      "title": "15-25% Rust Share Control Plan"
+    },
+    {
+      "id": "V5-RUST-HYB-002",
+      "title": "Memory Lane Rust Completion (Scheduler + Compression + SQLite Hot Paths)"
+    },
+    {
+      "id": "V5-RUST-HYB-003",
+      "title": "Execution Runtime Rust Cutover (Deterministic Receipts + Replay Core)"
+    },
+    {
+      "id": "V5-RUST-HYB-004",
+      "title": "Security + Vault Rust Core Hardening"
+    },
+    {
+      "id": "V5-RUST-HYB-005",
+      "title": "Pinnacle CRDT Rust Merge Engine"
+    },
+    {
+      "id": "V5-RUST-HYB-006",
+      "title": "Econ + Crypto Rust Safety Core"
+    },
+    {
+      "id": "V5-RUST-HYB-007",
+      "title": "Red Legion Chaos Engine Rust Acceleration"
+    },
+    {
+      "id": "V5-RUST-HYB-008",
+      "title": "Observability Telemetry Rust Emitter Core"
+    },
+    {
+      "id": "V5-RUST-HYB-009",
+      "title": "WASM Adapter Rust Bridge Expansion"
+    },
+    {
+      "id": "V5-RUST-HYB-010",
+      "title": "Hybrid Envelope Validation + Guardrail Gate"
+    }
+  ],
+  "paths": {
+    "latest_path": "state/ops/rust_hybrid_migration_program/latest.json",
+    "receipts_path": "state/ops/rust_hybrid_migration_program/receipts.jsonl",
+    "history_path": "state/ops/rust_hybrid_migration_program/history.jsonl",
+    "state_dir": "state/ops/rust_hybrid_migration_program/items",
+    "artifact_dir": "state/ops/rust_hybrid_migration_program/artifacts"
+  }
+}

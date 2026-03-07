@@ -1,0 +1,38 @@
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: protheuslabs/protheus
+  tag: latest
+  pullPolicy: IfNotPresent
+
+runtimeConfig:
+  CLEARANCE: "3"
+  NODE_ENV: "production"
+  SPINE_PUBLIC_BENCHMARK_ENABLED: "0"
+  SPINE_WORKFLOW_LAYER_ENABLED: "1"
+  SPINE_STRATEGY_PRINCIPLES_ENABLED: "1"
+
+cron:
+  enabled: true
+  schedule: "0 */4 * * *"
+  command:
+    - node
+    - client/systems/spine/spine.js
+    - daily
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  backoffLimit: 1
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "512Mi"
+  limits:
+    cpu: "1000m"
+    memory: "2Gi"
+
+networkPolicy:
+  enabled: true
+  allowDns: true
+  allowHttps: true

@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": false,
+  "source_registry_path": "client/config/backlog_registry.json",
+  "package_json_path": "package.json",
+  "statuses": {
+    "done": [
+      "done"
+    ],
+    "queued": [
+      "queued",
+      "proposed"
+    ],
+    "blocked": [
+      "blocked"
+    ]
+  },
+  "limits": {
+    "sample_rows": 40,
+    "blocker_rows": 40
+  },
+  "outputs": {
+    "latest_path": "state/ops/backlog_execution_pathfinder/latest.json",
+    "history_path": "state/ops/backlog_execution_pathfinder/history.jsonl",
+    "report_path": "state/ops/backlog_execution_pathfinder/report.json",
+    "report_md_path": "client/docs/backlog_views/execution_path.md"
+  }
+}

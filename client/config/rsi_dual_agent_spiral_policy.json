@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "adaptive.rsi.dual_agent_spiral"
+  },
+  "cycles_default": 3,
+  "difficulty_start": 1,
+  "difficulty_step": 1,
+  "difficulty_max": 6,
+  "system3_script": "client/adaptive/executive/system3_executive_layer.js",
+  "rsi_script": "client/adaptive/rsi/rsi_bootstrap.js",
+  "rsi_policy_path": "client/config/rsi_bootstrap_policy.json",
+  "target_paths": [
+    "client/systems/strategy/strategy_learner.ts",
+    "client/systems/autonomy/model_catalog_loop.ts",
+    "client/adaptive/executive/system3_executive_layer.ts"
+  ],
+  "paths": {
+    "memory_dir": "client/memory/client/adaptive/rsi_dual_agent_spiral",
+    "adaptive_index_path": "client/adaptive/rsi/dual_agent_spiral/index.json",
+    "events_path": "state/client/adaptive/rsi_dual_agent_spiral/events.jsonl",
+    "latest_path": "state/client/adaptive/rsi_dual_agent_spiral/latest.json",
+    "receipts_path": "state/client/adaptive/rsi_dual_agent_spiral/receipts.jsonl",
+    "spiral_state_path": "state/client/adaptive/rsi_dual_agent_spiral/state.json"
+  }
+}

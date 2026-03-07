@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_validation": true,
+  "schema_path": "client/config/capability_profile_schema.json",
+  "state": {
+    "root": "state/assimilation/capability_profiles",
+    "profiles_dir": "state/assimilation/capability_profiles/profiles",
+    "receipts_path": "state/assimilation/capability_profiles/receipts.jsonl",
+    "latest_path": "state/assimilation/capability_profiles/latest.json"
+  },
+  "onboarding": {
+    "profile_only_path_enabled": true,
+    "require_provenance": true,
+    "max_profile_aliases": 64
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "auto_stasis_on_fail": true,
+  "contract_mesh": {
+    "required_by_lane": {
+      "global": [],
+      "state_kernel": [
+        "integrity_attestation_id",
+        "helix_tier",
+        "sentinel_tier"
+      ],
+      "proposal_gating": [
+        "soul_token_attestation",
+        "startup_attestation",
+        "risk_receipt_id"
+      ],
+      "execution_primitive": [
+        "safety_attestation",
+        "rollback_receipt",
+        "guard_receipt_id"
+      ],
+      "memory_traversal": [
+        "memory_policy_receipt",
+        "directive_hash",
+        "query_scope"
+      ]
+    }
+  },
+  "runtime_attestation": {
+    "enabled": true,
+    "integrity_policy_path": "client/config/security_integrity_policy.json",
+    "heartbeat_latest_path": "state/security/remote_tamper_heartbeat/latest.json",
+    "heartbeat_quarantine_path": "state/security/remote_tamper_heartbeat/quarantine.json",
+    "max_heartbeat_age_sec": 180,
+    "require_heartbeat_quarantine_alignment": true
+  },
+  "binary_hardening": {
+    "enabled": true,
+    "require_hardened_artifact": true,
+    "min_obfuscation_tier": "light",
+    "allowed_tiers": [
+      "light",
+      "medium",
+      "hard"
+    ],
+    "binary_artifacts_path": "state/ops/binary_runtime_hardening/artifacts.json",
+    "binary_receipts_path": "state/ops/binary_runtime_hardening/receipts.jsonl",
+    "max_anti_debug_false_positives_per_day": 24
+  },
+  "paths": {
+    "latest_path": "state/security/skin_protection/latest.json",
+    "history_path": "state/security/skin_protection/history.jsonl",
+    "stasis_state_path": "state/security/skin_protection/stasis_state.json"
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "active_statuses": [
+    "queued",
+    "in_progress",
+    "blocked",
+    "proposed"
+  ],
+  "archive_statuses": [
+    "done",
+    "dropped",
+    "archived",
+    "obsolete"
+  ],
+  "governance": {
+    "max_in_progress": 7,
+    "stale_warn_days": 14,
+    "stale_archive_days": 30,
+    "stale_statuses": [
+      "queued",
+      "in_progress",
+      "blocked",
+      "proposed"
+    ],
+    "purge_candidate_statuses": [
+      "queued",
+      "proposed",
+      "blocked"
+    ],
+    "strict_stale_purge": false,
+    "strict_dependency_integrity": false
+  },
+  "quality": {
+    "strict": false,
+    "enforce_for_statuses": [
+      "queued",
+      "in_progress",
+      "blocked",
+      "proposed"
+    ],
+    "min_problem_chars": 24,
+    "min_acceptance_chars": 40,
+    "require_verification_signal": true,
+    "require_rollback_signal": true,
+    "verification_signals": [
+      "verify",
+      "test",
+      "receipt",
+      "check",
+      "assert"
+    ],
+    "rollback_signals": [
+      "rollback",
+      "revert",
+      "fallback",
+      "undo"
+    ]
+  },
+  "paths": {
+    "backlog_path": "SRS.md",
+    "registry_path": "client/config/backlog_registry.json",
+    "active_view_path": "client/docs/backlog_views/active.md",
+    "archive_view_path": "client/docs/backlog_views/archive.md",
+    "state_path": "state/ops/backlog_registry/state.json",
+    "latest_path": "state/ops/backlog_registry/latest.json",
+    "receipts_path": "state/ops/backlog_registry/receipts.jsonl"
+  }
+}

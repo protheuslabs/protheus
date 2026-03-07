@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "active_profile_path": "client/config/strategies/active_profile.json",
+  "profiles_dir": "client/config/strategies",
+  "guard": {
+    "enabled": true,
+    "scan_root": "systems",
+    "file_extensions": [
+      ".ts",
+      ".js"
+    ],
+    "skip_tokens": [
+      "/tests/"
+    ],
+    "forbidden_profile_tokens": [
+      "drop-shipping",
+      "ecommerce_only",
+      "affiliate_only"
+    ]
+  },
+  "outputs": {
+    "latest_path": "state/strategy/profile_layer/latest.json",
+    "history_path": "state/strategy/profile_layer/history.jsonl"
+  }
+}

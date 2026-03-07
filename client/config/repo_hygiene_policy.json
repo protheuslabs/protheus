@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "blocked_prefixes": [
+    "client/memory/_snapshots/",
+    "client/logs/tool_raw/",
+    "tmp/",
+    "state/",
+    "client/habits/client/logs/"
+  ],
+  "blocked_globs": [
+    "client/memory/*.backup.*",
+    "client/memory/tools/tests/temp_*/*",
+    "client/habits/scripts/*.bak.*",
+    "client/config/moltbook/credentials.json",
+    "state/security/secret_broker_key.txt",
+    "**/credentials.json",
+    "**/token.json",
+    "**/*.pem",
+    "**/*.p12",
+    "**/*.pfx",
+    "**/*.key"
+  ],
+  "allow_prefixes": [
+    "state/security/break_glass.jsonl",
+    "state/spine/runs/"
+  ],
+  "allow_globs": [],
+  "allow_new_js_twins": [],
+  "allow_new_js_twin_prefixes": [],
+  "allow_new_js_twin_globs": []
+}

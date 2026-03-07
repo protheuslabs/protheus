@@ -1,0 +1,32 @@
+{
+  "schema_id": "supply_chain_provenance_v2_policy",
+  "schema_version": "1.0",
+  "strict_default": true,
+  "required_artifacts": [
+    {
+      "id": "protheus-ops",
+      "artifact_path": "target/release/protheus-ops",
+      "sbom_path": "state/release/provenance/sbom/protheus-ops.cdx.json",
+      "signature_path": "state/release/provenance/signatures/protheus-ops.sig"
+    },
+    {
+      "id": "conduit-daemon",
+      "artifact_path": "target/release/conduit_daemon",
+      "sbom_path": "state/release/provenance/sbom/conduit_daemon.cdx.json",
+      "signature_path": "state/release/provenance/signatures/conduit_daemon.sig"
+    }
+  ],
+  "bundle_path": "state/release/provenance_bundle/latest.json",
+  "vulnerability_summary_path": "state/release/provenance_bundle/dependency_vulnerability_summary.json",
+  "rollback_policy_path": "client/config/release_rollback_policy.json",
+  "vulnerability_sla": {
+    "max_critical": 0,
+    "max_high": 2,
+    "max_medium": 20,
+    "max_report_age_hours": 24
+  },
+  "outputs": {
+    "latest_path": "state/ops/supply_chain_provenance_v2/latest.json",
+    "history_path": "state/ops/supply_chain_provenance_v2/history.jsonl"
+  }
+}

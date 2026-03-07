@@ -1,0 +1,1 @@
+{"ts":"2026-03-07T04:11:08.486Z","type":"public_benchmark_pack","date":"2026-03-07","verdict":"warn","drift_rate":null,"yield_rate":null,"red_team_critical_fail_cases":0,"runtime_efficiency_pass":false,"runtime_cold_start_p95_ms":null,"runtime_idle_rss_p95_mb":null,"runtime_install_artifact_mb":null}

@@ -1,0 +1,19 @@
+{
+  "schema_id": "backlog_queue_executor_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "registry_path": "client/config/backlog_registry.json",
+  "state_root": "state/ops/backlog_queue_executor",
+  "latest_path": "state/ops/backlog_queue_executor/latest.json",
+  "history_path": "state/ops/backlog_queue_executor/history.jsonl",
+  "sqlite": {
+    "enabled": true,
+    "db_path": "state/ops/backlog_queue_executor/queue.db",
+    "journal_mode": "WAL",
+    "synchronous": "NORMAL",
+    "busy_timeout_ms": 8000,
+    "queue_name": "backlog_queue_executor",
+    "migrate_history_jsonl": true,
+    "mirror_jsonl": true
+  }
+}

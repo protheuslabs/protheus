@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "risk": {
+    "default_tier": 2,
+    "require_explicit_approval_tier": 3
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "edge.lifecycle"
+  },
+  "thresholds": {
+    "battery_soft_pct": 30,
+    "battery_hard_pct": 18,
+    "thermal_soft_c": 42,
+    "thermal_hard_c": 48,
+    "background_kill_soft": 2,
+    "background_kill_hard": 4,
+    "wake_lock_soft_min": 20,
+    "wake_lock_hard_min": 45,
+    "target_autonomy_hours": 72
+  },
+  "paths": {
+    "memory_dir": "client/memory/edge/lifecycle",
+    "adaptive_index_path": "client/adaptive/edge/lifecycle/index.json",
+    "events_path": "state/edge/mobile_lifecycle/events.jsonl",
+    "latest_path": "state/edge/mobile_lifecycle/latest.json",
+    "receipts_path": "state/edge/mobile_lifecycle/receipts.jsonl",
+    "lifecycle_state_path": "state/edge/mobile_lifecycle/state.json"
+  }
+}

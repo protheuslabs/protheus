@@ -1,0 +1,44 @@
+{
+  "version": "1.0",
+  "target_roots": [
+    "systems"
+  ],
+  "file_extensions": [
+    ".js"
+  ],
+  "exclude_paths": [
+    "client/systems/security/architecture_guard.js"
+  ],
+  "banned_tokens": [
+    "moltbook",
+    "moltstack",
+    "twitter",
+    "api.x.com",
+    "hnrss.org",
+    "/api/v1/",
+    "submolt",
+    "gmail",
+    "bird"
+  ],
+  "allow_paths": [
+    "client/systems/autonomy/autonomy_controller.js",
+    "client/systems/spine/spine.js"
+  ],
+  "allow_token_overrides": {
+    "client/systems/security/guard.js": [
+      "moltbook"
+    ],
+    "client/systems/security/request_ingress.js": [
+      "moltbook"
+    ],
+    "client/systems/sensory/eyes_intake.js": [
+      "hnrss.org",
+      "moltbook",
+      "twitter",
+      "bird"
+    ],
+    "client/systems/sensory/eyes_collectors/bird_x.js": [
+      "bird"
+    ]
+  }
+}

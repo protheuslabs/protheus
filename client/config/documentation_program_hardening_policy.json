@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "governance_doc": "client/docs/DOCUMENTATION_PROGRAM_GOVERNANCE.md",
+  "required_files": ["client/docs/adr/README.md", "client/docs/adr/TEMPLATE.md", "client/docs/adr/INDEX.md"],
+  "required_sections": ["ownership model", "review cadence", "artifact tiers", "adr", "freshness process", "backlog + release linkage"],
+  "paths": {
+    "latest_path": "state/ops/documentation_program_hardening/latest.json",
+    "history_path": "state/ops/documentation_program_hardening/history.jsonl"
+  }
+}

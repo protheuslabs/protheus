@@ -1,0 +1,101 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "require_user_dirs": false,
+  "required_docs": [
+    "client/docs/ECONOMY.md",
+    "client/docs/IDENTITY.md",
+    "client/docs/DATA_SCOPE_BOUNDARIES.md"
+  ],
+  "lanes": [
+    {
+      "id": "V3-RACE-129",
+      "system_files": [
+        "client/systems/contracts/soul_contracts.ts",
+        "client/config/soul_contracts_policy.json"
+      ],
+      "user_paths": [
+        "client/memory/contracts",
+        "client/adaptive/contracts"
+      ]
+    },
+    {
+      "id": "V3-RACE-130",
+      "system_files": [
+        "client/systems/economy/protheus_token_engine.ts",
+        "client/systems/economy/global_directive_fund.ts"
+      ],
+      "user_paths": [
+        "client/memory/economy/preferences",
+        "client/adaptive/economy/preferences"
+      ]
+    },
+    {
+      "id": "V3-RACE-131",
+      "system_files": [
+        "client/systems/spawn/seed_spawn_lineage.ts",
+        "client/systems/spawn/spawn_broker.ts"
+      ],
+      "user_paths": [
+        "client/memory/lineage",
+        "client/adaptive/lineage"
+      ]
+    },
+    {
+      "id": "V3-RACE-132",
+      "system_files": [
+        "client/systems/autonomy/civic_duty_allocation_engine.ts"
+      ],
+      "user_paths": [
+        "client/memory/civic_duty",
+        "client/adaptive/civic_duty"
+      ]
+    },
+    {
+      "id": "V3-RACE-133",
+      "system_files": [
+        "client/systems/economy/peer_lending_market.ts",
+        "client/systems/economy/gpu_contribution_tracker.ts"
+      ],
+      "user_paths": [
+        "client/memory/economy/peer_lending",
+        "client/adaptive/economy/peer_lending"
+      ]
+    },
+    {
+      "id": "V3-RACE-134",
+      "system_files": [
+        "client/systems/identity/visual_signature_engine.ts"
+      ],
+      "user_paths": [
+        "client/memory/identity/signature",
+        "client/adaptive/identity/signature"
+      ]
+    },
+    {
+      "id": "V3-RACE-135",
+      "system_files": [
+        "client/systems/research/pinnacle_tech_integration_engine.ts"
+      ],
+      "user_paths": [
+        "client/memory/research/preferences",
+        "client/adaptive/research/preferences"
+      ]
+    }
+  ],
+  "touchpoints": {
+    "required_files": [
+      "client/systems/symbiosis/soul_vector_substrate.ts",
+      "client/systems/economy/tithe_engine.ts",
+      "client/systems/spawn/spawn_broker.ts",
+      "client/systems/security/guard.ts",
+      "client/systems/fractal/engine.ts",
+      "client/systems/fractal/warden/complexity_warden_meta_organ.ts",
+      "client/systems/security/jigsaw/attackcinema_replay_theater.ts"
+    ]
+  },
+  "paths": {
+    "latest_path": "state/ops/data_scope_boundary_check/latest.json",
+    "receipts_path": "state/ops/data_scope_boundary_check/receipts.jsonl"
+  }
+}

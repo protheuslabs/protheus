@@ -60,13 +60,13 @@ when_to_suggest:
   - Any workflow with repeated tool calls (exec/web_fetch/read) or scraping/crawling.
 implementation_delta:
   - Wrap ALL tool outputs before they enter working context.
-  - If output > 1200 chars OR > 40 lines: store raw to logs/tool_raw/<timestamp>.txt and inject only a compact summary + key ids/links/errors.
+  - If output > 1200 chars OR > 40 lines: store raw to client/logs/tool_raw/<timestamp>.txt and inject only a compact summary + key ids/links/errors.
   - Preserve errors, ids, URLs, counts; redact secrets.
 acceptance_test:
   - Run Moltbook hot feed + comments check: working context should contain only summarized tool outputs, while raw outputs are saved to logs.
   - Verify no missing post_ids/comment_ids and no leaked tokens.
   - ✅ PASSED: 83% token reduction achieved (3,576 → 601 chars)
-  - Benchmark log: logs/tool_raw/benchmark_results_summary.json
+  - Benchmark log: client/logs/tool_raw/benchmark_results_summary.json
 ```
 
 ```

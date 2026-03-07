@@ -1,0 +1,47 @@
+{
+  "ok": true,
+  "type": "public_benchmark_pack",
+  "ts": "2026-03-07T04:11:08.486Z",
+  "date": "2026-03-07",
+  "window_days": 180,
+  "simulation": {
+    "verdict": "unknown",
+    "drift_rate": null,
+    "yield_rate": null,
+    "safety_stop_rate": null,
+    "attempts": 0
+  },
+  "red_team": {
+    "ok": false,
+    "selected_cases": 0,
+    "executed_cases": 0,
+    "fail_cases": 0,
+    "critical_fail_cases": 0
+  },
+  "observer": {
+    "mood": null,
+    "recommendation": null
+  },
+  "workflow": {
+    "total": 0,
+    "active": 0
+  },
+  "runtime_efficiency": {
+    "pass": false,
+    "result": "unknown",
+    "cold_start_p95_ms": null,
+    "cold_start_threshold_ms": null,
+    "idle_rss_p95_mb": null,
+    "idle_rss_threshold_mb": null,
+    "install_artifact_mb": null,
+    "install_artifact_threshold_mb": null
+  },
+  "sources": {
+    "simulation_ok": false,
+    "red_team_ok": false,
+    "observer_ok": false,
+    "workflow_ok": false,
+    "runtime_efficiency_ok": false
+  },
+  "verdict": "warn"
+}

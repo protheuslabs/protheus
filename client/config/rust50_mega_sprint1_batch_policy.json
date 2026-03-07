@@ -1,0 +1,48 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "lane_id": "V6-RUST50-CONF-004",
+  "accepted_preamble": "ENFORCER RULES ACTIVE — READ codex_enforcer.md FIRST.",
+  "crates": [
+    { "id": "execution", "manifest": "core/layer2/execution/Cargo.toml" },
+    { "id": "pinnacle", "manifest": "core/layer0/pinnacle/Cargo.toml" },
+    { "id": "vault", "manifest": "core/layer0/vault/Cargo.toml" },
+    { "id": "red_legion", "manifest": "core/layer0/red_legion/Cargo.toml" },
+    { "id": "observability", "manifest": "core/layer1/observability/Cargo.toml" },
+    { "id": "graph", "manifest": "core/layer0/graph/Cargo.toml" },
+    { "id": "swarm", "manifest": "core/layer0/swarm/Cargo.toml" },
+    { "id": "mobile", "manifest": "core/layer0/mobile/Cargo.toml" }
+  ],
+  "regression_tests": [
+    ["node", "client/memory/tools/tests/execution_phase2_rust_parity.test.js"],
+    ["node", "client/memory/tools/tests/pinnacle_phase2_rust_parity.test.js"],
+    ["node", "client/memory/tools/tests/vault_phase3_rust_parity.test.js"],
+    ["node", "client/memory/tools/tests/red_legion_phase2_rust_parity.test.js"],
+    ["node", "client/memory/tools/tests/observability_chaos_resilience.test.js"],
+    ["node", "client/memory/tools/tests/observability_metrics_exporter.test.js"],
+    ["node", "client/memory/tools/tests/graph_phase6_rust_parity.test.js"],
+    ["node", "client/memory/tools/tests/swarm_phase7_rust_parity.test.js"],
+    ["node", "client/memory/tools/tests/mobile_phase8_rust_parity.test.js"]
+  ],
+  "sovereignty_tests": [
+    ["node", "client/memory/tools/tests/execution_security_gate_integration.test.js"],
+    ["node", "client/memory/tools/tests/vault_sovereignty_fail_closed.test.js"],
+    ["node", "client/memory/tools/tests/observability_sovereignty_index.test.js"],
+    ["node", "client/memory/tools/tests/swarm_verification_mode.test.js"]
+  ],
+  "mobile_status_cmd": [
+    "node",
+    "client/systems/hybrid/mobile/protheus_mobile_adapter.js",
+    "status",
+    "--strict=0",
+    "--apply=0"
+  ],
+  "battery_max_pct_24h": 5,
+  "rust_share_min_pct": 50,
+  "outputs": {
+    "latest_path": "state/ops/rust50_mega_sprint1_batch/latest.json",
+    "history_path": "state/ops/rust50_mega_sprint1_batch/history.jsonl",
+    "artifacts_dir": "state/ops/rust50_mega_sprint1_batch/artifacts"
+  }
+}

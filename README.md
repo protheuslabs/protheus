@@ -6,7 +6,7 @@
 [![Release](https://img.shields.io/github/v/release/protheuslabs/protheus?display_name=tag)](https://github.com/protheuslabs/protheus/releases)
 [![npm version](https://img.shields.io/npm/v/protheus)](https://www.npmjs.com/package/protheus)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fprotheuslabs%2Fprotheus-blue)](https://github.com/protheuslabs/protheus/pkgs/container/protheus)
-![Coverage](docs/badges/coverage.svg)
+![Coverage](client/docs/badges/coverage.svg)
 ![Dependabot](https://img.shields.io/badge/dependabot-enabled-025E8C?logo=dependabot)
 
 Protheus is an evidence-first Rust kernel for autonomous operations, workflow execution, and policy-governed system evolution.
@@ -18,7 +18,7 @@ This repository is organized to run like an internal platform team: typed runtim
 ## What This Repo Includes
 
 - Control plane CLI surface (`protheus`, `protheusd`, `protheusctl`, `protheus-top`)
-- Policy-backed runtime lanes across `systems/` (ops, security, memory, routing, workflow, observability, and more)
+- Policy-backed runtime lanes across `client/systems/` (ops, security, memory, routing, workflow, observability, and more)
 - Deterministic state and receipt contracts for auditable execution
 - Backlog governance pipeline with generated active/archive/reviewed views
 - Docs and runbooks that map directly to executable scripts and checks
@@ -115,7 +115,7 @@ The Python package is intentionally thin and delegates all kernel authority to R
 | `npm run test` | Stable test suite |
 | `npm run test:ci` | Deterministic CI-oriented test suite |
 | `npm run lint` | Type/system lint gate |
-| `npm run typecheck:systems` | Typecheck `systems/` lanes |
+| `npm run typecheck:systems` | Typecheck `client/systems/` lanes |
 | `npm run guard:merge` | Merge guard for core quality/security gates |
 | `npm run ops:backlog:registry:sync` | Regenerate backlog registry/views from source backlog |
 | `npm run ops:backlog:registry:check` | Validate generated backlog artifacts are in sync |
@@ -154,7 +154,7 @@ Completion setup examples:
 ```bash
 protheus completion bash > ~/.local/share/bash-completion/completions/protheus
 protheus completion zsh > ~/.zfunc/_protheus
-protheus completion fish > ~/.config/fish/completions/protheus.fish
+protheus completion fish > ~/.client/config/fish/completions/protheus.fish
 protheus setup
 protheus --skip-setup
 protheus demo
@@ -198,12 +198,12 @@ protheus shadow list --json=1
 - `protheus assimilate <path|url>` ingests a local file or allowlisted web page, runs research-organ probe + Core-5 persona review, and emits a Codex-ready sprint prompt.
 - Safety gates are fail-closed: blocked domains/private hosts are rejected, covenant violation signals stop execution, and `--apply` requires `--confirm-execution=1`.
 - Default mode is proposal-only with auditable receipts at `state/tools/assimilate/`.
-- Example: `protheus assimilate ./docs/cognitive_toolkit.md --dry-run=1`
+- Example: `protheus assimilate ./client/docs/cognitive_toolkit.md --dry-run=1`
 - Example: `protheus assimilate https://github.com/example/repo`
 - Programmatic use for loops/shadows:
   ```js
-  const { systemAssimilate } = require('./systems/tools/assimilate_api.js');
-  const result = systemAssimilate('./docs/cognitive_toolkit.md', { dryRun: true, format: 'json' });
+  const { systemAssimilate } = require('./client/systems/tools/assimilate_api.js');
+  const result = systemAssimilate('./client/docs/cognitive_toolkit.md', { dryRun: true, format: 'json' });
   ```
 
 ### Research Command
@@ -213,10 +213,10 @@ protheus shadow list --json=1
 - Implementation-intent queries automatically include an optional Codex sprint prompt.
 - Proactive suggestion mode: when tool/path/URL mentions are detected, the system can suggest assimilation with a natural prompt and optional auto-confirm flags.
 - Example: `protheus research "creating a quant trading software" --dry-run=1`
-- Example proactive flow: `protheus research "I just used docs/cognitive_toolkit.md for this workflow" --dry-run=1 --auto-confirm-assimilate=1`
+- Example proactive flow: `protheus research "I just used client/docs/cognitive_toolkit.md for this workflow" --dry-run=1 --auto-confirm-assimilate=1`
 - Programmatic use for loops/shadows:
   ```js
-  const { systemResearch } = require('./systems/tools/research_api.js');
+  const { systemResearch } = require('./client/systems/tools/research_api.js');
   const result = systemResearch('creating a quant trading software', { dryRun: true, format: 'json' });
   ```
 
@@ -230,9 +230,9 @@ protheus shadow list --json=1
   - `protheus tutorial on`
   - `protheus tutorial off`
 - Example contexts (JSON mode for deterministic output):
-  - `node systems/tools/cli_suggestion_engine.js suggest --cmd=status --text="I just used docs/cognitive_toolkit.md for this workflow." --auto-reject=1 --dry-run=1 --json=1`
-  - `node systems/tools/cli_suggestion_engine.js suggest --cmd=status --text="drift regression detected in memory lane" --auto-reject=1 --dry-run=1 --json=1`
-  - `node systems/tools/cli_suggestion_engine.js suggest --cmd=status --text="plan next sprint backlog for rust migration" --auto-reject=1 --dry-run=1 --json=1`
+  - `node client/systems/tools/cli_suggestion_engine.js suggest --cmd=status --text="I just used client/docs/cognitive_toolkit.md for this workflow." --auto-reject=1 --dry-run=1 --json=1`
+  - `node client/systems/tools/cli_suggestion_engine.js suggest --cmd=status --text="drift regression detected in memory lane" --auto-reject=1 --dry-run=1 --json=1`
+  - `node client/systems/tools/cli_suggestion_engine.js suggest --cmd=status --text="plan next sprint backlog for rust migration" --auto-reject=1 --dry-run=1 --json=1`
 
 ### Cognitive Toolkit Suite
 
@@ -247,17 +247,17 @@ Introducing the Cognitive Toolkit Suite: internal operators tooling for red-team
 - `protheus toolkit assimilate <path|url>` runs the same assimilation flow through the toolkit wrapper.
 - `protheus toolkit research "<query>"` runs the research command through the toolkit wrapper.
 
-See [Cognitive Toolkit Suite](docs/cognitive_toolkit.md) and `examples/*-demo/` for runnable examples.
+See [Cognitive Toolkit Suite](client/docs/cognitive_toolkit.md) and `examples/*-demo/` for runnable examples.
 
 ## Architecture Map
 
 | Path | Responsibility |
 |---|---|
-| `systems/` | Executable runtime lanes and control-plane modules |
-| `lib/` | Shared runtime helpers used by lanes |
-| `config/` | Policy, registries, and lane configuration |
-| `docs/` | Architecture, governance, runbooks, and contracts |
-| `memory/tools/tests/` | Deterministic tests and regression harnesses |
+| `client/systems/` | Executable runtime lanes and control-plane modules |
+| `client/lib/` | Shared runtime helpers used by lanes |
+| `client/config/` | Policy, registries, and lane configuration |
+| `client/docs/` | Architecture, governance, runbooks, and contracts |
+| `client/memory/tools/tests/` | Deterministic tests and regression harnesses |
 | `state/` | Runtime artifacts and receipts (operational output) |
 
 ## Quality And Governance Baseline
@@ -265,42 +265,42 @@ See [Cognitive Toolkit Suite](docs/cognitive_toolkit.md) and `examples/*-demo/` 
 The project is operated with explicit documentation and governance contracts:
 
 - [Architecture](ARCHITECTURE.md)
-- [Getting Started](docs/GETTING_STARTED.md)
-- [Security Posture](docs/SECURITY_POSTURE.md)
+- [Getting Started](client/docs/GETTING_STARTED.md)
+- [Security Posture](client/docs/SECURITY_POSTURE.md)
 - [Security Policy](SECURITY.md)
-- [Good First Issues](docs/community/GOOD_FIRST_ISSUES.md)
-- [InfRing Launch Announcement Template](docs/announcements/INFRING_LAUNCH_TEMPLATE.md)
-- [Onboarding Playbook](docs/ONBOARDING_PLAYBOOK.md)
-- [Developer Lane Quickstart](docs/DEVELOPER_LANE_QUICKSTART.md)
-- [Help](docs/HELP.md)
-- [UI Surface Maturity Matrix](docs/UI_SURFACE_MATURITY_MATRIX.md)
-- [UI Surface Inventory](docs/UI_SURFACE_INVENTORY.md)
-- [UI Accessibility & Interaction Contract](docs/UI_ACCESSIBILITY_INTERACTION_CONTRACT.md)
-- [Enhanced Reasoning Mirror](docs/ENHANCED_REASONING_MIRROR.md)
-- [History Cleanliness Program](docs/HISTORY_CLEANLINESS.md)
-- [Release Discipline Policy](docs/RELEASE_DISCIPLINE_POLICY.md)
-- [Claim-Evidence Policy](docs/CLAIM_EVIDENCE_POLICY.md)
-- [Empty Fort Integrity Checklist](docs/EMPTY_FORT_INTEGRITY_CHECKLIST.md)
-- [Org Code Format Standard](docs/ORG_CODE_FORMAT_STANDARD.md)
-- [Perception Audit Program](docs/PERCEPTION_AUDIT_PROGRAM.md)
-- [Public Collaboration Triage Contract](docs/PUBLIC_COLLABORATION_TRIAGE.md)
-- [Public Collaboration Surface](docs/PUBLIC_COLLABORATION_SURFACE.md)
-- [Core Migration Bridge](docs/CORE_MIGRATION_BRIDGE.md)
-- [Community Repo Graduation Pack](docs/COMMUNITY_REPO_GRADUATION_PACK.md)
-- [Universal Importers](docs/UNIVERSAL_IMPORTERS.md)
-- [Self-Healing Migration Daemon](docs/SELF_HEALING_MIGRATION_DAEMON.md)
-- [Post-Migration Completion Report](docs/POST_MIGRATION_COMPLETION_REPORT.md)
-- [WASI2 Execution Completeness Gate](docs/WASI2_EXECUTION_COMPLETENESS_GATE.md)
-- [Type-Derived Lane Docs Autogen](docs/TYPE_DERIVED_LANE_DOCS_AUTOGEN.md)
-- [Rust Authoritative Microkernel Acceleration](docs/RUST_AUTHORITATIVE_MICROKERNEL_ACCELERATION.md)
-- [ChromeOS/Fuchsia OTA Adapter](docs/CHROMEOS_FUCHSIA_DISTRIBUTION_OTA_ADAPTER.md)
-- [NGC NVIDIA Distribution Adapter](docs/NGC_NVIDIA_ENTERPRISE_DISTRIBUTION_ADAPTER.md)
-- [Public Operator Profile](docs/PUBLIC_OPERATOR_PROFILE.md)
-- [Illusion Integrity Auditor](docs/ILLUSION_INTEGRITY_AUDITOR.md)
-- [Backlog Governance](docs/BACKLOG_GOVERNANCE.md)
-- [Branch Protection Policy](docs/BRANCH_PROTECTION_POLICY.md)
-- [Operator Runbook](docs/OPERATOR_RUNBOOK.md)
-- [Documentation Hub](docs/README.md)
+- [Good First Issues](client/docs/community/GOOD_FIRST_ISSUES.md)
+- [InfRing Launch Announcement Template](client/docs/announcements/INFRING_LAUNCH_TEMPLATE.md)
+- [Onboarding Playbook](client/docs/ONBOARDING_PLAYBOOK.md)
+- [Developer Lane Quickstart](client/docs/DEVELOPER_LANE_QUICKSTART.md)
+- [Help](client/docs/HELP.md)
+- [UI Surface Maturity Matrix](client/docs/UI_SURFACE_MATURITY_MATRIX.md)
+- [UI Surface Inventory](client/docs/UI_SURFACE_INVENTORY.md)
+- [UI Accessibility & Interaction Contract](client/docs/UI_ACCESSIBILITY_INTERACTION_CONTRACT.md)
+- [Enhanced Reasoning Mirror](client/docs/ENHANCED_REASONING_MIRROR.md)
+- [History Cleanliness Program](client/docs/HISTORY_CLEANLINESS.md)
+- [Release Discipline Policy](client/docs/RELEASE_DISCIPLINE_POLICY.md)
+- [Claim-Evidence Policy](client/docs/CLAIM_EVIDENCE_POLICY.md)
+- [Empty Fort Integrity Checklist](client/docs/EMPTY_FORT_INTEGRITY_CHECKLIST.md)
+- [Org Code Format Standard](client/docs/ORG_CODE_FORMAT_STANDARD.md)
+- [Perception Audit Program](client/docs/PERCEPTION_AUDIT_PROGRAM.md)
+- [Public Collaboration Triage Contract](client/docs/PUBLIC_COLLABORATION_TRIAGE.md)
+- [Public Collaboration Surface](client/docs/PUBLIC_COLLABORATION_SURFACE.md)
+- [Core Migration Bridge](client/docs/CORE_MIGRATION_BRIDGE.md)
+- [Community Repo Graduation Pack](client/docs/COMMUNITY_REPO_GRADUATION_PACK.md)
+- [Universal Importers](client/docs/UNIVERSAL_IMPORTERS.md)
+- [Self-Healing Migration Daemon](client/docs/SELF_HEALING_MIGRATION_DAEMON.md)
+- [Post-Migration Completion Report](client/docs/POST_MIGRATION_COMPLETION_REPORT.md)
+- [WASI2 Execution Completeness Gate](client/docs/WASI2_EXECUTION_COMPLETENESS_GATE.md)
+- [Type-Derived Lane Docs Autogen](client/docs/TYPE_DERIVED_LANE_DOCS_AUTOGEN.md)
+- [Rust Authoritative Microkernel Acceleration](client/docs/RUST_AUTHORITATIVE_MICROKERNEL_ACCELERATION.md)
+- [ChromeOS/Fuchsia OTA Adapter](client/docs/CHROMEOS_FUCHSIA_DISTRIBUTION_OTA_ADAPTER.md)
+- [NGC NVIDIA Distribution Adapter](client/docs/NGC_NVIDIA_ENTERPRISE_DISTRIBUTION_ADAPTER.md)
+- [Public Operator Profile](client/docs/PUBLIC_OPERATOR_PROFILE.md)
+- [Illusion Integrity Auditor](client/docs/ILLUSION_INTEGRITY_AUDITOR.md)
+- [Backlog Governance](client/docs/BACKLOG_GOVERNANCE.md)
+- [Branch Protection Policy](client/docs/BRANCH_PROTECTION_POLICY.md)
+- [Operator Runbook](client/docs/OPERATOR_RUNBOOK.md)
+- [Documentation Hub](client/docs/README.md)
 - [Changelog](CHANGELOG.md)
 
 ## Contribution Workflow
@@ -309,17 +309,17 @@ The project is operated with explicit documentation and governance contracts:
 2. Follow the [Code of Conduct](.github/CODE_OF_CONDUCT.md).
 3. Keep changes scoped and test-backed.
 4. Run quality gates before PR.
-5. Link measurable claims to evidence per [Claim-Evidence Policy](docs/CLAIM_EVIDENCE_POLICY.md).
+5. Link measurable claims to evidence per [Claim-Evidence Policy](client/docs/CLAIM_EVIDENCE_POLICY.md).
 6. Update [CHANGELOG.md](CHANGELOG.md) for user-visible behavior/docs changes.
 7. Use [Bug report](.github/ISSUE_TEMPLATE/bug_report.yml), [Feature request](.github/ISSUE_TEMPLATE/feature_request.yml), and [Pull request](.github/PULL_REQUEST_TEMPLATE.md) templates.
 
 ## Security
 
 - Security policy and disclosure path: [SECURITY.md](SECURITY.md)
-- Runtime security lane overview: [docs/SECURITY.md](docs/SECURITY.md)
+- Runtime security lane overview: [client/docs/SECURITY.md](client/docs/SECURITY.md)
 
 ## Legal
 
 - License: [LICENSE](LICENSE)
 - License details: Apache-2.0
-- Archived historical legal docs: [legal/archive](legal/archive)
+- Archived historical legal docs: [client/legal/archive](client/legal/archive)

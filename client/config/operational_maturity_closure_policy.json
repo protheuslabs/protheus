@@ -1,0 +1,71 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "runbook_map_path": "client/config/autonomy_slo_runbook_map.json",
+  "state_path": "state/ops/operational_maturity_closure/latest.json",
+  "history_path": "state/ops/operational_maturity_closure/history.jsonl",
+  "escalation": {
+    "script": "client/systems/ops/alert_transport_health.js",
+    "args": [
+      "run",
+      "--strict=1"
+    ],
+    "timeout_ms": 30000
+  },
+  "classes": {
+    "eyes": {
+      "enabled": true,
+      "retries": 2,
+      "timeout_ms": 120000,
+      "health": {
+        "script": "client/habits/scripts/external_eyes.js",
+        "args": [
+          "preflight",
+          "--strict"
+        ]
+      },
+      "remediate": {
+        "script": "client/habits/scripts/external_eyes.js",
+        "args": [
+          "preflight"
+        ]
+      }
+    },
+    "visualizer": {
+      "enabled": true,
+      "retries": 1,
+      "timeout_ms": 40000,
+      "health": {
+        "script": "client/systems/ops/system_visualizer_guard.js",
+        "args": [
+          "check",
+          "--strict=1"
+        ]
+      },
+      "remediate": {
+        "script": "client/systems/ops/system_visualizer_guard.js",
+        "args": [
+          "restart"
+        ]
+      }
+    },
+    "alert_transport": {
+      "enabled": true,
+      "retries": 1,
+      "timeout_ms": 40000,
+      "health": {
+        "script": "client/systems/ops/alert_transport_health.js",
+        "args": [
+          "run",
+          "--strict=1"
+        ]
+      },
+      "remediate": {
+        "script": "client/systems/ops/alert_transport_health.js",
+        "args": [
+          "run"
+        ]
+      }
+    }
+  }
+}

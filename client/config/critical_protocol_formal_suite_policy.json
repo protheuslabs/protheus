@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "strict_fail_closed": true,
+  "required_paths": [
+    "client/systems/spine/spine.js",
+    "client/systems/autonomy/autonomy_controller.js",
+    "client/systems/actuation/actuation_executor.js",
+    "client/systems/security/critical_path_formal_verifier.js"
+  ],
+  "verifier_cmd": [
+    "node",
+    "client/systems/security/critical_path_formal_verifier.js",
+    "run",
+    "--strict=1"
+  ],
+  "paths": {
+    "latest_path": "state/ops/critical_protocol_formal_suite/latest.json",
+    "receipts_path": "state/ops/critical_protocol_formal_suite/receipts.jsonl"
+  }
+}

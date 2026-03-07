@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "max_open_milestones": 16,
+  "require_non_production_scope": true,
+  "paths": {
+    "latest_path": "state/research/civilizational_symbiosis_track/latest.json",
+    "receipts_path": "state/research/civilizational_symbiosis_track/receipts.jsonl",
+    "charter_path": "state/research/civilizational_symbiosis_track/charter.json",
+    "milestones_path": "state/research/civilizational_symbiosis_track/milestones.json",
+    "doc_path": "client/docs/CIVILIZATIONAL_SYMBIOSIS_TRACK.md"
+  }
+}

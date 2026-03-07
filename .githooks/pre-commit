@@ -3,4 +3,4 @@ set -euo pipefail
 
 npm run ops:format:check:staged
 npm run lint
-node systems/personas/pre_commit_lens_gate.js
+node client/systems/personas/pre_commit_lens_gate.js

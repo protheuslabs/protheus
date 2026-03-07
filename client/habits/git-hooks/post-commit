@@ -1,0 +1,115 @@
+#!/client/bin/bash
+#
+# Global post-commit hook - Auto-capture artifacts from any git repo
+# Installed via: git config --global core.hooksPath
+# Location: /Users/jay/.openclaw/workspace/client/habits/git-hooks/post-commit
+#
+
+# Get repo info
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+REPO_NAME=$(basename "$REPO_ROOT" 2>/dev/null || echo "unknown")
+BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+COMMIT_MSG=$(git log -1 --pretty=%s 2>/dev/null | head -c 100)
+REMOTE_URL=$(git remote get-url origin 2>/dev/null | head -c 200 || echo "")
+
+# Get changed files (from this commit only, not staged)
+CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null | head -10)
+CHANGED_COUNT=$(echo "$CHANGED_FILES" | grep -c '.' 2>/dev/null || echo "0")
+
+# Anti-noise: Check if all changes are noisy files
+NOISY_FILES=$(echo "$CHANGED_FILES" | grep -E '^(package-lock\.json|yarn\.lock|\.DS_Store|Thumbs\.db)$' | wc -l)
+if [ "$NOISY_FILES" -eq "$CHANGED_COUNT" ] && [ "$CHANGED_COUNT" -gt 3 ]; then
+    # Skip if only noisy files changed and more than 3 files
+    exit 0
+fi
+
+# Recursion guard: Skip if commit is in state/ directory (feedback loop prevention)
+if echo "$REPO_ROOT" | grep -q "/Users/jay/.openclaw/workspace/state/"; then
+    exit 0
+fi
+
+# Also skip if any changed file is in state/ directory
+if echo "$CHANGED_FILES" | grep -q "state/"; then
+    exit 0
+fi
+
+# Build artifact payload
+PAYLOAD=$(cat <<EOF
+{
+  "repo_name": "$REPO_NAME",
+  "repo_root": "$REPO_ROOT",
+  "branch": "$BRANCH",
+  "commit_hash": "$COMMIT_HASH",
+  "commit_message": "$COMMIT_MSG",
+  "remote_url": "$REMOTE_URL",
+  "changed_files_count": $CHANGED_COUNT,
+  "changed_files": $(echo "$CHANGED_FILES" | jq -R . | jq -s . 2>/dev/null || echo "[]")
+}
+EOF
+)
+
+# Call the autocap function via dop CLI
+# We create a special artifact entry via node directly
+cd /Users/jay/.openclaw/workspace || exit 0
+
+node -e "
+const fs = require('fs');
+const path = require('path');
+
+const payload = $PAYLOAD;
+const today = new Date().toISOString().slice(0, 10);
+const logPath = path.join('state', 'daily_logs', today + '.json');
+
+// Load or create daily log
+let dayLog;
+if (fs.existsSync(logPath)) {
+  dayLog = JSON.parse(fs.readFileSync(logPath, 'utf8'));
+} else {
+  dayLog = {
+    date: today,
+    entries: [],
+    context_switches: 0,
+    revenue_actions: [],
+    artifacts: []
+  };
+}
+
+// Build artifact key for duplicate detection
+const artifactKey = 'commit:' + payload.repo_name + ':' + payload.commit_hash;
+const existingKeys = new Set((dayLog.artifacts || []).map(a => a.type + ':' + (a.meta?.repo_name || '') + ':' + a.ref));
+
+if (existingKeys.has(artifactKey)) {
+  process.exit(0); // Skip duplicate
+}
+
+// Check commit cap (max 10 per day across all repos)
+const commitCount = (dayLog.artifacts || []).filter(a => a.type === 'commit').length;
+if (commitCount >= 10) {
+  process.exit(0); // At cap
+}
+
+// Add enriched commit artifact
+dayLog.artifacts = dayLog.artifacts || [];
+dayLog.artifacts.push({
+  type: 'commit',
+  ref: payload.commit_hash,
+  sha256: null,
+  meta: {
+    repo_name: payload.repo_name,
+    repo_root: payload.repo_root,
+    branch: payload.branch,
+    message: payload.commit_message,
+    remote_url: payload.remote_url,
+    changed_files_count: payload.changed_files_count,
+    changed_files: payload.changed_files.slice(0, 10)
+  },
+  timestamp: new Date().toISOString()
+});
+
+// Save
+fs.writeFileSync(logPath, JSON.stringify(dayLog, null, 2));
+console.log('🤖 Auto-captured commit from ' + payload.repo_name + ': ' + payload.commit_hash.slice(0, 7));
+" 2>/dev/null
+
+exit 0

@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'crates/fluxlattice/**'
+      - 'core/layer0/fluxlattice/**'
       - 'packages/lensmap/**'
-      - 'systems/ops/fluxlattice_program.*'
+      - 'client/systems/ops/fluxlattice_program.*'
 
 jobs:
   placeholder:

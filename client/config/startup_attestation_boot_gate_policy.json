@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "max_attestation_age_hours": 24,
+  "scripts": {
+    "startup_attestation": "client/systems/security/startup_attestation.js",
+    "integrity_kernel": "client/systems/security/integrity_kernel.js"
+  },
+  "outputs": {
+    "latest_path": "state/security/startup_attestation_boot_gate/latest.json",
+    "history_path": "state/security/startup_attestation_boot_gate/history.jsonl"
+  }
+}

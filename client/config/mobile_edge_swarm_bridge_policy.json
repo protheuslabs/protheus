@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "risk": {
+    "default_tier": 2,
+    "require_explicit_approval_tier": 3
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "spawn.mobile_edge"
+  },
+  "require_provenance_attestation": true,
+  "lineage_policy_path": "client/config/seed_spawn_lineage_policy.json",
+  "paths": {
+    "memory_dir": "client/memory/edge/swarm",
+    "adaptive_index_path": "client/adaptive/edge/swarm/index.json",
+    "events_path": "state/spawn/mobile_edge_swarm_bridge/events.jsonl",
+    "latest_path": "state/spawn/mobile_edge_swarm_bridge/latest.json",
+    "receipts_path": "state/spawn/mobile_edge_swarm_bridge/receipts.jsonl",
+    "enrollment_state_path": "state/spawn/mobile_edge_swarm_bridge/state.json"
+  }
+}

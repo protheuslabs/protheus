@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "feature_flag_name": "phase1_ui_polish",
+  "feature_flag_default": false,
+  "enable_on_apply": false,
+  "required_files": [
+    "README.md",
+    "client/docs/UI_SURFACE_MATURITY_MATRIX.md",
+    "client/docs/UI_PHASE1_TRADITIONAL_POLISH.md",
+    "client/docs/ONBOARDING_PLAYBOOK.md"
+  ],
+  "required_sections": [
+    "spacing",
+    "typography",
+    "motion",
+    "states",
+    "theme",
+    "keyboard navigation",
+    "command palette",
+    "responsive"
+  ],
+  "accessibility_terms": ["aria", "keyboard", "focus", "contrast"],
+  "paths": {
+    "feature_flags_path": "client/config/feature_flags.json",
+    "polish_spec_path": "client/docs/UI_PHASE1_TRADITIONAL_POLISH.md",
+    "surface_matrix_path": "client/docs/UI_SURFACE_MATURITY_MATRIX.md",
+    "latest_path": "state/ops/ui_phase1_polish_consistency_pass/latest.json",
+    "history_path": "state/ops/ui_phase1_polish_consistency_pass/history.jsonl"
+  }
+}

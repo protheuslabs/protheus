@@ -1,0 +1,1644 @@
+{
+  "version": 1.5,
+  "max_active": 25,
+  "gc": {
+    "inactive_days": 30,
+    "min_uses_30d": 1
+  },
+  "habits": [
+    {
+      "id": "rebuild_validate_memory",
+      "name": "Rebuild and Validate Memory",
+      "description": "Runs rebuild_exclusive.js and logs violation summary to daily file as SNIP",
+      "created_at": "2026-02-14T20:30:00Z",
+      "last_used_at": "2026-02-15T04:06:41.717Z",
+      "uses_30d": 4,
+      "lifetime_uses": 4,
+      "success_rate": 1,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 0,
+      "rollback_plan": "Revert via git checkout if SNIP malformed; manually fix client/memory/YYYY-MM-DD.md",
+      "test_plan": "Run with --json '{\"notes\":\"test\"}' twice; verify SNIP appended",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Optional notes to include in SNIP"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/rebuild_validate_memory.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/memory/*.md",
+          "client/habits/client/logs/*",
+          "client/habits/registry.json"
+        ],
+        "exec_allowlist": [
+          "node client/memory/tools/rebuild_exclusive.js"
+        ]
+      },
+      "status": "active",
+      "outcome": {
+        "last_outcome_score": 1,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "active",
+        "promote": {
+          "min_success_runs": 3,
+          "min_outcome_score": 0.7
+        },
+        "demote": {
+          "max_consecutive_errors": 2,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 0
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "provenance": {
+        "source": "migration",
+        "created_by": "manual",
+        "created_at": "2026-02-14T20:30:00Z",
+        "intent_key": "rebuild_validate_memory"
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": 736.5,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": 0,
+          "window_runs": [
+            {
+              "duration_ms": 1166,
+              "success": true,
+              "ts": 1771128020204
+            },
+            {
+              "duration_ms": 307,
+              "success": true,
+              "ts": 1771128401717
+            }
+          ]
+        }
+      },
+      "uid": "h4ls0hhcou20ya8vei7gk893"
+    },
+    {
+      "id": "safe_cron_swap",
+      "name": "Safe Cron Swap",
+      "description": "Atomic cron job replacement with verification gates and rollback protection",
+      "created_at": "2026-02-14T20:51:00Z",
+      "last_used_at": null,
+      "uses_30d": 0,
+      "lifetime_uses": 0,
+      "success_rate": 0,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 5000,
+      "rollback_plan": "Re-add old job, remove new job, verify via openclaw cron list",
+      "test_plan": "Run with dry_run=true first, then with real job swap",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [
+          "old_job_id",
+          "new_job_cli",
+          "verify_name"
+        ],
+        "properties": {
+          "old_job_id": {
+            "type": "string",
+            "description": "ID of the job to replace"
+          },
+          "new_job_cli": {
+            "type": "string",
+            "description": "Full openclaw cron add CLI command for the new job"
+          },
+          "verify_name": {
+            "type": "string",
+            "description": "Unique temporary name of the new job for verification"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/safe_cron_swap.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/memory/*.md",
+          "client/habits/client/logs/*",
+          "client/habits/registry.json",
+          "client/config/*.json"
+        ],
+        "exec_allowlist": [
+          "openclaw cron list",
+          "openclaw cron add",
+          "openclaw cron remove"
+        ]
+      },
+      "status": "candidate",
+      "outcome": {
+        "last_outcome_score": null,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "candidate",
+        "promote": {
+          "min_success_runs": 2,
+          "min_outcome_score": 0.85
+        },
+        "demote": {
+          "max_consecutive_errors": 1,
+          "min_outcome_score": 0.5,
+          "cooldown_minutes": 0
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "provenance": {
+        "source": "manual_proposal",
+        "created_by": "propose_habit",
+        "created_at": "2026-02-14T20:51:00Z",
+        "intent_key": "safe_cron_swap"
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": null,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": null,
+          "window_runs": []
+        }
+      },
+      "uid": "hophyzy9cuz3j0wjcwe1mvlx"
+    },
+    {
+      "id": "execute_bounded_proposal_eye_edb4c560e0b6aef6__e",
+      "name": "Execute bounded proposal EYE-edb4c560e0b6aef6 (external_intel): Optimize automat",
+      "description": "Auto-crystallized from repeated task: Execute bounded proposal EYE-edb4c560e0b6aef6 (external_intel): Optimize automation system growth: 2 open proposals require deterministic triage",
+      "created_at": "2026-02-20T08:56:31.983Z",
+      "last_used_at": null,
+      "uses_30d": 0,
+      "lifetime_uses": 0,
+      "success_rate": 0,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 250,
+      "rollback_plan": "Revert generated routine + registry entry in one commit.",
+      "test_plan": "Run node client/habits/scripts/run_habit.js --id execute_bounded_proposal_eye_edb4c560e0b6aef6__e --json '{}' and verify stable output.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Source task text"
+          },
+          "intent_key": {
+            "type": "string",
+            "description": "Normalized intent key"
+          },
+          "source": {
+            "type": "string",
+            "description": "Route source marker"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-form notes"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/execute_bounded_proposal_eye_edb4c560e0b6aef6__e.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/habits/client/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "candidate",
+      "outcome": {
+        "last_outcome_score": null,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "candidate",
+        "promote": {
+          "min_success_runs": 3,
+          "min_outcome_score": 0.7,
+          "min_effect_value": 1,
+          "effect_units_allowlist": [
+            "ms_saved",
+            "tokens_saved",
+            "reported_delta"
+          ]
+        },
+        "demote": {
+          "max_consecutive_errors": 2,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": null,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": null,
+          "window_runs": []
+        }
+      },
+      "provenance": {
+        "source": "repeat_trigger",
+        "created_by": "habit_crystallizer",
+        "created_at": "2026-02-20T08:56:31.983Z",
+        "intent_key": "execute_bounded_proposal_eye-edb4c560e0b6aef6_(external_intel):_optimize_automation_system_growth:_2_open_proposals",
+        "trigger_metrics": {
+          "repeats_14d": 7,
+          "tokens_est": 500,
+          "errors_30d": 0,
+          "which_met": [
+            "A"
+          ]
+        }
+      },
+      "uid": "h1phsl1p6do2wqlowr2q349e"
+    },
+    {
+      "id": "auto_canary_deterministic_habit_crystallization_",
+      "name": "auto canary deterministic habit crystallization live run alpha beta",
+      "description": "Auto-crystallized from repeated task: auto canary deterministic habit crystallization live run alpha beta",
+      "created_at": "2026-02-20T09:10:48.609Z",
+      "last_used_at": "2026-02-20T09:11:08.787Z",
+      "uses_30d": 3,
+      "lifetime_uses": 3,
+      "success_rate": 0.75,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 350,
+      "rollback_plan": "Revert generated routine + registry entry in one commit.",
+      "test_plan": "Run node client/habits/scripts/run_habit.js --id auto_canary_deterministic_habit_crystallization_ --json '{}' and verify stable output.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Source task text"
+          },
+          "intent_key": {
+            "type": "string",
+            "description": "Normalized intent key"
+          },
+          "source": {
+            "type": "string",
+            "description": "Route source marker"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-form notes"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/auto_canary_deterministic_habit_crystallization_.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/habits/client/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "candidate",
+      "outcome": {
+        "last_outcome_score": 1,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "candidate",
+        "promote": {
+          "min_success_runs": 3,
+          "min_outcome_score": 0.7,
+          "min_effect_value": 1,
+          "effect_units_allowlist": [
+            "ms_saved",
+            "tokens_saved",
+            "reported_delta"
+          ]
+        },
+        "demote": {
+          "max_consecutive_errors": 2,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": 1,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": 0,
+          "window_runs": [
+            {
+              "duration_ms": 1,
+              "success": true,
+              "ts": 1771578648651
+            },
+            {
+              "duration_ms": 1,
+              "success": true,
+              "ts": 1771578664788
+            },
+            {
+              "duration_ms": 1,
+              "success": true,
+              "ts": 1771578668787
+            }
+          ]
+        }
+      },
+      "provenance": {
+        "source": "repeat_trigger",
+        "created_by": "habit_crystallizer",
+        "created_at": "2026-02-20T09:10:48.609Z",
+        "intent_key": "auto_canary_deterministic_habit_crystallization_live_run_alpha_beta",
+        "trigger_metrics": {
+          "repeats_14d": 3,
+          "tokens_est": 700,
+          "errors_30d": 0,
+          "which_met": [
+            "A"
+          ]
+        }
+      },
+      "uid": "hayg64zdb3lswl4ab307uoti"
+    },
+    {
+      "id": "zeta_muon_sigma_habit_crystallization_fresh_rout",
+      "name": "zeta muon sigma habit crystallization fresh routine task",
+      "description": "Auto-crystallized from repeated task: zeta muon sigma habit crystallization fresh routine task",
+      "created_at": "2026-02-20T09:11:13.441Z",
+      "last_used_at": "2026-02-20T09:11:13.482Z",
+      "uses_30d": 1,
+      "lifetime_uses": 1,
+      "success_rate": 0.5,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 350,
+      "rollback_plan": "Revert generated routine + registry entry in one commit.",
+      "test_plan": "Run node client/habits/scripts/run_habit.js --id zeta_muon_sigma_habit_crystallization_fresh_rout --json '{}' and verify stable output.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Source task text"
+          },
+          "intent_key": {
+            "type": "string",
+            "description": "Normalized intent key"
+          },
+          "source": {
+            "type": "string",
+            "description": "Route source marker"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-form notes"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/zeta_muon_sigma_habit_crystallization_fresh_rout.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/habits/client/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "candidate",
+      "outcome": {
+        "last_outcome_score": 1,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "candidate",
+        "promote": {
+          "min_success_runs": 3,
+          "min_outcome_score": 0.7,
+          "min_effect_value": 1,
+          "effect_units_allowlist": [
+            "ms_saved",
+            "tokens_saved",
+            "reported_delta"
+          ]
+        },
+        "demote": {
+          "max_consecutive_errors": 2,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": 1,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": 0,
+          "window_runs": [
+            {
+              "duration_ms": 1,
+              "success": true,
+              "ts": 1771578673482
+            }
+          ]
+        }
+      },
+      "provenance": {
+        "source": "repeat_trigger",
+        "created_by": "habit_crystallizer",
+        "created_at": "2026-02-20T09:11:13.441Z",
+        "intent_key": "zeta_muon_sigma_habit_crystallization_fresh_routine_task",
+        "trigger_metrics": {
+          "repeats_14d": 3,
+          "tokens_est": 700,
+          "errors_30d": 0,
+          "which_met": [
+            "A"
+          ]
+        }
+      },
+      "uid": "h5dtork1si5c24mvdguryl3y"
+    },
+    {
+      "id": "execute_bounded_proposal_prp_b422f9b8183ba4d0__e",
+      "name": "Execute bounded proposal PRP-b422f9b8183ba4d0 (external_intel): AI Automation Sp",
+      "description": "Auto-crystallized from repeated task: Execute bounded proposal PRP-b422f9b8183ba4d0 (external_intel): AI Automation Specialist - Workflow Optimization — Freelance Opportunity",
+      "created_at": "2026-02-20T20:33:01.074Z",
+      "last_used_at": "2026-02-20T20:33:01.112Z",
+      "uses_30d": 1,
+      "lifetime_uses": 1,
+      "success_rate": 0.5,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 400,
+      "rollback_plan": "Revert generated routine + registry entry in one commit.",
+      "test_plan": "Run node client/habits/scripts/run_habit.js --id execute_bounded_proposal_prp_b422f9b8183ba4d0__e --json '{}' and verify stable output.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Source task text"
+          },
+          "intent_key": {
+            "type": "string",
+            "description": "Normalized intent key"
+          },
+          "source": {
+            "type": "string",
+            "description": "Route source marker"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-form notes"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/execute_bounded_proposal_prp_b422f9b8183ba4d0__e.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/habits/client/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "candidate",
+      "outcome": {
+        "last_outcome_score": 1,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "candidate",
+        "promote": {
+          "min_success_runs": 3,
+          "min_outcome_score": 0.7,
+          "min_effect_value": 1,
+          "effect_units_allowlist": [
+            "ms_saved",
+            "tokens_saved",
+            "reported_delta"
+          ]
+        },
+        "demote": {
+          "max_consecutive_errors": 2,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": 0,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": 0,
+          "window_runs": [
+            {
+              "duration_ms": 0,
+              "success": true,
+              "ts": 1771619581112
+            }
+          ]
+        }
+      },
+      "provenance": {
+        "source": "repeat_trigger",
+        "created_by": "habit_crystallizer",
+        "created_at": "2026-02-20T20:33:01.074Z",
+        "intent_key": "execute_bounded_proposal_prp-b422f9b8183ba4d0_(external_intel):_ai_automation_specialist_-_workflow_optimization_—",
+        "trigger_metrics": {
+          "repeats_14d": 3,
+          "tokens_est": 800,
+          "errors_30d": 0,
+          "which_met": [
+            "A"
+          ]
+        }
+      },
+      "uid": "h9dkpnuj0zpdwjkh75pf9rzu"
+    },
+    {
+      "id": "execute_bounded_proposal_prp_9eca862955cf4462__e",
+      "name": "Execute bounded proposal PRP-9eca862955cf4462 (external_intel): I Was Losing Job",
+      "description": "Auto-crystallized from repeated task: Execute bounded proposal PRP-9eca862955cf4462 (external_intel): I Was Losing Jobs to Faster Contractors — So I Built an AI That Writes Proposals in 60 Seconds",
+      "created_at": "2026-02-20T22:58:59.205Z",
+      "last_used_at": "2026-02-20T22:58:59.301Z",
+      "uses_30d": 1,
+      "lifetime_uses": 1,
+      "success_rate": 0.5,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 400,
+      "rollback_plan": "Revert generated routine + registry entry in one commit.",
+      "test_plan": "Run node client/habits/scripts/run_habit.js --id execute_bounded_proposal_prp_9eca862955cf4462__e --json '{}' and verify stable output.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Source task text"
+          },
+          "intent_key": {
+            "type": "string",
+            "description": "Normalized intent key"
+          },
+          "source": {
+            "type": "string",
+            "description": "Route source marker"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-form notes"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/execute_bounded_proposal_prp_9eca862955cf4462__e.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/habits/client/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "candidate",
+      "outcome": {
+        "last_outcome_score": 1,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "candidate",
+        "promote": {
+          "min_success_runs": 3,
+          "min_outcome_score": 0.7,
+          "min_effect_value": 1,
+          "effect_units_allowlist": [
+            "ms_saved",
+            "tokens_saved",
+            "reported_delta"
+          ]
+        },
+        "demote": {
+          "max_consecutive_errors": 2,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": 2,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": 0,
+          "window_runs": [
+            {
+              "duration_ms": 2,
+              "success": true,
+              "ts": 1771628339301
+            }
+          ]
+        }
+      },
+      "provenance": {
+        "source": "repeat_trigger",
+        "created_by": "habit_crystallizer",
+        "created_at": "2026-02-20T22:58:59.205Z",
+        "intent_key": "execute_bounded_proposal_prp-9eca862955cf4462_(external_intel):_i_was_losing_jobs_to_faster_contractors",
+        "trigger_metrics": {
+          "repeats_14d": 4,
+          "tokens_est": 800,
+          "errors_30d": 0,
+          "which_met": [
+            "A"
+          ]
+        }
+      },
+      "uid": "h1tsggm52ww8iypmf39isoxa"
+    },
+    {
+      "id": "execute_bounded_proposal_prp_d97b20e8b824f700__e",
+      "name": "Execute bounded proposal PRP-d97b20e8b824f700 (external_intel): I Was Losing Job",
+      "description": "Auto-crystallized from repeated task: Execute bounded proposal PRP-d97b20e8b824f700 (external_intel): I Was Losing Jobs to Faster Contractors — So I Built an AI That Writes Proposals in 60 Seconds",
+      "created_at": "2026-02-20T23:07:04.817Z",
+      "last_used_at": "2026-02-20T23:07:04.861Z",
+      "uses_30d": 1,
+      "lifetime_uses": 1,
+      "success_rate": 0.5,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 400,
+      "rollback_plan": "Revert generated routine + registry entry in one commit.",
+      "test_plan": "Run node client/habits/scripts/run_habit.js --id execute_bounded_proposal_prp_d97b20e8b824f700__e --json '{}' and verify stable output.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Source task text"
+          },
+          "intent_key": {
+            "type": "string",
+            "description": "Normalized intent key"
+          },
+          "source": {
+            "type": "string",
+            "description": "Route source marker"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-form notes"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/execute_bounded_proposal_prp_d97b20e8b824f700__e.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/habits/client/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "candidate",
+      "outcome": {
+        "last_outcome_score": 1,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "candidate",
+        "promote": {
+          "min_success_runs": 3,
+          "min_outcome_score": 0.7,
+          "min_effect_value": 1,
+          "effect_units_allowlist": [
+            "ms_saved",
+            "tokens_saved",
+            "reported_delta"
+          ]
+        },
+        "demote": {
+          "max_consecutive_errors": 2,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": 1,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": 0,
+          "window_runs": [
+            {
+              "duration_ms": 1,
+              "success": true,
+              "ts": 1771628824861
+            }
+          ]
+        }
+      },
+      "provenance": {
+        "source": "repeat_trigger",
+        "created_by": "habit_crystallizer",
+        "created_at": "2026-02-20T23:07:04.817Z",
+        "intent_key": "execute_bounded_proposal_prp-d97b20e8b824f700_(external_intel):_i_was_losing_jobs_to_faster_contractors",
+        "trigger_metrics": {
+          "repeats_14d": 4,
+          "tokens_est": 800,
+          "errors_30d": 0,
+          "which_met": [
+            "A"
+          ]
+        }
+      },
+      "uid": "h3jrxtvj9drqio4037s5k5pd"
+    },
+    {
+      "id": "execute_bounded_proposal_prp_28492a3aa16ac61f__e",
+      "name": "Execute bounded proposal PRP-28492a3aa16ac61f (external_intel): No-Code SaaS MVP",
+      "description": "Auto-crystallized from repeated task: Execute bounded proposal PRP-28492a3aa16ac61f (external_intel): No-Code SaaS MVP Builder — Freelance Opportunity",
+      "created_at": "2026-02-21T18:13:41.583Z",
+      "last_used_at": "2026-02-21T18:13:41.625Z",
+      "uses_30d": 1,
+      "lifetime_uses": 1,
+      "success_rate": 0.5,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 400,
+      "rollback_plan": "Revert generated routine + registry entry in one commit.",
+      "test_plan": "Run node client/habits/scripts/run_habit.js --id execute_bounded_proposal_prp_28492a3aa16ac61f__e --json '{}' and verify stable output.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Source task text"
+          },
+          "intent_key": {
+            "type": "string",
+            "description": "Normalized intent key"
+          },
+          "source": {
+            "type": "string",
+            "description": "Route source marker"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-form notes"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/execute_bounded_proposal_prp_28492a3aa16ac61f__e.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/habits/client/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "candidate",
+      "outcome": {
+        "last_outcome_score": 1,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "candidate",
+        "promote": {
+          "min_success_runs": 3,
+          "min_outcome_score": 0.7,
+          "min_effect_value": 1,
+          "effect_units_allowlist": [
+            "ms_saved",
+            "tokens_saved",
+            "reported_delta"
+          ]
+        },
+        "demote": {
+          "max_consecutive_errors": 2,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": 1,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": 0,
+          "window_runs": [
+            {
+              "duration_ms": 1,
+              "success": true,
+              "ts": 1771697621625
+            }
+          ]
+        }
+      },
+      "provenance": {
+        "source": "repeat_trigger",
+        "created_by": "habit_crystallizer",
+        "created_at": "2026-02-21T18:13:41.583Z",
+        "intent_key": "execute_bounded_proposal_prp-28492a3aa16ac61f_(external_intel):_no-code_saas_mvp_builder_—_freelance_opportunity",
+        "trigger_metrics": {
+          "repeats_14d": 6,
+          "tokens_est": 800,
+          "errors_30d": 0,
+          "which_met": [
+            "A"
+          ]
+        }
+      },
+      "uid": "h4qhnc7wjpqfohwy489c734u"
+    },
+    {
+      "id": "execute_bounded_proposal_csg_3c7677ecc41e6fba__c",
+      "name": "Execute bounded proposal CSG-3c7677ecc41e6fba (cross_signal_opportunity): [Cross",
+      "description": "Auto-crystallized from repeated task: Execute bounded proposal CSG-3c7677ecc41e6fba (cross_signal_opportunity): [Cross-Signal] Topic \"automation\" converging across 4 eyes",
+      "created_at": "2026-02-21T18:50:49.439Z",
+      "last_used_at": "2026-02-21T18:50:49.534Z",
+      "uses_30d": 1,
+      "lifetime_uses": 1,
+      "success_rate": 0.5,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 700,
+      "rollback_plan": "Revert generated routine + registry entry in one commit.",
+      "test_plan": "Run node client/habits/scripts/run_habit.js --id execute_bounded_proposal_csg_3c7677ecc41e6fba__c --json '{}' and verify stable output.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Source task text"
+          },
+          "intent_key": {
+            "type": "string",
+            "description": "Normalized intent key"
+          },
+          "source": {
+            "type": "string",
+            "description": "Route source marker"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-form notes"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/execute_bounded_proposal_csg_3c7677ecc41e6fba__c.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/habits/client/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "candidate",
+      "outcome": {
+        "last_outcome_score": 1,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "candidate",
+        "promote": {
+          "min_success_runs": 3,
+          "min_outcome_score": 0.7,
+          "min_effect_value": 1,
+          "effect_units_allowlist": [
+            "ms_saved",
+            "tokens_saved",
+            "reported_delta"
+          ]
+        },
+        "demote": {
+          "max_consecutive_errors": 2,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": 2,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": 0,
+          "window_runs": [
+            {
+              "duration_ms": 2,
+              "success": true,
+              "ts": 1771699849534
+            }
+          ]
+        }
+      },
+      "provenance": {
+        "source": "repeat_trigger",
+        "created_by": "habit_crystallizer",
+        "created_at": "2026-02-21T18:50:49.439Z",
+        "intent_key": "execute_bounded_proposal_csg-3c7677ecc41e6fba_(cross_signal_opportunity):_[cross-signal]_topic_<str>_converging_across_4_eyes",
+        "trigger_metrics": {
+          "repeats_14d": 11,
+          "tokens_est": 1400,
+          "errors_30d": 0,
+          "which_met": [
+            "A"
+          ]
+        }
+      },
+      "uid": "hwkq578tk525s43bsc156021"
+    },
+    {
+      "uid": "h52b041uijlnqxsuo8l7vvb8",
+      "id": "adaptive_candidate_proxy",
+      "name": "Adaptive Candidate Proxy",
+      "description": "Managed placeholder routine used by adaptive habit runtime sync.",
+      "created_at": "2026-02-22T18:05:11.345Z",
+      "last_used_at": null,
+      "uses_30d": 0,
+      "lifetime_uses": 0,
+      "success_rate": 0,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 0,
+      "rollback_plan": "Disable scaffold if adaptive runtime sync is removed.",
+      "test_plan": "Validate proxy routine remains no-op and hygiene guard passes.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Optional notes for adaptive candidate execution context"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/adaptive_candidate_proxy.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/habits/client/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "disabled",
+      "outcome": {
+        "last_outcome_score": null,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "disabled",
+        "promote": {
+          "min_success_runs": 99,
+          "min_outcome_score": 0.95
+        },
+        "demote": {
+          "max_consecutive_errors": 1,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "provenance": {
+        "source": "adaptive_habit_runtime_sync",
+        "created_by": "client/systems/adaptive/habits/habit_runtime_sync.js",
+        "created_at": "2026-02-22T18:05:11.345Z",
+        "intent_key": "adaptive_habit:proxy_scaffold",
+        "adaptive_uid": null
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": null,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": null,
+          "window_runs": []
+        }
+      }
+    },
+    {
+      "uid": "h1uloqpwv586fu3qkjag0t7v",
+      "id": "pain_idle_dream_cycle_9fac4cbaf305",
+      "name": "Pain Habit idle_dream_cycle dream_idle:all_model_attempts_fa",
+      "description": "Dream idle phase degraded or blocked (all_model_attempts_failed)",
+      "created_at": "2026-02-22T22:03:29.590Z",
+      "last_used_at": null,
+      "uses_30d": 0,
+      "lifetime_uses": 0,
+      "success_rate": 0,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 0,
+      "rollback_plan": "Disable placeholder entry and remove adaptive binding if behavior diverges.",
+      "test_plan": "Validate proxy execution is no-op and adaptive bindings remain intact.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Optional notes for adaptive candidate execution context"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/adaptive_candidate_proxy.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/habits/client/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "disabled",
+      "outcome": {
+        "last_outcome_score": null,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "disabled",
+        "promote": {
+          "min_success_runs": 99,
+          "min_outcome_score": 0.95
+        },
+        "demote": {
+          "max_consecutive_errors": 1,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "provenance": {
+        "source": "adaptive_habit_runtime_sync",
+        "created_by": "client/systems/adaptive/habits/habit_runtime_sync.js",
+        "created_at": "2026-02-22T22:03:29.948Z",
+        "intent_key": "adaptive_habit:pain_idle_dream_cycle_9fac4cbaf305",
+        "adaptive_uid": "h1uloqpwv586fu3qkjag0t7v"
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": null,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": null,
+          "window_runs": []
+        }
+      }
+    },
+    {
+      "uid": "h5g9sumex80d8i6knxw1aa28",
+      "id": "pain_external_eyes_0251f4298561",
+      "name": "Pain Habit external_eyes collector_preflight:collector_pr",
+      "description": "Collector preflight failed for ollama_search",
+      "created_at": "2026-02-23T00:00:13.902Z",
+      "last_used_at": null,
+      "uses_30d": 0,
+      "lifetime_uses": 0,
+      "success_rate": 0,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 0,
+      "rollback_plan": "Disable placeholder entry and remove adaptive binding if behavior diverges.",
+      "test_plan": "Validate proxy execution is no-op and adaptive bindings remain intact.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Optional notes for adaptive candidate execution context"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/adaptive_candidate_proxy.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/habits/client/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "disabled",
+      "outcome": {
+        "last_outcome_score": null,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "disabled",
+        "promote": {
+          "min_success_runs": 99,
+          "min_outcome_score": 0.95
+        },
+        "demote": {
+          "max_consecutive_errors": 1,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "provenance": {
+        "source": "adaptive_habit_runtime_sync",
+        "created_by": "client/systems/adaptive/habits/habit_runtime_sync.js",
+        "created_at": "2026-02-23T00:00:14.024Z",
+        "intent_key": "adaptive_habit:pain_external_eyes_0251f4298561",
+        "adaptive_uid": "h5g9sumex80d8i6knxw1aa28"
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": null,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": null,
+          "window_runs": []
+        }
+      }
+    },
+    {
+      "uid": "h63c93y89php6m0vtx7bzmhz",
+      "id": "pain_external_eyes_4278015a179e",
+      "name": "Pain Habit external_eyes collector_preflight:collector_pr",
+      "description": "Collector preflight failed for x_trends",
+      "created_at": "2026-02-23T00:00:13.872Z",
+      "last_used_at": null,
+      "uses_30d": 0,
+      "lifetime_uses": 0,
+      "success_rate": 0,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 0,
+      "rollback_plan": "Disable placeholder entry and remove adaptive binding if behavior diverges.",
+      "test_plan": "Validate proxy execution is no-op and adaptive bindings remain intact.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Optional notes for adaptive candidate execution context"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/adaptive_candidate_proxy.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/habits/client/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "disabled",
+      "outcome": {
+        "last_outcome_score": null,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "disabled",
+        "promote": {
+          "min_success_runs": 99,
+          "min_outcome_score": 0.95
+        },
+        "demote": {
+          "max_consecutive_errors": 1,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "provenance": {
+        "source": "adaptive_habit_runtime_sync",
+        "created_by": "client/systems/adaptive/habits/habit_runtime_sync.js",
+        "created_at": "2026-02-23T00:00:14.024Z",
+        "intent_key": "adaptive_habit:pain_external_eyes_4278015a179e",
+        "adaptive_uid": "h63c93y89php6m0vtx7bzmhz"
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": null,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": null,
+          "window_runs": []
+        }
+      }
+    },
+    {
+      "uid": "h3xhvd9zjg1blxys93gwgmwj",
+      "id": "pain_external_eyes_5f2d02fb9874",
+      "name": "Pain Habit external_eyes collector_preflight:domain_not_a",
+      "description": "Collector preflight failed for reddit_ai_automation",
+      "created_at": "2026-02-23T00:00:13.919Z",
+      "last_used_at": null,
+      "uses_30d": 0,
+      "lifetime_uses": 0,
+      "success_rate": 0,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 0,
+      "rollback_plan": "Disable placeholder entry and remove adaptive binding if behavior diverges.",
+      "test_plan": "Validate proxy execution is no-op and adaptive bindings remain intact.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Optional notes for adaptive candidate execution context"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/adaptive_candidate_proxy.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/habits/client/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "disabled",
+      "outcome": {
+        "last_outcome_score": null,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "disabled",
+        "promote": {
+          "min_success_runs": 99,
+          "min_outcome_score": 0.95
+        },
+        "demote": {
+          "max_consecutive_errors": 1,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "provenance": {
+        "source": "adaptive_habit_runtime_sync",
+        "created_by": "client/systems/adaptive/habits/habit_runtime_sync.js",
+        "created_at": "2026-02-23T00:00:14.024Z",
+        "intent_key": "adaptive_habit:pain_external_eyes_5f2d02fb9874",
+        "adaptive_uid": "h3xhvd9zjg1blxys93gwgmwj"
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": null,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": null,
+          "window_runs": []
+        }
+      }
+    },
+    {
+      "uid": "h2j4cwftgeb6odbe52uyho2z",
+      "id": "pain_idle_dream_cycle_ed445d71f2fe",
+      "name": "Pain Habit idle_dream_cycle dream_idle:local_model_unavailab",
+      "description": "Dream idle phase degraded or blocked (local_model_unavailable)",
+      "created_at": "2026-02-23T15:30:26.991Z",
+      "last_used_at": null,
+      "uses_30d": 0,
+      "lifetime_uses": 0,
+      "success_rate": 0,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 0,
+      "rollback_plan": "Disable placeholder entry and remove adaptive binding if behavior diverges.",
+      "test_plan": "Validate proxy execution is no-op and adaptive bindings remain intact.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Optional notes for adaptive candidate execution context"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/adaptive_candidate_proxy.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/habits/client/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "disabled",
+      "outcome": {
+        "last_outcome_score": null,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "disabled",
+        "promote": {
+          "min_success_runs": 99,
+          "min_outcome_score": 0.95
+        },
+        "demote": {
+          "max_consecutive_errors": 1,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "provenance": {
+        "source": "adaptive_habit_runtime_sync",
+        "created_by": "client/systems/adaptive/habits/habit_runtime_sync.js",
+        "created_at": "2026-02-23T15:30:27.310Z",
+        "intent_key": "adaptive_habit:pain_idle_dream_cycle_ed445d71f2fe",
+        "adaptive_uid": "h2j4cwftgeb6odbe52uyho2z"
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": null,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": null,
+          "window_runs": []
+        }
+      }
+    },
+    {
+      "uid": "h4l4q8epe25wz7txwrbxmrwu",
+      "id": "pain_idle_dream_cycle_b08c5c382628",
+      "name": "Pain Habit idle_dream_cycle dream_rem:local_model_unavailabl",
+      "description": "Dream rem phase degraded or blocked (local_model_unavailable)",
+      "created_at": "2026-02-23T20:31:06.426Z",
+      "last_used_at": null,
+      "uses_30d": 0,
+      "lifetime_uses": 0,
+      "success_rate": 0,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 0,
+      "rollback_plan": "Disable placeholder entry and remove adaptive binding if behavior diverges.",
+      "test_plan": "Validate proxy execution is no-op and adaptive bindings remain intact.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Optional notes for adaptive candidate execution context"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/adaptive_candidate_proxy.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/habits/client/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "disabled",
+      "outcome": {
+        "last_outcome_score": null,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "disabled",
+        "promote": {
+          "min_success_runs": 99,
+          "min_outcome_score": 0.95
+        },
+        "demote": {
+          "max_consecutive_errors": 1,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "provenance": {
+        "source": "adaptive_habit_runtime_sync",
+        "created_by": "client/systems/adaptive/habits/habit_runtime_sync.js",
+        "created_at": "2026-02-23T20:31:06.551Z",
+        "intent_key": "adaptive_habit:pain_idle_dream_cycle_b08c5c382628",
+        "adaptive_uid": "h4l4q8epe25wz7txwrbxmrwu"
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": null,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": null,
+          "window_runs": []
+        }
+      }
+    },
+    {
+      "uid": "h27m6w3mqgahzcqeua5x3n5m",
+      "id": "pain_external_eyes_a86a891d7237",
+      "name": "Pain Habit external_eyes collector_preflight:collector_er",
+      "description": "Collector preflight failed for ollama_search",
+      "created_at": "2026-02-24T00:00:13.034Z",
+      "last_used_at": null,
+      "uses_30d": 0,
+      "lifetime_uses": 0,
+      "success_rate": 0,
+      "avg_tokens_in": null,
+      "avg_tokens_out": null,
+      "estimated_tokens_saved": 0,
+      "rollback_plan": "Disable placeholder entry and remove adaptive binding if behavior diverges.",
+      "test_plan": "Validate proxy execution is no-op and adaptive bindings remain intact.",
+      "idempotent": true,
+      "inputs_schema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Optional notes for adaptive candidate execution context"
+          }
+        }
+      },
+      "entrypoint": "client/habits/routines/adaptive_candidate_proxy.js",
+      "permissions": {
+        "network": "deny",
+        "write_paths_allowlist": [
+          "client/habits/client/logs/*"
+        ],
+        "exec_allowlist": []
+      },
+      "status": "disabled",
+      "outcome": {
+        "last_outcome_score": null,
+        "last_delta_value": null,
+        "outcome_unit": null
+      },
+      "governance": {
+        "state": "disabled",
+        "promote": {
+          "min_success_runs": 99,
+          "min_outcome_score": 0.95
+        },
+        "demote": {
+          "max_consecutive_errors": 1,
+          "min_outcome_score": 0.4,
+          "cooldown_minutes": 1440
+        },
+        "pinned": false,
+        "consecutive_errors": 0
+      },
+      "provenance": {
+        "source": "adaptive_habit_runtime_sync",
+        "created_by": "client/systems/adaptive/habits/habit_runtime_sync.js",
+        "created_at": "2026-02-24T00:00:13.136Z",
+        "intent_key": "adaptive_habit:pain_external_eyes_a86a891d7237",
+        "adaptive_uid": "h27m6w3mqgahzcqeua5x3n5m"
+      },
+      "metrics": {
+        "baseline": {
+          "avg_duration_ms": null,
+          "avg_tokens_est": null,
+          "avg_error_rate": null
+        },
+        "rolling": {
+          "avg_duration_ms_30d": null,
+          "avg_tokens_est_30d": null,
+          "error_rate_30d": null,
+          "window_runs": []
+        }
+      }
+    }
+  ]
+}

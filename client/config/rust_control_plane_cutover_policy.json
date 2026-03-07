@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "thresholds": {
+    "min_parity_pass_rate": 1,
+    "max_avg_latency_delta_ms": 500,
+    "min_stable_parity_runs": 3
+  },
+  "profiles": {
+    "initial": "emergency",
+    "default": {
+      "rust_first": true,
+      "js_fallback": "emergency_only"
+    },
+    "emergency": {
+      "rust_first": false,
+      "js_fallback": "allowed"
+    }
+  },
+  "components": [
+    {
+      "id": "guard",
+      "js_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=guard", "--engine=js"],
+      "rust_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=guard", "--engine=rust"],
+      "contract_fields": ["type", "component", "contract_version"]
+    },
+    {
+      "id": "spine_router",
+      "js_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=spine_router", "--engine=js"],
+      "rust_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=spine_router", "--engine=rust"],
+      "contract_fields": ["type", "component", "contract_version"]
+    },
+    {
+      "id": "reflex_dispatcher",
+      "js_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=reflex_dispatcher", "--engine=js"],
+      "rust_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=reflex_dispatcher", "--engine=rust"],
+      "contract_fields": ["type", "component", "contract_version"]
+    },
+    {
+      "id": "spawn_broker",
+      "js_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=spawn_broker", "--engine=js"],
+      "rust_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=spawn_broker", "--engine=rust"],
+      "contract_fields": ["type", "component", "contract_version"]
+    },
+    {
+      "id": "actuation_executor",
+      "js_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=actuation_executor", "--engine=js"],
+      "rust_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=actuation_executor", "--engine=rust"],
+      "contract_fields": ["type", "component", "contract_version"]
+    }
+  ],
+  "paths": {
+    "state_path": "state/ops/rust_control_plane_cutover/state.json",
+    "latest_path": "state/ops/rust_control_plane_cutover/latest.json",
+    "receipts_path": "state/ops/rust_control_plane_cutover/receipts.jsonl",
+    "parity_history_path": "state/ops/rust_control_plane_cutover/parity_history.jsonl",
+    "benchmark_history_path": "state/ops/rust_control_plane_cutover/benchmark_history.jsonl",
+    "deprecations_path": "state/ops/rust_control_plane_cutover/deprecations.json"
+  }
+}

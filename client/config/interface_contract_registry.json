@@ -1,0 +1,31 @@
+{
+  "schema_id": "interface_contract_registry",
+  "schema_version": "1.0",
+  "updated_at": "2026-03-01T03:27:30.125Z",
+  "interfaces": [
+    {
+      "id": "openai_facade_chat_completions",
+      "kind": "api",
+      "version_policy": "n-2",
+      "migration_owner": "platform",
+      "compatibility_window_days": 180,
+      "source": "client/systems/ops/openfang_capability_pack.ts"
+    },
+    {
+      "id": "state_kernel_event_log",
+      "kind": "event_schema",
+      "version_policy": "append_only",
+      "migration_owner": "data_plane",
+      "compatibility_window_days": 365,
+      "source": "client/systems/ops/event_sourced_control_plane.ts"
+    },
+    {
+      "id": "workflow_executor_cli",
+      "kind": "cli",
+      "version_policy": "minor_stable",
+      "migration_owner": "runtime",
+      "compatibility_window_days": 120,
+      "source": "client/systems/workflow/workflow_executor.ts"
+    }
+  ]
+}

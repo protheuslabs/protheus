@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "ops.rsi_control_plane_cli_surface"
+  },
+  "protheusctl_script": "client/systems/ops/protheusctl.js",
+  "rsi_policy_path": "client/config/rsi_bootstrap_policy.json",
+  "rsi_history_path": "state/client/adaptive/rsi/receipts.jsonl",
+  "paths": {
+    "memory_dir": "client/memory/ops/rsi_control_plane_cli_surface_contract",
+    "adaptive_index_path": "client/adaptive/ops/rsi_control_plane_cli_surface_contract/index.json",
+    "events_path": "state/ops/rsi_control_plane_cli_surface_contract/events.jsonl",
+    "latest_path": "state/ops/rsi_control_plane_cli_surface_contract/latest.json",
+    "receipts_path": "state/ops/rsi_control_plane_cli_surface_contract/receipts.jsonl",
+    "contract_state_path": "state/ops/rsi_control_plane_cli_surface_contract/state.json"
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "schema_id": "requirement_conformance_matrix",
+  "schema_version": "1.0",
+  "source": "external_prompt_to_canonical_backlog_mapping",
+  "requirements": [
+    {
+      "external_requirement_id": "ext_v3_race_016_open_platform_release_pack",
+      "canonical_backlog_id": "V3-RACE-016",
+      "file_anchors": [
+        "client/systems/ops/open_platform_release_pack.ts",
+        "client/config/open_platform_release_pack_policy.json"
+      ],
+      "evidence_tests": [
+        "client/memory/tools/tests/open_platform_release_pack.test.js"
+      ]
+    },
+    {
+      "external_requirement_id": "ext_v3_race_017_authoritative_event_stream_cutover",
+      "canonical_backlog_id": "V3-RACE-017",
+      "file_anchors": [
+        "client/systems/ops/event_sourced_control_plane.ts",
+        "client/config/event_sourced_control_plane_policy.json"
+      ],
+      "evidence_tests": [
+        "client/memory/tools/tests/event_sourced_control_plane_authority.test.js",
+        "client/memory/tools/tests/event_sourced_control_plane_jetstream.test.js"
+      ]
+    },
+    {
+      "external_requirement_id": "ext_v3_race_018_trace_to_habit_autogenesis",
+      "canonical_backlog_id": "V3-RACE-018",
+      "file_anchors": [
+        "client/systems/ops/trace_habit_autogenesis.ts",
+        "client/config/trace_habit_autogenesis_policy.json"
+      ],
+      "evidence_tests": [
+        "client/memory/tools/tests/trace_habit_autogenesis.test.js"
+      ]
+    },
+    {
+      "external_requirement_id": "ext_v3_race_019_persistent_fractal_meta_organ",
+      "canonical_backlog_id": "V3-RACE-019",
+      "file_anchors": [
+        "client/systems/autonomy/persistent_fractal_meta_organ.ts",
+        "client/systems/fractal/engine.ts"
+      ],
+      "evidence_tests": [
+        "client/memory/tools/tests/persistent_fractal_meta_organ.test.js"
+      ]
+    },
+    {
+      "external_requirement_id": "ext_v3_race_020_soul_continuity_adapter",
+      "canonical_backlog_id": "V3-RACE-020",
+      "file_anchors": [
+        "client/systems/soul/soul_continuity_adapter.ts"
+      ],
+      "evidence_tests": [
+        "client/memory/tools/tests/soul_continuity_adapter.test.js"
+      ]
+    },
+    {
+      "external_requirement_id": "ext_v3_race_conf_001_platform_path_contract",
+      "canonical_backlog_id": "V3-RACE-CONF-001",
+      "file_anchors": [
+        "client/systems/ops/platform_path_contract_pack.ts",
+        "client/config/platform_path_contract_policy.json",
+        "platform/export_cli.ts"
+      ],
+      "evidence_tests": [
+        "client/memory/tools/tests/platform_path_contract_pack.test.js"
+      ]
+    },
+    {
+      "external_requirement_id": "ext_v3_race_conf_002_legacy_path_aliases",
+      "canonical_backlog_id": "V3-RACE-CONF-002",
+      "file_anchors": [
+        "client/systems/compat/legacy_alias_adapter.ts",
+        "client/systems/state/event_stream.ts",
+        "client/systems/autogenesis/trace_habit_autogenesis.ts",
+        "client/systems/autogenesis/trace_habit_loop.ts"
+      ],
+      "evidence_tests": [
+        "client/memory/tools/tests/legacy_path_alias_adapters.test.js"
+      ]
+    }
+  ]
+}

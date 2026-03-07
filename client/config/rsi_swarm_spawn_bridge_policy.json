@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "spawn.rsi_swarm_bridge"
+  },
+  "requested_cells": 1,
+  "seed_lineage_script": "client/systems/spawn/seed_spawn_lineage.js",
+  "nursery_script": "client/systems/nursery/nursery_bootstrap.js",
+  "spawn_broker_script": "client/systems/spawn/spawn_broker.js",
+  "provenance_gate_script": "client/systems/security/supply_chain_provenance_gate.js",
+  "paths": {
+    "memory_dir": "client/memory/spawn/rsi_swarm_spawn_bridge",
+    "adaptive_index_path": "client/adaptive/spawn/rsi_swarm_spawn_bridge/index.json",
+    "events_path": "state/spawn/rsi_swarm_spawn_bridge/events.jsonl",
+    "latest_path": "state/spawn/rsi_swarm_spawn_bridge/latest.json",
+    "receipts_path": "state/spawn/rsi_swarm_spawn_bridge/receipts.jsonl",
+    "bridge_state_path": "state/spawn/rsi_swarm_spawn_bridge/state.json"
+  }
+}

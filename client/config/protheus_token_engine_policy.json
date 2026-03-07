@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "constraints": {
+    "min_allocation_pct": 0,
+    "max_allocation_pct": 0.5,
+    "max_tx_amount": 1000000
+  },
+  "paths": {
+    "memory_preferences_dir": "client/memory/economy/preferences",
+    "adaptive_index_path": "client/adaptive/economy/preferences/index.json",
+    "balances_path": "state/economy/protheus_token_balances.json",
+    "ledger_path": "state/economy/protheus_token_ledger.jsonl",
+    "bridge_receipts_path": "state/blockchain/protheus_token_bridge.jsonl",
+    "latest_path": "state/economy/protheus_token_engine/latest.json",
+    "receipts_path": "state/economy/protheus_token_engine/receipts.jsonl"
+  }
+}

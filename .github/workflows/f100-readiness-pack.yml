@@ -3,37 +3,37 @@ name: F100 Readiness Pack
 on:
   push:
     paths:
-      - "config/f100_readiness_program_policy.json"
-      - "config/compliance_control_map.json"
-      - "config/one_million_performance_profile.json"
-      - "config/multi_tenant_isolation_contract.json"
-      - "config/api_cli_contract_registry.json"
-      - "config/oncall_incident_policy.json"
-      - "config/operator_surface_consistency_policy.json"
-      - "crates/ops/src/f100_readiness_program.rs"
-      - "docs/onboarding/**"
-      - "docs/ops/ENTERPRISE_ARCHITECTURE_EVIDENCE_PACK.md"
-      - "docs/ops/operator_surface_consistency_snapshot.json"
+      - "client/config/f100_readiness_program_policy.json"
+      - "client/config/compliance_control_map.json"
+      - "client/config/one_million_performance_profile.json"
+      - "client/config/multi_tenant_isolation_contract.json"
+      - "client/config/api_cli_contract_registry.json"
+      - "client/config/oncall_incident_policy.json"
+      - "client/config/operator_surface_consistency_policy.json"
+      - "core/layer0/ops/src/f100_readiness_program.rs"
+      - "client/docs/onboarding/**"
+      - "client/docs/ops/ENTERPRISE_ARCHITECTURE_EVIDENCE_PACK.md"
+      - "client/docs/ops/operator_surface_consistency_snapshot.json"
       - "runbooks/INCIDENT_COMMAND.md"
       - "runbooks/POSTMORTEM_TEMPLATE.md"
-      - "bin/protheus_onboarding_bootstrap.sh"
+      - "client/bin/protheus_onboarding_bootstrap.sh"
       - ".github/workflows/f100-readiness-pack.yml"
   pull_request:
     paths:
-      - "config/f100_readiness_program_policy.json"
-      - "config/compliance_control_map.json"
-      - "config/one_million_performance_profile.json"
-      - "config/multi_tenant_isolation_contract.json"
-      - "config/api_cli_contract_registry.json"
-      - "config/oncall_incident_policy.json"
-      - "config/operator_surface_consistency_policy.json"
-      - "crates/ops/src/f100_readiness_program.rs"
-      - "docs/onboarding/**"
-      - "docs/ops/ENTERPRISE_ARCHITECTURE_EVIDENCE_PACK.md"
-      - "docs/ops/operator_surface_consistency_snapshot.json"
+      - "client/config/f100_readiness_program_policy.json"
+      - "client/config/compliance_control_map.json"
+      - "client/config/one_million_performance_profile.json"
+      - "client/config/multi_tenant_isolation_contract.json"
+      - "client/config/api_cli_contract_registry.json"
+      - "client/config/oncall_incident_policy.json"
+      - "client/config/operator_surface_consistency_policy.json"
+      - "core/layer0/ops/src/f100_readiness_program.rs"
+      - "client/docs/onboarding/**"
+      - "client/docs/ops/ENTERPRISE_ARCHITECTURE_EVIDENCE_PACK.md"
+      - "client/docs/ops/operator_surface_consistency_snapshot.json"
       - "runbooks/INCIDENT_COMMAND.md"
       - "runbooks/POSTMORTEM_TEMPLATE.md"
-      - "bin/protheus_onboarding_bootstrap.sh"
+      - "client/bin/protheus_onboarding_bootstrap.sh"
       - ".github/workflows/f100-readiness-pack.yml"
 
 jobs:
@@ -49,23 +49,23 @@ jobs:
 
       - name: Run readiness lanes
         run: |
-          cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- \
+          cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- \
             f100-readiness-program run --lane=V6-F100-004 --strict=1
-          cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- \
+          cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- \
             f100-readiness-program run --lane=V6-F100-005 --strict=1
-          cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- \
+          cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- \
             f100-readiness-program run --lane=V6-F100-006 --strict=1
-          cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- \
+          cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- \
             f100-readiness-program run --lane=V6-F100-007 --strict=1
-          cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- \
+          cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- \
             f100-readiness-program run --lane=V6-F100-008 --strict=1
-          cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- \
+          cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- \
             f100-readiness-program run --lane=V6-F100-009 --strict=1
-          cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- \
+          cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- \
             f100-readiness-program run --lane=V6-F100-010 --strict=1
-          cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- \
+          cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- \
             f100-readiness-program run --lane=V6-F100-011 --strict=1
-          cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- \
+          cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- \
             f100-readiness-program run --lane=V6-F100-012 --strict=0
-          cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- \
+          cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- \
             f100-readiness-program run --lane=V6-F100-012 --strict=1

@@ -1,0 +1,58 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "required_docs": [
+    "client/docs/ORG_CODE_FORMAT_STANDARD.md",
+    "client/docs/PERCEPTION_AUDIT_PROGRAM.md",
+    "client/docs/EMPTY_FORT_INTEGRITY_CHECKLIST.md"
+  ],
+  "package_json_path": "package.json",
+  "required_package_scripts": [
+    "ops:format:check",
+    "lint"
+  ],
+  "ci_workflow_path": ".github/workflows/ci.yml",
+  "ci_required_commands": [
+    "npm run ops:format:check",
+    "npm run lint"
+  ],
+  "pre_commit_path": ".githooks/pre-commit",
+  "pre_commit_required_commands": [
+    "npm run ops:format:check",
+    "npm run lint"
+  ],
+  "templates": {
+    ".github/pull_request_template.md": [
+      "summary",
+      "roadmap",
+      "validation",
+      "risk"
+    ],
+    ".github/ISSUE_TEMPLATE/bug_report.md": [
+      "summary",
+      "reproduction steps",
+      "impact"
+    ],
+    ".github/ISSUE_TEMPLATE/feature_request.md": [
+      "problem statement",
+      "acceptance criteria",
+      "risks and tradeoffs"
+    ],
+    "client/docs/release/templates/release_plan.md": [
+      "scope",
+      "risk",
+      "rollback",
+      "claim-evidence matrix"
+    ]
+  },
+  "audit": {
+    "max_age_days": 31,
+    "min_score": 0.8
+  },
+  "paths": {
+    "latest_path": "state/ops/polish_perception_program/latest.json",
+    "history_path": "state/ops/polish_perception_program/history.jsonl",
+    "audit_latest_path": "state/ops/polish_perception_program/audit_latest.json",
+    "audit_history_path": "state/ops/polish_perception_program/audit_history.jsonl"
+  }
+}

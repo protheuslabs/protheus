@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "hot_runtime": [
+    { "id": "memory_index", "authority": "core/layer0/memory", "paths": ["core/layer0/memory"], "read_contract": "native_store" },
+    { "id": "state_kernel", "authority": "client/systems/ops/state_kernel.ts", "paths": ["state/ops/state_kernel"], "read_contract": "typed_store" },
+    { "id": "workflow_state", "authority": "client/systems/workflow/workflow_executor.ts", "paths": ["state/workflow"], "read_contract": "typed_store" }
+  ],
+  "audit_mirror": [
+    { "id": "event_stream", "paths": ["state/events/event_stream.jsonl"], "contract": "append_only_jsonl" },
+    { "id": "ops_receipts", "paths": ["state/ops"], "contract": "append_only_receipts" },
+    { "id": "memory_receipts", "paths": ["state/memory"], "contract": "append_only_receipts" }
+  ],
+  "paths": {
+    "latest_path": "state/ops/state_tiering_contract/latest.json",
+    "receipts_path": "state/ops/state_tiering_contract/receipts.jsonl"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "risk": {
+    "default_tier": 2,
+    "require_explicit_approval_tier": 3
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "ops.replay_parity"
+  },
+  "paths": {
+    "memory_dir": "client/memory/ops/rr-004",
+    "adaptive_index_path": "client/adaptive/ops/rr-004/index.json",
+    "events_path": "state/ops/rr-004/events.jsonl",
+    "latest_path": "state/ops/rr-004/latest.json",
+    "receipts_path": "state/ops/rr-004/receipts.jsonl"
+  }
+}

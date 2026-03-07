@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "checks": [
+    {
+      "id": "recording_engine_live",
+      "description": "Recorder lane captures security timelines",
+      "file_must_exist": "client/systems/security/jigsaw/README.md"
+    },
+    {
+      "id": "highlight_editor_lane",
+      "description": "Deterministic highlight generation configured"
+    },
+    {
+      "id": "clearance4_playback_gate",
+      "description": "Clearance-4 playback policy enforced"
+    },
+    {
+      "id": "encrypted_capture_storage",
+      "description": "Encrypted capture-at-rest contract active"
+    }
+  ],
+  "paths": {
+    "state_path": "state/security/project_jigsaw_attackcinema_replay/state.json",
+    "latest_path": "state/security/project_jigsaw_attackcinema_replay/latest.json",
+    "receipts_path": "state/security/project_jigsaw_attackcinema_replay/receipts.jsonl",
+    "history_path": "state/security/project_jigsaw_attackcinema_replay/history.jsonl"
+  }
+}

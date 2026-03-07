@@ -1,0 +1,77 @@
+{
+  "schema_id": "execution_yield_recovery_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "strict_default": false,
+  "window_days": 14,
+  "dead_window_days": 7,
+  "paths": {
+    "queue_log_path": "state/sensory/queue_log.jsonl",
+    "proposals_dir": "state/sensory/proposals",
+    "decisions_dir": "state/queue/decisions",
+    "eyes_registry_path": "state/sensory/eyes/registry.json",
+    "latest_path": "state/ops/execution_yield_recovery/latest.json",
+    "history_path": "state/ops/execution_yield_recovery/history.jsonl",
+    "throttle_state_path": "state/ops/execution_yield_recovery/intake_throttle.json",
+    "salvage_queue_path": "state/ops/execution_yield_recovery/escalation_salvage.jsonl",
+    "eye_actions_history_path": "state/ops/execution_yield_recovery/eye_actions.jsonl",
+    "artifact_state_path": "state/ops/execution_yield_recovery/artifact_bridge_state.json"
+  },
+  "top_k": {
+    "enabled": true,
+    "reserve_count": 2,
+    "min_score": 80,
+    "max_age_hours": 168
+  },
+  "filter_rebalance": {
+    "enabled": true,
+    "high_score_threshold": 85,
+    "stale_defer_hours": 24,
+    "reasons": [
+      "action_spec_missing",
+      "stale_open_age_sweep",
+      "composite_low"
+    ]
+  },
+  "queue_backpressure": {
+    "enabled": true,
+    "max_open": 140,
+    "max_open_p95_age_hours": 72,
+    "low_priority_score_threshold": 74
+  },
+  "eye_health": {
+    "enabled": true,
+    "fail_streak_threshold": 2,
+    "error_rate_threshold": 0.7,
+    "max_auto_heal_attempts": 2
+  },
+  "execution_floor": {
+    "enabled": true,
+    "min_shipped_per_day": 1,
+    "catchup_top_k": 2,
+    "observation_override": false
+  },
+  "artifact_bridge": {
+    "enabled": true,
+    "mode": "dopamine_log_artifact",
+    "command": [],
+    "directive": "queue_outcome_shipped_v1"
+  },
+  "escalation_ttl": {
+    "enabled": true,
+    "base_hours": 16,
+    "min_hours": 6,
+    "max_hours": 72,
+    "high_score_threshold": 85,
+    "high_score_factor": 2,
+    "low_score_threshold": 60,
+    "low_score_factor": 0.75,
+    "salvage_score_threshold": 85
+  },
+  "event_stream": {
+    "enabled": true,
+    "script_path": "client/systems/ops/event_sourced_control_plane.js",
+    "stream": "ops",
+    "event": "yield_recovery_tick"
+  }
+}

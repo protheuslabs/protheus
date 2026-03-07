@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "adaptive.rsi.integrity_chain_guard"
+  },
+  "rsi_chain_path": "state/client/adaptive/rsi/chain.jsonl",
+  "rsi_merkle_path": "state/client/adaptive/rsi/merkle.json",
+  "reversion_script": "client/systems/autonomy/self_mod_reversion_drill.js",
+  "continuity_script": "client/systems/continuity/resurrection_protocol.js",
+  "paths": {
+    "memory_dir": "client/memory/client/adaptive/rsi_integrity_chain_guard",
+    "adaptive_index_path": "client/adaptive/rsi/integrity_chain_guard/index.json",
+    "events_path": "state/client/adaptive/rsi_integrity_chain_guard/events.jsonl",
+    "latest_path": "state/client/adaptive/rsi_integrity_chain_guard/latest.json",
+    "receipts_path": "state/client/adaptive/rsi_integrity_chain_guard/receipts.jsonl",
+    "integrity_state_path": "state/client/adaptive/rsi_integrity_chain_guard/state.json"
+  }
+}

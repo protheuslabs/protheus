@@ -1,0 +1,37 @@
+{
+  "name": "protheus",
+  "version": "0.2.0",
+  "description": "Thin npm distribution wrapper for the Protheus Rust CLI binary.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/protheuslabs/protheus.git"
+  },
+  "homepage": "https://github.com/protheuslabs/protheus",
+  "bugs": {
+    "url": "https://github.com/protheuslabs/protheus/issues"
+  },
+  "bin": {
+    "protheus": "./client/bin/protheus.js"
+  },
+  "files": [
+    "client/bin/",
+    "scripts/",
+    "vendor/",
+    "README.md"
+  ],
+  "scripts": {
+    "postinstall": "node ./scripts/install.js",
+    "test:smoke": "node ./scripts/smoke.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "protheus",
+    "cli",
+    "rust",
+    "agents",
+    "orchestration"
+  ]
+}

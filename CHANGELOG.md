@@ -11,11 +11,11 @@ This project follows a strict evidence-backed changelog model:
 
 ### Added
 - `V4-SELF-001` self-audit lane baseline:
-  - Rust scanner core: `systems/self_audit/illusion_integrity_auditor.rs`
-  - Lane orchestrator: `systems/self_audit/illusion_integrity_lane.ts`
+  - Rust scanner core: `client/systems/self_audit/illusion_integrity_auditor.rs`
+  - Lane orchestrator: `client/systems/self_audit/illusion_integrity_lane.ts`
   - Policy and docs surface:
-    - `config/illusion_integrity_auditor_policy.json`
-    - `docs/ILLUSION_INTEGRITY_AUDITOR.md`
+    - `client/config/illusion_integrity_auditor_policy.json`
+    - `client/docs/ILLUSION_INTEGRITY_AUDITOR.md`
   - Control-plane trigger integration (`startup`, `promotion`, `protheusctl audit illusion`)
 
 ### Changed
@@ -29,11 +29,11 @@ This project follows a strict evidence-backed changelog model:
 
 ### Added
 - V4-FORT artifact baseline for enterprise-grade presentation:
-  - UI surface maturity matrix and update cadence (`docs/UI_SURFACE_MATURITY_MATRIX.md`)
-  - Role-based onboarding playbook (`docs/ONBOARDING_PLAYBOOK.md`)
-  - History cleanliness and release hygiene policy (`docs/HISTORY_CLEANLINESS.md`)
-  - Public collaboration triage contract (`docs/PUBLIC_COLLABORATION_TRIAGE.md`)
-  - Claim-evidence policy guard (`docs/CLAIM_EVIDENCE_POLICY.md`)
+  - UI surface maturity matrix and update cadence (`client/docs/UI_SURFACE_MATURITY_MATRIX.md`)
+  - Role-based onboarding playbook (`client/docs/ONBOARDING_PLAYBOOK.md`)
+  - History cleanliness and release hygiene policy (`client/docs/HISTORY_CLEANLINESS.md`)
+  - Public collaboration triage contract (`client/docs/PUBLIC_COLLABORATION_TRIAGE.md`)
+  - Claim-evidence policy guard (`client/docs/CLAIM_EVIDENCE_POLICY.md`)
   - GitHub issue templates for bug/feature/security routing (`.github/ISSUE_TEMPLATE/*`)
 
 ### Changed

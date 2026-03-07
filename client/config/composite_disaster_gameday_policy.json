@@ -1,0 +1,49 @@
+{
+  "schema_id": "composite_disaster_gameday_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "strict_default": false,
+  "cadence_hours": 168,
+  "max_total_duration_ms": 600000,
+  "require_postmortem": true,
+  "scenarios": [
+    {
+      "id": "restore_path_probe",
+      "stage": "restore",
+      "required": true,
+      "timeout_ms": 120000,
+      "command": [
+        "node",
+        "client/systems/continuity/resurrection_protocol.js",
+        "status"
+      ]
+    },
+    {
+      "id": "tamper_detection_probe",
+      "stage": "tamper",
+      "required": true,
+      "timeout_ms": 120000,
+      "command": [
+        "node",
+        "client/systems/security/remote_tamper_heartbeat.js",
+        "status"
+      ]
+    },
+    {
+      "id": "rollback_readiness_probe",
+      "stage": "rollback",
+      "required": true,
+      "timeout_ms": 120000,
+      "command": [
+        "node",
+        "client/systems/helix/helix_controller.js",
+        "status"
+      ]
+    }
+  ],
+  "outputs": {
+    "latest_path": "state/ops/composite_disaster_gameday/latest.json",
+    "history_path": "state/ops/composite_disaster_gameday/history.jsonl",
+    "postmortem_dir": "state/ops/composite_disaster_gameday/postmortems"
+  }
+}

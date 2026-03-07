@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "risk": {
+    "default_tier": 2,
+    "require_explicit_approval_tier": 3
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "economy.model_access_tiers"
+  },
+  "paths": {
+    "memory_dir": "client/memory/economy/model_access",
+    "adaptive_index_path": "client/adaptive/economy/model_access/index.json",
+    "events_path": "state/economy\/model_access_tiers/events.jsonl",
+    "latest_path": "state/economy\/model_access_tiers/latest.json",
+    "receipts_path": "state/economy\/model_access_tiers/receipts.jsonl"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "risk": {
+    "default_tier": 2,
+    "require_explicit_approval_tier": 3
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "crypto.zk_compliance"
+  },
+  "paths": {
+    "memory_dir": "client/memory/crypto/zk",
+    "adaptive_index_path": "client/adaptive/crypto/zk/index.json",
+    "events_path": "state/crypto/zk_compliance/events.jsonl",
+    "latest_path": "state/crypto/zk_compliance/latest.json",
+    "receipts_path": "state/crypto/zk_compliance/receipts.jsonl"
+  }
+}

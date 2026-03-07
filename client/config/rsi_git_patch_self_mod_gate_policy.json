@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "security.rsi_git_patch_gate"
+  },
+  "require_human_approval": true,
+  "min_dopamine_score": 1,
+  "patch_required": false,
+  "scripts": {
+    "rsi_bootstrap": "client/adaptive/rsi/rsi_bootstrap.js",
+    "rsi_policy": "client/config/rsi_bootstrap_policy.json",
+    "chaos": "client/systems/autonomy/red_team_harness.js",
+    "constitution": "client/systems/security/constitution_guardian.js",
+    "habit_lifecycle": "client/habits/scripts/reflex_habit_bridge.js",
+    "dopamine": "client/habits/scripts/dopamine_engine.js"
+  },
+  "paths": {
+    "memory_dir": "client/memory/security/rsi_git_patch_self_mod_gate",
+    "adaptive_index_path": "client/adaptive/security/rsi_git_patch_self_mod_gate/index.json",
+    "events_path": "state/security/rsi_git_patch_self_mod_gate/events.jsonl",
+    "latest_path": "state/security/rsi_git_patch_self_mod_gate/latest.json",
+    "receipts_path": "state/security/rsi_git_patch_self_mod_gate/receipts.jsonl"
+  }
+}

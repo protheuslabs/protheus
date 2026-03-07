@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "required_docs": ["client/docs/HISTORY_CLEANLINESS.md", "client/docs/RELEASE_DISCIPLINE_POLICY.md", "CHANGELOG.md", ".github/pull_request_template.md"],
+  "history_required_terms": ["append-only", "no force-push", "changelog"],
+  "pr_template_required_terms": ["summary", "validation", "changelog"],
+  "paths": {
+    "latest_path": "state/ops/history_cleanliness_program/latest.json",
+    "history_path": "state/ops/history_cleanliness_program/history.jsonl"
+  }
+}

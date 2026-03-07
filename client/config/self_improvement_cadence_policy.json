@@ -1,0 +1,53 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_first": true,
+  "cadence_minutes": 60,
+  "max_cycles_per_run": 1,
+  "proposal_cap_per_cycle": 2,
+  "apply_cap_per_cycle": 1,
+  "objective_id": "continuum_self_improvement",
+  "target_paths": [
+    "client/systems/autonomy/autonomy_controller.ts",
+    "client/systems/spine/spine.ts"
+  ],
+  "timeout_ms_per_step": 20000,
+  "quiet_hours": {
+    "enabled": false,
+    "start_hour_local": 22,
+    "end_hour_local": 7
+  },
+  "budget_guard": {
+    "max_cycles_per_day": 24,
+    "max_proposals_per_day": 64,
+    "max_applies_per_day": 12
+  },
+  "scripts": {
+    "observer": "client/systems/autonomy/observer_mirror.js",
+    "loop": "client/systems/autonomy/gated_self_improvement_loop.js",
+    "distiller": "client/systems/assimilation/trajectory_skill_distiller.js"
+  },
+  "event_trigger": {
+    "enabled": true,
+    "shadow_only": true,
+    "min_confidence": 0.997,
+    "min_strategy_confidence": 0.9,
+    "min_strategy_score": 30,
+    "cooldown_minutes": 120,
+    "allowed_sources": [
+      "nightly",
+      "high_success_receipt",
+      "manual"
+    ],
+    "paths": {
+      "gated_loop_latest_path": "state/autonomy/gated_self_improvement/latest.json",
+      "strategy_scorecard_latest_path": "state/client/adaptive/strategy/scorecards/latest.json",
+      "trigger_state_path": "state/autonomy/self_improvement_cadence/trigger_state.json"
+    }
+  },
+  "outputs": {
+    "state_path": "state/autonomy/self_improvement_cadence/state.json",
+    "latest_path": "state/autonomy/self_improvement_cadence/latest.json",
+    "receipts_path": "state/autonomy/self_improvement_cadence/receipts.jsonl"
+  }
+}

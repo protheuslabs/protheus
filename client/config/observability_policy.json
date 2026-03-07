@@ -1,0 +1,59 @@
+{
+  "version": "1.0",
+  "metrics": {
+    "enabled": true,
+    "write_prometheus": true,
+    "write_snapshot": true,
+    "health_reports_dir": "state/autonomy/health_reports",
+    "workflow_executor_latest_path": "state/client/adaptive/workflows/executor/latest.json",
+    "workflow_executor_latest_live_path": "state/client/adaptive/workflows/executor/latest_live.json",
+    "workflow_executor_history_path": "state/client/adaptive/workflows/executor/history.jsonl",
+    "workflow_executor_zero_selection_warn_streak": 2,
+    "execution_reliability_slo_path": "state/ops/execution_reliability_slo.json",
+    "ci_baseline_guard_path": "state/ops/ci_baseline_guard.json",
+    "alert_transport_health_path": "state/ops/alert_transport_health.json",
+    "rm_progress_dashboard_path": "state/ops/rm_progress_dashboard.json",
+    "ci_baseline_streak_path": "state/ops/ci_baseline_streak.json",
+    "output_prometheus_path": "state/observability/prometheus/current.prom",
+    "output_snapshot_path": "state/observability/metrics/latest.json",
+    "output_history_jsonl_path": "state/observability/metrics/history.jsonl"
+  },
+  "tracing": {
+    "enabled": true,
+    "spans_path": "state/observability/tracing/spans.jsonl",
+    "latest_path": "state/observability/tracing/latest.json",
+    "max_attr_count": 24,
+    "max_attr_key_length": 64,
+    "max_attr_value_length": 200
+  },
+  "alert_routing": {
+    "enabled": true,
+    "min_level": "warn",
+    "max_per_run": 400,
+    "source_alerts_dir": "state/autonomy/health_alerts",
+    "state_path": "state/observability/alerts/router_state.json",
+    "routed_jsonl_path": "state/observability/alerts/routed.jsonl",
+    "max_state_keys": 12000,
+    "actionability": {
+      "enabled": true,
+      "runbook_map_path": "client/config/autonomy_slo_runbook_map.json",
+      "default_owner": "ops",
+      "default_runbook_id": "INC-000",
+      "owner_overrides": {}
+    },
+    "sinks": {
+      "file": {
+        "enabled": true
+      },
+      "stdout": {
+        "enabled": false
+      },
+      "webhook": {
+        "enabled": false,
+        "url": "",
+        "url_env": "OBSERVABILITY_ALERT_WEBHOOK_URL",
+        "timeout_ms": 5000
+      }
+    }
+  }
+}

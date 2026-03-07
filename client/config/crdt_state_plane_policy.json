@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "risk": {
+    "default_tier": 2,
+    "require_explicit_approval_tier": 3
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "pinnacle.crdt_state_plane"
+  },
+  "paths": {
+    "memory_dir": "client/memory/crdt",
+    "adaptive_index_path": "client/adaptive/crdt/index.json",
+    "events_path": "state/pinnacle/crdt_state_plane/events.jsonl",
+    "latest_path": "state/pinnacle/crdt_state_plane/latest.json",
+    "receipts_path": "state/pinnacle/crdt_state_plane/receipts.jsonl"
+  }
+}

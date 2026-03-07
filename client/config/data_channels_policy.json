@@ -1,0 +1,57 @@
+{
+  "version": "1.0",
+  "channels": {
+    "memory": {
+      "roots": [
+        "client/memory/"
+      ],
+      "controllers": [
+        "client/systems/memory/"
+      ],
+      "purpose": "Curated and node-based memory"
+    },
+    "adaptive": {
+      "roots": [
+        "client/adaptive/",
+        "state/client/adaptive/"
+      ],
+      "controllers": [
+        "client/systems/adaptive/"
+      ],
+      "purpose": "Adaptive layer data + receipts"
+    },
+    "runtime_state_logs": {
+      "roots": [
+        "state/",
+        "client/logs/",
+        "client/habits/client/logs/"
+      ],
+      "controllers": [
+        "client/systems/spine/",
+        "client/systems/autonomy/",
+        "client/systems/security/",
+        "client/systems/sensory/",
+        "client/systems/routing/",
+        "client/systems/reflex/",
+        "client/systems/spawn/",
+        "client/systems/budget/"
+      ],
+      "purpose": "Operational state, audits, telemetry"
+    },
+    "secrets": {
+      "repo_scaffold": [
+        "client/secrets/"
+      ],
+      "external_root_default": "~/.client/config/protheus/client/secrets/",
+      "controllers": [
+        "client/lib/secret_broker.js",
+        "client/systems/security/secret_broker.js"
+      ],
+      "purpose": "Secret values and key material outside git"
+    }
+  },
+  "notes": [
+    "Controllers mutate their channel; other modules should use controller interfaces.",
+    "External secrets location is configurable via SECRET_BROKER_SECRETS_DIR."
+  ]
+}

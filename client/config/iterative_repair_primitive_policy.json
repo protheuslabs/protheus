@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "max_iterations": 4,
+  "max_runtime_sec": 120,
+  "stop_on_verify_pass": true,
+  "require_rollback_points": true,
+  "allowed_target_roots": [
+    "systems",
+    "lib",
+    "config",
+    "client/memory/tools/tests"
+  ],
+  "receipts_path": "state/primitives/iterative_repair/receipts.jsonl",
+  "latest_path": "state/primitives/iterative_repair/latest.json",
+  "state_path": "state/primitives/iterative_repair/state.json"
+}

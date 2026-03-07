@@ -1,0 +1,66 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "targets": {
+    "rust_share_min_pct": 55,
+    "rust_share_max_pct": 65,
+    "enforce_target_during_cutover": false
+  },
+  "scan": {
+    "include_extensions": [
+      ".rs",
+      ".ts",
+      ".js"
+    ],
+    "ignore_roots": [
+      "node_modules",
+      "dist",
+      "state",
+      "tmp",
+      "coverage"
+    ]
+  },
+  "commands": {
+    "rust_spine_parity": [
+      "node",
+      "client/systems/ops/rust_spine_microkernel.js",
+      "parity",
+      "--apply=1"
+    ],
+    "rust_spine_benchmark": [
+      "node",
+      "client/systems/ops/rust_spine_microkernel.js",
+      "benchmark",
+      "--apply=1",
+      "--window=30"
+    ],
+    "rust_spine_cutover": [
+      "node",
+      "client/systems/ops/rust_spine_microkernel.js",
+      "cutover",
+      "--apply=1"
+    ],
+    "wasi2_gate": [
+      "node",
+      "client/systems/ops/wasi2_execution_completeness_gate.js",
+      "run",
+      "--apply=1",
+      "--strict=1"
+    ],
+    "sandbox_coprocessor": [
+      "node",
+      "client/systems/security/execution_sandbox_rust_wasm_coprocessor_lane.js",
+      "verify",
+      "--owner=rust_accel",
+      "--strict=1",
+      "--apply=1",
+      "--mock=1"
+    ]
+  },
+  "paths": {
+    "latest_path": "state/ops/rust_authoritative_microkernel_acceleration/latest.json",
+    "receipts_path": "state/ops/rust_authoritative_microkernel_acceleration/receipts.jsonl",
+    "language_report_path": "state/ops/rust_authoritative_microkernel_acceleration/language_report.json"
+  }
+}

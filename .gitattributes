@@ -9,25 +9,25 @@
 *.tsx linguist-generated=false linguist-language=TypeScript
 
 # Runtime/state and research artifacts are not source-of-truth code.
-memory/** linguist-generated=true
+client/memory/** linguist-generated=true
 state/** linguist-generated=true
 research/** linguist-generated=true
 drafts/** linguist-generated=true
 
 # TS is the source of truth; JS files in these roots are bootstrap/runtime shims.
-systems/**/*.js linguist-generated=true
-lib/**/*.js linguist-generated=true
+client/systems/**/*.js linguist-generated=true
+client/lib/**/*.js linguist-generated=true
 
 # Legacy operational JS lanes are migration shims/scripts, not core language signal.
-habits/scripts/**/*.js linguist-generated=true
-habits/routines/**/*.js linguist-generated=true
-adaptive/sensory/eyes/collectors/**/*.js linguist-generated=true
-skills/moltbook/*.js linguist-generated=true
-skills/**/scripts/**/*.js linguist-generated=true
-patches/**/*.js linguist-generated=true
+client/habits/scripts/**/*.js linguist-generated=true
+client/habits/routines/**/*.js linguist-generated=true
+client/adaptive/sensory/eyes/collectors/**/*.js linguist-generated=true
+client/skills/moltbook/*.js linguist-generated=true
+client/skills/**/scripts/**/*.js linguist-generated=true
+client/patches/**/*.js linguist-generated=true
 tests/**/*.js linguist-generated=true
 
 # Force TS source roots to remain linguist-detectable.
-systems/**/*.ts linguist-generated=false
-lib/**/*.ts linguist-generated=false
+client/systems/**/*.ts linguist-generated=false
+client/lib/**/*.ts linguist-generated=false
 types/**/*.ts linguist-generated=false

@@ -1,0 +1,12 @@
+{
+  "schema_id": "platform_socket_runtime_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "oracle_state_path": "state/ops/platform_oracle_hostprofile/latest.json",
+  "socket_registry_path": "client/config/platform_socket_registry.json",
+  "admission_policy_path": "client/config/platform_socket_admission_policy.json",
+  "state_path": "state/ops/platform_socket_runtime/latest.json",
+  "history_path": "state/ops/platform_socket_runtime/history.jsonl",
+  "install_state_path": "state/ops/platform_socket_runtime/installed.json",
+  "signing_secret": "platform_socket_runtime_secret"
+}

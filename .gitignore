@@ -4,36 +4,36 @@ node_modules/
 .DS_Store
 .env
 .env.local
-config/moltbook/credentials.json
-config/credentials.json
+client/config/moltbook/credentials.json
+client/config/credentials.json
 # Local strategy profiles are instance-specific (keep docs scaffold only)
-config/strategies/*
-!config/strategies/README.md
+client/config/strategies/*
+!client/config/strategies/README.md
 state/security/secret_broker_key.txt
 *.tmp
 *.swp
 *~
 
 # Local secrets channel (tracked scaffold only)
-secrets/*
-!secrets/README.md
-!secrets/.gitignore
+client/secrets/*
+!client/secrets/README.md
+!client/secrets/.gitignore
 
 # Runtime/ops outputs (high churn, non-source artifacts)
-logs/tool_raw/
-habits/logs/*.ndjson
+client/logs/tool_raw/
+client/habits/client/logs/*.ndjson
 tmp/
 dist/
 .internal/
 **/target/
-memory/**
-!memory/README.md
-!memory/tools/
-!memory/tools/**
-memory/_snapshots/
-memory/*.backup.*
-memory/tools/tests/temp_*/
-habits/scripts/*.bak.*
+client/memory/**
+!client/memory/README.md
+!client/memory/tools/
+!client/memory/tools/**
+client/memory/_snapshots/
+client/memory/*.backup.*
+client/memory/tools/tests/temp_*/
+client/habits/scripts/*.bak.*
 
 # Generated state streams/snapshots
 #
@@ -41,11 +41,11 @@ habits/scripts/*.bak.*
 state/**
 
 # Adaptive sensory runtime catalogs (high-churn generated stores)
-adaptive/sensory/eyes/catalog.json
-adaptive/sensory/eyes/focus_triggers.json
-adaptive/sensory/eyes/*.write.lock
+client/adaptive/sensory/eyes/catalog.json
+client/adaptive/sensory/eyes/focus_triggers.json
+client/adaptive/sensory/eyes/*.write.lock
 
-state/daily_logs/*.json
+state/daily_client/logs/*.json
 state/dopamine_state.json
 state/git/outcomes/*.jsonl
 state/git/outcomes_cursor.json
@@ -89,13 +89,13 @@ state/autonomy/improvements/*.jsonl
 state/autonomy/habit_crystallizer/*.jsonl
 state/autonomy/receipts/*.jsonl
 state/autonomy/receipts/*.chain.json
-state/adaptive/reflex/*.json
-state/adaptive/reflex/*.jsonl
-state/adaptive/strategy/scorecards/*.json
-state/adaptive/strategy/outcome_fitness.json
-state/adaptive/strategy/outcome_fitness/*.json
-state/adaptive/strategy/snapshots/*.json
-state/adaptive/suggestions/*.json
+state/client/adaptive/reflex/*.json
+state/client/adaptive/reflex/*.jsonl
+state/client/adaptive/strategy/scorecards/*.json
+state/client/adaptive/strategy/outcome_fitness.json
+state/client/adaptive/strategy/outcome_fitness/*.json
+state/client/adaptive/strategy/snapshots/*.json
+state/client/adaptive/suggestions/*.json
 state/actuation/receipts/*.jsonl
 state/aie/events/*.jsonl
 state/sensory/receipts/*.jsonl
@@ -104,28 +104,28 @@ state/spine/short_circuit_state.json
 state/spine/budget_guard_state.json
 state/security/emergency_stop.json
 state/security/integrity_violations.jsonl
-state/habits/receipts/*.jsonl
+state/client/habits/receipts/*.jsonl
 state/security/skill_quarantine/install_receipts/*.jsonl
 state/autonomy/budget_events.jsonl
 state/autonomy/short_circuit.json
 state/autonomy/strategy_mode_changes.jsonl
 state/autonomy/strategy_mode_governor_state.json
 state/autonomy/health_alerts/*.jsonl
-state/autonomy/health_reports/*.json
-state/memory/adaptive_pointer_index.json
-state/memory/creative_links/*.json
-state/memory/creative_links/*.jsonl
-state/memory/dreams/*.json
-state/memory/dreams/*.md
-state/memory/dreams/*.jsonl
-state/memory/dreams/idle/*.json
-state/memory/dreams/idle/*.jsonl
-state/memory/dreams/rem/*.json
-state/memory/eyes_pointers/*.json
-state/memory/eyes_pointers/*.jsonl
-state/memory/eyes_memory_bridge.jsonl
-state/memory/uid_connection_index.json
-state/memory/uid_connections.jsonl
+state/autonomy/health_client/reports/*.json
+state/client/memory/adaptive_pointer_index.json
+state/client/memory/creative_links/*.json
+state/client/memory/creative_links/*.jsonl
+state/client/memory/dreams/*.json
+state/client/memory/dreams/*.md
+state/client/memory/dreams/*.jsonl
+state/client/memory/dreams/idle/*.json
+state/client/memory/dreams/idle/*.jsonl
+state/client/memory/dreams/rem/*.json
+state/client/memory/eyes_pointers/*.json
+state/client/memory/eyes_pointers/*.jsonl
+state/client/memory/eyes_memory_bridge.jsonl
+state/client/memory/uid_connection_index.json
+state/client/memory/uid_connections.jsonl
 state/sensory/cross_signal/hypotheses/*.json
 state/sensory/eyes/cache/*.json
 state/sensory/queue_log.jsonl
@@ -138,12 +138,12 @@ state/helix/**
 state/eye/**
 
 # Local skill installs/experiments are instance-specific.
-skills/**
-!skills/README.md
-!skills/mcp/
-!skills/mcp/*.ts
-!skills/mcp/*.js
-!skills/mcp/*.json
+client/skills/**
+!client/skills/README.md
+!client/skills/mcp/
+!client/skills/mcp/*.ts
+!client/skills/mcp/*.js
+!client/skills/mcp/*.json
 
 # Additional runtime churn (adaptive + memory + ops)
 .clawhub/lock.json
@@ -153,7 +153,7 @@ state/autonomy/pain*.json
 state/autonomy/pain*.jsonl
 state/dopamine_pain_*.json
 state/dopamine_pain_*.jsonl
-state/memory/adaptive_pointers.jsonl
+state/client/memory/adaptive_pointers.jsonl
 state/routing/local_warmup_state.json
 state/routing/prompt_result_cache/index.json
 state/routing/provider_readiness*.json
@@ -178,23 +178,23 @@ pqts/
 !personas/organization/projects/**
 
 # Instance-specific sensory collectors (local only)
-adaptive/sensory/eyes/collectors/abstractapi_enrich.js
-adaptive/sensory/eyes/collectors/coingecko_global.js
-adaptive/sensory/eyes/collectors/finnhub_market.js
-adaptive/sensory/eyes/collectors/github_pulse.js
-adaptive/sensory/eyes/collectors/iex_fundamentals.js
-adaptive/sensory/eyes/collectors/ipstack_geo.js
-adaptive/sensory/eyes/collectors/marketstack_quote.js
-adaptive/sensory/eyes/collectors/sentiment_proxy.js
-adaptive/sensory/eyes/collectors/spine_healthcheck.js
-adaptive/sensory/eyes/collectors/virustotal_threat.js
+client/adaptive/sensory/eyes/collectors/abstractapi_enrich.js
+client/adaptive/sensory/eyes/collectors/coingecko_global.js
+client/adaptive/sensory/eyes/collectors/finnhub_market.js
+client/adaptive/sensory/eyes/collectors/github_pulse.js
+client/adaptive/sensory/eyes/collectors/iex_fundamentals.js
+client/adaptive/sensory/eyes/collectors/ipstack_geo.js
+client/adaptive/sensory/eyes/collectors/marketstack_quote.js
+client/adaptive/sensory/eyes/collectors/sentiment_proxy.js
+client/adaptive/sensory/eyes/collectors/spine_healthcheck.js
+client/adaptive/sensory/eyes/collectors/virustotal_threat.js
 
 # Local transient runtime artifacts (non-canonical)
 sleep
 state/autonomy/*.lock
 state/sensory/*.backup.*.jsonl
 
-# Persona private data (keep orchestration assets, ignore personal persona profiles/memory/logs)
+# Persona private data (keep orchestration assets, ignore personal persona profiles/client/memory/logs)
 personas/*/
 !personas/organization/
 !personas/organization/**
@@ -206,21 +206,21 @@ personas/*/
 !personas/trigger_prompt.md
 
 # Churn normalization (runtime-generated, high-frequency outputs)
-state/adaptive/workflows/client_communication/*.json
-state/adaptive/workflows/client_communication/*.jsonl
-state/adaptive/workflows/high_value_play/*.json
-state/adaptive/workflows/high_value_play/*.jsonl
-state/adaptive/workflows/rate_limit_intelligence/*.json
-state/adaptive/workflows/rate_limit_intelligence/*.jsonl
-state/adaptive/workflows/executor/history.jsonl
-state/adaptive/workflows/executor/latest*.json
-state/adaptive/workflows/executor/rollout_state.json
-state/adaptive/workflows/executor/runs/*.json
-state/adaptive/workflows/orchestron/20*.json
-state/adaptive/workflows/orchestron/history.jsonl
-state/adaptive/workflows/orchestron/latest.json
-state/adaptive/workflows/orchestron/birth_events.jsonl
-state/adaptive/workflows/orchestron/adversarial/**/*.json
+state/client/adaptive/workflows/client_communication/*.json
+state/client/adaptive/workflows/client_communication/*.jsonl
+state/client/adaptive/workflows/high_value_play/*.json
+state/client/adaptive/workflows/high_value_play/*.jsonl
+state/client/adaptive/workflows/rate_limit_intelligence/*.json
+state/client/adaptive/workflows/rate_limit_intelligence/*.jsonl
+state/client/adaptive/workflows/executor/history.jsonl
+state/client/adaptive/workflows/executor/latest*.json
+state/client/adaptive/workflows/executor/rollout_state.json
+state/client/adaptive/workflows/executor/runs/*.json
+state/client/adaptive/workflows/orchestron/20*.json
+state/client/adaptive/workflows/orchestron/history.jsonl
+state/client/adaptive/workflows/orchestron/latest.json
+state/client/adaptive/workflows/orchestron/birth_events.jsonl
+state/client/adaptive/workflows/orchestron/adversarial/**/*.json
 state/autonomy/weaver/**
 state/autonomy/continuum/events/*.jsonl
 state/autonomy/continuum/history.jsonl
@@ -248,6 +248,6 @@ state/security/black_box_ledger/attestations/*.jsonl
 #
 
 # Local personal project mirrors / creds (instance-specific)
-config/rohan_github_credentials.md
+client/config/rohan_github_credentials.md
 rohan-kapoor-projects/
 rohankapoor-projects/

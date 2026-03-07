@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: "22"
       - name: integrity_kernel_check
-        run: node systems/security/integrity_kernel.js run
+        run: node client/systems/security/integrity_kernel.js run
 
   contract_check:
     runs-on: ubuntu-latest
@@ -47,7 +47,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: contract_check
-        run: node systems/spine/contract_check.js
+        run: node client/systems/spine/contract_check.js
 
   foundation_contract_gate:
     runs-on: ubuntu-latest
@@ -63,7 +63,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: foundation_contract_gate
-        run: node systems/ops/foundation_contract_gate.js run --strict=1
+        run: node client/systems/ops/foundation_contract_gate.js run --strict=1
 
   scale_envelope_baseline:
     runs-on: ubuntu-latest
@@ -79,7 +79,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: scale_envelope_baseline
-        run: node systems/ops/scale_envelope_baseline.js run --strict=1
+        run: node client/systems/ops/scale_envelope_baseline.js run --strict=1
 
   js_holdout_audit:
     runs-on: ubuntu-latest
@@ -95,7 +95,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: js_holdout_audit
-        run: node systems/ops/js_holdout_audit.js run --strict=1
+        run: node client/systems/ops/js_holdout_audit.js run --strict=1
 
   schema_contract_check:
     runs-on: ubuntu-latest
@@ -111,7 +111,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: schema_contract_check
-        run: node systems/security/schema_contract_check.js run
+        run: node client/systems/security/schema_contract_check.js run
 
   adaptive_layer_guard_strict:
     runs-on: ubuntu-latest
@@ -127,7 +127,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: adaptive_layer_guard_strict
-        run: node systems/sensory/adaptive_layer_guard.js run --strict
+        run: node client/systems/sensory/adaptive_layer_guard.js run --strict
 
   docs_coverage_gate:
     runs-on: ubuntu-latest
@@ -143,7 +143,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: docs_coverage_gate
-        run: node systems/ops/docs_coverage_gate.js run --strict=1
+        run: node client/systems/ops/docs_coverage_gate.js run --strict=1
 
   deployment_packaging_gate:
     runs-on: ubuntu-latest
@@ -159,7 +159,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: deployment_packaging_gate
-        run: node systems/ops/deployment_packaging.js run --profile=prod --strict=1
+        run: node client/systems/ops/deployment_packaging.js run --profile=prod --strict=1
 
   compliance_posture_gate:
     runs-on: ubuntu-latest
@@ -175,7 +175,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: compliance_posture_gate
-        run: node systems/ops/compliance_posture.js run --profile=prod --strict=1
+        run: node client/systems/ops/compliance_posture.js run --profile=prod --strict=1
 
   dr_gameday_gate:
     runs-on: ubuntu-latest
@@ -191,7 +191,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: dr_gameday_gate
-        run: node systems/ops/dr_gameday_gate.js run --strict=1
+        run: node client/systems/ops/dr_gameday_gate.js run --strict=1
 
   security_threat_pack:
     runs-on: ubuntu-latest
@@ -207,7 +207,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: security_threat_pack
-        run: node memory/tools/tests/security_threat_pack.test.js
+        run: node client/memory/tools/tests/security_threat_pack.test.js
 
   enterprise_hardening_gate:
     runs-on: ubuntu-latest
@@ -218,7 +218,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
       - name: enterprise_hardening_gate
-        run: cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- enterprise-hardening run --strict=1
+        run: cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- enterprise-hardening run --strict=1
 
   ci_suite:
     runs-on: ubuntu-latest

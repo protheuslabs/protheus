@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "checklist_path": "client/docs/PUBLIC_REPO_PRESENTATION_CHECKLIST.md",
+  "gitattributes_path": ".gitattributes",
+  "root_contract_script": "client/systems/ops/root_surface_contract.js",
+  "docs_contract_script": "client/systems/ops/docs_surface_contract.js",
+  "readme_path": "README.md",
+  "readme_required_links": [
+    "client/docs/README.md",
+    "client/docs/PUBLIC_OPERATOR_PROFILE.md",
+    "client/docs/ONBOARDING_PLAYBOOK.md"
+  ],
+  "forbidden_history_rewrite_tokens": ["commit --amend", "push --force", "reset --hard"],
+  "paths": {
+    "latest_path": "state/ops/public_repo_presentation_pass/latest.json",
+    "history_path": "state/ops/public_repo_presentation_pass/history.jsonl",
+    "verification_bundle_path": "state/ops/public_repo_presentation_pass/verification_bundle.json"
+  }
+}

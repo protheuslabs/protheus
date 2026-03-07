@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "ttl_hours": 24,
+  "critical_paths": [
+    "client/config/security_integrity_policy.json",
+    "client/config/agent_routing_rules.json",
+    "client/config/strategies/default.json",
+    "client/systems/security/guard.js",
+    "client/systems/security/integrity_kernel.js",
+    "client/systems/security/policy_rootd.js",
+    "client/systems/security/capability_lease.js",
+    "client/systems/spine/spine.js",
+    "client/systems/autonomy/autonomy_controller.js"
+  ]
+}

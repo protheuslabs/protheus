@@ -14,7 +14,7 @@ Before doing anything else:
 2. Read `USER.md` — this is who you're helping
 3. **Read `MEMORY.md`** — traversal protocol (new node-based system)
 4. **Read `MEMORY_INDEX.md`** — find relevant node_ids if needed
-5. **Read only specific node sections** from `memory/YYYY-MM-DD.md`
+5. **Read only specific node sections** from `client/memory/YYYY-MM-DD.md`
 6. **If in MAIN SESSION** (direct chat with your human): Also load any specific nodes referenced
 
 **NEVER read full daily files unless explicitly told — always use index first.**
@@ -28,7 +28,7 @@ You wake up fresh each session. These files are your continuity:
 - **Root navigator:** `MEMORY.md` — traversal protocol, not full content
 - **Index:** `MEMORY_INDEX.md` — tabular node lookup by tag/keyword
 - **Tag index:** `TAGS_INDEX.md` — inverted tag → node_id mapping
-- **Daily nodes:** `memory/YYYY-MM-DD.md` — specific node sections only
+- **Daily nodes:** `client/memory/YYYY-MM-DD.md` — specific node sections only
 
 ### How It Works
 
@@ -57,7 +57,7 @@ Capture what matters: decisions, context, things to remember. Skip secrets unles
 
 - **Memory is limited** — if you want to remember something, WRITE IT TO A FILE
 - "Mental notes" don't survive session restarts. Files do.
-- When someone says "remember this" → update `memory/YYYY-MM-DD.md` or relevant file
+- When someone says "remember this" → update `client/memory/YYYY-MM-DD.md` or relevant file
 - When you learn a lesson → update AGENTS.md, TOOLS.md, or the relevant skill
 - When you make a mistake → document it so future-you doesn't repeat it
 - **Text > Brain** 📝
@@ -177,7 +177,7 @@ You are free to edit `HEARTBEAT.md` with a short checklist or reminders. Keep it
 - **Mentions** - Twitter/social notifications?
 - **Weather** - Relevant if your human might go out?
 
-**Track your checks** in `memory/heartbeat-state.json`:
+**Track your checks** in `client/memory/heartbeat-state.json`:
 
 ```json
 {
@@ -215,7 +215,7 @@ You are free to edit `HEARTBEAT.md` with a short checklist or reminders. Keep it
 
 Periodically (every few days), use a heartbeat to:
 
-1. Read through recent `memory/YYYY-MM-DD.md` files
+1. Read through recent `client/memory/YYYY-MM-DD.md` files
 2. Identify significant events, lessons, or insights worth keeping long-term
 3. Update `MEMORY.md` with distilled learnings
 4. Remove outdated info from MEMORY.md that's no longer relevant
@@ -239,7 +239,7 @@ This is a starting point. Add your own conventions, style, and rules as you figu
 3. **MEMORY.md** — root navigator (read protocol, not full content)
 4. **MEMORY_INDEX.md** — find node_id by tag/keyword
 5. **TAGS_INDEX.md** — optional tag-based inverted lookup
-6. **memory/YYYY-MM-DD.md** — read ONLY the specific node section
+6. **client/memory/YYYY-MM-DD.md** — read ONLY the specific node section
 
 ### Rules To Follow Forever
 
@@ -290,9 +290,9 @@ When Jay says **"watch [something]"** in an info-related context, this is a dire
 
 **Implementation:**
 1. Determine the source type (RSS, API, scrape, GitHub, etc.)
-2. Create collector in `adaptive/sensory/eyes/collectors/` (never in `habits/scripts/eyes_collectors/`)
-3. Keep `systems/` generic only. Do not add source-specific collector code outside adaptive layer.
+2. Create collector in `client/adaptive/sensory/eyes/collectors/` (never in `client/habits/scripts/eyes_collectors/`)
+3. Keep `client/systems/` generic only. Do not add source-specific collector code outside adaptive layer.
 4. Add the eye through controller only:
-   `node systems/sensory/eyes_intake.js create --name="..." --parser=<parser_type> --directive=<active_directive_id> [--domains=d1,d2]`
-5. Test with `node habits/scripts/external_eyes.js run --eye=<id>`
+   `node client/systems/sensory/eyes_intake.js create --name="..." --parser=<parser_type> --directive=<active_directive_id> [--domains=d1,d2]`
+5. Test with `node client/habits/scripts/external_eyes.js run --eye=<id>`
 6. Report eye creation + test results

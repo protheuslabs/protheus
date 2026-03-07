@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "strict_default": false,
+  "target_hold_days": 7,
+  "enforce_hold_streak_strict": false,
+  "cold_start_probe": {
+    "command": [
+      "node",
+      "client/lib/conduit_full_lifecycle_probe.js"
+    ],
+    "samples": 5,
+    "max_ms": 500,
+    "warmup_runs": 1,
+    "runtime_mode": "source",
+    "require_full_dist": false
+  },
+  "idle_rss_probe": {
+    "samples": 3,
+    "max_mb": 120,
+    "require_modules": []
+  },
+  "install_artifact_probe": {
+    "max_mb": 60,
+    "paths": [
+      "dist"
+    ]
+  },
+  "state_path": "state/ops/runtime_efficiency_floor.json",
+  "history_path": "state/ops/runtime_efficiency_floor_history.jsonl"
+}

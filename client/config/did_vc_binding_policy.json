@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "risk": {
+    "default_tier": 2,
+    "require_explicit_approval_tier": 3
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "identity.did_vc"
+  },
+  "paths": {
+    "memory_dir": "client/memory/identity/did",
+    "adaptive_index_path": "client/adaptive/identity/did/index.json",
+    "events_path": "state/identity/did_vc/events.jsonl",
+    "latest_path": "state/identity/did_vc/latest.json",
+    "receipts_path": "state/identity/did_vc/receipts.jsonl"
+  }
+}

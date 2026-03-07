@@ -20,6 +20,6 @@ ENV TZ=UTC
 USER protheus
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD node systems/autonomy/health_status.js >/dev/null || exit 1
+  CMD node client/systems/autonomy/health_status.js >/dev/null || exit 1
 
-CMD ["node", "systems/spine/spine.js", "daily"]
+CMD ["node", "client/systems/spine/spine.js", "daily"]

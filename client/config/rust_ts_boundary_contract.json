@@ -1,0 +1,49 @@
+{
+  "schema_id": "rust_ts_boundary_contract",
+  "schema_version": "1.0",
+  "ts": "2026-03-03T02:31:16.028Z",
+  "versioning": {
+    "contract_semver": "1.0.0",
+    "compatibility_policy": "backward_compatible_minor_only"
+  },
+  "boundaries": [
+    {
+      "id": "memory_retrieval_napi",
+      "rust_surface": "core/layer0/memory",
+      "ts_surface": "client/systems/memory/rust_napi_binding.ts",
+      "fallback": "js_memory_backend"
+    },
+    {
+      "id": "control_plane_cutover",
+      "rust_surface": "client/systems/rust/control_plane_component_shim.js",
+      "ts_surface": "client/systems/ops/rust_control_plane_cutover.ts",
+      "fallback": "emergency_profile"
+    },
+    {
+      "id": "wasi_execution_lane",
+      "rust_surface": "client/systems/ops/wasi2_lane_adapter.ts",
+      "ts_surface": "client/systems/ops/wasi2_execution_completeness_gate.ts",
+      "fallback": "ts_adapter_lane"
+    },
+    {
+      "id": "core_binding_plane",
+      "rust_surface": "packages/protheus-core",
+      "ts_surface": "client/systems/ops/protheus_core_rust_binding_plane.ts",
+      "fallback": "ts_core_wrapper"
+    },
+    {
+      "id": "rust_spine_microkernel",
+      "rust_surface": "client/systems/rust",
+      "ts_surface": "client/systems/ops/rust_spine_microkernel.ts",
+      "fallback": "legacy_control_plane"
+    }
+  ],
+  "drift_gate": {
+    "schema_change_requires": [
+      "compatibility_tests",
+      "receipt",
+      "version_bump"
+    ],
+    "rollback_policy": "previous_contract_version_reactivation"
+  }
+}

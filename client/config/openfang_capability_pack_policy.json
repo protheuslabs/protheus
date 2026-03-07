@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "fuel": {
+    "default_budget": 100,
+    "min_remaining_for_success": 1
+  },
+  "taint": {
+    "sensitive_labels": ["secret", "pii", "credential"],
+    "blocked_sinks": ["external_webhook", "public_chat", "email_raw"]
+  },
+  "egress": {
+    "allow_domains": ["api.openai.com", "api.anthropic.com", "api.x.ai", "api.groq.com", "example.com"],
+    "deny_hosts": ["localhost", "127.0.0.1", "169.254.169.254", "metadata.google.internal"],
+    "deny_private_ip": true
+  },
+  "circuit_breaker": {
+    "window_ms": 60000,
+    "max_calls_per_window": 8,
+    "cooldown_ms": 90000
+  },
+  "paths": {
+    "latest_path": "state/ops/openfang_capability_pack/latest.json",
+    "receipts_path": "state/ops/openfang_capability_pack/receipts.jsonl",
+    "state_path": "state/ops/openfang_capability_pack/state.json",
+    "manifests_index_path": "state/ops/openfang_capability_pack/manifests.json",
+    "migration_output_path": "state/ops/openfang_capability_pack/migrations.jsonl",
+    "benchmark_path": "state/ops/public_benchmark_pack/openfang_capability_pack.json",
+    "runtime_efficiency_path": "state/ops/runtime_efficiency_floor/latest.json",
+    "adapters_path": "client/config/actuation_adapters.json"
+  }
+}

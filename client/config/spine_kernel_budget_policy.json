@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "max_spine_loc": 600,
+  "forbidden_patterns": [
+    "spawnSync(",
+    "execSync(",
+    "writeFileSync("
+  ],
+  "spine_entrypoints": [
+    "client/systems/spine/spine.ts"
+  ],
+  "paths": {
+    "memory_pref_dir": "client/memory/spine/preferences",
+    "adaptive_index_path": "client/adaptive/spine/index.json",
+    "latest_path": "state/ops/spine_kernel_budget_check/latest.json",
+    "receipts_path": "state/ops/spine_kernel_budget_check/receipts.jsonl"
+  }
+}

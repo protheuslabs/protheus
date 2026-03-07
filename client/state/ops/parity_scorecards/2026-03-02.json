@@ -1,0 +1,208 @@
+{
+  "ok": true,
+  "type": "narrow_agent_parity_harness",
+  "ts": "2026-03-07T04:39:19.101Z",
+  "date": "2026-03-07",
+  "week": {
+    "start": "2026-03-02",
+    "end": "2026-03-08",
+    "id": "2026-03-02"
+  },
+  "policy_version": "1.0",
+  "policy_path": "config/narrow_agent_parity_harness_policy.json",
+  "baseline_profile": "narrow-agent-v1",
+  "strict": true,
+  "window_days": 7,
+  "parity_pass": false,
+  "dimensions": {
+    "reliability": 0,
+    "latency_ms": null,
+    "cost_pressure": 0.8
+  },
+  "metric_catalog": {
+    "execution_success_rate": 0,
+    "queue_drain_rate": 0,
+    "runtime_pass_ratio": 0,
+    "closure_pass_ratio": 0,
+    "composite_reliability": 0,
+    "execution_latency_ms": null,
+    "boot_latency_ms": null,
+    "blended_latency_ms": null,
+    "budget_used_ratio_avg": 1,
+    "budget_used_ratio_max": 1,
+    "budget_autopause_deny_ratio": 0,
+    "cost_pressure": 0.8
+  },
+  "source_summary": {
+    "execution_reliability": {
+      "live_runs": 0,
+      "sufficient_data": false,
+      "pass": false
+    },
+    "runtime_efficiency": {
+      "pass": false
+    },
+    "workflow_closure": {
+      "pass_ratio": 0,
+      "rows_considered": 0,
+      "latest_day_pass": false
+    },
+    "budget_window": {
+      "samples": 0,
+      "avg_used_ratio": 1,
+      "max_used_ratio": 1
+    },
+    "budget_events": {
+      "total_decisions": 0,
+      "deny_ratio": 0,
+      "autopause_deny_ratio": 0
+    }
+  },
+  "scenarios": [
+    {
+      "id": "governed_execution",
+      "name": "Governed execution lane",
+      "metrics": {
+        "reliability": {
+          "key": "execution_success_rate",
+          "value": 0
+        },
+        "latency_ms": {
+          "key": "execution_latency_ms",
+          "value": 0
+        },
+        "cost_pressure": {
+          "key": "budget_used_ratio_avg",
+          "value": 1
+        }
+      },
+      "baselines": {
+        "reliability_min": 0.97,
+        "latency_ms_max": 120000,
+        "cost_pressure_max": 0.95
+      },
+      "weights": {
+        "reliability": 0.5,
+        "latency": 0.3,
+        "cost": 0.2
+      },
+      "checks": {
+        "reliability": false,
+        "latency_ms": false,
+        "cost_pressure": false
+      },
+      "scores": {
+        "reliability": 0,
+        "latency": 0,
+        "cost": 0.95,
+        "weighted": 0.19
+      },
+      "pass": false,
+      "notes": []
+    },
+    {
+      "id": "startup_responsiveness",
+      "name": "Startup responsiveness lane",
+      "metrics": {
+        "reliability": {
+          "key": "runtime_pass_ratio",
+          "value": 0
+        },
+        "latency_ms": {
+          "key": "boot_latency_ms",
+          "value": 0
+        },
+        "cost_pressure": {
+          "key": "budget_used_ratio_avg",
+          "value": 1
+        }
+      },
+      "baselines": {
+        "reliability_min": 0.95,
+        "latency_ms_max": 800,
+        "cost_pressure_max": 0.98
+      },
+      "weights": {
+        "reliability": 0.3,
+        "latency": 0.5,
+        "cost": 0.2
+      },
+      "checks": {
+        "reliability": false,
+        "latency_ms": false,
+        "cost_pressure": false
+      },
+      "scores": {
+        "reliability": 0,
+        "latency": 0,
+        "cost": 0.98,
+        "weighted": 0.196
+      },
+      "pass": false,
+      "notes": []
+    },
+    {
+      "id": "sustained_autonomy",
+      "name": "Sustained autonomy lane",
+      "metrics": {
+        "reliability": {
+          "key": "closure_pass_ratio",
+          "value": 0
+        },
+        "latency_ms": {
+          "key": "blended_latency_ms",
+          "value": 0
+        },
+        "cost_pressure": {
+          "key": "budget_autopause_deny_ratio",
+          "value": 0
+        }
+      },
+      "baselines": {
+        "reliability_min": 0.9,
+        "latency_ms_max": 60000,
+        "cost_pressure_max": 0.35
+      },
+      "weights": {
+        "reliability": 0.45,
+        "latency": 0.2,
+        "cost": 0.35
+      },
+      "checks": {
+        "reliability": false,
+        "latency_ms": false,
+        "cost_pressure": false
+      },
+      "scores": {
+        "reliability": 0,
+        "latency": 0,
+        "cost": 0,
+        "weighted": 0
+      },
+      "pass": false,
+      "notes": []
+    }
+  ],
+  "aggregate": {
+    "parity_pass": false,
+    "scenarios_total": 3,
+    "scenarios_passed": 0,
+    "pass_ratio": 0,
+    "weighted_score_avg": 0.1287,
+    "gates": {
+      "min_scenarios_passed": 2,
+      "min_pass_ratio": 0.66,
+      "min_weighted_score": 0.85
+    }
+  },
+  "source_paths": {
+    "execution_reliability_slo_path": "state/ops/execution_reliability_slo.json",
+    "runtime_efficiency_floor_path": "state/ops/runtime_efficiency_floor.json",
+    "workflow_execution_closure_path": "state/ops/workflow_execution_closure.json",
+    "daily_budget_dir": "state/autonomy/daily_budget",
+    "budget_events_path": "state/autonomy/budget_events.jsonl"
+  },
+  "state_path": "state/ops/narrow_agent_parity_harness.json",
+  "history_path": "state/ops/narrow_agent_parity_harness_history.jsonl",
+  "weekly_receipt_path": "state/ops/parity_scorecards/2026-03-02.json"
+}

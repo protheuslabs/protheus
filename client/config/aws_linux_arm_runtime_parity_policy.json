@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "allowed_arches": ["arm64", "aarch64"],
+  "allowed_distros": ["al2023", "amazonlinux2023", "bottlerocket"],
+  "required_capabilities": {
+    "graviton": true,
+    "neuron": true,
+    "bottlerocket_profile": true
+  },
+  "fallback_runtime": "cross_platform_runtime",
+  "rollback_command": "node client/systems/runtime/aws_linux_arm_runtime_parity.js run --force-fallback=1",
+  "paths": {
+    "latest_path": "state/runtime/aws_linux_arm_runtime_parity/latest.json",
+    "history_path": "state/runtime/aws_linux_arm_runtime_parity/history.jsonl"
+  }
+}

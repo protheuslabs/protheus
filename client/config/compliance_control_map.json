@@ -1,0 +1,32 @@
+{
+  "schema_id": "compliance_control_map",
+  "schema_version": "1.0",
+  "controls": [
+    {
+      "id": "change_control",
+      "max_age_days": 3650,
+      "evidence_paths": [
+        "client/config/sdlc_change_control_policy.json",
+        ".github/workflows/sdlc-change-control.yml",
+        "state/ops/sdlc_change_control/latest.json"
+      ]
+    },
+    {
+      "id": "supply_chain",
+      "max_age_days": 3650,
+      "evidence_paths": [
+        "client/config/supply_chain_provenance_v2_policy.json",
+        ".github/workflows/release-security-artifacts.yml",
+        "state/ops/supply_chain_provenance_v2/latest.json"
+      ]
+    },
+    {
+      "id": "reliability",
+      "max_age_days": 3650,
+      "evidence_paths": [
+        "client/config/f100_reliability_certification_policy.json",
+        "state/ops/f100_reliability_certification/latest.json"
+      ]
+    }
+  ]
+}

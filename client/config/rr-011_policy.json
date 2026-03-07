@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "risk": {
+    "default_tier": 2,
+    "require_explicit_approval_tier": 3
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "ops.resurrection"
+  },
+  "paths": {
+    "memory_dir": "client/memory/ops/rr-011",
+    "adaptive_index_path": "client/adaptive/ops/rr-011/index.json",
+    "events_path": "state/ops/rr-011/events.jsonl",
+    "latest_path": "state/ops/rr-011/latest.json",
+    "receipts_path": "state/ops/rr-011/receipts.jsonl"
+  }
+}

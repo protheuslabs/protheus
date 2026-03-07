@@ -1,0 +1,347 @@
+{
+  "version": 1,
+  "routing": {
+    "default_slot": "master",
+    "default_anchor_model": "ollama/kimi-k2.5:cloud",
+    "spawn_model_allowlist": [
+      "ollama/kimi-k2.5:cloud",
+      "ollama/qwen3:4b",
+      "ollama/gemma3:4b",
+      "ollama/smallthinker",
+      "gpt-oss:120b-cloud",
+      "qwen3-coder:480b-cloud",
+      "qwen3-v1:235b-cloud",
+      "minmax-m2-cloud",
+      "glm-4.6-cloud"
+    ],
+    "model_profiles": {
+      "ollama/smallthinker": {
+        "tiers": [1],
+        "roles": ["chat", "planning", "general", "reflex"],
+        "class": "cheap_local"
+      },
+      "ollama/qwen3:4b": {
+        "tiers": [1, 2],
+        "roles": ["coding", "tools", "logic", "general", "reflex"],
+        "class": "cheap_local"
+      },
+      "ollama/gemma3:4b": {
+        "tiers": [1, 2],
+        "roles": ["chat", "planning", "general", "reflex"],
+        "class": "cheap_local"
+      },
+      "ollama/kimi-k2.5:cloud": {
+        "tiers": [2, 3],
+        "roles": ["planning", "logic", "chat", "general"],
+        "class": "cloud_anchor"
+      },
+      "qwen3-coder:480b-cloud": {
+        "tiers": [2, 3],
+        "roles": ["coding", "tools", "logic"],
+        "class": "cloud_specialist"
+      },
+      "gpt-oss:120b-cloud": {
+        "tiers": [2, 3],
+        "roles": ["planning", "logic", "coding", "general"],
+        "class": "cloud_specialist"
+      }
+    },
+    "local_probe_policy": {
+      "default": {
+        "timeout_ms": 15000,
+        "max_latency_ms": 9000,
+        "accept_ok_token": true,
+        "timeout_backoff_step_ms": 2000,
+        "timeout_backoff_max_ms": 30000,
+        "suppression_timeout_streak": 3,
+        "suppression_minutes": 45
+      },
+      "models": {
+        "ollama/qwen3:4b": {
+          "timeout_ms": 16000,
+          "max_latency_ms": 15000
+        },
+        "ollama/smallthinker": {
+          "timeout_ms": 18000,
+          "max_latency_ms": 14000
+        },
+        "ollama/gemma3:4b": {
+          "timeout_ms": 20000,
+          "max_latency_ms": 18000
+        }
+      }
+    },
+    "local_hardware_planner": {
+      "enabled": true,
+      "activate_recommended_locals": true,
+      "class_thresholds": [
+        { "id": "tiny", "max_ram_gb": 8, "max_cpu_threads": 4 },
+        { "id": "small", "max_ram_gb": 16, "max_cpu_threads": 8 },
+        { "id": "medium", "max_ram_gb": 32, "max_cpu_threads": 16 },
+        { "id": "large", "max_ram_gb": 64, "max_cpu_threads": 32 },
+        { "id": "xlarge" }
+      ],
+      "local_model_requirements": {
+        "ollama/smallthinker": {
+          "min_hardware_class": "tiny",
+          "min_ram_gb": 4,
+          "min_cpu_threads": 2
+        },
+        "ollama/qwen3:4b": {
+          "min_hardware_class": "small",
+          "min_ram_gb": 8,
+          "min_cpu_threads": 4
+        },
+        "ollama/gemma3:4b": {
+          "min_hardware_class": "small",
+          "min_ram_gb": 8,
+          "min_cpu_threads": 4
+        }
+      }
+    },
+    "eyes_signal_policy": {
+      "enabled": true,
+      "registry_path": "state/sensory/eyes/registry.json",
+      "ttl_ms": 120000,
+      "min_non_stub_eyes": 2,
+      "degraded_error_rate": 0.45,
+      "degraded_fail_ratio": 0.5,
+      "local_bonus_degraded": 4,
+      "cloud_penalty_degraded": 3,
+      "local_bonus_degraded_ratio_weight": 5,
+      "cloud_penalty_degraded_ratio_weight": 4,
+      "high_signal_score_ema": 72,
+      "high_signal_ratio_min": 0.5,
+      "cloud_anchor_bonus_high_signal": 1,
+      "cloud_anchor_bonus_high_signal_ratio_weight": 3
+    },
+    "prompt_cache_policy": {
+      "enabled": true,
+      "index_path": "state/routing/prompt_cache_index.json",
+      "window_minutes": 180,
+      "min_hits": 2,
+      "max_entries": 900,
+      "max_timestamps_per_key": 32,
+      "cache_friendly_bonus": 2,
+      "cloud_anchor_extra_bonus": 1,
+      "non_friendly_cloud_penalty": 0,
+      "eligible_classes": ["cloud_anchor", "cloud_specialist"],
+      "lane_overrides": {
+        "reflex": {
+          "window_minutes": 90,
+          "min_hits": 1,
+          "cache_friendly_bonus": 1,
+          "cloud_anchor_extra_bonus": 0,
+          "non_friendly_cloud_penalty": 1
+        },
+        "autonomy": {
+          "window_minutes": 180,
+          "min_hits": 2,
+          "cache_friendly_bonus": 2,
+          "cloud_anchor_extra_bonus": 1,
+          "non_friendly_cloud_penalty": 0
+        },
+        "dream": {
+          "window_minutes": 720,
+          "min_hits": 3,
+          "cache_friendly_bonus": 3,
+          "cloud_anchor_extra_bonus": 2,
+          "non_friendly_cloud_penalty": 0
+        }
+      }
+    },
+    "communication_fast_path": {
+      "enabled": true,
+      "match_mode": "heuristic",
+      "max_chars": 48,
+      "max_words": 8,
+      "max_newlines": 0,
+      "disallow_regexes": [
+        "https?:\\/\\/",
+        "(^|\\s)--?[a-z0-9][a-z0-9_-]*\\b",
+        "\\b(node|npm|pnpm|yarn|git|curl|python|bash|zsh|ollama)\\b",
+        "[`{}\\[\\]<>$;=]",
+        "(^|\\s)(~\\/|\\.\\.?\\/|\\/users\\/|[a-z]:\\\\)"
+      ],
+      "slot": "grunt",
+      "prefer_model": "ollama/smallthinker",
+      "fallback_slot": "fallback",
+      "skip_outcome_scan": true
+    },
+    "route_classes": {
+      "reflex": {
+        "force_risk": "low",
+        "force_complexity": "low",
+        "force_role": "reflex",
+        "prefer_slot": "grunt",
+        "prefer_model": "ollama/smallthinker",
+        "fallback_slot": "fallback",
+        "disable_fast_path": true,
+        "max_tokens_est": 420
+      }
+    },
+    "router_budget_policy": {
+      "enabled": true,
+      "state_dir": "state/autonomy/daily_budget",
+      "soft_ratio": 0.75,
+      "hard_ratio": 0.92,
+      "cloud_penalty_soft": 4,
+      "cloud_penalty_hard": 10,
+      "cheap_local_bonus_soft": 3,
+      "cheap_local_bonus_hard": 7
+    },
+    "model_variant_policy": {
+      "enabled": true,
+      "min_tier": 3,
+      "roles": ["logic", "planning"],
+      "require_outcome_score_gain": true,
+      "min_outcome_score_delta": 2,
+      "max_negative_score_delta": -8,
+      "auto_return_to_base": true,
+      "variants": {
+        "ollama/kimi-k2.5:cloud": "ollama/kimi-k2.5:thinking"
+      }
+    },
+    "risk_buckets": {
+      "low": {
+        "description": "Pure reasoning, formatting, summaries, non-destructive reads, no trust changes, no cron changes, no writes outside allowlist."
+      },
+      "medium": {
+        "description": "Non-critical code edits, routine creation under client/habits/routines, doc edits, safe refactors, internal scripts that do not alter trust registries."
+      },
+      "high": {
+        "description": "Anything touching trust registries, governance files, routing config, cron scheduler ops, permission gates, execution wrappers, or system-wide defaults."
+      }
+    },
+    "complexity_buckets": {
+      "low": {
+        "signals": ["single-file edit", "small patch", "simple parsing", "minor config change"]
+      },
+      "medium": {
+        "signals": ["multi-file edits", "new script/module", "non-trivial logic", "new schema/contract"]
+      },
+      "high": {
+        "signals": ["architecture changes", "new router", "security-sensitive refactors", "migration logic", "cross-module invariants"]
+      }
+    },
+    "intent_to_risk_overrides": [
+      {
+        "if_any": ["trusted_skills.json", "trusted_habits.json", "trust_add", "hash pin", "governance", "doctor.js", "run_habit.js", "agent_slots.json", "agent_routing_rules.json"],
+        "set_risk": "high"
+      },
+      {
+        "if_any": ["openclaw cron", "cron add", "cron remove", "cron swap", "scheduler"],
+        "set_risk": "high"
+      },
+      {
+        "if_any": ["client/habits/routines", "propose_habit", "habit_gc", "habit_list"],
+        "set_risk": "medium"
+      }
+    ],
+    "slot_selection": [
+      {
+        "when": { "risk": "high", "complexity": "high" },
+        "use_slot": "master",
+        "prefer_model": "deepseek-v3:1:671b-cloud",
+        "fallback_slot": "master"
+      },
+      {
+        "when": { "risk": "high", "complexity": ["low", "medium"] },
+        "use_slot": "master",
+        "prefer_model": "kimi-k2.5:cloud",
+        "fallback_slot": "master"
+      },
+      {
+        "when": { "risk": "medium", "complexity": "high" },
+        "use_slot": "agent",
+        "prefer_model": "qwen3-coder:480b-cloud",
+        "fallback_slot": "master"
+      },
+      {
+        "when": { "risk": "medium", "complexity": ["low", "medium"] },
+        "use_slot": "coder",
+        "prefer_model": "qwen3-coder:480b-cloud",
+        "fallback_slot": "agent"
+      },
+      {
+        "when": { "risk": "low", "complexity": ["low", "medium"] },
+        "use_slot": "grunt",
+        "prefer_model": "ollama/smallthinker",
+        "fallback_slot": "fallback"
+      },
+      {
+        "when": { "risk": "low", "complexity": "high" },
+        "use_slot": "agent",
+        "prefer_model": "minmax-m2-cloud",
+        "fallback_slot": "master"
+      }
+    ],
+    "handoff_triggers": {
+      "force_handoff_if_any": [
+        { "reason": "model_missing_permissions", "signal": "PERMISSION_DENIED" },
+        { "reason": "token_caps_hit", "signal": "CAP_EXCEEDED" },
+        { "reason": "tool_required_unavailable", "signal": "MISSING_TOOL" },
+        { "reason": "repeated_failures", "signal": "CONSECUTIVE_ERRORS>=2" }
+      ],
+      "tier_3_max_turns": 3
+    },
+    "handoff_packet": {
+      "directory": "client/memory/handoff",
+      "filename_format": "YYYY-MM-DD__{from_slot}_to_{to_slot}__{topic_slug}.md",
+      "required_fields": [
+        "ts",
+        "from_slot",
+        "to_slot",
+        "models_tried",
+        "task_summary",
+        "current_state",
+        "constraints",
+        "next_actions",
+        "risks",
+        "files_touched",
+        "commands_run",
+        "rollback_plan"
+      ],
+      "template": [
+        "TS: {ts}",
+        "FROM: {from_slot} ({from_model})",
+        "TO: {to_slot} ({to_model})",
+        "MODELS_TRIED: {models_tried}",
+        "",
+        "TASK_SUMMARY:",
+        "{task_summary}",
+        "",
+        "CURRENT_STATE:",
+        "{current_state}",
+        "",
+        "CONSTRAINTS:",
+        "{constraints}",
+        "",
+        "FILES_TOUCHED:",
+        "{files_touched}",
+        "",
+        "COMMANDS_RUN:",
+        "{commands_run}",
+        "",
+        "RISKS:",
+        "{risks}",
+        "",
+        "NEXT_ACTIONS:",
+        "{next_actions}",
+        "",
+        "ROLLBACK_PLAN:",
+        "{rollback_plan}"
+      ]
+    },
+    "multi_model_guardrails": {
+      "enabled": true,
+      "require_second_opinion_for_risk": "high",
+      "second_opinion_slot": "master",
+      "second_opinion_prefer_model": "gpt-oss:120b",
+      "what_counts_as_second_opinion": [
+        "A brief written approval that the planned changes obey Governance v1.0 and do not widen permissions.",
+        "If disagreement: escalate to deepseek-v3:1:671b-cloud for tie-break."
+      ]
+    }
+  }
+}

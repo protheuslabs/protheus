@@ -1,0 +1,115 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "min_profile_confidence": 0.6,
+  "default_adapter_kind": "http_request",
+  "allowed_adapter_kinds": [],
+  "profile_roots": [
+    "state/assimilation/capability_profiles/profiles",
+    "client/config/universal_execution_profiles"
+  ],
+  "source_type_adapter_map": {
+    "api": "http_request",
+    "web_ui": "browser_task",
+    "filesystem": "filesystem_task",
+    "shell": "shell_task",
+    "payment": "payment_task",
+    "comms_email": "email_message"
+  },
+  "intent_adapter_map": {
+    "send_email": "email_message",
+    "send_slack": "slack_message",
+    "send_discord": "discord_message",
+    "create_calendar_event": "calendar_event",
+    "run_shell": "shell_task",
+    "write_file": "filesystem_task",
+    "pay_invoice": "payment_task"
+  },
+  "sub_executor_synthesis": {
+    "enabled": true,
+    "script_path": "client/systems/actuation/sub_executor_synthesis.js",
+    "auto_propose_on_errors": [
+      "adapter_kind_unresolved",
+      "adapter_kind_not_allowed",
+      "executor_failed"
+    ],
+    "risk_class_by_error": {
+      "adapter_kind_unresolved": "low",
+      "adapter_kind_not_allowed": "medium",
+      "executor_failed": "low"
+    }
+  },
+  "computer_use_hardening": {
+    "enabled": true,
+    "protected_adapter_kinds": [
+      "browser_task",
+      "browser_action",
+      "api_request"
+    ],
+    "require_session_id": true,
+    "require_checkpoint_for_apply": true,
+    "max_recovery_attempts": 1,
+    "verification_keywords": [
+      "captcha",
+      "verification_code",
+      "2fa",
+      "one_time_code"
+    ],
+    "handoff_required_on_verification": true,
+    "checkpoints_path": "state/actuation/universal_execution_primitive/checkpoints.jsonl",
+    "handoff_path": "state/actuation/universal_execution_primitive/handoffs.jsonl"
+  },
+  "computer_use_execution_verification": {
+    "enabled": true,
+    "protected_adapter_kinds": [
+      "browser_task",
+      "browser_action",
+      "api_request"
+    ],
+    "max_verify_attempts": 2,
+    "fail_closed": true,
+    "require_success_markers": false,
+    "success_markers": [
+      "success",
+      "completed",
+      "done"
+    ],
+    "failure_markers": [
+      "blocked",
+      "captcha_required",
+      "verification_required"
+    ],
+    "expected_outcome_keys": [
+      "expected_outcome",
+      "verification_target",
+      "expected_signal"
+    ],
+    "receipts_path": "state/actuation/universal_execution_primitive/verification.jsonl"
+  },
+  "computer_use_reliability_metrics": {
+    "enabled": true,
+    "tracked_adapter_kinds": [
+      "browser_task",
+      "browser_action",
+      "api_request"
+    ],
+    "suite_keys": [
+      "task_suite",
+      "suite",
+      "benchmark_suite"
+    ],
+    "case_keys": [
+      "case_id",
+      "task_id",
+      "benchmark_case_id"
+    ],
+    "rolling_window": 500,
+    "target_success_rate": 0.7,
+    "webarena_aliases": [
+      "webarena",
+      "webarena_lite"
+    ],
+    "metrics_path": "state/actuation/universal_execution_primitive/computer_use_metrics.json"
+  },
+  "receipts_path": "state/actuation/universal_execution_primitive/receipts"
+}

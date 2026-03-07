@@ -1,0 +1,53 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "required_docs": [
+    "client/docs/CLAIM_EVIDENCE_POLICY.md",
+    "client/docs/EMPTY_FORT_INTEGRITY_CHECKLIST.md",
+    "client/docs/PUBLIC_COLLABORATION_TRIAGE.md",
+    "client/docs/RELEASE_DISCIPLINE_POLICY.md"
+  ],
+  "release_surfaces": [
+    "README.md",
+    "client/docs/README.md",
+    "client/docs/PUBLIC_OPERATOR_PROFILE.md",
+    "client/docs/release/templates/release_plan.md"
+  ],
+  "claim_terms": [
+    "industry-leading",
+    "proven at scale",
+    "fully autonomous",
+    "formally verified",
+    "soc2",
+    "compliant",
+    "99.9%",
+    "p95",
+    "p99"
+  ],
+  "evidence_terms": [
+    "evidence",
+    "receipt",
+    "benchmark",
+    "source:",
+    "client/docs/",
+    "state/"
+  ],
+  "required_policy_terms": [
+    "measurable",
+    "security-sensitive",
+    "required evidence",
+    "prohibited patterns",
+    "review gate"
+  ],
+  "required_checklist_terms": [
+    "claim class",
+    "evidence link",
+    "owner",
+    "verification date",
+    "status"
+  ],
+  "paths": {
+    "latest_path": "state/ops/empty_fort_integrity_guard/latest.json",
+    "history_path": "state/ops/empty_fort_integrity_guard/history.jsonl"
+  }
+}

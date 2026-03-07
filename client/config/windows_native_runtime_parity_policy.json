@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "required_capabilities": {
+    "tauri_shell": true,
+    "directml": true,
+    "onnx_runtime": true
+  },
+  "fallback_runtime": "cross_platform_runtime",
+  "rollback_command": "node client/systems/runtime/windows_native_runtime_parity.js run --force-fallback=1",
+  "paths": {
+    "latest_path": "state/runtime/windows_native_runtime_parity/latest.json",
+    "history_path": "state/runtime/windows_native_runtime_parity/history.jsonl"
+  }
+}

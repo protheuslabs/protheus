@@ -9,4 +9,4 @@ agent-holo-viz
 state
 tests
 patches
-memory/_archive
+client/memory/_archive

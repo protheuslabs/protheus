@@ -1,0 +1,68 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": false,
+  "signing": {
+    "key_env": "PROTHEUS_MIGRATION_SIGNING_KEY",
+    "default_key": "migration_dev_key",
+    "algorithm": "sha256"
+  },
+  "git": {
+    "update_remote": true,
+    "remote_name": "origin",
+    "auto_init_target_repo": true
+  },
+  "workspace": {
+    "default_parent": ".."
+  },
+  "transfer_surfaces": [
+    {
+      "id": "config",
+      "source": "config",
+      "target": "config",
+      "required": true
+    },
+    {
+      "id": "habits",
+      "source": "habits",
+      "target": "habits",
+      "required": false
+    },
+    {
+      "id": "vault",
+      "source": "client/secrets/vault",
+      "target": "client/secrets/vault",
+      "required": false
+    },
+    {
+      "id": "memory",
+      "source": "memory",
+      "target": "memory",
+      "required": true
+    },
+    {
+      "id": "scientific_receipts",
+      "source": "state/science",
+      "target": "state/science",
+      "required": false
+    },
+    {
+      "id": "scientific_mode_v4_receipts",
+      "source": "state/science/scientific_mode_v4",
+      "target": "state/science/scientific_mode_v4",
+      "required": false
+    },
+    {
+      "id": "research_receipts",
+      "source": "state/research",
+      "target": "state/research",
+      "required": false
+    }
+  ],
+  "paths": {
+    "latest_path": "state/migration/core_bridge/latest.json",
+    "receipts_path": "state/migration/core_bridge/receipts.jsonl",
+    "checkpoints_root": "state/migration/core_bridge/checkpoints",
+    "registry_path": "state/migration/core_bridge/registry.json"
+  }
+}

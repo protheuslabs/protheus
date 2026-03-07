@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "max_history_rows": 400,
+  "auto_refresh_sources": true,
+  "refresh_timeout_ms": 30000,
+  "sources": {
+    "rm113_closure_path": "state/ops/workflow_execution_closure.json",
+    "rm119_reliability_path": "state/ops/execution_reliability_slo.json",
+    "rm001_ci_guard_path": "state/ops/ci_baseline_guard.json"
+  },
+  "refresh_scripts": {
+    "rm113": "client/systems/ops/workflow_execution_closure.js",
+    "rm119": "client/systems/ops/execution_reliability_slo.js",
+    "rm001": "client/systems/ops/ci_baseline_guard.js"
+  }
+}

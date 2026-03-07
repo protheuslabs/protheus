@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "key_env": "REMOTE_EMERGENCY_HALT_KEY",
+  "max_ttl_seconds": 300,
+  "max_clock_skew_seconds": 30,
+  "replay_nonce_ttl_seconds": 86400,
+  "paths": {
+    "state": "state/security/remote_emergency_halt_state.json",
+    "nonce_store": "state/security/remote_emergency_halt_nonces.json",
+    "audit": "state/security/remote_emergency_halt_audit.jsonl",
+    "black_box_attestation_dir": "state/security/black_box_ledger/attestations"
+  },
+  "policy_root": {
+    "enabled": true,
+    "script": "client/systems/security/policy_rootd.js",
+    "scope": "workflow_external_orchestration",
+    "source": "remote_emergency_halt",
+    "timeout_ms": 15000,
+    "require_lease_token": true
+  },
+  "revoke_leases": {
+    "enabled": true,
+    "lease_state_path": "state/security/capability_leases.json",
+    "lease_audit_path": "state/security/capability_leases.jsonl"
+  },
+  "secure_purge": {
+    "enabled": true,
+    "allow_live_purge": false,
+    "window_minutes_default": 15,
+    "window_minutes_max": 60,
+    "confirm_phrase": "I UNDERSTAND THIS PURGES SENSITIVE STATE",
+    "quarantine_dir": "research/security/remote_halt_purge",
+    "sensitive_paths": [
+      "state/security/soul_token_guard.json",
+      "state/security/release_attestations.jsonl",
+      "state/security/capability_leases.json",
+      "state/security/capability_leases.jsonl"
+    ]
+  }
+}

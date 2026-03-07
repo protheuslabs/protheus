@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": false,
+  "lane_id": "V4-SELF-001",
+  "signing_secret_env": "ILLUSION_AUDIT_SIGNING_SECRET",
+  "paths": {
+    "state_path": "state/self_audit/illusion_integrity/state.json",
+    "latest_path": "state/self_audit/illusion_integrity/latest.json",
+    "receipts_path": "state/self_audit/illusion_integrity/receipts.jsonl",
+    "history_path": "state/self_audit/illusion_integrity/history.jsonl",
+    "reports_dir": "state/self_audit/illusion_integrity/reports",
+    "patches_dir": "state/self_audit/illusion_integrity/patches"
+  },
+  "engine": {
+    "mode": "auto",
+    "timeout_ms": 90000,
+    "rust_manifest_path": "client/systems/self_audit/rust/Cargo.toml",
+    "rust_binary_name": "illusion-integrity-auditor",
+    "rust_source_path": "client/systems/self_audit/illusion_integrity_auditor.rs",
+    "allow_ts_fallback": true
+  },
+  "triggers": {
+    "startup": {
+      "enabled": true,
+      "strict": false
+    },
+    "promotion": {
+      "enabled": true,
+      "strict": false
+    },
+    "manual": {
+      "enabled": true,
+      "strict": false
+    }
+  },
+  "thresholds": {
+    "fail_score": 70,
+    "warn_score": 40,
+    "max_high_findings_before_fail": 2,
+    "min_ui_score": 80,
+    "min_scientific_score": 70
+  },
+  "git_metadata": {
+    "days_window": 14,
+    "min_commits_for_author_concentration_signal": 20,
+    "burst_window_minutes": 10,
+    "burst_threshold": 12
+  },
+  "backlog_check": {
+    "script": "client/systems/ops/backlog_registry.js",
+    "strict": false
+  },
+  "autofix": {
+    "allow_apply": false,
+    "require_human_consent": true,
+    "required_approval_min_len": 12,
+    "required_token_prefix": "consent_"
+  }
+}
+

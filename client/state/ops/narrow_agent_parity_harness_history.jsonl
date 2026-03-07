@@ -1,0 +1,1 @@
+{"ts":"2026-03-07T04:39:19.101Z","date":"2026-03-07","week_start":"2026-03-02","parity_pass":false,"dimensions":{"reliability":0,"latency_ms":null,"cost_pressure":0.8},"aggregate":{"parity_pass":false,"scenarios_total":3,"scenarios_passed":0,"pass_ratio":0,"weighted_score_avg":0.1287,"gates":{"min_scenarios_passed":2,"min_pass_ratio":0.66,"min_weighted_score":0.85}}}

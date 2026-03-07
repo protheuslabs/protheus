@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "risk": {
+    "default_tier": 2,
+    "require_explicit_approval_tier": 3
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "training.sovereign_rollout"
+  },
+  "paths": {
+    "memory_dir": "client/memory/training/rollout_preferences",
+    "adaptive_index_path": "client/adaptive/training/rollout/index.json",
+    "events_path": "state/training\/sovereign_rollout/events.jsonl",
+    "latest_path": "state/training\/sovereign_rollout/latest.json",
+    "receipts_path": "state/training\/sovereign_rollout/receipts.jsonl"
+  }
+}

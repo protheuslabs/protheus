@@ -1,0 +1,14 @@
+{
+  "schema_id": "workspace_dump_guard_policy",
+  "schema_version": "1.0",
+  "adaptive_root": "adaptive",
+  "memory_root": "memory",
+  "memory_tools_root": "client/memory/tools",
+  "forbidden_eyes_collectors_root": "client/habits/scripts/eyes_collectors",
+  "allowed_adaptive_source_roots": [
+    "client/adaptive/sensory/eyes/collectors",
+    "client/adaptive/executive",
+    "client/adaptive/rsi"
+  ],
+  "root_temp_debug_pattern": "^(temp|debug)[._-].+\\.(js|ts|py|sh)$"
+}

@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "scan_roots": [
+    "systems",
+    "habits",
+    "skills",
+    "client/memory/tools"
+  ],
+  "include_extensions": [
+    ".js",
+    ".ts",
+    ".mjs",
+    ".cjs",
+    ".sh"
+  ],
+  "skip_path_tokens": [
+    "/tests/",
+    "/test/",
+    "client/memory/tools/tests/",
+    "/node_modules/"
+  ],
+  "forbidden_patterns": [
+    {
+      "id": "shell_molthub_install",
+      "regex": "(^|[^a-zA-Z0-9_])molthub\\\\s+install\\\\b"
+    },
+    {
+      "id": "shell_npx_molthub_install",
+      "regex": "(^|[^a-zA-Z0-9_])npx\\\\s+molthub\\\\s+install\\\\b"
+    },
+    {
+      "id": "exec_direct_molthub",
+      "regex": "child_process\\\\s*\\\\.\\\\s*(exec|execSync|spawn|spawnSync)[^\\\\n]{0,180}molthub\\\\s+install"
+    },
+    {
+      "id": "npm_skill_installer_direct",
+      "regex": "npm\\\\s+(exec|run)?\\\\s*[^\\\\n]{0,60}(install|add)[^\\\\n]{0,120}skill"
+    }
+  ],
+  "required_wrapper_refs": [
+    "client/habits/scripts/install_skill_safe.js",
+    "client/systems/security/skill_quarantine.js"
+  ],
+  "outputs": {
+    "latest_path": "state/security/skill_install_path_enforcer/latest.json",
+    "history_path": "state/security/skill_install_path_enforcer/history.jsonl"
+  }
+}

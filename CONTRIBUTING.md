@@ -20,19 +20,19 @@ For full-repository enforcement (same scope as CI), run `npm run ops:format:chec
 
 ## Required Reading
 
-- [Onboarding Playbook](docs/ONBOARDING_PLAYBOOK.md)
-- [Enterprise Onboarding Pack](docs/ENTERPRISE_ONBOARDING_PACK.md)
-- [Developer Lane Quickstart](docs/DEVELOPER_LANE_QUICKSTART.md)
-- [History Cleanliness Program](docs/HISTORY_CLEANLINESS.md)
-- [Release Discipline Policy](docs/RELEASE_DISCIPLINE_POLICY.md)
-- [Documentation Program Governance](docs/DOCUMENTATION_PROGRAM_GOVERNANCE.md)
-- [Claim-Evidence Policy](docs/CLAIM_EVIDENCE_POLICY.md)
-- [Empty Fort Integrity Checklist](docs/EMPTY_FORT_INTEGRITY_CHECKLIST.md)
-- [Org Code Format Standard](docs/ORG_CODE_FORMAT_STANDARD.md)
-- [Perception Audit Program](docs/PERCEPTION_AUDIT_PROGRAM.md)
-- [Code Enforcer Engine](systems/ops/org_code_format_guard.ts)
-- [Public Collaboration Triage Contract](docs/PUBLIC_COLLABORATION_TRIAGE.md)
-- [Public Collaboration Surface](docs/PUBLIC_COLLABORATION_SURFACE.md)
+- [Onboarding Playbook](client/docs/ONBOARDING_PLAYBOOK.md)
+- [Enterprise Onboarding Pack](client/docs/ENTERPRISE_ONBOARDING_PACK.md)
+- [Developer Lane Quickstart](client/docs/DEVELOPER_LANE_QUICKSTART.md)
+- [History Cleanliness Program](client/docs/HISTORY_CLEANLINESS.md)
+- [Release Discipline Policy](client/docs/RELEASE_DISCIPLINE_POLICY.md)
+- [Documentation Program Governance](client/docs/DOCUMENTATION_PROGRAM_GOVERNANCE.md)
+- [Claim-Evidence Policy](client/docs/CLAIM_EVIDENCE_POLICY.md)
+- [Empty Fort Integrity Checklist](client/docs/EMPTY_FORT_INTEGRITY_CHECKLIST.md)
+- [Org Code Format Standard](client/docs/ORG_CODE_FORMAT_STANDARD.md)
+- [Perception Audit Program](client/docs/PERCEPTION_AUDIT_PROGRAM.md)
+- [Code Enforcer Engine](client/systems/ops/org_code_format_guard.ts)
+- [Public Collaboration Triage Contract](client/docs/PUBLIC_COLLABORATION_TRIAGE.md)
+- [Public Collaboration Surface](client/docs/PUBLIC_COLLABORATION_SURFACE.md)
 - [Changelog](CHANGELOG.md)
 
 ## Public Collaboration Entry Points
@@ -40,24 +40,24 @@ For full-repository enforcement (same scope as CI), run `npm run ops:format:chec
 - [Bug Report Template](.github/ISSUE_TEMPLATE/bug_report.md)
 - [Feature Request Template](.github/ISSUE_TEMPLATE/feature_request.md)
 - [Security Report Template](.github/ISSUE_TEMPLATE/security_report.md)
-- [Good First Issues Pack](docs/community/GOOD_FIRST_ISSUES.md)
+- [Good First Issues Pack](client/docs/community/GOOD_FIRST_ISSUES.md)
 
 ## Good First Issues
 
 If you are new to the repo, start with the curated starter pack:
 
-- [Good First Issues (10 scoped tasks)](docs/community/GOOD_FIRST_ISSUES.md)
+- [Good First Issues (10 scoped tasks)](client/docs/community/GOOD_FIRST_ISSUES.md)
 
 Maintainers can seed GitHub issues from this pack with labels:
 
 ```bash
-node systems/ops/good_first_issue_seed.js --apply=1
+node client/systems/ops/good_first_issue_seed.js --apply=1
 ```
 
 Dry-run (no GitHub writes):
 
 ```bash
-node systems/ops/good_first_issue_seed.js --apply=0
+node client/systems/ops/good_first_issue_seed.js --apply=0
 ```
 
 ## Commit Style

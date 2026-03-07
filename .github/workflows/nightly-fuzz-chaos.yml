@@ -39,4 +39,4 @@ jobs:
       - name: Chaos resilience smoke
         run: |
           NODE_PATH=$PWD/node_modules npm run -s formal:invariants:run
-          cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- enterprise-hardening run --strict=1
+          cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- enterprise-hardening run --strict=1

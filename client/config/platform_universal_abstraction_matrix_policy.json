@@ -1,0 +1,9 @@
+{
+  "schema_id": "platform_universal_abstraction_matrix_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "matrix_path": "client/config/platform_universal_abstraction_matrix.json",
+  "state_path": "state/ops/platform_universal_abstraction_matrix/latest.json",
+  "history_path": "state/ops/platform_universal_abstraction_matrix/history.jsonl",
+  "signing_secret": "platform_universal_abstraction_matrix_secret"
+}

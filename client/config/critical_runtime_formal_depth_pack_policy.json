@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "security.critical_runtime_formal_depth_pack"
+  },
+  "critical_path_formal_script": "client/systems/security/critical_path_formal_verifier.js",
+  "sovereignty_formal_script": "client/systems/security/formal_mind_sovereignty_verification.js",
+  "self_mod_gate_script": "client/systems/security/rsi_git_patch_self_mod_gate.js",
+  "integrity_chain_script": "client/adaptive/rsi/rsi_integrity_chain_guard.js",
+  "provenance_gate_script": "client/systems/security/supply_chain_provenance_gate.js",
+  "paths": {
+    "memory_dir": "client/memory/security/critical_runtime_formal_depth_pack",
+    "adaptive_index_path": "client/adaptive/security/critical_runtime_formal_depth_pack/index.json",
+    "events_path": "state/security/critical_runtime_formal_depth_pack/events.jsonl",
+    "latest_path": "state/security/critical_runtime_formal_depth_pack/latest.json",
+    "receipts_path": "state/security/critical_runtime_formal_depth_pack/receipts.jsonl",
+    "depth_pack_state_path": "state/security/critical_runtime_formal_depth_pack/state.json"
+  }
+}

@@ -25,7 +25,7 @@ jobs:
 
       - name: Build Rust release binaries
         run: |
-          cargo build --release --manifest-path crates/ops/Cargo.toml --bin protheus-ops
+          cargo build --release --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops
           cargo build --release -p conduit --bin conduit_daemon
 
       - name: Install Syft + cargo-audit
@@ -167,7 +167,7 @@ jobs:
             vulnerability_summary_path: 'state/release/provenance_bundle/dependency_vulnerability_summary.json',
             rollback: {
               last_known_good_tag: process.env.LAST_KNOWN_GOOD_TAG || 'v0.0.0',
-              policy_path: 'config/release_rollback_policy.json',
+              policy_path: 'client/config/release_rollback_policy.json',
             },
           };
 
@@ -177,9 +177,9 @@ jobs:
 
       - name: Enforce supply-chain provenance v2 gate
         run: |
-          cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- \
+          cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- \
             supply-chain-provenance-v2 run --strict=1 \
-            --policy=config/supply_chain_provenance_v2_policy.json \
+            --policy=client/config/supply_chain_provenance_v2_policy.json \
             --bundle-path=state/release/provenance_bundle/latest.json \
             --vuln-summary-path=state/release/provenance_bundle/dependency_vulnerability_summary.json
 
@@ -194,8 +194,8 @@ jobs:
           - Dependency vulnerability SLA summary (`state/release/provenance_bundle/dependency_vulnerability_summary.json`)
           - Provenance bundle (`state/release/provenance_bundle/latest.json`)
 
-          See `docs/requirements/REQ-06-f100-operational-excellence.md` and
-          `docs/requirements/REQ-07-security-credibility-verification.md`.
+          See `client/docs/requirements/REQ-06-f100-operational-excellence.md` and
+          `client/docs/requirements/REQ-07-security-credibility-verification.md`.
           EOF
 
       - name: Upload release artifacts

@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "risk": {
+    "default_tier": 2,
+    "require_explicit_approval_tier": 3
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "skills.mcp_gateway"
+  },
+  "paths": {
+    "memory_dir": "client/memory/client/skills/mcp",
+    "adaptive_index_path": "client/adaptive/client/skills/mcp/index.json",
+    "events_path": "state/client/skills/mcp_gateway/events.jsonl",
+    "latest_path": "state/client/skills/mcp_gateway/latest.json",
+    "receipts_path": "state/client/skills/mcp_gateway/receipts.jsonl",
+    "registry_path": "client/skills/mcp/registry.json",
+    "installs_path": "state/client/skills/mcp_gateway/installs.json"
+  }
+}

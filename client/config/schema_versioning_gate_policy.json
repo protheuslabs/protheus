@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "targets": [
+    {
+      "id": "proposal_admission",
+      "path": "client/config/contracts/proposal_admission.schema.json",
+      "required_schema_id": "proposal_admission",
+      "min_schema_version": "1.0",
+      "kind": "json"
+    },
+    {
+      "id": "system_budget",
+      "path": "client/config/contracts/system_budget.schema.json",
+      "required_schema_id": "system_budget",
+      "min_schema_version": "1.0",
+      "kind": "json"
+    }
+  ],
+  "migrations": {
+    "target_default_version": "1.0",
+    "allow_add_missing_fields_only": true
+  },
+  "outputs": {
+    "latest_path": "state/contracts/schema_versioning_gate/latest.json",
+    "history_path": "state/contracts/schema_versioning_gate/history.jsonl"
+  }
+}

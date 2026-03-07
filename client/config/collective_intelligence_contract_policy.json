@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "required_docs": [
+    "client/docs/ECONOMY.md",
+    "client/docs/INTELLIGENCE.md",
+    "client/docs/DATA_SCOPE_BOUNDARIES.md"
+  ],
+  "lanes": [
+    { "id": "V3-RACE-153", "module_path": "client/systems/training/collective_training_orchestrator.ts", "policy_path": "client/config/collective_training_orchestrator_policy.json", "user_paths": ["client/memory/training/contributions", "client/adaptive/training/contributions"] },
+    { "id": "V3-RACE-154", "module_path": "client/systems/training/training_contribution_contracts.ts", "policy_path": "client/config/training_contribution_contract_policy.json", "user_paths": ["client/memory/training/contracts", "client/adaptive/training/contracts"] },
+    { "id": "V3-RACE-155", "module_path": "client/systems/training/fractal_training_oversight.ts", "policy_path": "client/config/fractal_training_oversight_policy.json", "user_paths": ["client/memory/training/preferences", "client/adaptive/training/curriculum"] },
+    { "id": "V3-RACE-156", "module_path": "client/systems/training/sovereign_model_rollout_ladder.ts", "policy_path": "client/config/sovereign_model_rollout_policy.json", "user_paths": ["client/memory/training/rollout_preferences", "client/adaptive/training/rollout"] },
+    { "id": "V3-RACE-157", "module_path": "client/systems/training/model_artifact_archive.ts", "policy_path": "client/config/model_artifact_archive_policy.json", "user_paths": ["client/memory/training/artifact_access", "client/adaptive/training/artifacts"] },
+    { "id": "V3-RACE-158", "module_path": "client/systems/economy/training_contributor_incentive_engine.ts", "policy_path": "client/config/training_contributor_incentive_policy.json", "user_paths": ["client/memory/economy/training_rewards", "client/adaptive/economy/training_rewards"] },
+    { "id": "V3-RACE-159", "module_path": "client/systems/economy/model_access_tier_governance.ts", "policy_path": "client/config/model_access_tier_policy.json", "user_paths": ["client/memory/economy/model_access", "client/adaptive/economy/model_access"] }
+  ],
+  "paths": {
+    "latest_path": "state/ops/collective_intelligence_contract_check/latest.json",
+    "receipts_path": "state/ops/collective_intelligence_contract_check/receipts.jsonl"
+  }
+}

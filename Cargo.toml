@@ -1,27 +1,13 @@
 [workspace]
 resolver = "2"
 members = [
-  "crates/blob_test",
-  "crates/kernel_layers",
-  "crates/execution",
-  "crates/foundation_hook_enforcer",
-  "crates/fluxlattice",
-  "crates/graph",
-  "crates/memory",
-  "crates/memory_abstraction",
-  "crates/mobile",
-  "crates/observability",
-  "crates/ops",
-  "crates/pinnacle",
-  "crates/red_legion",
-  "crates/security",
-  "crates/singularity_seed",
-  "crates/swarm",
-  "crates/vault",
-  "systems/memory/rust",
-  "systems/self_audit/rust",
-  "systems/hybrid/rust"
-, "crates/task", "crates/resource", "crates/isolation", "crates/ipc", "crates/storage", "crates/update", "crates/conduit", "crates/conduit-security"]
+  "core/layer0/*",
+  "core/layer1/*",
+  "core/layer2/*"
+]
+exclude = [
+  "core/layer0/legacy_rust_sources"
+]
 
 [workspace.package]
 edition = "2021"

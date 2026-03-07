@@ -19,7 +19,7 @@ flowchart LR
     CONDUIT["Conduit (typed messages + receipts)"]
     POLICY["Constitution + Policy Gates (Rust)"]
     PRIMS["7 Core Primitives (Rust): task, resource, isolation, ipc, storage, observability, update"]
-    CORE["Rust Core Runtime (ops/execution/memory/routing)"]
+    CORE["Rust Core Runtime (ops/execution/client/memory/routing)"]
     STATE["Deterministic Receipts + State Artifacts"]
 
     UI --> CONDUIT
@@ -46,7 +46,7 @@ flowchart LR
 
 ## Related Docs
 
-- [Getting Started](docs/GETTING_STARTED.md)
-- [Conduit Requirement](docs/requirements/REQ-05-protheus-conduit-bridge.md)
-- [Rust Primitive Requirement](docs/requirements/REQ-08-rust-core-primitives.md)
-- [Security Posture](docs/SECURITY_POSTURE.md)
+- [Getting Started](client/docs/GETTING_STARTED.md)
+- [Conduit Requirement](client/docs/requirements/REQ-05-protheus-conduit-bridge.md)
+- [Rust Primitive Requirement](client/docs/requirements/REQ-08-rust-core-primitives.md)
+- [Security Posture](client/docs/SECURITY_POSTURE.md)

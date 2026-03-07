@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "remove_rules": {
+    "suffixes": [
+      ":status"
+    ]
+  },
+  "keep": {
+    "explicit": [
+      "dev",
+      "build",
+      "start",
+      "test",
+      "lint",
+      "security:audit"
+    ],
+    "keep_referenced": true,
+    "keep_curated_operator_surface": true
+  },
+  "paths": {
+    "package_json_path": "package.json",
+    "command_registry_policy_path": "client/config/command_registry_policy.json",
+    "latest_path": "state/ops/script_surface_reduction_wave2/latest.json",
+    "receipts_path": "state/ops/script_surface_reduction_wave2/receipts.jsonl",
+    "command_map_diff_path": "state/ops/script_surface_reduction_wave2/command_map_diff.json",
+    "migration_doc_path": "client/docs/ops/SCRIPT_SURFACE_REDUCTION_WAVE2.md"
+  }
+}

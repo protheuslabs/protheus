@@ -1,0 +1,53 @@
+{
+  "schema_id": "critical_path_policy_coverage_policy",
+  "schema_version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "require_merge_guard_hooks": true,
+  "critical_paths": [
+    {
+      "id": "error_budget_release_gate",
+      "command_path": "client/systems/ops/error_budget_release_gate.ts",
+      "policy_paths": [
+        "client/config/error_budget_release_gate_policy.json"
+      ],
+      "test_paths": [
+        "client/memory/tools/tests/error_budget_release_gate.test.js"
+      ]
+    },
+    {
+      "id": "critical_path_policy_coverage",
+      "command_path": "client/systems/ops/critical_path_policy_coverage.ts",
+      "policy_paths": [
+        "client/config/critical_path_policy_coverage_policy.json"
+      ],
+      "test_paths": [
+        "client/memory/tools/tests/critical_path_policy_coverage.test.js"
+      ]
+    },
+    {
+      "id": "composite_disaster_gameday",
+      "command_path": "client/systems/ops/composite_disaster_gameday.ts",
+      "policy_paths": [
+        "client/config/composite_disaster_gameday_policy.json"
+      ],
+      "test_paths": [
+        "client/memory/tools/tests/composite_disaster_gameday.test.js"
+      ]
+    },
+    {
+      "id": "backlog_intake_quality_gate",
+      "command_path": "client/systems/ops/backlog_intake_quality_gate.ts",
+      "policy_paths": [
+        "client/config/backlog_intake_quality_policy.json"
+      ],
+      "test_paths": [
+        "client/memory/tools/tests/backlog_intake_quality_gate.test.js"
+      ]
+    }
+  ],
+  "outputs": {
+    "latest_path": "state/ops/critical_path_policy_coverage/latest.json",
+    "history_path": "state/ops/critical_path_policy_coverage/history.jsonl"
+  }
+}

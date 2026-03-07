@@ -1,0 +1,67 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "thresholds": {
+    "min_parity_pass_rate": 1,
+    "min_component_parity_streak": 2,
+    "max_p95_latency_ms": 600,
+    "max_p99_latency_ms": 1200,
+    "min_availability": 0.995
+  },
+  "profiles": {
+    "initial": "shadow_js",
+    "rust_spine": {
+      "rust_first": true,
+      "js_fallback": "emergency_only"
+    },
+    "emergency_js": {
+      "rust_first": false,
+      "js_fallback": "allowed"
+    },
+    "shadow_js": {
+      "rust_first": false,
+      "js_fallback": "allowed"
+    }
+  },
+  "components": [
+    {
+      "id": "guard",
+      "js_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=guard", "--engine=js"],
+      "rust_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=guard", "--engine=rust"],
+      "contract_fields": ["type", "component", "contract_version"]
+    },
+    {
+      "id": "spawn_broker",
+      "js_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=spawn_broker", "--engine=js"],
+      "rust_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=spawn_broker", "--engine=rust"],
+      "contract_fields": ["type", "component", "contract_version"]
+    },
+    {
+      "id": "model_router",
+      "js_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=model_router", "--engine=js"],
+      "rust_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=model_router", "--engine=rust"],
+      "contract_fields": ["type", "component", "contract_version"]
+    },
+    {
+      "id": "origin_lock",
+      "js_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=origin_lock", "--engine=js"],
+      "rust_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=origin_lock", "--engine=rust"],
+      "contract_fields": ["type", "component", "contract_version"]
+    },
+    {
+      "id": "fractal_orchestrator",
+      "js_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=fractal_orchestrator", "--engine=js"],
+      "rust_command": ["node", "client/systems/rust/control_plane_component_shim.js", "run", "--component=fractal_orchestrator", "--engine=rust"],
+      "contract_fields": ["type", "component", "contract_version"]
+    }
+  ],
+  "paths": {
+    "state_path": "state/ops/rust_spine_microkernel/state.json",
+    "latest_path": "state/ops/rust_spine_microkernel/latest.json",
+    "receipts_path": "state/ops/rust_spine_microkernel/receipts.jsonl",
+    "parity_history_path": "state/ops/rust_spine_microkernel/parity_history.jsonl",
+    "benchmark_history_path": "state/ops/rust_spine_microkernel/benchmark_history.jsonl",
+    "rollback_history_path": "state/ops/rust_spine_microkernel/rollback_history.jsonl"
+  }
+}

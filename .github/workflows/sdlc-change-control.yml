@@ -37,8 +37,8 @@ PRBODY
 
       - name: Enforce SDLC change-control gate
         run: |
-          cargo run --quiet --manifest-path crates/ops/Cargo.toml --bin protheus-ops -- \
+          cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- \
             sdlc-change-control run --strict=1 \
-            --policy=config/sdlc_change_control_policy.json \
+            --policy=client/config/sdlc_change_control_policy.json \
             --pr-body-path=state/ops/sdlc_change_control/pr_body.md \
             --changed-paths-path=state/ops/sdlc_change_control/changed_paths.txt

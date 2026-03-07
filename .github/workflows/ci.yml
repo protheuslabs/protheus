@@ -28,7 +28,7 @@ jobs:
         run: npm run lint
 
       - name: Persona Docs Validation
-        run: node systems/ops/personas_docs_validation.js --strict=1 --allow-empty=1
+        run: node client/systems/ops/personas_docs_validation.js --strict=1 --allow-empty=1
 
       - name: Test
         run: npm run test
@@ -37,4 +37,4 @@ jobs:
         run: npm run ops:race-queue:hardening
 
       - name: Mobile Benchmark Matrix (Smoke)
-        run: node systems/ops/mobile_competitive_benchmark_matrix.js run --owner=ci --scenario=ci_mobile_android --target=android --battery-drain-hour=2.4 --thermal=39 --survival-hours=72 --sync-integrity=0.998 --apply=0
+        run: node client/systems/ops/mobile_competitive_benchmark_matrix.js run --owner=ci --scenario=ci_mobile_android --target=android --battery-drain-hour=2.4 --thermal=39 --survival-hours=72 --sync-integrity=0.998 --apply=0

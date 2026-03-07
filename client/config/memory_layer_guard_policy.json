@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "target_roots": [
+    "systems",
+    "habits",
+    "lib",
+    "adaptive"
+  ],
+  "file_extensions": [
+    ".js"
+  ],
+  "exclude_paths": [
+    "client/systems/memory/memory_layer_guard.js"
+  ],
+  "allow_paths": [
+    "client/systems/memory/eyes_memory_bridge.js",
+    "client/systems/memory/failure_memory_bridge.js",
+    "client/systems/memory/memory_dream.js",
+    "client/systems/memory/idle_dream_cycle.js",
+    "client/systems/memory/uid_connections.js",
+    "client/systems/memory/creative_links.js",
+    "client/systems/adaptive/core/layer_store.js"
+  ]
+}

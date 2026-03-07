@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "required_channels": [
+    "state_backup",
+    "offsite_state_backup"
+  ],
+  "backup_integrity_script": "client/systems/ops/backup_integrity_check.js",
+  "gitignore_path": ".gitignore",
+  "snapshot_patterns": [
+    "client/memory/_snapshots/",
+    "client/memory/*.backup.*",
+    "state/client/memory/snapshots/*.json",
+    "state/client/memory/snapshots/*.jsonl"
+  ],
+  "outputs": {
+    "latest_path": "state/ops/memory_snapshot_ignore_gate/latest.json",
+    "history_path": "state/ops/memory_snapshot_ignore_gate/history.jsonl"
+  }
+}

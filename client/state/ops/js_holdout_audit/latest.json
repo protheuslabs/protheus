@@ -1,0 +1,1030 @@
+{
+  "ok": false,
+  "type": "js_holdout_audit",
+  "script": "js_holdout_audit.js",
+  "ts": "2026-03-07T03:53:56.373Z",
+  "strict": false,
+  "supported_flags": [
+    "--registry",
+    "--strict"
+  ],
+  "registry_path": "config/js_exception_registry.json",
+  "strict_roots": [
+    "systems",
+    "lib"
+  ],
+  "advisory_roots": [
+    "client/habits/scripts",
+    "client/memory/tools"
+  ],
+  "strict_total": 272,
+  "advisory_total": 0,
+  "strict_counts": {
+    "unapproved_unpaired_js": 260,
+    "paired_ts": 12
+  },
+  "advisory_counts": {},
+  "strict_violations": [
+    {
+      "path": "systems/actuation/actuation_executor.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/actuation/bridge_from_proposals.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/actuation/disposable_infrastructure_organ.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/actuation/multi_channel_adapter.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/actuation/real_world_claws_bundle.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/actuation/sub_executor_synthesis.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/actuation/universal_execution_primitive.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/adaptive/habits/habit_runtime_sync.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/assimilation/world_model_freshness.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/adaptive_crystallizer.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/autonomy_controller.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/autonomy_rollout_controller.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/background_persistent_agent_runtime.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/backlog_autoscale_rust_bridge.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/batch_lane.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/canary_scheduler.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/collective_shadow.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/dream_signal_bridge.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/drift_target_governor.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/escalation_resolver.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/exception_recovery_classifier.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/gated_self_improvement_loop.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/genuine_creative_breakthrough_organ.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/health_status.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/hold_remediation_engine.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/improvement_controller.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/improvement_orchestrator.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/inversion_readiness_cert.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/lever_experiment_gate.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/mirror_organ.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/model_catalog_loop.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/mutation_safety_kernel.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/non_yield_cycle.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/non_yield_enqueue.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/non_yield_harvest.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/non_yield_ledger_backfill.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/non_yield_replay.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/objective_runtime_governor.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/observer_mirror.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/ops_dashboard.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/optimization_aperture_controller.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/outcome_fitness_loop.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/pain_adaptive_router.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/persistent_fractal_meta_organ.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/physiology_opportunity_map.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/pipeline_spc_gate.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/proactive_t1_initiative_engine.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/receipt_dashboard.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/receipt_summary.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/red_team_harness.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/self_code_evolution_sandbox.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/self_improvement_cadence_orchestrator.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/self_mod_reversion_drill.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/skill_generation_pipeline.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/strategy_execute_guard.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/strategy_mode.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/strategy_mode_governor.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/strategy_readiness.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/suggestion_lane.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/tier1_governance.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/trit_shadow_replay_calibration.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/trit_shadow_report.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/trit_shadow_weekly_adaptation.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/autonomy/zero_permission_conversational_layer.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/blockchain/sovereign_blockchain_bridge.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/budget/capital_allocation_organ.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/budget/global_cost_governor.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/budget/unified_global_budget_governor.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/continuity/active_state_bridge.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/continuity/active_state_continuity_layer.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/continuity/resurrection_protocol.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/continuity/session_continuity_vault.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/continuity/sovereign_resurrection_substrate.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/contracts/schema_versioning_gate.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/contracts/soul_contracts.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/dopamine/ambient.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/echo/value_anchor_renewal.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/economy/donor_mining_dashboard.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/economy/global_directive_fund.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/economy/protheus_token_engine.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/edge/protheus_edge_runtime.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/execution/task_decomposition_primitive.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/eye/eye_kernel.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/eye/subsumption_registry.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/finance/economic_entity_manager.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/forge/forge_organ.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/fractal/child_organ_runtime.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/fractal/evolution_arena.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/fractal/genome_ledger.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/fractal/introspection_map.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/fractal/mini_core_instancer.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/fractal/morph_planner.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/fractal/organism_cycle.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/fractal/regime_organ.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/fractal/symbiotic_fusion_chamber.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/fractal/warden/complexity_warden_meta_organ.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/graph/index.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/habits/habit_cell_pool_executor.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/hardware/attested_assimilation_plane.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/hardware/compression_transfer_plane.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/hardware/embodiment_layer.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/hardware/surface_budget_controller.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/helix/confirmed_malice_quarantine.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/helix/helix_admission_gate.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/hybrid/mobile/protheus_mobile_adapter.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/abstraction/analytics_engine.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/abstraction/memory_view.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/abstraction/test_harness.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/ambient.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/causal_temporal_graph.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/creative_links.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/cross_domain_mapper.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/cryonics_tier.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/dream_model_failover.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/eyes_memory_bridge.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/failure_memory_bridge.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/idle_dream_cycle.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/index.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/memory_dream.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/memory_efficiency_plane.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/memory_federation_plane.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/memory_index_freshness_gate.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/napi_build_surface_compat.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/offdevice_memory_replication.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/rust_memory_daemon_supervisor.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/rust_memory_transition_lane.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/memory/uid_connections.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/migration/community_repo_graduation_pack.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/migration/core_migration_bridge.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/migration/post_migration_verification_report.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/migration/self_healing_migration_daemon.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/migration/universal_importers.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/mobile/index.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/nursery/nursery_bootstrap.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/nursery/specialist_training.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/nursery/training_quarantine_loop.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/observability/index.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/observability/metrics_exporter.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/observability/siem_bridge.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/observability/slo_alert_router.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/observability/trace_bridge.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/obsidian/obsidian_bridge.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/obsidian/obsidian_phase_pack.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/ops/autotest_controller.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/ops/autotest_doctor.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/ops/f100_enterprise_baseline_gate.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/ops/fluxlattice_program.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/ops/foundation_contract_gate.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/ops/generate_coverage_badge.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/ops/good_first_issue_seed.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/ops/mech_suit_benchmark.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/ops/perception_polish_program.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/ops/runtime_efficiency_floor.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/ops/rust50_sprint_contract.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/ops/scale_readiness_program.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/ops/security_layer_inventory_gate.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/ops/state_kernel.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/personas/ambient_stance.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/personas/cli.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/personas/orchestration.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/personas/personas_rust_bridge.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/personas/shadow_cli.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/pinnacle/index.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/polyglot/polyglot_service_adapter.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/primitives/effect_type_system.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/primitives/emergent_primitive_synthesis.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/primitives/explanation_auto_emit.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/primitives/explanation_primitive.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/primitives/interactive_desktop_session_primitive.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/primitives/iterative_repair_primitive.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/primitives/primitive_runtime.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/primitives/runtime_scheduler.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/red_legion/command_center.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/red_legion/index.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/redteam/adaptive_defense_expansion.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/redteam/quantum_security_primitive_synthesis.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/redteam/self_improving_redteam_trainer.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/reflex/reflex_dispatcher.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/research/offline_r_analytics_runner.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/research/research_organ.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/routing/llm_gateway.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/routing/llm_gateway_failure_classifier.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/routing/model_variant_profile.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/routing/provider_onboarding_manifest.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/routing/provider_readiness.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/routing/route_execute.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/routing/route_task.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/routing/router_budget_calibration.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/science/enhanced_reasoning_mirror.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/science/experiment_scheduler.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/science/hypothesis_forge.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/science/meta_science_active_learning_loop.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/science/scientific_method_loop.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/science/scientific_mode_v4.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/security/formal_invariants_bootstrap.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/security/rust_security_gate.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/self_audit/illusion_integrity_lane.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/sensory/abstain_uncertainty_contract.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/sensory/causal_vs_correlation_signal_scorer.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    },
+    {
+      "path": "systems/sensory/cross_signal_engine.js",
+      "status": "unapproved_unpaired_js",
+      "has_ts_peer": false
+    }
+  ],
+  "advisory_violations": []
+}

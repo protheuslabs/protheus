@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "risk": {
+    "default_tier": 2,
+    "require_explicit_approval_tier": 3
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "economy.training_incentives"
+  },
+  "paths": {
+    "memory_dir": "client/memory/economy/training_rewards",
+    "adaptive_index_path": "client/adaptive/economy/training_rewards/index.json",
+    "events_path": "state/economy\/training_incentives/events.jsonl",
+    "latest_path": "state/economy\/training_incentives/latest.json",
+    "receipts_path": "state/economy\/training_incentives/receipts.jsonl"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "schema_id": "upgrade_lane_runtime_adaptive_index",
+  "schema_version": "1.0",
+  "updated_at": "2026-03-07T04:39:19.109Z",
+  "latest": {
+    "lane_id": "V3-RACE-174",
+    "event": "competitive_benchmark_run",
+    "action": "record",
+    "ok": true,
+    "receipt_hash": "3de764738632d496c5336aca6228a616"
+  }
+}

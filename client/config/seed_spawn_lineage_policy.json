@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "inheritance": {
+    "enabled_profiles": [
+      "seed_spawn"
+    ],
+    "max_directives": 16,
+    "max_badges": 32,
+    "max_contract_refs": 32,
+    "allow_parent_route_tithe": true,
+    "max_parent_route_tithe_pct": 0.15
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "spawn.lineage"
+  },
+  "paths": {
+    "memory_dir": "client/memory/lineage",
+    "adaptive_index_path": "client/adaptive/lineage/seed_spawn_index.json",
+    "contracts_dir": "state/spawn/seed_spawn_lineage/contracts",
+    "latest_path": "state/spawn/seed_spawn_lineage/latest.json",
+    "history_path": "state/spawn/seed_spawn_lineage/history.jsonl",
+    "receipts_path": "state/spawn/seed_spawn_lineage/receipts.jsonl"
+  }
+}

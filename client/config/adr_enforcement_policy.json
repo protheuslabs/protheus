@@ -1,0 +1,35 @@
+{
+  "schema_id": "adr_enforcement_policy",
+  "schema_version": "1.0",
+  "adr_index_path": "client/docs/adr/INDEX.md",
+  "adr_directory": "client/docs/adr",
+  "enforcement": {
+    "require_for_paths": [
+      "crates/",
+      "client/systems/",
+      "client/config/"
+    ],
+    "required_sections": [
+      "Context",
+      "Decision",
+      "Consequences",
+      "Rollback"
+    ],
+    "allowed_statuses": [
+      "proposed",
+      "accepted",
+      "superseded"
+    ],
+    "fail_on_missing_adr_link": true,
+    "fail_on_stale_adr": true,
+    "max_stale_days": 180
+  },
+  "ci": {
+    "required_check_name": "adr-enforcement-gate",
+    "command": "cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- enterprise-hardening run --strict=1"
+  },
+  "outputs": {
+    "latest_path": "state/ops/adr_enforcement/latest.json",
+    "history_path": "state/ops/adr_enforcement/history.jsonl"
+  }
+}

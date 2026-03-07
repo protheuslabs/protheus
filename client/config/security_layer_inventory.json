@@ -1,0 +1,149 @@
+{
+  "schema_id": "security_layer_inventory",
+  "schema_version": "1.0.0",
+  "owner": "core-security",
+  "layers": [
+    {
+      "id": "constitution_policy_core",
+      "title": "Constitution + policy contract enforcement",
+      "implementation_paths": [
+        "AGENT-CONSTITUTION.md",
+        "core/layer0/ops/src/contract_check.rs"
+      ],
+      "policy_paths": [
+        "client/config/guard_check_registry.json",
+        "client/config/directives/T0_invariants.yaml"
+      ],
+      "guard_check_ids": [
+        "contract_check",
+        "formal_invariant_engine",
+        "critical_path_formal_verifier"
+      ],
+      "test_paths": [
+        "core/layer0/ops/src/contract_check.rs",
+        "client/memory/tools/tests/critical_path_formal_verifier.test.js"
+      ]
+    },
+    {
+      "id": "conduit_boundary",
+      "title": "Rust conduit boundary and command security",
+      "implementation_paths": [
+        "core/layer2/conduit/src/lib.rs",
+        "core/layer2/conduit-security/src/lib.rs"
+      ],
+      "policy_paths": [
+        "client/config/guard_check_registry.json",
+        "client/config/runtime_scheduler_policy.json"
+      ],
+      "guard_check_ids": [
+        "formal_invariant_engine",
+        "critical_path_formal_verifier"
+      ],
+      "test_paths": [
+        "core/layer2/conduit/tests/invariants.rs",
+        "core/layer2/conduit/tests/certification.rs"
+      ]
+    },
+    {
+      "id": "sandbox_isolation_and_egress",
+      "title": "Sandbox isolation and egress guardrails",
+      "implementation_paths": [
+        "client/systems/security/execution_sandbox_envelope.ts",
+        "client/systems/security/egress_gateway.ts"
+      ],
+      "policy_paths": [
+        "client/config/execution_sandbox_envelope_policy.json",
+        "client/config/egress_gateway_policy.json"
+      ],
+      "guard_check_ids": [
+        "execution_sandbox_envelope_status",
+        "repository_access_auditor_status"
+      ],
+      "test_paths": [
+        "client/memory/tools/tests/execution_sandbox_envelope.test.js",
+        "client/memory/tools/tests/egress_gateway.test.js"
+      ]
+    },
+    {
+      "id": "supply_chain_trust",
+      "title": "Supply-chain trust verification plane",
+      "implementation_paths": [
+        "client/systems/security/supply_chain_trust_plane.ts"
+      ],
+      "policy_paths": [
+        "client/config/supply_chain_trust_policy.json"
+      ],
+      "guard_check_ids": [
+        "supply_chain_trust_plane"
+      ],
+      "test_paths": [
+        "client/memory/tools/tests/supply_chain_trust_plane.test.js"
+      ]
+    },
+    {
+      "id": "key_lifecycle_and_pq",
+      "title": "Key lifecycle governance and post-quantum migration",
+      "implementation_paths": [
+        "client/systems/security/key_lifecycle_governor.ts",
+        "client/systems/security/post_quantum_migration_lane.ts"
+      ],
+      "policy_paths": [
+        "client/config/key_lifecycle_policy.json",
+        "client/config/post_quantum_migration_policy.json"
+      ],
+      "guard_check_ids": [
+        "key_lifecycle_verify",
+        "post_quantum_migration_status"
+      ],
+      "test_paths": [
+        "client/memory/tools/tests/key_lifecycle_governor.test.js",
+        "client/memory/tools/tests/post_quantum_migration_lane.test.js"
+      ]
+    },
+    {
+      "id": "heartbeat_terms_and_repo_access",
+      "title": "Secure heartbeat endpoint + operator terms + repo access",
+      "implementation_paths": [
+        "client/systems/security/secure_heartbeat_endpoint.ts",
+        "client/systems/security/operator_terms_ack.ts",
+        "client/systems/security/repository_access_auditor.ts"
+      ],
+      "policy_paths": [
+        "client/config/secure_heartbeat_endpoint_policy.json",
+        "client/config/operator_terms_ack_policy.json",
+        "client/config/repository_access_policy.json"
+      ],
+      "guard_check_ids": [
+        "secure_heartbeat_endpoint_verify",
+        "operator_terms_ack_status",
+        "repository_access_auditor_status"
+      ],
+      "test_paths": [
+        "client/memory/tools/tests/secure_heartbeat_endpoint.test.js",
+        "client/memory/tools/tests/operator_terms_ack.test.js",
+        "client/memory/tools/tests/repository_access_auditor.test.js"
+      ]
+    },
+    {
+      "id": "state_kernel_integrity",
+      "title": "State kernel integrity and replay guardrails",
+      "implementation_paths": [
+        "client/systems/ops/state_kernel.js",
+        "client/systems/ops/state_kernel_cutover.js"
+      ],
+      "policy_paths": [
+        "client/config/state_kernel_policy.json",
+        "client/config/state_kernel_cutover_policy.json"
+      ],
+      "guard_check_ids": [
+        "state_kernel_status",
+        "state_kernel_parity",
+        "state_kernel_replay_verify",
+        "state_kernel_cutover_status"
+      ],
+      "test_paths": [
+        "client/memory/tools/tests/state_kernel.test.js"
+      ]
+    }
+  ]
+}

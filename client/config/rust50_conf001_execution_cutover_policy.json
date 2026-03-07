@@ -1,0 +1,40 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "lane_id": "V6-RUST50-CONF-001",
+  "accepted_preamble": "ENFORCER RULES ACTIVE — READ codex_enforcer.md FIRST.",
+  "required_refs": [
+    "codex_enforcer.md",
+    "core/layer2/execution/Cargo.toml",
+    "core/layer2/execution/src/lib.rs",
+    "core/layer2/execution/src/main.rs",
+    "client/systems/execution/index.ts",
+    "client/memory/tools/tests/execution_phase2_rust_parity.test.js",
+    "client/memory/tools/tests/execution_security_gate_integration.test.js"
+  ],
+  "checks": {
+    "wasm_build_cmd": [
+      "cargo",
+      "build",
+      "--manifest-path",
+      "core/layer2/execution/Cargo.toml",
+      "--target",
+      "wasm32-unknown-unknown",
+      "--release"
+    ],
+    "parity_test_cmd": [
+      "node",
+      "client/memory/tools/tests/execution_phase2_rust_parity.test.js"
+    ],
+    "sovereignty_test_cmd": [
+      "node",
+      "client/memory/tools/tests/execution_security_gate_integration.test.js"
+    ]
+  },
+  "outputs": {
+    "latest_path": "state/ops/rust50_conf001/latest.json",
+    "history_path": "state/ops/rust50_conf001/history.jsonl",
+    "artifacts_dir": "state/ops/rust50_conf001/artifacts"
+  }
+}

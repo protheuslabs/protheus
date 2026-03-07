@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "strict_default": true,
+  "remediation_threshold": 0.95,
+  "remediation_limit": 4,
+  "parity_cmd": [
+    "node",
+    "client/systems/ops/narrow_agent_parity_harness.js",
+    "run",
+    "--strict=1"
+  ],
+  "paths": {
+    "latest_path": "state/ops/continuous_parity_maintainer/latest.json",
+    "receipts_path": "state/ops/continuous_parity_maintainer/receipts.jsonl",
+    "remediation_queue_path": "state/ops/continuous_parity_maintainer/remediation_queue.json"
+  }
+}

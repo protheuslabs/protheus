@@ -3,7 +3,7 @@
 ## Licensing
 
 - Repository license: Apache-2.0 (see `LICENSE`)
-- Historical proprietary terms are archived under `legal/archive/` for audit context only.
+- Historical proprietary terms are archived under `client/legal/archive/` for audit context only.
 
 ## Mind Sovereignty Covenant (Immutable)
 
@@ -18,7 +18,7 @@
 1. Recursive self-improvement must route through signed gates, contract lanes, and deterministic receipts.
 2. Tier 3+ self-modification requires explicit operator approval before live apply.
 3. Every RSI step is hash-chained, Merkle-verifiable, and rollback-ready via resurrection protocol lanes.
-4. Memory and identity upgrades must preserve data-scope boundaries (user-specific in memory/adaptive, permanent non-user logic in systems/config).
+4. Memory and identity upgrades must preserve data-scope boundaries (user-specific in client/memory/adaptive, permanent non-user logic in client/systems/config).
 
 ## Protheus – Mission & Operating Principles
 

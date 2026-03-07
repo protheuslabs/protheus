@@ -1,0 +1,212 @@
+{
+  "ok": true,
+  "type": "autonomy_simulation_harness",
+  "ts": "2026-03-07T04:59:54.889Z",
+  "end_date": "2026-03-07",
+  "days": 180,
+  "verdict": "fail",
+  "verdict_raw": "fail",
+  "verdict_effective": "fail",
+  "checks": {
+    "drift_rate": {
+      "value": 0,
+      "warn": 0.65,
+      "fail": 0.85,
+      "status": "pass"
+    },
+    "yield_rate": {
+      "value": 0,
+      "warn": 0.2,
+      "fail": 0.08,
+      "status": "fail"
+    },
+    "safety_stop_rate": {
+      "value": 0,
+      "warn": 0.25,
+      "fail": 0.45,
+      "status": "pass"
+    },
+    "attempt_volume": {
+      "value": 0,
+      "min": 5,
+      "status": "warn"
+    },
+    "policy_hold_rate": {
+      "value": 0,
+      "warn": 0.2,
+      "fail": 0.35,
+      "enforce_fail": false,
+      "status": "pass"
+    },
+    "budget_hold_rate": {
+      "value": 0,
+      "warn": 0.12,
+      "fail": 0.25,
+      "enforce_fail": false,
+      "status": "pass"
+    },
+    "budget_autopause_active": {
+      "value": false,
+      "fail_when_active": true,
+      "status": "pass"
+    }
+  },
+  "checks_effective": {
+    "drift_rate": {
+      "value": 0,
+      "warn": 0.65,
+      "fail": 0.85,
+      "status": "pass"
+    },
+    "yield_rate": {
+      "value": 0,
+      "warn": 0.2,
+      "fail": 0.08,
+      "status": "fail"
+    },
+    "safety_stop_rate": {
+      "value": 0,
+      "warn": 0.25,
+      "fail": 0.45,
+      "status": "pass"
+    },
+    "attempt_volume": {
+      "value": 0,
+      "min": 5,
+      "status": "warn"
+    },
+    "policy_hold_rate": {
+      "value": 0,
+      "warn": 0.2,
+      "fail": 0.35,
+      "enforce_fail": false,
+      "status": "pass"
+    },
+    "budget_hold_rate": {
+      "value": 0,
+      "warn": 0.12,
+      "fail": 0.25,
+      "enforce_fail": false,
+      "status": "pass"
+    },
+    "budget_autopause_active": {
+      "value": false,
+      "fail_when_active": true,
+      "status": "pass"
+    }
+  },
+  "metric_integrity": {
+    "mode": "dual_track",
+    "baseline_preserved": true,
+    "effective_projection_present": true,
+    "denominator_reduction_only": false,
+    "denominator_delta": 0,
+    "identity_projection_enabled": false,
+    "identity_projection_blocked_attempts": 0
+  },
+  "counters": {
+    "run_rows": 0,
+    "attempts": 0,
+    "executed": 0,
+    "shipped": 0,
+    "no_progress": 0,
+    "safety_stops": 0,
+    "policy_holds": 0,
+    "budget_holds": 0
+  },
+  "baseline_counters": {
+    "attempts": 0,
+    "executed": 0,
+    "shipped": 0,
+    "no_progress": 0,
+    "safety_stops": 0,
+    "policy_holds": 0,
+    "budget_holds": 0
+  },
+  "effective_counters": {
+    "attempts": 0,
+    "executed": 0,
+    "shipped": 0,
+    "no_progress": 0,
+    "safety_stops": 0,
+    "policy_holds": 0,
+    "budget_holds": 0
+  },
+  "hold_reasons": {
+    "baseline": {
+      "policy": {},
+      "budget": {}
+    },
+    "effective": {
+      "policy": {},
+      "budget": {}
+    }
+  },
+  "budget_autopause": {
+    "path": "/Users/jay/.openclaw/workspace/client/state/autonomy/budget_autopause.json",
+    "active": false,
+    "currently_active": false,
+    "active_relevant": false,
+    "source": null,
+    "reason": null,
+    "pressure": null,
+    "until": null,
+    "updated_at": null,
+    "observed_in_window": false,
+    "active_at_window_end": false,
+    "signal_source": null,
+    "explicit_last_ts": null,
+    "implicit_last_ts": null,
+    "source_mode": "live_state_plus_runs",
+    "snapshot_fallback_used": false
+  },
+  "compiler_projection": {
+    "enabled": true,
+    "lineage_require_t1_root": true,
+    "lineage_block_missing_objective": true,
+    "filter_contextless_attempts": true,
+    "rolling_context_enabled": false,
+    "compiler_hash": "40cc5cf18353cd99",
+    "compiler_active_count": 3,
+    "accepted_attempts": 0,
+    "rejected_attempts": 0,
+    "skipped_attempts": 0,
+    "rejected_by_reason": {},
+    "skipped_by_reason": {},
+    "sample_rejected": [],
+    "sample_skipped": []
+  },
+  "identity_projection": {
+    "enabled": false,
+    "unavailable": false,
+    "unavailable_reason": null,
+    "policy_path": null,
+    "active_objective_ids": [],
+    "attempted": 0,
+    "blocked_attempts": 0,
+    "blocked_by_reason": {},
+    "summary": {
+      "checked": 0,
+      "blocked": 0,
+      "allowed": 0,
+      "identity_drift_score": 0,
+      "max_identity_drift_score": 0.58,
+      "max_candidate_drift_score": 0,
+      "blocking_code_counts": {}
+    },
+    "sample_blocked": []
+  },
+  "queue": {
+    "total": 0,
+    "pending": 0,
+    "stale_pending_72h": 0
+  },
+  "objective_mix": {
+    "executed_total": 0,
+    "objective_count": 0,
+    "counts": {}
+  },
+  "recommendations": [
+    "Bias selection toward high-value, executable proposals and reduce medium-risk capacity until shipped rate recovers."
+  ]
+}

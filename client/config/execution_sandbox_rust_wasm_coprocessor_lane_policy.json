@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "security.execution_sandbox_rust_wasm_coprocessor"
+  },
+  "enable_coprocessor": true,
+  "sandbox_script": "client/systems/security/execution_sandbox_envelope.js",
+  "wasm_runtime_script": "client/systems/wasm/component_runtime.js",
+  "paths": {
+    "memory_dir": "client/memory/security/execution_sandbox_rust_wasm_coprocessor_lane",
+    "adaptive_index_path": "client/adaptive/security/execution_sandbox_rust_wasm_coprocessor_lane/index.json",
+    "events_path": "state/security/execution_sandbox_rust_wasm_coprocessor_lane/events.jsonl",
+    "latest_path": "state/security/execution_sandbox_rust_wasm_coprocessor_lane/latest.json",
+    "receipts_path": "state/security/execution_sandbox_rust_wasm_coprocessor_lane/receipts.jsonl",
+    "coprocessor_state_path": "state/security/execution_sandbox_rust_wasm_coprocessor_lane/state.json"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "checks": [
+    {
+      "id": "warden_scoring_core",
+      "description": "Complexity scoring core computes normalized dimensions",
+      "file_must_exist": "client/systems/fractal/warden/README.md"
+    },
+    {
+      "id": "complexity_budget_enforcement",
+      "description": "Complexity budget and soul-tax enforcement active"
+    },
+    {
+      "id": "organ_contract_validation",
+      "description": "Fractal contract validation lane active"
+    },
+    {
+      "id": "weekly_simplification_cycle",
+      "description": "Scheduled simplification sprint lane active"
+    }
+  ],
+  "paths": {
+    "state_path": "state/fractal/complexity_warden_meta_organ/state.json",
+    "latest_path": "state/fractal/complexity_warden_meta_organ/latest.json",
+    "receipts_path": "state/fractal/complexity_warden_meta_organ/receipts.jsonl",
+    "history_path": "state/fractal/complexity_warden_meta_organ/history.jsonl"
+  }
+}

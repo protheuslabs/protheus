@@ -15,4 +15,4 @@ jobs:
           node-version: '20'
       - name: Verify generated artifacts are not staged
         run: |
-          node systems/ops/repo_hygiene_generated_guard.js check --strict=1
+          node client/systems/ops/repo_hygiene_generated_guard.js check --strict=1
