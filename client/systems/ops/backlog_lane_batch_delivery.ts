@@ -29,7 +29,11 @@ type AnyObj = Record<string, any>;
 
 const DEFAULT_POLICY_PATH = process.env.BACKLOG_LANE_BATCH_DELIVERY_POLICY_PATH
   ? path.resolve(process.env.BACKLOG_LANE_BATCH_DELIVERY_POLICY_PATH)
-  : path.join(ROOT, 'config', 'backlog_lane_batch_delivery_policy.json');
+  : (() => {
+      const migrated = path.join(ROOT, 'client', 'config', 'backlog_lane_batch_delivery_policy.json');
+      const legacy = path.join(ROOT, 'config', 'backlog_lane_batch_delivery_policy.json');
+      return fs.existsSync(migrated) ? migrated : legacy;
+    })();
 
 function usage() {
   console.log('Usage:');
@@ -71,7 +75,7 @@ function defaultPolicy() {
     version: '1.0',
     enabled: true,
     strict_default: true,
-    source_registry_path: 'config/backlog_registry.json',
+    source_registry_path: 'client/config/backlog_registry.json',
     done_statuses: ['done'],
     targets: {},
     outputs: {

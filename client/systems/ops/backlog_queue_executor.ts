@@ -8,10 +8,29 @@ const queueSqlite = require('../../lib/queue_sqlite_runtime.js');
 
 type AnyObj = Record<string, any>;
 
-const ROOT = path.resolve(__dirname, '..', '..');
+function findRepoRoot(startDir: string): string {
+  let dir = path.resolve(startDir || process.cwd());
+  while (true) {
+    const cargo = path.join(dir, 'Cargo.toml');
+    const layer0 = path.join(dir, 'core', 'layer0', 'ops', 'Cargo.toml');
+    const legacy = path.join(dir, 'crates', 'ops', 'Cargo.toml');
+    if (fs.existsSync(cargo) && (fs.existsSync(layer0) || fs.existsSync(legacy))) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) return path.resolve(startDir || process.cwd());
+    dir = parent;
+  }
+}
+
+const ROOT = findRepoRoot(__dirname);
 const DEFAULT_POLICY_PATH = process.env.BACKLOG_QUEUE_EXECUTOR_POLICY_PATH
   ? path.resolve(process.env.BACKLOG_QUEUE_EXECUTOR_POLICY_PATH)
-  : path.join(ROOT, 'config', 'backlog_queue_executor_policy.json');
+  : (() => {
+      const migrated = path.join(ROOT, 'client', 'config', 'backlog_queue_executor_policy.json');
+      const legacy = path.join(ROOT, 'config', 'backlog_queue_executor_policy.json');
+      return fs.existsSync(migrated) ? migrated : legacy;
+    })();
 
 const EXECUTABLE_IDS = [
   "V3-RACE-195",
@@ -231,7 +250,7 @@ function defaultPolicy(): AnyObj {
     schema_id: 'backlog_queue_executor_policy',
     schema_version: '1.0',
     enabled: true,
-    registry_path: 'config/backlog_registry.json',
+    registry_path: 'client/config/backlog_registry.json',
     state_root: 'state/ops/backlog_queue_executor',
     latest_path: 'state/ops/backlog_queue_executor/latest.json',
     history_path: 'state/ops/backlog_queue_executor/history.jsonl',

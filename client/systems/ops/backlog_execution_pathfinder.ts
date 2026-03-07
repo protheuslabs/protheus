@@ -43,7 +43,11 @@ type QueueBucket = {
 
 const DEFAULT_POLICY_PATH = process.env.BACKLOG_EXECUTION_PATHFINDER_POLICY_PATH
   ? path.resolve(process.env.BACKLOG_EXECUTION_PATHFINDER_POLICY_PATH)
-  : path.join(ROOT, 'config', 'backlog_execution_pathfinder_policy.json');
+  : (() => {
+      const migrated = path.join(ROOT, 'client', 'config', 'backlog_execution_pathfinder_policy.json');
+      const legacy = path.join(ROOT, 'config', 'backlog_execution_pathfinder_policy.json');
+      return fs.existsSync(migrated) ? migrated : legacy;
+    })();
 
 function usage() {
   console.log('Usage:');
@@ -74,7 +78,7 @@ function defaultPolicy() {
     version: '1.0',
     enabled: true,
     strict_default: false,
-    source_registry_path: 'config/backlog_registry.json',
+    source_registry_path: 'client/config/backlog_registry.json',
     package_json_path: 'package.json',
     statuses: {
       done: ['done'],
@@ -89,7 +93,7 @@ function defaultPolicy() {
       latest_path: 'state/ops/backlog_execution_pathfinder/latest.json',
       history_path: 'state/ops/backlog_execution_pathfinder/history.jsonl',
       report_path: 'state/ops/backlog_execution_pathfinder/report.json',
-      report_md_path: 'docs/backlog_views/execution_path.md'
+      report_md_path: 'client/docs/backlog_views/execution_path.md'
     }
   };
 }
