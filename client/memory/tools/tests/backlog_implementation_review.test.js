@@ -49,7 +49,7 @@ try {
   writeText(path.join(tmp, 'AGENTS.md'), '# test workspace\n');
   writeText(path.join(tmp, 'package.json'), '{}\n');
 
-  const registryPath = path.join(tmp, 'config', 'backlog_registry.json');
+  const registryPath = path.join(tmp, 'client', 'config', 'backlog_registry.json');
   writeJson(registryPath, {
     schema_id: 'backlog_registry_v1',
     schema_version: '1.0',
@@ -87,14 +87,14 @@ try {
     ]
   });
 
-  writeText(path.join(tmp, 'systems', 'foo.js'), [
+  writeText(path.join(tmp, 'client', 'systems', 'foo.js'), [
     '#!/usr/bin/env node',
     "'use strict';",
     '',
     "require('../../lib/ts_bootstrap').bootstrap(__filename, module);",
     ''
   ].join('\n'));
-  writeText(path.join(tmp, 'systems', 'foo.ts'), [
+  writeText(path.join(tmp, 'client', 'systems', 'foo.ts'), [
     '#!/usr/bin/env node',
     "'use strict';",
     'export {};',
@@ -106,10 +106,10 @@ try {
     'console.log(items.length);',
     ''
   ].join('\n'));
-  writeJson(path.join(tmp, 'config', 'foo.json'), { ok: true, id: 'V3-RACE-900' });
-  writeText(path.join(tmp, 'memory', 'tools', 'tests', 'foo.test.js'), 'console.log("V3-RACE-900");\n');
+  writeJson(path.join(tmp, 'client', 'config', 'foo.json'), { ok: true, id: 'V3-RACE-900' });
+  writeText(path.join(tmp, 'client', 'memory', 'tools', 'tests', 'foo.test.js'), 'console.log("V3-RACE-900");\n');
 
-  writeText(path.join(tmp, 'systems', 'wrapper_only.js'), [
+  writeText(path.join(tmp, 'client', 'systems', 'wrapper_only.js'), [
     '#!/usr/bin/env node',
     "'use strict';",
     '',
@@ -117,15 +117,15 @@ try {
     ''
   ].join('\n'));
 
-  const policyPath = path.join(tmp, 'config', 'policy.json');
+  const policyPath = path.join(tmp, 'client', 'config', 'policy.json');
   writeJson(policyPath, {
     version: '1.0-test',
     enabled: true,
     strict_default: false,
     source_registry_path: registryPath,
     outputs: {
-      review_registry_path: path.join(tmp, 'config', 'backlog_review_registry.json'),
-      reviewed_view_path: path.join(tmp, 'docs', 'backlog_views', 'reviewed.md'),
+      review_registry_path: path.join(tmp, 'client', 'config', 'backlog_review_registry.json'),
+      reviewed_view_path: path.join(tmp, 'client', 'docs', 'backlog_views', 'reviewed.md'),
       latest_path: path.join(tmp, 'state', 'ops', 'backlog_implementation_review', 'latest.json'),
       history_path: path.join(tmp, 'state', 'ops', 'backlog_implementation_review', 'history.jsonl')
     },
@@ -137,7 +137,7 @@ try {
       max_scan_bytes: 1048576
     },
     search: {
-      roots: ['systems', 'config', 'docs', 'client/memory/tools/tests'],
+      roots: ['client/systems', 'client/config', 'client/docs', 'client/memory/tools/tests'],
       exclude_paths: ['client/config/backlog_registry.json', 'client/docs/backlog_views/reviewed.md']
     }
   });
@@ -158,7 +158,7 @@ try {
   assert.strictEqual(out.payload.registry_summary.row_count, 3);
   assert.strictEqual(out.payload.registry_summary.fail_count, 1);
 
-  const reviewedPath = path.join(tmp, 'docs', 'backlog_views', 'reviewed.md');
+  const reviewedPath = path.join(tmp, 'client', 'docs', 'backlog_views', 'reviewed.md');
   assert.ok(fs.existsSync(reviewedPath), 'reviewed view should be written');
 
   fs.rmSync(tmp, { recursive: true, force: true });

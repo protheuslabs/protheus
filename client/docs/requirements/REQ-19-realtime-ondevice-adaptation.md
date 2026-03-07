@@ -27,18 +27,21 @@ Out of scope:
   - Adaptation can be triggered by runtime interactions and heartbeat cadence.
   - Trigger policy enforces bounded cadence and resource ceilings.
   - Every adaptation cycle emits deterministic receipts.
+  - Layer placement default: authoritative primitive in `core/layer2`; `client` is conduit-facing surface/tests only.
 
 2. `REQ-19-002` On-device low-power adaptation profile
 - Acceptance:
   - Adaptation path runs locally without mandatory cloud dependency.
   - Low-power throttling profile supports always-on background safety limits.
   - Hardware profile metadata is included in adaptation decisions/receipts.
+  - Layer placement default: low-power policy authority in `core/layer2`; `client` is conduit-facing surface/tests only.
 
 3. `REQ-19-003` Persistent adaptation state continuity
 - Acceptance:
   - Adaptation deltas are persisted and recoverable across restarts.
   - Recovery path validates integrity before applying persisted deltas.
   - “Never forgets” claim is represented as explicit continuity contract checks.
+  - Layer placement default: continuity/integrity authority in `core/layer2`; `client` is conduit-facing surface/tests only.
 
 4. `REQ-19-004` Covenant + drift fail-closed gates
 - Acceptance:
@@ -68,3 +71,4 @@ Out of scope:
 ## Execution Notes
 
 - Existing fine-tuning lanes provide baseline trainer substrate; this requirement adds real-time continuity + governance hardening around runtime adaptation.
+- Regression guard: if implementation appears in `client` for bootstrap velocity, treat it as temporary compatibility-only and open a core-port backlog item immediately.

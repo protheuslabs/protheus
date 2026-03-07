@@ -1252,7 +1252,15 @@
     "ops:good-first-issues:seed": "node client/systems/ops/good_first_issue_seed.js --apply=0",
     "ops:good-first-issues:publish": "node client/systems/ops/good_first_issue_seed.js --apply=1",
     "ops:conduit:edge-matrix": "cargo test -p conduit --no-default-features && cargo test -p conduit --no-default-features --features edge",
-    "test:resource:edge-selector": "cargo test -p resource"
+    "test:resource:edge-selector": "cargo test -p resource",
+    "ops:adaptive:realtime:status": "node client/systems/adaptive/realtime_adaptation_loop.js status",
+    "lane:v6-adapt-001:run": "node client/systems/adaptive/realtime_adaptation_loop.js cycle --trigger=interaction --interaction-id=lane_v6_adapt_001 --cpu-ms=120 --tokens=180 --memory-mb=192 --apply=1",
+    "test:lane:v6-adapt-001": "node client/memory/tools/tests/realtime_adaptation_loop.test.js",
+    "ops:adaptive:realtime:verify": "node client/systems/adaptive/realtime_adaptation_loop.js verify-continuity",
+    "lane:v6-adapt-002:run": "node client/systems/adaptive/realtime_adaptation_loop.js cycle --trigger=heartbeat --profile=low_power --heartbeat-id=lane_v6_adapt_002 --cpu-ms=90 --tokens=150 --memory-mb=180 --apply=1",
+    "test:lane:v6-adapt-002": "node client/memory/tools/tests/realtime_adaptation_low_power_profile.test.js",
+    "lane:v6-adapt-003:run": "node client/systems/adaptive/realtime_adaptation_loop.js cycle --trigger=interaction --interaction-id=lane_v6_adapt_003 --cpu-ms=90 --tokens=140 --memory-mb=160 --apply=1 && node client/systems/adaptive/realtime_adaptation_loop.js verify-continuity",
+    "test:lane:v6-adapt-003": "node client/memory/tools/tests/realtime_adaptation_continuity.test.js"
   },
   "bin": {
     "protheus": "./client/bin/protheus",

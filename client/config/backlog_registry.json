@@ -14980,34 +14980,48 @@
       "wave": "V5"
     },
     {
-      "acceptance": "Implement `REQ-19-001` interaction/heartbeat-triggered adaptation cycles with bounded cadence and receipts.",
+      "acceptance": "Implement `REQ-19-001` via `client/systems/adaptive/realtime_adaptation_loop.ts`, `client/config/realtime_adaptation_loop_policy.json`, and `client/memory/tools/tests/realtime_adaptation_loop.test.js` with interaction/heartbeat-triggered cycles, bounded cadence/resource ceilings, and deterministic receipts.",
       "class": "backlog",
       "dependencies": [],
       "id": "V6-ADAPT-001",
       "problem": "Existing fine-tune lanes focus on training workflows, not continuous runtime adaptation triggered by live interactions.",
-      "status": "queued",
+      "status": "done",
       "title": "Interaction-triggered real-time adaptation loop",
       "wave": "V6"
     },
     {
-      "acceptance": "Implement `REQ-19-002` on-device adaptation with throttling profile and hardware-aware receipt metadata.",
+      "acceptance": "Implement `REQ-19-002` via `client/systems/adaptive/realtime_adaptation_loop.ts`, `client/config/realtime_adaptation_loop_policy.json`, and `client/memory/tools/tests/realtime_adaptation_low_power_profile.test.js` with low-power throttling profile and hardware-aware receipt metadata.",
       "class": "backlog",
       "dependencies": [],
       "id": "V6-ADAPT-002",
       "problem": "Runtime adaptation needs explicit local-only low-power execution profile for always-on devices.",
-      "status": "queued",
+      "status": "done",
       "title": "On-device low-power adaptation runtime profile",
       "wave": "V6"
     },
     {
-      "acceptance": "Implement `REQ-19-003` persisted adaptation state + reboot recovery integrity checks.",
+      "acceptance": "Implement `REQ-19-003` via `client/systems/adaptive/realtime_adaptation_loop.ts`, `client/config/realtime_adaptation_loop_policy.json`, and `client/memory/tools/tests/realtime_adaptation_continuity.test.js` with persisted adaptation state, reboot continuity verification, and fail-closed integrity checks.",
       "class": "backlog",
       "dependencies": [],
       "id": "V6-ADAPT-003",
       "problem": "Persistent adaptation deltas must survive restart and validate before reuse to support continuity claims.",
-      "status": "queued",
+      "status": "done",
       "title": "Persistent adaptation continuity contract (“never forgets”)",
       "wave": "V6"
+    },
+    {
+      "id": "V6-ADAPT-CORE-001",
+      "class": "backlog",
+      "wave": "V6",
+      "status": "queued",
+      "title": "Port adaptation primitives to core and demote client runtime",
+      "problem": "Adaptation primitives were bootstrapped in client TS for immediate execution; authority must move to core to enforce strict layering and conduit-only boundaries.",
+      "dependencies": [
+        "V6-ADAPT-001",
+        "V6-ADAPT-002",
+        "V6-ADAPT-003"
+      ],
+      "acceptance": "Port REQ-19-001/002/003 primitives to Rust core/layer2 with conduit APIs; keep client as Layer 3 thin conduit shell + tests only; remove policy authority from client adaptation runtime."
     },
     {
       "acceptance": "Implement `REQ-19-004` fail-closed covenant + drift gates for adaptation updates with reversible blocks and receipts.",

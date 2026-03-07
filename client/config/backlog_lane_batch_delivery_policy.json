@@ -3,6 +3,8 @@
   "enabled": true,
   "strict_default": true,
   "source_registry_path": "client/config/backlog_registry.json",
+  "review_registry_path": "client/config/backlog_review_registry.json",
+  "require_review_pass": true,
   "done_statuses": [
     "done"
   ],

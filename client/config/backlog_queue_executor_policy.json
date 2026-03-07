@@ -3,6 +3,14 @@
   "schema_version": "1.0",
   "enabled": true,
   "registry_path": "client/config/backlog_registry.json",
+  "review_registry_path": "client/config/backlog_review_registry.json",
+  "enforce_real_delivery": true,
+  "require_review_pass": true,
+  "require_lane_test": true,
+  "pseudo_lane_markers": [
+    "backlog_lane_batch_delivery",
+    "backlog_queue_executor"
+  ],
   "state_root": "state/ops/backlog_queue_executor",
   "latest_path": "state/ops/backlog_queue_executor/latest.json",
   "history_path": "state/ops/backlog_queue_executor/history.jsonl",

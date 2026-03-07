@@ -76,6 +76,8 @@ function defaultPolicy() {
     enabled: true,
     strict_default: true,
     source_registry_path: 'client/config/backlog_registry.json',
+    review_registry_path: 'client/config/backlog_review_registry.json',
+    require_review_pass: true,
     done_statuses: ['done'],
     targets: {},
     outputs: {
@@ -103,6 +105,8 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
     enabled: toBool(raw.enabled, true),
     strict_default: toBool(raw.strict_default, base.strict_default),
     source_registry_path: resolvePath(raw.source_registry_path, base.source_registry_path),
+    review_registry_path: resolvePath(raw.review_registry_path, base.review_registry_path),
+    require_review_pass: toBool(raw.require_review_pass, base.require_review_pass),
     done_statuses: asList(raw.done_statuses || base.done_statuses, 40)
       .map((v) => normalizeToken(v, 40))
       .filter(Boolean),
@@ -135,6 +139,33 @@ function loadRegistry(policy: AnyObj) {
     byId.set(id, row);
   }
   return { ok: true, rows, byId, registry: reg };
+}
+
+function loadReviewRow(policy: AnyObj, id: string) {
+  const registry = readJson(policy.review_registry_path, null);
+  if (!registry || typeof registry !== 'object' || !Array.isArray(registry.rows)) {
+    return {
+      ok: false,
+      error: 'review_registry_missing_or_invalid',
+      review_registry_path: rel(policy.review_registry_path),
+      review: null
+    };
+  }
+  const row = registry.rows.find((entry: AnyObj) => normalizeId(entry && entry.id || '') === id) || null;
+  if (!row) {
+    return {
+      ok: false,
+      error: 'review_row_missing',
+      review_registry_path: rel(policy.review_registry_path),
+      review: null
+    };
+  }
+  return {
+    ok: true,
+    error: null,
+    review_registry_path: rel(policy.review_registry_path),
+    review: row
+  };
 }
 
 function parseDeps(raw: unknown) {
@@ -233,6 +264,16 @@ function runTarget(policy: AnyObj, args: AnyObj) {
   const acceptance = cleanText(row.acceptance || '', 16000);
   const verifySignals = ['verify', 'test', 'receipt', 'check', 'assert'];
   const rollbackSignals = ['rollback', 'revert', 'fallback', 'undo'];
+  const review = loadReviewRow(policy, id);
+  const reviewResult = normalizeToken(review && review.review && review.review.review_result || 'missing', 60) || 'missing';
+  const substantiveCodeCount = Number(
+    review
+    && review.review
+    && review.review.evidence
+    && Array.isArray(review.review.evidence.substantive_code_paths)
+      ? review.review.evidence.substantive_code_paths.length
+      : 0
+  );
 
   const checks = [
     {
@@ -258,6 +299,18 @@ function runTarget(policy: AnyObj, args: AnyObj) {
       required: !!target.rollback_signals_required,
       pass: target.rollback_signals_required ? hasAnySignal(acceptance, rollbackSignals) : true,
       reason: hasAnySignal(acceptance, rollbackSignals) ? 'ok' : 'rollback_signal_missing'
+    },
+    {
+      id: 'implementation_review_pass',
+      required: !!policy.require_review_pass,
+      pass: policy.require_review_pass ? (review.ok === true && reviewResult === 'pass' && substantiveCodeCount > 0) : true,
+      reason: policy.require_review_pass
+        ? (review.ok === true
+            ? (reviewResult === 'pass' && substantiveCodeCount > 0
+                ? 'ok'
+                : `review_result_${reviewResult || 'missing'}_substantive_${substantiveCodeCount}`)
+            : String(review.error || 'review_registry_error'))
+        : 'not_required'
     }
   ];
 
@@ -275,6 +328,7 @@ function runTarget(policy: AnyObj, args: AnyObj) {
     ts: nowIso(),
     policy_path: rel(policy.policy_path),
     source_registry_path: rel(policy.source_registry_path),
+    review_registry_path: review.review_registry_path || rel(policy.review_registry_path),
     id,
     class: cleanText(row.class || '', 80),
     wave: cleanText(row.wave || '', 40),
@@ -284,6 +338,8 @@ function runTarget(policy: AnyObj, args: AnyObj) {
     dependencies,
     dependency_status: dependencyStatus,
     open_dependencies: openDependencies,
+    implementation_review_result: reviewResult,
+    substantive_code_paths_count: substantiveCodeCount,
     checks,
     failed_required_checks: failedRequired.map((check) => check.id),
     apply,

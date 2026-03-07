@@ -22,13 +22,13 @@
   },
   "search": {
     "roots": [
-      "systems",
-      "lib",
+      "client/systems",
+      "client/lib",
       "core",
-      "packages",
-      "platform",
-      "config",
-      "docs",
+      "client/packages",
+      "client/platform",
+      "client/config",
+      "client/docs",
       "client/memory/tools/tests",
       "tests"
     ],

@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "min_cycle_interval_ms": 30000,
+  "resource_ceilings": {
+    "max_cpu_ms": 250,
+    "max_tokens": 4096,
+    "max_memory_mb": 512
+  },
+  "profiles": {
+    "default": {
+      "cadence_multiplier": 1,
+      "cpu_multiplier": 1,
+      "tokens_multiplier": 1,
+      "memory_multiplier": 1
+    },
+    "low_power": {
+      "cadence_multiplier": 2,
+      "cpu_multiplier": 0.6,
+      "tokens_multiplier": 0.65,
+      "memory_multiplier": 0.75
+    }
+  },
+  "paths": {
+    "state_path": "state/adaptive/realtime_adaptation_loop/state.json",
+    "latest_path": "state/adaptive/realtime_adaptation_loop/latest.json",
+    "receipts_path": "state/adaptive/realtime_adaptation_loop/receipts.jsonl"
+  }
+}

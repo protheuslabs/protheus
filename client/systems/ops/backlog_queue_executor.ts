@@ -4,6 +4,7 @@ export {};
 
 import fs from 'fs';
 import path from 'path';
+import { spawnSync } from 'child_process';
 const queueSqlite = require('../../lib/queue_sqlite_runtime.js');
 
 type AnyObj = Record<string, any>;
@@ -211,6 +212,15 @@ function parseArgs(argv: string[]): AnyObj {
   return out;
 }
 
+function asList(v: unknown, maxLen = 200): string[] {
+  if (Array.isArray(v)) {
+    return v.map((row) => cleanText(row, maxLen)).filter(Boolean);
+  }
+  const txt = cleanText(v, 4000);
+  if (!txt) return [];
+  return txt.split(',').map((row) => cleanText(row, maxLen)).filter(Boolean);
+}
+
 function toBool(v: unknown, fallback = false): boolean {
   if (v == null) return fallback;
   const s = String(v).trim().toLowerCase();
@@ -251,6 +261,11 @@ function defaultPolicy(): AnyObj {
     schema_version: '1.0',
     enabled: true,
     registry_path: 'client/config/backlog_registry.json',
+    review_registry_path: 'client/config/backlog_review_registry.json',
+    enforce_real_delivery: true,
+    require_review_pass: true,
+    require_lane_test: true,
+    pseudo_lane_markers: ['backlog_lane_batch_delivery', 'backlog_queue_executor'],
     state_root: 'state/ops/backlog_queue_executor',
     latest_path: 'state/ops/backlog_queue_executor/latest.json',
     history_path: 'state/ops/backlog_queue_executor/history.jsonl',
@@ -282,6 +297,11 @@ function loadPolicy(policyPath: string): AnyObj {
     schema_version: cleanText(raw.schema_version || base.schema_version, 24) || '1.0',
     enabled: raw.enabled !== false,
     registry_path: resolvePath(raw.registry_path || base.registry_path, base.registry_path),
+    review_registry_path: resolvePath(raw.review_registry_path || base.review_registry_path, base.review_registry_path),
+    enforce_real_delivery: toBool(raw.enforce_real_delivery, base.enforce_real_delivery !== false),
+    require_review_pass: toBool(raw.require_review_pass, base.require_review_pass !== false),
+    require_lane_test: toBool(raw.require_lane_test, base.require_lane_test !== false),
+    pseudo_lane_markers: asList(raw.pseudo_lane_markers || base.pseudo_lane_markers, 120).map((row) => row.toLowerCase()),
     state_root: resolvePath(raw.state_root || base.state_root, base.state_root),
     latest_path: resolvePath(raw.latest_path || base.latest_path, base.latest_path),
     history_path: resolvePath(raw.history_path || base.history_path, base.history_path),
@@ -296,7 +316,8 @@ function loadPolicy(policyPath: string): AnyObj {
       queue_name: cleanText(sqliteRaw.queue_name || base.sqlite.queue_name, 120) || 'backlog_queue_executor',
       migrate_history_jsonl: sqliteRaw.migrate_history_jsonl !== false,
       mirror_jsonl: sqliteRaw.mirror_jsonl !== false
-    }
+    },
+    policy_path: path.resolve(policyPath)
   };
 }
 
@@ -307,6 +328,77 @@ function normalizeId(raw: unknown): string {
 function loadRegistryRows(policy: AnyObj): AnyObj[] {
   const reg = readJson(policy.registry_path, {});
   return Array.isArray(reg.rows) ? reg.rows : [];
+}
+
+function loadReviewIndex(policy: AnyObj): AnyObj {
+  const registry = readJson(policy.review_registry_path, null);
+  const byId = new Map<string, AnyObj>();
+  if (registry && typeof registry === 'object' && Array.isArray(registry.rows)) {
+    for (const row of registry.rows) {
+      const id = normalizeId(row && row.id || '');
+      if (!id) continue;
+      byId.set(id, row);
+    }
+  }
+  return {
+    ok: byId.size > 0,
+    review_registry_path: policy.review_registry_path,
+    by_id: byId
+  };
+}
+
+function laneIdFromScriptToken(token: string): string {
+  const normalized = cleanText(token || '', 160)
+    .replace(/[^a-zA-Z0-9-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toUpperCase();
+  return /^[A-Z0-9]+(?:-[A-Z0-9]+)+$/.test(normalized) ? normalized : '';
+}
+
+function loadScriptCatalog(): AnyObj {
+  const pkgPath = path.join(ROOT, 'package.json');
+  const pkg = readJson(pkgPath, {});
+  const scripts = pkg && typeof pkg.scripts === 'object' ? pkg.scripts : {};
+  const laneRunById = new Map<string, AnyObj>();
+  const laneTestById = new Map<string, string>();
+  for (const [key, value] of Object.entries(scripts)) {
+    const runMatch = String(key || '').match(/^lane:([^:]+):run$/i);
+    if (runMatch) {
+      const id = laneIdFromScriptToken(runMatch[1]);
+      if (id) laneRunById.set(id, {
+        script_key: String(key),
+        script_command: cleanText(value as string, 4000)
+      });
+      continue;
+    }
+    const testMatch = String(key || '').match(/^test:lane:([^:]+)$/i);
+    if (testMatch) {
+      const id = laneIdFromScriptToken(testMatch[1]);
+      if (id) laneTestById.set(id, String(key));
+    }
+  }
+  return {
+    package_json_path: pkgPath,
+    lane_run_by_id: laneRunById,
+    lane_test_by_id: laneTestById
+  };
+}
+
+function runNpmScript(scriptKey: string): AnyObj {
+  const run = spawnSync('npm', ['run', '-s', scriptKey], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    timeout: 120000
+  });
+  const statusCode = Number.isFinite(Number(run.status)) ? Number(run.status) : 1;
+  return {
+    ok: statusCode === 0,
+    status: statusCode,
+    signal: run.signal || null,
+    stdout: cleanText(run.stdout || '', 1000),
+    stderr: cleanText(run.stderr || '', 1000)
+  };
 }
 
 function selectTargets(rows: AnyObj[], args: AnyObj): AnyObj[] {
@@ -340,18 +432,87 @@ function selectTargets(rows: AnyObj[], args: AnyObj): AnyObj[] {
   });
 }
 
-function executeRow(row: AnyObj, policy: AnyObj, dbCtx: AnyObj | null): AnyObj {
+function executeRow(
+  row: AnyObj,
+  policy: AnyObj,
+  dbCtx: AnyObj | null,
+  reviewIndex: AnyObj,
+  scriptCatalog: AnyObj
+): AnyObj {
   const id = normalizeId(row.id || '');
   const status = cleanText(row.status || 'unknown', 40).toLowerCase();
   const receiptDir = path.join(policy.state_root, 'receipts');
   const receiptPath = path.join(receiptDir, id + '.json');
   const historyPath = path.join(policy.state_root, 'receipts_history.jsonl');
+  const reviewRow = reviewIndex.by_id instanceof Map ? reviewIndex.by_id.get(id) : null;
+  const reviewResult = cleanText(reviewRow && reviewRow.review_result || '', 80)
+    .toLowerCase()
+    .replace(/[^a-z0-9_:-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  const substantiveCodeCount = Number(
+    reviewRow
+    && reviewRow.evidence
+    && Array.isArray(reviewRow.evidence.substantive_code_paths)
+      ? reviewRow.evidence.substantive_code_paths.length
+      : 0
+  );
+  const reviewAllowsExecution = !!(
+    reviewRow
+    && substantiveCodeCount > 0
+    && reviewResult !== 'fail'
+    && reviewResult !== 'blocked_external'
+  );
+  const runScript = scriptCatalog.lane_run_by_id instanceof Map ? scriptCatalog.lane_run_by_id.get(id) : null;
+  const testScript = scriptCatalog.lane_test_by_id instanceof Map ? scriptCatalog.lane_test_by_id.get(id) : null;
+  const runCommandText = cleanText(runScript && runScript.script_command || '', 4000).toLowerCase();
+  const pseudoMarkers = Array.isArray(policy.pseudo_lane_markers) ? policy.pseudo_lane_markers : [];
+  const pseudoLane = pseudoMarkers.some((marker: string) => marker && runCommandText.includes(String(marker).toLowerCase()));
+
+  const checks = [
+    {
+      id: 'lane_run_script_present',
+      required: !!policy.enforce_real_delivery,
+      pass: !!runScript,
+      reason: runScript ? 'ok' : 'lane_script_missing'
+    },
+    {
+      id: 'lane_run_script_real',
+      required: !!policy.enforce_real_delivery,
+      pass: !!runScript && !pseudoLane,
+      reason: runScript ? (pseudoLane ? 'pseudo_lane_script_blocked' : 'ok') : 'lane_script_missing'
+    },
+    {
+      id: 'implementation_review_pass',
+      required: !!policy.require_review_pass,
+      pass: policy.require_review_pass ? reviewAllowsExecution : true,
+      reason: policy.require_review_pass
+        ? (reviewAllowsExecution ? 'ok' : `review_${reviewResult || 'missing'}_substantive_${substantiveCodeCount}`)
+        : 'not_required'
+    },
+    {
+      id: 'lane_test_script_present',
+      required: !!policy.require_lane_test,
+      pass: policy.require_lane_test ? !!testScript : true,
+      reason: policy.require_lane_test ? (testScript ? 'ok' : 'lane_test_missing') : 'not_required'
+    }
+  ];
+  const failedRequired = checks.filter((check) => check.required && !check.pass);
+  const canExecute = failedRequired.length === 0;
+  const runResult = canExecute && runScript ? runNpmScript(String(runScript.script_key)) : null;
+  const testResult = canExecute && testScript ? runNpmScript(String(testScript)) : null;
+  const executionPassed = !!(
+    canExecute
+    && runResult
+    && runResult.ok === true
+    && (!policy.require_lane_test || (testResult && testResult.ok === true))
+  );
 
   const receipt = {
     schema_id: 'backlog_queue_execution_receipt',
     schema_version: '1.0',
     artifact_type: 'receipt',
-    ok: true,
+    ok: executionPassed,
     ts: nowIso(),
     id,
     class: cleanText(row.class || '', 80) || null,
@@ -359,9 +520,18 @@ function executeRow(row: AnyObj, policy: AnyObj, dbCtx: AnyObj | null): AnyObj {
     status_before: status,
     title: cleanText(row.title || '', 400) || null,
     dependencies: Array.isArray(row.dependencies) ? row.dependencies : [],
-    execution_mode: 'queued_backlog_lane_materialization',
+    execution_mode: canExecute ? 'real_lane_command' : 'validation_blocked',
     execution_surface: 'systems/ops/backlog_queue_executor.ts',
-    policy_path: rel(DEFAULT_POLICY_PATH),
+    policy_path: rel(policy.policy_path || DEFAULT_POLICY_PATH),
+    review_registry_path: rel(policy.review_registry_path),
+    review_result: reviewResult || null,
+    substantive_code_paths_count: substantiveCodeCount,
+    checks,
+    failed_required_checks: failedRequired.map((check) => check.id),
+    lane_run_script: runScript ? String(runScript.script_key) : null,
+    lane_test_script: testScript ? String(testScript) : null,
+    run_result: runResult,
+    test_result: testResult,
     receipt_path: rel(receiptPath)
   };
 
@@ -373,7 +543,9 @@ function executeRow(row: AnyObj, policy: AnyObj, dbCtx: AnyObj | null): AnyObj {
       status_before: status,
       title: receipt.title,
       wave: receipt.wave,
-      class: receipt.class
+      class: receipt.class,
+      ok: receipt.ok,
+      failed_required_checks: receipt.failed_required_checks
     }, receipt.ts);
     const sqlReceipt = queueSqlite.insertReceipt(dbCtx.db, id, receipt);
     receipt.sqlite_receipt_id = cleanText(sqlReceipt && sqlReceipt.receipt_id || '', 120) || null;
@@ -401,6 +573,8 @@ function run(policyPath: string, args: AnyObj): AnyObj {
 
   const rows = loadRegistryRows(policy);
   const targets = selectTargets(rows, args);
+  const reviewIndex = loadReviewIndex(policy);
+  const scriptCatalog = loadScriptCatalog();
   let dbCtx: AnyObj | null = null;
   let migration: AnyObj | null = null;
   if (policy.sqlite && policy.sqlite.enabled !== false) {
@@ -420,7 +594,7 @@ function run(policyPath: string, args: AnyObj): AnyObj {
         );
     dbCtx = { db, migration };
   }
-  const receipts = targets.map((row) => executeRow(row, policy, dbCtx));
+  const receipts = targets.map((row) => executeRow(row, policy, dbCtx, reviewIndex, scriptCatalog));
   const sqliteStats = dbCtx && dbCtx.db
     ? queueSqlite.queueStats(dbCtx.db, cleanText(policy.sqlite.queue_name || 'backlog_queue_executor', 120) || 'backlog_queue_executor')
     : null;
@@ -428,20 +602,32 @@ function run(policyPath: string, args: AnyObj): AnyObj {
     try { dbCtx.db.close(); } catch {}
   }
 
+  const okReceipts = receipts.filter((row) => row && row.ok === true);
+  const failedReceipts = receipts.filter((row) => !row || row.ok !== true);
+
   const summary = {
     schema_id: 'backlog_queue_executor_receipt',
     schema_version: '1.0',
     artifact_type: 'receipt',
-    ok: true,
+    ok: failedReceipts.length === 0,
     type: 'backlog_queue_executor',
     action: 'run',
     ts: nowIso(),
     policy_path: rel(policyPath),
     registry_path: rel(policy.registry_path),
+    review_registry_path: rel(policy.review_registry_path),
     queued_ids_catalog_size: EXECUTABLE_IDS.length,
     target_count: targets.length,
-    executed_count: receipts.length,
-    executed_ids: receipts.map((r) => r.id),
+    executed_count: okReceipts.length,
+    blocked_count: failedReceipts.length,
+    executed_ids: okReceipts.map((r) => r.id),
+    blocked_ids: failedReceipts.map((r) => r.id),
+    blocked_samples: failedReceipts.slice(0, 25).map((row) => ({
+      id: row.id,
+      failed_required_checks: Array.isArray(row.failed_required_checks) ? row.failed_required_checks : [],
+      run_result: row.run_result && row.run_result.ok === false ? row.run_result : null,
+      test_result: row.test_result && row.test_result.ok === false ? row.test_result : null
+    })),
     sqlite: {
       enabled: !!(policy.sqlite && policy.sqlite.enabled !== false),
       db_path: policy.sqlite && policy.sqlite.enabled !== false ? rel(policy.sqlite.db_path) : null,

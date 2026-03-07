@@ -32,7 +32,11 @@ const { writeArtifactSet } = require('../../lib/state_artifact_contract');
 
 const DEFAULT_POLICY_PATH = process.env.BACKLOG_IMPLEMENTATION_REVIEW_POLICY_PATH
   ? path.resolve(process.env.BACKLOG_IMPLEMENTATION_REVIEW_POLICY_PATH)
-  : path.join(ROOT, 'config', 'backlog_implementation_review_policy.json');
+  : (() => {
+      const migrated = path.join(ROOT, 'client', 'config', 'backlog_implementation_review_policy.json');
+      const legacy = path.join(ROOT, 'config', 'backlog_implementation_review_policy.json');
+      return fs.existsSync(migrated) ? migrated : legacy;
+    })();
 
 const CODE_EXT = new Set([
   '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',
@@ -67,10 +71,10 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
     version: cleanText(raw.version || '1.0', 24) || '1.0',
     enabled: toBool(raw.enabled, true),
     strict_default: toBool(raw.strict_default, false),
-    source_registry_path: resolvePath(raw.source_registry_path, 'config/backlog_registry.json'),
+    source_registry_path: resolvePath(raw.source_registry_path, 'client/config/backlog_registry.json'),
     outputs: {
-      review_registry_path: resolvePath(outputs.review_registry_path, 'config/backlog_review_registry.json'),
-      reviewed_view_path: resolvePath(outputs.reviewed_view_path, 'docs/backlog_views/reviewed.md'),
+      review_registry_path: resolvePath(outputs.review_registry_path, 'client/config/backlog_review_registry.json'),
+      reviewed_view_path: resolvePath(outputs.reviewed_view_path, 'client/docs/backlog_views/reviewed.md'),
       latest_path: resolvePath(outputs.latest_path, 'state/ops/backlog_implementation_review/latest.json'),
       history_path: resolvePath(outputs.history_path, 'state/ops/backlog_implementation_review/history.jsonl')
     },
@@ -83,18 +87,18 @@ function loadPolicy(policyPath = DEFAULT_POLICY_PATH) {
     },
     search: {
       roots: asList(
-        search.roots || ['systems', 'lib', 'core', 'packages', 'platform', 'config', 'docs', 'memory/tools/tests', 'tests'],
+        search.roots || ['client/systems', 'client/lib', 'core', 'client/packages', 'client/platform', 'client/config', 'client/docs', 'client/memory/tools/tests', 'tests'],
         220
       ),
       exclude_paths: asList(
         search.exclude_paths || [
           'SRS.md',
           'UPGRADE_BACKLOG.md',
-          'docs/backlog_views/active.md',
-          'docs/backlog_views/archive.md',
-          'docs/backlog_views/reviewed.md',
-          'config/backlog_registry.json',
-          'config/backlog_review_registry.json',
+          'client/docs/backlog_views/active.md',
+          'client/docs/backlog_views/archive.md',
+          'client/docs/backlog_views/reviewed.md',
+          'client/config/backlog_registry.json',
+          'client/config/backlog_review_registry.json',
           'node_modules/'
         ],
         260
@@ -118,6 +122,13 @@ function looksLikePath(raw: string) {
     plain.startsWith('/')
     || plain.startsWith('./')
     || plain.startsWith('../')
+    || plain.startsWith('client/systems/')
+    || plain.startsWith('client/lib/')
+    || plain.startsWith('client/packages/')
+    || plain.startsWith('client/platform/')
+    || plain.startsWith('client/config/')
+    || plain.startsWith('client/docs/')
+    || plain.startsWith('client/memory/')
     || plain.startsWith('systems/')
     || plain.startsWith('lib/')
     || plain.startsWith('core/')
@@ -264,15 +275,23 @@ function listSearchFiles(policy: any) {
 
 function classifyBucket(relPath: string) {
   const v = String(relPath || '');
-  if (v.startsWith('memory/tools/tests/') || v.startsWith('tests/')) return 'test';
-  if (v.startsWith('config/')) return 'config';
-  if (v.startsWith('docs/')) return 'docs';
+  if (
+    v.startsWith('memory/tools/tests/')
+    || v.startsWith('client/memory/tools/tests/')
+    || v.startsWith('tests/')
+  ) return 'test';
+  if (v.startsWith('config/') || v.startsWith('client/config/')) return 'config';
+  if (v.startsWith('docs/') || v.startsWith('client/docs/')) return 'docs';
   if (
     v.startsWith('systems/')
+    || v.startsWith('client/systems/')
     || v.startsWith('lib/')
+    || v.startsWith('client/lib/')
     || v.startsWith('core/')
     || v.startsWith('packages/')
+    || v.startsWith('client/packages/')
     || v.startsWith('platform/')
+    || v.startsWith('client/platform/')
   ) return 'runtime';
   return 'other';
 }
