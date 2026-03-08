@@ -193,6 +193,12 @@ flowchart TB
     L2 --> RECEIPTS
 ```
 
+Runtime subsystem ownership, interfaces, failure modes, and lane links are tracked in the generated map:
+
+- [Generated System Map](client/docs/architecture/SYSTEM_MAP.md)
+- Source registry: `client/config/system_map_registry.json`
+- Generator lane: `client/systems/ops/system_map_generator.ts`
+
 ## Runtime Flow
 
 1. A command enters from CLI or a cognition surface.
@@ -215,8 +221,10 @@ flowchart TB
 - [Rust Primitive Requirement](client/docs/requirements/REQ-08-rust-core-primitives.md)
 - [Layered Templates Requirement](client/docs/requirements/REQ-31-layered-templates-and-os-personality.md)
 - [Mech-Suit Cockpit Runtime Requirement](client/docs/requirements/REQ-32-mech-suit-cockpit-persistent-push.md)
+- [Executable System Map Requirement](client/docs/requirements/REQ-34-executable-system-map-registry.md)
 - [Security Posture](client/docs/SECURITY_POSTURE.md)
 - [Three-Plane Model](planes/README.md)
 - [Three-Plane Formal Spec Surface](planes/spec/README.md)
 - [Planes Contract Registry](planes/contracts/README.md)
 - [Layer Rulebook](client/docs/architecture/LAYER_RULEBOOK.md)
+- [Generated System Map](client/docs/architecture/SYSTEM_MAP.md)

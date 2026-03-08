@@ -1,6 +1,6 @@
 # Backlog Execution Path
 
-Generated: 2026-03-08T16:37:53.202Z
+Generated: 2026-03-08T16:55:18.673Z
 
 ## Summary
 
@@ -47,6 +47,26 @@ Generated: 2026-03-08T16:37:53.202Z
 | V6-COMP-001 | V6 | backlog | no |  | Competitive benchmark matrix with reproducible receipts |
 | V6-COMP-002 | V6 | backlog | no |  | `protheus migrate --from openfang` importer lane |
 | V6-COMP-003 | V6 | backlog | no |  | Evidence-first audit dashboard drilldown |
+| V6-FLUX-001 | V6 | backlog | no |  | Flux conformance matrix and traceability lane |
+| V6-FLUX-002 | V6 | backlog | no |  | Ontological integrity operation gate lane |
+| V6-FLUX-003 | V6 | backlog | no |  | Coherence preference runtime verifier lane |
+| V6-FLUX-004 | V6 | backlog | no |  | Structural fluidity stress harness lane |
+| V6-FLUX-005 | V6 | backlog | no |  | Substrate probe evidence lane |
+| V6-FLUX-006 | V6 | backlog | no |  | Flux readiness operator status lane |
+| V6-PAY-001 | V6 | backlog | no |  | HTTP 402 challenge middleware for stateless payment gating |
+| V6-PAY-002 | V6 | backlog | no |  | XMR402 proof verification path |
+| V6-PAY-003 | V6 | backlog | no |  | Replay and double-spend mitigation guardrails |
+| V6-PAY-004 | V6 | backlog | no |  | Governed autonomous payment initiation for shadows |
+| V6-PAY-005 | V6 | backlog | no |  | RPC/client/config/subaddress integration contract |
+| V6-PAY-006 | V6 | backlog | no |  | Wallet deep-link + operator payment UX lane |
+| V6-SBOX-002 | V6 | backlog | no |  | Dynamic scoped sub-agent spawning |
+| V6-SBOX-003 | V6 | backlog | no |  | Persistent sandbox state bridge |
+| V6-SBOX-004 | V6 | backlog | no |  | On-demand skill/tool loader for sandbox workloads |
+| V6-SBOX-005 | V6 | backlog | no |  | Context compression controls for long-running sandbox tasks |
+| V6-SHADOW-001 | V6 | backlog | no |  | Structured shadow conclave runtime lane |
+| V6-SHADOW-002 | V6 | backlog | no |  | Asynchronous conclave workspace lane |
+| V6-SHADOW-005 | V6 | backlog | no |  | Autonomous shadow proposal bridge lane |
+| V6-SHADOW-006 | V6 | backlog | no |  | Runtime health-gated routing/conclave lane |
 
 ## Top Dependency Blockers
 

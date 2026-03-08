@@ -1373,7 +1373,10 @@
     "lane:v6-shadow-003:run": "npm run -s ops:shadow:classify",
     "ops:shadow:dispatch": "node client/systems/shadow/shadow_dispatch_reliability.js enqueue --shadow=ops --message=\"runtime pulse\" --idempotency-key=manual_probe --apply=1 && node client/systems/shadow/shadow_dispatch_reliability.js dispatch --limit=5 --apply=1",
     "test:lane:v6-shadow-004": "node client/memory/tools/tests/shadow_dispatch_reliability.test.js",
-    "lane:v6-shadow-004:run": "npm run -s ops:shadow:dispatch"
+    "lane:v6-shadow-004:run": "npm run -s ops:shadow:dispatch",
+    "ops:system-map:run": "node client/systems/ops/system_map_generator.js run --apply=1",
+    "ops:system-map:status": "node client/systems/ops/system_map_generator.js status",
+    "test:ops:system-map-generator": "node client/memory/tools/tests/system_map_generator.test.js"
   },
   "bin": {
     "protheus": "./client/bin/protheus",
