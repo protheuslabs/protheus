@@ -1,0 +1,49 @@
+name: empty-fort-pulse
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Apply changes and open PR (service account only)'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+
+jobs:
+  pulse:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run pulse scheduler
+        id: pulse
+        run: |
+          APPLY_FLAG=0
+          if [ "${{ github.event.inputs.apply || 'false' }}" = "true" ]; then
+            APPLY_FLAG=1
+          fi
+          node scripts/empty_fort_pulse_scheduler.js --apply=${APPLY_FLAG} --actor=${{ github.actor }} --audit=artifacts/empty-fort/pulse_audit.json
+
+      - name: Create pulse PR (optional apply mode)
+        if: ${{ github.event.inputs.apply == 'true' }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: 'chore(empty-fort): pulse maintenance update'
+          title: 'chore(empty-fort): pulse maintenance update'
+          body: 'Automated low-risk pulse update with service-account and daily-cap guardrails.'
+          branch: 'codex/empty-fort-pulse-${{ github.run_id }}'
+          labels: 'empty-fort-pulse,maintenance'
+          add-paths: |
+            client/docs/ops/empty_fort_pulse_log.md

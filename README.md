@@ -312,6 +312,11 @@ The project is operated with explicit documentation and governance contracts:
 - [Documentation Hub](client/docs/README.md)
 - [Changelog](CHANGELOG.md)
 
+### Public Automation Disclosure
+
+- `empty-fort-pulse` is an optional low-risk maintenance automation constrained by declared service-account policy in [`client/config/empty_fort_pulse_policy.json`](client/config/empty_fort_pulse_policy.json).
+- Pulse runs are audit-logged and bounded by explicit daily caps before any PR creation attempt (`scripts/empty_fort_pulse_scheduler.js`, `.github/workflows/empty-fort-pulse.yml`).
+
 ## Contribution Workflow
 
 1. Read [CONTRIBUTING.md](CONTRIBUTING.md).

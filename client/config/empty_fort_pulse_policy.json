@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "service_account": "protheus-bot",
+  "max_prs_per_day": 2,
+  "allow_apply": true,
+  "labels": [
+    "empty-fort-pulse",
+    "maintenance"
+  ],
+  "target_file": "client/docs/ops/empty_fort_pulse_log.md"
+}
