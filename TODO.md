@@ -269,7 +269,8 @@
     - `formal:invariants:run` + conduit bridge smoke tests pass with live Rust lane.
   - Latest validation snapshot (2026-03-08):
     - `ops:mech-suit:benchmark` passes (`host_fault.timeout_detected=false`) and `formal:invariants:run` passes.
-    - `node client/lib/conduit_full_lifecycle_probe.js` still fails with `probe_error:conduit_stdio_timeout:15000` (also at `45000`), so startup-stall closure remains open.
+    - `node client/lib/conduit_full_lifecycle_probe.js` still fails (`probe_error:conduit_stdio_timeout:15000`), and direct `./target/debug/conduit_daemon --help` hangs in this host profile.
+    - Shared bridge startup probe now fails fast with `conduit_startup_probe_timeout:2000` so callers avoid long stdio timeout loops while closure remains open.
 
 - [x] `LOCAL-PARTITION-001` Migrate mutable runtime paths into unified local partitions.
   - Partition standard:
