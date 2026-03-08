@@ -131,13 +131,17 @@ function countFiles(dirPath) {
 }
 
 function runCommand(cmd) {
-  const r = spawnSync('sh', ['-lc', cmd], {
+  const normalized = String(cmd || '')
+    .replace(/\bnode\s+client\//g, 'node ')
+    .replace(/\bnpm\s+run\s+-s\s+/g, 'npm run -s ');
+  const r = spawnSync('sh', ['-lc', normalized], {
     cwd: ROOT,
     encoding: 'utf8',
     env: { ...process.env }
   });
   return {
     command: cmd,
+    normalized_command: normalized,
     ok: r.status === 0,
     status: Number(r.status || 0),
     stdout: String(r.stdout || '').trim().split('\n').slice(0, 30).join('\n'),

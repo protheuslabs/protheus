@@ -5,8 +5,11 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const DEFAULT_BASELINE_PATH = path.join(ROOT, 'state', 'autonomy', 'autophagy_baseline.json');
-const DEFAULT_SIM_DIR = path.join(ROOT, 'state', 'autonomy', 'simulations');
+const AUTONOMY_DIR = fs.existsSync(path.join(ROOT, 'local', 'state', 'autonomy'))
+  ? path.join(ROOT, 'local', 'state', 'autonomy')
+  : path.join(ROOT, 'state', 'autonomy');
+const DEFAULT_BASELINE_PATH = path.join(AUTONOMY_DIR, 'autophagy_baseline.json');
+const DEFAULT_SIM_DIR = path.join(AUTONOMY_DIR, 'simulations');
 
 function usage() {
   console.log('Usage:');

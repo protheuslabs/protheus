@@ -139,6 +139,83 @@ function decideActuation(policy: any, args: any, apply: boolean) {
   return row;
 }
 
+function evaluateWorkflowSandbox(input: any) {
+  const policy = loadPolicy();
+  if (policy.enabled === false) {
+    return {
+      ok: true,
+      allowed: true,
+      denied: false,
+      mode: cleanText(policy.mode || 'enforce', 40) || 'enforce',
+      action_type: 'workflow_step',
+      profile_id: null,
+      capability_manifest: [],
+      deny_reasons: [],
+      reason: 'lane_disabled_bypass'
+    };
+  }
+  const apply = !(input && input.dry_run === true);
+  const step = input && input.step && typeof input.step === 'object' ? input.step : {};
+  const args = {
+    'step-id': step.id || 'step',
+    'step-type': step.type || 'command',
+    command: input && input.command ? String(input.command) : '',
+    apply
+  };
+  const row = decideWorkflow(policy, args, apply);
+  const denied = row.allowed === false && String(policy.mode || 'enforce').toLowerCase() !== 'observe';
+  const profile = row.profile && typeof row.profile === 'object' ? row.profile : {};
+  return {
+    ok: true,
+    allowed: !denied,
+    denied,
+    mode: cleanText(policy.mode || 'enforce', 40) || 'enforce',
+    action_type: 'workflow_step',
+    profile_id: row.profile_id || null,
+    capability_manifest: Array.isArray(profile.capability_manifest) ? profile.capability_manifest : [],
+    deny_reasons: denied ? [cleanText(row.reason || 'sandbox_policy_denied', 180)] : [],
+    reason: cleanText(row.reason || 'ok', 180) || 'ok'
+  };
+}
+
+function evaluateActuationSandbox(input: any) {
+  const policy = loadPolicy();
+  if (policy.enabled === false) {
+    return {
+      ok: true,
+      allowed: true,
+      denied: false,
+      mode: cleanText(policy.mode || 'enforce', 40) || 'enforce',
+      action_type: 'actuation',
+      profile_id: null,
+      capability_manifest: [],
+      deny_reasons: [],
+      reason: 'lane_disabled_bypass'
+    };
+  }
+  const apply = !(input && input.dry_run === true);
+  const context = input && input.context && typeof input.context === 'object' ? input.context : {};
+  const args = {
+    kind: input && input.kind ? String(input.kind) : 'unknown',
+    context: JSON.stringify(context),
+    apply
+  };
+  const row = decideActuation(policy, args, apply);
+  const denied = row.allowed === false && String(policy.mode || 'enforce').toLowerCase() !== 'observe';
+  const profile = row.profile && typeof row.profile === 'object' ? row.profile : {};
+  return {
+    ok: true,
+    allowed: !denied,
+    denied,
+    mode: cleanText(policy.mode || 'enforce', 40) || 'enforce',
+    action_type: 'actuation',
+    profile_id: row.profile_id || null,
+    capability_manifest: Array.isArray(profile.capability_manifest) ? profile.capability_manifest : [],
+    deny_reasons: denied ? [cleanText(row.reason || 'sandbox_policy_denied', 180)] : [],
+    reason: cleanText(row.reason || 'ok', 180) || 'ok'
+  };
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const cmd = normalizeToken(args._[0] || 'status', 80) || 'status';
@@ -176,4 +253,14 @@ function main() {
   emit({ ok: false, type: 'execution_sandbox_envelope_error', error: 'unsupported_command', cmd }, 2);
 }
 
-main();
+module.exports = {
+  loadPolicy,
+  decideWorkflow,
+  decideActuation,
+  evaluateWorkflowSandbox,
+  evaluateActuationSandbox
+};
+
+if (require.main === module) {
+  main();
+}

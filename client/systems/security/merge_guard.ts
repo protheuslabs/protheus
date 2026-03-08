@@ -12,7 +12,10 @@ const path = require('path');
 function findRepoRoot(startDir) {
   let dir = path.resolve(startDir || process.cwd());
   while (true) {
-    if (fs.existsSync(path.join(dir, 'Cargo.toml')) && fs.existsSync(path.join(dir, 'crates', 'ops', 'Cargo.toml'))) {
+    const hasCargo = fs.existsSync(path.join(dir, 'Cargo.toml'));
+    const hasOps = fs.existsSync(path.join(dir, 'core', 'layer0', 'ops', 'Cargo.toml'))
+      || fs.existsSync(path.join(dir, 'crates', 'ops', 'Cargo.toml'));
+    if (hasCargo && hasOps) {
       return dir;
     }
     const parent = path.dirname(dir);
@@ -22,7 +25,10 @@ function findRepoRoot(startDir) {
 }
 
 const ROOT = findRepoRoot(__dirname);
-const { createLaneModule } = require(path.join(ROOT, 'lib', 'legacy_retired_lane_bridge.js'));
+const legacyBridgePath = fs.existsSync(path.join(ROOT, 'client', 'lib', 'legacy_retired_lane_bridge.js'))
+  ? path.join(ROOT, 'client', 'lib', 'legacy_retired_lane_bridge.js')
+  : path.join(ROOT, 'lib', 'legacy_retired_lane_bridge.js');
+const { createLaneModule } = require(legacyBridgePath);
 
 const lane = createLaneModule('SYSTEMS-SECURITY-MERGE-GUARD', ROOT);
 const { LANE_ID, buildLaneReceipt, verifyLaneReceipt } = lane;
