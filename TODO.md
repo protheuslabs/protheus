@@ -91,6 +91,7 @@
   - Latest validation snapshot (2026-03-08):
     - `attention_queue.rs` now hard-fails closed when Layer2 authority is unavailable (`layer2_priority_authority_unavailable`) unless explicit fallback is enabled.
     - `ops:mech-suit:benchmark` revalidated at `2026-03-08T09:40:13Z` with `ambient_mode_active=true`.
+    - `node client/memory/tools/tests/cockpit_harness.test.js` currently exits with `SKIP host_runtime_timeout`, so cockpit priority consumption proof is still blocked by local host runtime stalls.
     - `npm run -s ops:test:protheus-ops-core:attention` still exits with `reason_code=dyld_loader_stall_detected` during host build-script startup, so rollout exit remains blocked by `V6-HOST-BUILD-STALE-001`.
 
 - [x] `V6-MEMORY-HIERARCHY-XML-001` Backfill explicit XML hierarchy across historical daily memory files.
