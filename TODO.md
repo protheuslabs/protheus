@@ -93,11 +93,14 @@
     - `ops:mech-suit:benchmark` revalidated at `2026-03-08T09:40:13Z` with `ambient_mode_active=true`.
     - `npm run -s ops:test:protheus-ops-core:attention` still exits with `reason_code=dyld_loader_stall_detected` during host build-script startup, so rollout exit remains blocked by `V6-HOST-BUILD-STALE-001`.
 
-- [ ] `V6-MEMORY-HIERARCHY-XML-001` Backfill explicit XML hierarchy across historical daily memory files.
-  - Current state:
-    - New conversation synthesis output emits level metadata and XML payload boundaries, but historical `client/memory/YYYY-MM-DD.md` entries remain frontmatter + separator format.
-  - Completion criteria:
-    - Historical nodes carry explicit `<node|tag|jot>` boundaries + stable hex IDs without breaking recall/index parity.
+- [x] `V6-MEMORY-HIERARCHY-XML-001` Backfill explicit XML hierarchy across historical daily memory files.
+  - Delivered:
+    - Executed historical backfill: `node client/memory/tools/backfill_xml_hierarchy.js --apply=1`.
+    - Regenerated indices post-backfill: `node client/memory/tools/rebuild_exclusive.js`.
+    - Added drift/format regression coverage in `client/memory/tools/tests/memory_matrix.test.js` (isolated conversation matrix path + deterministic parsing assertions).
+  - Validation:
+    - `node client/memory/tools/backfill_xml_hierarchy.js` now reports no pending conversions in current surface.
+    - `npm run -s test:memory:matrix`.
 
 - [x] `V6-ROOT-INTERNAL-003` Decide and execute final placement policy for root personal/internal markdown artifacts.
   - Layer target: `client/local/internal/*` (or explicit archived docs path if governance files stay tracked).
@@ -289,6 +292,7 @@
     - Validation now returns deterministic stall reason codes instead of hanging.
     - Added auto-reap retry flow in `host_rust_validation.ts` (`max_retries` default `1`) with new preflight reap before first attempt.
     - Added orphan `build-script-build` detection in stale guard and surfaced `orphan_build_scripts` in diagnostics.
+    - `V6-EDGE-004` strict Rust edge-feature probes now run through `client/memory/tools/tests/v6_edge_004_lifecycle_validation.test.js`; in this host profile they defer with explicit `rust_edge_probe=deferred_host_stall` until dyld stall is resolved.
     - Revalidated at `2026-03-08T09:45:54Z`: both guarded profiles still fail deterministically with `reason_code=dyld_loader_stall_detected`, indicating unresolved host/toolchain startup behavior.
 
 - [x] `V6-APPS-RESTORE-003` Restore historical image-sensor tool lineage under `apps/`.

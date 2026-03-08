@@ -1310,6 +1310,8 @@
     "test:lane:v6-adapt-005": "node client/memory/tools/tests/adaptation_review_bridge.test.js",
     "lane:v6-adapt-006:run": "PROTHEUS_NOW_ISO=2026-03-08T12:00:00.000Z node client/systems/adaptive/realtime_adaptation_loop.js cycle --trigger=interaction --interaction-id=lane_v6_adapt_006 --profile=auto --platform=darwin --arch=arm64 --cpu-ms=110 --tokens=180 --memory-mb=192 --drift-score=0.2 --covenant-ok=1 --apply=1",
     "test:lane:v6-adapt-006": "node client/memory/tools/tests/realtime_adaptation_apple_profile.test.js",
+    "lane:v6-edge-004:run": "node client/memory/tools/tests/v6_edge_004_lifecycle_validation.test.js",
+    "test:lane:v6-edge-004": "node client/memory/tools/tests/v6_edge_004_lifecycle_validation.test.js",
     "local:init": "node client/systems/ops/local_runtime_partitioner.js init",
     "local:status": "node client/systems/ops/local_runtime_partitioner.js status",
     "local:reset": "node client/systems/ops/local_runtime_partitioner.js reset --confirm=RESET_LOCAL",

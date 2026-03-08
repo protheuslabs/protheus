@@ -54,6 +54,29 @@ function defaultLaneType(scriptRel: string, laneId: string) {
 function normalizePolicy(opts: AnyObj, policyPath: string, rawPolicy: AnyObj) {
   const basePaths = opts.paths && typeof opts.paths === 'object' ? opts.paths : {};
   const pathsRaw = rawPolicy.paths && typeof rawPolicy.paths === 'object' ? rawPolicy.paths : {};
+  const defaultPaths = {
+    memory_dir: 'memory/ops/lanes',
+    adaptive_index_path: 'adaptive/ops/lanes/index.json',
+    events_path: 'state/ops/lanes/events.jsonl',
+    latest_path: 'state/ops/lanes/latest.json',
+    receipts_path: 'state/ops/lanes/receipts.jsonl'
+  };
+  const resolvedPaths: AnyObj = {};
+  const pathKeys = new Set<string>([
+    ...Object.keys(defaultPaths),
+    ...Object.keys(basePaths),
+    ...Object.keys(pathsRaw)
+  ]);
+  for (const key of pathKeys) {
+    const rawValue = Object.prototype.hasOwnProperty.call(pathsRaw, key) ? pathsRaw[key] : undefined;
+    const baseValue = Object.prototype.hasOwnProperty.call(basePaths, key) ? basePaths[key] : undefined;
+    const fallback = Object.prototype.hasOwnProperty.call(defaultPaths, key)
+      ? (defaultPaths as AnyObj)[key]
+      : null;
+    const selected = rawValue != null ? rawValue : (baseValue != null ? baseValue : fallback);
+    if (selected == null) continue;
+    resolvedPaths[key] = resolvePath(selected, String(selected));
+  }
   return {
     version: cleanText(rawPolicy.version || '1.0', 32) || '1.0',
     enabled: rawPolicy.enabled !== false,
@@ -67,16 +90,7 @@ function normalizePolicy(opts: AnyObj, policyPath: string, rawPolicy: AnyObj) {
         180
       )
     },
-    paths: {
-      memory_dir: resolvePath(pathsRaw.memory_dir, String(basePaths.memory_dir || 'memory/ops/lanes')),
-      adaptive_index_path: resolvePath(
-        pathsRaw.adaptive_index_path,
-        String(basePaths.adaptive_index_path || 'adaptive/ops/lanes/index.json')
-      ),
-      events_path: resolvePath(pathsRaw.events_path, String(basePaths.events_path || 'state/ops/lanes/events.jsonl')),
-      latest_path: resolvePath(pathsRaw.latest_path, String(basePaths.latest_path || 'state/ops/lanes/latest.json')),
-      receipts_path: resolvePath(pathsRaw.receipts_path, String(basePaths.receipts_path || 'state/ops/lanes/receipts.jsonl'))
-    },
+    paths: resolvedPaths,
     policy_path: path.resolve(policyPath)
   };
 }
@@ -193,8 +207,28 @@ function runStandardLane(opts: AnyObj) {
     return out;
   }
 
+  function cmdStatus(recordPolicy: AnyObj, _statusArgs: AnyObj) {
+    return {
+      ok: true,
+      lane_id: laneId,
+      type: `${laneType}_status`,
+      action: 'status',
+      ts: nowIso(),
+      latest: readJson(recordPolicy.paths.latest_path, {}),
+      policy_path: rel(recordPolicy.policy_path),
+      artifacts: {
+        memory_dir: rel(recordPolicy.paths.memory_dir),
+        adaptive_index_path: rel(recordPolicy.paths.adaptive_index_path),
+        events_path: rel(recordPolicy.paths.events_path),
+        latest_path: rel(recordPolicy.paths.latest_path),
+        receipts_path: rel(recordPolicy.paths.receipts_path)
+      }
+    };
+  }
+
   const ctx = {
     cmdRecord,
+    cmdStatus,
     ROOT,
     args,
     lane_id: laneId,
@@ -203,21 +237,12 @@ function runStandardLane(opts: AnyObj) {
     apply
   };
 
-  if (cmd === 'status') {
-    const latest = readJson(policy.paths.latest_path, {});
-    emit({
-      ok: true,
-      lane_id: laneId,
-      type: `${laneType}_status`,
-      action: 'status',
-      ts: nowIso(),
-      latest,
-      policy_path: rel(policy.policy_path)
-    }, 0);
-  }
-
   let result: AnyObj;
-  if (cmd === 'configure') {
+  if (cmd === 'status' && opts.handlers && typeof opts.handlers.status === 'function') {
+    result = opts.handlers.status(policy, args, ctx);
+  } else if (cmd === 'status') {
+    emit(cmdStatus(policy, args), 0);
+  } else if (cmd === 'configure') {
     result = defaultConfigureRecord(opts, laneType, laneId, args, policy, ctx);
   } else if (opts.handlers && typeof opts.handlers[cmd] === 'function') {
     result = opts.handlers[cmd](policy, args, ctx);
