@@ -1,0 +1,100 @@
+[build-system]
+requires = ["setuptools==82.0.0", "wheel==0.45.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pqts"
+version = "0.1.0"
+description = "Production-oriented quant research and execution platform."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "pandas==2.3.3",
+  "numpy==2.4.2",
+  "aiohttp==3.13.3",
+  "websockets==16.0",
+  "pyyaml==6.0.3",
+  "scikit-learn==1.8.0",
+  "xgboost==3.2.0",
+  "joblib==1.5.3",
+  "python-dotenv==1.2.2",
+  "requests==2.32.5",
+  "plotly==6.6.0",
+  "dash==2.18.2",
+  "streamlit==1.55.0",
+  "altair==6.0.0",
+  "redis==7.2.1",
+  "sqlalchemy==2.0.48",
+  "alembic==1.18.4",
+  "ccxt==4.5.40",
+  "optuna==4.7.0",
+  "river==0.23.0",
+  "shap==0.51.0",
+  "riskfolio-lib==7.2.1",
+  "hmmlearn==0.3.3",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.0.2",
+  "pytest-asyncio==1.3.0",
+  "black==26.1.0",
+  "isort==8.0.1",
+  "ruff==0.15.4",
+  "flake8==7.3.0",
+  "mypy==1.19.1",
+  "bandit==1.9.4",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.black]
+line-length = 100
+target-version = ["py311", "py312", "py313"]
+exclude = '''
+/(
+    \.git
+  | \.pytest_cache
+  | __pycache__
+  | data
+  | logs
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+combine_as_imports = true
+skip_gitignore = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = ["data", "logs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_configs = true
+ignore_missing_imports = true
+show_error_codes = true
+pretty = true
+
+[[tool.mypy.overrides]]
+module = [
+  "analytics.paper_readiness",
+  "execution.paper_campaign",
+  "execution.paper_fill_model",
+  "execution.tca_feedback",
+]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+strict_equality = true

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PQTS Pricing</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --ink: #101828;
+        --muted: #475467;
+        --card: #ffffff;
+        --accent: #0f766e;
+      }
+      body {
+        margin: 0;
+        background: radial-gradient(circle at top, #e6f4f1, var(--bg));
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        color: var(--ink);
+      }
+      .wrap {
+        max-width: 1100px;
+        margin: 48px auto;
+        padding: 0 20px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 2rem;
+      }
+      p {
+        color: var(--muted);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+      }
+      .card {
+        background: var(--card);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(16, 24, 40, 0.08);
+        padding: 20px;
+      }
+      .price {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 6px 0 12px;
+      }
+      ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+      li {
+        margin: 6px 0;
+      }
+      .cta {
+        margin-top: 26px;
+      }
+      a.button {
+        display: inline-block;
+        text-decoration: none;
+        color: #fff;
+        background: var(--accent);
+        border-radius: 10px;
+        padding: 10px 16px;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>PQTS Pricing</h1>
+      <p>Built for prop desks, signal funds, and systematic family-office teams.</p>
+      <div class="grid">
+        <section class="card">
+          <h2>Launch</h2>
+          <div class="price">$599 / month</div>
+          <ul>
+            <li>Paper campaign orchestration</li>
+            <li>Risk-aware routing + TCA logs</li>
+            <li>Core readiness reports</li>
+          </ul>
+        </section>
+        <section class="card">
+          <h2>Professional</h2>
+          <div class="price">$2,499 / month</div>
+          <ul>
+            <li>Multi-market routing</li>
+            <li>Ops health alerts + promotion gates</li>
+            <li>Priority onboarding</li>
+          </ul>
+        </section>
+        <section class="card">
+          <h2>Enterprise</h2>
+          <div class="price">Custom</div>
+          <ul>
+            <li>Dedicated deployment model</li>
+            <li>Compliance exports + controls review</li>
+            <li>SLA-backed support</li>
+          </ul>
+        </section>
+      </div>
+      <div class="cta">
+        <a class="button" href="mailto:sales@pqts.example">Request Pilot Access</a>
+      </div>
+    </div>
+  </body>
+  </html>

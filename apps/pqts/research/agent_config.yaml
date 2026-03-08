@@ -1,0 +1,382 @@
+# AI Quant Research Agent - Operating Instructions
+# Embedded behavior specification for autonomous strategy discovery
+
+version: "1.0"
+purpose: "Automated quantitative research team for continuous strategy discovery"
+
+# Runtime knobs consumed directly by `research/ai_agent.py`
+db_path: data/research.db
+search_budget: 80
+top_performers: 10
+min_sharpe: 0.8
+max_drawdown: 0.20
+min_profit_factor: 1.1
+min_deflated_sharpe: 0.6
+max_pbo: 0.8
+min_walk_forward_consistency: 0.4
+
+capacity:
+  deployable_capital: 100000.0
+  max_annual_turnover_notional: 10000000.0
+
+costs:
+  commission_bps: 2.0
+  slippage_bps: 3.0
+  borrow_funding_bps: 1.0
+
+objective:
+  max_sharpe: 1.5
+  max_annual_vol: 0.25
+  annual_turnover: 6.0
+  cost_per_turnover: 0.0045
+
+analytics:
+  report_dir: data/research_reports
+  report_schema_version: "1.0.0"
+  artifact_registry_dir: data/research_artifacts
+
+objectives:
+  primary:
+    - maximize_risk_adjusted_returns
+  secondary:
+    - minimize_drawdowns
+    - maintain_system_stability
+    - continuously_discover_strategies
+    - retire_deteriorating_strategies
+
+core_principles:
+  safety_first:
+    - never_deploy_untested_strategies
+    - never_risk_catastrophic_loss
+    - prioritize_statistical_validity_over_short_term_profit
+    - maintain_diversification_across_strategies
+    - continuously_explore_while_exploiting
+
+  risk_limits:
+    max_daily_loss_pct: 2.0          # Hard stop
+    max_drawdown_pct: 15.0         # Strategy retirement
+    max_position_size_pct: 10.0    # Per position
+    max_leverage: 2.0
+    max_correlation: 0.7           # Between strategies
+
+  exploration_exploitation:
+    capital_allocation:
+      proven_strategies: 0.70        # 70% capital to profitable strategies
+      experimental_strategies: 0.30  # 30% to new discovery
+    research_budget:
+      variants_per_cycle: 100
+      cycles_per_day: 4
+      min_backtests_before_live: 1000
+
+system_architecture:
+  layers:
+    - market_data
+    - feature_store
+    - strategy_generation
+    - portfolio_construction
+    - execution_engine
+  
+  agent_scope:
+    - feature_engineering
+    - strategy_generation
+    - strategy_evaluation
+    - portfolio_allocation
+    - strategy_retirement
+  
+  execution_scope:
+    validated_strategies_only: true
+    requires_approval: live_trading
+
+operational_loop:
+  frequency: continuous
+  steps:
+    - collect_market_data
+    - generate_features
+    - generate_candidate_strategies
+    - run_backtests
+    - evaluate_results
+    - store_experiments
+    - promote_strategies
+    - retire_underperformers
+    - monitor_live_performance
+
+market_data:
+  requirements:
+    timestamp_precision: milliseconds
+    sync_across_exchanges: true
+    handle_missing_data: interpolate
+    archive_raw_data: true
+    retention_infinite: raw_data
+    retention_90_days: processed_features
+  
+  data_types:
+    - trades
+    - order_book_snapshots
+    - funding_rates
+    - liquidations
+    - volatility_metrics
+    - derived_features
+
+feature_generation:
+  categories:
+    order_book:
+      - order_book_imbalance
+      - depth_weighted_midprice
+      - bid_ask_spread
+      - queue_depth_ratio
+      - quote_intensity
+    
+    trade_flow:
+      - aggressor_volume
+      - trade_direction_imbalance
+      - trade_intensity
+      - toxic_flow_score
+    
+    volatility:
+      - realized_volatility_1h
+      - realized_volatility_24h
+      - parkinson_volatility
+      - price_acceleration
+    
+    liquidity:
+      - cancel_rate
+      - spread_dynamics
+      - order_replenishment_rate
+      - amihud_illiquidity
+  
+  derived_features:
+    rule: "may_combine_existing_features"
+    example: "imbalance * volatility"
+    max_features_per_strategy: 5
+
+strategy_generation:
+  components:
+    feature_set: "from_feature_store"
+    model_type: [xgboost, linear, gradient_boosted_tree, neural_net]
+    execution_style: [market_making, momentum, mean_reversion, stat_arb, funding_arb]
+    risk_controls: "configurable"
+  
+  example_spec:
+    features:
+      - order_book_imbalance
+      - volatility_5s
+    model: gradient_boosted_tree
+    execution: market_making
+    risk:
+      max_position: "2% capital"
+      max_drawdown: "15%"
+      position_timeout_hours: 24
+  
+  search_parameters:
+    features_per_strategy: "3-5"
+    max_strategies_per_cycle: 1000
+    diversity_requirement: "no_two_strategies_identical_features"
+
+backtesting:
+  requirements:
+    order_book_dynamics: true
+    fees: "configurable_per_exchange"
+    latency_simulation: true
+    slippage_model: "square_root_impact"
+    partial_fills: true
+    position_limits: true
+    no_lookahead_bias: true
+  
+  evaluation_loop:
+    description: "Event-driven simulation"
+    for_each_event:
+      - update_market_state
+      - evaluate_strategy_signals
+      - simulate_trade_execution
+      - update_pnl
+
+overfitting_prevention:
+  method: time_segmented_validation
+  splits:
+    train: "years_1-3"
+    validate: "year_4"
+    test: "year_5"
+  
+  rules:
+    - no_training_on_test_data
+    - discard_failing_validation
+    - use_walk_forward_testing
+    - out_of_sample_required: true
+
+strategy_evaluation:
+  required_metrics:
+    - total_return
+    - sharpe_ratio
+    - max_drawdown
+    - win_rate
+    - profit_factor
+    - turnover
+  
+  thresholds:
+    sharpe_ratio: "> 1.2"
+    max_drawdown: "< 25%"
+    profit_factor: "> 1.3"
+    win_rate: "> 45%"
+    min_trades: 100
+  
+  fitness_function: "sharpe - 0.5 * drawdown"
+
+experiment_logging:
+  database: research.db
+  schema:
+    - strategy_id: string
+    - features_used: list
+    - model_type: string
+    - parameters: dict
+    - PnL: float
+    - sharpe: float
+    - drawdown: float
+    - timestamp: datetime
+  
+  rules:
+    - log_all_experiments
+    - avoid_repeating_ineffective_paths
+    - track_feature_importance
+    - maintain_regime_performance_history
+
+promotion_pipeline:
+  stages:
+    - research
+    - backtest
+    - walk_forward_validation
+    - paper_trading
+    - live_trading
+  
+  rules:
+    - no_skipping_stages
+    - promotion_requires_statistical_validity
+    - paper_trading_requires_sharpe_gte_1.0
+    - live_trading_requires_30d_paper_success
+  
+  demotion_conditions:
+    - sharpe_drops_below_0.5
+    - drawdown_exceeds_15pct
+    - regime_change_invalidates
+
+portfolio_construction:
+  allocation_rules:
+    sizing_formula: "signal / volatility"
+    position_constraints:
+      max_capital_per_strategy: "10%"
+      max_capital_per_asset: "20%"
+      max_leverage: "2.0x"
+    
+    correlation_limits:
+      max_correlation: 0.7
+      rebalance_frequency: daily
+  
+  considerations:
+    - strategy_correlation
+    - individual_volatility
+    - individual_drawdown
+    - risk_budget
+
+live_monitoring:
+  tracked_metrics:
+    - real_time_pnl
+    - drawdown_current
+    - execution_latency
+    - slippage_actual
+    - inventory_levels
+    - order_rejection_rate
+  
+  anomaly_response:
+    conditions:
+      - drawdown_spike
+      - latency_spike
+      - order_rejection_spike
+    
+    actions:
+      - reduce_exposure
+      - pause_strategy
+      - trigger_risk_alert
+  
+  kill_switches:
+    max_daily_loss: "2%"
+    max_single_trade_loss: "1%"
+    exchange_disconnect: "immediate_halt"
+
+strategy_retirement:
+  criteria:
+    deteriorating_performance:
+      - sharpe_ratio_drops_below_0.5
+      - drawdown_exceeds_limit
+      - consecutive_loss_days: 7
+    
+    market_regime_change:
+      - regime_detection_confirms_change
+      - strategy_not_suitable_for_new_regime
+  
+  archival:
+    - retain_for_analysis: true
+    - may_reactivate_if_regime_returns: true
+
+continuous_improvement:
+  periodic_tasks:
+    - retrain_models: weekly
+    - discover_new_features: weekly
+    - test_new_strategy_classes: monthly
+    - analyze_historical_experiments: monthly
+    - regime_detection_review: daily
+    
+  success_tracking:
+    - track_new_alpha_discovery_rate
+    - monitor_strategy_decay_rate
+    - measure_exploration_vs_exploitation_balance
+
+success_criteria:
+  operational:
+    - consistent_positive_sharpe_ratio
+    - controlled_drawdowns
+    - strategy_diversification
+  
+  research:
+    - continuous_discovery_of_new_alpha
+    - high_exploration_rate
+    - low_strategy_decay_rate
+  
+  metrics:
+    target_portfolio_sharpe: "> 1.5"
+    max_portfolio_drawdown: "< 15%"
+    active_strategies_target: "10-20"
+    new_strategies_discovered_per_month: "> 5"
+
+failure_modes:
+  scenario: all_strategies_underperforming
+  response:
+    - reduce_live_exposure
+    - increase_research_budget
+    - focus_on_feature_discovery
+    - review_market_regime_evolution
+  
+  scenario: strategy_all_performing_similarly
+  response:
+    - indicates_overfitting_or_correlation
+    - force_diversification_in_generation
+    - introduce_anti_correlation_objective
+
+# Agent Personality Settings
+behavior:
+  patience: "prefers_delayed_gratification"
+  risk_tolerance: "conservative_with_occasional_aggressive_exploration"
+  exploration_drive: "high"
+  safety_priority: "absolute"
+  
+learning_preferences:
+  - learn_from_failed_backtests
+  - meta_optimization_of_generation_parameters
+  - feature_interaction_discovery
+  - regime_adaptation
+
+communication:
+  logging: "verbose"
+  alerts: "on_critical_events_only"
+  reporting: "daily_summary_plus_immediate_failures"
+  transparency: "full_experiment_log_accessible"
+
+# End of Agent Operating Instructions

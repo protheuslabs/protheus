@@ -1,0 +1,106 @@
+# Paper Trading Configuration - CALIBRATED for demo/testing
+# Reduces slippage prediction error to acceptable thresholds
+
+mode: paper_trading
+
+# ============================================
+# MARKET ADAPTERS
+# ============================================
+markets:
+  crypto:
+    enabled: true
+    exchanges:
+      - name: binance
+        api_key: ${BINANCE_TESTNET_API_KEY}
+        api_secret: ${BINANCE_TESTNET_API_SECRET}
+        testnet: true
+        symbols:
+          - BTCUSDT
+          - ETHUSDT
+          - SOLUSDT
+          - ADAUSDT
+          - DOTUSDT
+        
+      - name: coinbase
+        api_key: ${COINBASE_SANDBOX_API_KEY}
+        api_secret: ${COINBASE_SANDBOX_SECRET}
+        passphrase: ${COINBASE_SANDBOX_PASSPHRASE}
+        sandbox: true
+        symbols:
+          - BTC-USD
+          - ETH-USD
+          - SOL-USD
+
+# ============================================
+# PAPER FILL MODEL - CALIBRATED
+# ============================================
+# Key change: reduced adverse_selection_bps from 8.0 to 2.0
+# This brings predicted slippage in line with realized (~8-10 bps)
+paper_fill_model:
+  base_latency_ms: 35.0
+  latency_jitter_ms: 45.0
+  partial_fill_notional_usd: 25000.0
+  min_partial_fill_ratio: 0.55
+  adverse_selection_bps: 2.0        # REDUCED from 8.0
+  min_slippage_bps: 0.5             # REDUCED from 1.0
+  reality_stress_mode: false
+  stress_slippage_multiplier: 1.5   # REDUCED from 2.5
+  stress_fill_ratio_multiplier: 0.85
+  hard_reject_notional_usd: 250000.0
+  queue_penalty_floor: 0.20
+  queue_slippage_bps_per_turnover: 0.10  # REDUCED from 0.50
+
+# ============================================
+# MECHANISM SWITCHES
+# ============================================
+mechanism_switches:
+  routing_failover: true
+  capacity_curves: false
+  allocation_controls: false
+  regime_overlay: true
+  shorting_controls: false
+  market_data_resilience: true
+  tca_calibration_feedback: true
+  slippage_stress_model: false      # DISABLED for better calibration
+
+# ============================================
+# RISK MANAGEMENT
+# ============================================
+logging:
+  level: INFO
+  file: logs/pqts.log
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# ============================================
+# RUNTIME
+# ============================================
+runtime:
+  operator_tier: pro
+  state_path: data/engine_state.json
+  strict_strategy_contracts: true
+  ops_events_path: data/analytics/ops_events.jsonl
+  autopilot:
+    mode: hybrid
+    auto_apply_on_start: true
+    min_active_strategies: 2
+    max_active_strategies: 6
+    ai_rank_weight: 1.25
+    enabled_bias: 0.25
+
+# ============================================
+# RISK CONFIGURATION - REQUIRED
+# ============================================
+risk:
+  initial_capital: 100000.0
+  max_portfolio_risk_pct: 2.0
+  max_position_risk_pct: 1.0  
+  max_drawdown_pct: 10.0
+  max_correlation: 0.7
+  max_positions: 20
+  max_leverage: 3.0
+
+analytics:
+  data_dir: data/analytics
+  report_interval_hours: 24
+  save_trades: true
+  update_equity: true

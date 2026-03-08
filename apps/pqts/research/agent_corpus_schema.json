@@ -1,0 +1,364 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pqts.local/schemas/agent_corpus_card.json",
+  "title": "PQTS Agent Corpus Knowledge Card",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "card_id",
+    "title",
+    "topic",
+    "bucket",
+    "claim",
+    "strategy_family",
+    "market",
+    "venues",
+    "symbols",
+    "regime",
+    "source_refs",
+    "evidence",
+    "decision_rules",
+    "risk_constraints",
+    "failure_modes",
+    "quality",
+    "status",
+    "created_at",
+    "updated_at",
+    "version",
+    "author"
+  ],
+  "properties": {
+    "card_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_\\-]{8,64}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 200
+    },
+    "topic": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 120
+    },
+    "bucket": {
+      "type": "string",
+      "enum": [
+        "microstructure",
+        "execution",
+        "strategy",
+        "risk",
+        "regime",
+        "ops"
+      ]
+    },
+    "claim": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 600
+    },
+    "strategy_family": {
+      "type": "string",
+      "enum": [
+        "market_making",
+        "funding_carry",
+        "cross_venue_spread",
+        "mean_reversion",
+        "trend",
+        "stat_arb",
+        "execution_only",
+        "other"
+      ]
+    },
+    "market": {
+      "type": "string",
+      "enum": [
+        "crypto",
+        "forex",
+        "equities",
+        "multi"
+      ]
+    },
+    "venues": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 40
+      },
+      "uniqueItems": true
+    },
+    "symbols": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 40
+      },
+      "uniqueItems": true
+    },
+    "regime": {
+      "type": "string",
+      "enum": [
+        "trend",
+        "range",
+        "high_vol",
+        "low_vol",
+        "high_liq",
+        "low_liq",
+        "mixed"
+      ]
+    },
+    "source_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "id",
+          "as_of"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "backtest_report",
+              "walk_forward_report",
+              "paper_run",
+              "live_run",
+              "incident",
+              "note"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 120
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lookback_days",
+        "sample_count",
+        "oos_sharpe",
+        "deflated_sharpe",
+        "max_drawdown",
+        "turnover_annualized",
+        "cost_drag_bps",
+        "slippage_mape"
+      ],
+      "properties": {
+        "lookback_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3650
+        },
+        "sample_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "oos_sharpe": {
+          "type": "number",
+          "minimum": -5.0,
+          "maximum": 10.0
+        },
+        "deflated_sharpe": {
+          "type": "number",
+          "minimum": -5.0,
+          "maximum": 10.0
+        },
+        "max_drawdown": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "turnover_annualized": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1000.0
+        },
+        "cost_drag_bps": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 100000.0
+        },
+        "slippage_mape": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1000.0
+        }
+      }
+    },
+    "decision_rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action",
+          "condition",
+          "threshold"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "promote_to_paper",
+              "promote_to_live_canary",
+              "promote_to_live",
+              "hold",
+              "demote",
+              "kill"
+            ]
+          },
+          "condition": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 300
+          },
+          "threshold": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "risk_constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_daily_loss_pct",
+        "max_drawdown_pct",
+        "max_leverage",
+        "max_symbol_notional",
+        "max_venue_notional"
+      ],
+      "properties": {
+        "max_daily_loss_pct": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "max_drawdown_pct": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "max_leverage": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 50.0
+        },
+        "max_symbol_notional": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "max_venue_notional": {
+          "type": "number",
+          "minimum": 0.0
+        }
+      }
+    },
+    "failure_modes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 8,
+        "maxLength": 300
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "replication_score",
+        "oos_strength_score",
+        "data_quality_score",
+        "recency_score",
+        "quality_score",
+        "min_quality_for_retrieval"
+      ],
+      "properties": {
+        "replication_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "oos_strength_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "data_quality_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "recency_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "quality_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "min_quality_for_retrieval": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "deprecated",
+        "archived"
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 50
+      },
+      "uniqueItems": true
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "author": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 120
+    }
+  }
+}

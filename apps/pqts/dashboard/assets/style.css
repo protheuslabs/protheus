@@ -1,0 +1,132 @@
+/* Dashboard Styles */
+body {
+    background-color: #111827;
+    color: #e5e7eb;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.header {
+    padding: 20px;
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    border-bottom: 1px solid #374151;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #00ff88 0%, #00aa88 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.clock {
+    font-size: 18px;
+    color: #9ca3af;
+}
+
+.summary-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.card {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #374151;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 40px rgba(0, 255, 136, 0.1);
+}
+
+.card h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.card h2 {
+    margin: 0 0 5px 0;
+    font-size: 32px;
+    font-weight: 700;
+    color: #f3f4f6;
+}
+
+.card p {
+    margin: 0;
+    font-size: 14px;
+    color: #00ff88;
+}
+
+.main-content {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 20px;
+    padding: 20px;
+}
+
+.column-left, .column-right {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.chart-container, .table-container {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #374151;
+}
+
+.chart-container h3, .table-container h3 {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    color: #f3f4f6;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #374151;
+}
+
+th {
+    color: #9ca3af;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+td {
+    font-size: 14px;
+}
+
+tr:hover td {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 1200px) {
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .summary-row { grid-template-columns: 1fr; }
+}

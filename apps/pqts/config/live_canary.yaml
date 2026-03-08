@@ -1,0 +1,132 @@
+mode: live_trading
+
+markets:
+  crypto:
+    enabled: true
+    exchanges:
+      - name: binance
+        api_key: ${BINANCE_LIVE_API_KEY}
+        api_secret: ${BINANCE_LIVE_API_SECRET}
+        testnet: false
+        symbols: [BTCUSDT, ETHUSDT]
+      - name: coinbase
+        api_key: ${COINBASE_LIVE_API_KEY}
+        api_secret: ${COINBASE_LIVE_API_SECRET}
+        passphrase: ${COINBASE_LIVE_PASSPHRASE}
+        sandbox: false
+        symbols: [BTC-USD, ETH-USD]
+
+strategies:
+  market_making:
+    enabled: true
+    markets: [crypto]
+  funding_arbitrage:
+    enabled: true
+    markets: [crypto]
+
+risk:
+  initial_capital: 5000.0
+  risk_tolerance_profile: conservative
+  max_portfolio_risk_pct: 1.0
+  max_drawdown_pct: 5.0
+  max_leverage: 1.5
+  max_order_notional: 500.0
+  max_participation: 0.02
+  max_slippage_bps: 35.0
+
+execution:
+  require_live_client_order_id: true
+  idempotency_ttl_seconds: 300.0
+  strategy_disable_list_path: data/analytics/strategy_disable_list.json
+  strategy_disable_reload_seconds: 15.0
+  expected_alpha_bps_by_strategy:
+    market_making: 12.0
+    funding_arbitrage: 10.0
+    campaign: 12.0
+  profitability_gate:
+    enabled: true
+    min_edge_bps: 0.5
+    block_non_positive_expected_alpha: true
+    auto_block_campaign_zero_alpha: true
+    campaign_strategy_ids: [campaign]
+  market_data_resilience:
+    enabled: true
+    stale_after_seconds: 2.0
+    replay_window_seconds: 30.0
+    backup_venues_by_venue:
+      binance: [coinbase]
+      coinbase: [binance]
+  allocation_controls:
+    enabled: true
+    lookback_seconds: 3600
+    default_max_strategy_allocation_pct: 0.25
+    default_max_venue_allocation_pct: 0.50
+    max_strategy_allocation_pct_by_strategy:
+      market_making: 0.30
+      funding_arbitrage: 0.40
+    max_venue_allocation_pct_by_venue:
+      binance: 0.40
+      coinbase: 0.40
+  distributed_ops_state:
+    redis_url: ""
+    namespace: pqts_live_canary
+    ttl_seconds: 300
+  rate_limits:
+    binance:
+      order_create:
+        limit: 10
+        window_seconds: 1.0
+      order_cancel:
+        limit: 10
+        window_seconds: 1.0
+      market_ticker:
+        limit: 50
+        window_seconds: 1.0
+      market_order_book:
+        limit: 20
+        window_seconds: 1.0
+    coinbase:
+      order_create:
+        limit: 5
+        window_seconds: 1.0
+      order_cancel:
+        limit: 5
+        window_seconds: 1.0
+      market_ticker:
+        limit: 20
+        window_seconds: 1.0
+
+runtime:
+  operator_tier: pro
+  tenant:
+    tenant_id: canary_internal
+    plan: pro
+    allow_live_trading: true
+  secrets:
+    backend: env
+    enforce_rotation: true
+    rotation_metadata:
+      BINANCE_LIVE_API_KEY: "2026-02-01T00:00:00+00:00"
+      BINANCE_LIVE_API_SECRET: "2026-02-01T00:00:00+00:00"
+      COINBASE_LIVE_API_KEY: "2026-02-01T00:00:00+00:00"
+      COINBASE_LIVE_API_SECRET: "2026-02-01T00:00:00+00:00"
+      COINBASE_LIVE_PASSPHRASE: "2026-02-01T00:00:00+00:00"
+  operator_mode_presets:
+    simple_profile: market_maker_only
+    pro_profile: quant_canary
+  autopilot:
+    mode: hybrid
+    auto_apply_on_start: true
+    min_active_strategies: 1
+    max_active_strategies: 2
+  autopilot_policy_packs:
+    pro:
+      min_active_strategies: 1
+      max_active_strategies: 2
+strategy_profiles:
+  market_maker_only:
+    markets: [crypto]
+    strategies: [market_making]
+  quant_canary:
+    markets: [crypto]
+    strategies: [market_making, funding_arbitrage]

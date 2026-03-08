@@ -1,0 +1,101 @@
+
+# WHALE TRACKING STRATEGY (Added 2026-03-03)
+# Based on: Polymarket whale copy trading analysis
+whale_tracking:
+  description: "Copy profitable wallet traders - exploit information asymmetry"
+  
+  data_sources:
+    required:
+      - wallet_trade_history
+      - position_snapshots
+      - funding_payments
+      - order_book
+    optional:
+      - on_chain_transactions
+      - social_signals
+  
+  ranking_parameters:
+    metrics:
+      - sharpe_ratio: 0.3  # Weight in ranking
+      - win_rate: 0.3
+      - total_pnl: 0.2
+      - consistency_score: 0.2
+    
+    minimum_requirements:
+      min_trades: 10
+      min_profit: 1000
+      min_sharpe: 0.5
+      min_win_rate: 0.4
+    
+    tracking_scope:
+      top_percentile: 0.05  # Track top 5% of profitable wallets
+      lookback_days: 30
+      max_whales: 50
+  
+  signal_detection:
+    lookback_seconds: 120  # How recent must trade be
+    position_change_threshold: 0.3  # Minimum % of portfolio to trigger
+    latency_tolerance_ms: 500  # How fast we need to execute after whale
+  
+  copy_rules:
+    entry: "follow_top_5_percent_whales"
+    size_scaling: "proportional_to_whale_confidence"
+    exit: "when_whale_exits_or_stop_loss"
+    max_positions: 10  # Max concurrent whale-copy positions
+    position_size_pct: 0.05  # 5% capital per whale trade
+    
+    risk_controls:
+      stop_loss_pct: 3.0
+      max_correlation_same_whale: 0.5
+      diversify_across_whales: true
+      blacklist_decayed_whales: true
+  
+  profit_model:
+    description: "exploit_information_asymmetry"
+    example: "journalist_political_markets_early_knowledge"
+    edge_sources:
+      - insider_information
+      - superior_research
+      - faster_news_access
+      - statistical_edge
+    
+    expected_performance:
+      sharpe: 1.2-2.0
+      win_rate: 55-65%
+      alpha_decay: "low_if_continuous_discovery"
+  
+  risks_mitigation:
+    latency:
+      description: "whale_executes_before_we_see_signal"
+      mitigation: "optimize_data_pipeline_under_100ms"
+    
+    fake_signals:
+      description: "whales_intentionally_mislead"
+      mitigation: 
+        - "rank_by_consistency_not_just_pnl"
+        - "require_multiple_profitable_trades"
+        - "detect_abnormal_behavior_patterns"
+    
+    scale_limitation:
+      description: "prediction_markets_thin_liquidity"
+      mitigation: "cap_position_size_per_market"
+      note: "may_need_larger_exchanges_for_institutional_scale"
+  
+  ai_agent_integration:
+    discovery_loop:
+      - scan_all_wallets
+      - calculate_profitability_metrics
+      - rank_whales_by_composite_score
+      - backtest_copy_strategy
+      - deploy_if_sharpe_gte_1_2
+    
+    continuous_learning:
+      - track_whale_performance_realtime
+      - demote_decaying_whales
+      - promote_new_discoveries
+      - analyze_why_whales_are_profitable
+    
+    meta_optimization:
+      - discover_optimal_copy_timing_lag
+      - find_best_position_sizing_formula
+      - identify_market_conditions_where_whale_copy_works

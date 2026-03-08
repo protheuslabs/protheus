@@ -1,0 +1,79 @@
+{
+  "card_id": "mm_toxicity_filter_001",
+  "title": "Toxicity Filter Improves MM Quality in High Vol",
+  "topic": "adverse selection filter for market making",
+  "bucket": "microstructure",
+  "claim": "For BTC perps on Binance in high-vol regimes, disabling quotes when short-horizon toxicity exceeds threshold reduces slippage MAPE and improves net Sharpe.",
+  "strategy_family": "market_making",
+  "market": "crypto",
+  "venues": [
+    "binance"
+  ],
+  "symbols": [
+    "BTCUSDT"
+  ],
+  "regime": "high_vol",
+  "source_refs": [
+    {
+      "type": "backtest_report",
+      "id": "bt_mm_2026q1_014",
+      "as_of": "2026-03-01T00:00:00Z"
+    },
+    {
+      "type": "walk_forward_report",
+      "id": "wf_mm_2026q1_007",
+      "as_of": "2026-03-02T00:00:00Z"
+    }
+  ],
+  "evidence": {
+    "lookback_days": 180,
+    "sample_count": 1200,
+    "oos_sharpe": 1.38,
+    "deflated_sharpe": 1.11,
+    "max_drawdown": 0.09,
+    "turnover_annualized": 7.2,
+    "cost_drag_bps": 312.4,
+    "slippage_mape": 14.8
+  },
+  "decision_rules": [
+    {
+      "action": "promote_to_paper",
+      "condition": "oos_sharpe >= 1.0 and deflated_sharpe >= 0.8 and max_drawdown <= 0.12",
+      "threshold": 1.0
+    },
+    {
+      "action": "kill",
+      "condition": "rolling_30d_sharpe < 0.5 or slippage_mape > 30",
+      "threshold": 30.0
+    }
+  ],
+  "risk_constraints": {
+    "max_daily_loss_pct": 0.02,
+    "max_drawdown_pct": 0.1,
+    "max_leverage": 2.0,
+    "max_symbol_notional": 500000.0,
+    "max_venue_notional": 1000000.0
+  },
+  "failure_modes": [
+    "Quote staleness > 300ms during volatility spikes",
+    "Depth collapse at top of book causes extreme impact"
+  ],
+  "quality": {
+    "replication_score": 0.8,
+    "oos_strength_score": 0.76,
+    "data_quality_score": 0.9,
+    "recency_score": 0.86,
+    "quality_score": 0.82,
+    "min_quality_for_retrieval": 0.65
+  },
+  "status": "active",
+  "tags": [
+    "market_making",
+    "toxic_flow",
+    "high_volatility"
+  ],
+  "created_at": "2026-03-04T00:00:00Z",
+  "updated_at": "2026-03-04T00:00:00Z",
+  "version": "1.0.0",
+  "author": "quant_lead"
+}

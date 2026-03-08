@@ -1,0 +1,318 @@
+# Paper Trading Configuration
+# This configuration runs the trading system in paper trading mode
+# No real money is used - all trades are simulated
+
+mode: paper_trading
+
+# ============================================
+# MARKET ADAPTERS
+# ============================================
+markets:
+  crypto:
+    enabled: true
+    exchanges:
+      - name: binance
+        api_key: ${BINANCE_TESTNET_API_KEY}
+        api_secret: ${BINANCE_TESTNET_API_SECRET}
+        testnet: true
+        symbols:
+          - BTCUSDT
+          - ETHUSDT
+          - SOLUSDT
+          - ADAUSDT
+          - DOTUSDT
+        
+      - name: coinbase
+        api_key: ${COINBASE_SANDBOX_API_KEY}
+        api_secret: ${COINBASE_SANDBOX_SECRET}
+        passphrase: ${COINBASE_SANDBOX_PASSPHRASE}
+        sandbox: true
+        symbols:
+          - BTC-USD
+          - ETH-USD
+          - SOL-USD
+  
+  equities:
+    enabled: true
+    brokers:
+      - name: alpaca
+        api_key: ${ALPACA_PAPER_API_KEY}
+        api_secret: ${ALPACA_PAPER_API_SECRET}
+        paper: true
+        symbols:
+          - AAPL
+          - MSFT
+          - TSLA
+          - NVDA
+          - META
+  
+  forex:
+    enabled: true
+    brokers:
+      - name: oanda
+        api_key: ${OANDA_API_KEY}
+        account_id: ${OANDA_ACCOUNT_ID}
+        practice: true
+        pairs:
+          - EUR_USD
+          - GBP_USD
+          - USD_JPY
+          - AUD_USD
+
+# ============================================
+# STRATEGIES
+# ============================================
+strategies:
+  scalping:
+    enabled: true
+    max_positions: 3
+    timeframes: ['1m', '5m']
+    min_spread: 0.001
+    max_hold_time: 300
+    risk_reward_ratio: 1.5
+  
+  arbitrage:
+    enabled: true
+    min_spread_pct: 0.1
+    max_execution_time_ms: 500
+  
+  trend_following:
+    enabled: true
+    timeframes: ['1h', '4h', '1d']
+    max_positions: 5
+
+  swing_trend:
+    enabled: true
+    timeframes: ['4h', '1d']
+    lookback_bars: 48
+    max_positions: 4
+    markets: ['crypto', 'equities', 'forex']
+
+  hold_carry:
+    enabled: true
+    rebalance_days: 7
+    min_carry_bps: 8.0
+    max_positions: 6
+    markets: ['crypto', 'forex']
+  
+  mean_reversion:
+    enabled: true
+    lookback: 20
+    max_positions: 3
+    overbought: 70
+    oversold: 30
+  
+  ml:
+    enabled: true
+    model_type: ensemble
+    confidence_threshold: 0.6
+    retrain_interval_hours: 24
+    prediction_horizon: 1h
+  
+  volume_profile:
+    enabled: true
+    lookback_periods: 24
+    value_area_pct: 0.70
+    min_volume_node: 0.05
+  
+  order_flow:
+    enabled: true
+    lookback_ticks: 100
+    large_order_threshold: 10.0
+  
+  liquidity_sweep:
+    enabled: true
+    lookback_periods: 100
+    min_touches: 2
+    sweep_threshold: 0.005
+    reclaim_threshold: 0.003
+
+strategy_profiles:
+  casual_core:
+    markets: ['crypto', 'equities']
+    strategies: ['trend_following', 'mean_reversion', 'swing_trend', 'hold_carry']
+  pro_quant:
+    markets: ['crypto', 'equities', 'forex']
+    strategies:
+      [
+        'scalping',
+        'arbitrage',
+        'trend_following',
+        'swing_trend',
+        'hold_carry',
+        'mean_reversion',
+        'ml',
+        'volume_profile',
+        'order_flow',
+        'liquidity_sweep',
+      ]
+
+# ============================================
+# RISK MANAGEMENT
+# ============================================
+risk:
+  initial_capital: 10000.0
+  risk_tolerance_profile: balanced  # conservative, balanced, aggressive, professional, or custom key
+  risk_tolerance_profiles:
+    prop_desk:
+      description: "Higher-capacity profile for experienced desk operators"
+      risk_limit_scale: 1.2
+      canary_allocation_scale: 1.1
+  max_portfolio_risk_pct: 2.0
+  max_position_risk_pct: 1.0
+  max_drawdown_pct: 10.0
+  max_correlation: 0.7
+  max_positions: 15
+  max_leverage: 2.0
+  daily_loss_limit: 500.0
+  position_sizing: kelly_half  # kelly_full, kelly_half, fixed_amount, risk_pct
+  stop_loss: true
+  trailing_stop: true
+
+# ============================================
+# EXECUTION CONTROLS
+# ============================================
+execution:
+  reliability:
+    enable_failover: true
+  maker_urgency_ladder:
+    enabled: true
+    urgency_alpha_thresholds_bps:
+      normal: 2.0
+      urgent: 0.5
+    incremental_cost_buffer_bps: 0.5
+  confidence_allocator:
+    enabled: false
+    lookback_days: 30
+    min_samples: 40
+    min_multiplier: 0.25
+    max_multiplier: 1.5
+    neutral_multiplier: 1.0
+    z_score: 1.96
+    target_lower_bps: 2.0
+    response_slope: 0.5
+    hard_floor_on_negative_lower: true
+  tca_calibration:
+    enabled: true
+  expected_alpha_bps_by_strategy:
+    campaign: 12.0
+    scalping: 18.0
+    arbitrage: 14.0
+    trend_following: 9.0
+    swing_trend: 8.0
+    hold_carry: 7.0
+    mean_reversion: 10.0
+    ml: 11.0
+    volume_profile: 9.0
+    order_flow: 12.0
+    liquidity_sweep: 13.0
+    market_making: 10.0
+    funding_arbitrage: 9.0
+  profitability_gate:
+    enabled: true
+    min_edge_bps: 0.5
+    block_non_positive_expected_alpha: false
+    auto_block_campaign_zero_alpha: true
+    campaign_strategy_ids: ['campaign']
+  paper_prediction_blend: 1.0
+  paper_fill_model:
+    reality_stress_mode: true
+  market_data_resilience:
+    enabled: true
+    stale_after_seconds: 5.0
+    replay_window_seconds: 120.0
+    backup_venues_by_venue:
+      binance: ['coinbase']
+      coinbase: ['binance']
+
+mechanism_switches:
+  routing_failover: true
+  capacity_curves: false
+  allocation_controls: false
+  regime_overlay: true
+  maker_urgency_ladder: true
+  confidence_allocator: false
+  shorting_controls: false
+  profitability_gate: true
+  market_data_resilience: true
+  tca_calibration_feedback: true
+  slippage_stress_model: true
+
+# ============================================
+# RISK MANAGEMENT
+# ============================================
+analytics:
+  data_dir: data/analytics
+  report_interval_hours: 24
+  save_trades: true
+  update_equity: true
+
+# ============================================
+# DASHBOARD
+# ============================================
+dashboard:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8050
+  debug: false
+  update_interval_ms: 5000
+
+# ============================================
+# BACKTESTING
+# ============================================
+backtesting:
+  data_dir: data/historical
+  commission_rate: 0.001
+  slippage_model: fixed
+  slippage_bps: 5
+
+# ============================================
+# LOGGING
+# ============================================
+logging:
+  level: INFO
+  file: logs/pqts.log
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  max_size_mb: 100
+  backup_count: 5
+
+# ============================================
+# NOTIFICATIONS
+# ============================================
+notifications:
+  enabled: true
+  on_trade: true
+  on_error: true
+  on_drawdown: 5.0  # Notify if drawdown exceeds 5%
+
+# ============================================
+# RUNTIME
+# ============================================
+runtime:
+  operator_tier: pro
+  operator_mode_presets:
+    simple_profile: casual_core
+    pro_profile: pro_quant
+  state_path: data/engine_state.json
+  strict_strategy_contracts: true
+  ops_events_path: data/analytics/ops_events.jsonl
+  autopilot:
+    mode: hybrid
+    auto_apply_on_start: true
+    min_active_strategies: 2
+    max_active_strategies: 6
+    ai_rank_weight: 1.25
+    enabled_bias: 0.25
+    simple_strategy_allowlist: ['trend_following', 'mean_reversion', 'swing_trend', 'hold_carry']
+    complexity_penalty:
+      ml: 0.20
+      order_flow: 0.10
+      liquidity_sweep: 0.10
+  autopilot_policy_packs:
+    simple:
+      allowed_strategies: ['trend_following', 'mean_reversion', 'swing_trend', 'hold_carry']
+      min_active_strategies: 1
+      max_active_strategies: 3
+    pro:
+      min_active_strategies: 2
+      max_active_strategies: 8

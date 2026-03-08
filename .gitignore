@@ -180,6 +180,14 @@ pqts/
 !personas/organization/projects/
 !personas/organization/projects/**
 
+# Local app sandbox (default ignored; approved restored apps are unignored)
+apps/*
+!apps/README.md
+!apps/pqts/
+!apps/pqts/**
+!apps/comment-matrix/
+!apps/comment-matrix/**
+
 # Unified local runtime partitions (instance-specific)
 /client/local/
 /core/local/
