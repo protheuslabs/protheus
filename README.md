@@ -248,7 +248,7 @@ Introducing the Cognitive Toolkit Suite: internal operators tooling for red-team
 - `protheus toolkit assimilate <path|url>` runs the same assimilation flow through the toolkit wrapper.
 - `protheus toolkit research "<query>"` runs the research command through the toolkit wrapper.
 
-See [Cognitive Toolkit Suite](client/docs/cognitive_toolkit.md) and `examples/*-demo/` for runnable examples.
+See [Cognitive Toolkit Suite](client/docs/cognitive_toolkit.md) and `client/apps/examples/*-demo/` for runnable examples.
 
 ## Architecture Map
 
@@ -258,6 +258,9 @@ See [Cognitive Toolkit Suite](client/docs/cognitive_toolkit.md) and `examples/*-
 | `client/systems/` | Executable runtime lanes and control-plane modules |
 | `client/lib/` | Shared runtime helpers used by lanes |
 | `client/config/` | Policy, registries, and lane configuration |
+| `client/observability/` | Reports, runbooks, dashboard specs, and research artifacts |
+| `client/apps/` | User-facing/internal app layers and runnable example suites |
+| `client/developer/` | Developer templates and scaffolding assets |
 | `client/docs/` | Architecture, governance, runbooks, and contracts |
 | `client/memory/tools/tests/` | Deterministic tests and regression harnesses |
 | `client/local/`, `core/local/` | Instance-local runtime artifacts and receipts |

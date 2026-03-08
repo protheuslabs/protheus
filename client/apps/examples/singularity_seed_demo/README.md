@@ -3,7 +3,7 @@
 Run one full sovereignty-guarded singularity seed cycle:
 
 ```bash
-node examples/singularity_seed_demo/run.js
+node apps/examples/singularity_seed_demo/run.js
 ```
 
 Expected behavior:

@@ -5,7 +5,7 @@ Internal toolkit demo for stream-of-thought mapping with optional intercept cont
 Run:
 
 ```bash
-node examples/comment-mapper-demo/run.js
+node apps/examples/comment-mapper-demo/run.js
 ```
 
 This executes:

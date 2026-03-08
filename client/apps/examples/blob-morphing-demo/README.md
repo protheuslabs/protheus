@@ -5,7 +5,7 @@ Internal toolkit demo for blob asset status and verification.
 Run:
 
 ```bash
-node examples/blob-morphing-demo/run.js
+node apps/examples/blob-morphing-demo/run.js
 ```
 
 This executes:

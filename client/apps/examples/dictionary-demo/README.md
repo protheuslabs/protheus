@@ -5,7 +5,7 @@ Internal toolkit demo for concept lookup.
 Run:
 
 ```bash
-node examples/dictionary-demo/run.js
+node apps/examples/dictionary-demo/run.js
 ```
 
 This executes:

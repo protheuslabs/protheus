@@ -5,7 +5,7 @@ Internal toolkit demo for persona lens routing.
 Run:
 
 ```bash
-node examples/personas-demo/run.js
+node apps/examples/personas-demo/run.js
 ```
 
 This executes:
