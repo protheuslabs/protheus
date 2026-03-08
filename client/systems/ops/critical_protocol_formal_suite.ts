@@ -21,12 +21,12 @@ const {
 
 const DEFAULT_POLICY_PATH = process.env.CRITICAL_PROTOCOL_FORMAL_SUITE_POLICY_PATH
   ? path.resolve(process.env.CRITICAL_PROTOCOL_FORMAL_SUITE_POLICY_PATH)
-  : path.join(ROOT, 'config', 'critical_protocol_formal_suite_policy.json');
+  : path.join(ROOT, 'client', 'config', 'critical_protocol_formal_suite_policy.json');
 
 function usage() {
   console.log('Usage:');
-  console.log('  node systems/ops/critical_protocol_formal_suite.js run [--strict=1|0] [--policy=<path>]');
-  console.log('  node systems/ops/critical_protocol_formal_suite.js status [--policy=<path>]');
+  console.log('  node client/systems/ops/critical_protocol_formal_suite.js run [--strict=1|0] [--policy=<path>]');
+  console.log('  node client/systems/ops/critical_protocol_formal_suite.js status [--policy=<path>]');
 }
 
 function defaultPolicy() {
@@ -36,15 +36,15 @@ function defaultPolicy() {
     shadow_only: true,
     strict_fail_closed: true,
     required_paths: [
-      'systems/spine/spine.js',
-      'systems/autonomy/autonomy_controller.js',
-      'systems/actuation/actuation_executor.js',
-      'systems/security/critical_path_formal_verifier.js'
+      'client/systems/spine/spine.js',
+      'client/systems/autonomy/autonomy_controller.js',
+      'client/systems/actuation/actuation_executor.js',
+      'client/systems/security/critical_path_formal_verifier.js'
     ],
-    verifier_cmd: ['node', 'systems/security/critical_path_formal_verifier.js', 'run', '--strict=1'],
+    verifier_cmd: ['node', 'client/systems/security/critical_path_formal_verifier.js', 'run', '--strict=1'],
     paths: {
-      latest_path: 'state/ops/critical_protocol_formal_suite/latest.json',
-      receipts_path: 'state/ops/critical_protocol_formal_suite/receipts.jsonl'
+      latest_path: 'client/local/state/ops/critical_protocol_formal_suite/latest.json',
+      receipts_path: 'client/local/state/ops/critical_protocol_formal_suite/receipts.jsonl'
     }
   };
 }

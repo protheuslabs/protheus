@@ -83,6 +83,7 @@
     "systems/redteam/morph_manager.ts": "02b568dfa26bc1d5dedf6cb014cec910a3b02d8bd2565e2ce2dcdf6c1be5d794",
     "systems/redteam/swarm_tactics.ts": "f23e2829bc2c201331d0adfdb307144611c336236a8daa975496d94b320bc00e",
     "systems/redteam/wisdom_distiller.ts": "b317283f1160a79306536e92e9d5a6485a45b12be10e3ba4a8e08fa6bc630c26",
+    "systems/security/critical_path_formal_verifier.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/directive_compiler.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/formal_invariants_bootstrap.js": "3922714d29ebc1f08e4982f8b9b484a4f556e8e6f7e47d66729a21b5198a71f0",
     "systems/security/guard.js": "d289872fa9fa3bf06a3324338a13ba1453b1a5e0e887654727bdeedc7bb5e903",
@@ -94,7 +95,7 @@
     "systems/weaver/monoculture_guard.ts": "5549cb6b21dbfa618604b9d5bef972745988a190e2252a7fb54062fff45ce5ab",
     "systems/weaver/weaver_core.ts": "438e474ce9979667c0154630e1c00d2f4e447d06bf468aea674dc48675261131"
   },
-  "sealed_at": "2026-03-07T05:47:13.804Z",
+  "sealed_at": "2026-03-08T08:30:16.480Z",
   "sealed_by": "jay",
-  "last_approval_note": "Operator-approved env_toggle-safe spine reseal preflight (unsealed=1) 2026-03-07T05:47:13.135Z"
+  "last_approval_note": "Operator-approved env_toggle-safe spine reseal preflight (unsealed=1) 2026-03-08T08:30:15.928Z"
 }

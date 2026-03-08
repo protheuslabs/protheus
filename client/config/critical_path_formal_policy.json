@@ -4,13 +4,13 @@
   "enabled": true,
   "strict_fail_closed": true,
   "paths": {
-    "weaver_policy": "client/config/weaver_policy.json",
-    "inversion_policy": "client/config/inversion_policy.json",
-    "constitution_policy": "client/config/constitution_guardian_policy.json",
-    "formal_invariants": "client/config/formal_invariants.json",
-    "weaver_arbitration_source": "client/systems/weaver/arbitration_engine.ts",
-    "weaver_core_source": "client/systems/weaver/weaver_core.ts",
-    "inversion_source": "client/systems/autonomy/inversion_controller.ts"
+    "weaver_policy": "config/weaver_policy.json",
+    "inversion_policy": "config/inversion_policy.json",
+    "constitution_policy": "config/constitution_guardian_policy.json",
+    "formal_invariants": "config/formal_invariants.json",
+    "weaver_arbitration_source": "systems/weaver/arbitration_engine.ts",
+    "weaver_core_source": "systems/weaver/weaver_core.ts",
+    "inversion_source": "systems/autonomy/inversion_controller.ts"
   },
   "checks": {
     "required_weaver_weights": [
@@ -39,6 +39,6 @@
       "constitution"
     ]
   },
-  "state_path": "state/security/critical_path_formal/latest.json",
-  "history_path": "state/security/critical_path_formal/history.jsonl"
+  "state_path": "local/state/security/critical_path_formal/latest.json",
+  "history_path": "local/state/security/critical_path_formal/history.jsonl"
 }

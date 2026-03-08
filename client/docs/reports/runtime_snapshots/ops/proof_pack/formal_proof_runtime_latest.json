@@ -1,0 +1,406 @@
+{
+  "ok": true,
+  "type": "formal_proof_runtime_gate",
+  "ts": "2026-03-08T08:38:39.924Z",
+  "strict": true,
+  "shadow_only": true,
+  "runner": "local",
+  "git_head": "f3af3c00c1bf5e16b6038e108f22acc72354f902",
+  "required_failed": [],
+  "optional_missing_toolchains": [
+    "prusti_toolchain",
+    "lean_toolchain"
+  ],
+  "commands": [
+    {
+      "id": "formal_spec_guard",
+      "required": true,
+      "ok": true,
+      "status": 0,
+      "elapsed_ms": 340,
+      "runner": "local",
+      "missing_toolchain": false,
+      "stdout_summary": "{ \"ok\": true, \"type\": \"formal_spec_guard\", \"ts\": \"2026-03-08T08:38:38.985Z\", \"strict\": true, \"required_files\": [ \"planes/spec/README.md\", \"planes/spec/tla/three_plane_boundary.tla\", \"planes/spec/tla/three_plane_boundary.cfg\", \"planes/contracts/README.md\", \"planes/contracts/conduit_envelope.schema.json\" ], \"missing_files\": [], \"tla_missing_tokens\": [], \"schema_missing_fields\": [], \"architecture_mis",
+      "stderr_summary": "",
+      "payload": {
+        "ok": true,
+        "type": "formal_spec_guard",
+        "ts": "2026-03-08T08:38:38.985Z",
+        "strict": true,
+        "required_files": [
+          "planes/spec/README.md",
+          "planes/spec/tla/three_plane_boundary.tla",
+          "planes/spec/tla/three_plane_boundary.cfg",
+          "planes/contracts/README.md",
+          "planes/contracts/conduit_envelope.schema.json"
+        ],
+        "missing_files": [],
+        "tla_missing_tokens": [],
+        "schema_missing_fields": [],
+        "architecture_missing_refs": [],
+        "receipt_hash": "c3ae82d72221f5658a633b6b7bf737d89ea6e70a885e1837d6b38760c6a12652"
+      }
+    },
+    {
+      "id": "critical_path_formal",
+      "required": true,
+      "ok": true,
+      "status": 0,
+      "elapsed_ms": 182,
+      "runner": "local",
+      "missing_toolchain": false,
+      "stdout_summary": "{ \"schema_id\": \"critical_path_formal_verifier_result\", \"schema_version\": \"1.0\", \"ts\": \"2026-03-08T08:38:39.170Z\", \"ok\": true, \"checks\": [ { \"id\": \"files:weaver_policy_present\", \"ok\": true, \"detail\": \"config/weaver_policy.json\" }, { \"id\": \"files:inversion_policy_present\", \"ok\": true, \"detail\": \"config/inversion_policy.json\" }, { \"id\": \"files:constitution_policy_present\", \"ok\": true, \"detail\": \"conf",
+      "stderr_summary": "",
+      "payload": {
+        "schema_id": "critical_path_formal_verifier_result",
+        "schema_version": "1.0",
+        "ts": "2026-03-08T08:38:39.170Z",
+        "ok": true,
+        "checks": [
+          {
+            "id": "files:weaver_policy_present",
+            "ok": true,
+            "detail": "config/weaver_policy.json"
+          },
+          {
+            "id": "files:inversion_policy_present",
+            "ok": true,
+            "detail": "config/inversion_policy.json"
+          },
+          {
+            "id": "files:constitution_policy_present",
+            "ok": true,
+            "detail": "config/constitution_guardian_policy.json"
+          },
+          {
+            "id": "files:formal_invariants_present",
+            "ok": true,
+            "detail": "config/formal_invariants.json"
+          },
+          {
+            "id": "files:weaver_arbitration_source_present",
+            "ok": true,
+            "detail": "systems/weaver/arbitration_engine.ts"
+          },
+          {
+            "id": "files:weaver_core_source_present",
+            "ok": true,
+            "detail": "systems/weaver/weaver_core.ts"
+          },
+          {
+            "id": "files:inversion_source_present",
+            "ok": true,
+            "detail": "systems/autonomy/inversion_controller.ts"
+          },
+          {
+            "id": "weaver:policy_enabled",
+            "ok": true,
+            "detail": "enabled=true"
+          },
+          {
+            "id": "weaver:arbitration_source_hooks",
+            "ok": true,
+            "detail": "arbitration engine should include share-cap + soft-cap functions"
+          },
+          {
+            "id": "weaver:constitutional_veto_hook",
+            "ok": true,
+            "detail": "weaver core should evaluate constitutional veto before outputs"
+          },
+          {
+            "id": "weaver:required_weight_vector",
+            "ok": true,
+            "detail": "weights=7"
+          },
+          {
+            "id": "weaver:monoculture_guard_enabled",
+            "ok": true,
+            "detail": "enabled=true"
+          },
+          {
+            "id": "weaver:constitutional_veto_enabled",
+            "ok": true,
+            "detail": "enabled=true"
+          },
+          {
+            "id": "inversion:immutable_axioms_enabled",
+            "ok": true,
+            "detail": "enabled=true"
+          },
+          {
+            "id": "inversion:required_axioms_present",
+            "ok": true,
+            "detail": "axioms=5"
+          },
+          {
+            "id": "inversion:tier_transition_enabled",
+            "ok": true,
+            "detail": "enabled=true"
+          },
+          {
+            "id": "inversion:shadow_pass_required_for_live",
+            "ok": true,
+            "detail": "required=true"
+          },
+          {
+            "id": "inversion:objective_id_rank_gate",
+            "ok": true,
+            "detail": "required<=2 actual=2"
+          },
+          {
+            "id": "inversion:high_risk_live_targets_disabled",
+            "ok": true,
+            "detail": "targets=2"
+          },
+          {
+            "id": "inversion:model_check_live_gate_ordering",
+            "ok": true,
+            "detail": "targets_checked=5"
+          },
+          {
+            "id": "inversion:source_structured_axiom_matcher",
+            "ok": true,
+            "detail": "inversion controller should call semantic matcher for immutable axioms"
+          },
+          {
+            "id": "formal_invariants:spec_non_empty",
+            "ok": true,
+            "detail": "count=9"
+          },
+          {
+            "id": "formal_invariants:merge_guard_hook_present",
+            "ok": true,
+            "detail": "baseline formal invariants should include merge_guard coverage"
+          },
+          {
+            "id": "constitution:dual_approval_required",
+            "ok": true,
+            "detail": "require_dual_approval=true"
+          },
+          {
+            "id": "constitution:inheritance_lock_enforced",
+            "ok": true,
+            "detail": "enforce_inheritance_lock=true"
+          }
+        ],
+        "model_rows": [
+          {
+            "target": "tactical",
+            "rank": 1,
+            "live_enabled": true,
+            "min_shadow_hours": 0,
+            "required_shadow_passes": 0,
+            "required_first_live_veto_uses": 0,
+            "observer_quorum": 0,
+            "checks_ok": true
+          },
+          {
+            "target": "belief",
+            "rank": 2,
+            "live_enabled": true,
+            "min_shadow_hours": 6,
+            "required_shadow_passes": 2,
+            "required_first_live_veto_uses": 6,
+            "observer_quorum": 1,
+            "checks_ok": true
+          },
+          {
+            "target": "identity",
+            "rank": 3,
+            "live_enabled": true,
+            "min_shadow_hours": 24,
+            "required_shadow_passes": 5,
+            "required_first_live_veto_uses": 16,
+            "observer_quorum": 2,
+            "checks_ok": true
+          },
+          {
+            "target": "directive",
+            "rank": 4,
+            "live_enabled": false,
+            "min_shadow_hours": 72,
+            "required_shadow_passes": 8,
+            "required_first_live_veto_uses": 40,
+            "observer_quorum": 2,
+            "checks_ok": true
+          },
+          {
+            "target": "constitution",
+            "rank": 4,
+            "live_enabled": false,
+            "min_shadow_hours": 96,
+            "required_shadow_passes": 20,
+            "required_first_live_veto_uses": 9999,
+            "observer_quorum": 3,
+            "checks_ok": true
+          }
+        ],
+        "failed_check_count": 0
+      }
+    },
+    {
+      "id": "formal_invariants",
+      "required": true,
+      "ok": true,
+      "status": 0,
+      "elapsed_ms": 297,
+      "runner": "local",
+      "missing_toolchain": false,
+      "stdout_summary": "{ \"schema_id\": \"formal_invariant_engine_result\", \"schema_version\": \"1.0\", \"ts\": \"2026-03-08T08:38:39.464Z\", \"ok\": true, \"total_invariants\": 9, \"failed_invariants\": 0, \"checks\": [ { \"id\": \"t0_financial_gate_present\", \"ok\": true, \"type\": \"file_contains_all\", \"path\": \"client/config/directives/T0_invariants.yaml\", \"missing_patterns\": [] }, { \"id\": \"scheduler_mode_dream\", \"ok\": true, \"type\": \"json_path",
+      "stderr_summary": "",
+      "payload": {
+        "schema_id": "formal_invariant_engine_result",
+        "schema_version": "1.0",
+        "ts": "2026-03-08T08:38:39.464Z",
+        "ok": true,
+        "total_invariants": 9,
+        "failed_invariants": 0,
+        "checks": [
+          {
+            "id": "t0_financial_gate_present",
+            "ok": true,
+            "type": "file_contains_all",
+            "path": "client/config/directives/T0_invariants.yaml",
+            "missing_patterns": []
+          },
+          {
+            "id": "scheduler_mode_dream",
+            "ok": true,
+            "type": "json_path_includes",
+            "path": "client/config/runtime_scheduler_policy.json",
+            "json_path": "modes",
+            "expected": "dream",
+            "actual_count": 3
+          },
+          {
+            "id": "scheduler_mode_inversion",
+            "ok": true,
+            "type": "json_path_includes",
+            "path": "client/config/runtime_scheduler_policy.json",
+            "json_path": "modes",
+            "expected": "inversion",
+            "actual_count": 3
+          },
+          {
+            "id": "profile_compat_n_minus_2",
+            "ok": true,
+            "type": "json_path_gte",
+            "path": "client/config/profile_compatibility_policy.json",
+            "json_path": "max_minor_behind",
+            "expected": 2,
+            "actual": 2
+          },
+          {
+            "id": "subexec_requires_nursery",
+            "ok": true,
+            "type": "json_path_equals",
+            "path": "client/config/sub_executor_synthesis_policy.json",
+            "json_path": "validation.require_nursery_pass",
+            "expected": true,
+            "actual": true
+          },
+          {
+            "id": "subexec_requires_adversarial",
+            "ok": true,
+            "type": "json_path_equals",
+            "path": "client/config/sub_executor_synthesis_policy.json",
+            "json_path": "validation.require_adversarial_pass",
+            "expected": true,
+            "actual": true
+          },
+          {
+            "id": "migration_contract_payment_opcode",
+            "ok": true,
+            "type": "json_path_includes",
+            "path": "client/config/primitive_migration_contract.json",
+            "json_path": "active_opcodes",
+            "expected": "PAYMENT_EXECUTE",
+            "actual_count": 13
+          },
+          {
+            "id": "primitive_count_cap_floor",
+            "ok": true,
+            "type": "json_path_gte",
+            "path": "client/config/primitive_catalog.json",
+            "json_path": "primitive_count_cap",
+            "expected": 13,
+            "actual": 24
+          },
+          {
+            "id": "guard_registry_profile_compat_hook",
+            "ok": true,
+            "type": "file_contains_all",
+            "path": "client/config/guard_check_registry.json",
+            "missing_patterns": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "critical_protocol_suite",
+      "required": true,
+      "ok": true,
+      "status": 0,
+      "elapsed_ms": 364,
+      "runner": "local",
+      "missing_toolchain": false,
+      "stdout_summary": "{ \"ts\": \"2026-03-08T08:38:39.834Z\", \"ok\": true, \"shadow_only\": true, \"type\": \"critical_protocol_formal_suite_run\", \"strict\": true, \"checks\": { \"required_paths_present\": true, \"verifier_ok\": true }, \"missing_required_paths\": [], \"verifier\": { \"invoked\": true, \"status\": 0, \"ok\": true, \"stdout\": \"{ \\\"schema_id\\\": \\\"critical_path_formal_verifier_result\\\", \\\"schema_version\\\": \\\"1.0\\\", \\\"ts\\\": \\\"2026-03",
+      "stderr_summary": "",
+      "payload": {
+        "ts": "2026-03-08T08:38:39.834Z",
+        "ok": true,
+        "shadow_only": true,
+        "type": "critical_protocol_formal_suite_run",
+        "strict": true,
+        "checks": {
+          "required_paths_present": true,
+          "verifier_ok": true
+        },
+        "missing_required_paths": [],
+        "verifier": {
+          "invoked": true,
+          "status": 0,
+          "ok": true,
+          "stdout": "{ \"schema_id\": \"critical_path_formal_verifier_result\", \"schema_version\": \"1.0\", \"ts\": \"2026-03-08T08:38:39.828Z\", \"ok\": true, \"checks\": [ { \"id\": \"files:weaver_policy_present\", \"ok\": true, \"detail\": \"config/weaver_policy.json\" }, { \"id\": \"files:inversion_policy_present\", \"ok\": true, \"detail\": \"config/inversion_policy.json\" }, { \"id\": \"files:constitution_policy_present\", \"ok\": true, \"detail\": \"conf",
+          "stderr": ""
+        }
+      }
+    },
+    {
+      "id": "kani_toolchain",
+      "required": false,
+      "ok": false,
+      "status": 101,
+      "elapsed_ms": 84,
+      "runner": "local",
+      "missing_toolchain": false,
+      "stdout_summary": "",
+      "stderr_summary": "error: no such command: `kani` help: a command with a similar name exists: `yank` help: view all installed commands with `cargo --list` help: find a package to install `kani` with `cargo search cargo-kani`",
+      "payload": null
+    },
+    {
+      "id": "prusti_toolchain",
+      "required": false,
+      "ok": false,
+      "status": 1,
+      "elapsed_ms": 1,
+      "runner": "local",
+      "missing_toolchain": true,
+      "stdout_summary": "",
+      "stderr_summary": "",
+      "payload": null
+    },
+    {
+      "id": "lean_toolchain",
+      "required": false,
+      "ok": false,
+      "status": 1,
+      "elapsed_ms": 1,
+      "runner": "local",
+      "missing_toolchain": true,
+      "stdout_summary": "",
+      "stderr_summary": "",
+      "payload": null
+    }
+  ]
+}

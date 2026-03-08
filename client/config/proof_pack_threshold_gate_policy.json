@@ -1,0 +1,70 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "strict_default": true,
+  "runner_default": "local",
+  "docker": {
+    "image": "node:22-bookworm",
+    "workspace_mount": "/workspace"
+  },
+  "commands": {
+    "mech_benchmark": {
+      "bin": "node",
+      "args": [
+        "client/systems/ops/mech_suit_benchmark.js",
+        "run"
+      ],
+      "timeout_ms": 360000
+    },
+    "harness_6m": {
+      "bin": "node",
+      "args": [
+        "client/systems/autonomy/autonomy_simulation_harness.js",
+        "run",
+        "--days=180",
+        "--strict=0",
+        "--write=1"
+      ],
+      "timeout_ms": 240000
+    },
+    "protheus_vs_openclaw": {
+      "bin": "node",
+      "args": [
+        "client/systems/ops/narrow_agent_parity_harness.js",
+        "run",
+        "--days=180",
+        "--strict=0"
+      ],
+      "timeout_ms": 240000
+    },
+    "formal_invariants": {
+      "bin": "npm",
+      "args": [
+        "run",
+        "-s",
+        "formal:invariants:run"
+      ],
+      "timeout_ms": 180000
+    }
+  },
+  "thresholds": {
+    "mech_min_token_reduction_pct": 15,
+    "mech_require_ambient_mode": true,
+    "mech_require_no_host_timeout": true,
+    "harness_allowed_verdicts": [
+      "pass",
+      "warn"
+    ],
+    "harness_min_shipped": 5,
+    "parity_min_pass_ratio": 0.3333,
+    "parity_min_weighted_score_avg": 0.74,
+    "parity_allow_insufficient_data": true,
+    "invariants_require_ok": true
+  },
+  "paths": {
+    "latest_path": "client/local/state/ops/proof_pack_threshold_gate/latest.json",
+    "receipts_path": "client/local/state/ops/proof_pack_threshold_gate/receipts.jsonl",
+    "proof_pack_dir": "client/docs/reports/runtime_snapshots/ops/proof_pack"
+  }
+}

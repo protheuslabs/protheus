@@ -1,0 +1,39 @@
+name: Proof Pack Threshold Gate
+
+on:
+  pull_request:
+    branches: [main, rust50]
+  push:
+    branches: [main, rust50]
+  workflow_dispatch:
+
+jobs:
+  proof-pack-threshold-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run proof-pack threshold gate (dockerized)
+        run: npm run -s ops:proof-pack:gate:docker
+
+      - name: Upload proof-pack threshold artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proof-pack-threshold-artifacts
+          path: |
+            client/local/state/ops/proof_pack_threshold_gate/latest.json
+            client/local/state/ops/proof_pack_threshold_gate/receipts.jsonl
+            client/docs/reports/runtime_snapshots/ops/proof_pack/threshold_gate_latest.json
+          if-no-files-found: warn

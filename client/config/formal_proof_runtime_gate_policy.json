@@ -1,0 +1,90 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "shadow_only": true,
+  "strict_default": true,
+  "runner_default": "local",
+  "docker": {
+    "image": "node:22-bookworm",
+    "workspace_mount": "/workspace"
+  },
+  "commands": [
+    {
+      "id": "formal_spec_guard",
+      "bin": "npm",
+      "args": [
+        "run",
+        "-s",
+        "ops:formal-spec:check"
+      ],
+      "required": true,
+      "timeout_ms": 180000
+    },
+    {
+      "id": "critical_path_formal",
+      "bin": "node",
+      "args": [
+        "client/systems/security/critical_path_formal_verifier.js",
+        "run",
+        "--strict=1"
+      ],
+      "required": true,
+      "timeout_ms": 180000
+    },
+    {
+      "id": "formal_invariants",
+      "bin": "npm",
+      "args": [
+        "run",
+        "-s",
+        "formal:invariants:run"
+      ],
+      "required": true,
+      "timeout_ms": 180000
+    },
+    {
+      "id": "critical_protocol_suite",
+      "bin": "node",
+      "args": [
+        "client/systems/ops/critical_protocol_formal_suite.js",
+        "run",
+        "--strict=1"
+      ],
+      "required": true,
+      "timeout_ms": 180000
+    },
+    {
+      "id": "kani_toolchain",
+      "bin": "cargo",
+      "args": [
+        "kani",
+        "--version"
+      ],
+      "required": false,
+      "timeout_ms": 30000
+    },
+    {
+      "id": "prusti_toolchain",
+      "bin": "prusti-rustc",
+      "args": [
+        "--version"
+      ],
+      "required": false,
+      "timeout_ms": 30000
+    },
+    {
+      "id": "lean_toolchain",
+      "bin": "lean",
+      "args": [
+        "--version"
+      ],
+      "required": false,
+      "timeout_ms": 30000
+    }
+  ],
+  "paths": {
+    "latest_path": "client/local/state/ops/formal_proof_runtime_gate/latest.json",
+    "receipts_path": "client/local/state/ops/formal_proof_runtime_gate/receipts.jsonl",
+    "proof_pack_dir": "client/docs/reports/runtime_snapshots/ops/proof_pack"
+  }
+}
