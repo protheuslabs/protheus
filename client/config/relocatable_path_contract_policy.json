@@ -8,7 +8,7 @@
       "client/lib",
       "client/config",
       "client/bin",
-      "client/tools",
+      "client/developer/tools",
       "core",
       ".github/workflows",
       "package.json",

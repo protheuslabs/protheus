@@ -48,7 +48,7 @@
     - Added synthesizer: `client/systems/sensory/conversation_eye_synthesizer.ts`.
     - Added bootstrap lane + wrapper: `client/systems/sensory/conversation_eye_bootstrap.{ts,js}`.
     - `local_runtime_partitioner init/status` now ensures/reports conversation-eye installation.
-    - Migration bootstrap now auto-enables the lane (`client/tools/migrate_to_planes_runtime.sh`).
+    - Migration bootstrap now auto-enables the lane (`client/developer/tools/migrate_to_planes_runtime.sh`).
     - Default eyes catalog now includes `conversation_eye` (`catalog_store.ts` + catalog seed).
     - Added tests:
       - `client/memory/tools/tests/conversation_eye_bootstrap.test.js`
@@ -285,7 +285,7 @@
     - Reset command can wipe local partitions without touching source code.
   - Completed deliverables:
     - `protheusctl migrate-to-planes` (`plan|run|status`) shipped.
-    - `client/tools/migrate_to_planes_runtime.sh` shipped for one-command migration bootstrap.
+    - `client/developer/tools/migrate_to_planes_runtime.sh` shipped for one-command migration bootstrap.
     - `local_runtime_partitioner` init/status/reset shipped + tested.
     - Benchmark/harness defaults moved to `client/local/state/*` for generated artifacts.
 
