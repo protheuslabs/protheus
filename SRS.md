@@ -4674,3 +4674,17 @@ Objective: establish a narrow Rust-first conduit between the TCB and TypeScript 
 | V6-GAP-004 | launch-polish | V6 | done | Community Starter Issue Pack + Seeder | Contributor onboarding still lacked a deterministic “first PR” path with maintainable starter issue definitions. | Added `client/docs/community/GOOD_FIRST_ISSUES.md` (10 starter tasks with acceptance criteria/labels), `client/systems/ops/good_first_issue_seed.js` (dry-run/apply seeding with receipt output), and `CONTRIBUTING.md` wiring. | V6-GAP-003 |
 | V6-GAP-005 | launch-polish | V6 | done | InfRing Launch Announcement Template Pack | Launch communication quality was inconsistent and not codified into reusable artifacts. | Added `client/docs/announcements/INFRING_LAUNCH_TEMPLATE.md` with X/HN/Reddit templates and internal launch checklist; linked from `README.md`. | V6-GAP-003 |
 | V6-GAP-006 | blocked | Public Release + Announcement Publication Authority | Final publication (GitHub release, npm publish, public posting) requires maintainer account authority and client/legal/commercial approval outside autonomous execution. | Human-owned publication evidence is attached via authority artifacts (`HMAN-028`, `HMAN-029`) and corresponding release/post links are recorded in state evidence. | V6-F100-034, V6-SEC-001, V6-GAP-005 |
+
+## Technical Excellence Roadmap Intake (Google Doc `19DO7nvxizNJmLuoRUFrYYTNOmMnHJCGKI44AlGHbcSw`, 2026-03-08)
+
+Objective: convert roadmap claims into executable contracts while separating automatable engineering lanes from human-authority publication/legal lanes.
+
+| ID | status | title | problem | acceptance |
+|---|---|---|---|---|
+| V6-TECH-301 | done | Formal three-plane spec surface + guard | Three-plane formal claims were not backed by an executable repo contract. | `planes/spec/tla/three_plane_boundary.tla` + cfg + `client/systems/ops/formal_spec_guard.ts` + CI workflow `.github/workflows/formal-spec-guard.yml` exist and `npm run -s ops:formal-spec:check` passes. |
+| V6-TECH-302 | done | Inter-plane contract source-of-truth scaffold | Inter-plane envelope requirements lacked a canonical contracts directory. | `planes/contracts/conduit_envelope.schema.json` exists with required keys (`domain`, `command`, `payload`) and is validated by formal spec guard. |
+| V6-TECH-303 | done | Architecture + verify integration for formal surfaces | Formal surfaces were not integrated into architecture docs or the default verify path. | `ARCHITECTURE.md` references `planes/spec` + `planes/contracts`; `verify.sh` runs dependency-boundary and formal-spec checks before origin-integrity checks. |
+| V6-TECH-304 | queued | Full formal proof runtime lane in CI | Spec scaffolding exists but heavy proof lanes (`Kani`/`Prusti`/`Lean`) are not yet integrated end-to-end. | Add reproducible proof commands + CI jobs with artifacts and fail-closed enforcement when proofs regress. |
+| V6-TECH-305 | queued | Reproducible benchmark/proof-pack threshold enforcement | Roadmap-level benchmark thresholds are not yet fully CI-enforced with reproducible artifact proofs. | Add CI threshold gates and reproducible dockerized benchmark artifact outputs tied to commit hash. |
+
+Human-owned carryovers from this intake are tracked in `client/docs/HUMAN_ONLY_ACTIONS.md` (`HMAN-041..HMAN-044`).

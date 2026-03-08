@@ -26,6 +26,10 @@ Hard boundary:
 - Client <-> core communication is conduit + scrambler only.
 - Every substrate must declare fallback/degradation behavior.
 
+Formal contract surfaces:
+- Boundary/formal specs: `planes/spec/`
+- Inter-plane contract schemas: `planes/contracts/`
+
 ## Conscious vs Subconscious Split (Iceberg Model)
 
 Protheus follows an explicit iceberg contract:
@@ -184,4 +188,6 @@ flowchart LR
 - [Rust Primitive Requirement](client/docs/requirements/REQ-08-rust-core-primitives.md)
 - [Security Posture](client/docs/SECURITY_POSTURE.md)
 - [Three-Plane Model](planes/README.md)
+- [Three-Plane Formal Spec Surface](planes/spec/README.md)
+- [Planes Contract Registry](planes/contracts/README.md)
 - [Layer Rulebook](client/docs/architecture/LAYER_RULEBOOK.md)

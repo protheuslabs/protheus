@@ -71,6 +71,15 @@ Purpose: capture high-impact tasks that cannot be executed autonomously from bac
 | Adopter + case-study program execution | not complete | `HMAN-039` | Customer references and publication rights are relationship/legal workflows. |
 | Commercial support tier launch authority | not complete | `HMAN-040` | Paid SLA/contact commitments require business/legal ownership and staffing decisions. |
 
+## Human Intake (Technical Excellence Roadmap Doc `19DO7nvxizNJmLuoRUFrYYTNOmMnHJCGKI44AlGHbcSw`, 2026-03-08)
+
+| ID | Human Action | Why This Is Human-Only | Evidence Artifact (suggested) | Backlog Dependencies |
+|---|---|---|---|---|
+| HMAN-041 | Submit and own external standards response package (NIST/AAIF/CNCF positioning) | Requires external-account authority, policy accountability, and legal/public positioning sign-off. | `state/ops/evidence/standards_submission_bundle_<date>.pdf` | `REQ-30-H001` |
+| HMAN-042 | Approve external competitive claims and publication language | Public claims/positioning carry legal and brand risk requiring explicit human authorization. | `state/ops/evidence/competitive_claims_approval_<date>.md` | `REQ-30-H002` |
+| HMAN-043 | Contract independent formal-security assessment vendors | Requires procurement authority, budget control, and signed legal engagement. | `state/ops/evidence/formal_security_assessment_contract_<date>.pdf` | `REQ-30-H003`, `V6-F100-A-004` |
+| HMAN-044 | Approve publication of external proof/audit reports | Report publication scope and disclosure posture require legal/executive approval. | `state/ops/evidence/external_proof_publish_approval_<date>.md` | `REQ-30-H003`, `V6-F100-A-004` |
+
 ## Non-Negotiable Constraint
 
 These tasks are intentionally not auto-executable. They anchor sovereignty, legal control, and accountability in the human root.

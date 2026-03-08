@@ -390,3 +390,41 @@
 
 - [ ] `V6-F100-A-011` Activate named 24x7 support roster + escalation channels.
   - Human-owned: `HMAN-035`.
+
+## Technical Excellence Roadmap Intake (Google Doc `19DO7nvxizNJmLuoRUFrYYTNOmMnHJCGKI44AlGHbcSw`, 2026-03-08)
+
+- [x] `V6-TECH-ROADMAP-001` Ship formal three-plane spec surface + executable guard.
+  - Delivered:
+    - `planes/spec/README.md`
+    - `planes/spec/tla/three_plane_boundary.tla`
+    - `planes/spec/tla/three_plane_boundary.cfg`
+    - `client/systems/ops/formal_spec_guard.ts`
+    - `.github/workflows/formal-spec-guard.yml`
+  - Validation:
+    - `npm run -s ops:formal-spec:check`
+
+- [x] `V6-TECH-ROADMAP-002` Establish inter-plane contract source-of-truth.
+  - Delivered:
+    - `planes/contracts/README.md`
+    - `planes/contracts/conduit_envelope.schema.json`
+  - Validation:
+    - Included in `ops:formal-spec:check`
+
+- [x] `V6-TECH-ROADMAP-003` Bind architecture/verify flows to formal surfaces.
+  - Delivered:
+    - `ARCHITECTURE.md` now references `planes/spec` + `planes/contracts`
+    - `verify.sh` now runs `ops:dependency-boundary:check` + `ops:formal-spec:check` before origin-integrity lane checks
+  - Validation:
+    - `./verify.sh` (host runtime permitting cargo execution)
+
+- [ ] `V6-TECH-ROADMAP-004` Add full formal verification execution lane (`TLC`/`Kani`/`Prusti`/`Lean`) in CI.
+  - Current state:
+    - Spec scaffold + guard exists, but heavy proof runtime is not yet wired into CI on this host profile.
+  - Completion criteria:
+    - Reproducible `cargo kani`/proof lane commands and CI evidence artifacts.
+
+- [ ] `V6-TECH-ROADMAP-005` Raise deterministic benchmark/reproducibility pack to roadmap targets.
+  - Current state:
+    - Proof pack lanes exist, but published thresholds from roadmap doc are not fully enforced.
+  - Completion criteria:
+    - CI-enforced benchmark thresholds + reproducible Docker benchmark artifact contract.

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://protheus.dev/contracts/conduit-envelope.schema.json",
+  "title": "Conduit Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "domain", "command", "payload", "ts"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 6,
+      "maxLength": 128
+    },
+    "reply_to": {
+      "type": "string",
+      "minLength": 6,
+      "maxLength": 128
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "spine",
+        "attention-queue",
+        "memory",
+        "persona",
+        "dopamine",
+        "ops"
+      ]
+    },
+    "command": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 128
+    },
+    "payload": {
+      "type": "object"
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "trace_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}
