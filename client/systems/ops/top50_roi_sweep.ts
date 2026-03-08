@@ -180,6 +180,17 @@ function sleepMs(ms: number) {
   Atomics.wait(view, 0, 0, waitMs);
 }
 
+function pidAlive(pid: number) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    // EPERM means process exists but is not signalable by current user.
+    return !!(err && err.code === 'EPERM');
+  }
+}
+
 function acquireLock(lockPath: string, timeoutMs = DEFAULT_LOCK_TIMEOUT_MS, staleMs = DEFAULT_LOCK_STALE_MS) {
   ensureParent(lockPath);
   const started = Date.now();
@@ -196,13 +207,24 @@ function acquireLock(lockPath: string, timeoutMs = DEFAULT_LOCK_TIMEOUT_MS, stal
     } catch (err) {
       if (!err || err.code !== 'EEXIST') throw err;
       let stale = false;
+      let orphaned = false;
       try {
         const st = fs.statSync(lockPath);
         stale = (Date.now() - Number(st.mtimeMs || 0)) > staleMs;
       } catch {
         stale = false;
       }
-      if (stale) {
+      try {
+        const raw = String(fs.readFileSync(lockPath, 'utf8') || '').trim();
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const ownerPid = Number(parsed && parsed.pid);
+          orphaned = Number.isInteger(ownerPid) && ownerPid > 0 && ownerPid !== process.pid && !pidAlive(ownerPid);
+        }
+      } catch {
+        orphaned = false;
+      }
+      if (stale || orphaned) {
         try {
           fs.rmSync(lockPath, { force: true });
           continue;
@@ -331,10 +353,10 @@ function actionsForToday(): Action[] {
     { roi_rank: 12, id: 'signal_deadlock_breaker', command: `node systems/ops/signal_slo_deadlock_breaker.js run ${d}` },
     { roi_rank: 13, id: 'external_eyes_slo', command: `node habits/scripts/external_eyes.js slo ${d}` },
     { roi_rank: 14, id: 'external_eyes_preflight', command: 'node habits/scripts/external_eyes.js preflight --strict' },
-    { roi_rank: 15, id: 'autotest_sync', command: 'npm run autotest:sync' },
-    { roi_rank: 16, id: 'autotest_run_changed', command: 'npm run autotest:run -- --run-timeout-ms=240000' },
-    { roi_rank: 17, id: 'autotest_report_latest', command: 'npm run autotest:report' },
-    { roi_rank: 18, id: 'autotest_pulse', command: 'npm run autotest:pulse -- --run-timeout-ms=120000' },
+    { roi_rank: 15, id: 'autotest_sync', command: 'PROTHEUS_CONDUIT_STDIO_TIMEOUT_MS=20000 npm run autotest:sync' },
+    { roi_rank: 16, id: 'autotest_run_changed', command: 'PROTHEUS_CONDUIT_STDIO_TIMEOUT_MS=20000 npm run autotest:run -- --run-timeout-ms=20000' },
+    { roi_rank: 17, id: 'autotest_report_latest', command: 'PROTHEUS_CONDUIT_STDIO_TIMEOUT_MS=20000 npm run autotest:report' },
+    { roi_rank: 18, id: 'autotest_pulse', command: 'PROTHEUS_CONDUIT_STDIO_TIMEOUT_MS=20000 npm run autotest:pulse -- --run-timeout-ms=20000' },
     { roi_rank: 19, id: 'autotest_status', command: 'npm run autotest:status' },
     { roi_rank: 20, id: 'organ_atrophy_scan', command: 'npm run organ:atrophy:scan' },
     { roi_rank: 21, id: 'organ_atrophy_status', command: 'npm run organ:atrophy:status' },
