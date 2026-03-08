@@ -23,6 +23,26 @@ Hard boundary:
 - Client <-> core communication is conduit + scrambler only.
 - Every substrate must declare fallback/degradation behavior.
 
+## Conscious vs Subconscious Split (Iceberg Model)
+
+Protheus follows an explicit iceberg contract:
+
+- Subconscious runtime (hidden engine) lives in `core/` and owns scoring, priority, policy, escalation, and fail-closed authority.
+- Conscious runtime (cockpit surface) lives in `client/` and consumes core outputs through conduit only.
+- The cockpit can observe and render importance metadata; it cannot compute or override authority decisions.
+
+Driver analogy:
+
+- `core/` is the drivetrain, brakes, and stability control.
+- `client/` is the steering wheel, dashboard, and infotainment.
+- Conduit is the harness between them.
+
+REQ-27 authority implementation:
+
+- Importance scoring engine: `core/layer0/ops/src/importance.rs`
+- Priority ordering + queue metadata: `core/layer0/ops/src/attention_queue.rs`
+- Regression guard (no subconscious authority in client): `client/systems/ops/subconscious_boundary_guard.ts`
+
 ## Filesystem Mapping (Authoritative)
 
 | Plane | Contract Location | Implementation Location | Mutable Runtime Location |

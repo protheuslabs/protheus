@@ -161,6 +161,22 @@ jobs:
       - name: source_runtime_classifier
         run: npm run ops:source-runtime:check
 
+  subconscious_boundary_guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: subconscious_boundary_guard
+        run: npm run ops:subconscious-boundary:check
+
   deployment_packaging_gate:
     runs-on: ubuntu-latest
     timeout-minutes: 10

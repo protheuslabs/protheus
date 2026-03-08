@@ -1,0 +1,50 @@
+{
+  "schema_id": "subconscious_boundary_guard_policy",
+  "schema_version": "1.0.0",
+  "enabled": true,
+  "strict_default": true,
+  "scan_roots": [
+    "client/systems",
+    "client/lib"
+  ],
+  "file_extensions": [
+    ".ts",
+    ".js"
+  ],
+  "skip_path_contains": [
+    "/memory/tools/tests/",
+    "/dist/",
+    "/node_modules/",
+    "/systems/ops/subconscious_boundary_guard."
+  ],
+  "forbidden_patterns": [
+    {
+      "id": "importance_infer_function",
+      "pattern": "\\binfer_from_event\\s*\\("
+    },
+    {
+      "id": "importance_band_function",
+      "pattern": "\\bband_for_score\\s*\\("
+    },
+    {
+      "id": "importance_internal_json_export",
+      "pattern": "\\bimportance_to_json\\b"
+    },
+    {
+      "id": "importance_queue_front_flag",
+      "pattern": "\\bqueue_front\\b"
+    },
+    {
+      "id": "initiative_threshold_actions",
+      "pattern": "\\b(persistent_until_ack|triple_escalation|double_message|single_message)\\b"
+    },
+    {
+      "id": "importance_core_floor",
+      "pattern": "\\bcore_floor\\b"
+    }
+  ],
+  "paths": {
+    "latest_path": "client/local/state/ops/subconscious_boundary_guard/latest.json",
+    "receipts_path": "client/local/state/ops/subconscious_boundary_guard/receipts.jsonl"
+  }
+}

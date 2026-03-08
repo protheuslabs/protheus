@@ -65,6 +65,7 @@ Establish one core-authoritative priority system that scores importance across a
 1. Fail closed on malformed importance hints (ignore hint, compute deterministic fallback).
 2. Never allow client-surface code to become a second authority for scoring/ordering.
 3. Preserve existing conduit-only boundary between client and core.
+4. Enforce a regression guard that fails CI if REQ-27 subconscious authority tokens appear in `client/systems` or `client/lib`.
 
 ## Acceptance Criteria
 
@@ -73,3 +74,4 @@ Establish one core-authoritative priority system that scores importance across a
 3. Existing ambient producers (`spine`, `memory-ambient`, `persona-ambient`, `dopamine-ambient`) inherit the new scoring path without interface breakage.
 4. Cockpit harness consumes events in priority order via existing queue APIs.
 5. `cargo test -p protheus-ops-core attention_queue` and `cargo test -p protheus-ops-core importance` pass.
+6. `npm run -s ops:subconscious-boundary:check` passes and fails closed on violations.

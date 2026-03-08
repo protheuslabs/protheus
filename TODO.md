@@ -83,6 +83,7 @@
     - Attention queue now computes/persists importance metadata and priority ordering in `core/layer0/ops/src/attention_queue.rs`.
     - Receipts/latest snapshots now include `score`, `band`, `priority`, and `initiative_action`.
     - SRS lane tracked at `V6-INITIATIVE-013` + requirement spec `client/docs/requirements/REQ-27-global-importance-priority-kernel.md`.
+    - Added client regression guard lane: `client/systems/ops/subconscious_boundary_guard.ts` + CI required-check job + policy `client/config/subconscious_boundary_guard_policy.json`.
   - Completion criteria:
     - `cargo test -p protheus-ops-core attention_queue` and `cargo test -p protheus-ops-core importance` pass in this environment.
     - Cockpit/mech harness confirms priority-first attention consumption on mixed-severity inputs.
