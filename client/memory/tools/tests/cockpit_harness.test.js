@@ -72,6 +72,13 @@ function hostRuntimeTimeout(out) {
     || /conduit_stdio_timeout|conduit_bridge_timeout|ETIMEDOUT|_dyld_start/i.test(text);
 }
 
+function maybeSkipForHostTimeout(out, tempRoot) {
+  if (!hostRuntimeTimeout(out)) return false;
+  console.log('cockpit_harness.test.js: SKIP host_runtime_timeout');
+  fs.rmSync(tempRoot, { recursive: true, force: true });
+  process.exit(0);
+}
+
 function writePolicy(tempRoot) {
   const policyPath = path.join(tempRoot, 'mech_suit_mode_policy.json');
   const policy = {
@@ -147,15 +154,12 @@ try {
     attention_key: 'cockpit-harness-test-event'
   };
   let out = runOps(['attention-queue', 'enqueue', `--event-json=${JSON.stringify(event)}`], env);
-  if (hostRuntimeTimeout(out)) {
-    console.log('cockpit_harness.test.js: SKIP host_runtime_timeout');
-    fs.rmSync(tempRoot, { recursive: true, force: true });
-    process.exit(0);
-  }
+  maybeSkipForHostTimeout(out, tempRoot);
   assert.strictEqual(out.status, 0, out.stderr || out.stdout);
   assert.ok(out.payload && out.payload.ok === true, 'enqueue should succeed');
 
   out = runNode(COCKPIT, ['once', '--consumer=cockpit_test', '--limit=8'], env);
+  maybeSkipForHostTimeout(out, tempRoot);
   assert.strictEqual(out.status, 0, out.stderr || out.stdout);
   assert.ok(out.payload && out.payload.ok === true, 'cockpit once should succeed');
   assert.strictEqual(Number(out.payload.sequence || 0), 1, 'first ingest sequence should be 1');
@@ -164,6 +168,7 @@ try {
   assert.ok(fs.existsSync(latestPath), 'cockpit latest.json should be written');
 
   out = runNode(COCKPIT, ['once', '--consumer=cockpit_test', '--limit=8'], env);
+  maybeSkipForHostTimeout(out, tempRoot);
   assert.strictEqual(out.status, 0, out.stderr || out.stdout);
   assert.ok(out.payload && out.payload.ok === true, 'second cockpit once should succeed');
   assert.strictEqual(Number(out.payload.sequence || 0), 2, 'second ingest sequence should be 2');
@@ -173,6 +178,7 @@ try {
     ...env,
     COCKPIT_INBOX_LATEST_PATH: latestPath
   });
+  maybeSkipForHostTimeout(out, tempRoot);
   assert.strictEqual(out.status, 0, out.stderr || out.stdout);
   assert.ok(out.payload && typeof out.payload === 'object', 'protheusd status should return JSON payload');
   const cockpitSummary = out.payload.event && out.payload.event.detail

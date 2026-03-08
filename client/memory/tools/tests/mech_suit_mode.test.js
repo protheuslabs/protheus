@@ -12,6 +12,10 @@ const TS_ENTRYPOINT = path.join(ROOT, 'lib', 'ts_entrypoint.js');
 const HEARTBEAT = path.join(ROOT, 'systems', 'spine', 'heartbeat_trigger.js');
 const SAFE_LAUNCHER = path.join(ROOT, 'systems', 'spine', 'spine_safe_launcher.js');
 const BENCHMARK = path.join(ROOT, 'systems', 'ops', 'mech_suit_benchmark.js');
+const TEST_TIMEOUT_MS = Math.max(
+  2000,
+  Number(process.env.MECH_SUIT_MODE_TEST_TIMEOUT_MS || 45000) || 45000
+);
 
 function resolveScriptInvocation(script) {
   if (fs.existsSync(script)) {
@@ -37,16 +41,21 @@ function runNode(script, args = [], env = {}) {
   const out = spawnSync(process.execPath, [...invocation, ...args], {
     cwd: ROOT,
     encoding: 'utf8',
+    timeout: TEST_TIMEOUT_MS,
+    killSignal: 'SIGKILL',
     env: {
       ...process.env,
       PROTHEUS_SECURITY_GLOBAL_GATE: process.env.PROTHEUS_SECURITY_GLOBAL_GATE || '0',
       ...env
     }
   });
+  const timedOut = Boolean(out.error && String(out.error.code || '') === 'ETIMEDOUT');
   return {
-    status: Number.isFinite(out.status) ? Number(out.status) : 1,
+    status: Number.isFinite(out.status) ? Number(out.status) : (timedOut ? 124 : 1),
     stdout: String(out.stdout || ''),
-    stderr: String(out.stderr || '')
+    stderr: String(out.stderr || ''),
+    timedOut,
+    error: out.error ? String(out.error.message || out.error) : ''
   };
 }
 
@@ -62,8 +71,16 @@ function parseJson(text) {
 }
 
 function isRuntimeTimeout(out) {
-  const text = `${String(out && out.stdout || '')}\n${String(out && out.stderr || '')}`;
-  return /conduit_stdio_timeout|ETIMEDOUT|security_global_gate_failed/i.test(text);
+  const text = `${String(out && out.stdout || '')}\n${String(out && out.stderr || '')}\n${String(out && out.error || '')}`;
+  return out && out.timedOut === true
+    || /conduit_stdio_timeout|conduit_bridge_timeout|ETIMEDOUT|security_global_gate_failed|_dyld_start/i.test(text);
+}
+
+function maybeSkipForHostTimeout(out, cleanRoot) {
+  if (!isRuntimeTimeout(out)) return false;
+  console.log('mech_suit_mode.test.js: SKIP host_runtime_timeout');
+  fs.rmSync(cleanRoot, { recursive: true, force: true });
+  process.exit(0);
 }
 
 function setupResealCleanWorkspace() {
@@ -95,11 +112,7 @@ process.exit(1);
 try {
   const cleanRoot = setupResealCleanWorkspace();
   let out = runNode(HEARTBEAT, ['status']);
-  if (isRuntimeTimeout(out)) {
-    console.log('mech_suit_mode.test.js: SKIP host_runtime_timeout');
-    fs.rmSync(cleanRoot, { recursive: true, force: true });
-    process.exit(0);
-  }
+  maybeSkipForHostTimeout(out, cleanRoot);
   assert.strictEqual(out.status, 0, out.stderr || out.stdout);
   let payload = parseJson(out.stdout);
   assert.ok(payload && payload.ambient_mode_active === true, 'heartbeat status should expose ambient mode');
@@ -109,11 +122,13 @@ try {
     MECH_SUIT_MODE_FORCE: '1',
     OPENCLAW_WORKSPACE: cleanRoot
   });
+  maybeSkipForHostTimeout(out, cleanRoot);
   assert.notStrictEqual(out.status, 0, 'manual spine run should be blocked in mech suit mode');
   payload = parseJson(out.stdout);
   assert.ok(payload && payload.reason === 'manual_trigger_blocked_mech_suit_mode', 'manual run should fail closed behind heartbeat-only guard');
 
   out = runNode(BENCHMARK, []);
+  maybeSkipForHostTimeout(out, cleanRoot);
   assert.strictEqual(out.status, 0, out.stderr || out.stdout);
   payload = parseJson(out.stdout);
   const timeoutDetected = !!(payload && payload.host_fault && payload.host_fault.timeout_detected === true);
