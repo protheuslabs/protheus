@@ -1364,7 +1364,16 @@
     "ops:runtime-telemetry:emit-perf": "node client/lib/ts_entrypoint.js client/systems/observability/runtime_telemetry_optin.ts emit-perf --component=manual_probe --metric=latency_ms --value=12.5",
     "test:ops:runtime-telemetry": "node client/memory/tools/tests/runtime_telemetry_optin.test.js",
     "memory:backfill:xml": "node client/memory/tools/backfill_xml_hierarchy.js",
-    "memory:backfill:xml:apply": "node client/memory/tools/backfill_xml_hierarchy.js --apply=1"
+    "memory:backfill:xml:apply": "node client/memory/tools/backfill_xml_hierarchy.js --apply=1",
+    "ops:browser:text-diff": "node client/systems/browser/browser_text_diff_lane.js text --url=https://example.com --html=\"<html><body><main>example page</main></body></html>\"",
+    "test:lane:v6-browser-007": "node client/memory/tools/tests/browser_text_diff_lane.test.js",
+    "lane:v6-browser-007:run": "npm run -s ops:browser:text-diff",
+    "ops:shadow:classify": "node client/systems/shadow/shadow_signal_classifier.js classify --signal-json=\"{\"id\":\"manual_probe\",\"severity\":\"warn\",\"tags\":[\"infra\",\"memory\"],\"summary\":\"runtime memory pressure\"}\"",
+    "test:lane:v6-shadow-003": "node client/memory/tools/tests/shadow_signal_classifier.test.js",
+    "lane:v6-shadow-003:run": "npm run -s ops:shadow:classify",
+    "ops:shadow:dispatch": "node client/systems/shadow/shadow_dispatch_reliability.js enqueue --shadow=ops --message=\"runtime pulse\" --idempotency-key=manual_probe --apply=1 && node client/systems/shadow/shadow_dispatch_reliability.js dispatch --limit=5 --apply=1",
+    "test:lane:v6-shadow-004": "node client/memory/tools/tests/shadow_dispatch_reliability.test.js",
+    "lane:v6-shadow-004:run": "npm run -s ops:shadow:dispatch"
   },
   "bin": {
     "protheus": "./client/bin/protheus",

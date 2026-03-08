@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "max_text_tokens": 800,
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "browser.text_diff"
+  },
+  "paths": {
+    "memory_dir": "client/local/state/browser/text_diff/memory",
+    "adaptive_index_path": "client/local/adaptive/browser/text_diff/index.json",
+    "events_path": "client/local/state/browser/text_diff/events.jsonl",
+    "latest_path": "client/local/state/browser/text_diff/latest.json",
+    "receipts_path": "client/local/state/browser/text_diff/receipts.jsonl"
+  }
+}

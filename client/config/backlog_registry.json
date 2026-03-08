@@ -15029,7 +15029,7 @@
       "dependencies": [],
       "id": "V6-ADAPT-004",
       "problem": "Real-time adaptation requires strict safety bounds to prevent governance drift during incremental updates.",
-      "status": "queued",
+      "status": "done",
       "title": "Covenant/drift fail-closed adaptation gates",
       "wave": "V6"
     },
@@ -15039,7 +15039,7 @@
       "dependencies": [],
       "id": "V6-ADAPT-005",
       "problem": "High-impact adaptation changes should pass through human-legible governance reviews before promotion.",
-      "status": "queued",
+      "status": "done",
       "title": "Persona/shadow review bridge for high-impact adaptation",
       "wave": "V6"
     },
@@ -15049,7 +15049,7 @@
       "dependencies": [],
       "id": "V6-ADAPT-006",
       "problem": "Apple-silicon optimization is a high-ROI target but requires deterministic fallback for wider hardware coverage.",
-      "status": "queued",
+      "status": "done",
       "title": "Apple-silicon adaptation profile + portable fallback",
       "wave": "V6"
     },
@@ -15139,7 +15139,7 @@
       "dependencies": [],
       "id": "V6-BROWSER-007",
       "problem": "Browser intelligence costs stay bounded when agents consume text/diff snapshots instead of full visual payloads.",
-      "status": "queued",
+      "status": "done",
       "title": "Token-efficient text snapshot + diff endpoint lane",
       "wave": "V6"
     },
@@ -15428,7 +15428,7 @@
       "dependencies": [],
       "id": "V6-EDGE-004",
       "problem": "Fallback backend is unsafe without lifecycle/failure validation and no-TS substrate checks.",
-      "status": "queued",
+      "status": "done",
       "title": "Edge lifecycle validation + substrate-swap proof",
       "wave": "V6"
     },
@@ -16680,7 +16680,7 @@
       "dependencies": [],
       "id": "V6-SHADOW-003",
       "problem": "External-eye signals are not yet auto-classified/routed to the most relevant shadows.",
-      "status": "queued",
+      "status": "done",
       "title": "Eyes signal classifier and routing map lane",
       "wave": "V6"
     },
@@ -16690,7 +16690,7 @@
       "dependencies": [],
       "id": "V6-SHADOW-004",
       "problem": "Routed signals need guaranteed delivery semantics with retries and deterministic escalation.",
-      "status": "queued",
+      "status": "done",
       "title": "Shadow dispatch/notification reliability lane",
       "wave": "V6"
     },
@@ -16780,7 +16780,7 @@
       "dependencies": [],
       "id": "V6-TOOLS-001",
       "problem": "External tool reliability and precision improve with explicit context routing and deterministic tool selection.",
-      "status": "queued",
+      "status": "done",
       "title": "Dynamic tool-context management plane",
       "wave": "V6"
     },
@@ -16800,7 +16800,7 @@
       "dependencies": [],
       "id": "V6-TOOLS-003",
       "problem": "Heartbeat/breaker workflows need an operator-facing notification surface for timely intervention.",
-      "status": "queued",
+      "status": "done",
       "title": "Low-power messaging notification lane",
       "wave": "V6"
     },
@@ -16810,7 +16810,7 @@
       "dependencies": [],
       "id": "V6-TOOLS-004",
       "problem": "Orchestration should invoke tools/notifications through one governed path instead of ad hoc integrations.",
-      "status": "queued",
+      "status": "done",
       "title": "Shadow/persona bridge for tools and notifications",
       "wave": "V6"
     },

@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "max_routes": 3,
+  "severity_boost": {
+    "critical": 0.6,
+    "warn": 0.3,
+    "info": 0.1
+  },
+  "route_map": {
+    "revenue": ["growth", "commercial"],
+    "security": ["guardian", "audit"],
+    "infra": ["ops", "stability"],
+    "memory": ["memory_keeper"],
+    "persona": ["persona_council"],
+    "deadline": ["operator"],
+    "health": ["ops", "guardian"]
+  },
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "shadow.signal_classifier"
+  },
+  "paths": {
+    "memory_dir": "client/local/state/shadow/signal_classifier/memory",
+    "adaptive_index_path": "client/local/adaptive/shadow/signal_classifier/index.json",
+    "events_path": "client/local/state/shadow/signal_classifier/events.jsonl",
+    "latest_path": "client/local/state/shadow/signal_classifier/latest.json",
+    "receipts_path": "client/local/state/shadow/signal_classifier/receipts.jsonl"
+  }
+}
