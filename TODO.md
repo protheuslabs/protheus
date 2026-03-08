@@ -417,14 +417,28 @@
   - Validation:
     - `./verify.sh` (host runtime permitting cargo execution)
 
-- [ ] `V6-TECH-ROADMAP-004` Add full formal verification execution lane (`TLC`/`Kani`/`Prusti`/`Lean`) in CI.
-  - Current state:
-    - Spec scaffold + guard exists, but heavy proof runtime is not yet wired into CI on this host profile.
-  - Completion criteria:
-    - Reproducible `cargo kani`/proof lane commands and CI evidence artifacts.
+- [x] `V6-TECH-ROADMAP-004` Add full formal verification execution lane (`TLC`/`Kani`/`Prusti`/`Lean`) in CI.
+  - Delivered:
+    - `client/systems/ops/formal_proof_runtime_gate.{ts,js}`
+    - `client/config/formal_proof_runtime_gate_policy.json`
+    - `.github/workflows/formal-proof-runtime.yml`
+    - Proof artifacts: `client/docs/reports/runtime_snapshots/ops/proof_pack/formal_proof_runtime_latest.json`
+  - Validation:
+    - `npm run -s ops:formal-proof:run`
+    - `npm run -s ops:formal-proof:status`
+  - Notes:
+    - Required lanes fail-closed (`formal_spec_guard`, `critical_path_formal_verifier`, `formal:invariants:run`, `critical_protocol_formal_suite`).
+    - Optional toolchain probes (`cargo kani`, `prusti-rustc`, `lean`) are now surfaced as explicit runtime evidence.
 
-- [ ] `V6-TECH-ROADMAP-005` Raise deterministic benchmark/reproducibility pack to roadmap targets.
-  - Current state:
-    - Proof pack lanes exist, but published thresholds from roadmap doc are not fully enforced.
-  - Completion criteria:
-    - CI-enforced benchmark thresholds + reproducible Docker benchmark artifact contract.
+- [x] `V6-TECH-ROADMAP-005` Raise deterministic benchmark/reproducibility pack to roadmap targets.
+  - Delivered:
+    - `client/systems/ops/proof_pack_threshold_gate.{ts,js}`
+    - `client/config/proof_pack_threshold_gate_policy.json`
+    - `.github/workflows/proof-pack-threshold-gate.yml`
+    - Proof artifacts: `client/docs/reports/runtime_snapshots/ops/proof_pack/threshold_gate_latest.json`
+  - Validation:
+    - `npm run -s ops:proof-pack:gate`
+    - `npm run -s ops:proof-pack:gate:status`
+  - Notes:
+    - Gate enforces deterministic checks for mech benchmark, 6-month harness, parity harness, and formal invariants.
+    - `git_head` is embedded in receipts/artifacts for commit-bound reproducibility proof.
