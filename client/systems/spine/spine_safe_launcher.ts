@@ -422,6 +422,45 @@ async function runSpineStatus(plan: { mode: string, date: string }, env: Record<
   );
 }
 
+function resolveAmbientStatusStabilizeRetries() {
+  const raw = Number(process.env.SPINE_SAFE_LAUNCHER_STATUS_STABILIZE_RETRIES || 2);
+  if (!Number.isFinite(raw) || raw < 0) return 2;
+  return Math.min(8, Math.floor(raw));
+}
+
+function resolveAmbientStatusStabilizeDelayMs() {
+  const raw = Number(process.env.SPINE_SAFE_LAUNCHER_STATUS_STABILIZE_DELAY_MS || 250);
+  if (!Number.isFinite(raw) || raw < 0) return 250;
+  return Math.min(5000, Math.floor(raw));
+}
+
+function sleepMs(ms: number) {
+  if (!Number.isFinite(ms) || ms <= 0) return Promise.resolve();
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function runSpineStatusStabilized(
+  plan: { mode: string, date: string },
+  env: Record<string, string | undefined>
+) {
+  let rustStatus = await runSpineStatus(plan, env);
+  let retriesUsed = 0;
+  const maxRetries = resolveAmbientStatusStabilizeRetries();
+  const delayMs = resolveAmbientStatusStabilizeDelayMs();
+  while (retriesUsed < maxRetries) {
+    const payload = rustStatus && rustStatus.payload && typeof rustStatus.payload === 'object'
+      ? rustStatus.payload
+      : null;
+    if (!rustStatus || rustStatus.ok !== true || !payload) break;
+    if (payload.gate_active === true) break;
+    if (payload.ambient_mode_active === true) break;
+    retriesUsed += 1;
+    await sleepMs(delayMs);
+    rustStatus = await runSpineStatus(plan, env);
+  }
+  return { rustStatus, retriesUsed, stabilized: retriesUsed > 0 };
+}
+
 function spineStatusUnavailablePayload(plan: { command: string, mode: string, date: string }, runContext: string, rustStatus: any) {
   return {
     ok: false,
@@ -517,7 +556,8 @@ async function main() {
   };
 
   if (plan.command === 'status') {
-    const rustStatus = await runSpineStatus(plan, statusEnv);
+    const stabilizedStatus = await runSpineStatusStabilized(plan, statusEnv);
+    const rustStatus = stabilizedStatus.rustStatus;
     const spineStatus = rustStatus && rustStatus.payload && typeof rustStatus.payload === 'object'
       ? rustStatus.payload
       : null;
@@ -553,6 +593,8 @@ async function main() {
       precheck_reason: precheck.ok === true ? null : cleanText(precheck.reason || 'integrity_precheck_unavailable', 120),
       precheck_timeout_ms: precheck && precheck.timeout_ms ? Number(precheck.timeout_ms) : null,
       precheck_timed_out: precheck && precheck.timed_out === true,
+      status_stabilized: stabilizedStatus.stabilized,
+      status_stabilize_retries: stabilizedStatus.retriesUsed,
       spine_status: spineStatus
     };
     process.stdout.write(`${JSON.stringify(statusPayload, null, 2)}\n`);
