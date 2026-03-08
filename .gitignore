@@ -194,6 +194,8 @@ apps/*
 # Unified local runtime partitions (instance-specific)
 /client/local/
 /core/local/
+/client/tmp/
+/client/workspaces/
 
 # Instance-specific sensory collectors (local only)
 client/adaptive/sensory/eyes/collectors/abstractapi_enrich.js
