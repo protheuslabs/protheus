@@ -50,6 +50,7 @@
     ".githooks",
     ".github",
     ".internal",
+    "apps",
     "benchmarks",
     "bin",
     "build",

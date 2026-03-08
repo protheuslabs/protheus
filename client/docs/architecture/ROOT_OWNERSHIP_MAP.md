@@ -7,6 +7,7 @@ Defines ownership intent for repository-root entries after the core/client split
 - `core/`: core authority implementation (Rust and low-level layer0 native code).
 - `client/`: surface implementation (TS/JS/Python/Shell/PowerShell + tests).
 - `planes/`: architecture contracts (safety/cognition/substrate) and schemas.
+- `apps/`: optional top-of-client application/tool workspaces (default local-first, explicitly allowlisted tools may be tracked).
 
 ## Infrastructure/Metadata Directories
 
@@ -23,6 +24,13 @@ Defines ownership intent for repository-root entries after the core/client split
 - Product/repo metadata: `README.md`, `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`.
 - Build and package manifests: `Cargo.toml`, `Cargo.lock`, `package.json`, `package-lock.json`.
 - Runtime/infra bootstrap: `Dockerfile`, `docker-compose.yml`, `install.sh`, `install.ps1`, `tsconfig*.json`, `vitest.config.ts`.
+- Bootstrap identity/memory docs (intentionally tracked root exceptions): `MEMORY.md`, `MEMORY_INDEX.md`, `TAGS_INDEX.md`, `SOUL.md`, `USER.md`, `HEARTBEAT.md`, `IDENTITY.md`, `TOOLS.md`.
+
+## Root Exception Rationale
+
+- The bootstrap identity/memory docs are intentionally kept at root because agent startup and regression tests resolve them by canonical root paths.
+- These files are explicitly allowlisted in `client/config/root_surface_contract.json` and validated by `root_surface_contract` checks.
+- This is a policy exception, not a loophole: new runtime data must still live under `client/local/*` or `core/local/*`.
 
 ## Guarding Rules
 

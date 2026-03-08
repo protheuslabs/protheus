@@ -98,19 +98,13 @@ async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function run() {
-  const args = parseArgs(process.argv.slice(2));
-  const cmd = cleanText(args._[0] || 'run', 20).toLowerCase();
-  if (cmd !== 'run') {
-    process.stdout.write(`${JSON.stringify({ ok: false, error: 'unsupported_command', command: cmd })}\n`);
-    process.exit(2);
-  }
-  const profile = cleanText(args.profile || '', 80) || 'protheus_ops_attention';
-  const cargoArgs = profileToCargoArgs(profile);
-  const staleAgeSec = toInt(args['stale-age-sec'] || process.env.HOST_BUILD_STALE_MAX_AGE_SEC, 90, 20, 3600);
-  const checkIntervalMs = toInt(args['check-interval-ms'] || 5000, 1000, 1000, 60000);
-  const timeoutMs = toInt(args['timeout-ms'] || 20 * 60 * 1000, 10000, 10000, 2 * 60 * 60 * 1000);
-
+async function runValidationAttempt(
+  profile: string,
+  cargoArgs: string[],
+  staleAgeSec: number,
+  checkIntervalMs: number,
+  timeoutMs: number
+) {
   const startedAt = Date.now();
   const child = spawn('cargo', cargoArgs, {
     cwd: process.cwd(),
@@ -166,12 +160,56 @@ async function run() {
     stderr_tail: cleanText(stderr.slice(-1000), 1000),
     stdout_tail: cleanText(stdout.slice(-1000), 1000)
   };
+  return payload;
+}
+
+function reapStaleBuildScripts(maxAgeSec: number) {
+  try {
+    const cmd = `node client/systems/ops/host_build_stale_guard.js reap --kill=1 --max-age-sec=${Math.max(10, maxAgeSec)}`;
+    execSync(cmd, { cwd: process.cwd(), stdio: ['ignore', 'ignore', 'ignore'] });
+  } catch {
+    // best-effort cleanup only
+  }
+}
+
+async function run() {
+  const args = parseArgs(process.argv.slice(2));
+  const cmd = cleanText(args._[0] || 'run', 20).toLowerCase();
+  if (cmd !== 'run') {
+    process.stdout.write(`${JSON.stringify({ ok: false, error: 'unsupported_command', command: cmd })}\n`);
+    process.exit(2);
+  }
+  const profile = cleanText(args.profile || '', 80) || 'protheus_ops_attention';
+  const cargoArgs = profileToCargoArgs(profile);
+  const staleAgeSec = toInt(args['stale-age-sec'] || process.env.HOST_BUILD_STALE_MAX_AGE_SEC, 90, 20, 3600);
+  const checkIntervalMs = toInt(args['check-interval-ms'] || 5000, 1000, 1000, 60000);
+  const timeoutMs = toInt(args['timeout-ms'] || 20 * 60 * 1000, 10000, 10000, 2 * 60 * 60 * 1000);
+  const maxRetries = toInt(args['max-retries'] || process.env.HOST_RUST_VALIDATION_MAX_RETRIES, 1, 0, 5);
+
+  const attempts: Array<{ attempt: number, reason_code: string, exit_code: number }> = [];
+  let payload = null as any;
+  for (let attempt = 1; attempt <= (maxRetries + 1); attempt += 1) {
+    payload = await runValidationAttempt(profile, cargoArgs, staleAgeSec, checkIntervalMs, timeoutMs);
+    attempts.push({
+      attempt,
+      reason_code: cleanText(payload.reason_code, 120),
+      exit_code: Number(payload.exit_code || 1)
+    });
+    if (payload.exit_code === 0) break;
+    const canRetry = payload.reason_code === 'stale_build_script_detected' && attempt <= maxRetries;
+    if (!canRetry) break;
+    reapStaleBuildScripts(staleAgeSec);
+    await sleep(1200);
+  }
+
+  payload.attempts = attempts;
+  payload.retried = attempts.length > 1;
+  payload.max_retries = maxRetries;
   process.stdout.write(`${JSON.stringify(payload)}\n`);
-  process.exit(exitCode);
+  process.exit(Number(payload.exit_code || 1));
 }
 
 run().catch((err: any) => {
   process.stderr.write(`host_rust_validation_error:${cleanText(err && err.message ? err.message : err, 300)}\n`);
   process.exit(1);
 });
-

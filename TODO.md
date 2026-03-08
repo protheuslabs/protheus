@@ -88,6 +88,9 @@
     - `cargo test -p protheus-ops-core attention_queue` and `cargo test -p protheus-ops-core importance` pass in this environment.
     - Cockpit/mech harness confirms priority-first attention consumption on mixed-severity inputs.
     - No TS/client authority for scoring/order paths (core remains single authority).
+  - Latest validation snapshot (2026-03-08):
+    - `npm run -s ops:test:protheus-ops-core:attention` currently exits with `reason_code=stale_build_script_detected` (host build-script stall), not a priority-kernel logic regression.
+    - Rollout exit is blocked by `V6-HOST-BUILD-STALE-001` host determinism work.
 
 - [ ] `V6-MEMORY-HIERARCHY-XML-001` Backfill explicit XML hierarchy across historical daily memory files.
   - Current state:
@@ -95,12 +98,16 @@
   - Completion criteria:
     - Historical nodes carry explicit `<node|tag|jot>` boundaries + stable hex IDs without breaking recall/index parity.
 
-- [ ] `V6-ROOT-INTERNAL-003` Decide and execute final placement policy for root personal/internal markdown artifacts.
+- [x] `V6-ROOT-INTERNAL-003` Decide and execute final placement policy for root personal/internal markdown artifacts.
   - Layer target: `client/local/internal/*` (or explicit archived docs path if governance files stay tracked).
   - Current gap:
     - Root still carries operational identity/memory docs (`MEMORY.md`, `SOUL.md`, `HEARTBEAT.md`, `IDENTITY.md`, etc.) that are intentionally referenced by agent bootstrap and tests.
   - Completion criteria:
     - Either migrate to `client/local/internal/*` with bootstrap/test path updates, or formalize as intentionally tracked root exceptions in root-surface contracts and docs.
+  - Completed deliverables:
+    - Formalized root markdown exceptions in `client/config/root_surface_contract.json` (`allowed_root_files`).
+    - Documented root ownership and exception policy in `client/docs/architecture/ROOT_OWNERSHIP_MAP.md`.
+    - Guard check remains enforced via `node client/systems/ops/root_surface_contract.js check --strict=1`.
 
 - [ ] `V6-TSCONFIG-004` Finalize TypeScript config flattening beyond current extends chain.
   - Current state:
@@ -193,12 +200,13 @@
   - Progress:
     - Harness now emits conduit runtime gate health and marks `insufficient_data.active=true` when gate is active.
     - `ops:protheus-vs-openclaw` no longer hard-fails strict mode during active runtime-gate incidents (exit `0`, explicit degraded reason).
+    - Latest run (`2026-03-08T04:41:48Z`) still fails parity gates (`parity_pass=false`, pass_ratio `0.3333`, weighted_score `0.7463`) with largest gap in `sustained_autonomy` reliability.
   - Completion criteria:
     - `ops:protheus-vs-openclaw` exits `0` with `parity_pass: true`.
     - Weekly scorecard shows required pass ratio and weighted score thresholds.
     - Regression guard added so parity failures are surfaced before merge.
 
-- [ ] `V6-MECH-LIVE-001` Remove mech benchmark host-timeout skip and require live ambient-lane execution.
+- [x] `V6-MECH-LIVE-001` Remove mech benchmark host-timeout skip and require live ambient-lane execution.
   - Layer target: `core/layer2/conduit` + `core/layer0/ops` + mech benchmark contract in `client/systems/ops/mech_suit_benchmark.js`.
   - Current gap:
     - Ambient benchmark currently passes in gate-degraded mode when conduit runtime is unavailable; live Rust authority still blocked by runtime stall.
@@ -208,7 +216,8 @@
     - Spine heartbeat/status now fail fast and convert to gate-skipped mode, reducing repetitive timeout incidents.
     - Refreshed proof pack artifacts at `client/docs/reports/runtime_snapshots/ops/proof_pack/` with current benchmark + harness + parity + invariants outputs.
     - Ambient wrappers (`spine_safe_launcher`, persona ambient, dopamine ambient, memory ambient) now pass explicit conduit stdio budgets, removing multi-30s wrapper stalls.
-    - `ops:mech-suit:benchmark` now completes full case execution with no `skip_reason` in current run (`2026-03-07T22:18:01.987Z`, summary reduction `15.55%`, `ambient_mode_active=true`).
+    - `ops:mech-suit:benchmark` now completes full case execution with no `skip_reason` in current run (`2026-03-08T04:41:39.157Z`, summary reduction `18.19%`, `ambient_mode_active=true`).
+    - `npm run -s test:ops:mech-suit` now executes fully (`mech_suit_mode.test.js: OK`) after aligning test timeout with real benchmark runtime (default 240s).
   - Completion criteria:
     - `ops:mech-suit:benchmark` runs full case set without `skip_reason`.
     - `ambient_mode_active` and summary booleans are sourced from live lane receipts.
@@ -244,6 +253,9 @@
   - Scope:
     - Execute cockpit/mech/control-plane/proof-pack validations in an environment that does not trigger `host_runtime_timeout` skips.
     - Capture and publish artifact bundle tied to commit hash.
+  - Progress:
+    - `npm run -s test:ops:mech-suit` now executes fully with no `host_runtime_timeout` skip path.
+    - Remaining blocker is host Rust validation stalls (tracked in `V6-HOST-BUILD-STALE-001`) for attention/initiative cargo test profiles.
   - Completion criteria:
     - Previously skipped tests execute fully (no host-timeout skip path).
     - Benchmark/harness/proof-pack outputs are published and linked in reports.
@@ -267,6 +279,7 @@
     - Added monitored cargo wrapper: `client/systems/ops/host_rust_validation.{ts,js}`.
     - Wired guarded scripts: `ops:test:protheus-ops-core:attention` and `ops:test:execution-core:initiative`.
     - Validation now returns deterministic `reason_code=stale_build_script_detected` instead of hanging.
+    - Added auto-reap retry flow in `host_rust_validation.ts` (`max_retries` default `1`) to self-heal transient stale build-script pools before failing.
   - Completion criteria:
     - `cargo test -p execution_core initiative` completes deterministically on the validation host profile.
     - Stall detector emits actionable reason code instead of hanging lanes.

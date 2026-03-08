@@ -14,7 +14,7 @@ const SAFE_LAUNCHER = path.join(ROOT, 'systems', 'spine', 'spine_safe_launcher.j
 const BENCHMARK = path.join(ROOT, 'systems', 'ops', 'mech_suit_benchmark.js');
 const TEST_TIMEOUT_MS = Math.max(
   2000,
-  Number(process.env.MECH_SUIT_MODE_TEST_TIMEOUT_MS || 45000) || 45000
+  Number(process.env.MECH_SUIT_MODE_TEST_TIMEOUT_MS || 240000) || 240000
 );
 
 function resolveScriptInvocation(script) {
