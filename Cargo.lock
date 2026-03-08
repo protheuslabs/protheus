@@ -914,6 +914,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "protheus-swarm-router"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "serde",
+ "serde_json",
+ "sha2",
+]
+
+[[package]]
 name = "protheus-vault-core-v1"
 version = "0.1.0"
 dependencies = [

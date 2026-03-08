@@ -18,6 +18,9 @@ node client/systems/migration/universal_importers.js run --from=openfang --path=
 
 # Control-plane façade
 protheusctl import --from=openfang --path=./dump/openfang.json --apply=1 --strict=1
+
+# Migration alias façade
+protheusctl migrate --from=openfang --path=./dump/openfang.json --apply=1 --strict=1
 ```
 
 ## Contract

@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "owner_id": "ops_competitive_matrix",
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "ops.competitive_benchmark_matrix"
+  },
+  "paths": {
+    "memory_dir": "client/local/state/ops/competitive_benchmark_matrix/memory",
+    "adaptive_index_path": "client/local/adaptive/ops/competitive_benchmark_matrix/index.json",
+    "events_path": "client/local/state/ops/competitive_benchmark_matrix/events.jsonl",
+    "latest_path": "client/local/state/ops/competitive_benchmark_matrix/latest.json",
+    "receipts_path": "client/local/state/ops/competitive_benchmark_matrix/receipts.jsonl",
+    "snapshots_path": "client/local/state/ops/competitive_benchmark_matrix/snapshots.jsonl"
+  },
+  "baseline_metrics": {
+    "cold_start_ms": 280,
+    "idle_memory_mb": 145,
+    "install_size_mb": 74,
+    "evidence_verify_latency_ms": 42
+  },
+  "engines": [
+    "protheus",
+    "openfang",
+    "langgraph",
+    "mastra",
+    "letta"
+  ]
+}

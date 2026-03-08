@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "owner_id": "ops_audit_dashboard",
+  "event_stream": {
+    "enabled": true,
+    "publish": true,
+    "stream": "ops.evidence_audit_dashboard"
+  },
+  "paths": {
+    "memory_dir": "client/local/state/ops/evidence_audit_dashboard/memory",
+    "adaptive_index_path": "client/local/adaptive/ops/evidence_audit_dashboard/index.json",
+    "events_path": "client/local/state/ops/evidence_audit_dashboard/events.jsonl",
+    "latest_path": "client/local/state/ops/evidence_audit_dashboard/latest.json",
+    "receipts_path": "client/local/state/ops/evidence_audit_dashboard/receipts.jsonl",
+    "export_json_path": "client/local/state/ops/evidence_audit_dashboard/export.json",
+    "export_md_path": "client/local/state/ops/evidence_audit_dashboard/export.md"
+  },
+  "claims": [
+    {
+      "id": "competitive_benchmark_matrix_reproducible",
+      "evidence": [
+        "client/local/state/ops/competitive_benchmark_matrix/latest.json",
+        "client/local/state/ops/competitive_benchmark/latest.json"
+      ]
+    },
+    {
+      "id": "openfang_import_fail_closed",
+      "evidence": [
+        "client/local/state/migration/universal_importers/latest.json"
+      ]
+    },
+    {
+      "id": "security_layer_inventory_verified",
+      "evidence": [
+        "client/local/state/ops/security_layer_inventory_gate/latest.json"
+      ]
+    }
+  ]
+}

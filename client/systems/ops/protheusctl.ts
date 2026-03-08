@@ -36,6 +36,7 @@ function usage() {
   console.log('  protheusctl socket admission');
   console.log('  protheusctl mine dashboard --human=1');
   console.log('  protheusctl migrate --to=<org/repo|url> [--workspace=<path>] [--apply=1]');
+  console.log('  protheusctl migrate --from=<engine> --path=<source> [--apply=1]   # alias to importer lane');
   console.log('  protheusctl migrate-to-planes [plan|run|status|rollback] [--apply=1] [--move-untracked=1] [--compat-symlinks=1 (deprecated)] [--id=<migration_id|latest>]');
   console.log('  protheusctl migrate-cleanup [plan|run|status] [--apply=1] [--strict=1]');
   console.log('  protheusctl import --from=<engine> --path=<source> [--apply=1]');
@@ -416,8 +417,20 @@ function main() {
   }
 
   if (cmd === 'migrate') {
-    const migrationScript = path.join(__dirname, '..', 'migration', 'core_migration_bridge.js');
+    const fromFlag = rest.find((arg) => String(arg).startsWith('--from='));
+    const hasFromValue = !!(fromFlag && String(fromFlag).trim().length > '--from='.length);
     const sub = String(rest[0] || '').trim().toLowerCase();
+    const fromShorthand = sub === 'from' && String(rest[1] || '').trim().length > 0;
+    if (hasFromValue || fromShorthand) {
+      const importerScript = path.join(__dirname, '..', 'migration', 'universal_importers.js');
+      const importerArgs = fromShorthand
+        ? ['run', `--from=${String(rest[1] || '').trim()}`, ...rest.slice(2)]
+        : ['run', ...rest];
+      runScript(importerScript, importerArgs);
+      return;
+    }
+
+    const migrationScript = path.join(__dirname, '..', 'migration', 'core_migration_bridge.js');
     const supported = new Set(['run', 'status', 'rollback', 'help', '--help', '-h']);
     if (!sub || sub.startsWith('--') || !supported.has(sub)) {
       runScript(migrationScript, ['run', ...rest]);

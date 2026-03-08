@@ -103,6 +103,40 @@
     - `node client/memory/tools/backfill_xml_hierarchy.js` now reports no pending conversions in current surface.
     - `npm run -s test:memory:matrix`.
 
+- [x] `V6-COMP-001` Competitive benchmark matrix with reproducible receipts (`REQ-13-002`).
+  - Delivered:
+    - Added lane: `client/systems/ops/competitive_benchmark_matrix.{ts,js}`.
+    - Added policy: `client/config/competitive_benchmark_matrix_policy.json`.
+    - Added benchmark harness docs/scripts: `benchmarks/competitive_matrix/*`, `client/docs/COMPETITIVE_BENCHMARK_MATRIX.md`.
+  - Validation:
+    - `node client/memory/tools/tests/competitive_benchmark_matrix.test.js`
+    - `node client/memory/tools/tests/competitive_observability_benchmark_pack.test.js`
+    - `node client/memory/tools/tests/mobile_competitive_benchmark_matrix.test.js`
+
+- [x] `V6-COMP-002` `protheus migrate --from openfang` importer lane (`REQ-13-003`).
+  - Delivered:
+    - Restored importer surfaces: `client/systems/migration/universal_importers.ts` and `client/systems/migration/importers/*.js` wrappers.
+    - Added `protheusctl migrate --from=<engine>` alias route in `client/systems/ops/protheusctl.ts`.
+    - Updated docs: `client/docs/UNIVERSAL_IMPORTERS.md`.
+  - Validation:
+    - `node client/memory/tools/tests/universal_importers.test.js`
+    - `node client/memory/tools/tests/protheusctl_migrate_openfang_alias.test.js`
+
+- [x] `V6-COMP-003` Evidence-first audit dashboard drilldown (`REQ-13-004`).
+  - Delivered:
+    - Added lane: `client/systems/ops/evidence_audit_dashboard.{ts,js}`.
+    - Added policy: `client/config/evidence_audit_dashboard_policy.json`.
+    - Added docs: `client/docs/EVIDENCE_AUDIT_DASHBOARD.md`.
+  - Validation:
+    - `node client/memory/tools/tests/evidence_audit_dashboard.test.js`
+
+- [ ] `V6-SWARM-001..006` Swarm router crate rollout (`REQ-12-001` through `REQ-12-009`).
+  - Delivered:
+    - Added crate and CLI: `core/layer0/swarm_router/Cargo.toml`, `src/lib.rs`, `src/main.rs`.
+    - Implemented typed envelope, auto-id, in-flight tracker, recovery policy, scaling planner, queue contract, deterministic priority ordering, observability receipts, and upgrade/rollback protocol.
+  - Current blocker:
+    - Local cargo validation is blocked by host dyld build-script stalls (`V6-HOST-BUILD-STALE-001`); guarded run exits with `cargo_test_timeout` after stale reap.
+
 - [x] `V6-ROOT-INTERNAL-003` Decide and execute final placement policy for root personal/internal markdown artifacts.
   - Layer target: `client/local/internal/*` (or explicit archived docs path if governance files stay tracked).
   - Current gap:

@@ -1,0 +1,21 @@
+[package]
+name = "protheus-swarm-router"
+version = "0.1.0"
+edition = "2021"
+license = "SEE LICENSE IN LICENSE"
+description = "Deterministic swarm router primitives: envelopes, queue contracts, lifecycle, recovery, scaling, and upgrade receipts."
+
+[lib]
+name = "protheus_swarm_router"
+crate-type = ["rlib"]
+
+[[bin]]
+name = "swarm_router"
+path = "src/main.rs"
+
+[dependencies]
+hex = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+
