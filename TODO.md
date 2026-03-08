@@ -1,5 +1,15 @@
 # TODO
 
+## Cockpit Delta Follow-Up (Post REQ-33)
+
+- [ ] `V6-COCKPIT-005` Eliminate remaining `conduit_bridge_timeout` in `protheusd subscribe` under host pressure.
+  - Target: stable non-degraded subscription batches for idle queue conditions (no false timeout degradation).
+  - Current behavior: degraded-safe envelopes are emitted (no crash loop), but bridge path still times out on some hosts.
+
+- [ ] `V6-COCKPIT-006` Promote attention stream from long-poll contract to native push transport.
+  - Target: direct conduit subscription lane (server-push) with ack/cursor guarantees and bounded backpressure.
+  - Current behavior: `attention-queue drain --wait-ms` long-poll is in place and receipted.
+
 ## Backlog Follow-Up (Layer Ownership Guard)
 
 - [x] `V6-DIRECT-WIRING-001` Remove legacy runtime stubs/redirects and enforce canonical local partitions.

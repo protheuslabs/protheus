@@ -7,15 +7,18 @@ description = "Compile-time kernel layer topology for portable Rust-only substra
 
 [features]
 default = ["layer3"]
-layer0 = ["dep:task", "dep:resource"]
+layer_minus_one = ["dep:exotic_wrapper"]
+layer0 = ["layer_minus_one", "dep:task", "dep:resource"]
 layer1 = ["layer0", "dep:isolation", "dep:ipc", "dep:storage", "dep:update"]
 layer2 = ["layer1", "dep:conduit"]
-layer3 = ["layer2", "dep:protheus_observability"]
+layer3 = ["layer2", "dep:protheus_observability", "dep:os_extension_wrapper"]
 
 [dependencies]
 conduit = { path = "../../layer2/conduit", optional = true }
+exotic_wrapper = { path = "../../layer_minus_one/exotic_wrapper", optional = true }
 ipc = { path = "../../layer1/ipc", optional = true }
 isolation = { path = "../../layer1/isolation", optional = true }
+os_extension_wrapper = { path = "../../layer3/os_extension_wrapper", optional = true }
 protheus_observability = { package = "protheus-observability-core-v1", path = "../../layer1/observability", optional = true }
 resource = { path = "../../layer1/resource", optional = true }
 storage = { path = "../../layer1/storage", optional = true }

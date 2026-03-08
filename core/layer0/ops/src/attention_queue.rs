@@ -9,6 +9,8 @@ use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::thread;
+use std::time::Duration;
 
 #[derive(Debug, Clone)]
 struct AttentionContract {
@@ -47,13 +49,13 @@ fn usage() {
     eprintln!("  protheus-ops attention-queue enqueue --event-json=<json> [--run-context=<value>]");
     eprintln!("  protheus-ops attention-queue status");
     eprintln!(
-        "  protheus-ops attention-queue next [--consumer=<id>] [--limit=<n>] [--run-context=<value>]"
+        "  protheus-ops attention-queue next [--consumer=<id>] [--limit=<n>] [--wait-ms=<n>] [--run-context=<value>]"
     );
     eprintln!(
         "  protheus-ops attention-queue ack --consumer=<id> --through-index=<n> --cursor-token=<token> [--run-context=<value>]"
     );
     eprintln!(
-        "  protheus-ops attention-queue drain [--consumer=<id>] [--limit=<n>] [--run-context=<value>]"
+        "  protheus-ops attention-queue drain [--consumer=<id>] [--limit=<n>] [--wait-ms=<n>] [--run-context=<value>]"
     );
 }
 
@@ -188,6 +190,13 @@ fn parse_limit(raw: Option<&String>, fallback: usize, max: usize) -> usize {
         .and_then(|v| v.trim().parse::<usize>().ok())
         .unwrap_or(fallback);
     parsed.clamp(1, max)
+}
+
+fn parse_wait_ms(raw: Option<&String>, fallback: u64, max: u64) -> u64 {
+    let parsed = raw
+        .and_then(|v| v.trim().parse::<u64>().ok())
+        .unwrap_or(fallback);
+    parsed.clamp(0, max)
 }
 
 fn parse_through_index(raw: Option<&String>) -> Option<usize> {
@@ -934,7 +943,36 @@ fn next(root: &Path, flags: &BTreeMap<String, String>, auto_ack: bool) -> i32 {
         1,
         contract.max_batch_size,
     );
-    let (active_rows, expired_pruned) = load_active_queue(&contract);
+    let wait_ms = parse_wait_ms(
+        flags.get("wait-ms").or_else(|| flags.get("wait_ms")),
+        0,
+        300_000,
+    );
+    let wait_started_ms = Utc::now().timestamp_millis();
+    let mut active_rows = Vec::new();
+    let mut expired_pruned = 0usize;
+    loop {
+        let (rows, pruned) = load_active_queue(&contract);
+        active_rows = rows;
+        expired_pruned = pruned;
+        if wait_ms == 0 || !active_rows.is_empty() {
+            break;
+        }
+        let elapsed_ms = Utc::now()
+            .timestamp_millis()
+            .saturating_sub(wait_started_ms)
+            .max(0) as u64;
+        if elapsed_ms >= wait_ms {
+            break;
+        }
+        let remaining = wait_ms.saturating_sub(elapsed_ms);
+        let sleep_ms = remaining.clamp(25, 250);
+        thread::sleep(Duration::from_millis(sleep_ms));
+    }
+    let waited_ms = Utc::now()
+        .timestamp_millis()
+        .saturating_sub(wait_started_ms)
+        .max(0) as u64;
 
     let mut cursor_state = load_cursor_state(&contract.cursor_state_path);
     let mut cursor_offset = read_consumer_offset(&cursor_state, &consumer_id);
@@ -982,6 +1020,8 @@ fn next(root: &Path, flags: &BTreeMap<String, String>, auto_ack: bool) -> i32 {
         "run_context": run_context,
         "consumer_id": consumer_id,
         "limit": limit,
+        "wait_ms": wait_ms,
+        "waited_ms": waited_ms,
         "queue_depth": active_rows.len(),
         "expired_pruned": expired_pruned,
         "cursor_offset": cursor_offset,

@@ -43,6 +43,9 @@ The deterministic core stack is now explicitly layered and growth-safe:
 - Layer -1 is where exotic hardware paradigms are adapted into standard envelopes.
 - Layer 3 is where full OS personality capabilities grow (processes, VFS, drivers, syscalls, namespaces, windowing, networking).
 - Cognition remains outside numbered core layers and never becomes root-of-correctness.
+- Executable wrappers:
+  - Layer -1 exotic base wrapper: `core/layer_minus_one/exotic_wrapper`
+  - Layer 3 full OS extension wrapper: `core/layer3/os_extension_wrapper`
 
 Driver analogy:
 
@@ -56,11 +59,18 @@ REQ-27 authority implementation:
 - Priority ordering + queue metadata: `core/layer0/ops/src/attention_queue.rs`
 - Layer2 initiative primitives (score/action/priority queue shaping): `core/layer2/execution/src/initiative.rs`
 - Regression guard (no subconscious authority in client): `client/systems/ops/subconscious_boundary_guard.ts`
+- Cockpit + layer wrapper delta requirements: `client/docs/requirements/REQ-33-cockpit-stream-and-layer-wrappers.md`
 
 Migration note:
 - Strictly follow Protheus / InfRing Layering Specification v1.0 with upward-only flow:
   `Layer -1 -> Layer 0 -> Layer 1 -> Layer 2 -> Layer 3 -> Cognition`.
 - Existing `layer0/ops` authority lanes remain active while Layer2 ownership is completed incrementally without runtime regressions.
+
+## Mech-Suit Cockpit Runtime
+
+- `protheusd` now defaults to `attach` semantics (attach-or-start) for cockpit-first operation.
+- Startup origin-integrity checks support degraded timeout mode with deterministic retry scheduling, rather than hard startup deadlocks.
+- Attention queue drain supports wait-based delivery (`--wait-ms`) for long-lived subscription behavior through conduit receipts.
 
 ## Filesystem Mapping (Authoritative)
 

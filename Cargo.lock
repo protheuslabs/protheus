@@ -295,6 +295,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "exotic_wrapper"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sha2",
+]
+
+[[package]]
 name = "fallible-iterator"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -523,8 +532,10 @@ name = "kernel_layers"
 version = "0.1.0"
 dependencies = [
  "conduit",
+ "exotic_wrapper",
  "ipc",
  "isolation",
+ "os_extension_wrapper",
  "protheus-observability-core-v1",
  "resource",
  "storage",
@@ -688,6 +699,13 @@ name = "opaque-debug"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08d65885ee38876c4f86fa503fb49d7b507c2b62552df7c70b2fce627e06381"
+
+[[package]]
+name = "os_extension_wrapper"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "persona_dispatch_security_gate"

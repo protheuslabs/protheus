@@ -12,3 +12,6 @@ Scope examples:
 Rules:
 - Consume lower-layer guarantees; do not bypass Layer 0 invariants.
 - Upward-only flow: Layer 2 -> Layer 3 -> Cognition/Conduit surfaces.
+
+Primary implementation:
+- `core/layer3/os_extension_wrapper` (Rust crate)

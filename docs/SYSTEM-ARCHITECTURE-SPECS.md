@@ -107,5 +107,8 @@ pub trait OSPersonality {
 
 ## 9. Implementation Status (March 2026 snapshot)
 - Architecture contract updated to include Layer -1 and Layer 3.
-- `core/layer_minus_one/` and `core/layer3/` scaffolds are present as template ownership anchors.
+- Executable wrappers are present:
+  - `core/layer_minus_one/exotic_wrapper/` (exotic envelope + degradation contracts)
+  - `core/layer3/os_extension_wrapper/` (OS extension envelope contracts)
+- `core/layer0/kernel_layers` now exports Layer -1 and Layer 3 wrappers through compile-time features.
 - Runtime migration of all lane authority to the final stack remains incremental and must preserve receipts/invariants at every step.

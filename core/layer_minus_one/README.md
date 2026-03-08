@@ -11,3 +11,6 @@ Contract:
 Rules:
 - Keep this layer minimal; no policy authority and no cognition logic.
 - Upward-only flow: Layer -1 -> Layer 0.
+
+Primary implementation:
+- `core/layer_minus_one/exotic_wrapper` (Rust crate)

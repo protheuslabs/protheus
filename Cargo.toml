@@ -1,9 +1,11 @@
 [workspace]
 resolver = "2"
 members = [
+  "core/layer_minus_one/*",
   "core/layer0/*",
   "core/layer1/*",
-  "core/layer2/*"
+  "core/layer2/*",
+  "core/layer3/*"
 ]
 exclude = [
   "core/layer0/legacy_rust_sources"

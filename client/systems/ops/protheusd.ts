@@ -14,7 +14,7 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const INTERNAL_AMBIENT_LOOP = '__ambient-loop';
 
 function usage() {
-  console.log('Usage: protheusd start|stop|restart|status|diagnostics|tick|attach|subscribe [--policy=<path>] [--conduit] [--allow-legacy-fallback] [--autostart] [--no-autostart] [--no-cockpit]');
+  console.log('Usage: protheusd [attach|start|stop|restart|status|diagnostics|tick|subscribe] [--policy=<path>] [--conduit] [--allow-legacy-fallback] [--autostart] [--no-autostart] [--no-cockpit]');
 }
 
 function nowIso() {
@@ -630,6 +630,16 @@ function resolveRuntime(argv: string[]) {
     process.env.PROTHEUSD_ORIGIN_INTEGRITY_REQUIRE_PASS,
     toBool(originIntegrityPolicy.require_pass_on_start, true)
   );
+  const originIntegrityAllowTimeoutDegradedStart = toBool(
+    process.env.PROTHEUSD_ORIGIN_INTEGRITY_ALLOW_TIMEOUT_DEGRADED_START,
+    toBool(originIntegrityPolicy.allow_timeout_degraded_start, true)
+  );
+  const originIntegrityRetryMs = toInt(
+    process.env.PROTHEUSD_ORIGIN_INTEGRITY_RETRY_MS || originIntegrityPolicy.retry_ms,
+    10 * 60 * 1000,
+    30 * 1000,
+    6 * 60 * 60 * 1000
+  );
   const originIntegrityPolicyRaw = cleanText(
     process.env.PROTHEUS_ORIGIN_INTEGRITY_POLICY_PATH || originIntegrityPolicy.policy_path || 'config/origin_integrity_policy.json',
     500
@@ -696,6 +706,8 @@ function resolveRuntime(argv: string[]) {
     originIntegrityEnabled,
     originIntegrityTimeoutMs,
     originIntegrityRequirePass,
+    originIntegrityAllowTimeoutDegradedStart,
+    originIntegrityRetryMs,
     originIntegrityPolicyPath,
     verifyScriptPath,
     protheusOpsManifestPath,
@@ -759,7 +771,10 @@ function loadDaemonState(runtime: any) {
           status: Number.isFinite(Number(existing.origin_integrity.status)) ? Number(existing.origin_integrity.status) : null,
           reason: cleanText(existing.origin_integrity.reason || '', 260) || null,
           receipt_hash: cleanText(existing.origin_integrity.receipt_hash || '', 96) || null,
-          safety_plane_state_hash: cleanText(existing.origin_integrity.safety_plane_state_hash || '', 128) || null
+          safety_plane_state_hash: cleanText(existing.origin_integrity.safety_plane_state_hash || '', 128) || null,
+          pending: existing.origin_integrity.pending === true,
+          next_retry_at: cleanText(existing.origin_integrity.next_retry_at || '', 64) || null,
+          last_success_ts: cleanText(existing.origin_integrity.last_success_ts || '', 64) || null
         }
       : null
   };
@@ -970,6 +985,77 @@ function runOriginIntegrityCheck(runtime: any, trigger: string) {
   writeJson(latestPath, receipt);
   appendJsonl(receiptsPath, receipt);
   return receipt;
+}
+
+function isOriginIntegrityTimeoutReason(reason: unknown) {
+  const text = String(reason == null ? '' : reason).toLowerCase();
+  if (!text) return false;
+  return text.includes('origin_integrity_timeout:')
+    || text.includes('spawn_timeout:')
+    || text.includes('etimedout');
+}
+
+function shouldAllowDegradedOriginStartup(runtime: any, receipt: any) {
+  return runtime.originIntegrityAllowTimeoutDegradedStart === true
+    && isOriginIntegrityTimeoutReason(receipt && receipt.reason);
+}
+
+function buildOriginIntegrityState(receipt: any, trigger: string, extras: any = {}) {
+  return {
+    ok: receipt && receipt.ok === true,
+    ts: cleanText(receipt && receipt.ts || '', 64) || nowIso(),
+    trigger: cleanText(trigger, 80) || 'unknown',
+    source: cleanText(receipt && receipt.source || '', 80) || null,
+    status: Number.isFinite(Number(receipt && receipt.status)) ? Number(receipt.status) : 1,
+    reason: cleanText(receipt && receipt.reason || '', 260) || 'origin_integrity_check_failed',
+    receipt_hash: cleanText(receipt && receipt.receipt_hash || '', 96) || null,
+    safety_plane_state_hash: cleanText(
+      receipt && receipt.payload && receipt.payload.state_binding
+        ? receipt.payload.state_binding.safety_plane_state_hash
+        : '',
+      128
+    ) || null,
+    pending: extras.pending === true,
+    next_retry_at: cleanText(extras.next_retry_at || '', 64) || null,
+    last_success_ts: cleanText(extras.last_success_ts || '', 64) || null
+  };
+}
+
+function scheduleOriginIntegrityRetry(runtime: any) {
+  return new Date(Date.now() + runtime.originIntegrityRetryMs).toISOString();
+}
+
+function maybeRetryOriginIntegrity(runtime: any, state: any, trigger: string) {
+  const origin = state && state.origin_integrity && typeof state.origin_integrity === 'object'
+    ? state.origin_integrity
+    : null;
+  if (!origin || origin.pending !== true) return state;
+  const retryAtMs = origin.next_retry_at ? Date.parse(String(origin.next_retry_at)) : 0;
+  if (Number.isFinite(retryAtMs) && retryAtMs > Date.now()) return state;
+
+  const receipt = runOriginIntegrityCheck(runtime, trigger);
+  if (receipt && receipt.ok === true) {
+    state.origin_integrity = buildOriginIntegrityState(receipt, trigger, {
+      pending: false,
+      next_retry_at: null,
+      last_success_ts: cleanText(receipt.ts || '', 64) || nowIso()
+    });
+    if (String(state.last_error || '').startsWith('origin_integrity_degraded:')) {
+      state.last_error = null;
+    }
+    return state;
+  }
+
+  state.origin_integrity = buildOriginIntegrityState(receipt, trigger, {
+    pending: true,
+    next_retry_at: scheduleOriginIntegrityRetry(runtime),
+    last_success_ts: origin && origin.last_success_ts ? origin.last_success_ts : null
+  });
+  state.last_error = cleanText(
+    `origin_integrity_degraded:${receipt && receipt.reason ? receipt.reason : 'check_failed'}`,
+    260
+  ) || state.last_error;
+  return state;
 }
 
 async function runHeartbeat(runtime: any, trigger: string) {
@@ -1235,26 +1321,17 @@ async function runAmbientLoop(argv: string[]) {
   const pid = process.pid;
 
   const originIntegrity = runOriginIntegrityCheck(runtime, 'ambient_startup');
-  if (originIntegrity.ok !== true && runtime.originIntegrityRequirePass === true) {
+  const allowDegradedOriginStart = shouldAllowDegradedOriginStartup(runtime, originIntegrity);
+  if (originIntegrity.ok !== true && runtime.originIntegrityRequirePass === true && !allowDegradedOriginStart) {
     state.running = false;
     state.mode = 'stopped';
     state.pid = null;
     state.last_error = cleanText(`origin_integrity_failed:${originIntegrity.reason || 'check_failed'}`, 260);
-    state.origin_integrity = {
-      ok: false,
-      ts: cleanText(originIntegrity.ts || '', 64) || nowIso(),
-      trigger: 'ambient_startup',
-      source: cleanText(originIntegrity.source || '', 80) || null,
-      status: Number.isFinite(Number(originIntegrity.status)) ? Number(originIntegrity.status) : 1,
-      reason: cleanText(originIntegrity.reason || '', 260) || 'origin_integrity_check_failed',
-      receipt_hash: cleanText(originIntegrity.receipt_hash || '', 96) || null,
-      safety_plane_state_hash: cleanText(
-        originIntegrity.payload && originIntegrity.payload.state_binding
-          ? originIntegrity.payload.state_binding.safety_plane_state_hash
-          : '',
-        128
-      ) || null
-    };
+    state.origin_integrity = buildOriginIntegrityState(originIntegrity, 'ambient_startup', {
+      pending: false,
+      next_retry_at: null,
+      last_success_ts: null
+    });
     persistDaemonState(runtime, state);
     emitLatest(runtime, withReceipt({
       ok: false,
@@ -1276,21 +1353,19 @@ async function runAmbientLoop(argv: string[]) {
   state.updated_at = nowIso();
   state.heartbeat_hours = runtime.mechPolicy.heartbeatHours;
   state.next_heartbeat_at = nowIso();
-  state.origin_integrity = {
-    ok: originIntegrity.ok === true,
-    ts: cleanText(originIntegrity.ts || '', 64) || nowIso(),
-    trigger: 'ambient_startup',
-    source: cleanText(originIntegrity.source || '', 80) || null,
-    status: Number.isFinite(Number(originIntegrity.status)) ? Number(originIntegrity.status) : 0,
-    reason: cleanText(originIntegrity.reason || '', 260) || null,
-    receipt_hash: cleanText(originIntegrity.receipt_hash || '', 96) || null,
-    safety_plane_state_hash: cleanText(
-      originIntegrity.payload && originIntegrity.payload.state_binding
-        ? originIntegrity.payload.state_binding.safety_plane_state_hash
-        : '',
-      128
-    ) || null
-  };
+  state.origin_integrity = buildOriginIntegrityState(originIntegrity, 'ambient_startup', {
+    pending: originIntegrity.ok !== true,
+    next_retry_at: originIntegrity.ok === true ? null : scheduleOriginIntegrityRetry(runtime),
+    last_success_ts: originIntegrity.ok === true
+      ? (cleanText(originIntegrity.ts || '', 64) || nowIso())
+      : null
+  });
+  if (originIntegrity.ok !== true) {
+    state.last_error = cleanText(
+      `origin_integrity_degraded:${originIntegrity.reason || 'check_failed'}`,
+      260
+    ) || state.last_error;
+  }
   state.identity_hydration = buildIdentityHydrationSnapshot(runtime);
   writeJson(runtime.identityHydrationStatePath, state.identity_hydration);
   state.resident_memory = await buildResidentMemorySnapshot(runtime);
@@ -1392,6 +1467,8 @@ async function runAmbientLoop(argv: string[]) {
   const maybeHeartbeat = async (trigger: string) => {
     if (heartbeatInFlight || shuttingDown) return;
     let row = loadDaemonState(runtime);
+    row = maybeRetryOriginIntegrity(runtime, row, `ambient_${trigger}`);
+    persistDaemonState(runtime, row);
     const gate = readConduitRuntimeGate(runtime.root);
     const gateReason = bridgeReasonFromRuntimeGate(gate);
     if (gateReason) {
@@ -1651,11 +1728,14 @@ function statusReceipt(runtime: any, state: any) {
   const heartbeatHealthy = daemon.last_heartbeat_code === 0;
   const ambientConfigured = !!(mechLatest && mechLatest.active === true);
   const bridgeHealth = normalizedBridgeHealth(state.bridge_health);
-  const ambientHealthy = ambientConfigured && running && heartbeatHealthy && bridgeHealth.degraded !== true;
+  const originPending = !!(originIntegrity && originIntegrity.pending === true);
+  const ambientHealthy = ambientConfigured && running && heartbeatHealthy && bridgeHealth.degraded !== true && !originPending;
   const degradedReason = bridgeHealth.degraded === true
     ? (bridgeHealth.reason || 'bridge_degraded')
     : conduitRuntimeGate.gate_active === true
     ? 'conduit_runtime_gate_active'
+    : originPending
+    ? 'origin_integrity_pending'
     : !ambientConfigured
     ? 'ambient_policy_inactive'
     : !running
@@ -1769,28 +1849,19 @@ function startDaemon(runtime: any, argv: string[], opts: { exitOnFinish?: boolea
   }
 
   const originIntegrity = runOriginIntegrityCheck(runtime, 'start');
-  if (originIntegrity.ok !== true && runtime.originIntegrityRequirePass === true) {
+  const allowDegradedOriginStart = shouldAllowDegradedOriginStartup(runtime, originIntegrity);
+  if (originIntegrity.ok !== true && runtime.originIntegrityRequirePass === true && !allowDegradedOriginStart) {
     const next = loadDaemonState(runtime);
     next.running = false;
     next.mode = 'stopped';
     next.pid = null;
     next.request_seq = Number(next.request_seq || 0) + 1;
     next.last_error = cleanText(`origin_integrity_failed:${originIntegrity.reason || 'check_failed'}`, 260);
-    next.origin_integrity = {
-      ok: false,
-      ts: cleanText(originIntegrity.ts || '', 64) || nowIso(),
-      trigger: 'start',
-      source: cleanText(originIntegrity.source || '', 80) || null,
-      status: Number.isFinite(Number(originIntegrity.status)) ? Number(originIntegrity.status) : 1,
-      reason: cleanText(originIntegrity.reason || '', 260) || 'origin_integrity_check_failed',
-      receipt_hash: cleanText(originIntegrity.receipt_hash || '', 96) || null,
-      safety_plane_state_hash: cleanText(
-        originIntegrity.payload && originIntegrity.payload.state_binding
-          ? originIntegrity.payload.state_binding.safety_plane_state_hash
-          : '',
-        128
-      ) || null
-    };
+    next.origin_integrity = buildOriginIntegrityState(originIntegrity, 'start', {
+      pending: false,
+      next_retry_at: null,
+      last_success_ts: null
+    });
     persistDaemonState(runtime, next);
     const out = withReceipt({
       ok: false,
@@ -1833,21 +1904,19 @@ function startDaemon(runtime: any, argv: string[], opts: { exitOnFinish?: boolea
   next.request_seq = Number(next.request_seq || 0) + 1;
   next.heartbeat_hours = runtime.mechPolicy.heartbeatHours;
   next.next_heartbeat_at = nowIso();
-  next.origin_integrity = {
-    ok: originIntegrity.ok === true,
-    ts: cleanText(originIntegrity.ts || '', 64) || nowIso(),
-    trigger: 'start',
-    source: cleanText(originIntegrity.source || '', 80) || null,
-    status: Number.isFinite(Number(originIntegrity.status)) ? Number(originIntegrity.status) : 0,
-    reason: cleanText(originIntegrity.reason || '', 260) || null,
-    receipt_hash: cleanText(originIntegrity.receipt_hash || '', 96) || null,
-    safety_plane_state_hash: cleanText(
-      originIntegrity.payload && originIntegrity.payload.state_binding
-        ? originIntegrity.payload.state_binding.safety_plane_state_hash
-        : '',
-      128
-    ) || null
-  };
+  next.origin_integrity = buildOriginIntegrityState(originIntegrity, 'start', {
+    pending: originIntegrity.ok !== true,
+    next_retry_at: originIntegrity.ok === true ? null : scheduleOriginIntegrityRetry(runtime),
+    last_success_ts: originIntegrity.ok === true
+      ? (cleanText(originIntegrity.ts || '', 64) || nowIso())
+      : null
+  });
+  if (originIntegrity.ok !== true) {
+    next.last_error = cleanText(
+      `origin_integrity_degraded:${originIntegrity.reason || 'check_failed'}`,
+      260
+    ) || next.last_error;
+  }
   persistDaemonState(runtime, next);
 
   const out = withReceipt({
@@ -1859,7 +1928,9 @@ function startDaemon(runtime: any, argv: string[], opts: { exitOnFinish?: boolea
     request_id: requestId,
     running: true,
     mode: 'ambient',
-    pid: next.pid
+    pid: next.pid,
+    degraded_start: originIntegrity.ok !== true,
+    origin_integrity_pending: next.origin_integrity && next.origin_integrity.pending === true
   });
   emitLatest(runtime, out);
   if (exitOnFinish) {
@@ -1980,8 +2051,10 @@ async function runSubscribe(runtime: any, argv: string[]) {
     .replace(/^_+|_+$/g, '') || runtime.consumerId;
   const limit = toInt(parseFlag(argv, 'limit') || runtime.batchLimit, runtime.batchLimit, 1, 512);
   const pollMs = toInt(parseFlag(argv, 'poll-ms') || process.env.PROTHEUSD_SUBSCRIBE_POLL_MS, 1500, 250, 60000);
+  const waitMs = toInt(parseFlag(argv, 'wait-ms') || process.env.PROTHEUSD_SUBSCRIBE_WAIT_MS, pollMs, 0, 300000);
   const once = toBool(parseFlag(argv, 'once'), false);
   const maxCycles = toInt(parseFlag(argv, 'max-cycles'), once ? 1 : 0, 0, 1000000);
+  let consecutiveTimeouts = 0;
 
   let cycles = 0;
   const started = withReceipt({
@@ -1992,6 +2065,7 @@ async function runSubscribe(runtime: any, argv: string[]) {
     consumer,
     limit,
     poll_ms: pollMs,
+    wait_ms: waitMs,
     once
   });
   process.stdout.write(`${JSON.stringify(started)}\n`);
@@ -1999,12 +2073,18 @@ async function runSubscribe(runtime: any, argv: string[]) {
   while (true) {
     cycles += 1;
     const drained = await runAttentionCommand(
-      ['drain', `--consumer=${consumer}`, `--limit=${limit}`, '--run-context=daemon_subscribe'],
+      [
+        'drain',
+        `--consumer=${consumer}`,
+        `--limit=${limit}`,
+        '--run-context=daemon_subscribe',
+        `--wait-ms=${waitMs}`
+      ],
       {
         cwdHint: runtime.root,
         runContext: 'daemon_subscribe',
         skipRuntimeGate: true,
-        timeoutMs: Math.max(3000, runtime.cockpitConduitTimeoutMs)
+        timeoutMs: Math.max(12000, runtime.cockpitConduitTimeoutMs * 2, waitMs + 8000)
       }
     );
 
@@ -2018,6 +2098,8 @@ async function runSubscribe(runtime: any, argv: string[]) {
         260
       ) || 'attention_drain_failed';
       if (isBridgeTimeoutReason(rawReason)) {
+        consecutiveTimeouts += 1;
+        const backoffMs = Math.min(15000, Math.max(pollMs, 500 * Math.pow(2, Math.min(6, consecutiveTimeouts - 1))));
         const degraded = withReceipt({
           ok: true,
           shadow_only: false,
@@ -2030,13 +2112,14 @@ async function runSubscribe(runtime: any, argv: string[]) {
           cursor_after: null,
           degraded: true,
           degraded_reason: rawReason,
+          timeout_backoff_ms: backoffMs,
           attention: []
         });
         process.stdout.write(`${JSON.stringify(degraded)}\n`);
         if (once || maxCycles > 0 && cycles >= maxCycles) {
           break;
         }
-        await sleep(pollMs);
+        await sleep(backoffMs);
         continue;
       }
       const err = withReceipt({
@@ -2059,6 +2142,7 @@ async function runSubscribe(runtime: any, argv: string[]) {
 
     const payload = drained && drained.payload && typeof drained.payload === 'object' ? drained.payload : {};
     const events = Array.isArray(payload.events) ? payload.events : [];
+    consecutiveTimeouts = 0;
     const batch = withReceipt({
       ok: true,
       shadow_only: false,
@@ -2069,6 +2153,8 @@ async function runSubscribe(runtime: any, argv: string[]) {
       batch_count: events.length,
       queue_depth: Number(payload.queue_depth || 0),
       cursor_after: Number(payload.cursor_after || 0),
+      wait_ms: Number(payload.wait_ms || waitMs),
+      waited_ms: Number(payload.waited_ms || 0),
       attention: events.map((row: any) => (row && typeof row === 'object' ? row : null)).filter(Boolean)
     });
     process.stdout.write(`${JSON.stringify(batch)}\n`);
@@ -2076,7 +2162,7 @@ async function runSubscribe(runtime: any, argv: string[]) {
     if (once || maxCycles > 0 && cycles >= maxCycles) {
       break;
     }
-    await sleep(pollMs);
+    await sleep(Math.max(250, pollMs));
   }
 
   const done = withReceipt({
@@ -2192,8 +2278,11 @@ function runDiagnostics(runtime: any, argv: string[]) {
 
 async function main() {
   const argv = process.argv.slice(2);
-  const cmd = String(argv[0] || 'status').trim();
-  const rest = stripControlFlags(argv.slice(1));
+  const hasExplicitCommand = !!(argv[0] && !String(argv[0]).startsWith('--'));
+  const cmd = String(
+    hasExplicitCommand ? argv[0] : (process.env.PROTHEUSD_DEFAULT_COMMAND || 'attach')
+  ).trim();
+  const rest = stripControlFlags(hasExplicitCommand ? argv.slice(1) : argv);
   const strictConduit = conduitStrict(argv, cmd);
 
   if (cmd === 'help' || cmd === '--help' || cmd === '-h') {

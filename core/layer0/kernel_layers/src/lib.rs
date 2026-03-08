@@ -4,6 +4,7 @@
 /// Compile-time layers for portable kernel shedding.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KernelLayer {
+    LayerMinusOne,
     Layer0,
     Layer1,
     Layer2,
@@ -12,6 +13,7 @@ pub enum KernelLayer {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LayerTopology {
+    pub layer_minus_one: bool,
     pub layer0: bool,
     pub layer1: bool,
     pub layer2: bool,
@@ -21,6 +23,7 @@ pub struct LayerTopology {
 impl LayerTopology {
     pub const fn active() -> Self {
         Self {
+            layer_minus_one: cfg!(feature = "layer_minus_one"),
             layer0: cfg!(feature = "layer0"),
             layer1: cfg!(feature = "layer1"),
             layer2: cfg!(feature = "layer2"),
@@ -37,10 +40,20 @@ impl LayerTopology {
             Some(KernelLayer::Layer1)
         } else if self.layer0 {
             Some(KernelLayer::Layer0)
+        } else if self.layer_minus_one {
+            Some(KernelLayer::LayerMinusOne)
         } else {
             None
         }
     }
+}
+
+#[cfg(feature = "layer_minus_one")]
+pub mod layer_minus_one {
+    pub use exotic_wrapper::{
+        default_degradation, wrap_exotic_signal, DegradationContract, ExoticDomain, ExoticEnvelope,
+        Layer0Envelope,
+    };
 }
 
 #[cfg(feature = "layer0")]
@@ -68,6 +81,7 @@ pub mod layer2 {
 
 #[cfg(feature = "layer3")]
 pub mod layer3 {
+    pub use os_extension_wrapper::{wrap_os_extension, OsExtensionDescriptor, OsExtensionEnvelope};
     pub use protheus_observability::{
         evaluate_trace_window, load_embedded_observability_profile, TraceEvent, TraceWindowReport,
     };
@@ -80,6 +94,9 @@ mod tests {
     #[test]
     fn topology_is_monotonic() {
         let topology = LayerTopology::active();
+        if topology.layer0 {
+            assert!(topology.layer_minus_one);
+        }
         if topology.layer3 {
             assert!(topology.layer2);
             assert!(topology.layer1);
@@ -92,6 +109,20 @@ mod tests {
         if topology.layer1 {
             assert!(topology.layer0);
         }
+    }
+
+    #[cfg(feature = "layer_minus_one")]
+    #[test]
+    fn layer_minus_one_wrapper_is_available() {
+        let exotic = crate::layer_minus_one::ExoticEnvelope {
+            domain: crate::layer_minus_one::ExoticDomain::Ternary,
+            adapter_id: "tri.sim".to_string(),
+            signal_type: "trit_batch".to_string(),
+            payload_ref: "blob://tri".to_string(),
+            ts_ms: 1_762_000_000_000,
+        };
+        let wrapped = crate::layer_minus_one::wrap_exotic_signal(&exotic, "exotic.translate");
+        assert_eq!(wrapped.source_layer, "layer_minus_one");
     }
 
     #[cfg(feature = "layer0")]
@@ -158,6 +189,15 @@ mod tests {
                 "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".to_string(),
             signed: true,
         };
+        let descriptor = crate::layer3::OsExtensionDescriptor {
+            extension_id: "os.fs.v1".to_string(),
+            namespace: "protheus.fs".to_string(),
+            capability_manifest_hash: "abc123".to_string(),
+            syscall_surface: vec!["fs.mount".to_string()],
+            driver_surface: vec!["driver.block".to_string()],
+        };
+        let wrapped = crate::layer3::wrap_os_extension(&descriptor, "activate", 1_762_000_000_000);
+        assert_eq!(wrapped.source_layer, "layer3");
     }
 
     #[test]
@@ -172,6 +212,8 @@ mod tests {
             assert_eq!(highest, Some(KernelLayer::Layer1));
         } else if topology.layer0 {
             assert_eq!(highest, Some(KernelLayer::Layer0));
+        } else if topology.layer_minus_one {
+            assert_eq!(highest, Some(KernelLayer::LayerMinusOne));
         } else {
             assert_eq!(highest, None);
         }
