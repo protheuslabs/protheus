@@ -3,6 +3,7 @@ mod autoscale;
 mod blob;
 mod decompose;
 mod importers;
+mod initiative;
 mod inversion;
 mod sprint_contract;
 
@@ -184,6 +185,10 @@ pub use inversion::run_inversion_json;
 pub use importers::{
     run_importer_generic_json_json, run_importer_generic_yaml_json, run_importer_openfang_json,
     run_importer_workflow_graph_json,
+};
+pub use initiative::{
+    evaluate_importance, evaluate_importance_json, evaluate_initiative_json,
+    prioritize_attention_json, ImportanceDecision, ImportanceInput,
 };
 pub use sprint_contract::run_sprint_contract_json;
 

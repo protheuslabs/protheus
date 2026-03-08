@@ -2,6 +2,9 @@
 
 Protheus is built as a Rust-first kernel (trusted core) with a narrow conduit to TypeScript surfaces.
 
+Canonical architecture contract:
+- `docs/SYSTEM-ARCHITECTURE-SPECS.md` (Conscious/Subconscious Iceberg Specification v1.0)
+
 ## InfRing Direction
 
 InfRing is the target operating model: a portable autonomous substrate that runs unchanged across desktop, server, embedded, and high-assurance profiles.
@@ -41,7 +44,12 @@ REQ-27 authority implementation:
 
 - Importance scoring engine: `core/layer0/ops/src/importance.rs`
 - Priority ordering + queue metadata: `core/layer0/ops/src/attention_queue.rs`
+- Layer2 initiative primitives (score/action/priority queue shaping): `core/layer2/execution/src/initiative.rs`
 - Regression guard (no subconscious authority in client): `client/systems/ops/subconscious_boundary_guard.ts`
+
+Migration note:
+- Strictly follow Protheus Conscious/Subconscious Iceberg Specification v1.0 — subconscious code only in core/ layers with upward-only flow.
+- Existing `layer0/ops` authority lanes remain active while Layer2-only ownership is completed incrementally without runtime regressions.
 
 ## Filesystem Mapping (Authoritative)
 

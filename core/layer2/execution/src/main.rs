@@ -6,6 +6,7 @@ use execution_core::{
     evaluate_directive_gate_json, evaluate_heroic_gate_json, evaluate_route_complexity_json,
     evaluate_route_decision_json, evaluate_route_habit_readiness_json, evaluate_route_json,
     evaluate_route_match_json, evaluate_route_primitives_json, evaluate_route_reflex_match_json,
+    evaluate_importance_json, evaluate_initiative_json, prioritize_attention_json,
     queue_rows_json, run_autoscale_json, run_importer_generic_json_json,
     run_importer_generic_yaml_json, run_importer_openfang_json,
     run_importer_workflow_graph_json, run_inversion_json, run_sprint_contract_json, run_workflow,
@@ -62,6 +63,15 @@ fn usage() {
     eprintln!("  execution_core route-habit-readiness --payload=<json_payload>");
     eprintln!("  execution_core route-habit-readiness --payload-base64=<base64_json_payload>");
     eprintln!("  execution_core route-habit-readiness --payload-file=<path>");
+    eprintln!("  execution_core initiative-score --payload=<json_payload>");
+    eprintln!("  execution_core initiative-score --payload-base64=<base64_json_payload>");
+    eprintln!("  execution_core initiative-score --payload-file=<path>");
+    eprintln!("  execution_core initiative-action --payload=<json_payload>");
+    eprintln!("  execution_core initiative-action --payload-base64=<base64_json_payload>");
+    eprintln!("  execution_core initiative-action --payload-file=<path>");
+    eprintln!("  execution_core attention-priority --payload=<json_payload>");
+    eprintln!("  execution_core attention-priority --payload-base64=<base64_json_payload>");
+    eprintln!("  execution_core attention-priority --payload-file=<path>");
     eprintln!("  execution_core heroic-gate --payload=<json_payload>");
     eprintln!("  execution_core heroic-gate --payload-base64=<base64_json_payload>");
     eprintln!("  execution_core heroic-gate --payload-file=<path>");
@@ -353,6 +363,51 @@ fn main() {
         },
         "route-habit-readiness" => match load_payload(&args[1..]) {
             Ok(payload) => match evaluate_route_habit_readiness_json(&payload) {
+                Ok(out) => println!("{}", out),
+                Err(err) => {
+                    let payload = serde_json::json!({ "ok": false, "error": err });
+                    eprintln!("{}", payload);
+                    std::process::exit(1);
+                }
+            },
+            Err(err) => {
+                let payload = serde_json::json!({ "ok": false, "error": err });
+                eprintln!("{}", payload);
+                std::process::exit(1);
+            }
+        },
+        "initiative-score" => match load_payload(&args[1..]) {
+            Ok(payload) => match evaluate_importance_json(&payload) {
+                Ok(out) => println!("{}", out),
+                Err(err) => {
+                    let payload = serde_json::json!({ "ok": false, "error": err });
+                    eprintln!("{}", payload);
+                    std::process::exit(1);
+                }
+            },
+            Err(err) => {
+                let payload = serde_json::json!({ "ok": false, "error": err });
+                eprintln!("{}", payload);
+                std::process::exit(1);
+            }
+        },
+        "initiative-action" => match load_payload(&args[1..]) {
+            Ok(payload) => match evaluate_initiative_json(&payload) {
+                Ok(out) => println!("{}", out),
+                Err(err) => {
+                    let payload = serde_json::json!({ "ok": false, "error": err });
+                    eprintln!("{}", payload);
+                    std::process::exit(1);
+                }
+            },
+            Err(err) => {
+                let payload = serde_json::json!({ "ok": false, "error": err });
+                eprintln!("{}", payload);
+                std::process::exit(1);
+            }
+        },
+        "attention-priority" => match load_payload(&args[1..]) {
+            Ok(payload) => match prioritize_attention_json(&payload) {
                 Ok(out) => println!("{}", out),
                 Err(err) => {
                     let payload = serde_json::json!({ "ok": false, "error": err });

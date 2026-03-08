@@ -47,6 +47,11 @@ Purpose: capture high-impact tasks that cannot be executed autonomously from bac
 | HMAN-033 | Secure reference-customer publication rights and publish first case study | Requires customer relationship ownership, legal approval, and quote authorization | `state/ops/evidence/reference_case_study_publish_<date>.md` | `V6-F100-A-009` |
 | HMAN-034 | Approve and execute cloud marketplace listings (AWS/Azure/GCP) | Requires publisher account ownership, billing setup, and legal distribution approvals | `state/ops/evidence/cloud_marketplace_listing_<date>.md` | `V6-F100-A-010` |
 | HMAN-035 | Activate named 24x7 enterprise support roster and escalation channels | Requires staffing authority and operational ownership for on-call commitments | `state/ops/evidence/enterprise_support_roster_<date>.md` | `V6-F100-A-011` |
+| HMAN-036 | Approve and publish enterprise A/A+ roadmap with owners and dates | Requires executive priority decisions, ownership assignment, and accountable milestone commitments | `state/ops/evidence/enterprise_roadmap_publish_<date>.md` | `V6-F100-A-012`, `V6-F100-A-013`, `V6-F100-A-014`, `V6-F100-A-015`, `V6-F100-A-016` |
+| HMAN-037 | Approve SOC2 Type I + penetration-test prep pack and auditor outreach template | Requires compliance/security leadership sign-off on scope, control narratives, and external engagement posture | `state/ops/evidence/audit_prep_pack_approval_<date>.md` | `V6-F100-023`, `V6-F100-043`, `V6-F100-A-014` |
+| HMAN-038 | Approve production-readiness narrative for external architecture messaging | Requires legal/architecture sign-off on public claims and risk language | `state/ops/evidence/production_readiness_narrative_approval_<date>.md` | `V6-F100-A-012`, `V6-F100-A-016` |
+| HMAN-039 | Execute adopter + case-study publication program (3+ production users threshold) | Requires relationship ownership, permission capture, and publication-rights management | `state/ops/evidence/adopters_case_study_program_<date>.md` | `V6-F100-A-009`, `V6-F100-A-015` |
+| HMAN-040 | Launch commercial support tier surfaces (Sponsors/SLA/contact form) | Requires business/legal authority over commercial commitments and staffed response guarantees | `state/ops/evidence/commercial_support_tier_launch_<date>.md` | `V6-F100-044`, `V6-F100-A-011` |
 
 ## A-Grade External Status Register (2026-03-07)
 
@@ -60,6 +65,11 @@ Purpose: capture high-impact tasks that cannot be executed autonomously from bac
 | Enterprise legal packet publication (MSA/DPA/privacy/subprocessors) | not complete | `HMAN-032`, `V6-F100-A-008` | Legal publication and liability acceptance cannot be delegated. |
 | Cloud marketplace packaging and publication | not complete | `HMAN-034`, `V6-F100-A-010` | Marketplace ownership and billing/legal setup require human account control. |
 | 24x7 support operations activation | not complete | `HMAN-035`, `V6-F100-A-011` | Staffing and on-call authority must be human-run. |
+| Enterprise roadmap ownership + milestone publication | not complete | `HMAN-036` | Requires executive assignment of owners/dates and acceptance of delivery accountability. |
+| Audit prep pack and external outreach sign-off | not complete | `HMAN-037` | Control narratives and external outreach templates require compliance/security authority approval. |
+| Production-readiness external messaging sign-off | not complete | `HMAN-038` | Public-risk language and claim boundaries require legal/architecture approval. |
+| Adopter + case-study program execution | not complete | `HMAN-039` | Customer references and publication rights are relationship/legal workflows. |
+| Commercial support tier launch authority | not complete | `HMAN-040` | Paid SLA/contact commitments require business/legal ownership and staffing decisions. |
 
 ## Non-Negotiable Constraint
 

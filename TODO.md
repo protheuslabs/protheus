@@ -212,6 +212,83 @@
     - `ambient_mode_active` and summary booleans are sourced from live lane receipts.
     - Host-skip fallback stays disabled in CI/prod validation profiles.
 
+- [ ] `V6-RUNTIME-HYGIENE-001` Add retention pruning for high-churn local runtime artifacts.
+  - Layer target: `client/local/state/*` (runtime data only), daemon/report lanes in `client/systems/ops/*`.
+  - Scope:
+    - Add bounded retention/rotation policy for high-volume JSONL artifacts (control-plane receipts, cockpit history, bridge health traces).
+    - Add deterministic prune command + optional scheduled execution hook.
+  - Completion criteria:
+    - Retention policy is codified in config and enforced by a runnable lane.
+    - Artifact growth is bounded with no impact to required receipts/audit chain windows.
+
+- [ ] `V6-RUNTIME-DIAGNOSTICS-001` Add single-shot `protheusd` diagnostics report for triage.
+  - Layer target: `client/systems/ops/protheusd.ts` status/ops surface.
+  - Scope:
+    - Add consolidated diagnostics output (bridge health, runtime gate, timeout counters, cooldown state, resource snapshot, recent error reasons).
+    - Provide machine-readable and human-readable forms for Slack/incident triage.
+  - Completion criteria:
+    - One command yields a complete triage snapshot without manual log spelunking.
+    - Output includes enough context to distinguish timeout/deadlock/resource-pressure classes.
+
+- [ ] `V6-VALIDATION-HOST-001` Run full non-skipped runtime validation on stable host profile.
+  - Layer target: validation harnesses under `client/memory/tools/tests/*` and ops benchmark/harness scripts.
+  - Scope:
+    - Execute cockpit/mech/control-plane/proof-pack validations in an environment that does not trigger `host_runtime_timeout` skips.
+    - Capture and publish artifact bundle tied to commit hash.
+  - Completion criteria:
+    - Previously skipped tests execute fully (no host-timeout skip path).
+    - Benchmark/harness/proof-pack outputs are published and linked in reports.
+
+- [ ] `V6-ARCH-ICEBERG-028-EXIT` Promote Layer2 initiative/priority primitives to live authority.
+  - Layer target: `core/layer2/execution` + runtime callers currently binding `core/layer0/ops` importance/attention lanes.
+  - Scope:
+    - Wire live enqueue/scoring callers to `execution_core` `initiative-score`, `initiative-action`, and `attention-priority` surfaces.
+    - Remove duplicate authority paths once parity receipts prove no regression.
+  - Completion criteria:
+    - Runtime receipts show Layer2 as the active authority for initiative and attention ordering.
+    - Layer0 fallback remains compatibility-only or is removed with explicit migration receipt.
+
+- [ ] `V6-HOST-BUILD-STALE-001` Stabilize host Rust validation when build-script processes stall.
+  - Layer target: local host/tooling profile (`cargo` execution environment), validation harness wrappers.
+  - Scope:
+    - Detect and fail fast on stale `build-script-build` process pools before launching new validation runs.
+    - Emit clear diagnostic artifact for lock/stall incidents so test results are not silently inconclusive.
+  - Completion criteria:
+    - `cargo test -p execution_core initiative` completes deterministically on the validation host profile.
+    - Stall detector emits actionable reason code instead of hanging lanes.
+
+- [ ] `V6-DOPAMINE-CONTRACT-002` Resolve dopamine ambient command contract mismatch in mech benchmark.
+  - Layer target: `client/systems/habits/dopamine_ambient.ts` + conduit bridge command contract + `client/systems/ops/mech_suit_benchmark.js`.
+  - Current gap:
+    - Latest proof-pack includes `dopamine_snapshot_error` with `error=unknown_command` for `command=evaluate` during ambient benchmark execution.
+  - Scope:
+    - Align benchmark command usage with supported dopamine ambient contract (or add explicit compatibility alias with deterministic receipts).
+    - Add regression test proving no `unknown_command` for dopamine ambient probes under gate and non-gate windows.
+  - Completion criteria:
+    - Mech benchmark dopamine case does not emit `unknown_command`.
+    - Dopamine threshold-only checks surface pass/fail via typed payloads, not transport/command errors.
+
+- [ ] `V6-MECH-GATE-FALSE-NEGATIVE-001` Remove gate-window false negatives from mech benchmark strict path.
+  - Layer target: `client/systems/ops/mech_suit_benchmark.js` + conduit runtime-gate coordination surfaces.
+  - Current gap:
+    - Latest proof-pack still returns `ok:false` with gate-degraded persona/memory lanes despite ambient contracts being present.
+  - Scope:
+    - Add deterministic preflight that either waits for cleared runtime gate or marks run as `insufficient_data` (non-failing) instead of hard benchmark failure.
+    - Preserve strict-mode behavior for true functional regressions after gate is clear.
+  - Completion criteria:
+    - Strict benchmark fails only on functional lane regressions, not active runtime-gate windows.
+    - Gate-degraded runs are explicitly classified and excluded from false pass/fail signals.
+
+- [ ] `V6-SPINE-AMBIENT-CONSISTENCY-001` Eliminate startup race where first spine status reports ambient false then true.
+  - Layer target: spine status bootstrap path (`core/layer0/ops` + `client/systems/spine/*` wrappers).
+  - Current gap:
+    - Same benchmark run captured sequential spine status snapshots toggling `ambient_mode_active` from `false` to `true`.
+  - Scope:
+    - Make ambient-mode status deterministic at first observable status read after startup (or add explicit readiness state contract).
+    - Add regression test for one-shot status consistency.
+  - Completion criteria:
+    - First post-start status report is stable and does not oscillate ambient-mode booleans in the same run window.
+
 - [x] `V6-IDLE-DREAM-RECOVERY-001` Recover idle-dream runtime lane after conduit-only wrapper regression.
   - Layer target: `client/systems/memory` runtime orchestration surface.
   - Delivered:
