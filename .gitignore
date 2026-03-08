@@ -177,6 +177,7 @@ state/ops/cleanup/*.jsonl
 agent-holo-viz/
 projects/
 pqts/
+/app/
 !personas/organization/projects/
 !personas/organization/projects/**
 
