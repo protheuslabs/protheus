@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "owner_id": "sandbox_state_bridge",
+  "event_stream": { "enabled": true, "publish": true, "stream": "security.sandbox_state_bridge" },
+  "paths": {
+    "memory_dir": "client/local/state/security/sandbox_state_bridge/memory",
+    "adaptive_index_path": "client/local/adaptive/security/sandbox_state_bridge/index.json",
+    "events_path": "client/local/state/security/sandbox_state_bridge/events.jsonl",
+    "latest_path": "client/local/state/security/sandbox_state_bridge/latest.json",
+    "receipts_path": "client/local/state/security/sandbox_state_bridge/receipts.jsonl",
+    "snapshots_path": "client/local/state/security/sandbox_state_bridge/snapshots.jsonl",
+    "state_path": "client/local/state/security/sandbox_state_bridge/state.json"
+  }
+}

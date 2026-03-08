@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "owner_id": "native_browser_cdp",
+  "event_stream": { "enabled": true, "publish": true, "stream": "browser.native_cdp" },
+  "paths": {
+    "memory_dir": "client/local/state/browser/native_cdp/memory",
+    "adaptive_index_path": "client/local/adaptive/browser/native_cdp/index.json",
+    "events_path": "client/local/state/browser/native_cdp/events.jsonl",
+    "latest_path": "client/local/state/browser/native_cdp/latest.json",
+    "receipts_path": "client/local/state/browser/native_cdp/receipts.jsonl"
+  }
+}

@@ -137,6 +137,49 @@
   - Current blocker:
     - Local cargo validation is blocked by host dyld build-script stalls (`V6-HOST-BUILD-STALE-001`); guarded run exits with `cargo_test_timeout` after stale reap.
 
+- [x] `V6-SBOX-002` Dynamic scoped sub-agent spawning (`REQ-15-002`).
+  - Delivered:
+    - Added lane: `client/systems/security/sandbox_subagent_scope_runtime.{ts,js}`.
+    - Added policy: `client/config/sandbox_subagent_scope_policy.json`.
+    - Added lifecycle/state receipts under `client/local/state/security/sandbox_subagent_scope/*`.
+  - Validation:
+    - `node client/memory/tools/tests/sandbox_next10_bundle.test.js`
+
+- [x] `V6-SBOX-003` Persistent sandbox state bridge (`REQ-15-003`).
+  - Delivered:
+    - Added lane: `client/systems/security/sandbox_state_bridge.{ts,js}`.
+    - Added policy: `client/config/sandbox_state_bridge_policy.json`.
+    - Added snapshot/restore artifact path under `client/local/state/security/sandbox_state_bridge/*`.
+  - Validation:
+    - `node client/memory/tools/tests/sandbox_next10_bundle.test.js`
+
+- [x] `V6-SBOX-004` On-demand skill/tool loader (`REQ-15-004`).
+  - Delivered:
+    - Added lane: `client/systems/security/sandbox_skill_loader.{ts,js}`.
+    - Added policy: `client/config/sandbox_skill_loader_policy.json`.
+  - Validation:
+    - `node client/memory/tools/tests/sandbox_next10_bundle.test.js`
+
+- [x] `V6-SBOX-005` Context compression controls (`REQ-15-005`).
+  - Delivered:
+    - Added lane: `client/systems/security/sandbox_context_controls.{ts,js}`.
+    - Added policy: `client/config/sandbox_context_controls_policy.json`.
+  - Validation:
+    - `node client/memory/tools/tests/sandbox_next10_bundle.test.js`
+
+- [x] `V6-BROWSER-001..006` Native browser control batch (`REQ-16-001..006`, `REQ-20-001`).
+  - Delivered:
+    - Added browser lanes:
+      - `client/systems/browser/native_browser_daemon.{ts,js}`
+      - `client/systems/browser/native_browser_cdp.{ts,js}`
+      - `client/systems/browser/browser_session_vault.{ts,js}`
+      - `client/systems/browser/browser_snapshot_refs.{ts,js}`
+      - `client/systems/browser/browser_policy_gate.{ts,js}`
+      - `client/systems/browser/browser_cli_shadow_bridge.{ts,js}`
+    - Added browser policies under `client/config/browser/*.json`.
+  - Validation:
+    - `node client/memory/tools/tests/browser_next10_bundle.test.js`
+
 - [x] `V6-ROOT-INTERNAL-003` Decide and execute final placement policy for root personal/internal markdown artifacts.
   - Layer target: `client/local/internal/*` (or explicit archived docs path if governance files stay tracked).
   - Current gap:

@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "owner_id": "sandbox_skill_loader",
+  "event_stream": { "enabled": true, "publish": true, "stream": "security.sandbox_skill_loader" },
+  "allowed_skills": ["gh-fix-ci", "notion-spec-to-implementation", "skill-installer", "skill-creator"],
+  "paths": {
+    "memory_dir": "client/local/state/security/sandbox_skill_loader/memory",
+    "adaptive_index_path": "client/local/adaptive/security/sandbox_skill_loader/index.json",
+    "events_path": "client/local/state/security/sandbox_skill_loader/events.jsonl",
+    "latest_path": "client/local/state/security/sandbox_skill_loader/latest.json",
+    "receipts_path": "client/local/state/security/sandbox_skill_loader/receipts.jsonl",
+    "state_path": "client/local/state/security/sandbox_skill_loader/state.json"
+  }
+}

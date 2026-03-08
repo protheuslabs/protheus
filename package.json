@@ -500,6 +500,8 @@
     "test:ops:competitive-matrix": "node client/memory/tools/tests/competitive_benchmark_matrix.test.js",
     "test:ops:evidence-audit-dashboard": "node client/memory/tools/tests/evidence_audit_dashboard.test.js",
     "test:ops:protheusctl-migrate-openfang-alias": "node client/memory/tools/tests/protheusctl_migrate_openfang_alias.test.js",
+    "test:ops:sandbox-next10-bundle": "node client/memory/tools/tests/sandbox_next10_bundle.test.js",
+    "test:ops:browser-next10-bundle": "node client/memory/tools/tests/browser_next10_bundle.test.js",
     "test:ops:self-healing-migration-daemon": "node client/memory/tools/tests/self_healing_migration_daemon.test.js",
     "test:ops:post-migration-verification-report": "node client/memory/tools/tests/post_migration_verification_report.test.js",
     "test:ops:wasi2-gate": "node client/memory/tools/tests/wasi2_execution_completeness_gate.test.js",

@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "owner_id": "sandbox_context_controls",
+  "event_stream": { "enabled": true, "publish": true, "stream": "security.sandbox_context_controls" },
+  "max_tokens": 8000,
+  "mode": "trim",
+  "paths": {
+    "memory_dir": "client/local/state/security/sandbox_context_controls/memory",
+    "adaptive_index_path": "client/local/adaptive/security/sandbox_context_controls/index.json",
+    "events_path": "client/local/state/security/sandbox_context_controls/events.jsonl",
+    "latest_path": "client/local/state/security/sandbox_context_controls/latest.json",
+    "receipts_path": "client/local/state/security/sandbox_context_controls/receipts.jsonl"
+  }
+}

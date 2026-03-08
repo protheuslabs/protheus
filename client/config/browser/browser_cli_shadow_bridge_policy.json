@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "owner_id": "browser_cli_shadow_bridge",
+  "event_stream": { "enabled": true, "publish": true, "stream": "browser.cli_shadow_bridge" },
+  "breaker_threshold": 70,
+  "paths": {
+    "memory_dir": "client/local/state/browser/cli_shadow_bridge/memory",
+    "adaptive_index_path": "client/local/adaptive/browser/cli_shadow_bridge/index.json",
+    "events_path": "client/local/state/browser/cli_shadow_bridge/events.jsonl",
+    "latest_path": "client/local/state/browser/cli_shadow_bridge/latest.json",
+    "receipts_path": "client/local/state/browser/cli_shadow_bridge/receipts.jsonl"
+  }
+}

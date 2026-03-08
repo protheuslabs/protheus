@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "owner_id": "browser_snapshot_refs",
+  "event_stream": { "enabled": true, "publish": true, "stream": "browser.snapshot_refs" },
+  "paths": {
+    "memory_dir": "client/local/state/browser/snapshot_refs/memory",
+    "adaptive_index_path": "client/local/adaptive/browser/snapshot_refs/index.json",
+    "events_path": "client/local/state/browser/snapshot_refs/events.jsonl",
+    "latest_path": "client/local/state/browser/snapshot_refs/latest.json",
+    "receipts_path": "client/local/state/browser/snapshot_refs/receipts.jsonl"
+  }
+}

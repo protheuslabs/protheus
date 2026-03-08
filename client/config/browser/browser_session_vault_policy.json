@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "owner_id": "browser_session_vault",
+  "event_stream": { "enabled": true, "publish": true, "stream": "browser.session_vault" },
+  "encryption_key": "dev_browser_session_key",
+  "paths": {
+    "memory_dir": "client/local/state/browser/session_vault/memory",
+    "adaptive_index_path": "client/local/adaptive/browser/session_vault/index.json",
+    "events_path": "client/local/state/browser/session_vault/events.jsonl",
+    "latest_path": "client/local/state/browser/session_vault/latest.json",
+    "receipts_path": "client/local/state/browser/session_vault/receipts.jsonl",
+    "sessions_path": "client/local/state/browser/session_vault/sessions.json"
+  }
+}

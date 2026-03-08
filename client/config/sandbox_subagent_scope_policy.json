@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "owner_id": "sandbox_orchestrator",
+  "event_stream": { "enabled": true, "publish": true, "stream": "security.sandbox_subagent_scope" },
+  "paths": {
+    "memory_dir": "client/local/state/security/sandbox_subagent_scope/memory",
+    "adaptive_index_path": "client/local/adaptive/security/sandbox_subagent_scope/index.json",
+    "events_path": "client/local/state/security/sandbox_subagent_scope/events.jsonl",
+    "latest_path": "client/local/state/security/sandbox_subagent_scope/latest.json",
+    "receipts_path": "client/local/state/security/sandbox_subagent_scope/receipts.jsonl",
+    "state_path": "client/local/state/security/sandbox_subagent_scope/state.json"
+  }
+}

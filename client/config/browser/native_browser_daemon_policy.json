@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "owner_id": "native_browser_daemon",
+  "event_stream": { "enabled": true, "publish": true, "stream": "browser.native_daemon" },
+  "paths": {
+    "memory_dir": "client/local/state/browser/native_daemon/memory",
+    "adaptive_index_path": "client/local/adaptive/browser/native_daemon/index.json",
+    "events_path": "client/local/state/browser/native_daemon/events.jsonl",
+    "latest_path": "client/local/state/browser/native_daemon/latest.json",
+    "receipts_path": "client/local/state/browser/native_daemon/receipts.jsonl",
+    "daemon_state_path": "client/local/state/browser/native_daemon/state.json"
+  }
+}

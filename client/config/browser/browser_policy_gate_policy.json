@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "strict_default": true,
+  "owner_id": "browser_policy_gate",
+  "event_stream": { "enabled": true, "publish": true, "stream": "browser.policy_gate" },
+  "allow_domains": ["example.com", "*.example.org"],
+  "allow_actions": ["navigate", "snapshot", "evaluate", "click", "type"],
+  "paths": {
+    "memory_dir": "client/local/state/browser/policy_gate/memory",
+    "adaptive_index_path": "client/local/adaptive/browser/policy_gate/index.json",
+    "events_path": "client/local/state/browser/policy_gate/events.jsonl",
+    "latest_path": "client/local/state/browser/policy_gate/latest.json",
+    "receipts_path": "client/local/state/browser/policy_gate/receipts.jsonl"
+  }
+}
