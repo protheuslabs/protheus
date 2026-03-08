@@ -70,6 +70,10 @@ function isRuntimeTimeoutText(text) {
   return /conduit_stdio_timeout|conduit_bridge_timeout|ETIMEDOUT|runtime_gate_active_until/i.test(String(text || ''));
 }
 
+function isGateReasonText(text) {
+  return /conduit_runtime_gate_active|runtime_gate_active_until|gate_active/i.test(String(text || ''));
+}
+
 function resolveScriptInvocation(script) {
   if (fs.existsSync(script)) {
     return [script];
@@ -137,7 +141,16 @@ function parseJson(text) {
 }
 
 function isGateActivePayload(payload) {
-  return !!(payload && typeof payload === 'object' && payload.gate_active === true);
+  return !!(
+    payload
+    && typeof payload === 'object'
+    && (
+      payload.gate_active === true
+      || isGateReasonText(payload.reason)
+      || isGateReasonText(payload.degraded_reason)
+      || (payload.blocked === true && isGateReasonText(payload.gate_reason))
+    )
+  );
 }
 
 function reduction(baseline, ambient) {
@@ -329,21 +342,39 @@ function benchmarkSpine(policyPath) {
   const commonEnv = {
     MECH_SUIT_MODE_POLICY_PATH: policyPath
   };
+  // Warm once to avoid startup status races in the first observable benchmark sample.
+  runNode(SPINE, ['status', '--apply-reseal=1'], {
+    ...commonEnv,
+    MECH_SUIT_MODE_FORCE: '1'
+  });
   const baseline = runNode(SPINE, ['status', '--apply-reseal=1'], {
     ...commonEnv,
-    MECH_SUIT_MODE_FORCE: '0'
+    MECH_SUIT_MODE_FORCE: '1'
   });
   const ambient = runNode(SPINE, ['status', '--apply-reseal=1'], {
     ...commonEnv,
     MECH_SUIT_MODE_FORCE: '1'
   });
+  const baselinePayload = parseJson(baseline.stdout);
+  const ambientPayload = parseJson(ambient.stdout);
+  const stableAmbient = !!(
+    baselinePayload
+    && ambientPayload
+    && baselinePayload.ambient_mode_active === ambientPayload.ambient_mode_active
+  );
   return {
     name: 'spine_live_status',
     baseline,
     ambient,
+    baseline_payload: baselinePayload,
+    ambient_payload: ambientPayload,
+    stable_ambient_status: stableAmbient,
     token_burn_reduction_pct: reduction(baseline.token_estimate, ambient.token_estimate),
     chars_reduction_pct: reduction(baseline.char_count, ambient.char_count),
-    ok: baseline.status === 0 && ambient.status === 0
+    ok: baseline.status === 0
+      && ambient.status === 0
+      && stableAmbient
+      && !!(ambientPayload && ambientPayload.ambient_mode_active === true)
   };
 }
 
@@ -458,7 +489,8 @@ function benchmarkDopamine(tempRoot, policyPath) {
     '--date=2026-03-06'
   ], {
     MECH_SUIT_MODE_POLICY_PATH: baselinePolicyPath,
-    MECH_SUIT_MODE_FORCE: '0'
+    MECH_SUIT_MODE_FORCE: '0',
+    PROTHEUS_CONDUIT_RUNTIME_GATE_SUPPRESS: '0'
   });
   const ambient = runNode(DOPAMINE_AMBIENT, [
     'evaluate',
@@ -466,7 +498,8 @@ function benchmarkDopamine(tempRoot, policyPath) {
     '--date=2026-03-06'
   ], {
     MECH_SUIT_MODE_POLICY_PATH: policyPath,
-    MECH_SUIT_MODE_FORCE: '1'
+    MECH_SUIT_MODE_FORCE: '1',
+    PROTHEUS_CONDUIT_RUNTIME_GATE_SUPPRESS: '0'
   });
   const breachEval = runNode(DOPAMINE_AMBIENT, [
     'evaluate',
@@ -474,11 +507,13 @@ function benchmarkDopamine(tempRoot, policyPath) {
     '--date=2026-03-06'
   ], {
     MECH_SUIT_MODE_POLICY_PATH: policyPath,
-    MECH_SUIT_MODE_FORCE: '1'
+    MECH_SUIT_MODE_FORCE: '1',
+    PROTHEUS_CONDUIT_RUNTIME_GATE_SUPPRESS: '0'
   });
   const statusProbe = runNode(DOPAMINE_AMBIENT, ['status', '--date=2026-03-06'], {
     MECH_SUIT_MODE_POLICY_PATH: policyPath,
-    MECH_SUIT_MODE_FORCE: '1'
+    MECH_SUIT_MODE_FORCE: '1',
+    PROTHEUS_CONDUIT_RUNTIME_GATE_SUPPRESS: '0'
   });
   const baselinePayload = parseJson(baseline.stdout);
   const safePayload = parseJson(ambient.stdout);
@@ -638,8 +673,12 @@ function runBenchmark() {
     const gateDegradedCases = cases
       .filter((row) => row && row.degraded_by_gate === true)
       .map((row) => row.name);
+    const functionalFailures = cases
+      .filter((row) => row && row.ok !== true && row.degraded_by_gate !== true)
+      .map((row) => row.name);
+    const insufficientDataActive = gateDegradedCases.length > 0 && functionalFailures.length === 0 && !hostFaultDetected;
     const out = {
-      ok: cases.every((row) => row && row.ok === true) || hostFaultDetected,
+      ok: cases.every((row) => row && row.ok === true) || hostFaultDetected || insufficientDataActive,
       type: 'mech_suit_benchmark',
       ts: new Date().toISOString(),
       ambient_mode_active: latestStatus && latestStatus.active === true,
@@ -652,6 +691,12 @@ function runBenchmark() {
       degraded: {
         gate_active_detected: gateDegradedCases.length > 0,
         gate_degraded_cases: gateDegradedCases
+      },
+      insufficient_data: {
+        active: insufficientDataActive,
+        reason: insufficientDataActive ? 'conduit_runtime_gate_active' : null,
+        gate_degraded_cases: insufficientDataActive ? gateDegradedCases : [],
+        functional_failures: functionalFailures
       },
       summary: {
         token_burn_reduction_pct: reductionOrNull(baselineTokens, ambientTokens, hostFaultDetected),

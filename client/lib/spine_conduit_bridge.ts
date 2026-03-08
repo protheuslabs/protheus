@@ -656,6 +656,17 @@ async function runConduitAgent(agentId, requestPrefix, receiptKey, errorType, op
     const detailReason = detail && typeof detail.reason === 'string'
       ? detail.reason
       : (payload && typeof payload.reason === 'string' ? payload.reason : '');
+    const payloadError = payload && typeof payload.error === 'string' ? payload.error : '';
+    if (status !== 0 && payloadError === 'unknown_command') {
+      const compat = runConduitCompatFallback(root, agentId, errorType, {
+        ...opts,
+        fallbackReason: detailReason || 'unknown_command'
+      });
+      if (compat) {
+        if (!suppressRuntimeGate) clearRuntimeGateIfSet(root);
+        return compat;
+      }
+    }
     if (status === 0 && !suppressRuntimeGate) {
       clearRuntimeGateIfSet(root);
     } else if (!suppressRuntimeGate && timeoutLikeError(detailReason)) {
