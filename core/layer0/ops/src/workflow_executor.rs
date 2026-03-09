@@ -51,31 +51,26 @@ fn status_receipt(root: &Path, cmd: &str, args: &[String]) -> Value {
         .map(|v| v.clamp(1, 500))
         .unwrap_or(25);
 
-    let mut out = json!({
-        "ok": true,
-        "type": "workflow_executor",
-        "lane": LANE_ID,
-        "ts": now_iso(),
-        "command": cmd,
-        "scope": scope,
-        "max": max,
-        "argv": args,
-        "root": root.to_string_lossy(),
-        "replacement": REPLACEMENT,
-        "claim_evidence": [
-            {
-                "id": "native_workflow_executor_lane",
-                "claim": "workflow_executor_executes_natively_in_rust",
-                "evidence": {
-                    "command": cmd,
-                    "max": max
-                }
+    let mut out = protheus_autonomy_core_v1::workflow_receipt(cmd, Some(&scope));
+    out["lane"] = Value::String(LANE_ID.to_string());
+    out["ts"] = Value::String(now_iso());
+    out["max"] = json!(max);
+    out["argv"] = json!(args);
+    out["root"] = Value::String(root.to_string_lossy().to_string());
+    out["replacement"] = Value::String(REPLACEMENT.to_string());
+    out["claim_evidence"] = json!([
+        {
+            "id": "native_workflow_executor_lane",
+            "claim": "workflow_executor_executes_natively_in_rust",
+            "evidence": {
+                "command": cmd,
+                "max": max
             }
-        ],
-        "persona_lenses": {
-            "operator": {
-                "mode": "workflow"
-            }
+        }
+    ]);
+    out["persona_lenses"] = json!({
+        "operator": {
+            "mode": "workflow"
         }
     });
     out["receipt_hash"] = Value::String(receipt_hash(&out));

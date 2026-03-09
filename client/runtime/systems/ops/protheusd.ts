@@ -7,7 +7,12 @@ const fs = require('fs');
 const crypto = require('crypto');
 const os = require('os');
 const { spawn, spawnSync } = require('child_process');
-const { runSpineCommand, runAttentionCommand, runMemoryAmbientCommand } = require('../../lib/spine_conduit_bridge');
+const {
+  runSpineCommand,
+  runAttentionCommand,
+  runMemoryAmbientCommand,
+  runOpsDomainCommand
+} = require('../../lib/spine_conduit_bridge');
 const { CANONICAL_PATHS, normalizeForRoot } = require('../../lib/runtime_path_registry');
 
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -1673,6 +1678,28 @@ type ConduitRouteResult = {
 async function runConduit(command: string, extraArgs: string[]): Promise<ConduitRouteResult> {
   if (!['start', 'stop', 'status'].includes(command)) {
     return { routed: false, ok: false, error: 'unsupported_command' };
+  }
+
+  // Prefer Rust/core daemon-control lane before direct conduit client wiring.
+  try {
+    const routed = await runOpsDomainCommand(
+      'daemon-control',
+      [command, ...extraArgs],
+      {
+        runContext: 'protheusd_route',
+        timeoutMs: conduitRouteTimeoutMs(),
+        stdioTimeoutMs: Math.max(1000, conduitRouteTimeoutMs())
+      }
+    );
+    const status = Number.isFinite(routed && routed.status) ? Number(routed.status) : 1;
+    if (routed && routed.payload) {
+      process.stdout.write(`${JSON.stringify(routed.payload)}\n`);
+    }
+    if (status === 0) {
+      return { routed: true, ok: true };
+    }
+  } catch {
+    // Fall through to legacy direct conduit route for compatibility.
   }
 
   let ConduitClient: any;

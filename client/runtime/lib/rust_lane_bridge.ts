@@ -41,10 +41,109 @@ function normalizeStatus(v) {
   return Number.isFinite(Number(v)) ? Number(v) : 1;
 }
 
+function parseTimeoutMs(name, fallbackMs, minMs = 1000, maxMs = 300000) {
+  const raw = Number(process.env[name]);
+  if (!Number.isFinite(raw)) return fallbackMs;
+  return Math.max(minMs, Math.min(maxMs, Math.floor(raw)));
+}
+
+function localFallbackEnabled() {
+  const raw = String(process.env.PROTHEUS_OPS_LOCAL_FALLBACK || '1').trim().toLowerCase();
+  return !(raw === '0' || raw === 'false' || raw === 'no' || raw === 'off');
+}
+
 function defaultEnv() {
   return {
     ...process.env,
     PROTHEUS_NODE_BINARY: process.execPath || 'node'
+  };
+}
+
+function shouldFallbackToLocalCore(status, payload, stderr) {
+  if (status === 0) return false;
+  const reason = String(
+    (payload && payload.reason)
+      || (payload && payload.error)
+      || stderr
+      || ''
+  ).toLowerCase();
+  if (!reason) return false;
+  return (
+    reason.includes('conduit_')
+    || reason.includes('startup_probe')
+    || reason.includes('timeout')
+    || reason.includes('etimedout')
+    || reason.includes('timed out')
+    || reason.includes('bridge_wait_failed')
+    || reason.includes('runtime_gate')
+  );
+}
+
+function resolveProtheusOpsCommand(root, domain) {
+  const explicit = String(process.env.PROTHEUS_OPS_BIN || '').trim();
+  if (explicit) {
+    return {
+      command: explicit,
+      args: [domain]
+    };
+  }
+
+  const release = path.join(root, 'target', 'release', 'protheus-ops');
+  if (fs.existsSync(release)) {
+    return {
+      command: release,
+      args: [domain]
+    };
+  }
+  const debug = path.join(root, 'target', 'debug', 'protheus-ops');
+  if (fs.existsSync(debug)) {
+    return {
+      command: debug,
+      args: [domain]
+    };
+  }
+
+  return {
+    command: 'cargo',
+    args: [
+      'run',
+      '--quiet',
+      '--manifest-path',
+      'core/layer0/ops/Cargo.toml',
+      '--bin',
+      'protheus-ops',
+      '--',
+      domain
+    ]
+  };
+}
+
+function runLocalOpsDomain(root, domain, passArgs, cliMode, inheritStdio) {
+  const resolved = resolveProtheusOpsCommand(root, domain);
+  const commandArgs = resolved.args.concat(Array.isArray(passArgs) ? passArgs : []);
+  const timeoutMs = parseTimeoutMs('PROTHEUS_OPS_LOCAL_TIMEOUT_MS', 15000);
+  const run = spawnSync(resolved.command, commandArgs, {
+    cwd: root,
+    encoding: 'utf8',
+    env: defaultEnv(),
+    stdio: cliMode && inheritStdio ? 'inherit' : undefined,
+    timeout: timeoutMs,
+    maxBuffer: 1024 * 1024 * 4
+  });
+  const status = run.error ? 1 : normalizeStatus(run.status);
+  const stdout = run.stdout || '';
+  const stderr = `${run.stderr || ''}${run.error ? `\n${String(run.error && run.error.message ? run.error.message : run.error)}` : ''}`;
+  const payload = cliMode && inheritStdio ? null : parseJsonPayload(stdout);
+  return {
+    ok: status === 0,
+    status,
+    stdout,
+    stderr,
+    payload,
+    rust_command: resolved.command,
+    rust_args: [resolved.command, ...commandArgs],
+    timeout_ms: timeoutMs,
+    routed_via: 'core_local'
   };
 }
 
@@ -78,17 +177,34 @@ function runBridge(config, args = [], cliMode = false) {
       };
     }
     const commandArgs = [runner, '--domain', config.domain].concat(passArgs);
+    const timeoutMs = parseTimeoutMs('PROTHEUS_OPS_DOMAIN_BRIDGE_TIMEOUT_MS', 12000);
     const run = spawnSync(process.execPath, commandArgs, {
       cwd: root,
       encoding: 'utf8',
       env: defaultEnv(),
-      stdio: cliMode && config.inheritStdio ? 'inherit' : undefined
+      stdio: cliMode && config.inheritStdio ? 'inherit' : undefined,
+      timeout: timeoutMs,
+      maxBuffer: 1024 * 1024 * 4
     });
 
-    const status = normalizeStatus(run.status);
+    const status = run.error ? 1 : normalizeStatus(run.status);
     const stdout = run.stdout || '';
-    const stderr = run.stderr || '';
+    const stderr = `${run.stderr || ''}${run.error ? `\n${String(run.error && run.error.message ? run.error.message : run.error)}` : ''}`;
     const payload = cliMode && config.inheritStdio ? null : parseJsonPayload(stdout);
+
+    if (shouldFallbackToLocalCore(status, payload, stderr) && localFallbackEnabled()) {
+      const local = runLocalOpsDomain(
+        root,
+        config.domain,
+        passArgs,
+        cliMode,
+        config.inheritStdio
+      );
+      return {
+        ...local,
+        lane: config.lane
+      };
+    }
 
     return {
       ok: status === 0,

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 'use strict';
+export {};
 
 // Layer ownership: core/layer2/autonomy + core/layer0/ops::autonomy-controller (authoritative)
 const { createOpsLaneBridge } = require('../../lib/rust_lane_bridge');

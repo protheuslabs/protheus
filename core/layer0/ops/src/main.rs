@@ -26,6 +26,7 @@ fn usage() {
     println!("  protheus-ops rollout-rings <status|evaluate> [flags]");
     println!("  protheus-ops strategy-mode-governor <args>");
     println!("  protheus-ops status [--dashboard]");
+    println!("  protheus-ops daemon-control <start|stop|restart|status|attach|subscribe|tick|diagnostics> [flags]");
     println!("  protheus-ops backlog-runtime-anchor <build|verify> --lane-id=<V3-RACE-XXX>");
     println!("  protheus-ops legacy-retired-lane <build|verify> --lane-id=<SYSTEMS-OPS-...>");
     println!("  protheus-ops inversion-controller <command> [flags]");
@@ -59,6 +60,7 @@ fn usage() {
     println!("  protheus-ops backlog-registry <command> [flags]");
     println!("  protheus-ops rust-enterprise-productivity-program <command> [flags]");
     println!("  protheus-ops backlog-github-sync <command> [flags]");
+    println!("  protheus-ops workflow-controller <command> [flags]");
     println!("  protheus-ops workflow-executor <command> [flags]");
     println!("  protheus-ops fluxlattice-program <list|run|run-all|status> [flags]");
     println!("  protheus-ops perception-polish-program <list|run|run-all|status> [flags]");
@@ -256,6 +258,11 @@ fn main() {
             let exit = protheus_ops_core::health_status::run(&cwd, &rest);
             std::process::exit(exit);
         }
+        "daemon-control" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::daemon_control::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
         "backlog-runtime-anchor" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::backlog_runtime_anchor::run(&cwd, &rest);
@@ -419,6 +426,11 @@ fn main() {
         "backlog-github-sync" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::backlog_github_sync::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "workflow-controller" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::workflow_controller::run(&cwd, &rest);
             std::process::exit(exit);
         }
         "workflow-executor" => {

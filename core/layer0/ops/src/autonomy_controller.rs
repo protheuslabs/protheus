@@ -39,28 +39,23 @@ fn native_receipt(root: &Path, cmd: &str, argv: &[String]) -> Value {
         .unwrap_or(1);
     let objective = parse_flag(argv, "objective").unwrap_or_else(|| "default".to_string());
 
-    let mut out = json!({
-        "ok": true,
-        "type": "autonomy_controller",
-        "lane": LANE_ID,
-        "ts": now_iso(),
-        "command": cmd,
-        "argv": argv,
-        "objective": objective,
-        "max_actions": max_actions,
-        "replacement": REPLACEMENT,
-        "root": root.to_string_lossy(),
-        "claim_evidence": [
-            {
-                "id": "native_autonomy_controller_lane",
-                "claim": "autonomy_controller_executes_natively_in_rust",
-                "evidence": {
-                    "command": cmd,
-                    "max_actions": max_actions
-                }
+    let mut out = protheus_autonomy_core_v1::autonomy_receipt(cmd, Some(&objective));
+    out["lane"] = Value::String(LANE_ID.to_string());
+    out["ts"] = Value::String(now_iso());
+    out["argv"] = json!(argv);
+    out["max_actions"] = json!(max_actions);
+    out["replacement"] = Value::String(REPLACEMENT.to_string());
+    out["root"] = Value::String(root.to_string_lossy().to_string());
+    out["claim_evidence"] = json!([
+        {
+            "id": "native_autonomy_controller_lane",
+            "claim": "autonomy_controller_executes_natively_in_rust",
+            "evidence": {
+                "command": cmd,
+                "max_actions": max_actions
             }
-        ]
-    });
+        }
+    ]);
     out["receipt_hash"] = Value::String(receipt_hash(&out));
     out
 }

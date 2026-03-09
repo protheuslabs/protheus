@@ -32,6 +32,8 @@ burn_oracle_budget_gate = { path = "../burn_oracle_budget_gate" }
 persona_dispatch_security_gate = { path = "../persona_dispatch_security_gate" }
 execution_core = { path = "../../layer2/execution" }
 infring-layer1-security = { path = "../../layer1/security" }
+protheus-autonomy-core-v1 = { path = "../../layer2/autonomy" }
+protheus-ops-core-v1 = { path = "../../layer2/ops" }
 
 [dev-dependencies]
 tempfile = "3.13"
