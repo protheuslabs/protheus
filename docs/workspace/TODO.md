@@ -54,12 +54,26 @@
     - Denied reseals emit explicit remediation instructions in status surfaces.
     - Cockpit runtime remains fail-closed for unapproved reseal classes.
 
+- [ ] `V6-COCKPIT-011` Repair Moltbook skill/import path contracts after compaction.
+  - Target: restore deterministic social/heartbeat loop execution when client/runtime path refactors change wrapper locations.
+  - Completion criteria:
+    - Moltbook wrappers resolve through canonical path registry (no hard-coded stale paths).
+    - Import/path contract lane emits pass receipts for Moltbook skill surfaces.
+    - 4h heartbeat social path executes end-to-end with successful status receipt.
+
 - [ ] `V6-MEMORY-020` Add shared-pointer resident memory surface (mmap/zero-copy hotset reads).
   - Target: memory hot path avoids file operations for resident queries.
   - Completion criteria:
     - Resident memory exposes mmap/shared-memory handle with zero-copy reads.
     - Deterministic fallback to `TAGS_INDEX -> MEMORY_INDEX -> node section` when shared pointer unavailable.
     - Token-burn SLO checks protect `<200` query-path target under standard workloads.
+
+- [ ] `V6-MEMORY-021` Add per-query token burn telemetry + retrieval-path attribution.
+  - Target: make `<200` standard memory query budget measurable and regression-proof.
+  - Completion criteria:
+    - Query path emits deterministic token metrics (`hydration`, `retrieval`, `response`) per request.
+    - Telemetry records retrieval mode (`index_only`, `node_read`, `full_file`) and reason codes for high-burn paths.
+    - Regression lane fails when standard query path exceeds configured burn thresholds.
 
 ## Backlog Follow-Up (Layer Ownership Guard)
 

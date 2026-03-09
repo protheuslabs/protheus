@@ -66,16 +66,16 @@
     "config/directives/T1_make_jay_billionaire_v1.yaml": "e9a9082270763dc429b1b032c7f7c606c4a47e7cc252a3f501ac1ef975c7deb0",
     "config/directives/T1_northstars.yaml": "dbababba9f2dc49b0d24ada4a1a70117cdafe0767ba2ec4a69ec7f80c1721610",
     "config/echo_policy.json": "031025f20678cbe39446a160bb8e22916f8a90c9e1f392998ef666c45387d2e2",
-    "config/helix_policy.json": "3f598262ce8f376acdb710b52d0074b846fa4925e4bfdd604ada1f724c4c0a79",
+    "config/helix_policy.json": "076f2c8666528aaa426bdfa1004a56ae81d0fcf34ff438924eec4b3ca99ddf0d",
     "config/red_team_policy.json": "620a783e0756ee9b2b3c4a86636f5a234967c53af46163ad08d84ef1222f7bce",
     "config/skin_protection_policy.json": "24e36724d3fac74972a3b77ec9e1da82446485f89cdb76903563b247e0ecb13f",
     "config/weaver_policy.json": "07a427a5883ca3fcb1be3792cd0779551c1d5cf67b7bfad5cd252efe75508a73",
     "systems/echo/heroic_echo_controller.js": "eff565e488df497933a0074f9074d28d230925570b41f3125bb495a9ef501ed0",
     "systems/echo/heroic_echo_controller.ts": "4a264d7fa3d7402f965facd0c06fee253b7aaefd47aeb9636f473100ba31f4e3",
     "systems/echo/input_purification_gate.ts": "2b4a2d158132383d671f941d83b464a2721f1c478b8456841423696a8158b1d6",
-    "systems/helix/codex_root.ts": "e76e3c4a0070e5ebf321659b0024bee8f54e06f20476fc89f9e935fcb67fb0db",
+    "systems/helix/codex_root.ts": "3934b86c6a1dffbb87915e856533b5d366eaa9ce231cf2b72d949312550d6d60",
     "systems/helix/helix_controller.js": "eff565e488df497933a0074f9074d28d230925570b41f3125bb495a9ef501ed0",
-    "systems/helix/helix_controller.ts": "fdce35d2c0ff1e8faf853d731fbc2af97db2c80531ae5e2b024692628fe60e4e",
+    "systems/helix/helix_controller.ts": "d460acac39995cc0397a4187f44e12e29527d75fbae4f311137d1abf104e7760",
     "systems/helix/hunter_strand.ts": "2384cf44361b80b51f7c7fefeda3925fb43c962262cc8662615f0254fbc848d8",
     "systems/helix/quarantine_manager.ts": "81df59cd054b35c0a04564ec8cca8a8904344c81da08c74b2a3ac2064bb7b113",
     "systems/helix/reweave_doctor.ts": "d37c882e1b9bfdeba8ad0a1247e372fabcf1e78b6114dae3b93e7345c6688d6a",
@@ -125,7 +125,7 @@
     "systems/security/psycheforge/psycheforge_organ.js": "eff565e488df497933a0074f9074d28d230925570b41f3125bb495a9ef501ed0",
     "systems/security/remote_tamper_heartbeat.js": "eff565e488df497933a0074f9074d28d230925570b41f3125bb495a9ef501ed0",
     "systems/security/repository_access_auditor.js": "eff565e488df497933a0074f9074d28d230925570b41f3125bb495a9ef501ed0",
-    "systems/security/rust_security_gate.js": "d6676a57b1242989746c39cbe82801762fb6e0f1e9d7857ebb980b32cc97f377",
+    "systems/security/rust_security_gate.js": "20c83c4b3ed1bf574b9f2b1f2cfcb121f9993cb0d6248286ce99d18bb5c627d6",
     "systems/security/safety_resilience_guard.js": "eff565e488df497933a0074f9074d28d230925570b41f3125bb495a9ef501ed0",
     "systems/security/sandbox_context_controls.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
     "systems/security/sandbox_skill_loader.js": "9a32f0511e146372f8a620027400520d3245a5616ebfcfc272136bbf572e6be2",
@@ -148,7 +148,7 @@
     "systems/weaver/weaver_core.js": "eff565e488df497933a0074f9074d28d230925570b41f3125bb495a9ef501ed0",
     "systems/weaver/weaver_core.ts": "438e474ce9979667c0154630e1c00d2f4e447d06bf468aea674dc48675261131"
   },
-  "sealed_at": "2026-03-09T00:42:15.566Z",
+  "sealed_at": "2026-03-09T02:27:49.427Z",
   "sealed_by": "jay",
-  "last_approval_note": "post-cockpit-push-reseal"
+  "last_approval_note": "Automated integrity reseal assistant run (files=config/helix_policy.json,systems/helix/codex_root.ts,systems/helix/helix_controller.ts,systems/security/rust_security_gate.js) at 2026-03-09T02:27:49.208Z"
 }
