@@ -79,6 +79,17 @@ Status legend:
 | V7-ASM-009 | queued | Proof-preserving fastpath optimization lane for Layer-2 hotpaths | Performance can improve without weakening assurances only if fastpaths are explicitly constrained and verified. | Add bounded fastpaths for selected Layer-2 hotpaths with property checks proving parity to canonical path and automatic rollback on parity failure. |
 | V7-ASM-010 | queued | Industrial process mapping pack (ISA-95/RAMI 4.0 templates) | Enterprise industrial adoption needs concrete process-mapping artifacts, not generic architecture claims. | Add templates/examples that map InfRing primitives to ISA-95/RAMI concepts with validation checklist and documentation links. |
 
+## Stealth Research Engine Intake (Doc `15cAMJQN_HrVPrID0vIZBtYZVUMcl-JB-Q523XJahnN0`, 2026-03-08)
+
+| ID | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|
+| V6-RESEARCH-001.1 | queued | Multi-level stealth fetcher engine | Current research/assimilate flows are fragile on anti-bot protected targets and do not adapt fetch strategy by protection level. | Add fast HTTP + stealth fetcher + dynamic browser fetch modes with automatic selector based on protection signals; protected target scrape runs show fallback switching and bounded detection failures. |
+| V6-RESEARCH-001.2 | queued | Adaptive element tracking and selector recovery | Site layout churn breaks brittle selectors and causes repeated manual parser maintenance. | Implement adaptive element recovery (CSS/XPath/text/regex + similarity fallback) so parser contracts survive representative site redesign fixtures without manual selector edits. |
+| V6-RESEARCH-001.3 | queued | Smart scaling + resilience lane for crawling | Large crawl jobs need deterministic queueing/retry/checkpoint behavior to avoid partial-loss failures. | Ship concurrent crawler controls with per-domain throttle, checkpoint pause/resume, and exponential backoff retries; prove 100+ concurrent request profile with graceful recovery receipts. |
+| V6-RESEARCH-001.4 | queued | MCP extraction integration for pre-structured research payloads | LLM burn remains high when raw pages are forwarded without pre-extraction contracts. | Provide MCP-callable research endpoint that returns structured pre-extracted artifacts (content + metadata + provenance receipts) prior to model invocation. |
+| V6-RESEARCH-001.5 | queued | Safety-plane routed stealth research execution + deterministic receipts | Research tooling must not bypass conduit/policy enforcement even when running stealth/browser fetch paths. | Enforce research execution through Layer-0 conduit gate with policy/budget checks and deterministic per-action receipts; no direct bypass paths from client wrappers. |
+| V6-RESEARCH-001.6 | queued | Developer-facing stealth research DX (`protheus research --stealth`) | Adoption friction remains high without one-command CLI/API defaults and thin-wrapper conventions. | Add thin client wrappers and CLI flags for stealth mode (`protheus research --stealth`, `protheus assimilate --stealth`) with zero-config defaults and operator-visible diagnostics. |
+
 ## Production-Grade Checklist Addendum (2026-03-06)
 
 | ID | Status | Upgrade | Why | Exit Criteria |
