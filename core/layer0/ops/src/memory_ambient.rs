@@ -415,24 +415,40 @@ fn resolve_memory_command(root: &PathBuf) -> (String, Vec<String>) {
         }
     }
 
-    let release = root.join("target").join("release").join("memory-cli");
-    if release.exists() {
-        return (release.to_string_lossy().to_string(), Vec::new());
+    // Prefer the authoritative layer0/memory_runtime binary. Older paths may still
+    // leave a `memory-cli` executable from legacy crates, so check both names.
+    let release_primary = root
+        .join("target")
+        .join("release")
+        .join("protheus-memory-core");
+    if release_primary.exists() {
+        return (release_primary.to_string_lossy().to_string(), Vec::new());
     }
-    let debug = root.join("target").join("debug").join("memory-cli");
-    if debug.exists() {
-        return (debug.to_string_lossy().to_string(), Vec::new());
+    let debug_primary = root
+        .join("target")
+        .join("debug")
+        .join("protheus-memory-core");
+    if debug_primary.exists() {
+        return (debug_primary.to_string_lossy().to_string(), Vec::new());
+    }
+
+    let release_compat = root.join("target").join("release").join("memory-cli");
+    if release_compat.exists() {
+        return (release_compat.to_string_lossy().to_string(), Vec::new());
+    }
+    let debug_compat = root.join("target").join("debug").join("memory-cli");
+    if debug_compat.exists() {
+        return (debug_compat.to_string_lossy().to_string(), Vec::new());
     }
 
     (
         "cargo".to_string(),
         vec![
             "run".to_string(),
-            "--quiet".to_string(),
             "--manifest-path".to_string(),
             "core/layer0/memory_runtime/Cargo.toml".to_string(),
             "--bin".to_string(),
-            "memory-cli".to_string(),
+            "protheus-memory-core".to_string(),
             "--".to_string(),
         ],
     )
