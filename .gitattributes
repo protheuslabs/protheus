@@ -1,10 +1,8 @@
 # Linguist normalization for repository language stats.
-# Goal: reflect maintained runtime source, not churn/state/test artifacts.
-
-# Strict repo-wide language signal: prefer TS, hide JS migration/runtime shims.
-*.js linguist-generated=true
-*.cjs linguist-generated=true
-*.mjs linguist-generated=true
+# Goal: count real source languages as-is; only hide runtime churn artifacts.
+*.js linguist-generated=false linguist-language=JavaScript
+*.cjs linguist-generated=false linguist-language=JavaScript
+*.mjs linguist-generated=false linguist-language=JavaScript
 *.ts linguist-generated=false linguist-language=TypeScript
 *.tsx linguist-generated=false linguist-language=TypeScript
 
@@ -14,20 +12,7 @@ state/** linguist-generated=true
 research/** linguist-generated=true
 drafts/** linguist-generated=true
 
-# TS is the source of truth; JS files in these roots are bootstrap/runtime shims.
-client/systems/**/*.js linguist-generated=true
-client/lib/**/*.js linguist-generated=true
-
-# Legacy operational JS lanes are migration shims/scripts, not core language signal.
-client/habits/scripts/**/*.js linguist-generated=true
-client/habits/routines/**/*.js linguist-generated=true
-client/adaptive/sensory/eyes/collectors/**/*.js linguist-generated=true
-client/skills/moltbook/*.js linguist-generated=true
-client/skills/**/scripts/**/*.js linguist-generated=true
-client/patches/**/*.js linguist-generated=true
-tests/**/*.js linguist-generated=true
-
-# Force TS source roots to remain linguist-detectable.
+# Force source roots to remain linguist-detectable.
 client/systems/**/*.ts linguist-generated=false
 client/lib/**/*.ts linguist-generated=false
 types/**/*.ts linguist-generated=false
