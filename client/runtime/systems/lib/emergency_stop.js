@@ -1,4 +1,4 @@
 #!/usr/bin/env node
 'use strict';
 
-module.exports = require('../../lib/emergency_stop.ts');
+module.exports = require('../../lib/emergency_stop.js');

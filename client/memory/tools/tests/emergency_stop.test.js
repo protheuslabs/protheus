@@ -5,6 +5,14 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
+function resolveLib(repoRoot, relCandidates) {
+  for (const rel of relCandidates) {
+    const abs = path.join(repoRoot, rel);
+    if (fs.existsSync(abs)) return abs;
+  }
+  return path.join(repoRoot, relCandidates[0]);
+}
+
 function run() {
   const repoRoot = path.resolve(__dirname, '..', '..', '..');
   const stopPath = path.join(repoRoot, 'state', 'security', 'emergency_stop.json');
@@ -17,7 +25,10 @@ function run() {
   }
 
   try {
-    const em = require('../../../lib/emergency_stop.js');
+    const em = require(resolveLib(repoRoot, [
+      'runtime/systems/lib/emergency_stop.js',
+      'lib/emergency_stop.js'
+    ]));
 
     em.releaseEmergencyStop({
       approval_note: 'test reset state before assertions',

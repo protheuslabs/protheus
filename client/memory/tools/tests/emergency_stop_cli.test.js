@@ -6,8 +6,19 @@ const path = require('path');
 const assert = require('assert');
 const { spawnSync } = require('child_process');
 
+function resolveScript(repoRoot, relCandidates) {
+  for (const rel of relCandidates) {
+    const abs = path.join(repoRoot, rel);
+    if (fs.existsSync(abs)) return abs;
+  }
+  return path.join(repoRoot, relCandidates[0]);
+}
+
 function runCli(repoRoot, args) {
-  const script = path.join(repoRoot, 'systems', 'security', 'emergency_stop.js');
+  const script = resolveScript(repoRoot, [
+    'runtime/systems/security/emergency_stop.js',
+    'systems/security/emergency_stop.js'
+  ]);
   return spawnSync('node', [script, ...args], {
     cwd: repoRoot,
     encoding: 'utf8',
