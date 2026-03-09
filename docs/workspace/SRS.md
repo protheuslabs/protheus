@@ -131,6 +131,19 @@ Source note:
 | V6-HERMES-001.4 | queued | Subagent delegation primitives + governed tool-rich execution packs | Autonomous workflows need first-class delegated execution packs under strict capability controls. | Add subagent delegation primitives with policy-scoped tool packs (file/terminal/browser/code/cron) and deterministic parent-child receipt chains for each delegated run. |
 | V6-HERMES-001.5 | queued | Conduit-only autonomous discovery/delegation guard contract | New autonomous affordances must remain fail-closed under Safety Plane authority. | Enforce Layer-0 policy checks for self-discovery, tool execution, and delegation actions; any bypass attempt fails closed and emits auditable denial receipts. |
 
+## Virtual Browser Streaming & Collaboration Intake (Doc `1BaYvmljJ6VnYyjk4l_E-prfUKvjjuBJCCP8m4lj4uzE`, 2026-03-09)
+
+Source note:
+- External draft labels this as `V6-TOOLS-001`; this backlog maps it to `V6-VBROWSER-001.*` to avoid collision with existing `V6-TOOLS-001`.
+
+| ID | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|
+| V6-VBROWSER-001.1 | queued | Sandboxed virtual browser runtime with low-latency streaming | Research and operator flows need isolated browser/desktop sessions without exposing host browser state. | Add containerized browser runtime (ephemeral + persistent profiles) with low-latency stream transport and strict host-state isolation guarantees validated by policy receipts. |
+| V6-VBROWSER-001.2 | queued | Multi-user collaborative session controls | Collaborative shadow/user investigation requires shared sessions with explicit control boundaries. | Support joined session roles (`watch-only`, `shared-control`) with deterministic control handoff, participant actions, and session-event receipts. |
+| V6-VBROWSER-001.3 | queued | Automation-in-container lane with live monitoring | Browser automation requires both scriptability and real-time operator observability. | Provide governed automation execution inside session container (Playwright/Puppeteer-style) with live telemetry surfaced to `protheus-top` and auditable run receipts. |
+| V6-VBROWSER-001.4 | queued | Privacy/security controls for streamed browser sessions | Streaming sessions can widen exfiltration/risk without strict privacy/network/budget controls. | Add policy-gated controls for network posture (e.g., tor/vpn profiles), session recording/broadcast toggles, and hard budgets (duration/data/request volume) with fail-closed enforcement receipts. |
+| V6-VBROWSER-001.5 | queued | InfRing-native CLI + observability integration for streamed sessions | Adoption depends on first-class commands and consistent observability surfaces. | Add thin wrappers for `protheus browser` / `protheus shadow --browser` with conduit-only execution and dashboard stream integration; every session action emits deterministic receipts under persona/policy governance. |
+
 ## Production-Grade Checklist Addendum (2026-03-06)
 
 | ID | Status | Upgrade | Why | Exit Criteria |
