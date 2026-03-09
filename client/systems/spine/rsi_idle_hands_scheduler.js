@@ -3,7 +3,7 @@
 
 const path = require('path');
 const { spawnSync } = require('child_process');
-const RUNTIME_ENTRY = path.join(__dirname, '..', '..', 'runtime', 'systems', 'security', 'dream_warden_guard.js');
+const RUNTIME_ENTRY = path.join(__dirname, '..', '..', 'runtime', 'systems', 'spine', 'rsi_idle_hands_scheduler.js');
 
 if (require.main === module) {
   const out = spawnSync(process.execPath, [RUNTIME_ENTRY, ...process.argv.slice(2)], {

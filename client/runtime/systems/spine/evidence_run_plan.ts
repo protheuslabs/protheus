@@ -1,39 +1,20 @@
 #!/usr/bin/env node
+// @ts-nocheck
 'use strict';
+export {};
 
-function clampInt(v, lo, hi, fallback) {
-  const n = Number(v);
-  if (!Number.isFinite(n)) return fallback;
-  const i = Math.floor(n);
-  if (i < lo) return lo;
-  if (i > hi) return hi;
-  return i;
+// Layer ownership: core/layer2/spine::evidence_run_plan (authoritative)
+// TypeScript compatibility shim only.
+const path = require('path');
+const { spawnSync } = require('child_process');
+
+const JS_ENTRY = path.join(__dirname, 'evidence_run_plan.js');
+
+if (require.main === module) {
+  const out = spawnSync(process.execPath, [JS_ENTRY, ...process.argv.slice(2)], {
+    stdio: 'inherit'
+  });
+  process.exit(Number.isFinite(out && out.status) ? Number(out.status) : 1);
 }
 
-function normalizePressure(v) {
-  const s = String(v || '').trim().toLowerCase();
-  if (s === 'soft' || s === 'hard') return s;
-  return 'none';
-}
-
-function computeEvidenceRunPlan(configuredRunsRaw, budgetPressureRaw, projectedPressureRaw) {
-  const configuredRuns = clampInt(configuredRunsRaw, 0, 6, 2);
-  const budgetPressure = normalizePressure(budgetPressureRaw);
-  const projectedPressure = normalizePressure(projectedPressureRaw);
-  const pressureThrottle = budgetPressure !== 'none' || projectedPressure !== 'none';
-  const evidenceRuns = pressureThrottle
-    ? Math.min(configuredRuns, 1)
-    : configuredRuns;
-  return {
-    configured_runs: configuredRuns,
-    budget_pressure: budgetPressure,
-    projected_pressure: projectedPressure,
-    pressure_throttle: pressureThrottle,
-    evidence_runs: evidenceRuns
-  };
-}
-
-module.exports = {
-  computeEvidenceRunPlan
-};
-
+module.exports = require('./evidence_run_plan.js');

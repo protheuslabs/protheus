@@ -2,6 +2,9 @@
 use crate::{deterministic_receipt_hash, now_iso};
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
+use protheus_spine_core_v1::{
+    run_background_hands_scheduler, run_evidence_run_plan, run_rsi_idle_hands_scheduler,
+};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
@@ -192,6 +195,9 @@ fn usage() {
     eprintln!("  protheus-ops spine daily [YYYY-MM-DD] [--max-eyes=N]");
     eprintln!("  protheus-ops spine run [eyes|daily] [YYYY-MM-DD] [--max-eyes=N]");
     eprintln!("  protheus-ops spine status [--mode=eyes|daily] [--date=YYYY-MM-DD]");
+    eprintln!("  protheus-ops spine background-hands-scheduler <configure|schedule|status> [flags]");
+    eprintln!("  protheus-ops spine rsi-idle-hands-scheduler <run|status> [flags]");
+    eprintln!("  protheus-ops spine evidence-run-plan [--configured-runs=N] [--budget-pressure=none|soft|hard] [--projected-pressure=none|soft|hard]");
 }
 
 fn print_json_line(value: &Value) {
@@ -1566,6 +1572,25 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
 }
 
 pub fn run(root: &Path, argv: &[String]) -> i32 {
+    if let Some(first) = argv.first() {
+        let command = first.trim().to_ascii_lowercase();
+        if command == "background-hands-scheduler" || command == "background_hands_scheduler" {
+            let (code, payload) = run_background_hands_scheduler(root, &argv[1..]);
+            print_json_line(&payload);
+            return code;
+        }
+        if command == "rsi-idle-hands-scheduler" || command == "rsi_idle_hands_scheduler" {
+            let (code, payload) = run_rsi_idle_hands_scheduler(root, &argv[1..]);
+            print_json_line(&payload);
+            return code;
+        }
+        if command == "evidence-run-plan" || command == "evidence_run_plan" {
+            let (code, payload) = run_evidence_run_plan(&argv[1..]);
+            print_json_line(&payload);
+            return code;
+        }
+    }
+
     let Some(cli) = parse_cli(argv) else {
         usage();
         print_json_line(&cli_error_receipt(argv, "invalid_args", 2));

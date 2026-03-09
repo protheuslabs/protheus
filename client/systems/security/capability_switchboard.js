@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 'use strict';
 
-// Compatibility shim: client/systems -> client/runtime/systems
-module.exports = require('../../runtime/systems/security/capability_switchboard.js');
+const path = require('path');
+const { spawnSync } = require('child_process');
+const RUNTIME_ENTRY = path.join(__dirname, '..', '..', 'runtime', 'systems', 'security', 'capability_switchboard.js');
 
 if (require.main === module) {
-  const lane = module.exports;
-  const out = lane.run ? lane.run(process.argv.slice(2)) : { status: 1 };
+  const out = spawnSync(process.execPath, [RUNTIME_ENTRY, ...process.argv.slice(2)], {
+    stdio: 'inherit'
+  });
   process.exit(Number.isFinite(out && out.status) ? Number(out.status) : 1);
 }
+
+module.exports = require(RUNTIME_ENTRY);
