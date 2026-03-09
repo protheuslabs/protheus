@@ -4,7 +4,6 @@
 // Layer ownership: core/layer0/ops::spine (authoritative)
 // Lightweight heartbeat trigger path that avoids TS bootstrap overhead.
 const { runSpineCommand } = require('../../lib/spine_conduit_bridge');
-const tsBootstrap = require('../../lib/ts_bootstrap');
 
 function parseArgs(argv) {
   const out = { _: [] };
@@ -62,6 +61,7 @@ function buildSpineArgs(argv) {
 
 if (require.main === module) {
   process.env.PROTHEUS_CONDUIT_STARTUP_PROBE = '0';
+  process.env.PROTHEUS_CONDUIT_COMPAT_FALLBACK = '0';
   process.env.PROTHEUS_CONDUIT_STARTUP_PROBE_TIMEOUT_MS =
     process.env.PROTHEUS_CONDUIT_STARTUP_PROBE_TIMEOUT_MS || '8000';
   runSpineCommand(buildSpineArgs(process.argv.slice(2)), {
@@ -70,17 +70,7 @@ if (require.main === module) {
   }).then((out) => {
     if (out && out.payload) process.stdout.write(`${JSON.stringify(out.payload)}\n`);
     if (out && out.stderr) process.stderr.write(out.stderr.endsWith('\n') ? out.stderr : `${out.stderr}\n`);
-    const status = Number.isFinite(out && out.status) ? Number(out.status) : 1;
-    if (status !== 0) {
-      const reason = String((out && out.payload && out.payload.reason) || out && out.stderr || '');
-      if (/conduit_/i.test(reason) || /timeout/i.test(reason)) {
-        process.env.PROTHEUS_SPINE_TS_COMPAT = '1';
-        process.env.PROTHEUS_SPINE_TS_LOCAL_COMPAT = '1';
-        tsBootstrap.bootstrap(__filename, module);
-        return;
-      }
-    }
-    process.exit(status);
+    process.exit(Number.isFinite(out && out.status) ? Number(out.status) : 1);
   }).catch((error) => {
     const payload = {
       ok: false,
