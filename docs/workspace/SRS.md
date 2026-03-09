@@ -219,6 +219,20 @@ Source references:
 | V6-OBSERVABILITY-001.4 | queued | Self-hosted single-command deploy profile for observability stack | Adoption requires low-friction self-hosted deployment without vendor lock-in or mandatory telemetry. | Provide one-command self-hosted deployment profile (Docker-first) for monitoring/workflow/incident stack, with no mandatory external telemetry and deterministic deployment health receipts. |
 | V6-OBSERVABILITY-001.5 | queued | Conduit-only observability/workflow/incident control guardrails | Monitoring and response operations must remain Safety Plane governed and auditable. | Enforce Layer-0 conduit gates for all monitor/workflow/incident actions; every event/action yields deterministic receipts and bypass attempts fail closed under policy/capability checks. |
 
+## Persistent Background Execution, Connectors & Mobile Access Intake (Claude Code Feature Assimilation, 2026-03-09)
+
+Source note:
+- External draft labels this as `V6-COCKPIT-011`; this backlog maps it to `V6-PERSIST-001.*` to avoid collision with existing `V6-COCKPIT-011` (Moltbook path-contract repair lane).
+
+| ID | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|
+| V6-PERSIST-001.1 | queued | Scheduled persistent background task lane | Always-on task execution should persist independently of active attached sessions. | Add `protheus schedule` contracts for recurring background workflows that continue while detached, with deterministic schedule/run/handoff receipts and budget enforcement. |
+| V6-PERSIST-001.2 | queued | Remote mobile cockpit control surface | Operators need mobile-safe runtime control/visibility for intervention without desktop dependency. | Add mobile-friendly cockpit control surface exposing live daemon state, task controls, and intervention commands with full receipt/audit coverage and policy-gated access. |
+| V6-PERSIST-001.3 | queued | Auto memory continuity across restart/disconnect boundaries | Session continuity must survive attach detach cycles without manual reload procedures. | Enforce persistent memory reconstruction contract so attach sessions recover context/preferences/patterns automatically with deterministic reconstruction receipts. |
+| V6-PERSIST-001.4 | queued | One-click connector onboarding lane (Slack/Gmail/Drive + policy templates) | Connector adoption is bottlenecked without low-friction setup and standard policy wrappers. | Add connector CLI (`protheus connector add <provider>`) with one-command setup, policy template binding, capability checks, and deterministic connector audit receipts. |
+| V6-PERSIST-001.5 | queued | Sub-agent + co-work background execution contract | Persistent collaboration requires delegated sub-agents that continue execution in background mode. | Add governed sub-agent delegation and co-work background mode where parent and delegated agents continue under policy/budget caps with parent-child receipt chaining. |
+| V6-PERSIST-001.6 | queued | Conduit-only guardrail contract for persistence/connectors/mobile operations | New persistent/connectivity surfaces must remain strictly Safety Plane governed. | Enforce Layer-0 conduit checks for scheduled tasks, connector actions, mobile commands, and sub-agent events; bypass attempts fail closed with deterministic denial receipts. |
+
 ## Production-Grade Checklist Addendum (2026-03-06)
 
 | ID | Status | Upgrade | Why | Exit Criteria |
