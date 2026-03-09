@@ -6,16 +6,25 @@
  */
 
 const assert = require('assert');
+const fs = require('fs');
 const path = require('path');
-const { 
+const ROOT = path.resolve(__dirname, '..', '..', '..');
+const DIRECTIVE_GATE_CANDIDATES = [
+  path.join(ROOT, 'cognition', 'habits', 'scripts', 'directive_gate.js'),
+  path.join(ROOT, 'runtime', 'systems', 'security', 'directive_gate.js'),
+  path.join(ROOT, 'habits', 'scripts', 'directive_gate.js')
+];
+const DIRECTIVE_GATE_PATH =
+  DIRECTIVE_GATE_CANDIDATES.find((candidate) => fs.existsSync(candidate)) || DIRECTIVE_GATE_CANDIDATES[0];
+const {
   evaluateTask, 
   isAllowlistedPath, 
   isTrustRegistryModification,
   HIGH_RISK_PATTERNS,
   DENY_PATTERNS 
-} = require('../../../habits/scripts/directive_gate.js');
+} = require(DIRECTIVE_GATE_PATH);
 
-const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..', '..');
+const WORKSPACE_ROOT = ROOT;
 
 let failed = false;
 
