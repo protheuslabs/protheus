@@ -285,6 +285,24 @@ Notes:
 | V6-COCKPIT-013.3 | queued | Vibe-coding + workflow automation agency run mode | Teams should be able to collaboratively operate projects and automate recurring workflows under governed handoffs. | Extend orchestrator workflows so division agents can run collaborative coding/ops automations with explicit handoff states, deliverable metrics, and deterministic parent-child receipt chaining. |
 | V6-COCKPIT-013.4 | queued | Conduit-only agency orchestration guardrails for division templates | Expanded role/division automation must remain strictly Safety Plane governed with full auditability. | Enforce Layer-0 conduit checks for all division orchestration, role activation, tool use, and workflow handoffs; bypass attempts fail closed and every agency operation emits deterministic receipts. |
 
+## High-Performance Time-Series Storage Engine Intake (2026-03-09)
+
+Source references:
+- https://x.com/GridDBCommunity/status/1948263124693557702
+- GridDB Data Model Comparison v1.1
+
+Notes:
+- Proposed for next Snowball after Coreization Wave 1.
+- Storage authority remains core-only; client surfaces stay thin wrappers.
+
+| ID | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|
+| V6-STORAGE-001.1 | queued | Time-series container primitive for receipts/events/memory logs | Append-heavy runtime telemetry and receipts need a dedicated time-ordered storage primitive instead of generic mixed-path persistence. | Add a core time-series container contract with time-partitioning + index strategy for receipts, heartbeat, and event lanes; verify high-ingest profile (`100k+/s` target lane benchmark) and recent-window low-latency query receipts. |
+| V6-STORAGE-001.2 | queued | Hybrid ingest/query acceleration lane (memory-hot + durable tier) | Current file/SQLite-heavy paths can bottleneck high-volume telemetry and recall workloads. | Implement hybrid ingestion/tiering path with hot in-memory write/query acceleration and durable persistence; benchmark/receipt evidence shows material improvement over baseline file/SQLite paths under controlled workload gates. |
+| V6-STORAGE-001.3 | queued | Scale-out sharding/replication contract for network seed nodes | Distributed seed operation requires resilient multi-node storage without single-node bottlenecks. | Add shard/replica coordination contracts for time-series lanes with deterministic consistency and failover receipts; multi-node harness demonstrates no single point of failure under node-loss scenarios. |
+| V6-STORAGE-001.4 | queued | Workload-aware data model selector (time-series vs key-value vs document lanes) | Epistemic objects and receipt workloads have different access patterns that benefit from model-specific optimization. | Add policy-governed model-selection layer that routes workloads to optimal storage model or hybrid mode with deterministic selection rationale in receipts. |
+| V6-STORAGE-001.5 | queued | Conduit-only storage operations guardrail + audit lane | Storage engine expansion must remain Safety Plane governed and fully auditable. | Enforce Layer-0 conduit checks for all storage writes/queries/compaction/tiering actions; every operation emits deterministic receipts and bypass attempts fail closed. |
+
 ## Production-Grade Checklist Addendum (2026-03-06)
 
 | ID | Status | Upgrade | Why | Exit Criteria |
