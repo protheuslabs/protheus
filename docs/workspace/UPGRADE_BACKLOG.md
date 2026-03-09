@@ -136,6 +136,19 @@ Source note:
 | V6-COMPANY-001.4 | queued | 24/7 heartbeat agent runtime + remote monitoring surface | Zero-human mode depends on continuous operation independent of attached operator sessions. | Extend heartbeat scheduler for always-on teams, ensuring autonomous continuation during detach windows; expose live health/status in `protheus-top` and remote/mobile-safe monitoring feeds with deterministic heartbeat receipts. |
 | V6-COMPANY-001.5 | queued | Conduit-only company-operation guardrails | Company-level orchestration actions must remain strictly within Safety Plane authority boundaries. | Enforce Layer-0 conduit gates for org changes, budget operations, ticket transitions, and heartbeat controls; all actions produce deterministic receipts and fail-closed denials on policy/capability violations. |
 
+## WiFi CSI Non-Visual Sensing Intake (RuView, x.com/heygurisingh 2030779994767851980, 2026-03-09)
+
+Source reference:
+- https://github.com/ruvnet/RuView
+
+| ID | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|
+| V6-SUBSTRATE-001.1 | queued | WiFi CSI sensing engine lane (pose/vitals/presence) | Non-visual sensing provides privacy-preserving perception and through-wall detection without camera dependency. | Add CSI sensing lane capable of real-time pose proxy, breathing/heartbeat signal extraction, and presence events from supported WiFi/CSI hardware; detections emit deterministic receipts with confidence and sensor provenance. |
+| V6-SUBSTRATE-001.2 | queued | Edge module library enable/disable contract for CSI workloads | Practical adoption needs modular enablement per shadow/persona instead of one fixed sensing pipeline. | Add module registry (fall/sleep/activity/security/emotion/etc.) with one-command enable/disable by persona/shadow and deterministic module activation receipts. |
+| V6-SUBSTRATE-001.3 | queued | ESP32/low-power deployment profile lane | Substrate value depends on low-cost embedded deployment and offline operation. | Add embedded profile contract for ESP32-class deployment with no-cloud requirement, power budget telemetry, and deterministic degraded-mode behavior under constrained hardware. |
+| V6-SUBSTRATE-001.4 | queued | Conduit-routed privacy/consent guardrails for non-visual sensing | Through-wall and biometric-adjacent sensing requires strict local-first privacy controls and auditability. | Enforce local-only default policy, consent requirements, and budget/privacy checks for CSI events in Layer-0/1; every detection path is receipted and bypass attempts fail closed. |
+| V6-SUBSTRATE-001.5 | queued | Persona/shadow integration for WiFi sensing as native Eye | Sensor capability must be directly consumable by personas/shadows to be operationally useful. | Add `protheus eye enable wifi`/persona trigger integration with observability streams, so shadows can subscribe to CSI events via governed eye lanes and receipt-linked dashboards. |
+
 ## Production-Grade Checklist Addendum (2026-03-06)
 
 | ID | Status | Upgrade | Why | Exit Criteria |
