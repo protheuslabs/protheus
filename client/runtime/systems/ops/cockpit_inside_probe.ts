@@ -115,7 +115,14 @@ async function main() {
   const consumer = cleanText(args.consumer || process.env.COCKPIT_CONSUMER_ID || 'cockpit_llm', 80) || 'cockpit_llm';
   const limit = toInt(args.limit || process.env.COCKPIT_BATCH_LIMIT, 12, 1, 256);
   const waitMs = toInt(args['wait-ms'] || process.env.PROTHEUSD_SUBSCRIBE_WAIT_MS, 5000, 0, 300000);
+  const subscribeWaitMs = Math.max(250, Math.min(waitMs, 2500));
   const timeoutMs = toInt(args['timeout-ms'] || process.env.COCKPIT_INSIDE_PROBE_TIMEOUT_MS, 60000, 5000, 300000);
+  const commandTimeoutMs = toInt(
+    args['command-timeout-ms'] || process.env.COCKPIT_INSIDE_PROBE_COMMAND_TIMEOUT_MS,
+    20000,
+    3000,
+    120000
+  );
   const conduitProbeMs = toInt(
     args['conduit-probe-timeout-ms'] || process.env.COCKPIT_CONDUIT_PROBE_TIMEOUT_MS,
     5000,
@@ -133,25 +140,33 @@ async function main() {
     'systems/ops/protheusd.js',
     ['attach', '--autostart', `--consumer=${consumer}`, `--limit=${limit}`],
     env,
-    timeoutMs
+    commandTimeoutMs
   );
   const statusRun = runNodeScript(
     'systems/ops/protheusd.js',
     ['status', '--no-autostart'],
     env,
-    timeoutMs
+    commandTimeoutMs
   );
   const subscribeRun = runNodeScript(
     'systems/ops/protheusd.js',
-    ['subscribe', `--consumer=${consumer}`, `--limit=${limit}`, '--once=1', `--wait-ms=${waitMs}`],
+    [
+      'subscribe',
+      `--consumer=${consumer}`,
+      `--limit=${limit}`,
+      '--once=1',
+      '--transport=push',
+      `--wait-ms=${subscribeWaitMs}`,
+      `--push-heartbeat-ms=${Math.max(500, Math.min(2000, subscribeWaitMs))}`
+    ],
     env,
-    timeoutMs
+    Math.max(commandTimeoutMs, subscribeWaitMs + 5000)
   );
   const harnessRun = runNodeScript(
     'systems/ops/cockpit_harness.js',
     ['once', `--consumer=${consumer}`, `--limit=${limit}`],
     env,
-    timeoutMs
+    commandTimeoutMs
   );
 
   const statusPayload = statusRun.payloads.find((row: any) => row && row.type === 'protheus_control_plane_status') || null;

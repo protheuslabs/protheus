@@ -14,9 +14,17 @@
     - `node client/runtime/systems/ops/protheusd.js subscribe --once --consumer=timeout_probe --limit=100 --poll-ms=500 --wait-ms=15000`
       - observed: `degraded=false`, `batch_count=0`, stable done receipt.
 
-- [ ] `V6-COCKPIT-006` Promote attention stream from long-poll contract to native push transport.
+- [x] `V6-COCKPIT-006` Promote attention stream from long-poll contract to native push transport.
   - Target: direct conduit subscription lane (server-push) with ack/cursor guarantees and bounded backpressure.
-  - Current behavior: `attention-queue drain --wait-ms` long-poll is in place and receipted.
+  - Delivered:
+    - Added native push transport mode in `client/runtime/systems/ops/protheusd.ts` (`--transport=push`, default on) for `protheusd subscribe`.
+    - Added bounded file-mutation push waiter (`waitForAttentionPush`) so subscribe loops block on attention queue mutations instead of issuing repeated long-poll drains.
+    - Added transport metadata to subscribe receipts (`transport`, `native_push`, `push_wait_reason`) and preserved cursor/ack guarantees through `attention-queue drain`.
+    - Tuned push timeout floors to fail fast under host pressure (`bridge` 8s default, `stdio` 12s default) and defer to deterministic local compat drain when conduit runtime gate is active.
+  - Validation:
+    - `node client/runtime/systems/ops/protheusd.js subscribe --once --consumer=push_probe_fast --limit=2 --wait-ms=1200 --transport=push --poll-ms=500`
+      - observed: startup receipt reports `native_push=true`, batch receipt includes transport metadata and bounded fallback contract.
+    - `npm run -s typecheck:systems`
 
 ## Backlog Follow-Up (Layer Ownership Guard)
 

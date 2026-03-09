@@ -2097,6 +2097,90 @@ function drainAttentionLocalCompat(runtime: any, consumer: string, limit: number
   };
 }
 
+function fileSig(filePath: string) {
+  try {
+    const stat = fs.statSync(filePath);
+    const mtime = Number.isFinite(Number(stat.mtimeMs)) ? Number(stat.mtimeMs) : 0;
+    return `${stat.size}:${Math.floor(mtime)}`;
+  } catch {
+    return 'missing:0';
+  }
+}
+
+function attentionWatchTargets(runtime: any) {
+  const out = new Set<string>();
+  const queuePath = runtime && runtime.mechPolicy ? cleanText(runtime.mechPolicy.attentionQueuePath, 500) : '';
+  const latestPath = runtime && runtime.mechPolicy ? cleanText(runtime.mechPolicy.attentionLatestPath, 500) : '';
+  if (queuePath) out.add(queuePath);
+  if (latestPath) out.add(latestPath);
+  return Array.from(out.values());
+}
+
+async function waitForAttentionPush(runtime: any, timeoutMs: number) {
+  const targetMs = toInt(timeoutMs, 0, 0, 300000);
+  const startedMs = Date.now();
+  if (targetMs <= 0) {
+    return {
+      triggered: false,
+      reason: 'push_wait_disabled',
+      elapsed_ms: 0
+    };
+  }
+
+  const targets = attentionWatchTargets(runtime);
+  const baseline = new Map<string, string>();
+  for (const target of targets) {
+    baseline.set(target, fileSig(target));
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const watchers: Array<{ close: () => void }> = [];
+    const cleanup = () => {
+      while (watchers.length > 0) {
+        const watcher = watchers.pop();
+        try {
+          watcher && watcher.close();
+        } catch {}
+      }
+    };
+    const finish = (triggered: boolean, reason: string) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve({
+        triggered,
+        reason,
+        elapsed_ms: Math.max(0, Date.now() - startedMs)
+      });
+    };
+    const hasMutation = () => targets.some((target) => fileSig(target) !== baseline.get(target));
+    const detect = () => {
+      if (hasMutation()) finish(true, 'attention_mutation');
+    };
+    const timer = setTimeout(() => finish(false, 'push_timeout'), targetMs);
+    watchers.push({ close: () => clearTimeout(timer) });
+
+    const watchedDirs = new Set<string>();
+    for (const target of targets) {
+      const directDir = fs.existsSync(target) && fs.statSync(target).isDirectory()
+        ? target
+        : path.dirname(target);
+      if (!directDir || watchedDirs.has(directDir)) continue;
+      watchedDirs.add(directDir);
+      try {
+        const watcher = fs.watch(directDir, { persistent: false }, () => detect());
+        watchers.push(watcher);
+      } catch {}
+    }
+
+    // Fallback poll in case fs.watch is unavailable or event delivery is flaky.
+    const pollTimer = setInterval(() => detect(), Math.max(100, Math.min(500, Math.floor(targetMs / 10) || 100)));
+    watchers.push({ close: () => clearInterval(pollTimer) });
+    detect();
+  });
+}
+
 async function runSubscribe(runtime: any, argv: string[]) {
   let state = loadDaemonState(runtime);
   if (!isPidAlive(state.pid) && runtime.mechPolicy.enabled === true && ambientAutostartEnabled(argv)) {
@@ -2131,17 +2215,30 @@ async function runSubscribe(runtime: any, argv: string[]) {
     250,
     30000
   );
+  const transport = cleanText(
+    parseFlag(argv, 'transport')
+      || process.env.PROTHEUSD_SUBSCRIBE_TRANSPORT
+      || 'push',
+    24
+  ).toLowerCase();
+  const nativePush = transport === 'push' || transport === 'native_push';
   const subscribeBridgeFloorMs = toInt(
     process.env.PROTHEUSD_SUBSCRIBE_BRIDGE_TIMEOUT_MS,
-    20000,
+    nativePush ? 8000 : 20000,
     4000,
     5 * 60 * 1000
   );
   const subscribeStdioFloorMs = toInt(
     process.env.PROTHEUSD_SUBSCRIBE_STDIO_TIMEOUT_MS,
-    25000,
+    nativePush ? 12000 : 25000,
     5000,
     5 * 60 * 1000
+  );
+  const pushHeartbeatMs = toInt(
+    parseFlag(argv, 'push-heartbeat-ms') || process.env.PROTHEUSD_SUBSCRIBE_PUSH_HEARTBEAT_MS,
+    Math.max(pollMs, 5000),
+    500,
+    300000
   );
   const once = toBool(parseFlag(argv, 'once'), false);
   const maxCycles = toInt(parseFlag(argv, 'max-cycles'), once ? 1 : 0, 0, 1000000);
@@ -2158,13 +2255,16 @@ async function runSubscribe(runtime: any, argv: string[]) {
     limit,
     poll_ms: pollMs,
     wait_ms: waitMs,
+    wait_chunk_ms: waitChunkMs,
+    transport,
+    native_push: nativePush,
     once
   });
   process.stdout.write(`${JSON.stringify(started)}\n`);
 
   while (true) {
     cycles += 1;
-    const cycleWaitMs = Math.min(waitMs, waitChunkMs);
+    const cycleWaitMs = nativePush ? 0 : Math.min(waitMs, waitChunkMs);
     const bridgeTimeoutMs = Math.max(
       subscribeBridgeFloorMs,
       runtime.cockpitConduitTimeoutMs,
@@ -2281,6 +2381,29 @@ async function runSubscribe(runtime: any, argv: string[]) {
     const payload = drained && drained.payload && typeof drained.payload === 'object' ? drained.payload : {};
     const events = Array.isArray(payload.events) ? payload.events : [];
     consecutiveTimeouts = 0;
+    let pushWaitedMs = 0;
+    let pushWaitReason = '';
+    if (nativePush && events.length === 0) {
+      const waitTargetMs = once
+        ? Math.max(0, waitMs - onceWaitAccumulatedMs)
+        : Math.max(pushHeartbeatMs, 0);
+      if (waitTargetMs > 0) {
+        const pushWait = await waitForAttentionPush(runtime, waitTargetMs);
+        pushWaitedMs = Math.max(0, Number(pushWait && pushWait.elapsed_ms || 0));
+        pushWaitReason = cleanText(pushWait && pushWait.reason, 80);
+        if (once) {
+          onceWaitAccumulatedMs += pushWaitedMs;
+          if (pushWait && pushWait.triggered === true && (waitMs === 0 || onceWaitAccumulatedMs < waitMs)) {
+            continue;
+          }
+          if (onceWaitAccumulatedMs < waitMs) {
+            continue;
+          }
+        } else if (pushWait && pushWait.triggered === true) {
+          continue;
+        }
+      }
+    }
     const batch = withReceipt({
       ok: true,
       shadow_only: false,
@@ -2292,12 +2415,15 @@ async function runSubscribe(runtime: any, argv: string[]) {
       queue_depth: Number(payload.queue_depth || 0),
       cursor_after: Number(payload.cursor_after || 0),
       wait_ms: Number(payload.wait_ms || cycleWaitMs),
-      waited_ms: Number(payload.waited_ms || 0),
+      waited_ms: Number(payload.waited_ms || 0) + pushWaitedMs,
+      transport,
+      native_push: nativePush,
+      push_wait_reason: pushWaitReason || null,
       attention: events.map((row: any) => (row && typeof row === 'object' ? row : null)).filter(Boolean)
     });
 
     if (once && waitMs > cycleWaitMs && events.length === 0) {
-      const waitedNow = Math.max(1, Number(payload.waited_ms || cycleWaitMs));
+      const waitedNow = Math.max(1, Number(payload.waited_ms || cycleWaitMs) + pushWaitedMs);
       onceWaitAccumulatedMs += waitedNow;
       if (onceWaitAccumulatedMs < waitMs) {
         continue;

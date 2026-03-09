@@ -8,7 +8,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
-const SCRIPT = path.join(ROOT, 'systems', 'ops', 'subconscious_boundary_guard.js');
+const SCRIPT = path.join(ROOT, 'runtime', 'systems', 'ops', 'subconscious_boundary_guard.js');
 
 function run(args, env = {}) {
   const proc = spawnSync('node', [SCRIPT, ...args], {
@@ -38,7 +38,7 @@ try {
   fs.writeFileSync(path.join(tmp, 'package.json'), '{"name":"tmp"}\n', 'utf8');
 
   mkdirp(path.join(tmp, 'client', 'runtime', 'systems', 'ops'));
-  mkdirp(path.join(tmp, 'client', 'lib'));
+  mkdirp(path.join(tmp, 'client', 'runtime', 'lib'));
 
   fs.writeFileSync(
     path.join(tmp, 'client', 'runtime', 'systems', 'ops', 'safe.ts'),
