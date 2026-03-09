@@ -192,6 +192,8 @@ apps/*
 !apps/photo-grit/**
 !apps/ad_factory/
 !apps/ad_factory/**
+!apps/creator_outreach/
+!apps/creator_outreach/**
 
 # Unified local runtime partitions (instance-specific)
 /client/local/
