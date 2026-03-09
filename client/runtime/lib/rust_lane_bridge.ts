@@ -47,6 +47,37 @@ function parseTimeoutMs(name, fallbackMs, minMs = 1000, maxMs = 300000) {
   return Math.max(minMs, Math.min(maxMs, Math.floor(raw)));
 }
 
+function statMtimeMs(filePath) {
+  try {
+    return fs.statSync(filePath).mtimeMs || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function opsSourceNewestMtimeMs(root) {
+  const candidates = [
+    path.join(root, 'core', 'layer0', 'ops', 'Cargo.toml'),
+    path.join(root, 'core', 'layer0', 'ops', 'src', 'main.rs'),
+    path.join(root, 'core', 'layer0', 'ops', 'src', 'lib.rs'),
+    path.join(root, 'core', 'layer0', 'ops', 'src', 'spine.rs'),
+    path.join(root, 'core', 'layer0', 'ops', 'src', 'security_plane.rs')
+  ];
+  let newest = 0;
+  for (const candidate of candidates) {
+    newest = Math.max(newest, statMtimeMs(candidate));
+  }
+  return newest;
+}
+
+function binaryFreshEnough(root, binPath) {
+  const binMtime = statMtimeMs(binPath);
+  if (!binMtime) return false;
+  const srcMtime = opsSourceNewestMtimeMs(root);
+  if (!srcMtime) return true;
+  return binMtime >= srcMtime;
+}
+
 function localFallbackEnabled() {
   const raw = String(process.env.PROTHEUS_OPS_LOCAL_FALLBACK || '1').trim().toLowerCase();
   return !(raw === '0' || raw === 'false' || raw === 'no' || raw === 'off');
@@ -80,6 +111,8 @@ function shouldFallbackToLocalCore(status, payload, stderr) {
 }
 
 function resolveProtheusOpsCommand(root, domain) {
+  const preferCargo = String(process.env.PROTHEUS_OPS_PREFER_CARGO || '0').trim() === '1';
+  const usePrebuiltOnly = String(process.env.PROTHEUS_OPS_USE_PREBUILT || '0').trim() === '1';
   const explicit = String(process.env.PROTHEUS_OPS_BIN || '').trim();
   if (explicit) {
     return {
@@ -89,14 +122,14 @@ function resolveProtheusOpsCommand(root, domain) {
   }
 
   const release = path.join(root, 'target', 'release', 'protheus-ops');
-  if (fs.existsSync(release)) {
+  if (!preferCargo && fs.existsSync(release) && (usePrebuiltOnly || binaryFreshEnough(root, release))) {
     return {
       command: release,
       args: [domain]
     };
   }
   const debug = path.join(root, 'target', 'debug', 'protheus-ops');
-  if (fs.existsSync(debug)) {
+  if (!preferCargo && fs.existsSync(debug) && (usePrebuiltOnly || binaryFreshEnough(root, debug))) {
     return {
       command: debug,
       args: [domain]
@@ -121,7 +154,7 @@ function resolveProtheusOpsCommand(root, domain) {
 function runLocalOpsDomain(root, domain, passArgs, cliMode, inheritStdio) {
   const resolved = resolveProtheusOpsCommand(root, domain);
   const commandArgs = resolved.args.concat(Array.isArray(passArgs) ? passArgs : []);
-  const timeoutMs = parseTimeoutMs('PROTHEUS_OPS_LOCAL_TIMEOUT_MS', 15000);
+  const timeoutMs = parseTimeoutMs('PROTHEUS_OPS_LOCAL_TIMEOUT_MS', 45000);
   const run = spawnSync(resolved.command, commandArgs, {
     cwd: root,
     encoding: 'utf8',
