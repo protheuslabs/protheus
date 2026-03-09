@@ -151,6 +151,32 @@ Purpose: capture high-impact tasks that cannot be executed autonomously from bac
 | HMAN-079 | Approve Empty-Fort launch coupling to v1.0 release | Contributor-wall/psychological launch tactics require explicit brand/legal approval and governance safeguards. | `state/ops/evidence/master_plan_empty_fort_coupling_approval_<date>.md` | `V6-FORT-219-001`, `V6-FORT-219-005`, `HMAN-049` |
 | HMAN-080 | Approve seed-network ignition go/no-go authority model | Controlled RSI/seed ignition requires named approvers and explicit human accountability for activation thresholds. | `state/ops/evidence/seed_ignition_go_no_go_authority_<date>.md` | `V6-MPLAN-908`, `V6-MPLAN-910` |
 
+## Human Intake (Metakernel v0.1 Spec, 2026-03-08)
+
+| ID | Human Action | Why This Is Human-Only | Evidence Artifact (suggested) | Backlog Dependencies |
+|---|---|---|---|---|
+| HMAN-081 | Approve and fund substrate hardware access matrix (MCU, ternary candidate hardware, and lab infrastructure) | Real hardware procurement/access, budget authority, and safety approvals cannot be executed autonomously. | `state/ops/evidence/metakernel_substrate_hardware_matrix_approval_<date>.md` | `V7-META-015`, `V7-META-017` |
+| HMAN-082 | Approve neural-I/O ethics, consent, and legal governance envelope | Neural consent boundaries and data-rights liabilities require legal/ethics authority with explicit accountable owners. | `state/ops/evidence/metakernel_neural_governance_approval_<date>.md` | `V7-META-012`, `V7-META-018` |
+| HMAN-083 | Designate dual-control approver roster + physical revoke path owner for neural stimulation class actions | R4 neural-write authority requires named human approvers and out-of-band kill authority that cannot be delegated to runtime logic. | `state/ops/evidence/metakernel_neural_dual_control_roster_<date>.md` | `V7-META-012`, `V7-META-018` |
+| HMAN-084 | Contract quantum provider access and approve spend/risk budget for live broker validation | Provider contracts, credential custody, and usage budget acceptance are external/commercial decisions. | `state/ops/evidence/metakernel_quantum_provider_contract_<date>.pdf` | `V7-META-011`, `V7-META-016` |
+| HMAN-085 | Approve transparency-log and measured-boot trust-root custody model (keys, rotation, break-glass) | Trust-root key custody and break-glass policy require security/legal sign-off and accountable human ownership. | `state/ops/evidence/metakernel_trust_root_custody_approval_<date>.md` | `V7-META-013`, `V7-META-014` |
+
+## Human Intake (Technical Excellence #1 Doc `12_nnoI-1YXaxVc6YSgYRCMRKXNIWCcP1XKCJHv_NBeY`, 2026-03-09)
+
+| ID | Human Action | Why This Is Human-Only | Evidence Artifact (suggested) | Backlog Dependencies |
+|---|---|---|---|---|
+| HMAN-086 | Approve high-assurance profile scope and public claim boundaries (e.g., medical/defense variant) | Regulated/high-stakes claim boundaries require legal/compliance and executive risk ownership. | `state/ops/evidence/high_assurance_profile_scope_approval_<date>.md` | `V7-TOP1-005`, `V7-TOP1-006`, `V7-TOP1-010` |
+| HMAN-087 | Contract and authorize independent third-party kernel/security verification publication | External verification requires procurement authority, legal contracting, and disclosure-right approval. | `state/ops/evidence/independent_kernel_verification_contract_<date>.pdf` | `V7-TOP1-009` |
+| HMAN-088 | Approve public benchmark/comparison claim language and publication policy | Public comparative claims carry legal/brand exposure and require explicit human sign-off on wording and thresholds. | `state/ops/evidence/public_benchmark_claims_policy_approval_<date>.md` | `V7-TOP1-007`, `V7-TOP1-008` |
+
+## Human Intake (Assimilation Delta Doc `1GTs4h1w43rwhSMYctpuwYnLoQyKFeHxsas8LUTsmozA`, 2026-03-09)
+
+| ID | Human Action | Why This Is Human-Only | Evidence Artifact (suggested) | Backlog Dependencies |
+|---|---|---|---|---|
+| HMAN-089 | Approve variant-profile public claim boundaries and rollout order (medical/robotics/AI-isolation) | Regulated/sector claim sequencing and risk acceptance require executive/legal ownership. | `state/ops/evidence/variant_profile_rollout_claims_approval_<date>.md` | `V7-ASM-001`, `V7-ASM-002`, `V7-TOP1-010` |
+| HMAN-090 | Approve ABAC attribute classes and flight-recorder privacy/retention policy | Attribute governance and audit retention create policy/privacy obligations that require legal/compliance authority. | `state/ops/evidence/abac_flight_recorder_policy_approval_<date>.md` | `V7-ASM-006` |
+| HMAN-091 | Approve ISA-95/RAMI external positioning and industrial promise boundaries | Industrial standards positioning and implied support commitments require brand/legal sign-off. | `state/ops/evidence/industrial_standards_positioning_approval_<date>.md` | `V7-ASM-010`, `V6-DOM-412` |
+
 ## Non-Negotiable Constraint
 
 These tasks are intentionally not auto-executable. They anchor sovereignty, legal control, and accountability in the human root.

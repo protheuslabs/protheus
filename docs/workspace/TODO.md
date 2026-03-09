@@ -26,6 +26,41 @@
       - observed: startup receipt reports `native_push=true`, batch receipt includes transport metadata and bounded fallback contract.
     - `npm run -s typecheck:systems`
 
+- [ ] `V6-COCKPIT-007` Add true WebSocket-native push stream (no drain-style fallback as default).
+  - Target: `protheusd subscribe --transport=ws` becomes first-class stream transport with resumable cursors and explicit reconnect semantics.
+  - Completion criteria:
+    - WebSocket frames carry typed `open/message/ack/reconnect/close` events.
+    - Consumer ack/cursor resume is deterministic across reconnects.
+    - Stream path remains conduit-authoritative and fail-closed on policy violations.
+
+- [ ] `V6-COCKPIT-008` Unify Rust spine + Node runtime paths under one authoritative command contract.
+  - Target: Node wrappers become thin pass-through; behavior and error surfaces are Rust-authoritative.
+  - Completion criteria:
+    - Shared runtime command schema published and validated in CI.
+    - CLI + daemon parity suite proves identical receipt/error envelopes for core runtime commands.
+    - Wrapper drift checks fail on unauthorized Node-side policy logic.
+
+- [ ] `V6-COCKPIT-009` Defer identity hydration fully (page in `SOUL`/memory protocol only on demand).
+  - Target: cold boot starts from minimal identity stub and query-intent-driven page-in.
+  - Completion criteria:
+    - Startup does not eagerly load `SOUL` or memory protocol files.
+    - Hydration receipts record explicit deferred file set and token ceiling compliance.
+    - Regression test proves no behavior loss for mode/persona resolution.
+
+- [ ] `V6-COCKPIT-010` Auto-clear trusted integrity reseal classes with signed receipts.
+  - Target: eliminate sticky reseal-degraded loops after approved deterministic updates.
+  - Completion criteria:
+    - Policy-gated auto-reseal assistant clears allowed reseal classes.
+    - Denied reseals emit explicit remediation instructions in status surfaces.
+    - Cockpit runtime remains fail-closed for unapproved reseal classes.
+
+- [ ] `V6-MEMORY-020` Add shared-pointer resident memory surface (mmap/zero-copy hotset reads).
+  - Target: memory hot path avoids file operations for resident queries.
+  - Completion criteria:
+    - Resident memory exposes mmap/shared-memory handle with zero-copy reads.
+    - Deterministic fallback to `TAGS_INDEX -> MEMORY_INDEX -> node section` when shared pointer unavailable.
+    - Token-burn SLO checks protect `<200` query-path target under standard workloads.
+
 ## Backlog Follow-Up (Layer Ownership Guard)
 
 - [x] `V6-DIRECT-WIRING-001` Remove legacy runtime stubs/redirects and enforce canonical local partitions.
@@ -258,6 +293,20 @@
       - default threshold raised to `2` consecutive timeout-like failures before activating gate,
       - base/max backoff reduced to `5m/30m` (from hour-scale lockouts),
       - stale/expired gate handling corrected so active state does not persist indefinitely.
+
+## Mode + Smart Memory Regression Shield (2026-03-09)
+
+- [ ] `V6-LLMN-001` Canonical LLMN mode registry + alias normalization (`REQ-35`).
+- [ ] `V6-LLMN-002` Router/strategy parity for all LLMN modes (`REQ-35`).
+- [ ] `V6-LLMN-003` Mode-critical CLI entrypoint path restoration (`REQ-35`).
+- [ ] `V6-LLMN-004` LLMN conformance smoke pack + CI gate (`REQ-35`).
+- [ ] `V6-MEMORY-013` Index-first and node-only retrieval enforcement (`REQ-36`).
+- [ ] `V6-MEMORY-014` Lean dynamic hydration policy hardening (`REQ-36`).
+- [ ] `V6-MEMORY-015` Memory-query burn SLO gate (`<200`) (`REQ-36`).
+- [ ] `V6-MEMORY-016` Recall budget default contract + fail-closed cap mode (`REQ-36`).
+- [ ] `V6-MEMORY-017` Matrix/sequencer/auto-recall ranking invariants (`REQ-36`).
+- [ ] `V6-MEMORY-018` Index freshness + stale-read gate (`REQ-36`).
+- [ ] `V6-MEMORY-019` LensMap memory annotation schema (tags/nodes/jots in docs comments) (`REQ-36`).
     - Spine/status probes now fail fast (`conduit_stdio_timeout:8000`) and transition quickly to controlled gate mode rather than multi-minute hangs.
     - Raised default conduit stdio timeout from `8s` to `30s` in both shared conduit transport and spine bridge callsites to reduce false gate trips during startup pressure.
     - Added immediate bridge reprobe path in `protheusd` when runtime gate has cleared (prevents stale `bridge_degraded` state waiting on deferred probe windows).
@@ -487,6 +536,30 @@
   - Validation:
     - `node client/memory/tools/tests/idle_dream_cycle.test.js` passes.
     - `node client/memory/tools/tests/idle_dream_budget_guard.test.js` passes.
+
+## Metakernel v0.1 Intake (ChatGPT Spec, 2026-03-08)
+
+- [ ] `V7-META-001` Add canonical primitive contract registry under `planes/contracts/`.
+- [ ] `V7-META-002` Implement executable invariant gate for the eight metakernel invariants.
+- [ ] `V7-META-003` Ship `CellBundle` manifest schema + strict validator lane.
+- [ ] `V7-META-004` Add WIT world registry + wasm component ABI compatibility checks.
+- [ ] `V7-META-005` Implement effect-typed capability taxonomy + R0-R4 policy defaults.
+- [ ] `V7-META-006` Add cross-resource admission-control budget governor.
+- [ ] `V7-META-007` Implement epistemic-object schema v1 validation and lineage enforcement.
+- [ ] `V7-META-008` Enforce commit-before-actuate effect-journal gate.
+- [ ] `V7-META-009` Add substrate descriptor registry + degrade matrix.
+- [ ] `V7-META-010` Enforce radix policy guard (binary baseline, ternary class-scoped).
+- [ ] `V7-META-011` Implement quantum broker domain contract + fallback receipts.
+- [ ] `V7-META-012` Ship neural consent kernel scaffold with separated authorities.
+- [ ] `V7-META-013` Add attestation-graph service linking code/model/policy/data/effects.
+- [ ] `V7-META-014` Add degradation-contract verifier with non-widening privilege checks.
+- [ ] `V7-META-015` Add profile matrix harness (`mcu`, `edge`, `cloud`) with reproducible artifacts.
+- [ ] `V7-META-016` Execute live QPU provider validation campaign.
+  - Human-owned dependency: `HMAN-084`.
+- [ ] `V7-META-017` Execute ternary hardware lowering validation campaign.
+  - Human-owned dependency: `HMAN-081`.
+- [ ] `V7-META-018` Execute neural I/O safety validation campaign.
+  - Human-owned dependencies: `HMAN-082`, `HMAN-083`.
 
 ## Fortune-100 A-Grade Follow-Through (March 2026 Intake)
 
