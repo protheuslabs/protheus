@@ -103,6 +103,20 @@ Source note:
 | V6-SKILLS-001.4 | queued | Conduit-only skill execution + deterministic audit receipts | Skill execution must remain safety-plane governed and non-bypassable. | Route all skill run/install/share actions through Layer-0 conduit gates with deterministic receipts and explicit fail-closed policy checks for capability/budget violations. |
 | V6-SKILLS-001.5 | queued | Developer/user skill DX + observability surfacing | Adoption depends on low-friction CLI/SDK and visibility into skill execution behavior. | Ship thin wrappers for `protheus skill create|run|share|list`, expose skill usage in `protheus-top`/observability surfaces, and publish a minimal SDK contract for external builders. |
 
+## Binary & Firmware Vulnerability Detection Intake (Doc `1h3B8ayq-A9Ubx_pPKaRGFdLF8WFKWW38Do42u9wdqUI`, 2026-03-09)
+
+Source note:
+- External draft labels this as `V6-TOOLS-002`; this backlog maps it to `V6-BINVULN-001.*` to avoid collision with existing `V6-TOOLS-002` (sandboxed external action egress).
+
+| ID | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|
+| V6-BINVULN-001.1 | queued | Binary/firmware analysis engine lane | Security research workflows need first-class binary and firmware inspection instead of ad hoc external tooling. | Add scan support for binaries, UEFI images, BA2 archives, and Binary Ninja DB artifacts with rulepack-based detection; store findings with deterministic provenance receipts. |
+| V6-BINVULN-001.2 | queued | MCP analysis server surface for AI-assisted vuln hunting | Shadows/personas need delegated binary analysis through governed tool surfaces. | Expose binary analysis via MCP-compatible service contract (stdio/HTTP-SSE variants) so agents can request scans and receive structured Epistemic Objects with receipt links. |
+| V6-BINVULN-001.3 | queued | Structured output contract (`json/jsonl` + confidence/policy metadata) | Vulnerability workflows require machine-readable outputs with policy context for triage automation. | Emit structured findings (`json` and streaming `jsonl`) carrying provenance hash, confidence score, policy labels, and deterministic scan metadata for replay/audit. |
+| V6-BINVULN-001.4 | queued | Safety-plane sandboxed scan execution | Binary analysis must not bypass Layer-0 guardrails even when processing untrusted artifacts. | Run all scans through conduit-routed sandbox/container lanes with budget/privacy/degrade policy checks; fail closed on policy violations and persist deterministic receipts for each run. |
+| V6-BINVULN-001.5 | queued | Extensible custom/community rulepack intake | Capability growth requires user-extensible detection rules without modifying authoritative core logic. | Add client-facing rulepack install/enable contracts with schema validation and signature/provenance checks; user rulepacks can be activated without core source edits. |
+| V6-BINVULN-001.6 | queued | Developer DX + CLI/observability integration for vuln scans | Adoption depends on simple entrypoints and visibility into scan outcomes. | Add thin wrappers for `protheus scan binary ...` and `protheus research --firmware`, plus observability surfaces for scan status/findings in `protheus-top` and dashboard lanes. |
+
 ## Production-Grade Checklist Addendum (2026-03-06)
 
 | ID | Status | Upgrade | Why | Exit Criteria |
