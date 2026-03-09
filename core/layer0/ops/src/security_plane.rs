@@ -199,6 +199,18 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         "alias-verification-vault" | "alias_verification_vault" => {
             compatibility_security_command("alias-verification-vault", rest)
         }
+        "psycheforge-psycheforge-organ" | "psycheforge_psycheforge_organ" => {
+            compatibility_security_command("psycheforge-psycheforge-organ", rest)
+        }
+        "psycheforge-profile-synthesizer" | "psycheforge_profile_synthesizer" => {
+            compatibility_security_command("psycheforge-profile-synthesizer", rest)
+        }
+        "psycheforge-temporal-profile-store" | "psycheforge_temporal_profile_store" => {
+            compatibility_security_command("psycheforge-temporal-profile-store", rest)
+        }
+        "psycheforge-countermeasure-selector" | "psycheforge_countermeasure_selector" => {
+            compatibility_security_command("psycheforge-countermeasure-selector", rest)
+        }
         "delegated-authority-branching" | "delegated_authority_branching" => {
             compatibility_security_command("delegated-authority-branching", rest)
         }
@@ -274,7 +286,11 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                     "hardware-root-of-trust-attestation-mesh",
                     "formal-threat-modeling-engine",
                     "formal-mind-sovereignty-verification",
-                    "alias-verification-vault"
+                    "alias-verification-vault",
+                    "psycheforge-psycheforge-organ",
+                    "psycheforge-profile-synthesizer",
+                    "psycheforge-temporal-profile-store",
+                    "psycheforge-countermeasure-selector"
                 ]
             }),
             0,
@@ -328,7 +344,11 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                     "protheus-ops security-plane hardware-root-of-trust-attestation-mesh <command> [flags]",
                     "protheus-ops security-plane formal-threat-modeling-engine <command> [flags]",
                     "protheus-ops security-plane formal-mind-sovereignty-verification <command> [flags]",
-                    "protheus-ops security-plane alias-verification-vault <command> [flags]"
+                    "protheus-ops security-plane alias-verification-vault <command> [flags]",
+                    "protheus-ops security-plane psycheforge-psycheforge-organ <command> [flags]",
+                    "protheus-ops security-plane psycheforge-profile-synthesizer <command> [flags]",
+                    "protheus-ops security-plane psycheforge-temporal-profile-store <command> [flags]",
+                    "protheus-ops security-plane psycheforge-countermeasure-selector <command> [flags]"
                 ]
             }),
             2,

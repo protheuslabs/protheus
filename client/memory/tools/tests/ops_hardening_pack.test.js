@@ -8,8 +8,22 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
-const LEDGER = path.join(ROOT, 'systems', 'audit', 'hash_chain_ledger.js');
-const SCHED = path.join(ROOT, 'systems', 'spine', 'background_hands_scheduler.js');
+function resolveScript(candidates) {
+  for (const rel of candidates) {
+    const abs = path.join(ROOT, ...rel);
+    if (fs.existsSync(abs)) return abs;
+  }
+  return path.join(ROOT, ...candidates[0]);
+}
+
+const LEDGER = resolveScript([
+  ['runtime', 'systems', 'audit', 'hash_chain_ledger.js'],
+  ['systems', 'audit', 'hash_chain_ledger.js']
+]);
+const SCHED = resolveScript([
+  ['runtime', 'systems', 'spine', 'background_hands_scheduler.js'],
+  ['systems', 'spine', 'background_hands_scheduler.js']
+]);
 
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });

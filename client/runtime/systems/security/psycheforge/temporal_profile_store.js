@@ -3,8 +3,8 @@
 const { createOpsLaneBridge } = require('../../../lib/rust_lane_bridge');
 process.env.PROTHEUS_OPS_DOMAIN_BRIDGE_TIMEOUT_MS = process.env.PROTHEUS_OPS_DOMAIN_BRIDGE_TIMEOUT_MS || '1500';
 process.env.PROTHEUS_OPS_LOCAL_TIMEOUT_MS = process.env.PROTHEUS_OPS_LOCAL_TIMEOUT_MS || '2000';
-const SECURITY_CMD = 'psycheforge-psycheforge-organ';
-const bridge = createOpsLaneBridge(__dirname, 'psycheforge_psycheforge_organ', 'security-plane');
+const SECURITY_CMD = 'psycheforge-temporal-profile-store';
+const bridge = createOpsLaneBridge(__dirname, 'psycheforge_temporal_profile_store', 'security-plane');
 function run(args = []) {
   const out = bridge.run([SECURITY_CMD, ...(Array.isArray(args) ? args : [])]);
   if (out && out.status === 0) {

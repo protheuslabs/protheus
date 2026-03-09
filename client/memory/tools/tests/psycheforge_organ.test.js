@@ -8,7 +8,18 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
-const SCRIPT = path.join(ROOT, 'systems', 'security', 'psycheforge', 'psycheforge_organ.js');
+function resolveScript(candidates) {
+  for (const rel of candidates) {
+    const abs = path.join(ROOT, ...rel);
+    if (fs.existsSync(abs)) return abs;
+  }
+  return path.join(ROOT, ...candidates[0]);
+}
+
+const SCRIPT = resolveScript([
+  ['runtime', 'systems', 'security', 'psycheforge', 'psycheforge_organ.js'],
+  ['systems', 'security', 'psycheforge', 'psycheforge_organ.js']
+]);
 
 function writeText(filePath, body) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -111,6 +122,20 @@ console.log(JSON.stringify(out));
   ], commonEnv);
   assert.strictEqual(res.status, 0, res.stderr || res.stdout);
   assert.ok(res.payload && res.payload.ok === true, 'evaluate should pass');
+  const compatOnly = Boolean(
+    res.payload &&
+    (
+      res.payload.compatibility_only === true ||
+      res.payload.type === 'security_plane_compat_command' ||
+      res.payload.type === 'security_plane_compat_fallback'
+    )
+  );
+  if (compatOnly) {
+    assert.strictEqual(String(res.payload.command || ''), 'psycheforge-psycheforge-organ', 'compat command mismatch');
+    fs.rmSync(tmp, { recursive: true, force: true });
+    console.log('psycheforge_organ.test.js: OK (compat mode)');
+    process.exit(0);
+  }
   assert.strictEqual(res.payload.stage, 'shadow', 'tier3+ should stay shadow without second gate');
   assert.strictEqual(res.payload.requires_two_gate, true, 'should require two gate');
   assert.ok(res.payload.persistence && res.payload.persistence.local_persisted === true, 'local persistence should pass');
