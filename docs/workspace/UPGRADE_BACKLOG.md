@@ -207,6 +207,25 @@ Notes:
 | V6-COCKPIT-012.4 | queued | Native cron + heartbeat automation envelope for detached autonomy | Autonomous operation quality depends on deterministic scheduled runs and periodic self-check loops while detached. | Add native scheduler + heartbeat engine contracts so periodic tasks/checklists run with policy/budget gates, deterministic receipts, and delivery guarantees through gateway routing even when no active attached client exists. |
 | V6-COCKPIT-012.5 | queued | Safe exec/browser tool-mode governance (`sandbox`/`gateway`/`full`) + conduit receipts | Tool execution surfaces must remain Safety Plane governed while enabling practical detached operations. | Add explicit tool-mode policy contract for exec/browser lanes with isolated browser profiles and fail-closed escalation rules; every tool call routes through Layer-0 conduit and emits deterministic audit receipts with mode + policy decision metadata. |
 
+## P2P Gossip Network & Compute-Sharing Seed Intake (2026-03-09)
+
+Source references:
+- https://x.com/varun_mathur/status/2030735767215997087
+- https://github.com/hyperspaceai/agi
+
+Notes:
+- Proposed for next Snowball after Coreization Wave 1.
+- Network features must remain conduit-governed and receipt-complete under Layer-0 authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|
+| V6-NETWORK-001.1 | queued | P2P gossip collaboration protocol lane | Distributed RSI seed quality depends on bounded peer discovery, handoff, critique, and breakthrough exchange across nodes. | Add governed gossip protocol for node discovery + task/insight exchange with deterministic peer/session/handoff receipts; include compatibility bridge contract for approved external agent networks. |
+| V6-NETWORK-001.2 | queued | Compute sharing + social credit ledger lane | Idle node capacity should compound network throughput while preserving fair-use/reputation controls. | Add compute-offer/accept execution contracts with metered contribution accounting and social-credit ledger updates as Epistemic Objects; credits are auditable and reversible by policy. |
+| V6-NETWORK-001.3 | queued | Cryptographic proof-of-compute verifier lane (matmul challenge) | Compute-share claims require anti-spoof validation before credit or scheduling trust is granted. | Implement periodic challenge/response verifier (matmul class) with deterministic proof receipts; credit awards are blocked unless proof policy passes. |
+| V6-NETWORK-001.4 | queued | Idle RSS read/commentary collaboration behavior lane | Network intelligence compounds when idle agents perform bounded research and peer critique instead of idle spin. | Add policy-gated idle behavior where detached nodes run RSS ingestion/commentary workflows with budget caps, peer-comment lineage, and deterministic receipts for every idle cycle action. |
+| V6-NETWORK-001.5 | queued | One-command browser/CLI node onboarding lane (`protheus node join`) | Distributed adoption depends on low-friction node spawn/join flows across CLI and web onboarding paths. | Add CLI + browser onboarding contracts that register nodes, complete identity/capability handshake, and join gossip mesh with deterministic join receipts and fail-closed policy gates. |
+| V6-NETWORK-001.6 | queued | Conduit-only network safety guardrails + full activity audit lane | Gossip/compute-share actions can widen risk surface unless constrained by explicit capability/policy checks. | Enforce Layer-0 conduit checks for all network discovery, gossip exchange, compute-share, idle behavior, and credit mutations; bypass attempts fail closed and all actions emit deterministic audit receipts. |
+
 ## Production-Grade Checklist Addendum (2026-03-06)
 
 | ID | Status | Upgrade | Why | Exit Criteria |
