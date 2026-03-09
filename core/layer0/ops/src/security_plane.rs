@@ -137,6 +137,33 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         "log-redaction-guard" | "log_redaction_guard" => {
             compatibility_security_command("log-redaction-guard", rest)
         }
+        "rsi-git-patch-self-mod-gate" | "rsi_git_patch_self_mod_gate" => {
+            compatibility_security_command("rsi-git-patch-self-mod-gate", rest)
+        }
+        "request-ingress" | "request_ingress" => {
+            compatibility_security_command("request-ingress", rest)
+        }
+        "startup-attestation-boot-gate" | "startup_attestation_boot_gate" => {
+            compatibility_security_command("startup-attestation-boot-gate", rest)
+        }
+        "conflict-marker-guard" | "conflict_marker_guard" => {
+            compatibility_security_command("conflict-marker-guard", rest)
+        }
+        "llm-gateway-guard" | "llm_gateway_guard" => {
+            compatibility_security_command("llm-gateway-guard", rest)
+        }
+        "required-checks-policy-guard" | "required_checks_policy_guard" => {
+            compatibility_security_command("required-checks-policy-guard", rest)
+        }
+        "mcp-a2a-venom-contract-gate" | "mcp_a2a_venom_contract_gate" => {
+            compatibility_security_command("mcp-a2a-venom-contract-gate", rest)
+        }
+        "critical-runtime-formal-depth-pack" | "critical_runtime_formal_depth_pack" => {
+            compatibility_security_command("critical-runtime-formal-depth-pack", rest)
+        }
+        "dire-case-emergency-autonomy-protocol" | "dire_case_emergency_autonomy_protocol" => {
+            compatibility_security_command("dire-case-emergency-autonomy-protocol", rest)
+        }
         "delegated-authority-branching" | "delegated_authority_branching" => {
             compatibility_security_command("delegated-authority-branching", rest)
         }
@@ -192,7 +219,16 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                     "key-lifecycle-governor",
                     "supply-chain-trust-plane",
                     "post-quantum-migration-lane",
-                    "safety-resilience-guard"
+                    "safety-resilience-guard",
+                    "rsi-git-patch-self-mod-gate",
+                    "request-ingress",
+                    "startup-attestation-boot-gate",
+                    "conflict-marker-guard",
+                    "llm-gateway-guard",
+                    "required-checks-policy-guard",
+                    "mcp-a2a-venom-contract-gate",
+                    "critical-runtime-formal-depth-pack",
+                    "dire-case-emergency-autonomy-protocol"
                 ]
             }),
             0,
@@ -226,7 +262,16 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                     "protheus-ops security-plane skill-quarantine <command> [flags]",
                     "protheus-ops security-plane autonomous-skill-necessity-audit <command> [flags]",
                     "protheus-ops security-plane formal-invariant-engine <command> [flags]",
-                    "protheus-ops security-plane repo-hygiene-guard <command> [flags]"
+                    "protheus-ops security-plane repo-hygiene-guard <command> [flags]",
+                    "protheus-ops security-plane rsi-git-patch-self-mod-gate <command> [flags]",
+                    "protheus-ops security-plane request-ingress <command> [flags]",
+                    "protheus-ops security-plane startup-attestation-boot-gate <command> [flags]",
+                    "protheus-ops security-plane conflict-marker-guard <command> [flags]",
+                    "protheus-ops security-plane llm-gateway-guard <command> [flags]",
+                    "protheus-ops security-plane required-checks-policy-guard <command> [flags]",
+                    "protheus-ops security-plane mcp-a2a-venom-contract-gate <command> [flags]",
+                    "protheus-ops security-plane critical-runtime-formal-depth-pack <command> [flags]",
+                    "protheus-ops security-plane dire-case-emergency-autonomy-protocol <command> [flags]"
                 ]
             }),
             2,
