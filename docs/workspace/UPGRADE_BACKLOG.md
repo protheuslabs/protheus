@@ -44,6 +44,19 @@ Status legend:
 | V6-RESEARCH-001.5 | queued | Safety-plane routed stealth research execution + deterministic receipts | Research tooling must not bypass conduit/policy enforcement even when running stealth/browser fetch paths. | Enforce research execution through Layer-0 conduit gate with policy/budget checks and deterministic per-action receipts; no direct bypass paths from client wrappers. |
 | V6-RESEARCH-001.6 | queued | Developer-facing stealth research DX (`protheus research --stealth`) | Adoption friction remains high without one-command CLI/API defaults and thin-wrapper conventions. | Add thin client wrappers and CLI flags for stealth mode (`protheus research --stealth`, `protheus assimilate --stealth`) with zero-config defaults and operator-visible diagnostics. |
 
+## Claude Skills Framework Assimilation Intake (Doc `1pW_m6yHd--Tmgw19Eu-DgBv5iKelfOfoVcalR231cWg`, 2026-03-09)
+
+Source note:
+- External draft labels this as `V6-COCKPIT-008`; this backlog maps it to `V6-SKILLS-001.*` to avoid collision with existing cockpit runtime-unification item IDs.
+
+| ID | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|
+| V6-SKILLS-001.1 | queued | Skill template scaffold format (`markdown + YAML config + scripts/assets`) | Reusable skill authoring is inconsistent without one canonical package shape and generator. | Add `protheus skill create <name>` scaffold command that generates a complete skill package (instructions, config schema, trigger stubs, test cases, scripts/assets) under client cognition skill library paths. |
+| V6-SKILLS-001.2 | queued | Trigger activation + progressive loading contract | Skill invocations currently risk loading unnecessary context/tools and increasing burn. | Implement trigger-based skill activation (NL + explicit call) with progressive loading so only required context/tools are loaded per invocation; receipts include loaded-context/tool inventory. |
+| V6-SKILLS-001.3 | queued | Composable, versioned skill chaining + test validation | Cross-skill workflows are brittle without composition/version/test primitives. | Add composition primitives enabling chained skills (`research -> summarize -> format`), version contract metadata, and deterministic skill test-case runner with pass/fail receipts. |
+| V6-SKILLS-001.4 | queued | Conduit-only skill execution + deterministic audit receipts | Skill execution must remain safety-plane governed and non-bypassable. | Route all skill run/install/share actions through Layer-0 conduit gates with deterministic receipts and explicit fail-closed policy checks for capability/budget violations. |
+| V6-SKILLS-001.5 | queued | Developer/user skill DX + observability surfacing | Adoption depends on low-friction CLI/SDK and visibility into skill execution behavior. | Ship thin wrappers for `protheus skill create|run|share|list`, expose skill usage in `protheus-top`/observability surfaces, and publish a minimal SDK contract for external builders. |
+
 ## Production-Grade Checklist Addendum (2026-03-06)
 
 | ID | Status | Upgrade | Why | Exit Criteria |
