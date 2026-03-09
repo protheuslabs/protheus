@@ -144,6 +144,19 @@ Source note:
 | V6-VBROWSER-001.4 | queued | Privacy/security controls for streamed browser sessions | Streaming sessions can widen exfiltration/risk without strict privacy/network/budget controls. | Add policy-gated controls for network posture (e.g., tor/vpn profiles), session recording/broadcast toggles, and hard budgets (duration/data/request volume) with fail-closed enforcement receipts. |
 | V6-VBROWSER-001.5 | queued | InfRing-native CLI + observability integration for streamed sessions | Adoption depends on first-class commands and consistent observability surfaces. | Add thin wrappers for `protheus browser` / `protheus shadow --browser` with conduit-only execution and dashboard stream integration; every session action emits deterministic receipts under persona/policy governance. |
 
+## Agency-Style Multi-Agent Templates & Orchestrator Intake (Doc `1TqdYYidNv1tJF7P5C-dxgy2FR8CX09AfXSjGE3ZatSQ`, 2026-03-09)
+
+Source note:
+- External draft labels this as `V6-COCKPIT-006`; this backlog maps it to `V6-AGENCY-001.*` to avoid collision with existing `V6-COCKPIT-006` (native conduit push subscription transport).
+
+| ID | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|
+| V6-AGENCY-001.1 | queued | Personality-driven agent template pack | Orchestration quality and launch speed improve when production-ready role templates include explicit rules, voice, workflows, and success metrics. | Add role template pack (`frontend-wizard`, `security-engineer`, `growth-hacker`, `reality-checker`, etc.) with one-command shadow creation and deterministic template-activation receipts. |
+| V6-AGENCY-001.2 | queued | Division-based agency topology for orchestration | Complex projects need predictable multi-role composition across divisions rather than ad hoc role grouping. | Add division model (engineering/design/marketing/growth/qa/etc.) and orchestration manifests so `protheus orchestrate agency ...` can deploy cross-division teams with deterministic handoff receipts. |
+| V6-AGENCY-001.3 | queued | Multi-agent orchestrator coordinator lane | Parallel specialized-agent execution needs a dedicated coordinator for decomposition, fan-out, and merge decisions under one contract. | Extend Layer-2 orchestrator with deterministic multi-agent run coordination (5-10 concurrent agents), with coordinator decisions and child-run lineage visible in `protheus-top` receipts. |
+| V6-AGENCY-001.4 | queued | Workflow + success-metric contract binding for agency runs | Agency templates are not production-grade without explicit deliverable gates and measurable run outcomes. | Bind each agent template to workflow stages + metric contracts; orchestrated runs must output deliverable artifacts and success metrics as receipted Epistemic Objects. |
+| V6-AGENCY-001.5 | queued | Conduit-only activation/handoff guardrails for agency mode | Multi-agent activation/handoffs must remain fully Safety Plane governed to prevent implicit authority widening. | Enforce Layer-0 conduit checks for all role activations, tool invocations, and inter-agent handoffs; any bypass attempt fails closed with deterministic denial receipts. |
+
 ## Production-Grade Checklist Addendum (2026-03-06)
 
 | ID | Status | Upgrade | Why | Exit Criteria |
