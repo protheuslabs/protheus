@@ -293,6 +293,24 @@ Notes:
 | V6-COCKPIT-014.3 | queued | Installable `context-doctor` skill package lane | Tooling adoption improves when diagnostic logic is distributed as a first-class installable skill surface. | Add install/run contract (`protheus skill install context-doctor`, `protheus context doctor`) with workspace scan defaults and deterministic install/run receipts. |
 | V6-COCKPIT-014.4 | queued | Conduit-only context diagnostic guardrails + audit lane | Context health checks must remain Safety Plane governed and auditable like other cockpit operations. | Enforce Layer-0 conduit checks for all context-doctor scans/exports/scheduled runs; bypass attempts fail closed and every diagnostic action emits deterministic receipts. |
 
+## Discord Swarm Orchestration & Persistent Channel Binding Intake (2026-03-09)
+
+Source references:
+- https://x.com/jumperz/status/2030614747763081697
+
+Notes:
+- Proposed for next Snowball after Coreization Wave 1.
+- Focuses on persistent Discord swarm operations with context integrity and parallelism while preserving conduit-only governance.
+
+| ID | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|
+| V6-COCKPIT-015.1 | queued | Discord context-engine plugin contract for long-thread memory | Long-running Discord threads degrade if memory compression drops early context and decisions. | Add pluggable context-engine surface for Discord lanes so 200+ message threads can recall early-turn context deterministically, with provenance and receipt-linked retrieval traces. |
+| V6-COCKPIT-015.2 | queued | Persistent Discord channel binding lane | Operators need durable channel-to-shadow bindings that survive daemon restarts without manual rebind. | Add `protheus shadow bind channel` contract with persisted binding state and deterministic restart recovery receipts; bound shadows reattach automatically after daemon restart. |
+| V6-COCKPIT-015.3 | queued | Sub-worker inheritance contract for Discord orchestration | Spawned sub-workers must preserve parent voice/context/config to avoid inconsistent swarm behavior. | Add inheritance rules so child workers receive parent voice/profile/context policies by default with explicit override receipts and no silent divergence. |
+| V6-COCKPIT-015.4 | queued | Non-blocking parallel Discord message handling lane | Multi-agent Discord swarms need concurrent message handling without cross-agent blocking contention. | Implement parallel message scheduler for same-channel multi-agent queries; prove concurrent fan-out where multiple agents respond independently with deterministic per-agent receipts. |
+| V6-COCKPIT-015.5 | queued | Discord presence + voice-message support lane | Production Discord operation needs explicit online presence and voice input/output support with auditable flows. | Add managed online presence contract (green-dot heartbeat) and voice message handling pipeline with deterministic transcribe/respond receipts and policy gates. |
+| V6-COCKPIT-015.6 | queued | Conduit-only Discord interaction guardrails + full audit lane | Discord integrations can expand risk surface unless every interaction remains Safety Plane governed. | Enforce Layer-0 conduit checks for Discord messages, bindings, worker spawns, presence, and voice actions; bypass attempts fail closed and all operations emit deterministic receipts. |
+
 ## Production-Grade Checklist Addendum (2026-03-06)
 
 | ID | Status | Upgrade | Why | Exit Criteria |
