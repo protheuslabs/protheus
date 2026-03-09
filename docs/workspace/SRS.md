@@ -303,6 +303,23 @@ Notes:
 | V6-STORAGE-001.4 | queued | Workload-aware data model selector (time-series vs key-value vs document lanes) | Epistemic objects and receipt workloads have different access patterns that benefit from model-specific optimization. | Add policy-governed model-selection layer that routes workloads to optimal storage model or hybrid mode with deterministic selection rationale in receipts. |
 | V6-STORAGE-001.5 | queued | Conduit-only storage operations guardrail + audit lane | Storage engine expansion must remain Safety Plane governed and fully auditable. | Enforce Layer-0 conduit checks for all storage writes/queries/compaction/tiering actions; every operation emits deterministic receipts and bypass attempts fail closed. |
 
+## Browser-Native High-Speed LLM Inference Intake (2026-03-09)
+
+Source references:
+- https://x.com/Ex0byt/status/2030659739718160498
+
+Notes:
+- Proposed for Layer `-1` exotic substrate profile in the next Snowball after Coreization Wave 1.
+- Research prototype scope first; Safety Plane receipt/governance requirements remain mandatory.
+
+| ID | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|
+| V6-SUBSTRATE-003.1 | queued | WebGPU + WGSL accelerated browser inference runtime | Zero-cloud local inference at high throughput requires a dedicated browser substrate contract rather than generic model paths. | Add `layer_minus_one/webgpu` adapter profile supporting quantized inference (INT4/INT8/FP16), WGSL kernel path, and SafeTensors ingestion with benchmark gate targeting >=150 tok/s on supported class hardware. |
+| V6-SUBSTRATE-003.2 | queued | Single-tab zero-dependency execution contract | Privacy-first/browser portability requires full local execution without mandatory external API/server dependencies. | Prove browser-local inference sessions run end-to-end in one tab with no required external inference endpoints and deterministic local-only mode receipts. |
+| V6-SUBSTRATE-003.3 | queued | Model-agnostic SafeTensors loader + adaptive quantization selector | Practical adoption requires multi-model loading with automatic quantization/memory fit decisions. | Implement loader contract for arbitrary SafeTensors models with policy-bounded quantization selection based on device memory/runtime constraints and deterministic loader decision receipts. |
+| V6-SUBSTRATE-003.4 | queued | Conduit-routed browser inference guardrails + token-stream receipts | High-speed browser inference must remain Safety Plane governed despite client-local execution paths. | Enforce conduit-only invocation and deterministic token-stream receipt logging for browser inference calls; bypass attempts fail closed with policy denial receipts. |
+| V6-SUBSTRATE-003.5 | queued | Persona/shadow substrate switch contract (`protheus substrate enable webgpu`) | Operators need explicit routing controls to use browser-native inference for privacy-sensitive or edge-constrained tasks. | Add substrate switch/selection contract and thin client wrappers so shadows/personas can select `webgpu` profile under policy/budget gates with observability metrics (tokens/s, latency, fallback reason) in receipts. |
+
 ## Production-Grade Checklist Addendum (2026-03-06)
 
 | ID | Status | Upgrade | Why | Exit Criteria |
