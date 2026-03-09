@@ -233,6 +233,23 @@ Source note:
 | V6-PERSIST-001.5 | queued | Sub-agent + co-work background execution contract | Persistent collaboration requires delegated sub-agents that continue execution in background mode. | Add governed sub-agent delegation and co-work background mode where parent and delegated agents continue under policy/budget caps with parent-child receipt chaining. |
 | V6-PERSIST-001.6 | queued | Conduit-only guardrail contract for persistence/connectors/mobile operations | New persistent/connectivity surfaces must remain strictly Safety Plane governed. | Enforce Layer-0 conduit checks for scheduled tasks, connector actions, mobile commands, and sub-agent events; bypass attempts fail closed with deterministic denial receipts. |
 
+## OpenClaw-Style Workspace, Gateway & Persistent Agent Runtime Intake (2026-03-09)
+
+Source reference:
+- https://x.com/0x_Discover/status/2029886937486577835
+
+Notes:
+- Proposed for next Snowball after Coreization Wave 1.
+- Overlap with existing cockpit/persistence items is intentional; this intake captures remaining workspace bootstrap, gateway isolation, and tool-mode deltas.
+
+| ID | Status | Upgrade | Why | Exit Criteria |
+|---|---|---|---|---|
+| V6-COCKPIT-012.1 | queued | Workspace bootstrap memory contract (`AGENTS/SOUL/USER/MEMORY/HEARTBEAT/TOOLS + daily logs`) | Persistent operator quality depends on deterministic workspace bootstrap context without manual reload loops. | Add workspace bootstrap contract so each attach/invocation deterministically loads configured bootstrap memory surfaces with policy-bounded token budgets and receipt telemetry (`loaded`, `deferred`, `skipped`). |
+| V6-COCKPIT-012.2 | queued | Gateway daemon runtime with persistent connector sessions + WebSocket UI bridge | Multi-channel autonomy requires one persistent routing daemon instead of per-session connector spin-up. | Extend `protheusd` gateway mode to maintain durable channel connections (Discord/Slack/etc.), provide attach/reconnect-safe routing, and expose WebSocket stream endpoints with deterministic lifecycle receipts (`connect`, `route`, `reconnect`, `close`). |
+| V6-COCKPIT-012.3 | queued | `dmScope` isolation contract (per-agent / per-channel-peer context fences) | Shared daemon operation needs strict isolation boundaries to prevent cross-user/peer context leakage. | Implement scoped runtime partitions keyed by agent/channel-peer identity, enforce no cross-scope memory/tool leakage, and emit deterministic scope-boundary receipts on create/read/write/route actions. |
+| V6-COCKPIT-012.4 | queued | Native cron + heartbeat automation envelope for detached autonomy | Autonomous operation quality depends on deterministic scheduled runs and periodic self-check loops while detached. | Add native scheduler + heartbeat engine contracts so periodic tasks/checklists run with policy/budget gates, deterministic receipts, and delivery guarantees through gateway routing even when no active attached client exists. |
+| V6-COCKPIT-012.5 | queued | Safe exec/browser tool-mode governance (`sandbox`/`gateway`/`full`) + conduit receipts | Tool execution surfaces must remain Safety Plane governed while enabling practical detached operations. | Add explicit tool-mode policy contract for exec/browser lanes with isolated browser profiles and fail-closed escalation rules; every tool call routes through Layer-0 conduit and emits deterministic audit receipts with mode + policy decision metadata. |
+
 ## Production-Grade Checklist Addendum (2026-03-06)
 
 | ID | Status | Upgrade | Why | Exit Criteria |
