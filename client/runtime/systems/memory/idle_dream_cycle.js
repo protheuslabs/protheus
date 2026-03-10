@@ -6,21 +6,11 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
-const TS_ENTRYPOINT = path.resolve(__dirname, '..', '..', '..', 'lib', 'ts_entrypoint.js');
-const LEGACY_TS = path.resolve(__dirname, 'legacy', 'idle_dream_cycle_legacy.ts');
 
 function usage() {
   console.log('Usage:');
   console.log('  node systems/memory/idle_dream_cycle.js run [YYYY-MM-DD] [--force=1] [--rem-only=1]');
   console.log('  node systems/memory/idle_dream_cycle.js status');
-}
-
-function parseBool(v, fallback = false) {
-  const raw = String(v == null ? '' : v).trim().toLowerCase();
-  if (!raw) return fallback;
-  if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
-  if (['0', 'false', 'no', 'off'].includes(raw)) return false;
-  return fallback;
 }
 
 function parseJsonPayload(rawText) {
@@ -37,10 +27,6 @@ function parseJsonPayload(rawText) {
     } catch {}
   }
   return null;
-}
-
-function legacyFallbackEnabled() {
-  return parseBool(process.env.PROTHEUS_IDLE_DREAM_LEGACY_FALLBACK, false);
 }
 
 function resolveCoreIdleDreamCommand() {
@@ -91,39 +77,16 @@ function runCore(args = []) {
   };
 }
 
-function runLegacy(args = []) {
-  const proc = spawnSync(process.execPath, [TS_ENTRYPOINT, LEGACY_TS, ...args], {
-    cwd: process.cwd(),
-    encoding: 'utf8',
-    env: process.env
-  });
-  const payload = parseJsonPayload(proc.stdout);
-  return {
-    ok: Number(proc.status || 0) === 0 && payload && payload.ok !== false,
-    status: Number.isFinite(Number(proc.status)) ? Number(proc.status) : 1,
-    payload,
-    stdout: String(proc.stdout || ''),
-    stderr: String(proc.stderr || '')
-  };
-}
-
 async function run(args = []) {
   const coreOut = runCore(args);
-  if (coreOut.ok && coreOut.payload && coreOut.payload.ok !== false) {
-    return coreOut;
+  if (!coreOut.payload) {
+    coreOut.payload = {
+      ok: false,
+      type: 'idle_dream_cycle_wrapper_error',
+      error: 'core_idle_dream_cycle_failed_no_payload'
+    };
   }
-
-  if (!legacyFallbackEnabled()) {
-    if (!coreOut.payload) {
-      coreOut.payload = {
-        ok: false,
-        type: 'idle_dream_cycle_wrapper_error',
-        error: 'core_idle_dream_cycle_failed_no_payload'
-      };
-    }
-    return coreOut;
-  }
-  return runLegacy(args);
+  return coreOut;
 }
 
 if (require.main === module) {

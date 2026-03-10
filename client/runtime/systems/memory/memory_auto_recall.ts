@@ -6,8 +6,9 @@ export {};
 // Layer ownership: core/layer1/memory_runtime + core/layer0/ops::memory-ambient (authoritative)
 // TypeScript compatibility shim only.
 
+const path = require('path');
+const { spawnSync } = require('child_process');
 const { runMemoryAmbientCommand } = require('../../lib/spine_conduit_bridge');
-const legacy = require('./legacy/memory_auto_recall_legacy.js');
 
 function cleanText(v, maxLen = 240) {
   return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, maxLen);
@@ -61,36 +62,9 @@ function normalizeNodeId(v) {
 function toAmbientArgs(argv = []) {
   const parsed = parseArgs(argv);
   const cmd = String(parsed._[0] || 'status').trim().toLowerCase();
-  const tail = (cmd === 'status' || cmd === 'filed' || cmd === 'emit') ? parsed._.slice(1) : parsed._;
   const action = (cmd === 'filed' || cmd === 'emit') ? 'filed' : 'status';
-  return ['run', 'memory-auto-recall', `--action=${action}`, ...tail, ...argv.filter((token) => String(token).startsWith('--'))];
-}
-
-async function legacyFallback(argv = []) {
-  const parsed = parseArgs(argv);
-  const cmd = String(parsed._[0] || 'status').trim().toLowerCase();
-  if (cmd === 'status') {
-    const payload = legacy.status();
-    return { ok: payload && payload.ok !== false, status: payload && payload.ok !== false ? 0 : 1, payload, stderr: '' };
-  }
-
-  if (cmd === 'filed' || cmd === 'emit') {
-    const payload = await legacy.processMemoryFiled(
-      {
-        node_id: normalizeNodeId(parsed['node-id'] || parsed.node_id || parsed.node || ''),
-        tags: cleanText(parsed.tags || '', 400)
-          .split(',')
-          .map((token) => normalizeTag(token))
-          .filter(Boolean),
-        source: cleanText(parsed.source || 'manual', 80) || 'manual'
-      },
-      { dryRun: parseBool(parsed['dry-run'], false) }
-    );
-    return { ok: payload && payload.ok === true, status: payload && payload.ok === true ? 0 : 1, payload, stderr: '' };
-  }
-
-  const payload = { ok: false, reason: `unknown_command:${cmd}` };
-  return { ok: false, status: 1, payload, stderr: '' };
+  const extra = argv.filter((token) => String(token).startsWith('--'));
+  return ['run', 'memory-auto-recall', `--action=${action}`, ...extra];
 }
 
 function payloadLooksValid(payload) {
@@ -99,31 +73,94 @@ function payloadLooksValid(payload) {
   return t === 'memory_auto_recall' || t === 'memory_auto_recall_status';
 }
 
+function parsePayloadFromText(rawText = '') {
+  const raw = String(rawText || '').trim();
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {}
+  const lines = raw
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    try {
+      return JSON.parse(lines[i]);
+    } catch {
+      // keep scanning
+    }
+  }
+  return null;
+}
+
 async function run(args = [], opts = {}) {
   const mapped = toAmbientArgs(args);
-  try {
-    const out = await runMemoryAmbientCommand(mapped, {
-      runContext: 'memory_auto_recall_wrapper',
-      skipRuntimeGate: true,
-      timeoutMs: Number(process.env.PROTHEUS_MEMORY_AUTO_RECALL_TIMEOUT_MS || 60000),
-      stdioTimeoutMs: Number(process.env.PROTHEUS_MEMORY_AUTO_RECALL_STDIO_TIMEOUT_MS || 15000),
-      ...opts
-    });
-    if (out && out.ok === true && payloadLooksValid(out.payload) && out.payload.ok !== false) {
-      return out;
-    }
-  } catch {
-    // compatibility fallback below
+  const out = await runMemoryAmbientCommand(mapped, {
+    runContext: 'memory_auto_recall_wrapper',
+    skipRuntimeGate: true,
+    timeoutMs: Number(process.env.PROTHEUS_MEMORY_AUTO_RECALL_TIMEOUT_MS || 60000),
+    stdioTimeoutMs: Number(process.env.PROTHEUS_MEMORY_AUTO_RECALL_STDIO_TIMEOUT_MS || 15000),
+    ...opts
+  });
+
+  if (out && out.ok === true && payloadLooksValid(out.payload) && out.payload.ok !== false) {
+    return out;
   }
-  return legacyFallback(args);
+
+  const payload = out && out.payload && typeof out.payload === 'object'
+    ? out.payload
+    : {
+      ok: false,
+      type: 'memory_auto_recall',
+      reason: 'core_lane_unavailable'
+    };
+
+  return {
+    ok: false,
+    status: Number.isFinite(Number(out && out.status)) ? Number(out.status) : 1,
+    payload,
+    stderr: String((out && out.stderr) || ''),
+    stdout: String((out && out.stdout) || ''),
+    routed_via: String((out && out.routed_via) || 'conduit')
+  };
+}
+
+function invokeSelf(args = []) {
+  const out = spawnSync(process.execPath, [path.join(__dirname, 'memory_auto_recall.js'), ...args], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    env: process.env
+  });
+  const payload = parsePayloadFromText(out.stdout || '');
+  const status = Number.isFinite(Number(out.status)) ? Number(out.status) : 1;
+  return {
+    ok: status === 0 && payload && payload.ok !== false,
+    status,
+    payload,
+    stdout: String(out.stdout || ''),
+    stderr: String(out.stderr || '')
+  };
 }
 
 async function processMemoryFiled(sourceNode, opts = {}) {
-  return legacy.processMemoryFiled(sourceNode, opts);
+  const nodeId = normalizeNodeId(sourceNode && sourceNode.node_id);
+  const tags = Array.isArray(sourceNode && sourceNode.tags)
+    ? sourceNode.tags.map((tag) => normalizeTag(tag)).filter(Boolean)
+    : [];
+  const source = cleanText(sourceNode && sourceNode.source || 'manual', 80) || 'manual';
+
+  const args = ['filed', `--source=${source}`];
+  if (nodeId) args.push(`--node-id=${nodeId}`);
+  if (tags.length) args.push(`--tags=${tags.join(',')}`);
+  if (parseBool(opts && opts.dryRun, false)) args.push('--dry-run=1');
+
+  const out = invokeSelf(args);
+  return out.payload || { ok: false, type: 'memory_auto_recall', reason: 'self_invoke_failed' };
 }
 
 function status() {
-  return legacy.status();
+  const out = invokeSelf(['status']);
+  return out.payload || { ok: false, type: 'memory_auto_recall_status', reason: 'self_invoke_failed' };
 }
 
 if (require.main === module) {
@@ -141,7 +178,9 @@ if (require.main === module) {
       process.exit(Number.isFinite(out && out.status) ? Number(out.status) : 1);
     })
     .catch((error) => {
-      process.stdout.write(`${JSON.stringify({ ok: false, type: 'memory_auto_recall_wrapper_error', reason: cleanText(error && error.message ? error.message : error, 220) }, null, 2)}\n`);
+      process.stdout.write(
+        `${JSON.stringify({ ok: false, type: 'memory_auto_recall_wrapper_error', reason: cleanText(error && error.message ? error.message : error, 220) }, null, 2)}\n`
+      );
       process.exit(1);
     });
 }

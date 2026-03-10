@@ -5,9 +5,7 @@
 // Client wrapper routes memory recall commands through conduit-backed Rust lanes.
 const path = require('path');
 const fs = require('fs');
-const { spawnSync } = require('child_process');
 const { runMemoryAmbientCommand } = require('../../lib/spine_conduit_bridge');
-const LEGACY_ENTRY = path.join(__dirname, 'legacy', 'memory_recall_legacy.js');
 const DEFAULT_BURN_THRESHOLD_TOKENS = Number(process.env.PROTHEUS_MEMORY_BURN_THRESHOLD_TOKENS || 200);
 
 function parseArgs(argv) {
@@ -101,41 +99,6 @@ function noOpClearCacheReceipt() {
   };
 }
 
-function parseJsonPayload(rawText) {
-  const raw = String(rawText || '').trim();
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {}
-  const lines = raw.split('\n').map((line) => line.trim()).filter(Boolean);
-  for (let i = lines.length - 1; i >= 0; i -= 1) {
-    if (!lines[i].startsWith('{')) continue;
-    try {
-      return JSON.parse(lines[i]);
-    } catch {}
-  }
-  return null;
-}
-
-function runLegacy(args = []) {
-  const proc = spawnSync(process.execPath, [LEGACY_ENTRY, ...args], {
-    cwd: process.cwd(),
-    encoding: 'utf8',
-    env: process.env
-  });
-  const status = Number.isFinite(Number(proc.status)) ? Number(proc.status) : 1;
-  const stdout = String(proc.stdout || '');
-  const stderr = String(proc.stderr || '');
-  const payload = parseJsonPayload(stdout);
-  return {
-    ok: status === 0 && payload && payload.ok !== false,
-    status,
-    payload,
-    stdout,
-    stderr
-  };
-}
-
 function estimateTokens(value) {
   const text = String(value == null ? '' : value);
   if (!text) return 0;
@@ -185,7 +148,7 @@ function buildTokenTelemetry(args, out) {
     ? Math.max(1, Number(DEFAULT_BURN_THRESHOLD_TOKENS))
     : 200;
   const overThreshold = totalTokensEst > threshold;
-  const lane = responsePayload.routed_via || (out && out.ok === true ? 'conduit' : 'legacy_fallback');
+  const lane = responsePayload.routed_via || (out && out.ok === true ? 'conduit' : 'core_error');
   const telemetry = {
     ts: new Date().toISOString(),
     type: 'memory_recall_token_telemetry',
@@ -225,22 +188,43 @@ function isBridgeSuccess(out) {
 async function run(args = [], opts = {}) {
   const ambientArgs = toAmbientArgs(args);
   if (!ambientArgs) {
-    return runLegacy(args);
+    return {
+      ok: true,
+      status: 0,
+      payload: noOpClearCacheReceipt(),
+      stdout: '',
+      stderr: '',
+      routed_via: 'compat_noop'
+    };
   }
-  try {
-    const out = await runMemoryAmbientCommand(ambientArgs, {
-      runContext: 'memory_recall_wrapper',
-      skipRuntimeGate: true,
-      stdioTimeoutMs: Number(process.env.PROTHEUS_MEMORY_STDIO_TIMEOUT_MS || 25000),
-      ...opts
-    });
-    if (isBridgeSuccess(out)) {
-      return attachTelemetry(args, out);
-    }
-    return attachTelemetry(args, runLegacy(args));
-  } catch {
-    return attachTelemetry(args, runLegacy(args));
+
+  const out = await runMemoryAmbientCommand(ambientArgs, {
+    runContext: 'memory_recall_wrapper',
+    skipRuntimeGate: true,
+    stdioTimeoutMs: Number(process.env.PROTHEUS_MEMORY_STDIO_TIMEOUT_MS || 25000),
+    ...opts
+  });
+
+  if (isBridgeSuccess(out)) {
+    return attachTelemetry(args, out);
   }
+
+  const payload = out && out.payload && typeof out.payload === 'object'
+    ? out.payload
+    : {
+      ok: false,
+      type: 'memory_recall_error',
+      reason: 'core_lane_unavailable'
+    };
+
+  return attachTelemetry(args, {
+    ok: false,
+    status: Number.isFinite(Number(out && out.status)) ? Number(out.status) : 1,
+    payload,
+    stdout: String((out && out.stdout) || ''),
+    stderr: String((out && out.stderr) || ''),
+    routed_via: String((out && out.routed_via) || 'conduit')
+  });
 }
 
 if (require.main === module) {

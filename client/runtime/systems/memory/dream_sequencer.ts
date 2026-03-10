@@ -6,8 +6,9 @@ export {};
 // Layer ownership: core/layer1/memory_runtime + core/layer0/ops::memory-ambient (authoritative)
 // TypeScript compatibility shim only.
 
+const path = require('path');
+const { spawnSync } = require('child_process');
 const { runMemoryAmbientCommand } = require('../../lib/spine_conduit_bridge');
-const legacy = require('./legacy/dream_sequencer_legacy.js');
 
 function cleanText(v, maxLen = 220) {
   return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, maxLen);
@@ -49,28 +50,9 @@ function parseBool(v, fallback = false) {
 function toAmbientArgs(argv = []) {
   const parsed = parseArgs(argv);
   const cmd = String(parsed._[0] || 'run').trim().toLowerCase();
-  const tail = (cmd === 'run' || cmd === 'status') ? parsed._.slice(1) : parsed._;
   const action = cmd === 'status' ? 'status' : 'run';
-  return ['run', 'dream-sequencer', `--action=${action}`, ...tail, ...argv.filter((token) => String(token).startsWith('--'))];
-}
-
-function legacyFallback(argv = []) {
-  const parsed = parseArgs(argv);
-  const cmd = String(parsed._[0] || 'run').trim().toLowerCase();
-  if (cmd === 'status') {
-    const payload = legacy.statusDreamSequencer();
-    return { ok: payload && payload.ok !== false, status: payload && payload.ok !== false ? 0 : 1, payload, stderr: '' };
-  }
-  if (cmd === 'run') {
-    const payload = legacy.runDreamSequencer({
-      apply: parseBool(parsed.apply, true),
-      reason: cleanText(parsed.reason || 'manual', 120) || 'manual',
-      topTagCount: Number(parsed['top-tags'] || parsed.top_tags || 12)
-    });
-    return { ok: payload && payload.ok === true, status: payload && payload.ok === true ? 0 : 1, payload, stderr: '' };
-  }
-  const payload = { ok: false, reason: `unknown_command:${cmd}` };
-  return { ok: false, status: 1, payload, stderr: '' };
+  const extra = argv.filter((token) => String(token).startsWith('--'));
+  return ['run', 'dream-sequencer', `--action=${action}`, ...extra];
 }
 
 function payloadLooksValid(payload) {
@@ -79,31 +61,86 @@ function payloadLooksValid(payload) {
   return t === 'dream_sequencer' || t === 'dream_sequencer_status';
 }
 
+function parsePayloadFromText(rawText = '') {
+  const raw = String(rawText || '').trim();
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {}
+  const lines = raw
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    try {
+      return JSON.parse(lines[i]);
+    } catch {
+      // keep scanning
+    }
+  }
+  return null;
+}
+
 async function run(args = [], opts = {}) {
   const mapped = toAmbientArgs(args);
-  try {
-    const out = await runMemoryAmbientCommand(mapped, {
-      runContext: 'dream_sequencer_wrapper',
-      skipRuntimeGate: true,
-      timeoutMs: Number(process.env.PROTHEUS_DREAM_SEQUENCER_TIMEOUT_MS || 60000),
-      stdioTimeoutMs: Number(process.env.PROTHEUS_DREAM_SEQUENCER_STDIO_TIMEOUT_MS || 15000),
-      ...opts
-    });
-    if (out && out.ok === true && payloadLooksValid(out.payload) && out.payload.ok !== false) {
-      return out;
-    }
-  } catch {
-    // compatibility fallback below
+  const out = await runMemoryAmbientCommand(mapped, {
+    runContext: 'dream_sequencer_wrapper',
+    skipRuntimeGate: true,
+    timeoutMs: Number(process.env.PROTHEUS_DREAM_SEQUENCER_TIMEOUT_MS || 60000),
+    stdioTimeoutMs: Number(process.env.PROTHEUS_DREAM_SEQUENCER_STDIO_TIMEOUT_MS || 15000),
+    ...opts
+  });
+
+  if (out && out.ok === true && payloadLooksValid(out.payload) && out.payload.ok !== false) {
+    return out;
   }
-  return legacyFallback(args);
+
+  const payload = out && out.payload && typeof out.payload === 'object'
+    ? out.payload
+    : {
+      ok: false,
+      type: 'dream_sequencer',
+      reason: 'core_lane_unavailable'
+    };
+
+  return {
+    ok: false,
+    status: Number.isFinite(Number(out && out.status)) ? Number(out.status) : 1,
+    payload,
+    stderr: String((out && out.stderr) || ''),
+    stdout: String((out && out.stdout) || ''),
+    routed_via: String((out && out.routed_via) || 'conduit')
+  };
+}
+
+function invokeSelf(args = []) {
+  const out = spawnSync(process.execPath, [path.join(__dirname, 'dream_sequencer.js'), ...args], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    env: process.env
+  });
+  const payload = parsePayloadFromText(out.stdout || '');
+  const status = Number.isFinite(Number(out.status)) ? Number(out.status) : 1;
+  return {
+    ok: status === 0 && payload && payload.ok !== false,
+    status,
+    payload,
+    stdout: String(out.stdout || ''),
+    stderr: String(out.stderr || '')
+  };
 }
 
 function runDreamSequencer(opts = {}) {
-  return legacy.runDreamSequencer(opts);
+  const args = ['run', `--apply=${parseBool(opts && opts.apply, true) ? '1' : '0'}`];
+  if (opts && opts.reason != null) args.push(`--reason=${String(opts.reason)}`);
+  if (opts && opts.topTagCount != null) args.push(`--top-tags=${Number(opts.topTagCount) || 12}`);
+  const out = invokeSelf(args);
+  return out.payload || { ok: false, type: 'dream_sequencer', reason: 'self_invoke_failed' };
 }
 
 function statusDreamSequencer() {
-  return legacy.statusDreamSequencer();
+  const out = invokeSelf(['status']);
+  return out.payload || { ok: false, type: 'dream_sequencer_status', reason: 'self_invoke_failed' };
 }
 
 if (require.main === module) {
@@ -121,7 +158,9 @@ if (require.main === module) {
       process.exit(Number.isFinite(out && out.status) ? Number(out.status) : 1);
     })
     .catch((error) => {
-      process.stdout.write(`${JSON.stringify({ ok: false, type: 'dream_sequencer_wrapper_error', reason: cleanText(error && error.message ? error.message : error, 220) }, null, 2)}\n`);
+      process.stdout.write(
+        `${JSON.stringify({ ok: false, type: 'dream_sequencer_wrapper_error', reason: cleanText(error && error.message ? error.message : error, 220) }, null, 2)}\n`
+      );
       process.exit(1);
     });
 }
