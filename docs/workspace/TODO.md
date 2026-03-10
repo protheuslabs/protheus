@@ -54,7 +54,7 @@ Updated: 2026-03-10 (runtime-unblocked + verification-green)
   - `node client/memory/tools/tests/model_router_routing_features.test.js`
   - `node client/memory/tools/tests/model_router_variant_policy.test.js`
   - `node client/memory/tools/tests/legacy_path_alias_adapters.test.js`
-- Smart-memory low-burn tranche completed for `V6-MEMORY-013..018` (`V6-MEMORY-019` still queued), with passing evidence:
+- Smart-memory low-burn tranche completed for `V6-MEMORY-013..019`, with passing evidence:
   - `node client/memory/tools/tests/memory_recall_context_budget.test.js`
   - `node client/memory/tools/tests/conversation_eye_bootstrap.test.js`
   - `node client/memory/tools/tests/memory_burn_slo_guard.test.js`
@@ -62,6 +62,7 @@ Updated: 2026-03-10 (runtime-unblocked + verification-green)
   - `node client/memory/tools/tests/memory_matrix.test.js`
   - `node client/memory/tools/tests/memory_auto_recall.test.js`
   - `node client/memory/tools/tests/memory_index_freshness_gate.test.js`
+  - `cargo test --manifest-path core/layer1/memory_runtime/Cargo.toml`
 
 ## Commands
 

@@ -73,7 +73,7 @@
 ## Backlog Resume Tranche (Post-Unblock)
 - Completed and marked `done`:
   - `V6-LLMN-001..004` (mode registry/parity/path/conformance shield)
-  - `V6-MEMORY-013..018` (low-burn retrieval/hydration/budget/ranking/freshness shield)
+  - `V6-MEMORY-013..019` (low-burn retrieval/hydration/budget/ranking/freshness + LensMap annotation shield)
 - Validation evidence:
   - `client/memory/tools/tests/llmn_mode_conformance.test.js`
   - `client/memory/tools/tests/strategy_resolver.test.js`
@@ -87,7 +87,5 @@
   - `client/memory/tools/tests/memory_matrix.test.js`
   - `client/memory/tools/tests/memory_auto_recall.test.js`
   - `client/memory/tools/tests/memory_index_freshness_gate.test.js`
-- Remaining in this shield group:
-  - `V6-MEMORY-019` (LensMap tags/nodes/jots annotation schema)
 - Actionable backlog count after tranche:
-  - `artifacts/backlog_actionable_report_2026-03-10_resume.json` -> `actionable_count: 391`
+  - `artifacts/backlog_actionable_report_2026-03-10_resume.json` -> `actionable_count: 390`
