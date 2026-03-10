@@ -44,56 +44,28 @@
 - Command:
   - `npm run -s metrics:rust-share:gate`
 - Result:
-  - `rust_share_pct: 63.723`
-  - `rs: 118795`, `ts: 39301`, `js: 28329`
+  - `rust_share_pct: 64.818`
+  - `rs: 119441`, `ts: 36898`, `js: 27933`
 
 ## Runtime Regression Status
-- Runtime execution remains blocked in this session:
-  - Local compiled binaries (including minimal `/tmp` test binaries) hang before `main`.
-- Host policy evidence:
-- `/tmp/hello_c_test` and `/tmp/hello_rust_test` hang with no stdout (guarded runner exits via `SIGALRM`).
-- `./target/debug/protheus-ops status` hangs (guarded runner exits via `SIGALRM`).
-  - `spctl --assess --type execute /tmp/hello_c_test` -> rejected.
-  - `sample` on hanging process shows call graph pinned at `_dyld_start` (never enters `main`).
-  - `syspolicyd` observed pegged for extended runtime; restart requires elevated host control outside this process.
-- Host remediation attempted in-session:
-  - `spctl developer-mode enable-terminal` executed successfully.
-  - `DevToolsSecurity -enable` executed successfully.
-- Execution behavior unchanged for local compiled binaries.
-- Post-toggle execution artifact:
-  - `artifacts/todo_execution_2026-03-10_after_devtools.json`
-  - `host.devtools.status`: pass
-  - `OPS-BLOCKER-001` probes: still timeout (`SIGALRM`)
-  - `OPS-BLOCKER-003` (`./verify.sh`): timed out (45s cap in guarded run)
-- Deferred fallback status:
-  - `OPS-BLOCKER-002` completed (fail-closed defaults enabled).
-  - Active bridge defaults now set `PROTHEUS_OPS_DEFER_ON_HOST_STALL=0`.
-- Current command snapshot (fail-closed):
-  - `./verify.sh` -> timed out (60s cap in blocker run)
-  - `npm run -s typecheck:systems` -> `spawnSync .../target/debug/protheus-ops ETIMEDOUT`
-  - `npm run -s ops:source-runtime:check` -> `spawnSync .../target/debug/protheus-ops ETIMEDOUT`
-  - `npm run -s ops:subconscious-boundary:check` -> `spawnSync .../target/debug/protheus-ops ETIMEDOUT`
-  - `npm run -s test:memory:context-budget` -> `spawnSync .../target/debug/protheus-ops ETIMEDOUT`
-  - `npm run -s test:memory:matrix` -> `spawnSync .../target/debug/protheus-ops ETIMEDOUT`
-  - `npm run -s test:memory:auto-recall` -> `spawnSync .../target/debug/protheus-ops ETIMEDOUT`
-  - `npm run -s test:reflexes` -> `spawnSync .../target/debug/protheus-ops ETIMEDOUT`
-  - `npm run -s ops:srs:top200:regression` -> timeout in this host/runtime state
-  - `npm run -s metrics:rust-share:gate` -> pass (`rust_share_pct: 63.723`)
-  - `npm run -s ops:layer-placement:check` -> pass (`violations_count:0`) after restoring policy file + ownership headers
-- Full regression artifact:
-  - `artifacts/blocker_regression_2026-03-10.json`
-- Ordered TODO execution artifact:
-  - `artifacts/todo_execution_2026-03-10.json`
-  - `artifacts/todo_execution_2026-03-10_resume.json`
-  - `artifacts/todo_execution_2026-03-10_resume2.json`
-  - `artifacts/todo_execution_2026-03-10_after_devtools.json`
-- Action when environment clears:
-  - Re-run `./verify.sh`
-  - Re-run system suite:
-    - `npm run -s typecheck:systems`
-    - `npm run -s test:ops:source-runtime-classifier`
-    - `npm run -s test:ops:subconscious-boundary-guard`
-    - `npm run -s test:memory:context-budget`
-    - `npm run -s test:memory:matrix`
-    - `npm run -s test:memory:auto-recall`
-    - `npm run -s test:reflexes`
+- Runtime execution is now unblocked in-session:
+  - `/tmp/hello_c_test` exits `0` with expected stdout.
+  - `/tmp/hello_rust_test` exits `0` with expected stdout.
+  - `./target/debug/protheus-ops status` returns JSON receipt successfully.
+- Verification stack is green:
+  - `npm run -s ops:layer-placement:check` -> pass
+  - `npm run -s metrics:rust-share:gate` -> pass (`64.818%`)
+  - `npm run -s ops:srs:top200:regression` -> pass (`200/200`)
+  - `./verify.sh` -> pass
+- Regression suite previously blocked by runtime now passes:
+  - `npm run -s typecheck:systems`
+  - `npm run -s test:ops:source-runtime-classifier`
+  - `npm run -s test:ops:subconscious-boundary-guard`
+  - `npm run -s test:memory:context-budget`
+  - `npm run -s test:memory:matrix`
+  - `npm run -s test:memory:auto-recall`
+  - `npm run -s test:reflexes`
+- Runtime unblock and regression evidence:
+  - `artifacts/todo_execution_2026-03-10_resume_runtime_unblocked.json`
+  - `artifacts/regression_suite_resume_runtime_unblocked.json`
+  - `artifacts/srs_top200_regression_2026-03-10.json`

@@ -2,7 +2,7 @@
 // Layer ownership: core/layer2/autonomy (authoritative).
 
 use crate::{
-    append_jsonl, clamp_num, now_iso, parse_bool_str, parse_date_or_today, read_json, read_jsonl,
+    append_jsonl, now_iso, parse_bool_str, parse_date_or_today, read_json, read_jsonl,
     resolve_runtime_path, round_to, write_json_atomic,
 };
 use chrono::{Duration, NaiveDate};
@@ -395,12 +395,21 @@ fn read_budget_snapshot(path: &Path, end_date: &str, run_rows: &[Value]) -> Valu
 
     let external_override = std::env::var("AUTONOMY_SIM_RUNS_DIR").is_ok()
         || std::env::var("AUTONOMY_SIM_PROPOSALS_DIR").is_ok();
-    let snapshot_suggests_active = currently_active && parse_date_or_today(Some(end_date)) == parse_date_or_today(None.as_deref());
+    let snapshot_suggests_active =
+        currently_active && parse_date_or_today(Some(end_date)) == parse_date_or_today(None);
 
     let active_relevant = if external_override {
         active_at_window_end
     } else {
         active_at_window_end || (!observed_in_window && snapshot_suggests_active)
+    };
+
+    let signal_source = if explicit_last.is_some() {
+        Value::String("route_summary.autopause".to_string())
+    } else if implicit_last.is_some() {
+        Value::String("budget_autopause_signal".to_string())
+    } else {
+        Value::Null
     };
 
     json!({
@@ -415,7 +424,7 @@ fn read_budget_snapshot(path: &Path, end_date: &str, run_rows: &[Value]) -> Valu
         "updated_at": snapshot.get("updated_at").cloned().unwrap_or(Value::Null),
         "observed_in_window": observed_in_window,
         "active_at_window_end": active_at_window_end,
-        "signal_source": if explicit_last.is_some() { "route_summary.autopause" } else if implicit_last.is_some() { "budget_autopause_signal" } else { Value::Null },
+        "signal_source": signal_source,
         "explicit_last_ts": explicit_last.map(|(ms, _, _)| chrono::DateTime::from_timestamp_millis(ms).map(|dt| dt.to_rfc3339()).unwrap_or_default()),
         "implicit_last_ts": implicit_last.map(|ms| chrono::DateTime::from_timestamp_millis(ms).map(|dt| dt.to_rfc3339()).unwrap_or_default()),
         "source_mode": if external_override { "derived_from_runs" } else { "live_state_plus_runs" },

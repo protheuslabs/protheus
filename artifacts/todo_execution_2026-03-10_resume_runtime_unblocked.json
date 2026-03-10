@@ -1,0 +1,63 @@
+{
+  "generated_at": "2026-03-10T17:51:51.426Z",
+  "revision": "430488becab4c4d5875ec7d92db4d4046caf5d1a",
+  "steps": [
+    {
+      "command": "/tmp/hello_c_test",
+      "status": 0,
+      "signal": null,
+      "stdout": "hello-c",
+      "stderr": ""
+    },
+    {
+      "command": "/tmp/hello_rust_test",
+      "status": 0,
+      "signal": null,
+      "stdout": "hello-rust",
+      "stderr": ""
+    },
+    {
+      "command": "./target/debug/protheus-ops status",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"alerts\":{\"checks\":[\"rust_source_of_truth\",\"verification_pass_rate\"],\"count\":2},\"argv\":[],\"checks\":{\"budget_guard\":{\"source\":\"rust_health_baseline\",\"status\":\"pass\"},\"budget_pressure\":{\"source\":\"rust_health_baseline\",\"status\":\"pass\"},\"cron_delivery_integrity\":{\"source\":\"rust_health_integrity_gate\",\"status\":\"pass\"},\"dark_eyes\":{\"source\":\"rust_health_baseline\",\"status\":\"pass\"},\"dream_degradation\":{\"source\":\"rust_health_baseline\",\"status\":\"pass\"},\"drift\":{\"source\":\"rust_health_baseline\",\"status\":\"pass\"},\"loop_stall\":{\"source\":\"rust_health_baseline\",\"status\":\"pass\"},\"proposal_starvation\":{\"source\":\"rust_health_baseline\",\"status\":\"pass\"},\"queue_backlog\":{\"source\":\"rust_health_baseline\",\"status\":\"pass\"},\"rust_source_of_truth\":{\"source\":\"rust_health_integrity_gate\",\"status\":\"warn\"},\"verification_pass_rate\":{\"details\":{\"cron_delivery_integrity_ok\":true,\"rust_source_of_truth_ok\":false},\"source\":\"rust_health_integrity_gate\",\"status\":\"warn\"}},\"claim_evidence\":[{\"claim\":\"health_status_executes_natively_in_rust\",\"evidence\":{\"argv_len\":0,\"command\":\"status\",\"cron_delivery_integrity_ok\":true,\"rust_source_of_truth_ok\":false},\"id\":\"native_health_status_lane\"}],\"command\":\"status\",\"cron_delivery_integrity\":{\"enabled_jobs\":9,\"isolated_jobs\":7,\"issues\":[],\"jobs_with_delivery\":9,\"ok\":true,\"path\":\"client/runtime/config/cron_jobs.json\",\"total_jobs\":9},\"dashboard_metrics\":{\"cron_job_health\":{\"enabled_jobs\":9,\"issues\":0,\"source\":\"client/runtime/config/cron_jobs.json\",\"status\":\"pass\",\"target_min\":0.9,\"value\":1.0}},\"lane\":\"health_status\",\"ok\":false,\"persona_lenses\":{\"auditor\":{\"deterministic_receipt\":true},\"operator\":{\"mode\":\"status\"}},\"receipt_hash\":\"a14dea9d1ca00296c724c9f73c1623c83d32d95ab277a1c3f164919c6dead07d\",\"replacement\":\"protheus-ops health-status\",\"root\":\"/Users/jay/.openclaw/workspace\",\"rust_source_of_truth_integrity\":{\"allowlist_prefixes\":[\"client/runtime/systems/conduit/\",\"client/runtime/systems/marketplace/\",\"client/runtime/systems/ui/\",\"client/runtime/systems/extensions/\",\"exten",
+      "stderr": ""
+    },
+    {
+      "command": "node scripts/ci/coreization_wave1_static_audit.mjs --out artifacts/coreization_wave1_static_audit_2026-03-10_resume.json",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\n  \"generated_at\": \"2026-03-10T17:49:45.238Z\",\n  \"revision\": \"430488becab4c4d5875ec7d92db4d4046caf5d1a\",\n  \"policy\": {\n    \"target\": \"Hard Coreization Wave 1 static surface check\",\n    \"max_thin_wrapper_lines\": 80\n  },\n  \"modules\": [\n    {\n      \"module\": \"security\",\n      \"directory\": \"client/runtime/systems/security\",\n      \"files\": 197,\n      \"ts_files\": 102,\n      \"js_files\": 95,\n      \"wrappers\": 197,\n      \"non_wrappers\": 0\n    },\n    {\n      \"module\": \"spine\",\n      \"directory\": \"client/runtime/systems/spine\",\n      \"files\": 14,\n      \"ts_files\": 7,\n      \"js_files\": 7,\n      \"wrappers\": 14,\n      \"non_wrappers\": 0\n    },\n    {\n      \"module\": \"memory\",\n      \"directory\": \"client/runtime/systems/memory\",\n      \"files\": 63,\n      \"ts_files\": 27,\n      \"js_files\": 36,\n      \"wrappers\": 63,\n      \"non_wrappers\": 0\n    },\n    {\n      \"module\": \"autonomy\",\n      \"directory\": \"client/runtime/systems/autonomy\",\n      \"files\": 122,\n      \"ts_files\": 39,\n      \"js_files\": 83,\n      \"wrappers\": 122,\n      \"non_wrappers\": 0\n    },\n    {\n      \"module\": \"workflow\",\n      \"directory\": \"client/runtime/systems/workflow\",\n      \"files\": 35,\n      \"ts_files\": 13,\n      \"js_files\": 22,\n      \"wrappers\": 35,\n      \"non_wrappers\": 0\n    },\n    {\n      \"module\": \"ops-daemon\",\n      \"directory\": \"client/runtime/systems/ops\",\n      \"files\": 1,\n      \"ts_files\": 1,\n      \"js_files\": 0,\n      \"wrappers\": 1,\n      \"non_wrappers\": 0\n    }\n  ],\n  \"summary\": {\n    \"module_count\": 6,\n    \"violation_count\": 0,\n    \"warning_count\": 0,\n    \"pass\": true\n  },\n  \"violations\": [],\n  \"warnings\": []\n}",
+      "stderr": ""
+    },
+    {
+      "command": "npm run -s ops:layer-placement:check",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\n  \"ok\": true,\n  \"type\": \"layer_placement_policy_check\",\n  \"policy\": \"client/runtime/config/layer_placement_policy.json\",\n  \"base_ref\": \"8b860a7a0a068996e14eae97095e5ab37b7738cd\",\n  \"changed_files\": 27,\n  \"violations_count\": 0,\n  \"violations\": []\n}",
+      "stderr": ""
+    },
+    {
+      "command": "npm run -s metrics:rust-share:gate",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\n  \"generated_at\": \"2026-03-10T17:49:45Z\",\n  \"ref\": \"HEAD\",\n  \"revision\": \"430488becab4c4d5875ec7d92db4d4046caf5d1a\",\n  \"counts\": {\n    \"rs\": 119441,\n    \"ts\": 36898,\n    \"js\": 27933,\n    \"total\": 184272\n  },\n  \"rust_share_pct\": 64.818\n}",
+      "stderr": ""
+    },
+    {
+      "command": "npm run -s ops:srs:top200:regression",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\n  \"ok\": true,\n  \"type\": \"srs_top200_regression\",\n  \"out_json\": \"artifacts/srs_top200_regression_2026-03-10.json\",\n  \"out_markdown\": \"docs/workspace/SRS_TOP_200_REGRESSION_2026-03-10.md\",\n  \"summary\": {\n    \"generatedAt\": \"2026-03-10T17:51:48.924Z\",\n    \"source\": {\n      \"srs\": \"docs/workspace/SRS.md\",\n      \"todo\": \"docs/workspace/TODO.md\"\n    },\n    \"totalSrsRows\": 1670,\n    \"top200Count\": 200,\n    \"regression\": {\n      \"fail\": 0,\n      \"warn\": 0,\n      \"pass\": 200\n    }\n  }\n}",
+      "stderr": ""
+    },
+    {
+      "command": "./verify.sh",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"contract\":{\"deterministic\":true,\"migrated_to_rust\":true,\"receipt_ready\":true,\"reversible\":true},\"lane_hash\":\"cbbff76c1a21a7e3fbe95b46fb6f025a\",\"lane_id\":\"RUNTIME-SYSTEMS-OPS-DEPENDENCY_BOUNDARY_GUARD\",\"ok\":true,\"receipt_hash\":\"3e05e24bd41c8a7ad9bf46c2acc1e911e430a9ce56f080d1062b3f8280c46af4\",\"ts\":\"2026-03-10T17:51:49.730Z\",\"type\":\"legacy_retired_lane\"}\n{\"contract\":{\"deterministic\":true,\"migrated_to_rust\":true,\"receipt_ready\":true,\"reversible\":true},\"lane_hash\":\"a1b46ca01f49262b203ca0505774bcb3\",\"lane_id\":\"RUNTIME-SYSTEMS-OPS-FORMAL_SPEC_GUARD\",\"ok\":true,\"receipt_hash\":\"73cd7128c01a129858df669a08f984b3692e0ad9c0e4fbfdf3e0923043a75f9b\",\"ts\":\"2026-03-10T17:51:50.361Z\",\"type\":\"legacy_retired_lane\"}\n{\n  \"checks\": {\n    \"conduit_only\": {\n      \"ok\": true,\n      \"payload\": {\n        \"contract\": {\n          \"deterministic\": true,\n          \"migrated_to_rust\": true,\n          \"receipt_ready\": true,\n          \"reversible\": true\n        },\n        \"lane_hash\": \"9f5dfd8d48fa72948dd12d9a7102c64f\",\n        \"lane_id\": \"RUNTIME-SYSTEMS-OPS-DEPENDENCY_BOUNDARY_GUARD\",\n        \"ok\": true,\n        \"receipt_hash\": \"612dc2af73d11b095751465f3d9aaebbb3167da08b3322fba77f2405fa2a67f0\",\n        \"ts\": \"2026-03-10T17:51:50.883Z\",\n        \"type\": \"legacy_retired_lane\"\n      },\n      \"policy_path\": \"Users/jay/.openclaw/workspace/client/runtime/config/dependency_boundary_manifest.json\",\n      \"status\": 0,\n      \"stderr\": null\n    },\n    \"constitution\": {\n      \"constitution_exists\": true,\n      \"constitution_hash\": \"e594454eef28857512e20bf2fb23136af1d3c9559b5edf3c9a837121cfe4b463\",\n      \"constitution_path\": \"docs/workspace/AGENT-CONSTITUTION.md\",\n      \"guardian_emergency_rollback_requires_approval\": true,\n      \"guardian_policy_path\": \"client/runtime/config/constitution_guardian_policy.json\",\n      \"guardian_require_dual_approval\": true,\n      \"ok\": true,\n      \"rsi_bootstrap_policy_path\": \"client/runtime/config/rsi_bootstrap_policy.json\",\n      \"rsi_merkle_path\": \"state/client/cognition/adap",
+      "stderr": ""
+    }
+  ],
+  "all_ok": true
+}

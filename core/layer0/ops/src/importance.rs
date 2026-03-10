@@ -170,7 +170,7 @@ pub fn infer_from_event(
     let mut reason_codes = Vec::new();
 
     // Core/system health dominates higher-layer cognition tasks.
-    let mut core_floor = if severity == "critical" { 0.85 } else { 0.0 };
+    let mut core_floor: f64 = if severity == "critical" { 0.85 } else { 0.0 };
     if severity == "critical" {
         reason_codes.push("severity_critical_floor".to_string());
     }

@@ -51,11 +51,8 @@ fn success_receipt(command: &str, mode: Option<&str>, argv: &[String], root: &Pa
                 }
             ]),
         );
-        obj.insert(
-            "receipt_hash".to_string(),
-            Value::String(deterministic_receipt_hash(&out)),
-        );
     }
+    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
     out
 }
 

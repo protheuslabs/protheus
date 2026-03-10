@@ -103,8 +103,15 @@ function defaultEnv() {
   };
 }
 
-function shouldFallbackToLocalCore(status, payload, stderr) {
+function shouldFallbackToLocalCore(status, payload, stderr, domain = '') {
   if (status === 0) return false;
+  const normalizedDomain = String(domain || '').trim().toLowerCase();
+  const failClosed = payload && typeof payload === 'object' && payload.fail_closed === true;
+  if (normalizedDomain === 'legacy-retired-lane' && failClosed) {
+    // Legacy-retired lanes are authoritative in core and must fail over to
+    // direct core execution when conduit returns bare fail_closed receipts.
+    return true;
+  }
   const reason = String(
     (payload && payload.reason)
       || (payload && payload.error)
@@ -260,7 +267,7 @@ function runBridge(config, args = [], cliMode = false) {
     const stderr = `${run.stderr || ''}${run.error ? `\n${String(run.error && run.error.message ? run.error.message : run.error)}` : ''}`;
     const payload = cliMode && config.inheritStdio ? null : parseJsonPayload(stdout);
 
-    if (shouldFallbackToLocalCore(status, payload, stderr) && localFallbackEnabled()) {
+    if (shouldFallbackToLocalCore(status, payload, stderr, config.domain) && localFallbackEnabled()) {
       const local = runLocalOpsDomain(
         root,
         config.domain,

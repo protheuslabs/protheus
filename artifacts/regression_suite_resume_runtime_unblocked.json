@@ -1,0 +1,56 @@
+{
+  "generated_at": "2026-03-10T17:52:22.932Z",
+  "revision": "430488becab4c4d5875ec7d92db4d4046caf5d1a",
+  "results": [
+    {
+      "command": "npm run -s typecheck:systems",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"contract\":{\"deterministic\":true,\"migrated_to_rust\":true,\"receipt_ready\":true,\"reversible\":true},\"lane_hash\":\"8ee7cc414e32b172f386b21ac1a3e4d7\",\"lane_id\":\"RUNTIME-SYSTEMS-OPS-TYPECHECK_SYSTEMS\",\"ok\":true,\"receipt_hash\":\"1924c9fc214a5be818a4ef355eeaffb44425bc6c2bc92eab926c2bc7813989b1\",\"ts\":\"2026-03-10T17:52:19.302Z\",\"type\":\"legacy_retired_lane\"}",
+      "stderr": ""
+    },
+    {
+      "command": "npm run -s test:ops:source-runtime-classifier",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"contract\":{\"deterministic\":true,\"migrated_to_rust\":true,\"receipt_ready\":true,\"reversible\":true},\"lane_hash\":\"af4626dc29575503e2c962760c230e11\",\"lane_id\":\"MEMORY-TEST-SOURCE_RUNTIME_CLASSIFIER_CONTRACT.TEST\",\"ok\":true,\"receipt_hash\":\"aedb2a0c8f0235fba79b56fc5eb9de90b9c3cfdaf1167b94ad457a701456e95c\",\"ts\":\"2026-03-10T17:52:19.936Z\",\"type\":\"legacy_retired_lane\"}",
+      "stderr": ""
+    },
+    {
+      "command": "npm run -s test:ops:subconscious-boundary-guard",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"contract\":{\"deterministic\":true,\"migrated_to_rust\":true,\"receipt_ready\":true,\"reversible\":true},\"lane_hash\":\"9d6286dcb40fbfd7c7fded7ca45e318c\",\"lane_id\":\"MEMORY-TEST-SUBCONSCIOUS_BOUNDARY_GUARD.TEST\",\"ok\":true,\"receipt_hash\":\"314dd3593bf84ff2ee560237931db77d7229eaafd4d66153c6788c59d62aeafa\",\"ts\":\"2026-03-10T17:52:20.585Z\",\"type\":\"legacy_retired_lane\"}",
+      "stderr": ""
+    },
+    {
+      "command": "npm run -s test:memory:context-budget",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"contract\":{\"deterministic\":true,\"migrated_to_rust\":true,\"receipt_ready\":true,\"reversible\":true},\"lane_hash\":\"2ac55a40f76ca2cbc0928e720fb11aca\",\"lane_id\":\"MEMORY-TEST-MEMORY_RECALL_CONTEXT_BUDGET.TEST\",\"ok\":true,\"receipt_hash\":\"9b2ea2f41e32db0bffd0cbd25d07a441cb114a8a6d7cde902fc8851115e2b621\",\"ts\":\"2026-03-10T17:52:21.281Z\",\"type\":\"legacy_retired_lane\"}",
+      "stderr": ""
+    },
+    {
+      "command": "npm run -s test:memory:matrix",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"contract\":{\"deterministic\":true,\"migrated_to_rust\":true,\"receipt_ready\":true,\"reversible\":true},\"lane_hash\":\"8bb616cb67c6692cc6ca7c38ab335035\",\"lane_id\":\"MEMORY-TEST-MEMORY_MATRIX.TEST\",\"ok\":true,\"receipt_hash\":\"af7b8d06c52327addae8b5f78163a2a602bb7f2718ef4350a6148956f03ca8a2\",\"ts\":\"2026-03-10T17:52:21.826Z\",\"type\":\"legacy_retired_lane\"}",
+      "stderr": ""
+    },
+    {
+      "command": "npm run -s test:memory:auto-recall",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"contract\":{\"deterministic\":true,\"migrated_to_rust\":true,\"receipt_ready\":true,\"reversible\":true},\"lane_hash\":\"1105da12a46aa943eafd4c607dcd7072\",\"lane_id\":\"MEMORY-TEST-MEMORY_AUTO_RECALL.TEST\",\"ok\":true,\"receipt_hash\":\"76fd2cbc42d21b2c5b593355f94f24ce0aa118c5683ae4ba22512146b5600562\",\"ts\":\"2026-03-10T17:52:22.391Z\",\"type\":\"legacy_retired_lane\"}",
+      "stderr": ""
+    },
+    {
+      "command": "npm run -s test:reflexes",
+      "status": 0,
+      "signal": null,
+      "stdout": "{\"contract\":{\"deterministic\":true,\"migrated_to_rust\":true,\"receipt_ready\":true,\"reversible\":true},\"lane_hash\":\"f40bd71343f5fef5e7c553a12804020a\",\"lane_id\":\"MEMORY-TEST-CLIENT_REFLEXES.TEST\",\"ok\":true,\"receipt_hash\":\"5c9376213e3f516adf5b065a40032a2b73bc9e588ff4b12882e87b859303726e\",\"ts\":\"2026-03-10T17:52:22.924Z\",\"type\":\"legacy_retired_lane\"}",
+      "stderr": ""
+    }
+  ],
+  "all_ok": true
+}

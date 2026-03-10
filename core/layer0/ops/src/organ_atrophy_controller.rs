@@ -66,10 +66,8 @@ fn parse_bool(raw: Option<&String>, fallback: bool) -> bool {
 
 fn parse_date(raw: Option<&String>) -> String {
     let candidate = raw.map(|v| v.trim().to_string()).unwrap_or_default();
-    if regex::Regex::new(r"^\d{4}-\d{2}-\d{2}$")
-        .ok()
-        .map(|re| re.is_match(&candidate))
-        .unwrap_or(false)
+    if !candidate.is_empty()
+        && chrono::NaiveDate::parse_from_str(&candidate, "%Y-%m-%d").is_ok()
     {
         return candidate;
     }
