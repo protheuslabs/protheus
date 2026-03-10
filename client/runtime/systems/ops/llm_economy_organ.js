@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-// Layer ownership: core/layer2/ops + core/layer0/ops::backlog-queue-executor (authoritative)
+// Layer ownership: core/layer2/ops + core/layer0/ops::llm-economy-organ (authoritative)
 // Thin wrapper only; authority logic lives in Rust.
 const { createOpsLaneBridge } = require('../../lib/rust_lane_bridge');
 
@@ -12,7 +12,7 @@ process.env.PROTHEUS_OPS_DOMAIN_BRIDGE_TIMEOUT_MS =
 process.env.PROTHEUS_OPS_LOCAL_TIMEOUT_MS =
   process.env.PROTHEUS_OPS_LOCAL_TIMEOUT_MS || '25000';
 
-const bridge = createOpsLaneBridge(__dirname, 'backlog_queue_executor', 'backlog-queue-executor');
+const bridge = createOpsLaneBridge(__dirname, 'llm_economy_organ', 'llm-economy-organ');
 
 function runCore(args = []) {
   const out = bridge.run(Array.isArray(args) ? args : []);

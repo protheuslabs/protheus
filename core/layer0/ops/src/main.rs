@@ -31,6 +31,8 @@ fn usage() {
     println!("  protheus-ops narrow-agent-parity-harness <run|status> [flags]");
     println!("  protheus-ops offsite-backup <sync|restore-drill|status|diagnose|list> [flags]");
     println!("  protheus-ops settlement-program <list|run|run-all|settle|revert|edit-core|edit-module|status> [flags]");
+    println!("  protheus-ops llm-economy-organ <run|status> [flags]");
+    println!("  protheus-ops backlog-queue-executor <run|status> [flags]");
     println!("  protheus-ops backlog-runtime-anchor <build|verify> --lane-id=<V3-RACE-XXX>");
     println!("  protheus-ops legacy-retired-lane <build|verify> --lane-id=<SYSTEMS-OPS-...>");
     println!("  protheus-ops inversion-controller <command> [flags]");
@@ -286,6 +288,16 @@ fn main() {
         "settlement-program" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::settlement_program::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "llm-economy-organ" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::llm_economy_organ::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "backlog-queue-executor" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::backlog_queue_executor::run(&cwd, &rest);
             std::process::exit(exit);
         }
         "backlog-runtime-anchor" => {
