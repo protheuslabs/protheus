@@ -1029,22 +1029,3 @@ mod tests {
     }
 }
 
-pub mod opendev_dual_agent;
-pub mod company_layer_orchestration;
-pub mod wifi_csi_engine;
-pub mod biological_computing_adapter;
-pub mod observability_automation_engine;
-pub mod persistent_background_runtime;
-pub mod workspace_gateway_runtime;
-pub mod p2p_gossip_seed;
-pub mod startup_agency_builder;
-pub mod timeseries_receipt_engine;
-pub mod webgpu_inference_adapter;
-pub mod context_doctor;
-pub mod discord_swarm_orchestration;
-pub mod bookmark_knowledge_pipeline;
-pub mod public_api_catalog;
-pub mod decentralized_data_marketplace;
-pub mod autoresearch_loop;
-pub mod intel_sweep_router;
-pub mod gui_drift_manager;

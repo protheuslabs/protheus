@@ -1,0 +1,118 @@
+{
+  "generated_at": "2026-03-10T17:16:02.016Z",
+  "branch": "main",
+  "commit": "8b860a7a",
+  "results": [
+    {
+      "step": "host.devtools.status",
+      "result": {
+        "cmd": "/bin/zsh -lc /usr/sbin/DevToolsSecurity -status && /usr/sbin/spctl --status",
+        "status": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "Developer mode is currently enabled.\nassessments enabled\n",
+        "stderr": "/Users/jay/.zprofile:source:19: no such file or directory: /Users/jay/.openclaw/workspace/config/dream_cloud_routing.env\n",
+        "timeout_ms": 8000
+      }
+    },
+    {
+      "step": "OPS-BLOCKER-001.hello-c",
+      "result": {
+        "cmd": "/usr/bin/perl -e $SIG{ALRM}=sub{exit 124}; alarm shift; exec @ARGV 8 /tmp/hello_c_test",
+        "status": null,
+        "signal": "SIGALRM",
+        "error": null,
+        "stdout": "",
+        "stderr": "",
+        "timeout_ms": 12000
+      }
+    },
+    {
+      "step": "OPS-BLOCKER-001.hello-rs",
+      "result": {
+        "cmd": "/usr/bin/perl -e $SIG{ALRM}=sub{exit 124}; alarm shift; exec @ARGV 8 /tmp/hello_rust_test",
+        "status": null,
+        "signal": "SIGALRM",
+        "error": null,
+        "stdout": "",
+        "stderr": "",
+        "timeout_ms": 12000
+      }
+    },
+    {
+      "step": "OPS-BLOCKER-001.ops-status",
+      "result": {
+        "cmd": "/usr/bin/perl -e $SIG{ALRM}=sub{exit 124}; alarm shift; exec @ARGV 12 ./target/debug/protheus-ops status",
+        "status": null,
+        "signal": "SIGALRM",
+        "error": null,
+        "stdout": "",
+        "stderr": "",
+        "timeout_ms": 18000
+      }
+    },
+    {
+      "step": "OPS-BLOCKER-002.no-deferred",
+      "result": {
+        "cmd": "/bin/zsh -lc rg -n 'PROTHEUS_OPS_DEFER_ON_HOST_STALL|ops_domain_deferred_host_stall' client/runtime/lib/rust_lane_bridge.ts client/runtime/lib/legacy_retired_wrapper.js package.json",
+        "status": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "client/runtime/lib/legacy_retired_wrapper.js:26:  process.env.PROTHEUS_OPS_DEFER_ON_HOST_STALL =\nclient/runtime/lib/legacy_retired_wrapper.js:27:    process.env.PROTHEUS_OPS_DEFER_ON_HOST_STALL || '0';\nclient/runtime/lib/rust_lane_bridge.ts:87:  const raw = String(process.env.PROTHEUS_OPS_DEFER_ON_HOST_STALL || '0').trim().toLowerCase();\nclient/runtime/lib/rust_lane_bridge.ts:182:      type: 'ops_domain_deferred_host_stall',\nclient/runtime/lib/rust_lane_bridge.ts:326:  process.env.PROTHEUS_OPS_DEFER_ON_HOST_STALL =\nclient/runtime/lib/rust_lane_bridge.ts:327:    process.env.PROTHEUS_OPS_DEFER_ON_HOST_STALL || '0';\n",
+        "stderr": "/Users/jay/.zprofile:source:19: no such file or directory: /Users/jay/.openclaw/workspace/config/dream_cloud_routing.env\n",
+        "timeout_ms": 10000
+      }
+    },
+    {
+      "step": "COREIZATION-GATE.layer-placement",
+      "result": {
+        "cmd": "npm run -s ops:layer-placement:check",
+        "status": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "{\n  \"ok\": true,\n  \"type\": \"layer_placement_policy_check\",\n  \"policy\": \"client/runtime/config/layer_placement_policy.json\",\n  \"base_ref\": \"5d3f3d9b4d4bca59c4275b0fb6d38ce84582a166\",\n  \"changed_files\": 7,\n  \"violations_count\": 0,\n  \"violations\": []\n}\n",
+        "stderr": "",
+        "timeout_ms": 20000
+      }
+    },
+    {
+      "step": "COREIZATION-GATE.static-audit",
+      "result": {
+        "cmd": "node scripts/ci/coreization_wave1_static_audit.mjs",
+        "status": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "{\n  \"generated_at\": \"2026-03-10T17:15:15.870Z\",\n  \"revision\": \"8b860a7a0a068996e14eae97095e5ab37b7738cd\",\n  \"policy\": {\n    \"target\": \"Hard Coreization Wave 1 static surface check\",\n    \"max_thin_wrapper_lines\": 80\n  },\n  \"modules\": [\n    {\n      \"module\": \"security\",\n      \"directory\": \"client/runtime/systems/security\",\n      \"files\": 197,\n      \"ts_files\": 102,\n      \"js_files\": 95,\n      \"wrappers\": 197,\n      \"non_wrappers\": 0\n    },\n    {\n      \"module\": \"spine\",\n      \"directory\": \"client/runtime/systems/spine\",\n      \"files\": 14,\n      \"ts_files\": 7,\n      \"js_files\": 7,\n      \"wrappers\": 14,\n      \"non_wrappers\": 0\n    },\n    {\n      \"module\": \"memory\",\n      \"directory\": \"client/runtime/systems/memory\",\n      \"files\": 63,\n      \"ts_files\": 27,\n      \"js_files\": 36,\n      \"wrappers\": 63,\n      \"non_wrappers\": 0\n    },\n    {\n      \"module\": \"autonomy\",\n      \"directory\": \"client/runtime/systems/autonomy\",\n      \"files\": 122,\n      \"ts_files\": 39,\n      \"js_files\": 83,\n      \"wrappers\": 122,\n      \"non_wrappers\": 0\n    },\n    {\n      \"module\": \"workflow\",\n      \"directory\": \"client/runtime/systems/workflow\",\n      \"files\": 35,\n      \"ts_files\": 13,\n      \"js_files\": 22,\n      \"wrappers\": 35,\n      \"non_wrappers\": 0\n    },\n    {\n      \"module\": \"ops-daemon\",\n      \"directory\": \"client/runtime/systems/ops\",\n      \"files\": 1,\n      \"ts_files\": 1,\n      \"js_files\": 0,\n      \"wrappers\": 1,\n      \"non_wrappers\": 0\n    }\n  ],\n  \"summary\": {\n    \"module_count\": 6,\n    \"violation_count\": 0,\n    \"warning_count\": 0,\n    \"pass\": true\n  },\n  \"violations\": [],\n  \"warnings\": []\n}\n",
+        "stderr": "",
+        "timeout_ms": 20000
+      }
+    },
+    {
+      "step": "BACKLOG.rust-share",
+      "result": {
+        "cmd": "npm run -s metrics:rust-share:gate",
+        "status": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "{\n  \"generated_at\": \"2026-03-10T17:15:16Z\",\n  \"ref\": \"HEAD\",\n  \"revision\": \"8b860a7a0a068996e14eae97095e5ab37b7738cd\",\n  \"counts\": {\n    \"rs\": 119336,\n    \"ts\": 36898,\n    \"js\": 27933,\n    \"total\": 184167\n  },\n  \"rust_share_pct\": 64.798\n}\n",
+        "stderr": "",
+        "timeout_ms": 20000
+      }
+    },
+    {
+      "step": "OPS-BLOCKER-003.verify",
+      "result": {
+        "cmd": "/bin/zsh -lc ./verify.sh",
+        "status": null,
+        "signal": "SIGTERM",
+        "error": {
+          "code": "ETIMEDOUT",
+          "message": "spawnSync /bin/zsh ETIMEDOUT"
+        },
+        "stdout": "",
+        "stderr": "/Users/jay/.zprofile:source:19: no such file or directory: /Users/jay/.openclaw/workspace/config/dream_cloud_routing.env\n",
+        "timeout_ms": 45000
+      }
+    }
+  ]
+}

@@ -1,11 +1,11 @@
-// Layer ownership: core/layer0/ops (authoritative)
+// Layer ownership: core/layer2/ops (authoritative)
 // SPDX-License-Identifier: Apache-2.0
 use crate::ops_lane_runtime::{run_lane, LaneSpec};
 use std::path::Path;
 
 const USAGE: &[&str] = &[
     "Usage:",
-    "  protheus-ops autoresearch-loop run|status|train|evaluate|commit [--policy=<path>] [--state-path=<path>] [--strict=1|0]",
+    "  protheus-ops timeseries-receipt-engine run|status|ingest|query|compact|tier [--policy=<path>] [--state-path=<path>] [--strict=1|0]",
 ];
 
 pub fn run(root: &Path, argv: &[String]) -> i32 {
@@ -13,9 +13,9 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         root,
         argv,
         &LaneSpec {
-            lane_id: "autoresearch_loop",
-            lane_type: "autoresearch_loop",
-            replacement: "protheus-ops autoresearch-loop",
+            lane_id: "timeseries_receipt_engine",
+            lane_type: "timeseries_receipt_engine",
+            replacement: "protheus-ops timeseries-receipt-engine",
             usage: USAGE,
             passthrough_flags: &["strict", "policy", "state-path"],
         },

@@ -1,11 +1,11 @@
-// Layer ownership: core/layer0/ops (authoritative)
+// Layer ownership: core/layer2/ops (authoritative)
 // SPDX-License-Identifier: Apache-2.0
 use crate::ops_lane_runtime::{run_lane, LaneSpec};
 use std::path::Path;
 
 const USAGE: &[&str] = &[
     "Usage:",
-    "  protheus-ops persistent-background-runtime run|status|schedule|connector|subagent [--policy=<path>] [--state-path=<path>] [--strict=1|0]",
+    "  protheus-ops bookmark-knowledge-pipeline run|status|ingest|search|mindmap [--policy=<path>] [--state-path=<path>] [--strict=1|0]",
 ];
 
 pub fn run(root: &Path, argv: &[String]) -> i32 {
@@ -13,9 +13,9 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         root,
         argv,
         &LaneSpec {
-            lane_id: "persistent_background_runtime",
-            lane_type: "persistent_background_runtime",
-            replacement: "protheus-ops persistent-background-runtime",
+            lane_id: "bookmark_knowledge_pipeline",
+            lane_type: "bookmark_knowledge_pipeline",
+            replacement: "protheus-ops bookmark-knowledge-pipeline",
             usage: USAGE,
             passthrough_flags: &["strict", "policy", "state-path"],
         },

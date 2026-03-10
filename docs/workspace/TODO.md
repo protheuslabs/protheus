@@ -1,6 +1,6 @@
 # TODO (Ordered Blocker Queue)
 
-Updated: 2026-03-10 (resume2)
+Updated: 2026-03-10 (after-devtools + layer2-refactor)
 
 Backlog implementation remains paused until runtime validation is real (non-deferred).
 
@@ -23,6 +23,8 @@ Backlog implementation remains paused until runtime validation is real (non-defe
 - `/usr/sbin/spctl --assess --type execute /tmp/hello_c_test` => rejected.
 - `sample` shows stuck at `_dyld_start` before `main`.
 - `syspolicyd` observed pegged for extended runtime and cannot be restarted from current user context.
+- `DevToolsSecurity` and `spctl developer-mode enable-terminal` are enabled, but blocker persists in-session.
+- Latest artifact: `artifacts/todo_execution_2026-03-10_after_devtools.json`.
 
 2. `OPS-BLOCKER-002` `P0` `ROI=9/10` `DEP=001` Remove deferred host-stall fallback from validation path. `STATUS: COMPLETE`
 - Exit criteria:
@@ -42,6 +44,7 @@ Backlog implementation remains paused until runtime validation is real (non-defe
 - Ordered TODO execution artifacts:
 - `artifacts/todo_execution_2026-03-10_resume.json`
 - `artifacts/todo_execution_2026-03-10_resume2.json`
+- `artifacts/todo_execution_2026-03-10_after_devtools.json`
 - Non-runtime checks pass (`metrics:rust-share:gate`, `ops:layer-placement:check`, `coreization_wave1_static_audit`).
 - Long suite commands (`./verify.sh`, `ops:srs:top200:regression`) still timeout in this host/runtime state.
 - Runtime checks fail-closed on local binary timeout until blocker 001 is resolved.
@@ -50,6 +53,8 @@ Backlog implementation remains paused until runtime validation is real (non-defe
 - Exit criteria:
 - `node scripts/ci/coreization_wave1_static_audit.mjs` -> `pass: true`.
 - `npm run -s ops:layer-placement:check` -> `violations_count: 0`.
+- Additional simplification applied:
+- 19 non-deterministic V6 feature lanes moved from `core/layer0/ops/src` to `core/layer2/ops/src` with Layer 2 dispatch via `protheus_ops_core_v1`.
 
 5. `BACKLOG-RESUME` `P2` `ROI=10/10 (deferred)` `DEP=001,002,003,COREIZATION-GATE-001` Resume ROI backlog execution only after blockers 1-4 pass. `STATUS: BLOCKED`
 - Exit criteria:

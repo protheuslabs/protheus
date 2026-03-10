@@ -26,6 +26,10 @@ tmp/
 dist/
 .internal/
 **/target/
+target_l0ops_*/
+target_ops_clean/
+target_system_regression/
+artifacts/heartbeat/
 client/memory/**
 !client/memory/README.md
 !client/memory/tools/
@@ -202,6 +206,56 @@ apps/*
 /client/workspaces/
 /client/runtime/local/
 /client/runtime/state/
+
+# Workspace-local bootstrap/session notes (not part of repo source of truth)
+AGENTS.md
+BOOTSTRAP.md
+HEARTBEAT.md
+IDENTITY.md
+SOUL.md
+TOOLS.md
+USER.md
+.trash/
+
+# Runtime local credentials (instance-specific)
+client/runtime/config/credentials.json
+client/runtime/config/moltbook/credentials.json
+client/runtime/config/strategies/*.json
+
+# Additional local churn currently restored from stashes
+client/cognition/adaptive/sensory/eyes/catalog.json
+client/cognition/adaptive/sensory/eyes/focus_triggers.json
+client/runtime/client/
+client/runtime/systems/memory/TAG_MEMORY_MATRIX.md
+docs/workspace/archive/
+docs/workspace/rohan_busywork_report_2026-03-08.md
+
+# Local skill installs (tracked core skill sources remain in-repo)
+client/cognition/skills/bird/
+client/cognition/skills/cfo/
+client/cognition/skills/clawhub/
+client/cognition/skills/communication-skill/
+client/cognition/skills/financial-tracker/
+client/cognition/skills/gcalcli-calendar/
+client/cognition/skills/github/
+client/cognition/skills/gmail/
+client/cognition/skills/gog/
+client/cognition/skills/imap-smtp-email/README.md
+client/cognition/skills/imap-smtp-email/SKILL.md
+client/cognition/skills/imap-smtp-email/_meta.json
+client/cognition/skills/imap-smtp-email/package.json
+client/cognition/skills/imap-smtp-email/setup.sh
+client/cognition/skills/mercury-payments/
+client/cognition/skills/moltbook/SKILL.md
+client/cognition/skills/moltbook/manifest.json
+client/cognition/skills/moltstack/SKILL.md
+client/cognition/skills/moltstack/references/
+client/cognition/skills/notion/
+client/cognition/skills/openclaw-token-optimizer/
+client/cognition/skills/polymarket-arbitrage/
+client/cognition/skills/reddit-readonly/
+client/cognition/skills/reddit/
+client/cognition/skills/sendclaw-email/
 
 # Instance-specific sensory collectors (local only)
 client/adaptive/sensory/eyes/collectors/abstractapi_enrich.js

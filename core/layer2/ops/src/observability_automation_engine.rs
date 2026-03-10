@@ -1,4 +1,4 @@
-// Layer ownership: core/layer0/ops (authoritative)
+// Layer ownership: core/layer2/ops (authoritative)
 // SPDX-License-Identifier: Apache-2.0
 use crate::ops_lane_runtime::{run_lane, LaneSpec};
 use std::path::Path;

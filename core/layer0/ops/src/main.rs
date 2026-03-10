@@ -510,73 +510,73 @@ fn main() {
             exit_domain!(&cwd, &args, protheus_ops_core::scale_readiness::run);
         }
         "opendev-dual-agent" => {
-            exit_domain!(&cwd, &args, protheus_ops_core::opendev_dual_agent::run);
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::opendev_dual_agent::run);
         }
         "company-layer-orchestration" => {
-            exit_domain!(&cwd, &args, protheus_ops_core::company_layer_orchestration::run);
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::company_layer_orchestration::run);
         }
         "wifi-csi-engine" => {
-            exit_domain!(&cwd, &args, protheus_ops_core::wifi_csi_engine::run);
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::wifi_csi_engine::run);
         }
         "biological-computing-adapter" => {
-            exit_domain!(&cwd, &args, protheus_ops_core::biological_computing_adapter::run);
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::biological_computing_adapter::run);
         }
         "observability-automation-engine" => {
             exit_domain!(
                 &cwd,
                 &args,
-                protheus_ops_core::observability_automation_engine::run
+                protheus_ops_core_v1::observability_automation_engine::run
             );
         }
         "persistent-background-runtime" => {
             exit_domain!(
                 &cwd,
                 &args,
-                protheus_ops_core::persistent_background_runtime::run
+                protheus_ops_core_v1::persistent_background_runtime::run
             );
         }
         "workspace-gateway-runtime" => {
-            exit_domain!(&cwd, &args, protheus_ops_core::workspace_gateway_runtime::run);
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::workspace_gateway_runtime::run);
         }
         "p2p-gossip-seed" => {
-            exit_domain!(&cwd, &args, protheus_ops_core::p2p_gossip_seed::run);
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::p2p_gossip_seed::run);
         }
         "startup-agency-builder" => {
-            exit_domain!(&cwd, &args, protheus_ops_core::startup_agency_builder::run);
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::startup_agency_builder::run);
         }
         "timeseries-receipt-engine" => {
-            exit_domain!(&cwd, &args, protheus_ops_core::timeseries_receipt_engine::run);
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::timeseries_receipt_engine::run);
         }
         "webgpu-inference-adapter" => {
-            exit_domain!(&cwd, &args, protheus_ops_core::webgpu_inference_adapter::run);
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::webgpu_inference_adapter::run);
         }
         "context-doctor" => {
-            exit_domain!(&cwd, &args, protheus_ops_core::context_doctor::run);
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::context_doctor::run);
         }
         "discord-swarm-orchestration" => {
-            exit_domain!(&cwd, &args, protheus_ops_core::discord_swarm_orchestration::run);
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::discord_swarm_orchestration::run);
         }
         "bookmark-knowledge-pipeline" => {
-            exit_domain!(&cwd, &args, protheus_ops_core::bookmark_knowledge_pipeline::run);
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::bookmark_knowledge_pipeline::run);
         }
         "public-api-catalog" => {
-            exit_domain!(&cwd, &args, protheus_ops_core::public_api_catalog::run);
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::public_api_catalog::run);
         }
         "decentralized-data-marketplace" => {
             exit_domain!(
                 &cwd,
                 &args,
-                protheus_ops_core::decentralized_data_marketplace::run
+                protheus_ops_core_v1::decentralized_data_marketplace::run
             );
         }
         "autoresearch-loop" => {
-            exit_domain!(&cwd, &args, protheus_ops_core::autoresearch_loop::run);
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::autoresearch_loop::run);
         }
         "intel-sweep-router" => {
-            exit_domain!(&cwd, &args, protheus_ops_core::intel_sweep_router::run);
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::intel_sweep_router::run);
         }
         "gui-drift-manager" => {
-            exit_domain!(&cwd, &args, protheus_ops_core::gui_drift_manager::run);
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::gui_drift_manager::run);
         }
         _ => {
             print_json(&cli_error_receipt("unknown_domain", 1, Some(domain), None));
