@@ -54,7 +54,10 @@ async function main() {
     process.exit(2);
   }
 
-  const passArgs = Array.isArray(args._) && args._.length > 1 ? args._.slice(1) : [];
+  // Keep all positional args when domain is provided via --domain=<name>.
+  // The previous slice(1) dropped the first command token (e.g. "run"),
+  // which broke domains that require explicit subcommands.
+  const passArgs = Array.isArray(args._) ? args._.slice() : [];
   const skipRuntimeGate = toBool(
     args['skip-runtime-gate'],
     toBool(process.env.PROTHEUS_OPS_DOMAIN_SKIP_RUNTIME_GATE, true)
