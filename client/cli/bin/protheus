@@ -5,8 +5,8 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-const sourceScript = path.resolve(__dirname, '..', 'systems', 'ops', 'protheusctl.js');
-const distScript = path.resolve(__dirname, '..', 'dist', 'systems', 'ops', 'protheusctl.js');
+const sourceScript = path.resolve(__dirname, '..', '..', 'runtime', 'systems', 'ops', 'protheusctl.js');
+const distScript = path.resolve(__dirname, '..', '..', 'runtime', 'dist', 'systems', 'ops', 'protheusctl.js');
 const runtimeMode = String(process.env.PROTHEUS_RUNTIME_MODE || '').trim().toLowerCase();
 const preferDist = runtimeMode !== 'source';
 const script = preferDist && fs.existsSync(distScript) ? distScript : sourceScript;

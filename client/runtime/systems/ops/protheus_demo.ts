@@ -7,8 +7,8 @@ const { spawnSync } = require('child_process');
 
 const ROOT = process.env.OPENCLAW_WORKSPACE
   ? path.resolve(process.env.OPENCLAW_WORKSPACE)
-  : path.resolve(__dirname, '..', '..');
-const PROTHEUS_BIN = path.join(ROOT, 'bin', 'protheus');
+  : path.resolve(__dirname, '..', '..', '..');
+const PROTHEUS_BIN = path.join(ROOT, 'cli', 'bin', 'protheus');
 
 function cleanText(v: unknown, maxLen = 400) {
   return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, maxLen);

@@ -5,8 +5,8 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-const sourceScript = path.resolve(__dirname, '..', 'systems', 'ops', 'protheusd.js');
-const distScript = path.resolve(__dirname, '..', 'dist', 'systems', 'ops', 'protheusd.js');
+const sourceScript = path.resolve(__dirname, '..', '..', 'runtime', 'systems', 'ops', 'protheusd.js');
+const distScript = path.resolve(__dirname, '..', '..', 'runtime', 'dist', 'systems', 'ops', 'protheusd.js');
 const runtimeMode = String(process.env.PROTHEUS_RUNTIME_MODE || '').trim().toLowerCase();
 const preferDist = runtimeMode !== 'source';
 const script = preferDist && fs.existsSync(distScript) ? distScript : sourceScript;
@@ -17,6 +17,10 @@ if (!fs.existsSync(script)) {
 }
 
 const run = spawnSync(process.execPath, [script, ...process.argv.slice(2)], {
-  stdio: 'inherit'
+  stdio: 'inherit',
+  env: {
+    ...process.env,
+    PROTHEUS_OPS_DOMAIN_BRIDGE_TIMEOUT_MS: process.env.PROTHEUS_OPS_DOMAIN_BRIDGE_TIMEOUT_MS || '12000'
+  }
 });
 process.exit(Number.isFinite(run.status) ? run.status : 1);

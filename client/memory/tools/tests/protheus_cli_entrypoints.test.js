@@ -8,10 +8,10 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
-const BIN_PROTHEUS = path.join(ROOT, 'bin', 'protheus');
-const BIN_PROTHEUSCTL = path.join(ROOT, 'bin', 'protheusctl');
-const BIN_PROTHEUSD = path.join(ROOT, 'bin', 'protheusd');
-const BIN_PROTHEUS_TOP = path.join(ROOT, 'bin', 'protheus-top');
+const BIN_PROTHEUS = path.join(ROOT, 'cli', 'bin', 'protheus');
+const BIN_PROTHEUSCTL = path.join(ROOT, 'cli', 'bin', 'protheusctl');
+const BIN_PROTHEUSD = path.join(ROOT, 'cli', 'bin', 'protheusd');
+const BIN_PROTHEUS_TOP = path.join(ROOT, 'cli', 'bin', 'protheus-top');
 
 function writeJson(filePath, payload) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -35,7 +35,9 @@ function runBin(binPath, args) {
     encoding: 'utf8',
     env: {
       ...process.env,
-      PROTHEUS_RUNTIME_MODE: 'source'
+      PROTHEUS_RUNTIME_MODE: 'source',
+      PROTHEUS_OPS_LOCAL_FALLBACK: process.env.PROTHEUS_OPS_LOCAL_FALLBACK || '0',
+      PROTHEUS_OPS_DOMAIN_BRIDGE_TIMEOUT_MS: process.env.PROTHEUS_OPS_DOMAIN_BRIDGE_TIMEOUT_MS || '12000'
     }
   });
   return {
@@ -111,6 +113,10 @@ try {
   out = runBin(BIN_PROTHEUS_TOP, [`--policy=${policyPath}`]);
   assert.strictEqual(out.status, 0, out.stderr || out.stdout);
   assert.ok(out.payload && out.payload.type === 'protheus_top', 'top wrapper should return top payload');
+
+  out = runBin(BIN_PROTHEUSD, ['diagnostics', `--policy=${policyPath}`]);
+  assert.strictEqual(out.status, 0, out.stderr || out.stdout);
+  assert.ok(out.payload && out.payload.type === 'protheus_daemon_control', 'diagnostics should return daemon control receipt');
 
   out = runBin(BIN_PROTHEUSD, ['stop', `--policy=${policyPath}`]);
   assert.strictEqual(out.status, 0, out.stderr || out.stdout);

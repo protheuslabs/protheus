@@ -8,8 +8,8 @@ const { spawnSync } = require('child_process');
 const { colorize, supportsColor } = require('./cli_ui.js');
 const { buildManifest } = require('./protheus_command_list.js');
 
-const ROOT = path.resolve(__dirname, '..', '..');
-const PROTHEUS_BIN = path.join(ROOT, 'bin', 'protheus');
+const ROOT = path.resolve(__dirname, '..', '..', '..');
+const PROTHEUS_BIN = path.join(ROOT, 'cli', 'bin', 'protheus');
 
 function cleanText(v: unknown, maxLen = 400) {
   return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, maxLen);
