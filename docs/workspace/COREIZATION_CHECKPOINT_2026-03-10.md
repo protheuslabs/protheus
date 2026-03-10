@@ -27,6 +27,8 @@
 ## Cleanup Applied
 - Added missing ownership marker in:
   - `client/runtime/systems/security/venom_containment_layer.ts`
+- Added wrapper-policy marker token used by layer-placement guard:
+  - `client/runtime/systems/security/venom_containment_layer.ts`
 
 ## Rust Share
 - Command:
@@ -39,6 +41,16 @@
 - Runtime execution remains blocked in this session:
   - Local compiled binaries (including minimal `/tmp` test binaries) hang before `main`.
   - Existing wrappers therefore may emit deferred host-stall receipts rather than true runtime execution.
+- Current command snapshot:
+  - `npm run -s typecheck:systems` -> deferred host stall receipt (`legacy-retired-lane`, `ETIMEDOUT`)
+  - `npm run -s ops:source-runtime:check` -> deferred host stall receipt (`legacy-retired-lane`, `ETIMEDOUT`)
+  - `npm run -s ops:subconscious-boundary:check` -> deferred host stall receipt (`legacy-retired-lane`, `ETIMEDOUT`)
+  - `npm run -s test:memory:context-budget` -> deferred host stall receipt (`legacy-retired-lane`, `ETIMEDOUT`)
+  - `npm run -s test:memory:matrix` -> deferred host stall receipt (`legacy-retired-lane`, `ETIMEDOUT`)
+  - `npm run -s test:memory:auto-recall` -> deferred host stall receipt (`legacy-retired-lane`, `ETIMEDOUT`)
+  - `npm run -s test:reflexes` -> deferred host stall receipt (`legacy-retired-lane`, `ETIMEDOUT`)
+  - `npm run -s ops:srs:top200:regression` -> pass (`fail:0 warn:0 pass:200`)
+  - `npm run -s ops:layer-placement:check` -> pass (`violations_count:0`)
 - Action when environment clears:
   - Re-run `./verify.sh`
   - Re-run system suite:

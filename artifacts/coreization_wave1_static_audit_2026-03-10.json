@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-03-10T10:53:12.795Z",
-  "revision": "12c5d3c1f41038d3dca3ab74d112e880a82c80e3",
+  "generated_at": "2026-03-10T11:01:59.794Z",
+  "revision": "3b9da177aad30bf08c667fa4e8c4769eda7256a6",
   "policy": {
     "target": "Hard Coreization Wave 1 static surface check",
     "max_thin_wrapper_lines": 80
