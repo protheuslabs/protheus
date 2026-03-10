@@ -65,6 +65,7 @@ fn usage() {
     println!("  protheus-ops persona-schema-contract <validate|status> [--strict=1|0] [--schema-mode=<id>] [--payload=<json>|--input=<path>]");
     println!("  protheus-ops protheusctl <command> [flags]");
     println!("  protheus-ops personas-cli <command> [flags]");
+    println!("  protheus-ops autophagy-auto-approval <evaluate|monitor|commit|rollback|status> [flags]");
     println!("  protheus-ops assimilation-controller <command> [flags]");
     println!("  protheus-ops sensory-eyes-intake <command> [flags]");
     println!("  protheus-ops spawn-broker <status|request|release> [flags]");
@@ -470,6 +471,9 @@ fn main() {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::personas_cli::run(&cwd, &rest);
             std::process::exit(exit);
+        }
+        "autophagy-auto-approval" => {
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::autophagy_auto_approval::run);
         }
         "assimilation-controller" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();

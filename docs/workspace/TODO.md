@@ -123,13 +123,19 @@ Updated: 2026-03-10 (policy enforcement tranche closed + Protheus 2.0 intake app
   - `node apps/examples/dictionary-demo/run.js`
   - `node apps/examples/personas-demo/run.js`
 
-11. `V6-ALIVE-001.2` `P1` `ROI=10/10` `DEP=V3-RACE-180,007` Confidence-gated autophagy auto-approval + rollback window. `STATUS: QUEUED`
+11. `V6-ALIVE-001.2` `P1` `ROI=10/10` `DEP=V3-RACE-180,007` Confidence-gated autophagy auto-approval + rollback window. `STATUS: COMPLETE`
 - Source:
 - `proposals/protheus_optimization_v2.md`
 - `AGE-10`
 - Exit criteria:
 - High-confidence bounded proposals auto-execute under policy thresholds with delayed commit, rollback window, and explicit regret/remediation path on degradation.
 - Human review shifts from per-proposal blocking to exception/batch approval for low-confidence or excluded proposal classes.
+- Completion evidence:
+- `core/layer2/ops/src/autophagy_auto_approval.rs`
+- `core/layer0/ops/src/main.rs`
+- `client/runtime/config/autophagy_auto_approval_policy.json`
+- `client/runtime/systems/autonomy/autophagy_auto_approval.ts`
+- `docs/client/AUTOPHAGY_AUTO_APPROVAL.md`
 
 12. `V6-ALIVE-001.1` `P1` `ROI=9/10` `DEP=007` Micro-dopamine events + objective auto-verification. `STATUS: QUEUED`
 - Source:
@@ -182,13 +188,13 @@ Updated: 2026-03-10 (policy enforcement tranche closed + Protheus 2.0 intake app
 18. `MAINT-006` `P1` `ROI=9/10` `DEP=009,010` Client legacy language debt burn-down (`JS/Python/Shell -> TS/client or apps/adapters/tests`). `STATUS: IN_PROGRESS`
 - Current baseline:
 - `client` legacy debt tracked by repo-surface audit + debt ledger:
-  - `total=893`
-  - `js=872`
+  - `total=894`
+  - `js=873`
   - `sh=13`
   - `py=7`
   - `ps1=1`
 - High-value residual slices:
-  - `compat_runtime_wrapper_surface=716`
+  - `compat_runtime_wrapper_surface=717`
   - `compat_cognition_wrapper_surface=70`
   - `platform_compat_surface=50`
   - `installer_or_dev_shell=23`

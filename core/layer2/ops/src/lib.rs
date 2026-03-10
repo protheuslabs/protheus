@@ -7,6 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 pub mod ops_lane_runtime;
 pub mod autoresearch_loop;
+pub mod autophagy_auto_approval;
 pub mod biological_computing_adapter;
 pub mod bookmark_knowledge_pipeline;
 pub mod company_layer_orchestration;

@@ -1,18 +1,18 @@
 {
   "type": "client_legacy_debt_report",
-  "generated_at": "2026-03-10T23:09:45.893Z",
-  "revision": "04a8be5a0ce3a9c51b25e5dbda7073a00970adc0",
+  "generated_at": "2026-03-10T23:23:51.115Z",
+  "revision": "10f4bca6b0bc4bc0a74db7be25edc3f2ed30e449",
   "root": "client",
   "summary": {
-    "total_files": 893,
+    "total_files": 894,
     "by_ext": {
-      "js": 872,
+      "js": 873,
       "sh": 13,
       "py": 7,
       "ps1": 1
     },
     "by_category": {
-      "compat_runtime_wrapper_surface": 716,
+      "compat_runtime_wrapper_surface": 717,
       "compat_cognition_wrapper_surface": 70,
       "platform_compat_surface": 50,
       "installer_or_dev_shell": 23,
@@ -1015,6 +1015,11 @@
     },
     {
       "file": "client/runtime/systems/autonomy/autonomy_simulation_harness.js",
+      "ext": "js",
+      "category": "compat_runtime_wrapper_surface"
+    },
+    {
+      "file": "client/runtime/systems/autonomy/autophagy_auto_approval.js",
       "ext": "js",
       "category": "compat_runtime_wrapper_surface"
     },

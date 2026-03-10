@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "auto_approval": {
+    "enabled": true,
+    "min_confidence": 0.85,
+    "min_historical_success_rate": 0.9,
+    "max_impact_score": 50,
+    "excluded_types": [
+      "safety_critical",
+      "budget_hold"
+    ],
+    "auto_rollback_on_degradation": true,
+    "rollback_window_minutes": 30,
+    "regret_issue_label": "auto_approval_regret",
+    "degradation_threshold": {
+      "max_drift_delta": 0.01,
+      "max_yield_drop": 0.05
+    }
+  },
+  "paths": {
+    "state_path": "state/autonomy/autophagy_auto_approval/state.json",
+    "latest_path": "state/autonomy/autophagy_auto_approval/latest.json",
+    "receipts_path": "state/autonomy/autophagy_auto_approval/receipts.jsonl",
+    "regrets_path": "state/autonomy/autophagy_auto_approval/regrets.jsonl"
+  }
+}
