@@ -1,0 +1,110 @@
+{
+  "version": "2026-03-10",
+  "code_roots": [
+    "core",
+    "client",
+    "apps",
+    "adapters",
+    "tests"
+  ],
+  "root_rules": {
+    "core": {
+      "allowed_extensions": [
+        "rs",
+        "c",
+        "cc",
+        "cpp",
+        "h",
+        "hpp",
+        "sh"
+      ],
+      "notes": "Rust-first. C/C++ only for low-level or hardware-adjacent modules. Shell allowed only for tightly-scoped build/install/packaging helpers."
+    },
+    "client": {
+      "target_extensions": [
+        "ts",
+        "tsx",
+        "html",
+        "css",
+        "scss"
+      ],
+      "legacy_debt_extensions": [
+        "js",
+        "py",
+        "sh",
+        "ps1"
+      ],
+      "notes": "Client is developer-facing platform surface. JS/Python/Shell/PowerShell are tracked as explicit migration debt or packaging/installer glue."
+    },
+    "apps": {
+      "allowed_extensions": [
+        "ts",
+        "tsx",
+        "js",
+        "jsx",
+        "py",
+        "rs",
+        "html",
+        "css",
+        "scss",
+        "sh",
+        "toml",
+        "json",
+        "yaml",
+        "yml"
+      ],
+      "notes": "Apps are polyglot and product-oriented, but must not own core authority."
+    },
+    "adapters": {
+      "allowed_extensions": [
+        "ts",
+        "tsx",
+        "js",
+        "jsx",
+        "py",
+        "rs",
+        "sh",
+        "toml",
+        "json",
+        "yaml",
+        "yml"
+      ],
+      "notes": "Adapters are polyglot integration shims for external systems."
+    },
+    "tests": {
+      "allowed_extensions": [
+        "ts",
+        "tsx",
+        "js",
+        "jsx",
+        "py",
+        "rs",
+        "sh"
+      ],
+      "notes": "Top-level integration/regression/e2e verification surface."
+    }
+  },
+  "runtime_exceptions": [
+    "scripts/",
+    "examples/",
+    "benchmarks/",
+    "docs/",
+    "artifacts/",
+    "state/",
+    "dist/",
+    "target/",
+    "target_l0ops_iso2/",
+    "target_l0ops_isolated/",
+    "target_l0ops_sweep/",
+    "target_ops_clean/",
+    "target_system_regression/",
+    "node_modules/"
+  ],
+  "ignore_path_prefixes": [
+    "client/runtime/local/"
+  ],
+  "ignore_exact_paths": [
+    "verify.sh",
+    "vitest.config.ts"
+  ]
+}

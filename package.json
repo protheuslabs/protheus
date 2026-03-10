@@ -8,6 +8,7 @@
     "metrics:rust-share:gate": "bash scripts/metrics/tracked_loc_report.sh --ref=HEAD --min-rust-share=60",
     "ops:layer-placement:check": "node scripts/ci/layer_placement_check.mjs",
     "ops:client-layer:boundary": "node scripts/ci/client_layer_boundary_audit.mjs --strict=1",
+    "ops:repo-surface:audit": "node scripts/ci/repo_surface_policy_audit.mjs --strict=1",
     "ops:backlog:actionable-report": "node scripts/ci/backlog_actionable_report.mjs",
     "ops:backlog:actionable-gate": "node scripts/ci/backlog_actionable_report.mjs --fail-on-actionable",
     "ops:srs:top200:regression": "node scripts/ci/srs_top200_regression.mjs",

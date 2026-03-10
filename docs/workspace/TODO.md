@@ -107,6 +107,30 @@ Updated: 2026-03-10 (security TODO execution tranche applied)
 - `artifacts/client_layer_boundary_audit_2026-03-10.json`
 - `npm run -s ops:client-layer:boundary`
 
+12. `MAINT-005` `P1` `ROI=8/10` `DEP=004` Repo surface policy codified (`core/client/apps/adapters/tests`). `STATUS: COMPLETE`
+- Exit criteria:
+- Repo topology and language policy are documented and enforced by audit.
+- `/apps`, `/adapters`, and `/tests` surfaces are explicitly defined.
+- Completion evidence:
+- `docs/client/architecture/LAYER_RULEBOOK.md`
+- `client/runtime/config/repo_surface_policy.json`
+- `scripts/ci/repo_surface_policy_audit.mjs`
+- `apps/README.md`
+- `adapters/README.md`
+- `tests/README.md`
+- `artifacts/repo_surface_policy_audit_2026-03-10.json`
+
+13. `MAINT-006` `P1` `ROI=9/10` `DEP=005` Client legacy language debt burn-down (`JS/Python/Shell -> TS/client or apps/adapters/tests`). `STATUS: QUEUED`
+- Current baseline:
+- `client` legacy debt tracked by repo-surface audit:
+  - `js=5392`
+  - `sh=19`
+  - `py=11`
+  - `ps1=1`
+- Exit criteria:
+- Client reaches TS/TSX + HTML/CSS target state except explicitly-approved installer/package shims.
+- App/adaptor/test candidates are relocated out of `client`.
+
 ## Commands used in this tranche
 - `node scripts/ci/nightly_fuzz_chaos_report.mjs`
 - `./target/debug/protheus-ops contract-check --rust-contract-check-ids=primitive_ts_wrapper_contract`
@@ -115,6 +139,7 @@ Updated: 2026-03-10 (security TODO execution tranche applied)
 - `node scripts/ci/release_security_readiness_report.mjs`
 - `node scripts/ci/formal_verification_expansion_report.mjs`
 - `node scripts/ci/client_layer_boundary_audit.mjs --strict=1 --out=artifacts/client_layer_boundary_audit_2026-03-10.json`
+- `node scripts/ci/repo_surface_policy_audit.mjs --strict=1 --out=artifacts/repo_surface_policy_audit_2026-03-10.json`
 - `npm run -s metrics:rust-share:gate`
 - `./verify.sh`
 - `node scripts/ci/backlog_actionable_report.mjs > artifacts/backlog_actionable_report_2026-03-10_post_security_todo.json`
