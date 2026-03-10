@@ -1,22 +1,18 @@
 #!/usr/bin/env node
-// @ts-nocheck
 'use strict';
 
-// Layer ownership: core/layer2/ops + core/layer0/ops::legacy-retired-lane (authoritative)
+// Layer ownership: core/layer2/runtime + core/layer0/ops::legacy-retired-lane (authoritative)
 // TypeScript compatibility shim only.
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { createRequire } from 'node:module';
-import { spawnSync } from 'node:child_process';
+const { createLegacyRetiredModule, runAsMain } = require('../../lib/legacy_retired_wrapper.js');
 
-const require = createRequire(import.meta.url);
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const JS_ENTRY = path.join(__dirname, 'formal_spec_guard.js');
+const mod = createLegacyRetiredModule(
+  __dirname,
+  'formal_spec_guard',
+  'RUNTIME-SYSTEMS-OPS-FORMAL_SPEC_GUARD'
+);
 
-if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
-  const out = spawnSync(process.execPath, [JS_ENTRY, ...process.argv.slice(2)], { stdio: 'inherit' });
-  process.exit(Number.isFinite(out && out.status) ? Number(out.status) : 1);
+if (require.main === module) {
+  runAsMain(mod, process.argv.slice(2));
 }
 
-export const { run } = require('./formal_spec_guard.js');
+module.exports = mod;

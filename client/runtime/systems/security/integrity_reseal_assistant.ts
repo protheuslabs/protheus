@@ -4,6 +4,7 @@
 
 // Layer ownership: core/layer2/runtime + core/layer0/ops::legacy-retired-lane (authoritative)
 // TypeScript compatibility shim only.
-const mod = require('./integrity_reseal_assistant.js');
-if (require.main === module) mod.run(process.argv.slice(2));
+const { createLegacyRetiredModule, runAsMain } = require('../../lib/legacy_retired_wrapper.js');
+const mod = createLegacyRetiredModule(__dirname, 'integrity_reseal_assistant', 'RUNTIME-SYSTEMS-SECURITY-INTEGRITY_RESEAL_ASSISTANT');
+if (require.main === module) runAsMain(mod, process.argv.slice(2));
 module.exports = mod;

@@ -4,6 +4,7 @@
 
 // Layer ownership: core/layer2/runtime + core/layer0/ops::legacy-retired-lane (authoritative)
 // TypeScript compatibility shim only.
-const mod = require('./memory_layer_guard.js');
-if (require.main === module) mod.run(process.argv.slice(2));
+const { createLegacyRetiredModule, runAsMain } = require('../../lib/legacy_retired_wrapper.js');
+const mod = createLegacyRetiredModule(__dirname, 'memory_layer_guard', 'RUNTIME-SYSTEMS-MEMORY-MEMORY_LAYER_GUARD');
+if (require.main === module) runAsMain(mod, process.argv.slice(2));
 module.exports = mod;

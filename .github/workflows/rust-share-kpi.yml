@@ -28,6 +28,11 @@ jobs:
           scripts/metrics/tracked_loc_report.sh --ref=HEAD ${BASE_ARGS} --out=artifacts/rust_share/tracked_loc_report.json
           cat artifacts/rust_share/tracked_loc_report.json
 
+      - name: Enforce Rust share floor (>=60%)
+        shell: bash
+        run: |
+          scripts/metrics/tracked_loc_report.sh --ref=HEAD --min-rust-share=60 >/dev/null
+
       - name: Upload KPI artifact
         uses: actions/upload-artifact@v4
         with:

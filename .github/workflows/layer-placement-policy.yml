@@ -1,0 +1,36 @@
+name: Layer Placement Policy
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  layer-placement-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Resolve base ref
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+
+      - name: Run layer placement policy check
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            node scripts/ci/layer_placement_check.mjs --base-ref=origin/${{ github.base_ref }}
+          else
+            node scripts/ci/layer_placement_check.mjs --base-ref=HEAD~1
+          fi

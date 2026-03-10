@@ -1,15 +1,15 @@
-# Creator Outreach (Default App Scaffold)
+# Creator Outreach (V6-APP-001)
 
-Purpose: default `/apps` app for autonomous creator discovery, outreach, follow-up, and booking.
+Layer: app (runs on top of client; not core authority).
 
-Placement:
-- Lives in `/apps` (top-level), not in `client/`.
-- Runs on top of client/runtime wrappers.
-- Core authority paths remain conduit-governed.
+Purpose:
+- Creator discovery (YouTube/Twitch)
+- Personalized outreach generation and scheduling
+- Response handling and call-booking orchestration
 
-Planned lanes (V6-APP-001):
-- Discovery on creator surfaces (e.g., YouTube/Twitch)
-- Personalized outreach + follow-up sequencing
-- Response triage + booking workflow
-- 24/7 scheduled/background operation
-- Deterministic receipt trail for all actions
+Core integration contract:
+- Route all outbound actions through Conduit policy gates.
+- Emit deterministic receipts for discovery, outreach, and follow-up flows.
+
+CLI target:
+- `protheus app run creator-outreach`

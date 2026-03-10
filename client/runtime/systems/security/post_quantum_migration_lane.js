@@ -1,17 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
-// Layer ownership: core/layer1/security (authoritative)
-const { runSecurityPlane, runSecurityPlaneCli } = require('../../lib/security_plane_bridge');
-
-function run(args = []) {
-  return runSecurityPlane('post-quantum-migration-lane', args);
-}
-
-if (require.main === module) {
-  runSecurityPlaneCli('post-quantum-migration-lane', process.argv.slice(2));
-}
-
-module.exports = {
-  run
-};
+// Layer ownership: core/layer2/runtime + core/layer0/ops::legacy-retired-lane (authoritative)
+// Thin compatibility wrapper only.
+const { createLegacyRetiredModule, runAsMain } = require('../../lib/legacy_retired_wrapper.js');
+const mod = createLegacyRetiredModule(__dirname, 'post_quantum_migration_lane', 'RUNTIME-SYSTEMS-SECURITY-POST_QUANTUM_MIGRATION_LANE');
+if (require.main === module) runAsMain(mod, process.argv.slice(2));
+module.exports = mod;

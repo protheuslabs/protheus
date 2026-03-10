@@ -4,6 +4,7 @@
 
 // Layer ownership: core/layer2/runtime + core/layer0/ops::legacy-retired-lane (authoritative)
 // TypeScript compatibility shim only.
-const mod = require('./adversarial_goal_drift_auditor.js');
-if (require.main === module) mod.run(process.argv.slice(2));
+const { createLegacyRetiredModule, runAsMain } = require('../../lib/legacy_retired_wrapper.js');
+const mod = createLegacyRetiredModule(__dirname, 'adversarial_goal_drift_auditor', 'RUNTIME-SYSTEMS-SECURITY-ADVERSARIAL_GOAL_DRIFT_AUDITOR');
+if (require.main === module) runAsMain(mod, process.argv.slice(2));
 module.exports = mod;

@@ -1,0 +1,7 @@
+{
+  "id": "creator-outreach",
+  "srs": "V6-APP-001",
+  "layer": "app",
+  "entrypoint": "protheus app run creator-outreach",
+  "authority": "core"
+}

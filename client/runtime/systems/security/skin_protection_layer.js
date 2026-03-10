@@ -1,17 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
-// Layer ownership: core/layer1/security (authoritative)
-const { runSecurityPlane, runSecurityPlaneCli } = require('../../lib/security_plane_bridge');
-
-function run(args = []) {
-  return runSecurityPlane('skin-protection-layer', args);
-}
-
-if (require.main === module) {
-  runSecurityPlaneCli('skin-protection-layer', process.argv.slice(2));
-}
-
-module.exports = {
-  run
-};
+// Layer ownership: core/layer2/runtime + core/layer0/ops::legacy-retired-lane (authoritative)
+// Thin compatibility wrapper only.
+const { createLegacyRetiredModule, runAsMain } = require('../../lib/legacy_retired_wrapper.js');
+const mod = createLegacyRetiredModule(__dirname, 'skin_protection_layer', 'RUNTIME-SYSTEMS-SECURITY-SKIN_PROTECTION_LAYER');
+if (require.main === module) runAsMain(mod, process.argv.slice(2));
+module.exports = mod;

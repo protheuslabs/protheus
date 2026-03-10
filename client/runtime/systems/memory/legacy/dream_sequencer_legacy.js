@@ -1,18 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
-// Layer ownership: core/layer1/memory_runtime + core/layer0/ops::memory-ambient (authoritative)
-// Legacy compatibility shim only.
-
-const path = require('path');
-const { spawnSync } = require('child_process');
-const ENTRY = path.join(__dirname, '..', 'dream_sequencer.js');
-
-if (require.main === module) {
-  const out = spawnSync(process.execPath, [ENTRY, ...process.argv.slice(2)], {
-    stdio: 'inherit'
-  });
-  process.exit(Number.isFinite(out && out.status) ? Number(out.status) : 1);
-}
-
-module.exports = require('../dream_sequencer.js');
+// Layer ownership: core/layer2/runtime + core/layer0/ops::legacy-retired-lane (authoritative)
+// Thin compatibility wrapper only.
+const { createLegacyRetiredModule, runAsMain } = require('../../../lib/legacy_retired_wrapper.js');
+const mod = createLegacyRetiredModule(__dirname, 'dream_sequencer_legacy', 'RUNTIME-SYSTEMS-MEMORY-LEGACY-DREAM_SEQUENCER_LEGACY');
+if (require.main === module) runAsMain(mod, process.argv.slice(2));
+module.exports = mod;
