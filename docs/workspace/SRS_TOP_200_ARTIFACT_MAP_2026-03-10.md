@@ -46,6 +46,7 @@ Purpose:
 | V6-COCKPIT-015.2 | core/layer2/ops | `core/layer2/ops/src/lib.rs`, `core/layer0/ops/src/daemon_control.rs` | Persistent channel binding runtime anchor through daemon control contracts. |
 | V6-COCKPIT-015.4 | core/layer2/ops + core/layer2/execution | `core/layer0/ops/src/spawn_broker.rs`, `core/layer2/execution/src/lib.rs` | Non-blocking parallel swarm message fan-out anchor (scheduler + execution lane split). |
 | V6-COCKPIT-012.1 | core/layer1/memory_runtime + core/layer2/ops | `core/layer1/memory_runtime/src/hydration_policy.rs`, `core/layer2/ops/src/lib.rs` | Workspace bootstrap memory injection anchor (index-first bootstrap + daemon attach context contract). |
+| V6-COCKPIT-012.2 | core/layer2/ops + core/layer2/conduit | `core/layer2/ops/src/lib.rs`, `core/layer2/conduit/src/lib.rs` | Gateway daemon persistent-connection anchor (attach/reconnect + stream routing contract). |
 | V6-COCKPIT-009.5 | core/layer1/memory_runtime | `core/layer1/memory_runtime/src/lib.rs`, `core/layer0/memory_runtime/src/lane_contracts.rs` | Persistent memory across sessions anchor for deferred cockpit memory continuity. |
 | V7-META-004 | core/layer2/conduit + planes/contracts | `core/layer2/conduit/src/lib.rs`, `planes/contracts/conduit_envelope.schema.json`, `planes/contracts/README.md` | WIT/component ABI registry anchor and conduit contract mapping surface. |
 

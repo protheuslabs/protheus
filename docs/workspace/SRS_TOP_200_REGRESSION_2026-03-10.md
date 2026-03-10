@@ -7,27 +7,27 @@
 
 | Rank | ID | Status | Score | Evidence Hits | Non-Backlog Evidence | Regression |
 |---:|---|---|---:|---:|---:|---|
-| 1 | V6-COCKPIT-008 | queued | 380 | 2 | 4 | pass |
-| 2 | V6-COCKPIT-007 | queued | 375 | 12 | 8 | pass |
+| 1 | V6-COCKPIT-008 | queued | 380 | 8 | 4 | pass |
+| 2 | V6-COCKPIT-007 | queued | 375 | 8 | 4 | pass |
 | 3 | V6-COMP-005 | blocked | 350 | 32 | 28 | pass |
 | 4 | V6-SUBSTRATE-002.4 | blocked | 336 | 6 | 2 | pass |
-| 5 | V7-META-016 | blocked | 326 | 6 | 3 | pass |
-| 6 | V7-META-017 | blocked | 326 | 5 | 4 | pass |
+| 5 | V7-META-016 | blocked | 326 | 5 | 3 | pass |
+| 6 | V7-META-017 | blocked | 326 | 5 | 3 | pass |
 | 7 | V7-META-018 | blocked | 326 | 6 | 4 | pass |
-| 8 | V6-COCKPIT-009 | queued | 320 | 29 | 15 | pass |
-| 9 | V6-COCKPIT-009.1 | queued | 320 | 4 | 2 | pass |
+| 8 | V6-COCKPIT-009 | queued | 320 | 45 | 31 | pass |
+| 9 | V6-COCKPIT-009.1 | queued | 320 | 4 | 7 | pass |
 | 10 | V6-COCKPIT-009.2 | queued | 320 | 4 | 2 | pass |
 | 11 | V6-COCKPIT-009.3 | queued | 320 | 4 | 2 | pass |
-| 12 | V6-COCKPIT-009.4 | queued | 320 | 4 | 3 | pass |
-| 13 | V6-COCKPIT-009.5 | queued | 320 | 5 | 3 | pass |
-| 14 | V6-COCKPIT-009.6 | queued | 320 | 8 | 2 | pass |
-| 15 | V6-COCKPIT-010 | queued | 320 | 7 | 3 | pass |
+| 12 | V6-COCKPIT-009.4 | queued | 320 | 4 | 2 | pass |
+| 13 | V6-COCKPIT-009.5 | queued | 320 | 6 | 3 | pass |
+| 14 | V6-COCKPIT-009.6 | queued | 320 | 8 | 6 | pass |
+| 15 | V6-COCKPIT-010 | queued | 320 | 7 | 7 | pass |
 | 16 | V6-COCKPIT-011 | queued | 320 | 10 | 6 | pass |
 | 17 | V6-COCKPIT-012.1 | queued | 320 | 5 | 3 | pass |
-| 18 | V6-COCKPIT-012.2 | queued | 320 | 4 | 2 | pass |
+| 18 | V6-COCKPIT-012.2 | queued | 320 | 6 | 4 | pass |
 | 19 | V6-COCKPIT-012.3 | queued | 320 | 4 | 2 | pass |
 | 20 | V6-COCKPIT-012.4 | queued | 320 | 4 | 2 | pass |
-| 21 | V6-COCKPIT-012.5 | queued | 320 | 1 | 2 | pass |
+| 21 | V6-COCKPIT-012.5 | queued | 320 | 4 | 2 | pass |
 | 22 | V6-COCKPIT-013.1 | queued | 320 | 4 | 2 | pass |
 | 23 | V6-COCKPIT-013.2 | queued | 320 | 4 | 2 | pass |
 | 24 | V6-COCKPIT-013.3 | queued | 320 | 4 | 2 | pass |
@@ -73,17 +73,17 @@
 | 64 | V2-012 | blocked | 310 | 74 | 64 | pass |
 | 65 | V6-EDGE-005 | blocked | 310 | 28 | 26 | pass |
 | 66 | V6-F100-022 | blocked | 310 | 30 | 26 | pass |
-| 67 | V6-F100-023 | blocked | 310 | 20 | 56 | pass |
+| 67 | V6-F100-023 | blocked | 310 | 62 | 56 | pass |
 | 68 | V6-F100-024 | blocked | 310 | 30 | 26 | pass |
 | 69 | V6-F100-025 | blocked | 310 | 32 | 26 | pass |
 | 70 | V6-F100-034 | blocked | 310 | 57 | 51 | pass |
 | 71 | V6-F100-043 | blocked | 310 | 22 | 16 | pass |
 | 72 | V6-F100-044 | blocked | 310 | 20 | 14 | pass |
 | 73 | V6-F100-045 | blocked | 310 | 17 | 13 | pass |
-| 74 | V6-F100-A-008 | blocked | 310 | 10 | 5 | pass |
+| 74 | V6-F100-A-008 | blocked | 310 | 11 | 4 | pass |
 | 75 | V6-F100-A-009 | blocked | 310 | 8 | 3 | pass |
 | 76 | V6-F100-A-010 | blocked | 310 | 10 | 4 | pass |
-| 77 | V6-F100-A-011 | blocked | 310 | 11 | 5 | pass |
+| 77 | V6-F100-A-011 | blocked | 310 | 11 | 6 | pass |
 | 78 | V6-FLUX-007 | blocked | 310 | 28 | 26 | pass |
 | 79 | V6-GAP-006 | blocked | 310 | 18 | 16 | pass |
 | 80 | V6-PAY-007 | blocked | 310 | 28 | 26 | pass |
@@ -153,20 +153,20 @@
 | 144 | V6-VBROWSER-001.5 | queued | 270 | 4 | 2 | pass |
 | 145 | V7-META-001 | queued | 266 | 5 | 2 | pass |
 | 146 | V7-META-002 | queued | 266 | 4 | 2 | pass |
-| 147 | V7-META-003 | queued | 266 | 4 | 3 | pass |
+| 147 | V7-META-003 | queued | 266 | 5 | 3 | pass |
 | 148 | V7-META-004 | queued | 266 | 6 | 4 | pass |
-| 149 | V7-META-005 | queued | 266 | 4 | 2 | pass |
+| 149 | V7-META-005 | queued | 266 | 5 | 3 | pass |
 | 150 | V7-META-006 | queued | 266 | 4 | 2 | pass |
 | 151 | V7-META-007 | queued | 266 | 4 | 2 | pass |
 | 152 | V7-META-008 | queued | 266 | 4 | 2 | pass |
-| 153 | V7-META-009 | queued | 266 | 4 | 3 | pass |
-| 154 | V7-META-010 | queued | 266 | 4 | 2 | pass |
-| 155 | V7-META-011 | queued | 266 | 5 | 3 | pass |
-| 156 | V7-META-012 | queued | 266 | 8 | 5 | pass |
+| 153 | V7-META-009 | queued | 266 | 5 | 2 | pass |
+| 154 | V7-META-010 | queued | 266 | 5 | 2 | pass |
+| 155 | V7-META-011 | queued | 266 | 5 | 4 | pass |
+| 156 | V7-META-012 | queued | 266 | 7 | 5 | pass |
 | 157 | V7-META-013 | queued | 266 | 5 | 3 | pass |
 | 158 | V7-META-014 | queued | 266 | 5 | 3 | pass |
-| 159 | V7-META-015 | queued | 266 | 5 | 3 | pass |
-| 160 | V6-ADAPT-CORE-001 | queued | 250 | 21 | 19 | pass |
+| 159 | V7-META-015 | queued | 266 | 5 | 4 | pass |
+| 160 | V6-ADAPT-CORE-001 | queued | 250 | 21 | 20 | pass |
 | 161 | V6-BINVULN-001.1 | queued | 250 | 4 | 2 | pass |
 | 162 | V6-BINVULN-001.2 | queued | 250 | 4 | 2 | pass |
 | 163 | V6-BINVULN-001.3 | queued | 250 | 4 | 2 | pass |
@@ -187,7 +187,7 @@
 | 178 | V6-COLLAB-001.2 | queued | 250 | 4 | 2 | pass |
 | 179 | V6-COLLAB-001.3 | queued | 250 | 4 | 2 | pass |
 | 180 | V6-COLLAB-001.4 | queued | 250 | 4 | 2 | pass |
-| 181 | V6-DOM-401 | queued | 250 | 3 | 1 | pass |
+| 181 | V6-DOM-401 | queued | 250 | 3 | 0 | pass |
 | 182 | V6-DOM-402 | queued | 250 | 3 | 1 | pass |
 | 183 | V6-DOM-403 | queued | 250 | 4 | 2 | pass |
 | 184 | V6-DOM-404 | queued | 250 | 4 | 2 | pass |
@@ -205,8 +205,8 @@
 | 196 | V6-EXT-704 | queued | 250 | 3 | 1 | pass |
 | 197 | V6-EXT-705 | queued | 250 | 3 | 1 | pass |
 | 198 | V6-EXT-706 | queued | 250 | 7 | 5 | pass |
-| 199 | V6-EXT-707 | queued | 250 | 5 | 3 | pass |
-| 200 | V6-EXT-708 | queued | 250 | 4 | 2 | pass |
+| 199 | V6-EXT-707 | queued | 250 | 6 | 4 | pass |
+| 200 | V6-EXT-708 | queued | 250 | 5 | 3 | pass |
 
 ## High-Priority Regression Findings (fail/warn)
 

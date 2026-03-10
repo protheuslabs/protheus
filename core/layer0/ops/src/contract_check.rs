@@ -146,12 +146,21 @@ fn contract_check_ids_from_args(args: &[String]) -> Vec<String> {
         .unwrap_or_default()
 }
 
+fn should_run_rust_subcheck(selected: &HashSet<String>, id: &str) -> bool {
+    selected.is_empty()
+        || selected.contains(CHECK_ID_RUST_SOURCE_OF_TRUTH)
+        || selected.contains(id)
+}
+
 fn execute_contract_checks(root: &Path, args: &[String]) -> Result<Value, String> {
     let status_only = args.iter().any(|arg| arg == "status");
     let deep_probes = env_flag("CONTRACT_CHECK_DEEP_PROBES", false);
+    let selected_ids = contract_check_ids_from_args(args)
+        .into_iter()
+        .collect::<HashSet<_>>();
     let mut checks = vec![
         check_dist_runtime_guardrails(root)?,
-        check_rust_source_of_truth_contract(root)?,
+        check_rust_source_of_truth_contract(root, &selected_ids)?,
         check_guard_registry_contracts(root)?,
         check_source_tokens(
             root,
@@ -252,7 +261,10 @@ fn check_required_tokens_at_path(
     Ok(())
 }
 
-fn check_rust_source_of_truth_contract(root: &Path) -> Result<Value, String> {
+fn check_rust_source_of_truth_contract(
+    root: &Path,
+    selected: &HashSet<String>,
+) -> Result<Value, String> {
     let policy_path = root.join(RUST_SOURCE_OF_TRUTH_POLICY_REL);
     let raw = fs::read_to_string(&policy_path).map_err(|err| {
         format!(
@@ -267,207 +279,226 @@ fn check_rust_source_of_truth_contract(root: &Path) -> Result<Value, String> {
         )
     })?;
 
-    let entrypoint_gate = require_object(&policy, "rust_entrypoint_gate")?;
-    let entrypoint_path = require_rel_path(entrypoint_gate, "path")?;
-    let entrypoint_tokens = require_string_array(entrypoint_gate, "required_tokens")?;
-    if !entrypoint_path.ends_with(".rs") {
-        return Err(format!(
-            "rust_source_of_truth_path_extension_mismatch:rust_entrypoint_gate:{entrypoint_path}"
-        ));
-    }
-    check_required_tokens_at_path(
-        root,
-        &entrypoint_path,
-        &entrypoint_tokens,
-        "rust_entrypoint_gate",
-    )?;
+    let run_entrypoint = should_run_rust_subcheck(selected, "rust_entrypoint_gate");
+    let run_conduit = should_run_rust_subcheck(selected, "conduit_strict_gate");
+    let run_conduit_budget = should_run_rust_subcheck(selected, "conduit_budget_gate");
+    let run_status_dashboard = should_run_rust_subcheck(selected, "status_dashboard_gate");
+    let run_js_wrapper = should_run_rust_subcheck(selected, "js_wrapper_contract");
+    let run_rust_shim = should_run_rust_subcheck(selected, "rust_shim_contract");
+    let run_primitive_wrapper = should_run_rust_subcheck(selected, "primitive_ts_wrapper_contract");
 
-    let conduit_gate = require_object(&policy, "conduit_strict_gate")?;
-    let conduit_path = require_rel_path(conduit_gate, "path")?;
-    let conduit_tokens = require_string_array(conduit_gate, "required_tokens")?;
-    if !conduit_path.ends_with(".ts") {
-        return Err(format!(
-            "rust_source_of_truth_path_extension_mismatch:conduit_strict_gate:{conduit_path}"
-        ));
-    }
-    check_required_tokens_at_path(
-        root,
-        &conduit_path,
-        &conduit_tokens,
-        "conduit_strict_gate",
-    )?;
-
-    let conduit_budget_gate = require_object(&policy, "conduit_budget_gate")?;
-    let conduit_budget_path = require_rel_path(conduit_budget_gate, "path")?;
-    let conduit_budget_tokens = require_string_array(conduit_budget_gate, "required_tokens")?;
-    if !conduit_budget_path.ends_with(".rs") {
-        return Err(format!(
-            "rust_source_of_truth_path_extension_mismatch:conduit_budget_gate:{conduit_budget_path}"
-        ));
-    }
-    check_required_tokens_at_path(
-        root,
-        &conduit_budget_path,
-        &conduit_budget_tokens,
-        "conduit_budget_gate",
-    )?;
-
-    let status_dashboard_gate = require_object(&policy, "status_dashboard_gate")?;
-    let status_dashboard_path = require_rel_path(status_dashboard_gate, "path")?;
-    let status_dashboard_tokens = require_string_array(status_dashboard_gate, "required_tokens")?;
-    if !status_dashboard_path.ends_with(".ts") {
-        return Err(format!(
-            "rust_source_of_truth_path_extension_mismatch:status_dashboard_gate:{status_dashboard_path}"
-        ));
-    }
-    check_required_tokens_at_path(
-        root,
-        &status_dashboard_path,
-        &status_dashboard_tokens,
-        "status_dashboard_gate",
-    )?;
-
-    let wrapper_contract = require_object(&policy, "js_wrapper_contract")?;
-    let wrapper_paths = require_string_array(wrapper_contract, "required_wrapper_paths")?;
-    for rel in &wrapper_paths {
-        if !rel.ends_with(".js") {
-            return Err(format!("required_wrapper_must_be_js:{rel}"));
+    let mut entrypoint_path: Option<String> = None;
+    if run_entrypoint {
+        let entrypoint_gate = require_object(&policy, "rust_entrypoint_gate")?;
+        let path = require_rel_path(entrypoint_gate, "path")?;
+        let tokens = require_string_array(entrypoint_gate, "required_tokens")?;
+        if !path.ends_with(".rs") {
+            return Err(format!(
+                "rust_source_of_truth_path_extension_mismatch:rust_entrypoint_gate:{path}"
+            ));
         }
-        let path = root.join(rel);
-        let source = fs::read_to_string(&path)
-            .map_err(|err| format!("read_wrapper_failed:{}:{err}", path.display()))?;
-        if !is_ts_bootstrap_wrapper(&source) {
-            return Err(format!("required_wrapper_not_bootstrap:{rel}"));
-        }
+        check_required_tokens_at_path(root, &path, &tokens, "rust_entrypoint_gate")?;
+        entrypoint_path = Some(path);
     }
 
-    let rust_shim_contract = require_object(&policy, "rust_shim_contract")?;
-    let rust_shim_entries = rust_shim_contract
-        .get("entries")
-        .and_then(Value::as_array)
-        .ok_or_else(|| "rust_source_of_truth_policy_missing_array:entries".to_string())?;
-    if rust_shim_entries.is_empty() {
-        return Err("rust_source_of_truth_policy_empty_array:entries".to_string());
+    let mut conduit_path: Option<String> = None;
+    if run_conduit {
+        let conduit_gate = require_object(&policy, "conduit_strict_gate")?;
+        let path = require_rel_path(conduit_gate, "path")?;
+        let tokens = require_string_array(conduit_gate, "required_tokens")?;
+        if !path.ends_with(".ts") {
+            return Err(format!(
+                "rust_source_of_truth_path_extension_mismatch:conduit_strict_gate:{path}"
+            ));
+        }
+        check_required_tokens_at_path(root, &path, &tokens, "conduit_strict_gate")?;
+        conduit_path = Some(path);
     }
+
+    let mut conduit_budget_path: Option<String> = None;
+    if run_conduit_budget {
+        let conduit_budget_gate = require_object(&policy, "conduit_budget_gate")?;
+        let path = require_rel_path(conduit_budget_gate, "path")?;
+        let tokens = require_string_array(conduit_budget_gate, "required_tokens")?;
+        if !path.ends_with(".rs") {
+            return Err(format!(
+                "rust_source_of_truth_path_extension_mismatch:conduit_budget_gate:{path}"
+            ));
+        }
+        check_required_tokens_at_path(root, &path, &tokens, "conduit_budget_gate")?;
+        conduit_budget_path = Some(path);
+    }
+
+    let mut status_dashboard_path: Option<String> = None;
+    if run_status_dashboard {
+        let status_dashboard_gate = require_object(&policy, "status_dashboard_gate")?;
+        let path = require_rel_path(status_dashboard_gate, "path")?;
+        let tokens = require_string_array(status_dashboard_gate, "required_tokens")?;
+        if !path.ends_with(".ts") {
+            return Err(format!(
+                "rust_source_of_truth_path_extension_mismatch:status_dashboard_gate:{path}"
+            ));
+        }
+        check_required_tokens_at_path(root, &path, &tokens, "status_dashboard_gate")?;
+        status_dashboard_path = Some(path);
+    }
+
+    let mut wrapper_paths_checked = 0usize;
+    if run_js_wrapper {
+        let wrapper_contract = require_object(&policy, "js_wrapper_contract")?;
+        let wrapper_paths = require_string_array(wrapper_contract, "required_wrapper_paths")?;
+        for rel in &wrapper_paths {
+            if !rel.ends_with(".js") {
+                return Err(format!("required_wrapper_must_be_js:{rel}"));
+            }
+            let path = root.join(rel);
+            let source = fs::read_to_string(&path)
+                .map_err(|err| format!("read_wrapper_failed:{}:{err}", path.display()))?;
+            if !is_ts_bootstrap_wrapper(&source) {
+                return Err(format!("required_wrapper_not_bootstrap:{rel}"));
+            }
+        }
+        wrapper_paths_checked = wrapper_paths.len();
+    }
+
     let mut rust_shim_checked = 0usize;
-    for entry in rust_shim_entries {
-        let section = entry
-            .as_object()
-            .ok_or_else(|| "rust_source_of_truth_policy_invalid_entry:entries".to_string())?;
-        let shim_path = require_rel_path(section, "path")?;
-        if !shim_path.ends_with(".js") {
-            return Err(format!("rust_shim_must_be_js:{shim_path}"));
+    if run_rust_shim {
+        let rust_shim_contract = require_object(&policy, "rust_shim_contract")?;
+        let rust_shim_entries = rust_shim_contract
+            .get("entries")
+            .and_then(Value::as_array)
+            .ok_or_else(|| "rust_source_of_truth_policy_missing_array:entries".to_string())?;
+        if rust_shim_entries.is_empty() {
+            return Err("rust_source_of_truth_policy_empty_array:entries".to_string());
         }
-        let shim_tokens = require_string_array(section, "required_tokens")?;
-        check_required_tokens_at_path(
-            root,
-            &shim_path,
-            &shim_tokens,
-            "rust_shim_contract",
-        )?;
-        rust_shim_checked += 1;
-    }
-
-    let primitive_wrapper_contract = require_object(&policy, "primitive_ts_wrapper_contract")?;
-    let primitive_wrapper_entries = primitive_wrapper_contract
-        .get("entries")
-        .and_then(Value::as_array)
-        .ok_or_else(|| {
-            "rust_source_of_truth_policy_missing_array:primitive_ts_wrapper_contract.entries"
-                .to_string()
-        })?;
-    if primitive_wrapper_entries.is_empty() {
-        return Err(
-            "rust_source_of_truth_policy_empty_array:primitive_ts_wrapper_contract.entries"
-                .to_string(),
-        );
+        for entry in rust_shim_entries {
+            let section = entry
+                .as_object()
+                .ok_or_else(|| "rust_source_of_truth_policy_invalid_entry:entries".to_string())?;
+            let shim_path = require_rel_path(section, "path")?;
+            if !shim_path.ends_with(".js") {
+                return Err(format!("rust_shim_must_be_js:{shim_path}"));
+            }
+            let shim_tokens = require_string_array(section, "required_tokens")?;
+            check_required_tokens_at_path(root, &shim_path, &shim_tokens, "rust_shim_contract")?;
+            rust_shim_checked += 1;
+        }
     }
 
     let mut primitive_ts_wrappers_checked = 0usize;
-    for entry in primitive_wrapper_entries {
-        let section = entry.as_object().ok_or_else(|| {
-            "rust_source_of_truth_policy_invalid_entry:primitive_ts_wrapper_contract.entries"
-                .to_string()
-        })?;
-        let wrapper_path = require_rel_path(section, "path")?;
-        if !wrapper_path.ends_with(".ts") {
-            return Err(format!(
-                "primitive_ts_wrapper_must_be_ts:{wrapper_path}"
-            ));
+    if run_primitive_wrapper {
+        let primitive_wrapper_contract = require_object(&policy, "primitive_ts_wrapper_contract")?;
+        let primitive_wrapper_entries = primitive_wrapper_contract
+            .get("entries")
+            .and_then(Value::as_array)
+            .ok_or_else(|| {
+                "rust_source_of_truth_policy_missing_array:primitive_ts_wrapper_contract.entries"
+                    .to_string()
+            })?;
+        if primitive_wrapper_entries.is_empty() {
+            return Err(
+                "rust_source_of_truth_policy_empty_array:primitive_ts_wrapper_contract.entries"
+                    .to_string(),
+            );
         }
 
-        let required_tokens = require_string_array(section, "required_tokens")?;
-        check_required_tokens_at_path(
-            root,
-            &wrapper_path,
-            &required_tokens,
-            "primitive_ts_wrapper_contract",
-        )?;
-
-        let forbidden_tokens = section
-            .get("forbidden_tokens")
-            .and_then(Value::as_array)
-            .map(|rows| {
-                rows.iter()
-                    .filter_map(Value::as_str)
-                    .map(|row| row.trim().to_string())
-                    .filter(|row| !row.is_empty())
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default();
-
-        if !forbidden_tokens.is_empty() {
-            let wrapper_source = fs::read_to_string(root.join(&wrapper_path)).map_err(|err| {
-                format!(
-                    "read_source_failed:{}:{err}",
-                    root.join(&wrapper_path).display()
-                )
+        for entry in primitive_wrapper_entries {
+            let section = entry.as_object().ok_or_else(|| {
+                "rust_source_of_truth_policy_invalid_entry:primitive_ts_wrapper_contract.entries"
+                    .to_string()
             })?;
-            let found_forbidden = forbidden_tokens
+            let wrapper_path = require_rel_path(section, "path")?;
+            if !wrapper_path.ends_with(".ts") {
+                return Err(format!("primitive_ts_wrapper_must_be_ts:{wrapper_path}"));
+            }
+
+            let required_tokens = require_string_array(section, "required_tokens")?;
+            check_required_tokens_at_path(
+                root,
+                &wrapper_path,
+                &required_tokens,
+                "primitive_ts_wrapper_contract",
+            )?;
+
+            let forbidden_tokens = section
+                .get("forbidden_tokens")
+                .and_then(Value::as_array)
+                .map(|rows| {
+                    rows.iter()
+                        .filter_map(Value::as_str)
+                        .map(|row| row.trim().to_string())
+                        .filter(|row| !row.is_empty())
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+
+            if !forbidden_tokens.is_empty() {
+                let wrapper_source = fs::read_to_string(root.join(&wrapper_path)).map_err(|err| {
+                    format!(
+                        "read_source_failed:{}:{err}",
+                        root.join(&wrapper_path).display()
+                    )
+                })?;
+                let found_forbidden = forbidden_tokens
+                    .iter()
+                    .filter(|token| wrapper_source.contains(token.as_str()))
+                    .cloned()
+                    .collect::<Vec<_>>();
+                if !found_forbidden.is_empty() {
+                    return Err(format!(
+                        "forbidden_source_tokens:primitive_ts_wrapper_contract:{}:{}",
+                        wrapper_path,
+                        found_forbidden.join(",")
+                    ));
+                }
+            }
+
+            primitive_ts_wrappers_checked += 1;
+        }
+    }
+
+    let mut ts_surface_allowlist_prefixes: Vec<String> = Vec::new();
+    if run_conduit || run_status_dashboard {
+        ts_surface_allowlist_prefixes = policy
+            .get("ts_surface_allowlist_prefixes")
+            .and_then(Value::as_array)
+            .ok_or_else(|| {
+                "rust_source_of_truth_policy_missing_array:ts_surface_allowlist_prefixes"
+                    .to_string()
+            })?
+            .iter()
+            .filter_map(Value::as_str)
+            .map(|row| row.trim().to_string())
+            .filter(|row| !row.is_empty())
+            .collect::<Vec<_>>();
+        if ts_surface_allowlist_prefixes.is_empty() {
+            return Err(
+                "rust_source_of_truth_policy_empty_array:ts_surface_allowlist_prefixes".to_string(),
+            );
+        }
+
+        let mut ts_paths_to_validate: Vec<String> = Vec::new();
+        if let Some(path) = conduit_path.clone() {
+            ts_paths_to_validate.push(path);
+        }
+        if let Some(path) = status_dashboard_path.clone() {
+            ts_paths_to_validate.push(path);
+        }
+        for ts_path in ts_paths_to_validate {
+            let allowed = ts_surface_allowlist_prefixes
                 .iter()
-                .filter(|token| wrapper_source.contains(token.as_str()))
-                .cloned()
-                .collect::<Vec<_>>();
-            if !found_forbidden.is_empty() {
+                .any(|prefix| ts_path.starts_with(prefix));
+            if !allowed {
                 return Err(format!(
-                    "forbidden_source_tokens:primitive_ts_wrapper_contract:{}:{}",
-                    wrapper_path,
-                    found_forbidden.join(",")
+                    "ts_path_outside_surface_allowlist:{ts_path}:{}",
+                    ts_surface_allowlist_prefixes.join(",")
                 ));
             }
         }
-
-        primitive_ts_wrappers_checked += 1;
     }
 
-    let ts_surface_allowlist_prefixes = policy
-        .get("ts_surface_allowlist_prefixes")
-        .and_then(Value::as_array)
-        .ok_or_else(|| {
-            "rust_source_of_truth_policy_missing_array:ts_surface_allowlist_prefixes".to_string()
-        })?
-        .iter()
-        .filter_map(Value::as_str)
-        .map(|row| row.trim().to_string())
-        .filter(|row| !row.is_empty())
-        .collect::<Vec<_>>();
-    if ts_surface_allowlist_prefixes.is_empty() {
-        return Err(
-            "rust_source_of_truth_policy_empty_array:ts_surface_allowlist_prefixes".to_string(),
-        );
-    }
-
-    for ts_path in [&conduit_path, &status_dashboard_path] {
-        let allowed = ts_surface_allowlist_prefixes
-            .iter()
-            .any(|prefix| ts_path.starts_with(prefix));
-        if !allowed {
-            return Err(format!(
-                "ts_path_outside_surface_allowlist:{ts_path}:{}",
-                ts_surface_allowlist_prefixes.join(",")
-            ));
-        }
-    }
+    let mut scoped_check_ids = selected.iter().cloned().collect::<Vec<_>>();
+    scoped_check_ids.sort();
 
     Ok(json!({
         "id": CHECK_ID_RUST_SOURCE_OF_TRUTH,
@@ -477,10 +508,11 @@ fn check_rust_source_of_truth_contract(root: &Path) -> Result<Value, String> {
         "conduit_path": conduit_path,
         "conduit_budget_path": conduit_budget_path,
         "status_dashboard_path": status_dashboard_path,
-        "wrapper_paths_checked": wrapper_paths.len(),
+        "wrapper_paths_checked": wrapper_paths_checked,
         "rust_shims_checked": rust_shim_checked,
         "primitive_ts_wrappers_checked": primitive_ts_wrappers_checked,
         "ts_surface_allowlist_prefixes": ts_surface_allowlist_prefixes,
+        "scoped_check_ids": scoped_check_ids,
     }))
 }
 

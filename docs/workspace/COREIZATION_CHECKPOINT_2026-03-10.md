@@ -77,6 +77,8 @@
   - `V6-MEMORY-021` (per-query token telemetry + burn-SLO trace lane)
   - `V6-SWARM-001..006` (swarm router closure tranche)
   - `V6-INITIATIVE-013`, `V6-ARCH-ICEBERG-028` (initiative + iceberg live runtime closure tranche)
+  - `V6-PRIM-001`, `V6-PRIM-002`, `V6-PRIM-003`, `V6-PRIM-006` (layer1 primitive rust-closure tranche)
+  - `V6-PRIM-009` (primitive residual audit refresh)
 - Validation evidence:
   - `client/memory/tools/tests/llmn_mode_conformance.test.js`
   - `client/memory/tools/tests/strategy_resolver.test.js`
@@ -95,5 +97,9 @@
   - `cargo test -p execution_core initiative`
   - `npm run -s test:ops:source-runtime-classifier`
   - `npm run -s test:ops:subconscious-boundary-guard`
+  - `cargo test -p task`
+  - `cargo test -p resource`
+  - `cargo test -p isolation`
+  - `cargo test -p protheus-observability-core-v1`
 - Actionable backlog count after tranche:
-  - `artifacts/backlog_actionable_report_2026-03-10_resume.json` -> `actionable_count: 381`
+  - `artifacts/backlog_actionable_report_2026-03-10_resume.json` -> `actionable_count: 376`

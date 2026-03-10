@@ -73,6 +73,16 @@ Updated: 2026-03-10 (runtime-unblocked + verification-green)
   - `cargo test -p execution_core initiative`
   - `npm run -s test:ops:source-runtime-classifier`
   - `npm run -s test:ops:subconscious-boundary-guard`
+- Primitive core closure tranche completed (`V6-PRIM-001`, `V6-PRIM-002`, `V6-PRIM-003`, `V6-PRIM-006`):
+  - `cargo test -p task`
+  - `cargo test -p resource`
+  - `cargo test -p isolation`
+  - `cargo test -p protheus-observability-core-v1`
+- Primitive residual audit tranche completed (`V6-PRIM-009`):
+  - `docs/client/reports/primitive_ts_logic_audit_2026-03-10.md`
+  - `artifacts/primitive_ts_logic_audit_2026-03-10.json`
+- Primitive wrapper contract lane remains in progress (`V6-PRIM-008`) with scoped gate:
+  - `./target/debug/protheus-ops contract-check --rust-contract-check-ids=primitive_ts_wrapper_contract`
 
 ## Commands
 
