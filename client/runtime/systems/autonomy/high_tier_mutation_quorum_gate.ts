@@ -2,21 +2,9 @@
 // @ts-nocheck
 'use strict';
 
-// Layer ownership: core/layer2/autonomy + core/layer0/ops::legacy-retired-lane (authoritative)
+// Layer ownership: core/layer2/runtime + core/layer0/ops::legacy-retired-lane (authoritative)
 // TypeScript compatibility shim only.
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { createRequire } from 'node:module';
-import { spawnSync } from 'node:child_process';
-
-const require = createRequire(import.meta.url);
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const JS_ENTRY = path.join(__dirname, 'high_tier_mutation_quorum_gate.js');
-
-if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
-  const out = spawnSync(process.execPath, [JS_ENTRY, ...process.argv.slice(2)], { stdio: 'inherit' });
-  process.exit(Number.isFinite(out && out.status) ? Number(out.status) : 1);
-}
-
-export const { run } = require('./high_tier_mutation_quorum_gate.js');
+const { createLegacyRetiredModule, runAsMain } = require('../../lib/legacy_retired_wrapper.js');
+const mod = createLegacyRetiredModule(__dirname, 'high_tier_mutation_quorum_gate', 'RUNTIME-SYSTEMS-AUTONOMY-HIGH_TIER_MUTATION_QUORUM_GATE');
+if (require.main === module) runAsMain(mod, process.argv.slice(2));
+module.exports = mod;

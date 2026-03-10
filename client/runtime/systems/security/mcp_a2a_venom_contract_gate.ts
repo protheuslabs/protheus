@@ -1,20 +1,10 @@
 #!/usr/bin/env node
 // @ts-nocheck
 'use strict';
-export {};
 
-// Layer ownership: core/layer1/security::mcp-a2a-venom-contract-gate (authoritative)
+// Layer ownership: core/layer2/runtime + core/layer0/ops::legacy-retired-lane (authoritative)
 // TypeScript compatibility shim only.
-const path = require('path');
-const { spawnSync } = require('child_process');
-
-const JS_ENTRY = path.join(__dirname, 'mcp_a2a_venom_contract_gate.js');
-
-if (require.main === module) {
-  const out = spawnSync(process.execPath, [JS_ENTRY, ...process.argv.slice(2)], {
-    stdio: 'inherit'
-  });
-  process.exit(Number.isFinite(out && out.status) ? Number(out.status) : 1);
-}
-
-module.exports = require('./mcp_a2a_venom_contract_gate.js');
+const { createLegacyRetiredModule, runAsMain } = require('../../lib/legacy_retired_wrapper.js');
+const mod = createLegacyRetiredModule(__dirname, 'mcp_a2a_venom_contract_gate', 'RUNTIME-SYSTEMS-SECURITY-MCP_A2A_VENOM_CONTRACT_GATE');
+if (require.main === module) runAsMain(mod, process.argv.slice(2));
+module.exports = mod;

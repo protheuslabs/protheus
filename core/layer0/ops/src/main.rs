@@ -72,6 +72,25 @@ fn usage() {
     println!("  protheus-ops fluxlattice-program <list|run|run-all|status> [flags]");
     println!("  protheus-ops perception-polish-program <list|run|run-all|status> [flags]");
     println!("  protheus-ops scale-readiness-program <list|run|run-all|status> [flags]");
+    println!("  protheus-ops opendev-dual-agent <run|status> [flags]");
+    println!("  protheus-ops company-layer-orchestration <run|status> [flags]");
+    println!("  protheus-ops wifi-csi-engine <run|status> [flags]");
+    println!("  protheus-ops biological-computing-adapter <run|status> [flags]");
+    println!("  protheus-ops observability-automation-engine <run|status> [flags]");
+    println!("  protheus-ops persistent-background-runtime <run|status> [flags]");
+    println!("  protheus-ops workspace-gateway-runtime <run|status> [flags]");
+    println!("  protheus-ops p2p-gossip-seed <run|status> [flags]");
+    println!("  protheus-ops startup-agency-builder <run|status> [flags]");
+    println!("  protheus-ops timeseries-receipt-engine <run|status> [flags]");
+    println!("  protheus-ops webgpu-inference-adapter <run|status> [flags]");
+    println!("  protheus-ops context-doctor <run|status> [flags]");
+    println!("  protheus-ops discord-swarm-orchestration <run|status> [flags]");
+    println!("  protheus-ops bookmark-knowledge-pipeline <run|status> [flags]");
+    println!("  protheus-ops public-api-catalog <run|status> [flags]");
+    println!("  protheus-ops decentralized-data-marketplace <run|status> [flags]");
+    println!("  protheus-ops autoresearch-loop <run|status> [flags]");
+    println!("  protheus-ops intel-sweep-router <run|status> [flags]");
+    println!("  protheus-ops gui-drift-manager <run|status> [flags]");
 }
 
 fn print_json(value: &serde_json::Value) {
@@ -80,6 +99,14 @@ fn print_json(value: &serde_json::Value) {
         serde_json::to_string_pretty(value)
             .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"encode_failed\"}".to_string())
     );
+}
+
+macro_rules! exit_domain {
+    ($cwd:expr, $args:expr, $runner:path) => {{
+        let rest = $args.iter().skip(1).cloned().collect::<Vec<_>>();
+        let exit = $runner($cwd, &rest);
+        std::process::exit(exit);
+    }};
 }
 
 fn cli_error_receipt(
@@ -451,49 +478,104 @@ fn main() {
             std::process::exit(exit);
         }
         "dynamic-burn-budget-oracle" => {
-            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
-            let exit = protheus_ops_core::dynamic_burn_budget_oracle::run(&cwd, &rest);
-            std::process::exit(exit);
+            exit_domain!(&cwd, &args, protheus_ops_core::dynamic_burn_budget_oracle::run);
         }
         "backlog-registry" => {
-            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
-            let exit = protheus_ops_core::backlog_registry::run(&cwd, &rest);
-            std::process::exit(exit);
+            exit_domain!(&cwd, &args, protheus_ops_core::backlog_registry::run);
         }
         "rust-enterprise-productivity-program" => {
-            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
-            let exit = protheus_ops_core::rust_enterprise_productivity_program::run(&cwd, &rest);
-            std::process::exit(exit);
+            exit_domain!(
+                &cwd,
+                &args,
+                protheus_ops_core::rust_enterprise_productivity_program::run
+            );
         }
         "backlog-github-sync" => {
-            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
-            let exit = protheus_ops_core::backlog_github_sync::run(&cwd, &rest);
-            std::process::exit(exit);
+            exit_domain!(&cwd, &args, protheus_ops_core::backlog_github_sync::run);
         }
         "workflow-controller" => {
-            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
-            let exit = protheus_ops_core::workflow_controller::run(&cwd, &rest);
-            std::process::exit(exit);
+            exit_domain!(&cwd, &args, protheus_ops_core::workflow_controller::run);
         }
         "workflow-executor" => {
-            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
-            let exit = protheus_ops_core::workflow_executor::run(&cwd, &rest);
-            std::process::exit(exit);
+            exit_domain!(&cwd, &args, protheus_ops_core::workflow_executor::run);
         }
         "fluxlattice-program" => {
-            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
-            let exit = protheus_ops_core::fluxlattice_program::run(&cwd, &rest);
-            std::process::exit(exit);
+            exit_domain!(&cwd, &args, protheus_ops_core::fluxlattice_program::run);
         }
         "perception-polish-program" => {
-            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
-            let exit = protheus_ops_core::perception_polish::run(&cwd, &rest);
-            std::process::exit(exit);
+            exit_domain!(&cwd, &args, protheus_ops_core::perception_polish::run);
         }
         "scale-readiness-program" => {
-            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
-            let exit = protheus_ops_core::scale_readiness::run(&cwd, &rest);
-            std::process::exit(exit);
+            exit_domain!(&cwd, &args, protheus_ops_core::scale_readiness::run);
+        }
+        "opendev-dual-agent" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::opendev_dual_agent::run);
+        }
+        "company-layer-orchestration" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::company_layer_orchestration::run);
+        }
+        "wifi-csi-engine" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::wifi_csi_engine::run);
+        }
+        "biological-computing-adapter" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::biological_computing_adapter::run);
+        }
+        "observability-automation-engine" => {
+            exit_domain!(
+                &cwd,
+                &args,
+                protheus_ops_core::observability_automation_engine::run
+            );
+        }
+        "persistent-background-runtime" => {
+            exit_domain!(
+                &cwd,
+                &args,
+                protheus_ops_core::persistent_background_runtime::run
+            );
+        }
+        "workspace-gateway-runtime" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::workspace_gateway_runtime::run);
+        }
+        "p2p-gossip-seed" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::p2p_gossip_seed::run);
+        }
+        "startup-agency-builder" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::startup_agency_builder::run);
+        }
+        "timeseries-receipt-engine" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::timeseries_receipt_engine::run);
+        }
+        "webgpu-inference-adapter" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::webgpu_inference_adapter::run);
+        }
+        "context-doctor" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::context_doctor::run);
+        }
+        "discord-swarm-orchestration" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::discord_swarm_orchestration::run);
+        }
+        "bookmark-knowledge-pipeline" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::bookmark_knowledge_pipeline::run);
+        }
+        "public-api-catalog" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::public_api_catalog::run);
+        }
+        "decentralized-data-marketplace" => {
+            exit_domain!(
+                &cwd,
+                &args,
+                protheus_ops_core::decentralized_data_marketplace::run
+            );
+        }
+        "autoresearch-loop" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::autoresearch_loop::run);
+        }
+        "intel-sweep-router" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::intel_sweep_router::run);
+        }
+        "gui-drift-manager" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::gui_drift_manager::run);
         }
         _ => {
             print_json(&cli_error_receipt("unknown_domain", 1, Some(domain), None));

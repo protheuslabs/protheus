@@ -1,17 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
-// Layer ownership: core/layer1/security (authoritative)
-const { runSecurityPlane, runSecurityPlaneCli } = require('../../lib/security_plane_bridge');
-
-function run(args = []) {
-  return runSecurityPlane('critical-path-formal-verifier', args);
-}
-
-if (require.main === module) {
-  runSecurityPlaneCli('critical-path-formal-verifier', process.argv.slice(2));
-}
-
-module.exports = {
-  run
-};
+// Layer ownership: core/layer2/runtime + core/layer0/ops::legacy-retired-lane (authoritative)
+// Thin compatibility wrapper only.
+const { createLegacyRetiredModule, runAsMain } = require('../../lib/legacy_retired_wrapper.js');
+const mod = createLegacyRetiredModule(__dirname, 'critical_path_formal_verifier', 'RUNTIME-SYSTEMS-SECURITY-CRITICAL_PATH_FORMAL_VERIFIER');
+if (require.main === module) runAsMain(mod, process.argv.slice(2));
+module.exports = mod;

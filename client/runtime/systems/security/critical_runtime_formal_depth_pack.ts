@@ -1,20 +1,10 @@
 #!/usr/bin/env node
 // @ts-nocheck
 'use strict';
-export {};
 
-// Layer ownership: core/layer1/security::critical-runtime-formal-depth-pack (authoritative)
+// Layer ownership: core/layer2/runtime + core/layer0/ops::legacy-retired-lane (authoritative)
 // TypeScript compatibility shim only.
-const path = require('path');
-const { spawnSync } = require('child_process');
-
-const JS_ENTRY = path.join(__dirname, 'critical_runtime_formal_depth_pack.js');
-
-if (require.main === module) {
-  const out = spawnSync(process.execPath, [JS_ENTRY, ...process.argv.slice(2)], {
-    stdio: 'inherit'
-  });
-  process.exit(Number.isFinite(out && out.status) ? Number(out.status) : 1);
-}
-
-module.exports = require('./critical_runtime_formal_depth_pack.js');
+const { createLegacyRetiredModule, runAsMain } = require('../../lib/legacy_retired_wrapper.js');
+const mod = createLegacyRetiredModule(__dirname, 'critical_runtime_formal_depth_pack', 'RUNTIME-SYSTEMS-SECURITY-CRITICAL_RUNTIME_FORMAL_DEPTH_PACK');
+if (require.main === module) runAsMain(mod, process.argv.slice(2));
+module.exports = mod;

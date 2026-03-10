@@ -1,13 +1,15 @@
-# Ad Factory (Default App Scaffold)
+# Video Ad Factory (V6-COCKPIT-016)
 
-Purpose: a default top-level app for generating marketing ad scripts/videos at scale.
+Layer: app (runs on top of client; not core authority).
 
-Boundary:
-- This app sits in `/apps` and is not part of `client/`.
-- It must call client/core capabilities through conduit-governed interfaces.
+Purpose:
+- Automated script generation
+- UGC-style video variant generation
+- High-volume ad factory batch orchestration
 
-Planned lanes (V6-COCKPIT-016):
-- Script generation
-- UGC-style video generation
-- Batch ad factory mode
-- Cost/receipt tracking
+Core integration contract:
+- Route all generation/dispatch actions through Conduit.
+- Emit deterministic receipts for every script/video artifact.
+
+CLI target:
+- `protheus app run ad-factory`

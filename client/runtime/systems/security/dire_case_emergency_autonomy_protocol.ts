@@ -1,20 +1,10 @@
 #!/usr/bin/env node
 // @ts-nocheck
 'use strict';
-export {};
 
-// Layer ownership: core/layer1/security::dire-case-emergency-autonomy-protocol (authoritative)
+// Layer ownership: core/layer2/runtime + core/layer0/ops::legacy-retired-lane (authoritative)
 // TypeScript compatibility shim only.
-const path = require('path');
-const { spawnSync } = require('child_process');
-
-const JS_ENTRY = path.join(__dirname, 'dire_case_emergency_autonomy_protocol.js');
-
-if (require.main === module) {
-  const out = spawnSync(process.execPath, [JS_ENTRY, ...process.argv.slice(2)], {
-    stdio: 'inherit'
-  });
-  process.exit(Number.isFinite(out && out.status) ? Number(out.status) : 1);
-}
-
-module.exports = require('./dire_case_emergency_autonomy_protocol.js');
+const { createLegacyRetiredModule, runAsMain } = require('../../lib/legacy_retired_wrapper.js');
+const mod = createLegacyRetiredModule(__dirname, 'dire_case_emergency_autonomy_protocol', 'RUNTIME-SYSTEMS-SECURITY-DIRE_CASE_EMERGENCY_AUTONOMY_PROTOCOL');
+if (require.main === module) runAsMain(mod, process.argv.slice(2));
+module.exports = mod;
