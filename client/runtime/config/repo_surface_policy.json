@@ -3,6 +3,7 @@
   "code_roots": [
     "core",
     "client",
+    "packages",
     "apps",
     "adapters",
     "tests"
@@ -35,6 +36,20 @@
         "ps1"
       ],
       "notes": "Client is developer-facing platform surface. JS/Python/Shell/PowerShell are tracked as explicit migration debt or packaging/installer glue."
+    },
+    "packages": {
+      "allowed_extensions": [
+        "ts",
+        "tsx",
+        "js",
+        "jsx",
+        "py",
+        "sh",
+        "html",
+        "css",
+        "scss"
+      ],
+      "notes": "Packages are public SDK/package distribution surfaces. They may be polyglot, but must remain thin, developer-facing, and non-authoritative."
     },
     "apps": {
       "allowed_extensions": [

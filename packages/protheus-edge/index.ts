@@ -54,27 +54,27 @@ function toFlags(options: Record<string, any> = {}) {
 }
 
 function edgeRuntime(command: string, options: Record<string, any> = {}) {
-  return runNodeScript('systems/edge/protheus_edge_runtime.js', [command, ...toFlags(options)]);
+  return runNodeScript('client/runtime/systems/edge/protheus_edge_runtime.js', [command, ...toFlags(options)]);
 }
 
 function edgeLifecycle(command: string, options: Record<string, any> = {}) {
-  return runNodeScript('systems/edge/mobile_lifecycle_resilience.js', [command, ...toFlags(options)]);
+  return runNodeScript('client/runtime/systems/edge/mobile_lifecycle_resilience.js', [command, ...toFlags(options)]);
 }
 
 function edgeSwarm(command: string, options: Record<string, any> = {}) {
-  return runNodeScript('systems/spawn/mobile_edge_swarm_bridge.js', [command, ...toFlags(options)]);
+  return runNodeScript('client/runtime/systems/spawn/mobile_edge_swarm_bridge.js', [command, ...toFlags(options)]);
 }
 
 function edgeWrapper(command: string, options: Record<string, any> = {}) {
-  return runNodeScript('systems/ops/mobile_wrapper_distribution_pack.js', [command, ...toFlags(options)]);
+  return runNodeScript('client/runtime/systems/ops/mobile_wrapper_distribution_pack.js', [command, ...toFlags(options)]);
 }
 
 function edgeBenchmark(command: string, options: Record<string, any> = {}) {
-  return runNodeScript('systems/ops/mobile_competitive_benchmark_matrix.js', [command, ...toFlags(options)]);
+  return runNodeScript('client/runtime/systems/ops/mobile_competitive_benchmark_matrix.js', [command, ...toFlags(options)]);
 }
 
 function mobileTop(options: Record<string, any> = {}) {
-  return runNodeScript('systems/edge/mobile_ops_top.js', ['status', ...toFlags(options)]);
+  return runNodeScript('client/runtime/systems/edge/mobile_ops_top.js', ['status', ...toFlags(options)]);
 }
 
 function folderSizeBytes(dirPath: string) {
@@ -96,14 +96,17 @@ function folderSizeBytes(dirPath: string) {
 }
 
 function edgeStatusBundle(options: Record<string, any> = {}) {
-  return {
-    ok: true,
+  const bundle = {
     edge: edgeRuntime('status', options),
     lifecycle: edgeLifecycle('status', options),
     swarm: edgeSwarm('status', options),
     wrappers: edgeWrapper('status', options),
     benchmark: edgeBenchmark('status', options),
     top: mobileTop(options)
+  };
+  return {
+    ok: Object.values(bundle).every((entry: any) => entry && entry.ok === true),
+    ...bundle
   };
 }
 

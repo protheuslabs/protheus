@@ -1,7 +1,7 @@
 {
   "type": "client_layer_boundary_audit",
-  "generated_at": "2026-03-10T22:02:04.485Z",
-  "revision": "a519b61a9cf0175f7d11088e858bc4b6069ef64a",
+  "generated_at": "2026-03-10T22:16:00.040Z",
+  "revision": "894f5bacea94d3126e7292da52421c5ad7210df9",
   "policy_path": "client/runtime/config/client_layer_boundary_policy.json",
   "summary": {
     "scanned_files": 1747,

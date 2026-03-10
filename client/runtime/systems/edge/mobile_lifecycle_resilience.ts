@@ -4,6 +4,7 @@
 
 // Layer ownership: core/layer2/runtime + core/layer0/ops::legacy-retired-lane (authoritative)
 // TypeScript compatibility shim only.
-const mod = require('./mobile_lifecycle_resilience.js');
-if (require.main === module) mod.run(process.argv.slice(2));
+const { createLegacyRetiredModule, runAsMain } = require('../../lib/legacy_retired_wrapper.js');
+const mod = createLegacyRetiredModule(__dirname, 'mobile_lifecycle_resilience', 'RUNTIME-SYSTEMS-EDGE-MOBILE_LIFECYCLE_RESILIENCE');
+if (require.main === module) runAsMain(mod, process.argv.slice(2));
 module.exports = mod;

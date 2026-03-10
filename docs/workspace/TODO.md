@@ -182,21 +182,26 @@ Updated: 2026-03-10 (policy enforcement + Protheus 2.0 intake applied)
 18. `MAINT-006` `P1` `ROI=9/10` `DEP=009,010` Client legacy language debt burn-down (`JS/Python/Shell -> TS/client or apps/adapters/tests`). `STATUS: IN_PROGRESS`
 - Current baseline:
 - `client` legacy debt tracked by repo-surface audit + debt ledger:
-  - `total=4288`
-  - `js=4257`
-  - `sh=19`
-  - `py=11`
+  - `total=894`
+  - `js=872`
+  - `sh=13`
+  - `py=8`
   - `ps1=1`
 - High-value residual slices:
-  - `move_to_tests=0` (executed by relocating `client/memory/tools/tests` to `/tests/client-memory-tools`)
-  - `runtime_or_authority_debt=717`
-  - `tracked_state_debt=3382`
-  - `adapter_surface=9`
-  - `sdk_package_surface=3`
-  - `move_to_apps=0`
+  - `runtime_wrapper_debt=716`
+  - `runtime_or_authority_debt=1`
+  - `cognition_surface_debt=70`
+  - `platform_shim_debt=50`
+  - `installer_or_dev_shell=23`
+  - `skill_script_or_connector=17`
 - Latest tranche evidence:
   - `tests/client-memory-tools/`
   - `tests/websocket-stability-test.js`
+  - `packages/README.md`
+  - `packages/lensmap/`
+  - `packages/protheus-core/`
+  - `packages/protheus-edge/`
+  - `packages/protheus-py/`
   - `artifacts/client_legacy_debt_report_2026-03-10_policy_enforcement.json`
   - `artifacts/repo_surface_policy_audit_2026-03-10_policy_enforcement.json`
   - removed legacy shim roots:
@@ -205,6 +210,14 @@ Updated: 2026-03-10 (policy enforcement + Protheus 2.0 intake applied)
     - `client/systems/audit/`
     - `client/systems/spine/`
     - `client/runtime/systems/lib/`
+  - evicted untracked runtime-state debris from `client/runtime/state/state` into ignored top-level `state/local/`
+  - moved package distribution surfaces out of `client/cli/packages/` into top-level `/packages`
+  - reclassified thin JS runtime wrappers as `runtime_wrapper_debt` instead of authority debt
+  - package smoke evidence:
+    - `node packages/protheus-core/starter.js --mode=contract --spine=0 --reflex=0 --gates=0 --max-mb=5 --max-ms=200`
+    - `node packages/protheus-core/core_profile_contract.js status`
+    - `node packages/protheus-edge/starter.js --mode=status`
+    - `node packages/lensmap/lensmap_cli.js status`
 - Exit criteria:
 - Client reaches TS/TSX + HTML/CSS target state except explicitly-approved installer/package shims.
 - App/adaptor/test candidates are relocated out of `client`.

@@ -25,7 +25,7 @@
       "client/runtime/systems",
       "client/runtime/lib",
       "core",
-      "client/cli/packages",
+      "packages",
       "client/runtime/platform",
       "client/runtime/config",
       "docs/client",

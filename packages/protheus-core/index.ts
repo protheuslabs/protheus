@@ -30,15 +30,15 @@ function runNodeScript(relScript: string, args: string[] = [], timeoutMs = 12000
 }
 
 function spineStatus(extraArgs: string[] = []) {
-  return runNodeScript('systems/spine/spine.js', ['status', ...extraArgs]);
+  return runNodeScript('client/runtime/systems/spine/spine.js', ['status', ...extraArgs]);
 }
 
 function reflexStatus(extraArgs: string[] = []) {
-  return runNodeScript('habits/scripts/reflex_habit_bridge.js', ['status', ...extraArgs]);
+  return runNodeScript('client/cognition/habits/scripts/reflex_habit_bridge.js', ['status', ...extraArgs]);
 }
 
 function gateStatus(extraArgs: string[] = []) {
-  return runNodeScript('systems/security/guard.js', ['status', ...extraArgs]);
+  return runNodeScript('client/runtime/systems/security/guard.js', ['status', ...extraArgs]);
 }
 
 function toBoolOption(v: unknown, fallback = true) {
@@ -63,9 +63,9 @@ function coreStatus(options: Record<string, any> = {}) {
       gates: includeGates
     }
   };
-  if (includeSpine) out.spine = runNodeScript('systems/spine/spine.js', ['status'], timeoutMs);
-  if (includeReflex) out.reflex = runNodeScript('habits/scripts/reflex_habit_bridge.js', ['status'], timeoutMs);
-  if (includeGates) out.gates = runNodeScript('systems/security/guard.js', ['status'], timeoutMs);
+  if (includeSpine) out.spine = runNodeScript('client/runtime/systems/spine/spine.js', ['status'], timeoutMs);
+  if (includeReflex) out.reflex = runNodeScript('client/cognition/habits/scripts/reflex_habit_bridge.js', ['status'], timeoutMs);
+  if (includeGates) out.gates = runNodeScript('client/runtime/systems/security/guard.js', ['status'], timeoutMs);
   out.ok = ['spine', 'reflex', 'gates']
     .filter((key) => Object.prototype.hasOwnProperty.call(out, key))
     .every((key) => out[key] && out[key].ok === true);

@@ -6,6 +6,7 @@ import { execSync } from 'node:child_process';
 
 const ROOT = process.cwd();
 const LEGACY_RE = /\.(js|py|sh|ps1)$/;
+const SOURCE_CACHE = new Map();
 
 function parseArgs(argv) {
   const out = {
@@ -38,17 +39,45 @@ function walk(dir, out = []) {
   return out;
 }
 
+function readSource(file) {
+  if (SOURCE_CACHE.has(file)) return SOURCE_CACHE.get(file);
+  let source = '';
+  try {
+    source = fs.readFileSync(path.resolve(ROOT, file), 'utf8');
+  } catch {}
+  SOURCE_CACHE.set(file, source);
+  return source;
+}
+
+function isRuntimeWrapper(file) {
+  if (!(file.startsWith('client/runtime/systems/') || file.startsWith('client/systems/'))) return false;
+  if (path.extname(file).toLowerCase() !== '.js') return false;
+  const source = readSource(file);
+  if (!source) return false;
+  return [
+    'ts_bootstrap',
+    'ts_entrypoint',
+    'createOpsLaneBridge',
+    'createLegacyRetiredModule',
+    'createManifestLaneBridge',
+    'createConduitLaneModule',
+    'createRustLaneBridge',
+    'createDirectConduitBridge',
+    'createConduitBridge',
+    'legacy-retired-lane',
+    'Layer ownership: core/'
+  ].some((marker) => source.includes(marker));
+}
+
 function classify(file) {
   if (file.startsWith('client/cli/apps/')) return 'move_to_apps';
   if (file.includes('/tests/')) return 'move_to_tests';
   if (file.startsWith('client/runtime/state/')) return 'tracked_state_debt';
   if (file.startsWith('client/runtime/tmp/')) return 'tmp_generated_debt';
   if (file.startsWith('client/runtime/patches/')) return 'platform_patch_surface';
-  if (file.startsWith('client/cli/packages/protheus-py/')) return 'adapter_surface';
-  if (file.startsWith('client/cli/packages/protheus-edge/wrappers/')) return 'adapter_surface';
-  if (file.startsWith('client/cli/packages/')) return 'sdk_package_surface';
   if (file.startsWith('client/install.') || file.startsWith('client/runtime/deploy/') || file.startsWith('client/cli/bin/') || file.startsWith('client/cli/npm/') || file.startsWith('client/cli/tools/')) return 'installer_or_dev_shell';
   if (file.startsWith('client/cognition/skills/')) return 'skill_script_or_connector';
+  if (isRuntimeWrapper(file)) return 'runtime_wrapper_debt';
   if (file.startsWith('client/runtime/systems/') || file.startsWith('client/systems/')) return 'runtime_or_authority_debt';
   if (file.startsWith('client/runtime/lib/') || file.startsWith('client/lib/')) return 'platform_shim_debt';
   if (file.startsWith('client/memory/tools/')) return 'tooling_or_test_debt';

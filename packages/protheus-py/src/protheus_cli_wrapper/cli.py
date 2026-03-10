@@ -23,7 +23,7 @@ def _candidate_repo_roots() -> List[Path]:
 
 def _find_repo_root() -> Optional[Path]:
     for root in _candidate_repo_roots():
-        manifest = root / "crates" / "ops" / "Cargo.toml"
+        manifest = root / "core" / "layer0" / "ops" / "Cargo.toml"
         if manifest.exists():
             return root
     return None
@@ -48,7 +48,7 @@ def _build_commands(repo_root: Optional[Path]) -> List[List[str]]:
                 commands.append([str(local_bin)])
 
         cargo_bin = shutil.which("cargo")
-        manifest = repo_root / "crates" / "ops" / "Cargo.toml"
+        manifest = repo_root / "core" / "layer0" / "ops" / "Cargo.toml"
         if cargo_bin and manifest.exists():
             commands.append(
                 [

@@ -8,12 +8,12 @@ export {};
  */
 
 const path = require('path');
-const { normalizeToken } = require('../../../lib/queued_backlog_runtime');
-const { runStandardLane } = require('../../../lib/upgrade_lane_runtime');
+const { normalizeToken } = require('../../client/runtime/lib/queued_backlog_runtime');
+const { runStandardLane } = require('../../client/runtime/lib/upgrade_lane_runtime');
 
 const POLICY_PATH = process.env.PROTHEUS_CORE_PROFILE_POLICY_PATH
   ? path.resolve(process.env.PROTHEUS_CORE_PROFILE_POLICY_PATH)
-  : path.join(__dirname, '..', '..', 'config', 'protheus_core_profile_policy.json');
+  : path.join(__dirname, '..', '..', 'client', 'runtime', 'config', 'protheus_core_profile_policy.json');
 
 function usage() {
   console.log('Usage:');
@@ -28,11 +28,11 @@ runStandardLane({
   policy_path: POLICY_PATH,
   stream: 'core.profiles',
   paths: {
-    memory_dir: 'memory/core_profiles',
-    adaptive_index_path: 'adaptive/core_profiles/index.json',
-    events_path: 'state/core/profiles/events.jsonl',
-    latest_path: 'state/core/profiles/latest.json',
-    receipts_path: 'state/core/profiles/receipts.jsonl'
+    memory_dir: 'client/runtime/local/memory/core_profiles',
+    adaptive_index_path: 'client/cognition/adaptive/core_profiles/index.json',
+    events_path: 'client/runtime/local/state/core/profiles/events.jsonl',
+    latest_path: 'client/runtime/local/state/core/profiles/latest.json',
+    receipts_path: 'client/runtime/local/state/core/profiles/receipts.jsonl'
   },
   usage,
   handlers: {
