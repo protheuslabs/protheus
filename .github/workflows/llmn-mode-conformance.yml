@@ -1,0 +1,20 @@
+name: LLMN Mode Conformance
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  llmn-conformance-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run LLMN conformance smoke
+        run: node client/memory/tools/tests/llmn_mode_conformance.test.js

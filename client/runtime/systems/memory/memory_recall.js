@@ -4,9 +4,11 @@
 // Layer ownership: core/layer0/memory_runtime + core/layer0/ops::memory-ambient (authoritative)
 // Client wrapper routes memory recall commands through conduit-backed Rust lanes.
 const path = require('path');
+const fs = require('fs');
 const { spawnSync } = require('child_process');
 const { runMemoryAmbientCommand } = require('../../lib/spine_conduit_bridge');
 const LEGACY_ENTRY = path.join(__dirname, 'legacy', 'memory_recall_legacy.js');
+const DEFAULT_BURN_THRESHOLD_TOKENS = Number(process.env.PROTHEUS_MEMORY_BURN_THRESHOLD_TOKENS || 200);
 
 function parseArgs(argv) {
   const out = { _: [] };
@@ -134,6 +136,83 @@ function runLegacy(args = []) {
   };
 }
 
+function estimateTokens(value) {
+  const text = String(value == null ? '' : value);
+  if (!text) return 0;
+  return Math.max(1, Math.ceil(text.length / 4));
+}
+
+function telemetryPath() {
+  const override = String(process.env.PROTHEUS_MEMORY_BURN_TELEMETRY_PATH || '').trim();
+  if (override) return path.resolve(override);
+  return path.join(__dirname, '..', '..', 'local', 'state', 'ops', 'token_burn', 'memory_recall.jsonl');
+}
+
+function appendTelemetry(entry) {
+  const target = telemetryPath();
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.appendFileSync(target, `${JSON.stringify(entry)}\n`, 'utf8');
+}
+
+function buildTokenTelemetry(args, out) {
+  const parsed = parseArgs(args || []);
+  const command = String(parsed._[0] || 'query').trim().toLowerCase();
+  const queryText = command === 'query' ? String(parsed.q || '') : '';
+  const queryTokensEst = estimateTokens(queryText);
+  const responsePayload = out && out.payload && typeof out.payload === 'object' ? out.payload : {};
+  let responseSurface = '';
+  if (Array.isArray(responsePayload.hits)) {
+    responseSurface = responsePayload.hits
+      .slice(0, 3)
+      .map((hit) => {
+        if (!hit || typeof hit !== 'object') return '';
+        const tags = Array.isArray(hit.tags) ? hit.tags.join(',') : '';
+        return `${String(hit.node_id || '')}|${String(hit.uid || '')}|${String(hit.summary || '')}|${tags}`;
+      })
+      .filter(Boolean)
+      .join('\n');
+  } else if (responsePayload && typeof responsePayload === 'object') {
+    responseSurface = [
+      String(responsePayload.node_id || ''),
+      String(responsePayload.uid || ''),
+      String(responsePayload.summary || ''),
+      Array.isArray(responsePayload.tags) ? responsePayload.tags.join(',') : ''
+    ].filter(Boolean).join('|');
+  }
+  const responseTokensEst = estimateTokens(responseSurface || JSON.stringify(responsePayload));
+  const totalTokensEst = queryTokensEst + responseTokensEst;
+  const threshold = Number.isFinite(DEFAULT_BURN_THRESHOLD_TOKENS)
+    ? Math.max(1, Number(DEFAULT_BURN_THRESHOLD_TOKENS))
+    : 200;
+  const overThreshold = totalTokensEst > threshold;
+  const lane = responsePayload.routed_via || (out && out.ok === true ? 'conduit' : 'legacy_fallback');
+  const telemetry = {
+    ts: new Date().toISOString(),
+    type: 'memory_recall_token_telemetry',
+    command,
+    lane,
+    query_tokens_est: queryTokensEst,
+    response_tokens_est: responseTokensEst,
+    total_tokens_est: totalTokensEst,
+    threshold_tokens: threshold,
+    over_threshold: overThreshold,
+    threshold_reason: overThreshold ? 'query_or_response_estimate_above_threshold' : null,
+    estimation_basis: responseSurface ? 'compact_hit_surface' : 'payload_fallback'
+  };
+  return telemetry;
+}
+
+function attachTelemetry(args, out) {
+  try {
+    const telemetry = buildTokenTelemetry(args, out);
+    appendTelemetry(telemetry);
+    if (out && out.payload && typeof out.payload === 'object') {
+      out.payload.token_telemetry = telemetry;
+    }
+  } catch {}
+  return out;
+}
+
 function isBridgeSuccess(out) {
   if (!out || out.ok !== true || !out.payload || typeof out.payload !== 'object') return false;
   if (out.payload.ok === false) return false;
@@ -156,11 +235,11 @@ async function run(args = [], opts = {}) {
       ...opts
     });
     if (isBridgeSuccess(out)) {
-      return out;
+      return attachTelemetry(args, out);
     }
-    return runLegacy(args);
+    return attachTelemetry(args, runLegacy(args));
   } catch {
-    return runLegacy(args);
+    return attachTelemetry(args, runLegacy(args));
   }
 }
 

@@ -962,6 +962,18 @@ function normalizeKey(s) {
   return String(s || "").trim().toLowerCase();
 }
 
+function normalizeLllmMode(rawMode) {
+  const raw = String(rawMode || "").trim().toLowerCase();
+  if (!raw) return "normal";
+  const dashed = raw.replace(/[_\s]+/g, "-");
+  if (["normal", "default", "standard"].includes(dashed)) return "normal";
+  if (["creative"].includes(dashed)) return "creative";
+  if (["narrative", "story", "storytime"].includes(dashed)) return "narrative";
+  if (["hyper-creative", "hypercreative"].includes(dashed)) return "hyper-creative";
+  if (["deep-thinker", "deep-thinker-mode", "deep-thinking", "deepthinking"].includes(dashed)) return "deep-thinker";
+  return dashed;
+}
+
 function inferRole(intent, task) {
   const txt = `${intent || ""} ${task || ""}`.toLowerCase();
   const tests = [
@@ -1077,7 +1089,7 @@ function detectCommunicationFastPath({ cfg, risk, complexity, intent, task, mode
   const allowBypass = allowGenericMedium === true;
   if (!policy.enabled) return { matched: false, reason: "disabled", policy };
 
-  const m = normalizeKey(mode || "normal");
+  const m = normalizeLllmMode(mode || "normal");
   if (m === "deep-thinker" || m === "deep_thinker" || m === "hyper-creative" || m === "hyper_creative") {
     return { matched: false, reason: "mode_disallowed", policy };
   }
@@ -2067,7 +2079,7 @@ function tierAliasToAdjustment(tierAlias, base) {
 }
 
 function applyModeAdjustments(mode, base) {
-  const m = normalizeKey(mode || "normal");
+  const m = normalizeLllmMode(mode || "normal");
   const out = { ...base, mode: m, mode_adjusted: false, mode_reason: null, mode_policy_source: "fallback" };
   const adapters = loadModeAdapters();
   const modeRouting = adapters && adapters.mode_routing && typeof adapters.mode_routing === "object"
@@ -4409,6 +4421,7 @@ module.exports = {
   unban,
   isBanned,
   isLocalOllamaModel,
+  normalizeLllmMode,
   inferRole,
   inferTier,
   modelOutcomeStats,

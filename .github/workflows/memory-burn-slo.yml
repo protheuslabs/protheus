@@ -1,0 +1,20 @@
+name: Memory Burn SLO
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  memory-burn-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run memory burn SLO guard
+        run: node client/memory/tools/tests/memory_burn_slo_guard.test.js
