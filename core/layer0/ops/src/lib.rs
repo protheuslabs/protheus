@@ -68,6 +68,8 @@ pub mod spawn_broker;
 pub mod strategy_mode_governor;
 pub mod ops_lane_runtime;
 pub mod narrow_agent_parity_harness;
+pub mod offsite_backup;
+pub mod settlement_program;
 pub mod venom_containment_layer;
 pub mod workflow_executor;
 
