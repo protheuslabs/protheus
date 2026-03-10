@@ -7,6 +7,7 @@
     "metrics:rust-share:delta-main": "bash scripts/metrics/tracked_loc_report.sh --ref=HEAD --base-ref=origin/main",
     "metrics:heartbeat-kpi": "node scripts/metrics/heartbeat_kpi_report.js",
     "test:metrics:heartbeat-kpi": "node client/memory/tools/tests/heartbeat_kpi_report.test.js",
+    "test:memory:idle-dream-core-wrapper": "node client/memory/tools/tests/idle_dream_cycle_core_wrapper.test.js",
     "typecheck:systems": "node client/runtime/systems/ops/typecheck_systems.js",
     "ts:clone:drift": "node client/runtime/systems/ops/ts_clone_drift_report.js --write=client/runtime/local/state/ops/ts_clone_drift_report.json",
     "ts:clone:guard": "node client/runtime/systems/ops/ts_clone_drift_guard.js --baseline=config/ts_clone_drift_baseline.json",

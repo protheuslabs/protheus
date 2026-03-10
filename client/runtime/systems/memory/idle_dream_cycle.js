@@ -2,10 +2,10 @@
 'use strict';
 
 // Layer ownership: core/layer1/memory_runtime + core/layer0/ops::memory-ambient (authoritative)
-const { runMemoryAmbientCommand } = require('../../lib/spine_conduit_bridge');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
+const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 const TS_ENTRYPOINT = path.resolve(__dirname, '..', '..', '..', 'lib', 'ts_entrypoint.js');
 const LEGACY_TS = path.resolve(__dirname, 'legacy', 'idle_dream_cycle_legacy.ts');
 
@@ -15,45 +15,89 @@ function usage() {
   console.log('  node systems/memory/idle_dream_cycle.js status');
 }
 
-function toAmbientArgs(argv) {
-  const cmd = String((argv && argv[0]) || '').trim().toLowerCase();
-  if (!cmd || cmd === 'run') {
-    const tail = (argv || []).slice(cmd ? 1 : 0);
-    return ['run', 'idle-dream-cycle', ...tail];
-  }
-  if (cmd === 'status') return ['status'];
-  if (cmd === 'help' || cmd === '--help' || cmd === '-h') return ['run', 'help'];
-  return ['run', ...argv];
+function parseBool(v, fallback = false) {
+  const raw = String(v == null ? '' : v).trim().toLowerCase();
+  if (!raw) return fallback;
+  if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
+  if (['0', 'false', 'no', 'off'].includes(raw)) return false;
+  return fallback;
 }
 
-async function run(args = [], opts = {}) {
-  const mapped = toAmbientArgs(args);
-  const ambientEnabled = String(process.env.PROTHEUS_IDLE_DREAM_AMBIENT || '0').trim() === '1';
-  if (ambientEnabled) {
+function parseJsonPayload(rawText) {
+  const raw = String(rawText || '').trim();
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {}
+  const lines = raw.split('\n').map((line) => line.trim()).filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    if (!lines[i].startsWith('{')) continue;
     try {
-      const out = await runMemoryAmbientCommand(mapped, {
-        runContext: 'idle_dream_cycle_wrapper',
-        skipRuntimeGate: true,
-        stdioTimeoutMs: Number(process.env.PROTHEUS_MEMORY_STDIO_TIMEOUT_MS || 25000),
-        ...opts
-      });
-      if (out && out.ok === true && out.payload && out.payload.ok !== false) {
-        return out;
-      }
-    } catch {
-      // compatibility fallback below
-    }
+      return JSON.parse(lines[i]);
+    } catch {}
   }
+  return null;
+}
+
+function legacyFallbackEnabled() {
+  return parseBool(process.env.PROTHEUS_IDLE_DREAM_LEGACY_FALLBACK, false);
+}
+
+function resolveCoreIdleDreamCommand() {
+  const explicit = String(process.env.PROTHEUS_IDLE_DREAM_BIN || '').trim();
+  if (explicit) {
+    return { command: explicit, args: [] };
+  }
+
+  const release = path.join(WORKSPACE_ROOT, 'target', 'release', 'idle_dream_cycle');
+  if (require('fs').existsSync(release)) {
+    return { command: release, args: [] };
+  }
+  const debug = path.join(WORKSPACE_ROOT, 'target', 'debug', 'idle_dream_cycle');
+  if (require('fs').existsSync(debug)) {
+    return { command: debug, args: [] };
+  }
+
+  return {
+    command: 'cargo',
+    args: [
+      'run',
+      '--quiet',
+      '--manifest-path',
+      'core/layer0/memory_runtime/Cargo.toml',
+      '--bin',
+      'idle_dream_cycle',
+      '--'
+    ]
+  };
+}
+
+function runCore(args = []) {
+  const resolved = resolveCoreIdleDreamCommand();
+  const commandArgs = resolved.args.concat(Array.isArray(args) ? args : []);
+  const run = spawnSync(resolved.command, commandArgs, {
+    cwd: WORKSPACE_ROOT,
+    encoding: 'utf8',
+    timeout: Number(process.env.PROTHEUS_IDLE_DREAM_TIMEOUT_MS || 60000),
+    env: process.env,
+    maxBuffer: 1024 * 1024 * 4
+  });
+  return {
+    ok: Number(run.status || 0) === 0,
+    status: Number.isFinite(Number(run.status)) ? Number(run.status) : 1,
+    payload: parseJsonPayload(run.stdout),
+    stdout: String(run.stdout || ''),
+    stderr: String(run.stderr || '')
+  };
+}
+
+function runLegacy(args = []) {
   const proc = spawnSync(process.execPath, [TS_ENTRYPOINT, LEGACY_TS, ...args], {
     cwd: process.cwd(),
     encoding: 'utf8',
     env: process.env
   });
-  const payloadText = String(proc.stdout || '').trim();
-  let payload = null;
-  if (payloadText) {
-    try { payload = JSON.parse(payloadText); } catch {}
-  }
+  const payload = parseJsonPayload(proc.stdout);
   return {
     ok: Number(proc.status || 0) === 0 && payload && payload.ok !== false,
     status: Number.isFinite(Number(proc.status)) ? Number(proc.status) : 1,
@@ -61,6 +105,25 @@ async function run(args = [], opts = {}) {
     stdout: String(proc.stdout || ''),
     stderr: String(proc.stderr || '')
   };
+}
+
+async function run(args = []) {
+  const coreOut = runCore(args);
+  if (coreOut.ok && coreOut.payload && coreOut.payload.ok !== false) {
+    return coreOut;
+  }
+
+  if (!legacyFallbackEnabled()) {
+    if (!coreOut.payload) {
+      coreOut.payload = {
+        ok: false,
+        type: 'idle_dream_cycle_wrapper_error',
+        error: 'core_idle_dream_cycle_failed_no_payload'
+      };
+    }
+    return coreOut;
+  }
+  return runLegacy(args);
 }
 
 if (require.main === module) {
