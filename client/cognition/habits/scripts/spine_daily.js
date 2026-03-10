@@ -1,27 +1,22 @@
 #!/usr/bin/env node
-/**
- * client/cognition/habits/scripts/spine_daily.js — tier-friendly wrapper for spine daily
- *
- * Purpose:
- * - Provide an easy "habit/reflex" entrypoint
- * - Let higher-tier infra do the orchestration
- */
+'use strict';
 
-const { spawnSync } = require("child_process");
+// Layer ownership: apps/habits/scripts (authoritative)
+// Thin compatibility wrapper only.
+const path = require('path');
+const { spawnSync } = require('child_process');
+const target = path.resolve(__dirname, '../../../../apps/habits/scripts/spine_daily.js');
 
-function run(cmd, args, env = {}) {
-  const r = spawnSync(cmd, args, { stdio: "inherit", env: { ...process.env, ...env } });
-  if (r.status !== 0) process.exit(r.status || 1);
+function run(args = process.argv.slice(2)) {
+  const r = spawnSync(process.execPath, [target, ...args], {
+    stdio: 'inherit',
+    env: process.env
+  });
+  return r.status == null ? 1 : r.status;
 }
 
-const date = process.argv[2];
-const maxEyesArg = process.argv.find(a => a.startsWith("--max-eyes="));
+if (require.main === module) {
+  process.exit(run(process.argv.slice(2)));
+}
 
-// Wrappers run with infra clearance (tier 3) by default
-if (!process.env.CLEARANCE) process.env.CLEARANCE = "3";
-
-const args = ["client/runtime/systems/spine/spine.js", "daily"];
-if (date) args.push(date);
-if (maxEyesArg) args.push(maxEyesArg);
-
-run("node", args);
+module.exports = { run };

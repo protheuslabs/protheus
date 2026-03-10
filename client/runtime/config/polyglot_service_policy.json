@@ -5,7 +5,7 @@
   "allow_fallback_baseline": true,
   "worker": {
     "runtime": "python3",
-    "script": "client/runtime/systems/polyglot/pilot_task_classifier.py",
+    "script": "adapters/polyglot/pilot_task_classifier.py",
     "timeout_ms": 2500
   },
   "benchmark": {

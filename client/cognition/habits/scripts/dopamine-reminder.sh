@@ -1,9 +1,9 @@
-#!/client/cli/bin/bash
-#
-# dopamine-reminder.sh - Lightweight 6pm closeout reminder
-# Suggested: Add to cron with: 0 18 * * * /Users/jay/.openclaw/workspace/client/cognition/habits/scripts/dopamine-reminder.sh
-#
-
-echo "🔔 Dopamine Check"
-echo "   Run: done"
-echo "   Or:  dop closeout"
+#!/usr/bin/env bash
+set -euo pipefail
+# Layer ownership: apps/habits/scripts (authoritative)
+# Thin compatibility wrapper only.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIR="${SCRIPT_DIR}"
+while [ ! -f "${DIR}/Cargo.toml" ] && [ "${DIR}" != "/" ]; do DIR="$(dirname "${DIR}")"; done
+ROOT="${DIR}"
+exec bash "${ROOT}/apps/habits/scripts/dopamine-reminder.sh" "$@"

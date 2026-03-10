@@ -1,26 +1,25 @@
 {
   "type": "client_legacy_debt_report",
-  "generated_at": "2026-03-10T22:17:19.693Z",
-  "revision": "894f5bacea94d3126e7292da52421c5ad7210df9",
+  "generated_at": "2026-03-10T23:09:45.893Z",
+  "revision": "04a8be5a0ce3a9c51b25e5dbda7073a00970adc0",
   "root": "client",
   "summary": {
-    "total_files": 894,
+    "total_files": 893,
     "by_ext": {
       "js": 872,
       "sh": 13,
-      "py": 8,
+      "py": 7,
       "ps1": 1
     },
     "by_category": {
-      "runtime_wrapper_debt": 716,
-      "cognition_surface_debt": 70,
-      "platform_shim_debt": 50,
+      "compat_runtime_wrapper_surface": 716,
+      "compat_cognition_wrapper_surface": 70,
+      "platform_compat_surface": 50,
       "installer_or_dev_shell": 23,
       "skill_script_or_connector": 17,
       "tooling_or_test_debt": 11,
       "platform_patch_surface": 3,
-      "tmp_generated_debt": 3,
-      "runtime_or_authority_debt": 1
+      "tmp_generated_debt": 3
     }
   },
   "entries": [
@@ -127,352 +126,352 @@
     {
       "file": "client/cognition/adaptive/rsi/rsi_bootstrap.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/adaptive/rsi/rsi_integrity_chain_guard.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/adaptive/sensory/eyes/collectors/abstractapi_enrich.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/adaptive/sensory/eyes/collectors/coingecko_global.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/adaptive/sensory/eyes/collectors/finnhub_market.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/adaptive/sensory/eyes/collectors/github_pulse.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/adaptive/sensory/eyes/collectors/google_trends.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/adaptive/sensory/eyes/collectors/hn_rss.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/adaptive/sensory/eyes/collectors/iex_fundamentals.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/adaptive/sensory/eyes/collectors/ipstack_geo.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/adaptive/sensory/eyes/collectors/marketstack_quote.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/adaptive/sensory/eyes/collectors/medium_rss.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/adaptive/sensory/eyes/collectors/ollama_search.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/adaptive/sensory/eyes/collectors/producthunt_launches.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/adaptive/sensory/eyes/collectors/sentiment_proxy.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/adaptive/sensory/eyes/collectors/spine_healthcheck.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/adaptive/sensory/eyes/collectors/virustotal_threat.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/routines/adaptive_candidate_proxy.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/routines/auto_canary_deterministic_habit_crystallization_.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/routines/execute_bounded_proposal_csg_3c7677ecc41e6fba__c.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/routines/execute_bounded_proposal_eye_edb4c560e0b6aef6__e.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/routines/execute_bounded_proposal_prp_28492a3aa16ac61f__e.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/routines/execute_bounded_proposal_prp_9eca862955cf4462__e.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/routines/execute_bounded_proposal_prp_b422f9b8183ba4d0__e.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/routines/execute_bounded_proposal_prp_d97b20e8b824f700__e.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/routines/rebuild_validate_memory.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/routines/safe_cron_swap.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/routines/zeta_muon_sigma_habit_crystallization_fresh_rout.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/aie_logger.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/aie_run.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/aie_scorer.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/autonomy_controller.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/check_versions.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/directive_gate.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/doctor.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/dopamine-git-hook.sh",
       "ext": "sh",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/dopamine-reminder.sh",
       "ext": "sh",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/dopamine_ambient_snapshot.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/dopamine_engine.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/external_eyes.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/eyes_insight.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/eyes_inventory.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/git_outcomes.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/habit_crystallizer.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/habit_gc.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/habit_list.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/habit_uid_store.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/health_check_util.sh",
       "ext": "sh",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/improvement_lane.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/install_skill_safe.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/proposal_queue.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/propose_habit.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/queue_gc.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/reflex_habit_bridge.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/route_execute.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/route_probe.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/route_task.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/run_habit.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/sensory_capture.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/sensory_digest.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/sensory_insight.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/sensory_queue.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/spine_daily.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/spine_eyes.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/trust_add_habit.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/habits/scripts/trust_list_habits.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/lib/legacy_retired_wrapper.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/personas/rohan-kapoor/cron/rohan-activity.sh",
       "ext": "sh",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/personas/rohan-kapoor/scripts/generate-commits.sh",
       "ext": "sh",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/reflexes/index.js",
       "ext": "js",
-      "category": "cognition_surface_debt"
+      "category": "compat_cognition_wrapper_surface"
     },
     {
       "file": "client/cognition/skills/imap-smtp-email/scripts/imap.js",
@@ -572,122 +571,122 @@
     {
       "file": "client/lib/approval_gate.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/backlog_runtime_anchor_bridge.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/conduit_full_lifecycle_probe.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/direct_conduit_lane_bridge.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/legacy_conduit_proxy.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/legacy_retired_lane_bridge.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/mech_suit_mode.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/mutation_provenance.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/ops_domain_conduit_runner.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/queue_sqlite_runtime.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/redaction_classification.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/runtime_path_registry.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/rust_lane_bridge.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/secret_broker.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/security_plane_bridge.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/spine_conduit_bridge.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/strategy_campaign_scheduler.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/success_criteria_verifier.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/symbiosis_coherence_signal.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/ternary_belief_engine.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/trit_shadow_control.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/ts_bootstrap.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/ts_entrypoint.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/lib/uid.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/memory/tools/audit_exec_usage.js",
@@ -752,132 +751,132 @@
     {
       "file": "client/runtime/lib/approval_gate.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/backlog_runtime_anchor_bridge.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/conduit_full_lifecycle_probe.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/direct_conduit_lane_bridge.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/emergency_stop.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/legacy_conduit_proxy.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/legacy_retired_lane_bridge.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/legacy_retired_wrapper.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/mech_suit_mode.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/mutation_provenance.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/ops_domain_conduit_runner.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/queue_sqlite_runtime.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/redaction_classification.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/runtime_path_registry.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/rust_lane_bridge.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/secret_broker.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/security_plane_bridge.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/spine_conduit_bridge.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/strategy_campaign_scheduler.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/success_criteria_verifier.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/symbiosis_coherence_signal.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/ternary_belief_engine.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/trit_shadow_control.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/ts_bootstrap.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/ts_entrypoint.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/lib/uid.js",
       "ext": "js",
-      "category": "platform_shim_debt"
+      "category": "platform_compat_surface"
     },
     {
       "file": "client/runtime/patches/websocket-client-patch.js",
@@ -897,3587 +896,3582 @@
     {
       "file": "client/runtime/systems/actuation/actuation_executor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/actuation/adapter_defragmentation.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/actuation/bridge_from_proposals.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/actuation/disposable_infrastructure_organ.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/actuation/full_virtual_desktop_claw_lane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/actuation/multi_channel_adapter.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/actuation/real_world_claws_bundle.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/actuation/sub_executor_synthesis.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/actuation/universal_execution_primitive.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/adaptive/adaptation_review_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/adaptive/adaptive_runtime.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/adaptive/habits/habit_runtime_sync.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/adaptive/realtime_adaptation_loop.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/assimilation/assimilation_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/assimilation/capability_profile_compiler.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/assimilation/habit_adapter_finetune_lane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/assimilation/source_attestation_extension.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/assimilation/trajectory_skill_distiller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/assimilation/world_model_freshness.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/audit/hash_chain_ledger.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/adaptive_crystallizer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/alignment_oracle.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/autonomy_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/autonomy_rollout_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/autonomy_simulation_harness.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/autophagy_baseline_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/backfill_signal_quality.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/background_persistent_agent_runtime.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/backlog_autoscale_rust_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/batch_lane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/canary_scheduler.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/civic_duty_allocation_engine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/collective_shadow.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/doctor_forge_micro_debug_lane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/dream_signal_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/drift_target_governor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/escalation_resolver.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/ethical_reasoning_organ.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/exception_recovery_classifier.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/execution_worthiness_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/gated_self_improvement_loop.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/genuine_creative_breakthrough_organ.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/health_status.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/high_tier_mutation_quorum_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/hold_remediation_engine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/improvement_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/improvement_orchestrator.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/inversion_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/inversion_readiness_cert.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/inversion_semantic_matcher.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/lever_experiment_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/mirror_organ.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/model_catalog_loop.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/model_catalog_rollback.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/motivational_state_vector.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/multi_agent_debate_orchestrator.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/mutation_safety_kernel.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/non_yield_cycle.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/non_yield_enqueue.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/non_yield_harvest.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/non_yield_ledger_backfill.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/non_yield_replay.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/objective_optimization_floor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/objective_runtime_governor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/observer_mirror.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/ops_dashboard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/optimization_aperture_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/outcome_fitness_loop.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/pain_adaptive_router.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/pain_signal.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/persistent_fractal_meta_organ.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/physiology_opportunity_map.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/pipeline_spc_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/proactive_t1_initiative_engine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/proposal_admission_hygiene.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/proposal_enricher.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/proposal_type_outcome_calibrator.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/quorum_validator.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/receipt_dashboard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/receipt_summary.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/red_team_harness.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/runtime_stability_soak.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/self_change_failsafe.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/self_code_evolution_sandbox.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/self_documentation_closeout.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/self_improvement_cadence_orchestrator.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/self_mod_reversion_drill.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/skill_generation_pipeline.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/slo_runbook_check.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/strategy_doctor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/strategy_execute_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/strategy_mode.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/strategy_mode_governor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/strategy_readiness.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/suggestion_lane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/swarm_orchestration_runtime.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/swarm_verification_mode.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/tier1_governance.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/trit_shadow_replay_calibration.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/trit_shadow_report.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/trit_shadow_weekly_adaptation.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/two_phase_change_execution.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/autonomy/zero_permission_conversational_layer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/blockchain/sovereign_blockchain_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/browser/browser_cli_shadow_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/browser/browser_policy_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/browser/browser_session_vault.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/browser/browser_snapshot_refs.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/browser/browser_text_diff_lane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/browser/native_browser_cdp.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/browser/native_browser_daemon.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/budget/capital_allocation_organ.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/budget/global_cost_governor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/budget/system_budget.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/budget/unified_global_budget_governor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/conduit/conduit-client.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/continuity/active_state_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/continuity/active_state_continuity_layer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/continuity/human_machine_merge_interface_security_substrate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/continuity/inter_protheus_federation_trust_web.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/continuity/resurrection_protocol.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/continuity/session_continuity_vault.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/continuity/sovereign_decommission_succession_protocol.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/continuity/sovereign_resurrection_substrate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/contracts/schema_versioning_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/contracts/soul_contracts.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/distributed/deterministic_control_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/dopamine/ambient.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/dual_brain/coordinator.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/echo/heroic_echo_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/echo/value_anchor_renewal.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/economy/donor_mining_dashboard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/economy/flywheel_acceptance_harness.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/economy/global_directive_fund.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/economy/protheus_token_engine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/economy/public_donation_api.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/edge/mobile_lifecycle_resilience.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/edge/mobile_ops_top.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/edge/protheus_edge_runtime.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/execution/task_decomposition_primitive.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/eye/eye_kernel.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/eye/subsumption_registry.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/finance/agent_settlement_extension.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/finance/economic_entity_manager.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/forge/forge_organ.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/fractal/child_organ_runtime.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/fractal/evolution_arena.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/fractal/genome_ledger.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/fractal/introspection_map.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/fractal/mini_core_instancer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/fractal/morph_planner.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/fractal/organism_cycle.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/fractal/regime_organ.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/fractal/resonance_field_gates.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/fractal/symbiotic_fusion_chamber.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/fractal/warden/complexity_warden_meta_organ.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/graph/index.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/habits/habit_cell_pool_executor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/hardware/attested_assimilation_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/hardware/compression_transfer_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/hardware/embodiment_layer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/hardware/opportunistic_offload_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/hardware/surface_budget_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/hardware/surface_embodiment_freshness_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/helix/confirmed_malice_quarantine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/helix/helix_admission_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/helix/helix_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/honor/legion_honor_codex.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/hybrid/mobile/protheus_mobile_adapter.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/identity/identity_anchor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/abstraction/analytics_engine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/abstraction/memory_view.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/abstraction/test_harness.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/ambient.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/causal_temporal_graph.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/creative_links.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/cross_cell_exchange_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/cross_domain_mapper.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/cryonics_tier.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/data_poisoning_causal_rollback_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/dream_model_failover.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/dream_sequencer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/dynamic_memory_embedding_adapter.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/eyes_memory_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/failure_memory_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/hybrid_memory_engine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/idle_dream_cycle.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/index.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/legacy/dream_sequencer_legacy.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/legacy/idle_dream_cycle_legacy.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/legacy/memory_auto_recall_legacy.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/legacy/memory_matrix_legacy.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/legacy/memory_recall_legacy.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/memory_auto_recall.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/memory_dream.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/memory_efficiency_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/memory_fallback_retirement_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/memory_federation_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/memory_index_freshness_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/memory_layer_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/memory_matrix.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/memory_recall.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/napi_build_surface_compat.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/offdevice_memory_replication.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/rust_memory_daemon_supervisor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/rust_memory_transition_lane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/memory/uid_connections.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/migration/community_repo_graduation_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/migration/core_migration_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/migration/importers/generic_json_importer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/migration/importers/generic_yaml_importer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/migration/importers/openfang_importer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/migration/importers/workflow_graph_importer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/migration/post_migration_verification_report.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/migration/self_healing_migration_daemon.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/migration/universal_importers.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/mobile/index.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/nursery/nursery_bootstrap.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/nursery/specialist_training.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/nursery/training_quarantine_loop.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/observability/enterprise_slo_observability_dashboard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/observability/index.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/observability/metrics_exporter.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/observability/siem_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/observability/slo_alert_router.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/observability/thought_action_trace_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/observability/trace_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/obsidian/obsidian_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/obsidian/obsidian_phase_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/obsidian/vault_watcher.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/alert_transport_health.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/architecture_refinement_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/automated_compliance_mapping_evidence_engine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/autonomy_health_visibility_dashboard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/autotest_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/autotest_doctor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/autotest_doctor_watchdog.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/autotest_recipe_release.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/autotest_recipe_verifier.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/aws_ci_cd_mirror_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/aws_reproducible_artifact_profile.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/backlog_execution_pathfinder.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/backlog_github_sync.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/backlog_implementation_review.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/backlog_intake_quality_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/backlog_lane_batch_delivery.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/backlog_queue_executor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/backlog_registry.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/backup_integrity_check.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/benchmark_autonomy_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/binary_runtime_hardening.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/black_swan_disaster_gamebooks.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/broken_piece_lab.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/build_smoke.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/build_systems.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/canonical_execution_path_check.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/chaos_program.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/chaos_self_healing_automation.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/chromeos_fuchsia_distribution_ota_adapter.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/ci_baseline_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/ci_quality_scorecard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/ci_workflow_rationalization_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/cleanup_orchestrator.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/cli_ui.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/cockpit_harness.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/cockpit_inside_probe.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/cognitive_toolkit_cli.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/collective_intelligence_contract_check.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/command_registry_surface_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/compatibility_conformance_program.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/compatibility_tail_retirement.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/competitive_benchmark_matrix.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/competitive_observability_benchmark_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/complexity_budget_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/compliance_posture.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/compliance_reports.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/compliance_retention_uplift.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/composite_disaster_gameday.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/config_flag_conflict_check.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/config_plane_pilot.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/config_registry.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/continuous_chaos_auto_remediation_suite.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/continuous_chaos_resilience.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/continuous_parity_maintainer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/control_plane_live_activation_shadow_exit_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/critical_path_policy_coverage.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/critical_protocol_formal_suite.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/cross_instance_federated_learning.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/data_retention_tiering.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/data_scope_boundary_check.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/deny_telemetry_normalizer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/dependency_boundary_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/deployment_packaging.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/dist_runtime_cutover.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/docs_coverage_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/docs_structure_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/docs_surface_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/documentation_program_hardening.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/dr_gameday.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/dr_gameday_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/dynamic_burn_budget_oracle.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/empty_fort_integrity_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/enterprise_onboarding_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/enterprise_readiness_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/enterprise_scm_cd_mirror_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/entrypoint_runtime_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/environment_promotion_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/error_budget_release_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/event_sourced_control_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/evidence_audit_dashboard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/execution_doctor_ga.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/execution_reliability_slo.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/execution_yield_recovery.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/explain_decision.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/explainability_artifact_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/f100_a_plus_readiness_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/f100_enterprise_baseline_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/federated_sovereign_mesh_runtime.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/first_run_onboarding_wizard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/fluxlattice_program.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/formal_proof_runtime_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/formal_spec_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/foundation_contract_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/full_pipeline_e2e_hardening_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/generate_coverage_badge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/global_molt_cycle.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/good_first_issue_seed.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/guard_check_registry.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/guided_recovery_error_ux.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/handoff_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/history_cleanliness_program.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/holo_overlay_compiler.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/host_adaptation_operator_surface.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/host_build_stale_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/host_profile_conformance_formal_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/host_rust_validation.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/hybrid_interface_stability_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/js_holdout_audit.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/legal_language_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/legal_regulatory_autodiff_governance_router.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/llm_economy_organ.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/local_runtime_partitioner.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/low_urgency_batch_execution_lane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/mech_suit_benchmark.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/mech_suit_mode_control.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/memory_snapshot_ignore_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/migrate_cleanup.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/migrate_to_planes.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/mobile_competitive_benchmark_matrix.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/mobile_wrapper_distribution_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/model_health_auto_recovery.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/narrow_agent_parity_harness.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/ngc_nvidia_enterprise_distribution_adapter.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/observability_deployment_defaults.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/offsite_backup.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/open_platform_release_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/openclaw_backup_retention.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/openfang_capability_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/openfang_parity_runtime.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/operational_maturity_closure.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/operator_override_drill.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/org_code_format_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/organ_atrophy_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/os_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/package_manifest_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/perception_layer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/perception_polish_program.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/permanent_guidelines_drift_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/personal_protheus_installer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/personas_docs_validation.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/phone_seed_profile.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/pinnacle_integration_contract_check.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/pipeline_handoff_score.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/platform_adaptation_channel_runtime.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/platform_oracle_hostprofile.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/platform_path_contract_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/platform_socket_runtime.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/platform_universal_abstraction_matrix.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/polish_perception_program.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/post_launch_migration_readiness.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/postmortem_loop.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/predictive_capacity_forecast.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/productized_suite_program.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/profile_compatibility_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/proof_pack_threshold_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheus_command_list.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheus_completion.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheus_control_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheus_core_runtime_envelope.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheus_core_rust_binding_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheus_debug_diagnostics.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheus_demo.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheus_diagram.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheus_examples.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheus_prime_seed.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheus_repl.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheus_setup_wizard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheus_top.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheus_unknown_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheus_version_cli.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheusctl.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheusctl_skills_discover.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheusd.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/protheusd_control.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/public_benchmark_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/public_collaboration_surface_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/public_docs_developer_experience_overhaul.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/public_repo_presentation_pass.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/queue_hygiene_summary.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/queue_log_compact.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/readiness_bridge_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/release_semver_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/relocatable_path_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/reminder_data_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/replay_parity_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/repo_hygiene_generated_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/reproducible_distribution_artifact_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/requirement_conformance_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/resurrection_protocol.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/rm_progress_dashboard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/root_scaffolding_rationalization.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/root_surface_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/rsi_control_plane_cli_surface_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/runtime_efficiency_floor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/runtime_retention_prune.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/runtime_state_surface_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/rust50_conf001_execution_cutover.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/rust50_migration_program.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/rust50_sprint1_batch.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/rust50_sprint_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/rust_authoritative_microkernel_acceleration.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/rust_control_plane_cutover.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/rust_dual_logic_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/rust_enterprise_productivity_program.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/rust_hotpath_inventory.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/rust_hybrid_migration_program.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/rust_spine_microkernel.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/rust_workspace_quality_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/scale_benchmark.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/scale_envelope_baseline.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/scale_readiness_program.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/schema_evolution_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/schema_migration_n2_check.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/script_surface_reduction_wave2.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/security_layer_inventory_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/seed_boot_probe.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/self_hosted_bootstrap_compiler.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/settlement_program.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/signal_slo_deadlock_breaker.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/simplicity_budget_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/simplicity_offset_backfill.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/soc2_type2_track.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/source_runtime_classifier_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/spine_kernel_budget_check.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/stale_state_cleanup.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/state_backup_integrity.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/state_kernel.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/state_kernel_cutover.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/state_kernel_dual_write.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/state_kernel_migrate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/state_stream_policy_check.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/state_tiering_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/subconscious_boundary_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/system_health_audit_runner.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/system_map_generator.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/system_visualizer_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/system_visualizer_server.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/token_economics_engine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/top50_roi_sweep.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/trace_habit_autogenesis.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/ts_clone_drift_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/ts_clone_drift_report.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/type_derived_lane_docs_autogen.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/typecheck_systems.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/ui_phase1_polish_consistency_pass.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/ui_surface_maturity_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/universal_distribution_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/v1_hardening_checkpoint.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/wasi2_execution_completeness_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/wasi2_lane_adapter.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/ops/workflow_execution_closure.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/personas/ambient_stance.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/personas/cli.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/personas/orchestration.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/personas/personas_rust_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/personas/shadow_cli.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/pinnacle/index.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
-    },
-    {
-      "file": "client/runtime/systems/polyglot/pilot_task_classifier.py",
-      "ext": "py",
-      "category": "runtime_or_authority_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/polyglot/polyglot_service_adapter.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/primitives/action_grammar.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/primitives/canonical_event_log.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/primitives/cognitive_control_primitive.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/primitives/effect_type_system.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/primitives/emergent_primitive_synthesis.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/primitives/explanation_auto_emit.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/primitives/explanation_primitive.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/primitives/interactive_desktop_session_primitive.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/primitives/iterative_repair_primitive.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/primitives/long_horizon_planning_primitive.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/primitives/policy_vm.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/primitives/primitive_catalog.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/primitives/primitive_registry.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/primitives/primitive_runtime.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/primitives/replay_verify.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/primitives/runtime_scheduler.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/red_legion/command_center.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/red_legion/index.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/redteam/adaptive_defense_expansion.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/redteam/ant_colony_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/redteam/quantum_security_primitive_synthesis.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/redteam/self_improving_redteam_trainer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/reflex/reflex_dispatcher.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/research/offline_r_analytics_runner.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/research/research_organ.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/routing/llm_gateway.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/routing/llm_gateway_failure_classifier.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/routing/model_behavior_drift_containment_shield.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/routing/model_catalog_service.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/routing/model_router.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/routing/model_variant_profile.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/routing/provider_onboarding_manifest.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/routing/provider_readiness.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/routing/route_execute.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/routing/route_task.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/routing/router_budget_calibration.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/science/enhanced_reasoning_mirror.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/science/experiment_scheduler.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/science/hypothesis_forge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/science/meta_science_active_learning_loop.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/science/scientific_method_loop.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/science/scientific_mode_v4.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/adversarial_goal_drift_auditor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/agent_passport.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/alias_verification_vault.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/anti_sabotage_shield.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/autonomous_skill_necessity_audit.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/black_box_ledger.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/capability_envelope_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/capability_lease.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/capability_switchboard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/conflict_marker_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/constitution_guardian.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/copy_hardening_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/crimson_wraith_protocol.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/critical_path_formal_verifier.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/critical_runtime_formal_depth_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/delegated_authority_branching.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/dire_case_emergency_autonomy_protocol.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/directive_compiler.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/directive_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/directive_hierarchy_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/dream_warden_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/emergency_stop.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/enterprise_access_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/execution_sandbox_envelope.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/execution_sandbox_rust_wasm_coprocessor_lane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/external_security_cycle.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/formal_invariant_engine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/formal_invariants_bootstrap.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/formal_mind_sovereignty_verification.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/formal_threat_modeling_engine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/goal_preservation_kernel.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/governance_hardening_lane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/governance_hardening_pack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/habit_hygiene_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/hardware_root_of_trust_attestation_mesh.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/independent_safety_coprocessor_veto_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/insider_threat_split_trust_command_governance.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/integrity_kernel.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/integrity_reseal.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/integrity_reseal_assistant.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/ip_posture_review.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/irrevocable_geas_covenant.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/jigsaw/attackcinema_replay_theater.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/key_lifecycle_governor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/legion_geas_protocol.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/llm_gateway_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/lockweaver/eternal_flux_field.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/log_redaction_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/mcp_a2a_venom_contract_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/merge_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/mind_fortress_principle.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/mirrorreaper_tier4_resource_inversion.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/model_vaccine_sandbox.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/multi_mind_isolation_boundary_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/operator_terms_ack.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/organ_state_encryption_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/phoenix_protocol_respawn_continuity.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/post_quantum_migration_lane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/psycheforge/_shared.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/psycheforge/countermeasure_selector.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/psycheforge/profile_synthesizer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/psycheforge/psycheforge_organ.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/psycheforge/temporal_profile_store.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/remote_emergency_halt.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/remote_tamper_heartbeat.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/repo_hygiene_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/repository_access_auditor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/request_ingress.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/required_checks_policy_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/rsi_git_patch_self_mod_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/rust_security_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/safety_resilience_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/sandbox_context_controls.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/sandbox_skill_loader.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/sandbox_state_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/sandbox_subagent_scope_runtime.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/schema_contract_check.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/secret_rotation_migration_auditor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/secure_heartbeat_endpoint.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/signed_plugin_trust_marketplace.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/skill_install_enforcer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/skill_install_path_enforcer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/skill_quarantine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/skin_protection_layer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/smart_knot_crown_jewel_obfuscation.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/soul_token_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/startup_attestation.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/startup_attestation_boot_gate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/supply_chain_reproducible_build_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/supply_chain_trust_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/thorn_swarm_protocol.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/venom_containment_layer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/wasm_capability_microkernel.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/security/workspace_dump_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/self_audit/illusion_integrity_lane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/abstain_uncertainty_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/active_learning_uncertainty_queue.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/adaptive_layer_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/adversarial_hypothesis_challenger.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/analysis_kernel_stage_interface.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/analysis_quality_slo_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/causal_validation_gate_high_impact.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/causal_vs_correlation_signal_scorer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/champion_challenger_detector_promotion.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/collector_driver.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/conversation_eye_bootstrap.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/counterfactual_signal_replay.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/cross_objective_interference_guard.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/cross_signal_engine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/detector_error_taxonomy_autotune.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/detector_rollback_migration_safety_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/distribution_shift_decomposition_engine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/dynamic_source_reliability_graph.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/ensemble_disagreement_escalation_lane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/eyes_intake.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/feature_data_reproducibility_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/focus_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/gold_eval_blind_scoring_lane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/ground_truth_label_adjudication_lane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/hypothesis_lifecycle_ledger.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/latent_intent_inference_graph.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/multi_hop_objective_chain_mapper.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/multimodal_signal_adapter_plane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/novelty_saturation_prioritization_engine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/offline_statistical_lab_artifact_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/sensitivity_privacy_aware_scoring_contract.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/sensory/value_of_information_collection_planner.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/shadow/shadow_dispatch_reliability.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/shadow/shadow_signal_classifier.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/singularity_seed/index.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/soul/revocation_ceremony.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/soul/soul_continuity_adapter.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/soul/soul_print_manager.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/spawn/mobile_edge_swarm_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/spawn/seed_spawn_lineage.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/spawn/spawn_broker.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/spine/background_hands_scheduler.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/spine/contract_check.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/spine/evidence_run_plan.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/spine/heartbeat_trigger.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/spine/rsi_idle_hands_scheduler.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/spine/spine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/spine/spine_safe_launcher.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/storm/creator_optin_ledger.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/storm/storm_value_distribution.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/strategy/strategy_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/strategy/strategy_learner.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/strategy/strategy_principles.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/swarm/index.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/symbiosis/deep_symbiosis_understanding_layer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/symbiosis/neural_dormant_seed.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/symbiosis/pre_neuralink_interface.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/symbiosis/soul_vector_substrate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/tools/assimilate.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/tools/cli_suggestion_engine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/tools/proactive_assimilation.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/tools/research.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/tools/shadow_tool_notification_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/tools/tool_context_router.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/tools/tool_notification_lane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/vault/index.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/weaver/drift_aware_revenue_optimizer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/weaver/weaver_core.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/account_creation_profile_extension.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/client_communication_organ.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/client_relationship_manager.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/data_rights_engine.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/gated_account_creation_organ.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/high_value_play_detector.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/learning_conduit.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/lib/ts_bootstrap.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/lib/ts_entrypoint.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/orchestron/adaptive_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/orchestron/adversarial_lane.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/orchestron/candidate_generator.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/orchestron/contracts.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/orchestron/intent_analyzer.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/orchestron/nursery_tester.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/orchestron_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/payment_skills_bridge.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/rate_limit_intelligence.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/universal_outreach_primitive.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/workflow_controller.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/workflow_executor.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/systems/workflow/workflow_generator.js",
       "ext": "js",
-      "category": "runtime_wrapper_debt"
+      "category": "compat_runtime_wrapper_surface"
     },
     {
       "file": "client/runtime/tmp/open-platform-release-pack-FnK8Gu/stubs/compatibility_stub.js",

@@ -49,6 +49,45 @@ function readSource(file) {
   return source;
 }
 
+function hasTwinTs(file) {
+  return path.extname(file).toLowerCase() === '.js' && fs.existsSync(path.resolve(ROOT, file.replace(/\.js$/i, '.ts')));
+}
+
+function isBootstrapWrapper(file) {
+  if (path.extname(file).toLowerCase() !== '.js') return false;
+  const source = readSource(file);
+  if (!source) return false;
+  return source.includes('ts_bootstrap') || source.includes('ts_entrypoint');
+}
+
+function isAliasWrapper(file) {
+  const source = readSource(file);
+  if (!source) return false;
+  return /module\.exports\s*=\s*require\(/.test(source) && !source.includes('spawnSync');
+}
+
+function isThinCompatibilityWrapper(file) {
+  const source = readSource(file);
+  if (!source) return false;
+  return [
+    'Thin compatibility wrapper only.',
+    'Compatibility wrapper.',
+    'Moved to:',
+    'createCognitionModule',
+    'createLegacyRetiredModule',
+    'legacy-retired-lane',
+    'Layer ownership: apps/',
+    'Layer ownership: core/'
+  ].some((marker) => source.includes(marker));
+}
+
+function isShellWrapper(file) {
+  if (path.extname(file).toLowerCase() !== '.sh') return false;
+  const source = readSource(file);
+  if (!source) return false;
+  return source.includes('Thin compatibility wrapper only.');
+}
+
 function isRuntimeWrapper(file) {
   if (!(file.startsWith('client/runtime/systems/') || file.startsWith('client/systems/'))) return false;
   if (path.extname(file).toLowerCase() !== '.js') return false;
@@ -77,7 +116,10 @@ function classify(file) {
   if (file.startsWith('client/runtime/patches/')) return 'platform_patch_surface';
   if (file.startsWith('client/install.') || file.startsWith('client/runtime/deploy/') || file.startsWith('client/cli/bin/') || file.startsWith('client/cli/npm/') || file.startsWith('client/cli/tools/')) return 'installer_or_dev_shell';
   if (file.startsWith('client/cognition/skills/')) return 'skill_script_or_connector';
-  if (isRuntimeWrapper(file)) return 'runtime_wrapper_debt';
+  if (isRuntimeWrapper(file)) return 'compat_runtime_wrapper_surface';
+  if ((file.startsWith('client/runtime/lib/') || file.startsWith('client/lib/')) && (isBootstrapWrapper(file) || isAliasWrapper(file) || hasTwinTs(file))) return 'platform_compat_surface';
+  if (file.startsWith('client/cognition/') && (isThinCompatibilityWrapper(file) || isShellWrapper(file) || isBootstrapWrapper(file))) return 'compat_cognition_wrapper_surface';
+  if (file.startsWith('client/cognition/habits/routines/') || file.startsWith('client/cognition/habits/scripts/') || file.startsWith('client/cognition/personas/')) return 'move_to_apps';
   if (file.startsWith('client/runtime/systems/') || file.startsWith('client/systems/')) return 'runtime_or_authority_debt';
   if (file.startsWith('client/runtime/lib/') || file.startsWith('client/lib/')) return 'platform_shim_debt';
   if (file.startsWith('client/memory/tools/')) return 'tooling_or_test_debt';

@@ -27,7 +27,7 @@ Purpose: allow non-TS modules behind strict, testable contracts with rollback-sa
 ## Pilot
 
 - Adapter: `client/runtime/systems/polyglot/polyglot_service_adapter.ts`
-- Worker: `client/runtime/systems/polyglot/pilot_task_classifier.py`
+- Worker: `adapters/polyglot/pilot_task_classifier.py`
 - Policy: `client/runtime/config/polyglot_service_policy.json`
 - Test: `tests/client-memory-tools/polyglot_service_adapter.test.js`
 

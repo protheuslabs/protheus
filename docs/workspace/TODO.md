@@ -1,6 +1,6 @@
 # TODO (Priority + ROI + Dependency Ordered)
 
-Updated: 2026-03-10 (policy enforcement + Protheus 2.0 intake applied)
+Updated: 2026-03-10 (policy enforcement tranche closed + Protheus 2.0 intake applied)
 
 ## Ordering policy
 - Priority first (`P0` > `P1` > `P2` > `P3`)
@@ -182,18 +182,20 @@ Updated: 2026-03-10 (policy enforcement + Protheus 2.0 intake applied)
 18. `MAINT-006` `P1` `ROI=9/10` `DEP=009,010` Client legacy language debt burn-down (`JS/Python/Shell -> TS/client or apps/adapters/tests`). `STATUS: IN_PROGRESS`
 - Current baseline:
 - `client` legacy debt tracked by repo-surface audit + debt ledger:
-  - `total=894`
+  - `total=893`
   - `js=872`
   - `sh=13`
-  - `py=8`
+  - `py=7`
   - `ps1=1`
 - High-value residual slices:
-  - `runtime_wrapper_debt=716`
-  - `runtime_or_authority_debt=1`
-  - `cognition_surface_debt=70`
-  - `platform_shim_debt=50`
+  - `compat_runtime_wrapper_surface=716`
+  - `compat_cognition_wrapper_surface=70`
+  - `platform_compat_surface=50`
   - `installer_or_dev_shell=23`
   - `skill_script_or_connector=17`
+  - `tooling_or_test_debt=11`
+  - `platform_patch_surface=3`
+  - `tmp_generated_debt=3`
 - Latest tranche evidence:
   - `tests/client-memory-tools/`
   - `tests/websocket-stability-test.js`
@@ -215,9 +217,15 @@ Updated: 2026-03-10 (policy enforcement + Protheus 2.0 intake applied)
   - reclassified thin JS runtime wrappers as `runtime_wrapper_debt` instead of authority debt
   - package smoke evidence:
     - `node packages/protheus-core/starter.js --mode=contract --spine=0 --reflex=0 --gates=0 --max-mb=5 --max-ms=200`
-    - `node packages/protheus-core/core_profile_contract.js status`
-    - `node packages/protheus-edge/starter.js --mode=status`
-    - `node packages/lensmap/lensmap_cli.js status`
+  - `node packages/protheus-core/core_profile_contract.js status`
+  - `node packages/protheus-edge/starter.js --mode=status`
+  - `node packages/lensmap/lensmap_cli.js status`
+  - `apps/_shared/run_protheus_ops.js`
+  - `apps/habits/scripts/spine_daily.js`
+  - `apps/habits/scripts/spine_eyes.js`
+  - `adapters/polyglot/pilot_task_classifier.py`
+  - `artifacts/public_platform_contract_audit_2026-03-10_policy_enforcement.json`
+  - `npm run -s ops:public-platform:contract`
 - Exit criteria:
 - Client reaches TS/TSX + HTML/CSS target state except explicitly-approved installer/package shims.
 - App/adaptor/test candidates are relocated out of `client`.

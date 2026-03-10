@@ -1,15 +1,9 @@
-#!/client/cli/bin/bash
-#
-# post-commit hook - Auto-capture artifacts after each git commit
-# Install: ln -sf /Users/jay/.openclaw/workspace/client/cognition/habits/scripts/dopamine-git-hook.sh .git/hooks/post-commit
-#
-
-cd /Users/jay/.openclaw/workspace || exit 0
-
-# Run autocap silently (suppress output unless error)
-/Users/jay/.local/client/cli/bin/dop autocap git > /dev/null 2>&1
-
-# Optional: Log that artifacts were captured
-# echo "🤖 Artifacts auto-captured from commit" >&2
-
-exit 0
+#!/usr/bin/env bash
+set -euo pipefail
+# Layer ownership: apps/habits/scripts (authoritative)
+# Thin compatibility wrapper only.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIR="${SCRIPT_DIR}"
+while [ ! -f "${DIR}/Cargo.toml" ] && [ "${DIR}" != "/" ]; do DIR="$(dirname "${DIR}")"; done
+ROOT="${DIR}"
+exec bash "${ROOT}/apps/habits/scripts/dopamine-git-hook.sh" "$@"
