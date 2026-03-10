@@ -74,6 +74,7 @@
 - Completed and marked `done`:
   - `V6-LLMN-001..004` (mode registry/parity/path/conformance shield)
   - `V6-MEMORY-013..019` (low-burn retrieval/hydration/budget/ranking/freshness + LensMap annotation shield)
+  - `V6-MEMORY-021` (per-query token telemetry + burn-SLO trace lane)
 - Validation evidence:
   - `client/memory/tools/tests/llmn_mode_conformance.test.js`
   - `client/memory/tools/tests/strategy_resolver.test.js`

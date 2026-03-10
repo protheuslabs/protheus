@@ -63,6 +63,9 @@ Updated: 2026-03-10 (runtime-unblocked + verification-green)
   - `node client/memory/tools/tests/memory_auto_recall.test.js`
   - `node client/memory/tools/tests/memory_index_freshness_gate.test.js`
   - `cargo test --manifest-path core/layer1/memory_runtime/Cargo.toml`
+- Token telemetry extension completed for `V6-MEMORY-021`:
+  - `core/layer1/memory_runtime/src/token_telemetry.rs`
+  - `cargo test --manifest-path core/layer1/memory_runtime/Cargo.toml`
 
 ## Commands
 

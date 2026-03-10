@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-03-10T18:07:23.430Z",
+    "generatedAt": "2026-03-10T18:17:04.332Z",
     "source": {
       "srs": "docs/workspace/SRS.md",
       "todo": "docs/workspace/TODO.md"
@@ -23,7 +23,7 @@
       "exitCriteria": "Added Rust importance engine + priority queue ordering in `core/layer0/ops/src/importance.rs` and `core/layer0/ops/src/attention_queue.rs`; enqueue/status receipts now carry `score`, `band`, `priority`, and `initiative_action`. Added subconscious/client boundary regression guard lane (`client/runtime/systems/ops/subconscious_boundary_guard.ts`) with strict policy + required-check wiring. Remaining exit: complete live runtime validation and cockpit-priority consumption proof.",
       "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
       "score": 425,
-      "evidenceCount": 29,
+      "evidenceCount": 30,
       "nonBacklogEvidenceCount": 27,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
@@ -42,8 +42,8 @@
       "exitCriteria": "Added `core/layer0/swarm_router` crate with typed envelope + queue primitives (`core/layer0/swarm_router/src/lib.rs`, `src/main.rs`) implementing `id/reply_to/route/payload/priority/status` and queue schema `swarm_queue_v1`. Remaining exit: cargo lane validation is currently blocked by host dyld build-script stalls (`V6-HOST-BUILD-STALE-001`, `cargo_test_timeout` after stale-reap).",
       "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
       "score": 415,
-      "evidenceCount": 67,
-      "nonBacklogEvidenceCount": 65,
+      "evidenceCount": 66,
+      "nonBacklogEvidenceCount": 64,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -289,8 +289,8 @@
       "exitCriteria": "Human approvals (`HMAN-082`, `HMAN-083`) and device-access evidence complete staged safety validation before lane promotion.",
       "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
       "score": 326,
-      "evidenceCount": 6,
-      "nonBacklogEvidenceCount": 4,
+      "evidenceCount": 7,
+      "nonBacklogEvidenceCount": 5,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -309,7 +309,7 @@
       "section": "Production-Grade Checklist Addendum (2026-03-06)",
       "score": 320,
       "evidenceCount": 29,
-      "nonBacklogEvidenceCount": 31,
+      "nonBacklogEvidenceCount": 15,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -327,7 +327,7 @@
       "exitCriteria": "Add Layer-2 dual-agent coordinator contract with planner/executor split and deterministic handoff receipts (`core/layer2/orchestrator/dual_agent.rs`); add Layer-3 persona split template (`client/cognition/personas/dual_agent_template/`); prove shadows run in dual-agent mode with planner re-injection preventing instruction fade-out.",
       "section": "Production-Grade Checklist Addendum (2026-03-06)",
       "score": 320,
-      "evidenceCount": 4,
+      "evidenceCount": 1,
       "nonBacklogEvidenceCount": 2,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
@@ -346,8 +346,8 @@
       "exitCriteria": "Add on-demand lazy tool discovery lane (`core/layer2/tools/lazy_discovery.rs`) that loads tools only when planner requests them; all discoveries route via conduit with receipts; verify no full manifest preload at boot and >=70% context-bloat reduction on long tasks.",
       "section": "Production-Grade Checklist Addendum (2026-03-06)",
       "score": 320,
-      "evidenceCount": 4,
-      "nonBacklogEvidenceCount": 2,
+      "evidenceCount": 5,
+      "nonBacklogEvidenceCount": 3,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -385,7 +385,7 @@
       "section": "Production-Grade Checklist Addendum (2026-03-06)",
       "score": 320,
       "evidenceCount": 4,
-      "nonBacklogEvidenceCount": 2,
+      "nonBacklogEvidenceCount": 3,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -422,8 +422,8 @@
       "exitCriteria": "Add Layer-1 autonomous safety policy lane (`core/layer1/policy/autonomous_safety.rs`) and Layer-0 enforcement bindings so high-risk actions (terminal/file-write/code-run) require capability grant + policy check + receipt; `protheus-top` shows complete audit trail for autonomous actions.",
       "section": "Production-Grade Checklist Addendum (2026-03-06)",
       "score": 320,
-      "evidenceCount": 4,
-      "nonBacklogEvidenceCount": 6,
+      "evidenceCount": 8,
+      "nonBacklogEvidenceCount": 2,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -441,7 +441,7 @@
       "exitCriteria": "Add policy-gated auto-reseal path that clears trusted reseal classes with signed receipts; blocked reseals must emit explicit remediation hints and never silently suppress cockpit runtime.",
       "section": "Production-Grade Checklist Addendum (2026-03-06)",
       "score": 320,
-      "evidenceCount": 7,
+      "evidenceCount": 11,
       "nonBacklogEvidenceCount": 3,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
@@ -461,7 +461,7 @@
       "section": "Production-Grade Checklist Addendum (2026-03-06)",
       "score": 320,
       "evidenceCount": 10,
-      "nonBacklogEvidenceCount": 6,
+      "nonBacklogEvidenceCount": 14,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -1365,25 +1365,6 @@
     },
     {
       "rank": 72,
-      "id": "V6-MEMORY-021",
-      "status": "queued",
-      "upgrade": "Per-query token burn telemetry + budget trace lane (`REQ-36`)",
-      "why": "Low-burn targets cannot be protected reliably without per-query token accounting and retrieval-path attribution.",
-      "exitCriteria": "Emit deterministic per-query token telemetry (`startup/hydration/retrieval/response`) with path attribution (`index-only`, `node-read`, `full-file`), persist rolling session stats, and fail regression checks when standard memory query path drifts above configured thresholds.",
-      "section": "Production-Grade Checklist Addendum (2026-03-06)",
-      "score": 315,
-      "evidenceCount": 4,
-      "nonBacklogEvidenceCount": 2,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 73,
       "id": "V2-012",
       "status": "blocked",
       "upgrade": "External security assessment and pen-test cycle (canonical blocker)",
@@ -1402,7 +1383,7 @@
       }
     },
     {
-      "rank": 74,
+      "rank": 73,
       "id": "V6-EDGE-005",
       "status": "blocked",
       "upgrade": "Third-party license and source-ingest decision for edge backend",
@@ -1421,7 +1402,7 @@
       }
     },
     {
-      "rank": 75,
+      "rank": 74,
       "id": "V6-F100-022",
       "status": "blocked",
       "upgrade": "Live trading proof gate (30-day promotion evidence)",
@@ -1440,7 +1421,7 @@
       }
     },
     {
-      "rank": 76,
+      "rank": 75,
       "id": "V6-F100-023",
       "status": "blocked",
       "upgrade": "Third-party security audit publication",
@@ -1459,7 +1440,7 @@
       }
     },
     {
-      "rank": 77,
+      "rank": 76,
       "id": "V6-F100-024",
       "status": "blocked",
       "upgrade": "Horizontal scaling proof in production profile",
@@ -1478,7 +1459,7 @@
       }
     },
     {
-      "rank": 78,
+      "rank": 77,
       "id": "V6-F100-025",
       "status": "blocked",
       "upgrade": "Continuous chaos weekly evidence contract",
@@ -1497,7 +1478,7 @@
       }
     },
     {
-      "rank": 79,
+      "rank": 78,
       "id": "V6-F100-034",
       "status": "blocked",
       "upgrade": "First public semantic release + npm publish",
@@ -1516,7 +1497,7 @@
       }
     },
     {
-      "rank": 80,
+      "rank": 79,
       "id": "V6-F100-043",
       "status": "blocked",
       "upgrade": "External certification and attestation program (SOC2/ISO/FedRAMP/GDPR)",
@@ -1535,7 +1516,7 @@
       }
     },
     {
-      "rank": 81,
+      "rank": 80,
       "id": "V6-F100-044",
       "status": "blocked",
       "upgrade": "Commercial support/SLA contract lane (enterprise readiness)",
@@ -1554,7 +1535,7 @@
       }
     },
     {
-      "rank": 82,
+      "rank": 81,
       "id": "V6-F100-045",
       "status": "blocked",
       "upgrade": "Public compliance report publication lane",
@@ -1573,7 +1554,7 @@
       }
     },
     {
-      "rank": 83,
+      "rank": 82,
       "id": "V6-F100-A-008",
       "status": "blocked",
       "upgrade": "Enterprise legal packet publication (MSA/DPA/privacy/subprocessors)",
@@ -1592,7 +1573,7 @@
       }
     },
     {
-      "rank": 84,
+      "rank": 83,
       "id": "V6-F100-A-009",
       "status": "blocked",
       "upgrade": "First reference customer case study publication",
@@ -1611,7 +1592,7 @@
       }
     },
     {
-      "rank": 85,
+      "rank": 84,
       "id": "V6-F100-A-010",
       "status": "blocked",
       "upgrade": "Cloud marketplace listing publication (AWS/Azure/GCP)",
@@ -1630,7 +1611,7 @@
       }
     },
     {
-      "rank": 86,
+      "rank": 85,
       "id": "V6-F100-A-011",
       "status": "blocked",
       "upgrade": "Named 24x7 support roster activation",
@@ -1638,8 +1619,8 @@
       "exitCriteria": "Published support roster and escalation contacts are active and validated in drill evidence; owner `HMAN-035`.",
       "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
       "score": 310,
-      "evidenceCount": 11,
-      "nonBacklogEvidenceCount": 5,
+      "evidenceCount": 12,
+      "nonBacklogEvidenceCount": 6,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -1649,7 +1630,7 @@
       }
     },
     {
-      "rank": 87,
+      "rank": 86,
       "id": "V6-FLUX-007",
       "status": "blocked",
       "upgrade": "Advanced substrate live validation lane",
@@ -1668,7 +1649,7 @@
       }
     },
     {
-      "rank": 88,
+      "rank": 87,
       "id": "V6-GAP-006",
       "status": "blocked",
       "upgrade": "Public Release + Announcement Publication Authority",
@@ -1687,7 +1668,7 @@
       }
     },
     {
-      "rank": 89,
+      "rank": 88,
       "id": "V6-PAY-007",
       "status": "blocked",
       "upgrade": "Monero network/compliance profile decision for production rollout",
@@ -1706,7 +1687,7 @@
       }
     },
     {
-      "rank": 90,
+      "rank": 89,
       "id": "V6-SBOX-006",
       "status": "blocked",
       "upgrade": "Sandbox runtime substrate decision (container vs lightweight jail)",
@@ -1725,7 +1706,7 @@
       }
     },
     {
-      "rank": 91,
+      "rank": 90,
       "id": "V6-TOOLS-005",
       "status": "blocked",
       "upgrade": "Optional reactions/worktree event automation track",
@@ -1744,7 +1725,7 @@
       }
     },
     {
-      "rank": 92,
+      "rank": 91,
       "id": "V7-TOP1-009",
       "status": "blocked",
       "upgrade": "Independent third-party verification publication lane",
@@ -1763,7 +1744,7 @@
       }
     },
     {
-      "rank": 93,
+      "rank": 92,
       "id": "V7-TOP1-010",
       "status": "blocked",
       "upgrade": "High-assurance profile release gate (medical/defense-class)",
@@ -1782,7 +1763,7 @@
       }
     },
     {
-      "rank": 94,
+      "rank": 93,
       "id": "V6-OBSERVABILITY-001.1",
       "status": "queued",
       "upgrade": "Real-time monitoring + intelligent alert context lane",
@@ -1801,7 +1782,7 @@
       }
     },
     {
-      "rank": 95,
+      "rank": 94,
       "id": "V6-OBSERVABILITY-001.2",
       "status": "queued",
       "upgrade": "Visual workflow editor + job scheduling lane",
@@ -1820,7 +1801,7 @@
       }
     },
     {
-      "rank": 96,
+      "rank": 95,
       "id": "V6-OBSERVABILITY-001.3",
       "status": "queued",
       "upgrade": "Automatic incident-response orchestration lane",
@@ -1839,7 +1820,7 @@
       }
     },
     {
-      "rank": 97,
+      "rank": 96,
       "id": "V6-OBSERVABILITY-001.4",
       "status": "queued",
       "upgrade": "Self-hosted single-command deploy profile for observability stack",
@@ -1858,7 +1839,7 @@
       }
     },
     {
-      "rank": 98,
+      "rank": 97,
       "id": "V6-OBSERVABILITY-001.5",
       "status": "queued",
       "upgrade": "Conduit-only observability/workflow/incident control guardrails",
@@ -1877,7 +1858,7 @@
       }
     },
     {
-      "rank": 99,
+      "rank": 98,
       "id": "V6-COMPANY-001.1",
       "status": "queued",
       "upgrade": "Company layer org-chart/runtime hierarchy model",
@@ -1896,7 +1877,7 @@
       }
     },
     {
-      "rank": 100,
+      "rank": 99,
       "id": "V6-COMPANY-001.2",
       "status": "queued",
       "upgrade": "Per-agent period budget enforcement (tokens/cost/compute/privacy)",
@@ -1915,7 +1896,7 @@
       }
     },
     {
-      "rank": 101,
+      "rank": 100,
       "id": "V6-COMPANY-001.3",
       "status": "queued",
       "upgrade": "Ticket system with immutable audit chain",
@@ -1934,7 +1915,7 @@
       }
     },
     {
-      "rank": 102,
+      "rank": 101,
       "id": "V6-COMPANY-001.4",
       "status": "queued",
       "upgrade": "24/7 heartbeat agent runtime + remote monitoring surface",
@@ -1953,7 +1934,7 @@
       }
     },
     {
-      "rank": 103,
+      "rank": 102,
       "id": "V6-COMPANY-001.5",
       "status": "queued",
       "upgrade": "Conduit-only company-operation guardrails",
@@ -1972,7 +1953,7 @@
       }
     },
     {
-      "rank": 104,
+      "rank": 103,
       "id": "V6-AGENCY-001.1",
       "status": "queued",
       "upgrade": "Personality-driven agent template pack",
@@ -1991,7 +1972,7 @@
       }
     },
     {
-      "rank": 105,
+      "rank": 104,
       "id": "V6-AGENCY-001.2",
       "status": "queued",
       "upgrade": "Division-based agency topology for orchestration",
@@ -2010,7 +1991,7 @@
       }
     },
     {
-      "rank": 106,
+      "rank": 105,
       "id": "V6-AGENCY-001.3",
       "status": "queued",
       "upgrade": "Multi-agent orchestrator coordinator lane",
@@ -2029,7 +2010,7 @@
       }
     },
     {
-      "rank": 107,
+      "rank": 106,
       "id": "V6-AGENCY-001.4",
       "status": "queued",
       "upgrade": "Workflow + success-metric contract binding for agency runs",
@@ -2048,7 +2029,7 @@
       }
     },
     {
-      "rank": 108,
+      "rank": 107,
       "id": "V6-AGENCY-001.5",
       "status": "queued",
       "upgrade": "Conduit-only activation/handoff guardrails for agency mode",
@@ -2067,7 +2048,7 @@
       }
     },
     {
-      "rank": 109,
+      "rank": 108,
       "id": "V6-NETWORK-001.1",
       "status": "queued",
       "upgrade": "P2P gossip collaboration protocol lane",
@@ -2086,7 +2067,7 @@
       }
     },
     {
-      "rank": 110,
+      "rank": 109,
       "id": "V6-NETWORK-001.2",
       "status": "queued",
       "upgrade": "Compute sharing + social credit ledger lane",
@@ -2105,7 +2086,7 @@
       }
     },
     {
-      "rank": 111,
+      "rank": 110,
       "id": "V6-NETWORK-001.3",
       "status": "queued",
       "upgrade": "Cryptographic proof-of-compute verifier lane (matmul challenge)",
@@ -2124,7 +2105,7 @@
       }
     },
     {
-      "rank": 112,
+      "rank": 111,
       "id": "V6-NETWORK-001.4",
       "status": "queued",
       "upgrade": "Idle RSS read/commentary collaboration behavior lane",
@@ -2143,7 +2124,7 @@
       }
     },
     {
-      "rank": 113,
+      "rank": 112,
       "id": "V6-NETWORK-001.5",
       "status": "queued",
       "upgrade": "One-command browser/CLI node onboarding lane (`protheus node join`)",
@@ -2162,7 +2143,7 @@
       }
     },
     {
-      "rank": 114,
+      "rank": 113,
       "id": "V6-NETWORK-001.6",
       "status": "queued",
       "upgrade": "Conduit-only network safety guardrails + full activity audit lane",
@@ -2181,7 +2162,7 @@
       }
     },
     {
-      "rank": 115,
+      "rank": 114,
       "id": "V6-NETWORK-002.1",
       "status": "queued",
       "upgrade": "Decentralized Data Discovery Catalog",
@@ -2200,7 +2181,7 @@
       }
     },
     {
-      "rank": 116,
+      "rank": 115,
       "id": "V6-NETWORK-002.2",
       "status": "queued",
       "upgrade": "Secure Data Sharing with Provenance Contracts",
@@ -2219,7 +2200,7 @@
       }
     },
     {
-      "rank": 117,
+      "rank": 116,
       "id": "V6-NETWORK-002.3",
       "status": "queued",
       "upgrade": "Compute-to-Data Execution Lane",
@@ -2238,7 +2219,7 @@
       }
     },
     {
-      "rank": 118,
+      "rank": 117,
       "id": "V6-NETWORK-002.4",
       "status": "queued",
       "upgrade": "Knowledge Graph Provenance Index Integration",
@@ -2257,7 +2238,7 @@
       }
     },
     {
-      "rank": 119,
+      "rank": 118,
       "id": "V6-NETWORK-002.5",
       "status": "queued",
       "upgrade": "Conduit-Only Marketplace Enforcement + Receipts",
@@ -2276,7 +2257,7 @@
       }
     },
     {
-      "rank": 120,
+      "rank": 119,
       "id": "V6-STORAGE-001.1",
       "status": "queued",
       "upgrade": "Time-series container primitive for receipts/events/memory logs",
@@ -2295,7 +2276,7 @@
       }
     },
     {
-      "rank": 121,
+      "rank": 120,
       "id": "V6-STORAGE-001.2",
       "status": "queued",
       "upgrade": "Hybrid ingest/query acceleration lane (memory-hot + durable tier)",
@@ -2314,7 +2295,7 @@
       }
     },
     {
-      "rank": 122,
+      "rank": 121,
       "id": "V6-STORAGE-001.3",
       "status": "queued",
       "upgrade": "Scale-out sharding/replication contract for network seed nodes",
@@ -2333,7 +2314,7 @@
       }
     },
     {
-      "rank": 123,
+      "rank": 122,
       "id": "V6-STORAGE-001.4",
       "status": "queued",
       "upgrade": "Workload-aware data model selector (time-series vs key-value vs document lanes)",
@@ -2352,7 +2333,7 @@
       }
     },
     {
-      "rank": 124,
+      "rank": 123,
       "id": "V6-STORAGE-001.5",
       "status": "queued",
       "upgrade": "Conduit-only storage operations guardrail + audit lane",
@@ -2371,7 +2352,7 @@
       }
     },
     {
-      "rank": 125,
+      "rank": 124,
       "id": "V6-APP-001.1",
       "status": "queued",
       "upgrade": "Creator Discovery Engine (YouTube/Twitch)",
@@ -2390,7 +2371,7 @@
       }
     },
     {
-      "rank": 126,
+      "rank": 125,
       "id": "V6-APP-001.2",
       "status": "queued",
       "upgrade": "Personalized Outreach + Follow-Up Sequences",
@@ -2409,7 +2390,7 @@
       }
     },
     {
-      "rank": 127,
+      "rank": 126,
       "id": "V6-APP-001.3",
       "status": "queued",
       "upgrade": "Response Handling + Call Booking Workflow",
@@ -2428,7 +2409,7 @@
       }
     },
     {
-      "rank": 128,
+      "rank": 127,
       "id": "V6-APP-001.4",
       "status": "queued",
       "upgrade": "24/7 Autonomous Campaign Operation Profile",
@@ -2447,7 +2428,7 @@
       }
     },
     {
-      "rank": 129,
+      "rank": 128,
       "id": "V6-APP-001.5",
       "status": "queued",
       "upgrade": "Conduit-Only Outreach Enforcement + Default `/apps` Placement",
@@ -2466,7 +2447,7 @@
       }
     },
     {
-      "rank": 130,
+      "rank": 129,
       "id": "V6-SUBSTRATE-001.1",
       "status": "queued",
       "upgrade": "WiFi CSI sensing engine lane (pose/vitals/presence)",
@@ -2485,7 +2466,7 @@
       }
     },
     {
-      "rank": 131,
+      "rank": 130,
       "id": "V6-SUBSTRATE-001.2",
       "status": "queued",
       "upgrade": "Edge module library enable/disable contract for CSI workloads",
@@ -2493,7 +2474,7 @@
       "exitCriteria": "Add module registry (fall/sleep/activity/security/emotion/etc.) with one-command enable/disable by persona/shadow and deterministic module activation receipts.",
       "section": "WiFi CSI Non-Visual Sensing Intake (RuView, x.com/heygurisingh 2030779994767851980, 2026-03-09)",
       "score": 276,
-      "evidenceCount": 4,
+      "evidenceCount": 1,
       "nonBacklogEvidenceCount": 2,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
@@ -2504,7 +2485,7 @@
       }
     },
     {
-      "rank": 132,
+      "rank": 131,
       "id": "V6-SUBSTRATE-001.3",
       "status": "queued",
       "upgrade": "ESP32/low-power deployment profile lane",
@@ -2523,7 +2504,7 @@
       }
     },
     {
-      "rank": 133,
+      "rank": 132,
       "id": "V6-SUBSTRATE-001.4",
       "status": "queued",
       "upgrade": "Conduit-routed privacy/consent guardrails for non-visual sensing",
@@ -2542,7 +2523,7 @@
       }
     },
     {
-      "rank": 134,
+      "rank": 133,
       "id": "V6-SUBSTRATE-001.5",
       "status": "queued",
       "upgrade": "Persona/shadow integration for WiFi sensing as native Eye",
@@ -2551,7 +2532,7 @@
       "section": "WiFi CSI Non-Visual Sensing Intake (RuView, x.com/heygurisingh 2030779994767851980, 2026-03-09)",
       "score": 276,
       "evidenceCount": 4,
-      "nonBacklogEvidenceCount": 2,
+      "nonBacklogEvidenceCount": 0,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -2561,7 +2542,7 @@
       }
     },
     {
-      "rank": 135,
+      "rank": 134,
       "id": "V6-SUBSTRATE-002.1",
       "status": "queued",
       "upgrade": "Biological substrate interface lane (living-neuron signal -> model control)",
@@ -2580,7 +2561,7 @@
       }
     },
     {
-      "rank": 136,
+      "rank": 135,
       "id": "V6-SUBSTRATE-002.2",
       "status": "queued",
       "upgrade": "Closed-loop biological feedback engine",
@@ -2599,7 +2580,7 @@
       }
     },
     {
-      "rank": 137,
+      "rank": 136,
       "id": "V6-SUBSTRATE-002.3",
       "status": "queued",
       "upgrade": "Layer `-1` pluggable biological adapter template",
@@ -2618,7 +2599,7 @@
       }
     },
     {
-      "rank": 138,
+      "rank": 137,
       "id": "V6-SUBSTRATE-002.5",
       "status": "queued",
       "upgrade": "CLI/persona observability integration for biological substrate",
@@ -2637,7 +2618,7 @@
       }
     },
     {
-      "rank": 139,
+      "rank": 138,
       "id": "V6-SUBSTRATE-003.1",
       "status": "queued",
       "upgrade": "WebGPU + WGSL accelerated browser inference runtime",
@@ -2656,7 +2637,7 @@
       }
     },
     {
-      "rank": 140,
+      "rank": 139,
       "id": "V6-SUBSTRATE-003.2",
       "status": "queued",
       "upgrade": "Single-tab zero-dependency execution contract",
@@ -2675,7 +2656,7 @@
       }
     },
     {
-      "rank": 141,
+      "rank": 140,
       "id": "V6-SUBSTRATE-003.3",
       "status": "queued",
       "upgrade": "Model-agnostic SafeTensors loader + adaptive quantization selector",
@@ -2694,7 +2675,7 @@
       }
     },
     {
-      "rank": 142,
+      "rank": 141,
       "id": "V6-SUBSTRATE-003.4",
       "status": "queued",
       "upgrade": "Conduit-routed browser inference guardrails + token-stream receipts",
@@ -2713,7 +2694,7 @@
       }
     },
     {
-      "rank": 143,
+      "rank": 142,
       "id": "V6-SUBSTRATE-003.5",
       "status": "queued",
       "upgrade": "Persona/shadow substrate switch contract (`protheus substrate enable webgpu`)",
@@ -2732,7 +2713,7 @@
       }
     },
     {
-      "rank": 144,
+      "rank": 143,
       "id": "V6-HERMES-001.1",
       "status": "queued",
       "upgrade": "Autonomous self-discovery identity lane",
@@ -2751,7 +2732,7 @@
       }
     },
     {
-      "rank": 145,
+      "rank": 144,
       "id": "V6-HERMES-001.2",
       "status": "queued",
       "upgrade": "Premium real-time TUI envelope for shadow/cockpit execution",
@@ -2770,7 +2751,7 @@
       }
     },
     {
-      "rank": 146,
+      "rank": 145,
       "id": "V6-HERMES-001.3",
       "status": "queued",
       "upgrade": "Persistent memory continuity hardening across attach/disconnect boundaries",
@@ -2789,7 +2770,7 @@
       }
     },
     {
-      "rank": 147,
+      "rank": 146,
       "id": "V6-HERMES-001.4",
       "status": "queued",
       "upgrade": "Subagent delegation primitives + governed tool-rich execution packs",
@@ -2808,7 +2789,7 @@
       }
     },
     {
-      "rank": 148,
+      "rank": 147,
       "id": "V6-HERMES-001.5",
       "status": "queued",
       "upgrade": "Conduit-only autonomous discovery/delegation guard contract",
@@ -2827,7 +2808,7 @@
       }
     },
     {
-      "rank": 149,
+      "rank": 148,
       "id": "V6-VBROWSER-001.1",
       "status": "queued",
       "upgrade": "Sandboxed virtual browser runtime with low-latency streaming",
@@ -2846,7 +2827,7 @@
       }
     },
     {
-      "rank": 150,
+      "rank": 149,
       "id": "V6-VBROWSER-001.2",
       "status": "queued",
       "upgrade": "Multi-user collaborative session controls",
@@ -2855,7 +2836,7 @@
       "section": "Virtual Browser Streaming & Collaboration Intake (Doc `1BaYvmljJ6VnYyjk4l_E-prfUKvjjuBJCCP8m4lj4uzE`, 2026-03-09)",
       "score": 270,
       "evidenceCount": 4,
-      "nonBacklogEvidenceCount": 2,
+      "nonBacklogEvidenceCount": 0,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -2865,7 +2846,7 @@
       }
     },
     {
-      "rank": 151,
+      "rank": 150,
       "id": "V6-VBROWSER-001.3",
       "status": "queued",
       "upgrade": "Automation-in-container lane with live monitoring",
@@ -2884,7 +2865,7 @@
       }
     },
     {
-      "rank": 152,
+      "rank": 151,
       "id": "V6-VBROWSER-001.4",
       "status": "queued",
       "upgrade": "Privacy/security controls for streamed browser sessions",
@@ -2903,7 +2884,7 @@
       }
     },
     {
-      "rank": 153,
+      "rank": 152,
       "id": "V6-VBROWSER-001.5",
       "status": "queued",
       "upgrade": "InfRing-native CLI + observability integration for streamed sessions",
@@ -2922,7 +2903,7 @@
       }
     },
     {
-      "rank": 154,
+      "rank": 153,
       "id": "V7-META-001",
       "status": "queued",
       "upgrade": "Core primitive contract registry (`node/cell/task/capability/object/stream/journal/budget/policy/model/supervisor/attestation`)",
@@ -2941,7 +2922,7 @@
       }
     },
     {
-      "rank": 155,
+      "rank": 154,
       "id": "V7-META-002",
       "status": "queued",
       "upgrade": "Invariant gate for the first eight metakernel invariants",
@@ -2960,7 +2941,7 @@
       }
     },
     {
-      "rank": 156,
+      "rank": 155,
       "id": "V7-META-003",
       "status": "queued",
       "upgrade": "`CellBundle` manifest schema + validator lane",
@@ -2969,7 +2950,7 @@
       "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
       "score": 266,
       "evidenceCount": 4,
-      "nonBacklogEvidenceCount": 2,
+      "nonBacklogEvidenceCount": 3,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -2979,7 +2960,7 @@
       }
     },
     {
-      "rank": 157,
+      "rank": 156,
       "id": "V7-META-004",
       "status": "queued",
       "upgrade": "WIT world registry + wasm component ABI contract",
@@ -2998,7 +2979,7 @@
       }
     },
     {
-      "rank": 158,
+      "rank": 157,
       "id": "V7-META-005",
       "status": "queued",
       "upgrade": "Effect-typed capability taxonomy + risk class policy defaults (R0-R4)",
@@ -3017,7 +2998,7 @@
       }
     },
     {
-      "rank": 159,
+      "rank": 158,
       "id": "V7-META-006",
       "status": "queued",
       "upgrade": "Budget admission controller across CPU/RAM/storage/network/tokens/power/privacy/cognitive-load",
@@ -3036,7 +3017,7 @@
       }
     },
     {
-      "rank": 160,
+      "rank": 159,
       "id": "V7-META-007",
       "status": "queued",
       "upgrade": "Epistemic object schema v1 (value/schema/provenance/confidence/policy/retention/export/rollback)",
@@ -3055,7 +3036,7 @@
       }
     },
     {
-      "rank": 161,
+      "rank": 160,
       "id": "V7-META-008",
       "status": "queued",
       "upgrade": "Effect journal commit-before-actuate enforcement",
@@ -3063,7 +3044,7 @@
       "exitCriteria": "Enforce no unjournaled external effect path in runtime gates; actuation calls fail-closed without associated journal entries.",
       "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
       "score": 266,
-      "evidenceCount": 4,
+      "evidenceCount": 5,
       "nonBacklogEvidenceCount": 2,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
@@ -3074,7 +3055,7 @@
       }
     },
     {
-      "rank": 162,
+      "rank": 161,
       "id": "V7-META-009",
       "status": "queued",
       "upgrade": "Substrate descriptor registry + degrade matrix",
@@ -3093,7 +3074,7 @@
       }
     },
     {
-      "rank": 163,
+      "rank": 162,
       "id": "V7-META-010",
       "status": "queued",
       "upgrade": "Radix policy guard (binary baseline, ternary optional class-scoped lowering)",
@@ -3112,7 +3093,7 @@
       }
     },
     {
-      "rank": 164,
+      "rank": 163,
       "id": "V7-META-011",
       "status": "queued",
       "upgrade": "Quantum broker domain contract (`compile/estimate/submit/session/batch/measure`)",
@@ -3131,7 +3112,7 @@
       }
     },
     {
-      "rank": 165,
+      "rank": 164,
       "id": "V7-META-012",
       "status": "queued",
       "upgrade": "Neural consent kernel scaffold with separated authorities (`observe/infer/feedback/stimulate`)",
@@ -3140,7 +3121,7 @@
       "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
       "score": 266,
       "evidenceCount": 7,
-      "nonBacklogEvidenceCount": 6,
+      "nonBacklogEvidenceCount": 5,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -3150,7 +3131,7 @@
       }
     },
     {
-      "rank": 166,
+      "rank": 165,
       "id": "V7-META-013",
       "status": "queued",
       "upgrade": "Attestation graph service for code/model/policy/data/effect lineage",
@@ -3169,7 +3150,7 @@
       }
     },
     {
-      "rank": 167,
+      "rank": 166,
       "id": "V7-META-014",
       "status": "queued",
       "upgrade": "Degradation-contract verifier (`no-network/no-ternary/no-qpu/neural-link-loss`)",
@@ -3177,26 +3158,7 @@
       "exitCriteria": "Add verifier ensuring each critical lane declares fallback behavior and that fallback never widens privilege; emit deterministic degraded-mode receipts.",
       "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
       "score": 266,
-      "evidenceCount": 5,
-      "nonBacklogEvidenceCount": 4,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 168,
-      "id": "V7-META-015",
-      "status": "queued",
-      "upgrade": "Execution profile matrix harness (`mcu`, `edge`, `cloud`)",
-      "why": "Profile claims need reproducible execution evidence, not architecture-only assertions.",
-      "exitCriteria": "Add profile harness that runs deterministic conformance checks per profile with pass/fail artifacts and regression deltas.",
-      "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
-      "score": 266,
-      "evidenceCount": 5,
+      "evidenceCount": 6,
       "nonBacklogEvidenceCount": 3,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
@@ -3207,16 +3169,16 @@
       }
     },
     {
-      "rank": 169,
-      "id": "V6-ADAPT-CORE-001",
+      "rank": 167,
+      "id": "V7-META-015",
       "status": "queued",
-      "upgrade": "Port adaptation primitives to core and demote client runtime",
-      "why": "Adaptation primitives are currently bootstrapped in TS client runtime for execution speed; authority must live in core to satisfy strict layering/security.",
-      "exitCriteria": "Port `REQ-19-001`/`002`/`003` primitives to Rust `core/layer2`, expose only conduit APIs, keep `client` Layer 3 as thin compatibility shell + tests, and remove policy authority from client runtime code.",
-      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
-      "score": 250,
-      "evidenceCount": 21,
-      "nonBacklogEvidenceCount": 20,
+      "upgrade": "Execution profile matrix harness (`mcu`, `edge`, `cloud`)",
+      "why": "Profile claims need reproducible execution evidence, not architecture-only assertions.",
+      "exitCriteria": "Add profile harness that runs deterministic conformance checks per profile with pass/fail artifacts and regression deltas.",
+      "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
+      "score": 266,
+      "evidenceCount": 6,
+      "nonBacklogEvidenceCount": 3,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -3226,7 +3188,26 @@
       }
     },
     {
-      "rank": 170,
+      "rank": 168,
+      "id": "V6-ADAPT-CORE-001",
+      "status": "queued",
+      "upgrade": "Port adaptation primitives to core and demote client runtime",
+      "why": "Adaptation primitives are currently bootstrapped in TS client runtime for execution speed; authority must live in core to satisfy strict layering/security.",
+      "exitCriteria": "Port `REQ-19-001`/`002`/`003` primitives to Rust `core/layer2`, expose only conduit APIs, keep `client` Layer 3 as thin compatibility shell + tests, and remove policy authority from client runtime code.",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "score": 250,
+      "evidenceCount": 21,
+      "nonBacklogEvidenceCount": 19,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 169,
       "id": "V6-BINVULN-001.1",
       "status": "queued",
       "upgrade": "Binary/firmware analysis engine lane",
@@ -3245,7 +3226,7 @@
       }
     },
     {
-      "rank": 171,
+      "rank": 170,
       "id": "V6-BINVULN-001.2",
       "status": "queued",
       "upgrade": "MCP analysis server surface for AI-assisted vuln hunting",
@@ -3264,7 +3245,7 @@
       }
     },
     {
-      "rank": 172,
+      "rank": 171,
       "id": "V6-BINVULN-001.3",
       "status": "queued",
       "upgrade": "Structured output contract (`json/jsonl` + confidence/policy metadata)",
@@ -3283,7 +3264,7 @@
       }
     },
     {
-      "rank": 173,
+      "rank": 172,
       "id": "V6-BINVULN-001.4",
       "status": "queued",
       "upgrade": "Safety-plane sandboxed scan execution",
@@ -3302,7 +3283,7 @@
       }
     },
     {
-      "rank": 174,
+      "rank": 173,
       "id": "V6-BINVULN-001.5",
       "status": "queued",
       "upgrade": "Extensible custom/community rulepack intake",
@@ -3321,7 +3302,7 @@
       }
     },
     {
-      "rank": 175,
+      "rank": 174,
       "id": "V6-BINVULN-001.6",
       "status": "queued",
       "upgrade": "Developer DX + CLI/observability integration for vuln scans",
@@ -3340,7 +3321,7 @@
       }
     },
     {
-      "rank": 176,
+      "rank": 175,
       "id": "V6-BROWSER-008",
       "status": "queued",
       "upgrade": "Multi-instance orchestration + real-time dashboard lane",
@@ -3359,7 +3340,7 @@
       }
     },
     {
-      "rank": 177,
+      "rank": 176,
       "id": "V6-BROWSER-009",
       "status": "queued",
       "upgrade": "Stealth + headed handoff control lane",
@@ -3378,7 +3359,7 @@
       }
     },
     {
-      "rank": 178,
+      "rank": 177,
       "id": "V6-BROWSER-010",
       "status": "queued",
       "upgrade": "Blob-backed encrypted session continuity lane",
@@ -3397,7 +3378,7 @@
       }
     },
     {
-      "rank": 179,
+      "rank": 178,
       "id": "V6-BROWSER-011",
       "status": "queued",
       "upgrade": "Multi-browser fallback profile lane",
@@ -3416,7 +3397,7 @@
       }
     },
     {
-      "rank": 180,
+      "rank": 179,
       "id": "V6-BROWSER-012",
       "status": "queued",
       "upgrade": "Shadow/persona browser governance + drift breaker lane",
@@ -3424,7 +3405,7 @@
       "exitCriteria": "Implement `REQ-20-007` shadow/persona bridge, drift telemetry thresholds, breaker hooks, and escalation receipts.",
       "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
       "score": 250,
-      "evidenceCount": 1,
+      "evidenceCount": 29,
       "nonBacklogEvidenceCount": 27,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
@@ -3435,7 +3416,7 @@
       }
     },
     {
-      "rank": 181,
+      "rank": 180,
       "id": "V6-BROWSER-013",
       "status": "queued",
       "upgrade": "Browser API conformance harness lane",
@@ -3454,7 +3435,7 @@
       }
     },
     {
-      "rank": 182,
+      "rank": 181,
       "id": "V6-BROWSER-014",
       "status": "queued",
       "upgrade": "Snapshot/diff token-efficiency SLO gate lane",
@@ -3473,7 +3454,7 @@
       }
     },
     {
-      "rank": 183,
+      "rank": 182,
       "id": "V6-BROWSER-015",
       "status": "queued",
       "upgrade": "Zero-config startup + footprint verification lane",
@@ -3492,7 +3473,7 @@
       }
     },
     {
-      "rank": 184,
+      "rank": 183,
       "id": "V6-BROWSER-016",
       "status": "queued",
       "upgrade": "Cross-language HTTP integration contract lane",
@@ -3511,7 +3492,7 @@
       }
     },
     {
-      "rank": 185,
+      "rank": 184,
       "id": "V6-BROWSER-017",
       "status": "queued",
       "upgrade": "Comparative browser benchmark publication lane",
@@ -3530,7 +3511,7 @@
       }
     },
     {
-      "rank": 186,
+      "rank": 185,
       "id": "V6-COLLAB-001.1",
       "status": "queued",
       "upgrade": "Visual team dashboard lane for multi-agent collaboration",
@@ -3549,7 +3530,7 @@
       }
     },
     {
-      "rank": 187,
+      "rank": 186,
       "id": "V6-COLLAB-001.2",
       "status": "queued",
       "upgrade": "Instant role template launcher with runtime enforcement",
@@ -3568,7 +3549,7 @@
       }
     },
     {
-      "rank": 188,
+      "rank": 187,
       "id": "V6-COLLAB-001.3",
       "status": "queued",
       "upgrade": "Native team automation scheduling lane",
@@ -3587,7 +3568,7 @@
       }
     },
     {
-      "rank": 189,
+      "rank": 188,
       "id": "V6-COLLAB-001.4",
       "status": "queued",
       "upgrade": "Conduit-only collaboration control guardrails",
@@ -3606,7 +3587,7 @@
       }
     },
     {
-      "rank": 190,
+      "rank": 189,
       "id": "V6-DOM-401",
       "status": "queued",
       "upgrade": "Polyglot GA release contract (`v0.1.0`)",
@@ -3625,7 +3606,7 @@
       }
     },
     {
-      "rank": 191,
+      "rank": 190,
       "id": "V6-DOM-402",
       "status": "queued",
       "upgrade": "Native Python SDK parity lane (Rust-backed)",
@@ -3644,7 +3625,7 @@
       }
     },
     {
-      "rank": 192,
+      "rank": 191,
       "id": "V6-DOM-403",
       "status": "queued",
       "upgrade": "Public benchmark crown harness + reproducibility gate",
@@ -3663,7 +3644,7 @@
       }
     },
     {
-      "rank": 193,
+      "rank": 192,
       "id": "V6-DOM-404",
       "status": "queued",
       "upgrade": "Zero-to-production developer bootstrap UX lane",
@@ -3682,7 +3663,7 @@
       }
     },
     {
-      "rank": 194,
+      "rank": 193,
       "id": "V6-DOM-405",
       "status": "queued",
       "upgrade": "Tool registry + policy-gated marketplace ingestion lane",
@@ -3701,7 +3682,7 @@
       }
     },
     {
-      "rank": 195,
+      "rank": 194,
       "id": "V6-DOM-406",
       "status": "queued",
       "upgrade": "Crew/debate/shadow orchestration contract uplift",
@@ -3720,7 +3701,7 @@
       }
     },
     {
-      "rank": 196,
+      "rank": 195,
       "id": "V6-DOM-407",
       "status": "queued",
       "upgrade": "MCP + A2A interoperability runtime lane",
@@ -3739,7 +3720,7 @@
       }
     },
     {
-      "rank": 197,
+      "rank": 196,
       "id": "V6-DOM-408",
       "status": "queued",
       "upgrade": "WebMCP/browser substrate adapter",
@@ -3758,7 +3739,7 @@
       }
     },
     {
-      "rank": 198,
+      "rank": 197,
       "id": "V6-DOM-409",
       "status": "queued",
       "upgrade": "Agent identity and trust control plane",
@@ -3777,7 +3758,7 @@
       }
     },
     {
-      "rank": 199,
+      "rank": 198,
       "id": "V6-DOM-410",
       "status": "queued",
       "upgrade": "Kubernetes operator + multi-cloud runtime packaging",
@@ -3796,7 +3777,7 @@
       }
     },
     {
-      "rank": 200,
+      "rank": 199,
       "id": "V6-DOM-411",
       "status": "queued",
       "upgrade": "Open Agent Contracts specification pack",
@@ -3804,8 +3785,27 @@
       "exitCriteria": "Publish versioned Open Agent Contracts spec (schemas + examples + compatibility tests) covering three planes, conduit envelopes, identity/session primitives, and backward-compatibility policy checks.",
       "section": "Dominance Roadmap Intake (Google Doc `1u_KCXofHnG2OGFsLp3J0r-Yk-YyN0Ft0dzeEeOFd4kk`, 2026-03-08)",
       "score": 250,
-      "evidenceCount": 4,
-      "nonBacklogEvidenceCount": 2,
+      "evidenceCount": 5,
+      "nonBacklogEvidenceCount": 3,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 200,
+      "id": "V6-DOM-412",
+      "status": "queued",
+      "upgrade": "Vertical compliance template compiler + TRiSM report lane",
+      "why": "Regulated-market adoption is slowed by lack of precompiled policy templates and auditable compliance report generation.",
+      "exitCriteria": "Add template compiler for regulated profiles (finance/healthcare/defense) that emits policy bundles + deterministic TRiSM-style evidence reports from receipts with validation and replay tests.",
+      "section": "Dominance Roadmap Intake (Google Doc `1u_KCXofHnG2OGFsLp3J0r-Yk-YyN0Ft0dzeEeOFd4kk`, 2026-03-08)",
+      "score": 250,
+      "evidenceCount": 5,
+      "nonBacklogEvidenceCount": 3,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
