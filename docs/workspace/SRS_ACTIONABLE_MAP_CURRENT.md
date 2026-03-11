@@ -1,15 +1,15 @@
 # SRS Actionable Map (Current)
 
-Generated: 2026-03-11T18:50:31.809Z
+Generated: 2026-03-11T20:40:00.864Z
 
 ## Summary
-- actionable_total: 786
-- queued: 576
-- in_progress: 183
+- actionable_total: 430
+- queued: 373
+- in_progress: 30
 - blocked: 27
 - execute_now: 0
 - repair_lane: 0
-- design_required: 759
+- design_required: 403
 - blocked_external: 27
 
 | ID | Status | Bucket | Impact | Layer | Lane | Runnable | Missing Entrypoint | Section |
@@ -17,194 +17,12 @@ Generated: 2026-03-11T18:50:31.809Z
 | V7-META-016 | blocked | blocked_external | 10 | 0/1/2 |  | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
 | V7-META-017 | blocked | blocked_external | 10 | 0/1/2 |  | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
 | V7-META-018 | blocked | blocked_external | 10 | 0/1/2 |  | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
-| V6-LLMN-001 | in_progress | design_required | 8 | 1/2/client | lane:v6-llmn-001:run | no |  | LLMN Mode + Smart Memory Regression Shield (2026-03-09) |
-| V6-LLMN-002 | in_progress | design_required | 8 | 1/2/client | lane:v6-llmn-002:run | no |  | LLMN Mode + Smart Memory Regression Shield (2026-03-09) |
-| V6-LLMN-003 | in_progress | design_required | 8 | 1/2/client | lane:v6-llmn-003:run | no |  | LLMN Mode + Smart Memory Regression Shield (2026-03-09) |
-| V6-LLMN-004 | in_progress | design_required | 8 | 1/2/client | lane:v6-llmn-004:run | no |  | LLMN Mode + Smart Memory Regression Shield (2026-03-09) |
-| V6-MEMORY-016 | in_progress | design_required | 10 | 0/1/2/client | lane:v6-memory-016:run | no |  | LLMN Mode + Smart Memory Regression Shield (2026-03-09) |
-| V6-MEMORY-017 | in_progress | design_required | 8 | 1/2/client | lane:v6-memory-017:run | no |  | LLMN Mode + Smart Memory Regression Shield (2026-03-09) |
-| V6-MEMORY-018 | in_progress | design_required | 8 | 1/2/client | lane:v6-memory-018:run | no |  | LLMN Mode + Smart Memory Regression Shield (2026-03-09) |
-| V6-MEMORY-019 | in_progress | design_required | 8 | 1/2/client | lane:v6-memory-019:run | no |  | LLMN Mode + Smart Memory Regression Shield (2026-03-09) |
-| V7-TOP1-001 | queued | design_required | 10 | 0/1/2 | lane:v7-top1-001:run | no |  | Technical Excellence #1 Intake (Doc `12_nnoI-1YXaxVc6YSgYRCMRKXNIWCcP1XKCJHv_NBeY`, 2026-03-09) |
-| V7-TOP1-002 | queued | design_required | 10 | 0/1/2 | lane:v7-top1-002:run | no |  | Technical Excellence #1 Intake (Doc `12_nnoI-1YXaxVc6YSgYRCMRKXNIWCcP1XKCJHv_NBeY`, 2026-03-09) |
-| V7-TOP1-003 | queued | design_required | 10 | 0/1/2 | lane:v7-top1-003:run | no |  | Technical Excellence #1 Intake (Doc `12_nnoI-1YXaxVc6YSgYRCMRKXNIWCcP1XKCJHv_NBeY`, 2026-03-09) |
-| V7-TOP1-004 | queued | design_required | 10 | 0/1/2 | lane:v7-top1-004:run | no |  | Technical Excellence #1 Intake (Doc `12_nnoI-1YXaxVc6YSgYRCMRKXNIWCcP1XKCJHv_NBeY`, 2026-03-09) |
-| V7-TOP1-005 | queued | design_required | 10 | 0/1/2 | lane:v7-top1-005:run | no |  | Technical Excellence #1 Intake (Doc `12_nnoI-1YXaxVc6YSgYRCMRKXNIWCcP1XKCJHv_NBeY`, 2026-03-09) |
-| V7-TOP1-006 | queued | design_required | 10 | 0/1/2 | lane:v7-top1-006:run | no |  | Technical Excellence #1 Intake (Doc `12_nnoI-1YXaxVc6YSgYRCMRKXNIWCcP1XKCJHv_NBeY`, 2026-03-09) |
-| V7-TOP1-007 | queued | design_required | 10 | 0/1/2 | lane:v7-top1-007:run | no |  | Technical Excellence #1 Intake (Doc `12_nnoI-1YXaxVc6YSgYRCMRKXNIWCcP1XKCJHv_NBeY`, 2026-03-09) |
-| V7-TOP1-008 | queued | design_required | 10 | 0/1/2 | lane:v7-top1-008:run | no |  | Technical Excellence #1 Intake (Doc `12_nnoI-1YXaxVc6YSgYRCMRKXNIWCcP1XKCJHv_NBeY`, 2026-03-09) |
 | V7-TOP1-009 | blocked | blocked_external | 10 | 0/1/2 |  | no |  | Technical Excellence #1 Intake (Doc `12_nnoI-1YXaxVc6YSgYRCMRKXNIWCcP1XKCJHv_NBeY`, 2026-03-09) |
 | V7-TOP1-010 | blocked | blocked_external | 10 | 0/1/2 |  | no |  | Technical Excellence #1 Intake (Doc `12_nnoI-1YXaxVc6YSgYRCMRKXNIWCcP1XKCJHv_NBeY`, 2026-03-09) |
-| V7-ASM-001 | queued | design_required | 6 | 1/2/client | lane:v7-asm-001:run | no |  | Assimilation Delta Intake (Doc `1GTs4h1w43rwhSMYctpuwYnLoQyKFeHxsas8LUTsmozA`, 2026-03-09) |
-| V7-ASM-002 | queued | design_required | 6 | 1/2/client | lane:v7-asm-002:run | no |  | Assimilation Delta Intake (Doc `1GTs4h1w43rwhSMYctpuwYnLoQyKFeHxsas8LUTsmozA`, 2026-03-09) |
-| V7-ASM-003 | queued | design_required | 6 | 1/2/client | lane:v7-asm-003:run | no |  | Assimilation Delta Intake (Doc `1GTs4h1w43rwhSMYctpuwYnLoQyKFeHxsas8LUTsmozA`, 2026-03-09) |
-| V7-ASM-004 | queued | design_required | 10 | 0/1/2/client | lane:v7-asm-004:run | no |  | Assimilation Delta Intake (Doc `1GTs4h1w43rwhSMYctpuwYnLoQyKFeHxsas8LUTsmozA`, 2026-03-09) |
-| V7-ASM-005 | queued | design_required | 6 | 1/2/client | lane:v7-asm-005:run | no |  | Assimilation Delta Intake (Doc `1GTs4h1w43rwhSMYctpuwYnLoQyKFeHxsas8LUTsmozA`, 2026-03-09) |
-| V7-ASM-006 | queued | design_required | 6 | 1/2/client | lane:v7-asm-006:run | no |  | Assimilation Delta Intake (Doc `1GTs4h1w43rwhSMYctpuwYnLoQyKFeHxsas8LUTsmozA`, 2026-03-09) |
-| V7-ASM-007 | queued | design_required | 6 | 1/2/client/adapter | lane:v7-asm-007:run | no |  | Assimilation Delta Intake (Doc `1GTs4h1w43rwhSMYctpuwYnLoQyKFeHxsas8LUTsmozA`, 2026-03-09) |
-| V7-ASM-008 | queued | design_required | 6 | 1/2/client | lane:v7-asm-008:run | no |  | Assimilation Delta Intake (Doc `1GTs4h1w43rwhSMYctpuwYnLoQyKFeHxsas8LUTsmozA`, 2026-03-09) |
-| V7-ASM-009 | queued | design_required | 6 | 1/2/client | lane:v7-asm-009:run | no |  | Assimilation Delta Intake (Doc `1GTs4h1w43rwhSMYctpuwYnLoQyKFeHxsas8LUTsmozA`, 2026-03-09) |
-| V7-ASM-010 | queued | design_required | 6 | 1/2/client | lane:v7-asm-010:run | no |  | Assimilation Delta Intake (Doc `1GTs4h1w43rwhSMYctpuwYnLoQyKFeHxsas8LUTsmozA`, 2026-03-09) |
-| V6-RESEARCH-001.1 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-001.1:run | no |  | Stealth Research Engine Intake (Doc `15cAMJQN_HrVPrID0vIZBtYZVUMcl-JB-Q523XJahnN0`, 2026-03-08) |
-| V6-RESEARCH-001.2 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-001.2:run | no |  | Stealth Research Engine Intake (Doc `15cAMJQN_HrVPrID0vIZBtYZVUMcl-JB-Q523XJahnN0`, 2026-03-08) |
-| V6-RESEARCH-001.3 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-001.3:run | no |  | Stealth Research Engine Intake (Doc `15cAMJQN_HrVPrID0vIZBtYZVUMcl-JB-Q523XJahnN0`, 2026-03-08) |
-| V6-RESEARCH-001.4 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-001.4:run | no |  | Stealth Research Engine Intake (Doc `15cAMJQN_HrVPrID0vIZBtYZVUMcl-JB-Q523XJahnN0`, 2026-03-08) |
-| V6-RESEARCH-001.5 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-001.5:run | no |  | Stealth Research Engine Intake (Doc `15cAMJQN_HrVPrID0vIZBtYZVUMcl-JB-Q523XJahnN0`, 2026-03-08) |
-| V6-RESEARCH-001.6 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-001.6:run | no |  | Stealth Research Engine Intake (Doc `15cAMJQN_HrVPrID0vIZBtYZVUMcl-JB-Q523XJahnN0`, 2026-03-08) |
-| V6-RESEARCH-002.1 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-002.1:run | no |  | Scrapy Core Crawling Architecture Source Coverage Intake (Doc `1TV9jmVwCtNvClWsQ5fbDFZD_gQ1Qoj5ffHl3aGjYBJg`, 2026-03-11) |
-| V6-RESEARCH-002.2 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-002.2:run | no |  | Scrapy Core Crawling Architecture Source Coverage Intake (Doc `1TV9jmVwCtNvClWsQ5fbDFZD_gQ1Qoj5ffHl3aGjYBJg`, 2026-03-11) |
-| V6-RESEARCH-002.3 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-002.3:run | no |  | Scrapy Core Crawling Architecture Source Coverage Intake (Doc `1TV9jmVwCtNvClWsQ5fbDFZD_gQ1Qoj5ffHl3aGjYBJg`, 2026-03-11) |
-| V6-RESEARCH-002.4 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-002.4:run | no |  | Scrapy Core Crawling Architecture Source Coverage Intake (Doc `1TV9jmVwCtNvClWsQ5fbDFZD_gQ1Qoj5ffHl3aGjYBJg`, 2026-03-11) |
-| V6-RESEARCH-002.5 | queued | design_required | 10 | 0/1/2/adapter/client | lane:v6-research-002.5:run | no |  | Scrapy Core Crawling Architecture Source Coverage Intake (Doc `1TV9jmVwCtNvClWsQ5fbDFZD_gQ1Qoj5ffHl3aGjYBJg`, 2026-03-11) |
-| V6-RESEARCH-002.6 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-002.6:run | no |  | Scrapy Core Crawling Architecture Source Coverage Intake (Doc `1TV9jmVwCtNvClWsQ5fbDFZD_gQ1Qoj5ffHl3aGjYBJg`, 2026-03-11) |
-| V6-RESEARCH-004.1 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-004.1:run | no |  | Firecrawl Agent Crawler Source Coverage Intake (Doc `1GNCzMkKKyHNpxNwkWncd6YkM3kQl7272xiBH3kYYTis`, 2026-03-11) |
-| V6-RESEARCH-004.2 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-004.2:run | no |  | Firecrawl Agent Crawler Source Coverage Intake (Doc `1GNCzMkKKyHNpxNwkWncd6YkM3kQl7272xiBH3kYYTis`, 2026-03-11) |
-| V6-RESEARCH-004.3 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-004.3:run | no |  | Firecrawl Agent Crawler Source Coverage Intake (Doc `1GNCzMkKKyHNpxNwkWncd6YkM3kQl7272xiBH3kYYTis`, 2026-03-11) |
-| V6-RESEARCH-004.4 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-004.4:run | no |  | Firecrawl Agent Crawler Source Coverage Intake (Doc `1GNCzMkKKyHNpxNwkWncd6YkM3kQl7272xiBH3kYYTis`, 2026-03-11) |
-| V6-RESEARCH-004.5 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-004.5:run | no |  | Firecrawl Agent Crawler Source Coverage Intake (Doc `1GNCzMkKKyHNpxNwkWncd6YkM3kQl7272xiBH3kYYTis`, 2026-03-11) |
-| V6-RESEARCH-004.6 | queued | design_required | 10 | 0/1/2/adapter/client | lane:v6-research-004.6:run | no |  | Firecrawl Agent Crawler Source Coverage Intake (Doc `1GNCzMkKKyHNpxNwkWncd6YkM3kQl7272xiBH3kYYTis`, 2026-03-11) |
-| V6-RESEARCH-005.1 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-005.1:run | no |  | Python-Scraping Pattern Source Coverage Intake (Doc `10zk6RreqZjknjQFYv8rPx75OD1W_exBricQ2lWCJ2CU`, 2026-03-11) |
-| V6-RESEARCH-005.2 | queued | design_required | 10 | 0/1/2/adapter/client | lane:v6-research-005.2:run | no |  | Python-Scraping Pattern Source Coverage Intake (Doc `10zk6RreqZjknjQFYv8rPx75OD1W_exBricQ2lWCJ2CU`, 2026-03-11) |
-| V6-RESEARCH-005.3 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-005.3:run | no |  | Python-Scraping Pattern Source Coverage Intake (Doc `10zk6RreqZjknjQFYv8rPx75OD1W_exBricQ2lWCJ2CU`, 2026-03-11) |
-| V6-RESEARCH-005.4 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-005.4:run | no |  | Python-Scraping Pattern Source Coverage Intake (Doc `10zk6RreqZjknjQFYv8rPx75OD1W_exBricQ2lWCJ2CU`, 2026-03-11) |
-| V6-RESEARCH-005.5 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-005.5:run | no |  | Python-Scraping Pattern Source Coverage Intake (Doc `10zk6RreqZjknjQFYv8rPx75OD1W_exBricQ2lWCJ2CU`, 2026-03-11) |
-| V6-RESEARCH-005.6 | queued | design_required | 10 | 0/1/2/adapter/client | lane:v6-research-005.6:run | no |  | Python-Scraping Pattern Source Coverage Intake (Doc `10zk6RreqZjknjQFYv8rPx75OD1W_exBricQ2lWCJ2CU`, 2026-03-11) |
-| V6-RESEARCH-006.1 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-006.1:run | no |  | Google News URL Decoder Source Coverage Intake (Doc `14LDfaNqkqACV7ZYZTeclBGIoHFHrY33CNmY14jTx6XQ`, 2026-03-11) |
-| V6-RESEARCH-006.2 | queued | design_required | 10 | 0/1/2/adapter/client | lane:v6-research-006.2:run | no |  | Google News URL Decoder Source Coverage Intake (Doc `14LDfaNqkqACV7ZYZTeclBGIoHFHrY33CNmY14jTx6XQ`, 2026-03-11) |
-| V6-RESEARCH-006.3 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-006.3:run | no |  | Google News URL Decoder Source Coverage Intake (Doc `14LDfaNqkqACV7ZYZTeclBGIoHFHrY33CNmY14jTx6XQ`, 2026-03-11) |
-| V6-RESEARCH-006.4 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-006.4:run | no |  | Google News URL Decoder Source Coverage Intake (Doc `14LDfaNqkqACV7ZYZTeclBGIoHFHrY33CNmY14jTx6XQ`, 2026-03-11) |
-| V6-RESEARCH-006.5 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-research-006.5:run | no |  | Google News URL Decoder Source Coverage Intake (Doc `14LDfaNqkqACV7ZYZTeclBGIoHFHrY33CNmY14jTx6XQ`, 2026-03-11) |
-| V6-RESEARCH-006.6 | queued | design_required | 10 | 0/1/2/adapter/client | lane:v6-research-006.6:run | no |  | Google News URL Decoder Source Coverage Intake (Doc `14LDfaNqkqACV7ZYZTeclBGIoHFHrY33CNmY14jTx6XQ`, 2026-03-11) |
-| V6-PARSE-001.1 | queued | design_required | 7 | 0/1/2/adapter/client | lane:v6-parse-001.1:run | no |  | doc2dict Structured Parser Source Coverage Intake (Doc `1ssSBNU2J52VcoFj6LiwNorpF4PxTvXf5kJ-H0ls5rt0`, 2026-03-11) |
-| V6-PARSE-001.2 | queued | design_required | 7 | 0/1/2/adapter/client | lane:v6-parse-001.2:run | no |  | doc2dict Structured Parser Source Coverage Intake (Doc `1ssSBNU2J52VcoFj6LiwNorpF4PxTvXf5kJ-H0ls5rt0`, 2026-03-11) |
-| V6-PARSE-001.3 | queued | design_required | 7 | 0/1/2/adapter/client | lane:v6-parse-001.3:run | no |  | doc2dict Structured Parser Source Coverage Intake (Doc `1ssSBNU2J52VcoFj6LiwNorpF4PxTvXf5kJ-H0ls5rt0`, 2026-03-11) |
-| V6-PARSE-001.4 | queued | design_required | 7 | 0/1/2/adapter/client | lane:v6-parse-001.4:run | no |  | doc2dict Structured Parser Source Coverage Intake (Doc `1ssSBNU2J52VcoFj6LiwNorpF4PxTvXf5kJ-H0ls5rt0`, 2026-03-11) |
-| V6-PARSE-001.5 | queued | design_required | 7 | 0/1/2/adapter/client | lane:v6-parse-001.5:run | no |  | doc2dict Structured Parser Source Coverage Intake (Doc `1ssSBNU2J52VcoFj6LiwNorpF4PxTvXf5kJ-H0ls5rt0`, 2026-03-11) |
-| V6-PARSE-001.6 | queued | design_required | 10 | 0/1/2/adapter/client | lane:v6-parse-001.6:run | no |  | doc2dict Structured Parser Source Coverage Intake (Doc `1ssSBNU2J52VcoFj6LiwNorpF4PxTvXf5kJ-H0ls5rt0`, 2026-03-11) |
-| V6-MCP-001.1 | queued | design_required | 10 | 0/1/2/adapter/client | lane:v6-mcp-001.1:run | no |  | MCP-Agent Framework Source Coverage Intake (Doc `1hcCLIo1oi2szipjtdsxSQso1oQCE__bTXGuDyrFHZUI`, 2026-03-11) |
-| V6-MCP-001.2 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-mcp-001.2:run | no |  | MCP-Agent Framework Source Coverage Intake (Doc `1hcCLIo1oi2szipjtdsxSQso1oQCE__bTXGuDyrFHZUI`, 2026-03-11) |
-| V6-MCP-001.3 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-mcp-001.3:run | no |  | MCP-Agent Framework Source Coverage Intake (Doc `1hcCLIo1oi2szipjtdsxSQso1oQCE__bTXGuDyrFHZUI`, 2026-03-11) |
-| V6-MCP-001.4 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-mcp-001.4:run | no |  | MCP-Agent Framework Source Coverage Intake (Doc `1hcCLIo1oi2szipjtdsxSQso1oQCE__bTXGuDyrFHZUI`, 2026-03-11) |
-| V6-MCP-001.5 | queued | design_required | 8 | 0/1/2/adapter/client | lane:v6-mcp-001.5:run | no |  | MCP-Agent Framework Source Coverage Intake (Doc `1hcCLIo1oi2szipjtdsxSQso1oQCE__bTXGuDyrFHZUI`, 2026-03-11) |
-| V6-MCP-001.6 | queued | design_required | 10 | 0/1/2/adapter/client | lane:v6-mcp-001.6:run | no |  | MCP-Agent Framework Source Coverage Intake (Doc `1hcCLIo1oi2szipjtdsxSQso1oQCE__bTXGuDyrFHZUI`, 2026-03-11) |
-| V6-FLOW-001.1 | queued | design_required | 10 | 0/1/2/client/app | lane:v6-flow-001.1:run | no |  | Langflow Visual Builder Source Coverage Intake (Doc `1PKFNEBQd4d_56dfyNWorIeHXZyWysWdVy3T4zUbrNs8`, 2026-03-11) |
-| V6-FLOW-001.2 | queued | design_required | 7 | 0/1/2/client/app | lane:v6-flow-001.2:run | no |  | Langflow Visual Builder Source Coverage Intake (Doc `1PKFNEBQd4d_56dfyNWorIeHXZyWysWdVy3T4zUbrNs8`, 2026-03-11) |
-| V6-FLOW-001.3 | queued | design_required | 7 | 0/1/2/client/app | lane:v6-flow-001.3:run | no |  | Langflow Visual Builder Source Coverage Intake (Doc `1PKFNEBQd4d_56dfyNWorIeHXZyWysWdVy3T4zUbrNs8`, 2026-03-11) |
-| V6-FLOW-001.4 | queued | design_required | 7 | 0/1/2/client/app | lane:v6-flow-001.4:run | no |  | Langflow Visual Builder Source Coverage Intake (Doc `1PKFNEBQd4d_56dfyNWorIeHXZyWysWdVy3T4zUbrNs8`, 2026-03-11) |
-| V6-FLOW-001.5 | queued | design_required | 7 | 0/1/2/client/app | lane:v6-flow-001.5:run | no |  | Langflow Visual Builder Source Coverage Intake (Doc `1PKFNEBQd4d_56dfyNWorIeHXZyWysWdVy3T4zUbrNs8`, 2026-03-11) |
-| V6-FLOW-001.6 | queued | design_required | 10 | 0/1/2/client/app | lane:v6-flow-001.6:run | no |  | Langflow Visual Builder Source Coverage Intake (Doc `1PKFNEBQd4d_56dfyNWorIeHXZyWysWdVy3T4zUbrNs8`, 2026-03-11) |
-| V6-SKILLS-001.1 | queued | design_required | 7 | 1/2/client/app | lane:v6-skills-001.1:run | no |  | Claude Skills Framework Assimilation Intake (Doc `1pW_m6yHd--Tmgw19Eu-DgBv5iKelfOfoVcalR231cWg`, 2026-03-09) |
-| V6-SKILLS-001.2 | queued | design_required | 7 | 1/2/client/app | lane:v6-skills-001.2:run | no |  | Claude Skills Framework Assimilation Intake (Doc `1pW_m6yHd--Tmgw19Eu-DgBv5iKelfOfoVcalR231cWg`, 2026-03-09) |
-| V6-SKILLS-001.3 | queued | design_required | 7 | 1/2/client/app | lane:v6-skills-001.3:run | no |  | Claude Skills Framework Assimilation Intake (Doc `1pW_m6yHd--Tmgw19Eu-DgBv5iKelfOfoVcalR231cWg`, 2026-03-09) |
-| V6-SKILLS-001.4 | queued | design_required | 10 | 0/1/2/client/app | lane:v6-skills-001.4:run | no |  | Claude Skills Framework Assimilation Intake (Doc `1pW_m6yHd--Tmgw19Eu-DgBv5iKelfOfoVcalR231cWg`, 2026-03-09) |
-| V6-SKILLS-001.5 | queued | design_required | 7 | 1/2/client/app | lane:v6-skills-001.5:run | no |  | Claude Skills Framework Assimilation Intake (Doc `1pW_m6yHd--Tmgw19Eu-DgBv5iKelfOfoVcalR231cWg`, 2026-03-09) |
-| V6-SKILLS-001.6 | queued | design_required | 7 | 1/2/client/app | lane:v6-skills-001.6:run | no |  | Claude Skills Framework Assimilation Intake (Doc `1pW_m6yHd--Tmgw19Eu-DgBv5iKelfOfoVcalR231cWg`, 2026-03-09) |
-| V6-SKILLS-001.7 | queued | design_required | 7 | 1/2/client/app | lane:v6-skills-001.7:run | no |  | Claude Skills Framework Assimilation Intake (Doc `1pW_m6yHd--Tmgw19Eu-DgBv5iKelfOfoVcalR231cWg`, 2026-03-09) |
-| V6-SKILLS-001.8 | queued | design_required | 7 | 1/2/client/app | lane:v6-skills-001.8:run | no |  | Claude Skills Framework Assimilation Intake (Doc `1pW_m6yHd--Tmgw19Eu-DgBv5iKelfOfoVcalR231cWg`, 2026-03-09) |
-| V6-BINVULN-001.1 | queued | design_required | 6 | 1/2/client | lane:v6-binvuln-001.1:run | no |  | Binary & Firmware Vulnerability Detection Intake (Doc `1h3B8ayq-A9Ubx_pPKaRGFdLF8WFKWW38Do42u9wdqUI`, 2026-03-09) |
-| V6-BINVULN-001.2 | queued | design_required | 6 | 1/2/client | lane:v6-binvuln-001.2:run | no |  | Binary & Firmware Vulnerability Detection Intake (Doc `1h3B8ayq-A9Ubx_pPKaRGFdLF8WFKWW38Do42u9wdqUI`, 2026-03-09) |
-| V6-BINVULN-001.3 | queued | design_required | 6 | 1/2/client | lane:v6-binvuln-001.3:run | no |  | Binary & Firmware Vulnerability Detection Intake (Doc `1h3B8ayq-A9Ubx_pPKaRGFdLF8WFKWW38Do42u9wdqUI`, 2026-03-09) |
-| V6-BINVULN-001.4 | queued | design_required | 6 | 1/2/client | lane:v6-binvuln-001.4:run | no |  | Binary & Firmware Vulnerability Detection Intake (Doc `1h3B8ayq-A9Ubx_pPKaRGFdLF8WFKWW38Do42u9wdqUI`, 2026-03-09) |
-| V6-BINVULN-001.5 | queued | design_required | 6 | 1/2/client | lane:v6-binvuln-001.5:run | no |  | Binary & Firmware Vulnerability Detection Intake (Doc `1h3B8ayq-A9Ubx_pPKaRGFdLF8WFKWW38Do42u9wdqUI`, 2026-03-09) |
-| V6-BINVULN-001.6 | queued | design_required | 6 | 1/2/client | lane:v6-binvuln-001.6:run | no |  | Binary & Firmware Vulnerability Detection Intake (Doc `1h3B8ayq-A9Ubx_pPKaRGFdLF8WFKWW38Do42u9wdqUI`, 2026-03-09) |
-| V6-HERMES-001.1 | queued | design_required | 6 | 1/2/client | lane:v6-hermes-001.1:run | no |  | Hermes-Style Autonomous Runtime Intake (Doc `1BLeP2bP00zlj8JwXec7OPeqk4dIMXgp5Oq6z-HTSCLY`, 2026-03-09) |
-| V6-HERMES-001.2 | queued | design_required | 6 | 1/2/client | lane:v6-hermes-001.2:run | no |  | Hermes-Style Autonomous Runtime Intake (Doc `1BLeP2bP00zlj8JwXec7OPeqk4dIMXgp5Oq6z-HTSCLY`, 2026-03-09) |
-| V6-HERMES-001.3 | queued | design_required | 6 | 1/2/client | lane:v6-hermes-001.3:run | no |  | Hermes-Style Autonomous Runtime Intake (Doc `1BLeP2bP00zlj8JwXec7OPeqk4dIMXgp5Oq6z-HTSCLY`, 2026-03-09) |
-| V6-HERMES-001.4 | queued | design_required | 6 | 1/2/client | lane:v6-hermes-001.4:run | no |  | Hermes-Style Autonomous Runtime Intake (Doc `1BLeP2bP00zlj8JwXec7OPeqk4dIMXgp5Oq6z-HTSCLY`, 2026-03-09) |
-| V6-HERMES-001.5 | queued | design_required | 10 | 0/1/2/client | lane:v6-hermes-001.5:run | no |  | Hermes-Style Autonomous Runtime Intake (Doc `1BLeP2bP00zlj8JwXec7OPeqk4dIMXgp5Oq6z-HTSCLY`, 2026-03-09) |
-| V6-VBROWSER-001.1 | queued | design_required | 6 | 1/2/client | lane:v6-vbrowser-001.1:run | no |  | Virtual Browser Streaming & Collaboration Intake (Doc `1BaYvmljJ6VnYyjk4l_E-prfUKvjjuBJCCP8m4lj4uzE`, 2026-03-09) |
-| V6-VBROWSER-001.2 | queued | design_required | 6 | 1/2/client | lane:v6-vbrowser-001.2:run | no |  | Virtual Browser Streaming & Collaboration Intake (Doc `1BaYvmljJ6VnYyjk4l_E-prfUKvjjuBJCCP8m4lj4uzE`, 2026-03-09) |
-| V6-VBROWSER-001.3 | queued | design_required | 6 | 1/2/client | lane:v6-vbrowser-001.3:run | no |  | Virtual Browser Streaming & Collaboration Intake (Doc `1BaYvmljJ6VnYyjk4l_E-prfUKvjjuBJCCP8m4lj4uzE`, 2026-03-09) |
-| V6-VBROWSER-001.4 | queued | design_required | 10 | 0/1/2/client | lane:v6-vbrowser-001.4:run | no |  | Virtual Browser Streaming & Collaboration Intake (Doc `1BaYvmljJ6VnYyjk4l_E-prfUKvjjuBJCCP8m4lj4uzE`, 2026-03-09) |
-| V6-VBROWSER-001.5 | queued | design_required | 10 | 0/1/2/client | lane:v6-vbrowser-001.5:run | no |  | Virtual Browser Streaming & Collaboration Intake (Doc `1BaYvmljJ6VnYyjk4l_E-prfUKvjjuBJCCP8m4lj4uzE`, 2026-03-09) |
-| V6-AGENCY-001.1 | queued | design_required | 6 | 1/2/client | lane:v6-agency-001.1:run | no |  | Agency-Style Multi-Agent Templates & Orchestrator Intake (Doc `1TqdYYidNv1tJF7P5C-dxgy2FR8CX09AfXSjGE3ZatSQ`, 2026-03-09) |
-| V6-AGENCY-001.2 | queued | design_required | 6 | 1/2/client | lane:v6-agency-001.2:run | no |  | Agency-Style Multi-Agent Templates & Orchestrator Intake (Doc `1TqdYYidNv1tJF7P5C-dxgy2FR8CX09AfXSjGE3ZatSQ`, 2026-03-09) |
-| V6-AGENCY-001.3 | queued | design_required | 6 | 1/2/client | lane:v6-agency-001.3:run | no |  | Agency-Style Multi-Agent Templates & Orchestrator Intake (Doc `1TqdYYidNv1tJF7P5C-dxgy2FR8CX09AfXSjGE3ZatSQ`, 2026-03-09) |
-| V6-AGENCY-001.4 | queued | design_required | 6 | 1/2/client | lane:v6-agency-001.4:run | no |  | Agency-Style Multi-Agent Templates & Orchestrator Intake (Doc `1TqdYYidNv1tJF7P5C-dxgy2FR8CX09AfXSjGE3ZatSQ`, 2026-03-09) |
-| V6-AGENCY-001.5 | queued | design_required | 10 | 0/1/2/client | lane:v6-agency-001.5:run | no |  | Agency-Style Multi-Agent Templates & Orchestrator Intake (Doc `1TqdYYidNv1tJF7P5C-dxgy2FR8CX09AfXSjGE3ZatSQ`, 2026-03-09) |
-| V6-COLLAB-001.1 | queued | design_required | 6 | 1/2/client | lane:v6-collab-001.1:run | no |  | Visual Agent Team Dashboard & Role Templates Intake (Doc `1Aegff87diqP1piog54qjAmWyPrxLOMO4CCoAuOWfmlU`, 2026-03-09) |
-| V6-COLLAB-001.2 | queued | design_required | 6 | 1/2/client | lane:v6-collab-001.2:run | no |  | Visual Agent Team Dashboard & Role Templates Intake (Doc `1Aegff87diqP1piog54qjAmWyPrxLOMO4CCoAuOWfmlU`, 2026-03-09) |
-| V6-COLLAB-001.3 | queued | design_required | 6 | 1/2/client | lane:v6-collab-001.3:run | no |  | Visual Agent Team Dashboard & Role Templates Intake (Doc `1Aegff87diqP1piog54qjAmWyPrxLOMO4CCoAuOWfmlU`, 2026-03-09) |
-| V6-COLLAB-001.4 | queued | design_required | 10 | 0/1/2/client | lane:v6-collab-001.4:run | no |  | Visual Agent Team Dashboard & Role Templates Intake (Doc `1Aegff87diqP1piog54qjAmWyPrxLOMO4CCoAuOWfmlU`, 2026-03-09) |
-| V6-COMPANY-001.1 | queued | design_required | 8 | 0/1/2/3/client | lane:v6-company-001.1:run | no |  | Paperclip Company Layer & Zero-Human Orchestration Intake (x.com/hasantoxr 2030604968416412144, 2026-03-09) |
-| V6-COMPANY-001.2 | queued | design_required | 8 | 0/1/2/3/client | lane:v6-company-001.2:run | no |  | Paperclip Company Layer & Zero-Human Orchestration Intake (x.com/hasantoxr 2030604968416412144, 2026-03-09) |
-| V6-COMPANY-001.3 | queued | design_required | 8 | 0/1/2/3/client | lane:v6-company-001.3:run | no |  | Paperclip Company Layer & Zero-Human Orchestration Intake (x.com/hasantoxr 2030604968416412144, 2026-03-09) |
-| V6-COMPANY-001.4 | queued | design_required | 8 | 0/1/2/3/client | lane:v6-company-001.4:run | no |  | Paperclip Company Layer & Zero-Human Orchestration Intake (x.com/hasantoxr 2030604968416412144, 2026-03-09) |
-| V6-COMPANY-001.5 | queued | design_required | 10 | 0/1/2/3/client | lane:v6-company-001.5:run | no |  | Paperclip Company Layer & Zero-Human Orchestration Intake (x.com/hasantoxr 2030604968416412144, 2026-03-09) |
-| V6-SUBSTRATE-001.1 | queued | design_required | 9 | -1/0/1/2/3/adapter | lane:v6-substrate-001.1:run | no |  | WiFi CSI Non-Visual Sensing Intake (RuView, x.com/heygurisingh 2030779994767851980, 2026-03-09) |
-| V6-SUBSTRATE-001.2 | queued | design_required | 9 | -1/0/1/2/3/adapter | lane:v6-substrate-001.2:run | no |  | WiFi CSI Non-Visual Sensing Intake (RuView, x.com/heygurisingh 2030779994767851980, 2026-03-09) |
-| V6-SUBSTRATE-001.3 | queued | design_required | 9 | -1/0/1/2/3/adapter | lane:v6-substrate-001.3:run | no |  | WiFi CSI Non-Visual Sensing Intake (RuView, x.com/heygurisingh 2030779994767851980, 2026-03-09) |
-| V6-SUBSTRATE-001.4 | queued | design_required | 9 | -1/0/1/2/3/adapter | lane:v6-substrate-001.4:run | no |  | WiFi CSI Non-Visual Sensing Intake (RuView, x.com/heygurisingh 2030779994767851980, 2026-03-09) |
-| V6-SUBSTRATE-001.5 | queued | design_required | 9 | -1/0/1/2/3/adapter | lane:v6-substrate-001.5:run | no |  | WiFi CSI Non-Visual Sensing Intake (RuView, x.com/heygurisingh 2030779994767851980, 2026-03-09) |
-| V6-SUBSTRATE-002.1 | queued | design_required | 9 | -1/0/1/2/3/adapter | lane:v6-substrate-002.1:run | no |  | Biological Neural Hybrid Integration Intake (x.com/Crypto_Jargon 2030603197237387411, 2026-03-09) |
-| V6-SUBSTRATE-002.2 | queued | design_required | 9 | -1/0/1/2/3/adapter | lane:v6-substrate-002.2:run | no |  | Biological Neural Hybrid Integration Intake (x.com/Crypto_Jargon 2030603197237387411, 2026-03-09) |
-| V6-SUBSTRATE-002.3 | queued | design_required | 10 | -1/0/1/2/3/adapter | lane:v6-substrate-002.3:run | no |  | Biological Neural Hybrid Integration Intake (x.com/Crypto_Jargon 2030603197237387411, 2026-03-09) |
 | V6-SUBSTRATE-002.4 | blocked | blocked_external | 9 | -1/0/1/2/3/adapter |  | no |  | Biological Neural Hybrid Integration Intake (x.com/Crypto_Jargon 2030603197237387411, 2026-03-09) |
-| V6-SUBSTRATE-002.5 | queued | design_required | 9 | -1/0/1/2/3/adapter | lane:v6-substrate-002.5:run | no |  | Biological Neural Hybrid Integration Intake (x.com/Crypto_Jargon 2030603197237387411, 2026-03-09) |
-| V6-OBSERVABILITY-001.1 | queued | design_required | 7 | 0/1/2/client | lane:v6-observability-001.1:run | no |  | Self-Hosted Observability + Orchestration + Incident Response Intake (xyOps, 2026-03-09) |
-| V6-OBSERVABILITY-001.2 | queued | design_required | 7 | 0/1/2/client | lane:v6-observability-001.2:run | no |  | Self-Hosted Observability + Orchestration + Incident Response Intake (xyOps, 2026-03-09) |
-| V6-OBSERVABILITY-001.3 | queued | design_required | 7 | 0/1/2/client | lane:v6-observability-001.3:run | no |  | Self-Hosted Observability + Orchestration + Incident Response Intake (xyOps, 2026-03-09) |
-| V6-OBSERVABILITY-001.4 | queued | design_required | 7 | 0/1/2/client | lane:v6-observability-001.4:run | no |  | Self-Hosted Observability + Orchestration + Incident Response Intake (xyOps, 2026-03-09) |
-| V6-OBSERVABILITY-001.5 | queued | design_required | 10 | 0/1/2/client | lane:v6-observability-001.5:run | no |  | Self-Hosted Observability + Orchestration + Incident Response Intake (xyOps, 2026-03-09) |
-| V6-PERSIST-001.1 | queued | design_required | 8 | 0/1/2/client | lane:v6-persist-001.1:run | no |  | Persistent Background Execution, Connectors & Mobile Access Intake (Claude Code Feature Assimilation, 2026-03-09) |
-| V6-PERSIST-001.2 | queued | design_required | 8 | 0/1/2/client | lane:v6-persist-001.2:run | no |  | Persistent Background Execution, Connectors & Mobile Access Intake (Claude Code Feature Assimilation, 2026-03-09) |
-| V6-PERSIST-001.3 | queued | design_required | 8 | 0/1/2/client | lane:v6-persist-001.3:run | no |  | Persistent Background Execution, Connectors & Mobile Access Intake (Claude Code Feature Assimilation, 2026-03-09) |
-| V6-PERSIST-001.4 | queued | design_required | 8 | 0/1/2/client | lane:v6-persist-001.4:run | no |  | Persistent Background Execution, Connectors & Mobile Access Intake (Claude Code Feature Assimilation, 2026-03-09) |
-| V6-PERSIST-001.5 | queued | design_required | 8 | 0/1/2/client | lane:v6-persist-001.5:run | no |  | Persistent Background Execution, Connectors & Mobile Access Intake (Claude Code Feature Assimilation, 2026-03-09) |
-| V6-PERSIST-001.6 | queued | design_required | 10 | 0/1/2/client | lane:v6-persist-001.6:run | no |  | Persistent Background Execution, Connectors & Mobile Access Intake (Claude Code Feature Assimilation, 2026-03-09) |
-| V6-PERSIST-001.7 | queued | design_required | 8 | 0/1/2/client | lane:v6-persist-001.7:run | no |  | Persistent Scheduling Source Coverage Intake (Doc `1FEglrmeMZyEqoPX0rrALvmwKMux8UUk_502Vw9n6hb4`, 2026-03-11) |
-| V6-PERSIST-001.8 | queued | design_required | 8 | 0/1/2/client | lane:v6-persist-001.8:run | no |  | Persistent Scheduling Source Coverage Intake (Doc `1FEglrmeMZyEqoPX0rrALvmwKMux8UUk_502Vw9n6hb4`, 2026-03-11) |
-| V6-PERSIST-001.9 | queued | design_required | 10 | 0/1/2/client | lane:v6-persist-001.9:run | no |  | Persistent Scheduling Source Coverage Intake (Doc `1FEglrmeMZyEqoPX0rrALvmwKMux8UUk_502Vw9n6hb4`, 2026-03-11) |
 | V6-PERSIST-001.10 | queued | design_required | 8 | 0/1/2/client | lane:v6-persist-001.10:run | no |  | Persistent Scheduling Source Coverage Intake (Doc `1FEglrmeMZyEqoPX0rrALvmwKMux8UUk_502Vw9n6hb4`, 2026-03-11) |
 | V6-PERSIST-001.11 | queued | design_required | 8 | 0/1/2/client | lane:v6-persist-001.11:run | no |  | Persistent Scheduling Source Coverage Intake (Doc `1FEglrmeMZyEqoPX0rrALvmwKMux8UUk_502Vw9n6hb4`, 2026-03-11) |
 | V6-PERSIST-001.12 | queued | design_required | 8 | 0/1/2/client | lane:v6-persist-001.12:run | no |  | Persistent Scheduling Source Coverage Intake (Doc `1FEglrmeMZyEqoPX0rrALvmwKMux8UUk_502Vw9n6hb4`, 2026-03-11) |
-| V6-APP-008.1 | queued | design_required | 6 | app | lane:v6-app-008.1:run | no |  | Simple LLM Chat Starter Source Coverage (Doc `1VTv__jItMvt_KINaDxeGdqQE1RqxhKa9tIVn9dTf8AQ`, 2026-03-11) |
-| V6-APP-007.1 | queued | design_required | 6 | app | lane:v6-app-007.1:run | no |  | Advanced Multi-Provider Chat UI Source Coverage (Doc `1CdnTfqUDe4wsUYP6AknXoJ0LwNE_NinREtoCm0om1xQ`, 2026-03-11) |
-| V6-APP-006.1 | queued | design_required | 6 | app | lane:v6-app-006.1:run | no |  | AI Software Engineer App Intake (Doc `1KKKAfH8FwOTTyfyKl2zPupgTfTmYUdppHqegNYJLR7o`, 2026-03-11) |
-| V6-APP-006.2 | queued | design_required | 6 | app | lane:v6-app-006.2:run | no |  | AI Software Engineer App Intake (Doc `1KKKAfH8FwOTTyfyKl2zPupgTfTmYUdppHqegNYJLR7o`, 2026-03-11) |
-| V6-APP-006.3 | queued | design_required | 10 | 0/app | lane:v6-app-006.3:run | no |  | AI Software Engineer App Intake (Doc `1KKKAfH8FwOTTyfyKl2zPupgTfTmYUdppHqegNYJLR7o`, 2026-03-11) |
-| V6-APP-006.4 | queued | design_required | 6 | app | lane:v6-app-006.4:run | no |  | DeerFlow Product-Builder Source Coverage Intake (Doc `1nQS5TPPQfwllJDNSDcR1ll7zBNYpJ3uoDqn1-M8Fy5k`, 2026-03-11) |
-| V6-APP-006.5 | queued | design_required | 6 | app | lane:v6-app-006.5:run | no |  | DeerFlow Product-Builder Source Coverage Intake (Doc `1nQS5TPPQfwllJDNSDcR1ll7zBNYpJ3uoDqn1-M8Fy5k`, 2026-03-11) |
-| V6-APP-006.6 | queued | design_required | 6 | app | lane:v6-app-006.6:run | no |  | DeerFlow Product-Builder Source Coverage Intake (Doc `1nQS5TPPQfwllJDNSDcR1ll7zBNYpJ3uoDqn1-M8Fy5k`, 2026-03-11) |
-| V6-APP-006.7 | queued | design_required | 6 | app | lane:v6-app-006.7:run | no |  | DeerFlow Product-Builder Source Coverage Intake (Doc `1nQS5TPPQfwllJDNSDcR1ll7zBNYpJ3uoDqn1-M8Fy5k`, 2026-03-11) |
-| V6-APP-006.8 | queued | design_required | 6 | app | lane:v6-app-006.8:run | no |  | DeerFlow Product-Builder Source Coverage Intake (Doc `1nQS5TPPQfwllJDNSDcR1ll7zBNYpJ3uoDqn1-M8Fy5k`, 2026-03-11) |
-| V6-ORCH-001.1 | queued | design_required | 8 | 0/1/2/client | lane:v6-orch-001.1:run | no |  | CEO-Orchestrator Source Coverage Intake (Doc `1laeJh5FIHhiVcgOeI3LvQyi_eW8Xo_hwHDuMtLBIaww`, 2026-03-11) |
-| V6-ORCH-001.2 | queued | design_required | 8 | 0/1/2/client | lane:v6-orch-001.2:run | no |  | CEO-Orchestrator Source Coverage Intake (Doc `1laeJh5FIHhiVcgOeI3LvQyi_eW8Xo_hwHDuMtLBIaww`, 2026-03-11) |
-| V6-ORCH-001.3 | queued | design_required | 8 | 0/1/2/client | lane:v6-orch-001.3:run | no |  | CEO-Orchestrator Source Coverage Intake (Doc `1laeJh5FIHhiVcgOeI3LvQyi_eW8Xo_hwHDuMtLBIaww`, 2026-03-11) |
-| V6-ORCH-001.4 | queued | design_required | 8 | 0/1/2/client | lane:v6-orch-001.4:run | no |  | CEO-Orchestrator Source Coverage Intake (Doc `1laeJh5FIHhiVcgOeI3LvQyi_eW8Xo_hwHDuMtLBIaww`, 2026-03-11) |
-| V6-ORCH-001.5 | queued | design_required | 8 | 0/1/2/client | lane:v6-orch-001.5:run | no |  | CEO-Orchestrator Source Coverage Intake (Doc `1laeJh5FIHhiVcgOeI3LvQyi_eW8Xo_hwHDuMtLBIaww`, 2026-03-11) |
-| V6-ORCH-001.6 | queued | design_required | 10 | 0/1/2/client | lane:v6-orch-001.6:run | no |  | CEO-Orchestrator Source Coverage Intake (Doc `1laeJh5FIHhiVcgOeI3LvQyi_eW8Xo_hwHDuMtLBIaww`, 2026-03-11) |
-| V6-OBSERVABILITY-003.6 | queued | design_required | 7 | 0/1/2/client | lane:v6-observability-003.6:run | no |  | 2026 Hiring Projects Source Coverage Intake (Doc `1qgE2wXUFVwVt1Ei0lnud8ILNZPKx3DHoqemS3z9zYmk`, 2026-03-11) |
-| V6-VOICE-001.1 | queued | design_required | 7 | 0/1/2/adapter/client/app | lane:v6-voice-001.1:run | no |  | 2026 Hiring Projects Source Coverage Intake (Doc `1qgE2wXUFVwVt1Ei0lnud8ILNZPKx3DHoqemS3z9zYmk`, 2026-03-11) |
-| V6-VOICE-001.2 | queued | design_required | 7 | 0/1/2/adapter/client/app | lane:v6-voice-001.2:run | no |  | 2026 Hiring Projects Source Coverage Intake (Doc `1qgE2wXUFVwVt1Ei0lnud8ILNZPKx3DHoqemS3z9zYmk`, 2026-03-11) |
-| V6-VOICE-001.3 | queued | design_required | 10 | 0/1/2/adapter/client/app | lane:v6-voice-001.3:run | no |  | 2026 Hiring Projects Source Coverage Intake (Doc `1qgE2wXUFVwVt1Ei0lnud8ILNZPKx3DHoqemS3z9zYmk`, 2026-03-11) |
-| V6-VOICE-001.4 | queued | design_required | 10 | 0/1/2/adapter/client/app | lane:v6-voice-001.4:run | no |  | 2026 Hiring Projects Source Coverage Intake (Doc `1qgE2wXUFVwVt1Ei0lnud8ILNZPKx3DHoqemS3z9zYmk`, 2026-03-11) |
-| V6-PARSE-001.7 | queued | design_required | 7 | 0/1/2/adapter/client | lane:v6-parse-001.7:run | no |  | 2026 Hiring Projects Source Coverage Intake (Doc `1qgE2wXUFVwVt1Ei0lnud8ILNZPKx3DHoqemS3z9zYmk`, 2026-03-11) |
-| V6-CODE-REVIEW-001.1 | queued | design_required | 7 | 0/1/2/adapter/client/app | lane:v6-code-review-001.1:run | no |  | 2026 Hiring Projects Source Coverage Intake (Doc `1qgE2wXUFVwVt1Ei0lnud8ILNZPKx3DHoqemS3z9zYmk`, 2026-03-11) |
-| V6-CODE-REVIEW-001.2 | queued | design_required | 7 | 0/1/2/adapter/client/app | lane:v6-code-review-001.2:run | no |  | 2026 Hiring Projects Source Coverage Intake (Doc `1qgE2wXUFVwVt1Ei0lnud8ILNZPKx3DHoqemS3z9zYmk`, 2026-03-11) |
-| V6-CODE-REVIEW-001.3 | queued | design_required | 7 | 0/1/2/adapter/client/app | lane:v6-code-review-001.3:run | no |  | 2026 Hiring Projects Source Coverage Intake (Doc `1qgE2wXUFVwVt1Ei0lnud8ILNZPKx3DHoqemS3z9zYmk`, 2026-03-11) |
-| V6-CODE-REVIEW-001.4 | queued | design_required | 10 | 0/1/2/adapter/client/app | lane:v6-code-review-001.4:run | no |  | 2026 Hiring Projects Source Coverage Intake (Doc `1qgE2wXUFVwVt1Ei0lnud8ILNZPKx3DHoqemS3z9zYmk`, 2026-03-11) |
-| V6-CODE-REVIEW-001.5 | queued | design_required | 7 | 0/1/2/adapter/client/app | lane:v6-code-review-001.5:run | no |  | 2026 Hiring Projects Source Coverage Intake (Doc `1qgE2wXUFVwVt1Ei0lnud8ILNZPKx3DHoqemS3z9zYmk`, 2026-03-11) |
-| V6-AGENCY-001.6 | queued | design_required | 6 | 1/2/client | lane:v6-agency-001.6:run | no |  | Manager-Team Source Coverage Intake (Doc `1yaohxnWC1MWG11OAuyo7rIAV2FhSB9AxT4oFHqKAO3g`, 2026-03-11) |
-| V6-AGENCY-001.7 | queued | design_required | 6 | 1/2/client | lane:v6-agency-001.7:run | no |  | Manager-Team Source Coverage Intake (Doc `1yaohxnWC1MWG11OAuyo7rIAV2FhSB9AxT4oFHqKAO3g`, 2026-03-11) |
-| V6-AGENCY-001.8 | queued | design_required | 6 | 1/2/client | lane:v6-agency-001.8:run | no |  | Manager-Team Source Coverage Intake (Doc `1yaohxnWC1MWG11OAuyo7rIAV2FhSB9AxT4oFHqKAO3g`, 2026-03-11) |
-| V6-AGENCY-001.9 | queued | design_required | 6 | 1/2/client | lane:v6-agency-001.9:run | no |  | Manager-Team Source Coverage Intake (Doc `1yaohxnWC1MWG11OAuyo7rIAV2FhSB9AxT4oFHqKAO3g`, 2026-03-11) |
-| V6-SKILLS-001.9 | queued | design_required | 7 | 1/2/client/app | lane:v6-skills-001.9:run | no |  | Hermes Agent Source Coverage Intake (Doc `1x-lmXs9oEWchu0JSw9zcGslfz8_r2O4qlPQzhsy0DKc`, 2026-03-11) |
-| V6-MEMORY-022 | queued | design_required | 8 | 1/2/client | lane:v6-memory-022:run | no |  | Hermes Agent Source Coverage Intake (Doc `1x-lmXs9oEWchu0JSw9zcGslfz8_r2O4qlPQzhsy0DKc`, 2026-03-11) |
-| V6-COCKPIT-018.6 | queued | design_required | 8 | 0/1/2/client | lane:v6-cockpit-018.6:run | no |  | Hermes Agent Source Coverage Intake (Doc `1x-lmXs9oEWchu0JSw9zcGslfz8_r2O4qlPQzhsy0DKc`, 2026-03-11) |
-| V6-COCKPIT-018.7 | queued | design_required | 8 | 0/1/2/client | lane:v6-cockpit-018.7:run | no |  | Hermes Agent Source Coverage Intake (Doc `1x-lmXs9oEWchu0JSw9zcGslfz8_r2O4qlPQzhsy0DKc`, 2026-03-11) |
-| V6-REGISTRY-001.1 | queued | design_required | 6 | 1/2/client | lane:v6-registry-001.1:run | no |  | Hermes Agent Source Coverage Intake (Doc `1x-lmXs9oEWchu0JSw9zcGslfz8_r2O4qlPQzhsy0DKc`, 2026-03-11) |
-| V6-REGISTRY-001.2 | queued | design_required | 6 | 1/2/client | lane:v6-registry-001.2:run | no |  | Hermes Agent Source Coverage Intake (Doc `1x-lmXs9oEWchu0JSw9zcGslfz8_r2O4qlPQzhsy0DKc`, 2026-03-11) |
-| V6-REGISTRY-001.3 | queued | design_required | 10 | 0/1/2/client | lane:v6-registry-001.3:run | no |  | Hermes Agent Source Coverage Intake (Doc `1x-lmXs9oEWchu0JSw9zcGslfz8_r2O4qlPQzhsy0DKc`, 2026-03-11) |
-| V6-APP-005.1 | queued | design_required | 6 | app | lane:v6-app-005.1:run | no |  | Grounded RAG Search Source Coverage (Doc `1upMQ3CguMe25aMCUnDDgshRSWbbVySOxqi4JfwAicLc`, 2026-03-11) |
-| V6-APP-017.1 | queued | design_required | 6 | app | lane:v6-app-017.1:run | no |  | Visual Explainer & Commit Visual Audit Source Coverage Intake (Doc `1m8ociR4Chj9n4wuFAcArZQTG6gwx_vZzlVHB_F6CNzg`, 2026-03-11) |
-| V6-APP-017.2 | queued | design_required | 10 | 0/app | lane:v6-app-017.2:run | no |  | Visual Explainer & Commit Visual Audit Source Coverage Intake (Doc `1m8ociR4Chj9n4wuFAcArZQTG6gwx_vZzlVHB_F6CNzg`, 2026-03-11) |
-| V6-APP-017.3 | queued | design_required | 6 | app | lane:v6-app-017.3:run | no |  | Visual Explainer & Commit Visual Audit Source Coverage Intake (Doc `1m8ociR4Chj9n4wuFAcArZQTG6gwx_vZzlVHB_F6CNzg`, 2026-03-11) |
-| V6-APP-017.4 | queued | design_required | 6 | app | lane:v6-app-017.4:run | no |  | Visual Explainer & Commit Visual Audit Source Coverage Intake (Doc `1m8ociR4Chj9n4wuFAcArZQTG6gwx_vZzlVHB_F6CNzg`, 2026-03-11) |
-| V6-APP-017.5 | queued | design_required | 6 | app | lane:v6-app-017.5:run | no |  | Visual Explainer & Commit Visual Audit Source Coverage Intake (Doc `1m8ociR4Chj9n4wuFAcArZQTG6gwx_vZzlVHB_F6CNzg`, 2026-03-11) |
-| V6-APP-017.6 | queued | design_required | 10 | 0/app | lane:v6-app-017.6:run | no |  | Visual Explainer & Commit Visual Audit Source Coverage Intake (Doc `1m8ociR4Chj9n4wuFAcArZQTG6gwx_vZzlVHB_F6CNzg`, 2026-03-11) |
-| V6-APP-017.7 | queued | design_required | 6 | app | lane:v6-app-017.7:run | no |  | CodeWiki Interactive Repo Guide Source Coverage Intake (Doc `1MHmFF7WsgfPT-qHj_-lMXJtYL9TADsl32E8udmCBftU`, 2026-03-11) |
-| V6-APP-017.8 | queued | design_required | 6 | app | lane:v6-app-017.8:run | no |  | CodeWiki Interactive Repo Guide Source Coverage Intake (Doc `1MHmFF7WsgfPT-qHj_-lMXJtYL9TADsl32E8udmCBftU`, 2026-03-11) |
 | V6-APP-017.9 | queued | design_required | 6 | app | lane:v6-app-017.9:run | no |  | CodeWiki Interactive Repo Guide Source Coverage Intake (Doc `1MHmFF7WsgfPT-qHj_-lMXJtYL9TADsl32E8udmCBftU`, 2026-03-11) |
 | V6-APP-017.10 | queued | design_required | 6 | app/adapter | lane:v6-app-017.10:run | no |  | CodeWiki Interactive Repo Guide Source Coverage Intake (Doc `1MHmFF7WsgfPT-qHj_-lMXJtYL9TADsl32E8udmCBftU`, 2026-03-11) |
 | V6-APP-017.11 | queued | design_required | 6 | app | lane:v6-app-017.11:run | no |  | CodeWiki Interactive Repo Guide Source Coverage Intake (Doc `1MHmFF7WsgfPT-qHj_-lMXJtYL9TADsl32E8udmCBftU`, 2026-03-11) |
@@ -278,7 +96,6 @@ Generated: 2026-03-11T18:50:31.809Z
 | V6-MEMORY-004.4 | queued | design_required | 8 | 1/2/client | lane:v6-memory-004.4:run | no |  | Semantic Code Indexing & Search Intake (cocoindex-code, 2026-03-11) |
 | V6-MEMORY-004.5 | queued | design_required | 8 | 1/2/client | lane:v6-memory-004.5:run | no |  | Semantic Code Indexing & Search Intake (cocoindex-code, 2026-03-11) |
 | V6-MEMORY-004.6 | queued | design_required | 10 | 0/1/2/client | lane:v6-memory-004.6:run | no |  | Semantic Code Indexing & Search Intake (cocoindex-code, 2026-03-11) |
-| V6-F100-021 | in_progress | design_required | 9 | 0/1/2/client | lane:v6-f100-021:run | no |  | Production-Grade Checklist Addendum (2026-03-06) |
 | V6-COCKPIT-003 | in_progress | design_required | 8 | 0/1/2/client | lane:v6-cockpit-003:run | no |  | Production-Grade Checklist Addendum (2026-03-06) |
 | V6-COCKPIT-009 | queued | design_required | 8 | 0/1/2/client | lane:v6-cockpit-009:run | no |  | Production-Grade Checklist Addendum (2026-03-06) |
 | V6-COCKPIT-010 | queued | design_required | 8 | 0/1/2/client | lane:v6-cockpit-010:run | no |  | Production-Grade Checklist Addendum (2026-03-06) |
@@ -293,7 +110,6 @@ Generated: 2026-03-11T18:50:31.809Z
 | V6-MEMORY-021 | in_progress | design_required | 8 | 1/2/client | lane:v6-memory-021:run | no |  | Production-Grade Checklist Addendum (2026-03-06) |
 | V6-HOST-BUILD-STALE-001 | in_progress | design_required | 6 | 1/2/client | lane:v6-host-build-stale-001:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
 | V6-VALIDATION-HOST-001 | in_progress | design_required | 6 | 1/2/client | lane:v6-validation-host-001:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-ARCH-ICEBERG-028 | in_progress | design_required | 10 | 0/1/2/client | lane:v6-arch-iceberg-028:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
 | V6-ARCH-032 | in_progress | design_required | 6 | 1/2/client | lane:v6-arch-032:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
 | V6-ORIGIN-002 | in_progress | design_required | 10 | 0/1/2/client | lane:v6-origin-002:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
 | V6-ORIGIN-003 | in_progress | design_required | 6 | 1/2/client | lane:v6-origin-003:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
@@ -304,9 +120,6 @@ Generated: 2026-03-11T18:50:31.809Z
 | V6-F100-023 | blocked | blocked_external | 9 | 0/1/2/client |  | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
 | V6-F100-024 | blocked | blocked_external | 9 | 0/1/2/client |  | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
 | V6-F100-025 | blocked | blocked_external | 9 | 0/1/2/client |  | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-F100-029 | in_progress | design_required | 10 | 0/1/2/client | lane:v6-f100-029:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-F100-030 | in_progress | design_required | 10 | 0/1/2/client | lane:v6-f100-030:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-F100-033 | in_progress | design_required | 9 | 0/1/2/client | lane:v6-f100-033:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
 | V6-F100-034 | blocked | blocked_external | 9 | 0/1/2/client |  | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
 | V6-F100-043 | blocked | blocked_external | 9 | 0/1/2/client |  | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
 | V6-F100-044 | blocked | blocked_external | 9 | 0/1/2/client |  | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
@@ -323,98 +136,18 @@ Generated: 2026-03-11T18:50:31.809Z
 | V6-F100-A-016 | queued | design_required | 9 | 0/1/2/client | lane:v6-f100-a-016:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
 | V6-EDGE-005 | blocked | blocked_external | 10 | 0/1/2/client |  | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
 | V6-COMP-005 | blocked | blocked_external | 9 | 0/1/2 |  | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-RUNTIME-002 | in_progress | design_required | 9 | 0/1/2/client | lane:v6-runtime-002:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-RUNTIME-003 | in_progress | design_required | 10 | 0/1/2/client | lane:v6-runtime-003:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-RUNTIME-004 | in_progress | design_required | 10 | 0/1/2/client | lane:v6-runtime-004:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-SBOX-001 | in_progress | design_required | 10 | 0/1/2/client | lane:v6-sbox-001:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-SBOX-002 | in_progress | design_required | 10 | 0/1/2/client | lane:v6-sbox-002:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
 | V6-SBOX-006 | blocked | blocked_external | 10 | -1/0/1/2/3/adapter |  | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-BROWSER-008 | queued | design_required | 7 | 0/1/2/client | lane:v6-browser-008:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-BROWSER-009 | queued | design_required | 8 | 0/1/2 | lane:v6-browser-009:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-BROWSER-010 | queued | design_required | 10 | 0/1/2 | lane:v6-browser-010:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-BROWSER-011 | queued | design_required | 7 | 0/1/2/adapter/client | lane:v6-browser-011:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-BROWSER-012 | queued | design_required | 7 | 0/1/2 | lane:v6-browser-012:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-BROWSER-013 | queued | design_required | 7 | 0/1/2 | lane:v6-browser-013:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-BROWSER-014 | queued | design_required | 7 | 0/1/2 | lane:v6-browser-014:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-BROWSER-015 | queued | design_required | 9 | 0/1/2/client | lane:v6-browser-015:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-BROWSER-016 | queued | design_required | 9 | 0/1/2 | lane:v6-browser-016:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-BROWSER-017 | queued | design_required | 9 | 0/1/2/client | lane:v6-browser-017:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-SHADOW-001 | queued | design_required | 9 | 0/1/2 | lane:v6-shadow-001:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-SHADOW-002 | queued | design_required | 10 | 0/1/2 | lane:v6-shadow-002:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-SHADOW-005 | queued | design_required | 9 | 0/1/2 | lane:v6-shadow-005:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-SHADOW-006 | queued | design_required | 6 | 0/1/2 | lane:v6-shadow-006:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-FLUX-001 | queued | design_required | 9 | 0/1/2/client | lane:v6-flux-001:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-FLUX-002 | queued | design_required | 10 | 0/1/2/client | lane:v6-flux-002:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-FLUX-003 | queued | design_required | 6 | 0/1/2/client | lane:v6-flux-003:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-FLUX-004 | queued | design_required | 10 | 0/1/2/client | lane:v6-flux-004:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-FLUX-005 | queued | design_required | 9 | -1/0/1/2/3/adapter | lane:v6-flux-005:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-FLUX-006 | queued | design_required | 10 | -1/0/1/2/3/adapter | lane:v6-flux-006:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
 | V6-FLUX-007 | blocked | blocked_external | 7 | -1/0/1/2/3/adapter |  | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
 | V6-TOOLS-005 | blocked | blocked_external | 8 | 0/1/2 |  | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-PAY-001 | queued | design_required | 9 | 0/1/2 | lane:v6-pay-001:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-PAY-002 | queued | design_required | 9 | 0/1/2 | lane:v6-pay-002:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-PAY-003 | queued | design_required | 10 | 0/1/2 | lane:v6-pay-003:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-PAY-004 | queued | design_required | 8 | 0/1/2 | lane:v6-pay-004:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-PAY-005 | queued | design_required | 10 | 0/1/2/client | lane:v6-pay-005:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-PAY-006 | queued | design_required | 9 | 0/1/2/client | lane:v6-pay-006:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
 | V6-PAY-007 | blocked | blocked_external | 9 | 0/1/2/adapter/client |  | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-ADAPT-CORE-001 | queued | design_required | 10 | 0/1/2/client | lane:v6-adapt-core-001:run | no |  | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V1H-008 | in_progress | design_required | 6 | 1/2/client | lane:v1h-008:run | no |  | V1 Hardening (Required for 6-Month Autopilot) |
-| V2-006 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v2-006:run | no |  | V2 |
 | V2-012 | blocked | blocked_external | 8 | 1/2/client/adapter |  | no |  | V2 |
 | V2-018B | queued | design_required | 7 | 1/2/client/adapter | lane:v2-018b:run | no |  | V2 |
-| V2-029 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v2-029:run | no |  | V2 |
-| V2-032 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v2-032:run | no |  | V2 |
-| V2-041 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v2-041:run | no |  | V2 |
-| V2-043 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v2-043:run | no |  | V2 |
-| V2-048 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v2-048:run | no |  | V2 |
-| V2-049 | in_progress | design_required | 10 | 0/1/2/client/adapter | lane:v2-049:run | no |  | V2 |
-| V3-001 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-001:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
-| V3-002 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-002:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
-| V3-003 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-003:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
 | V3-004a | queued | design_required | 7 | 1/2/client/adapter | lane:v3-004a:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
 | V3-004b | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-004b:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
 | V3-004c | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-004c:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
 | V3-004d | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-004d:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
 | V3-004e | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-004e:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
 | V3-004f | queued | design_required | 7 | 1/2/client/adapter | lane:v3-004f:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
-| V3-014 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-014:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
-| V3-019 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-019:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
-| V3-020 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-020:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
-| V2-BRG-004 | in_progress | design_required | 6 | 0/1/2/adapter/client | lane:v2-brg-004:run | no |  | Constraint Bridge Track (Grok Intake, 2026-02-26) |
-| V3-025 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-025:run | no |  | Security Fortress Intake (Normalized, 2026-02-26) |
-| V3-026 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-026:run | no |  | Security Fortress Intake (Normalized, 2026-02-26) |
-| V3-027 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-027:run | no |  | Governance + Intelligence Gap Intake (Grok, 2026-02-26) |
-| V3-044 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-044:run | no |  | Governance + Intelligence Gap Intake (Grok, 2026-02-26) |
-| V3-046 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-046:run | no |  | Governance + Intelligence Gap Intake (Grok, 2026-02-26) |
-| V3-048 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-048:run | no |  | Governance + Intelligence Gap Intake (Grok, 2026-02-26) |
-| V3-049 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-049:run | no |  | Governance + Intelligence Gap Intake (Grok, 2026-02-26) |
-| V3-050 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-050:run | no |  | Governance + Intelligence Gap Intake (Grok, 2026-02-26) |
-| V3-061 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-061:run | no |  | Governance + Intelligence Gap Intake (Grok, 2026-02-26) |
-| V4-CLEAN-002 | in_progress | design_required | 7 | 0/1/2/client | lane:v4-clean-002:run | no |  | V4 Cleanup Track (Corrected Grok Intake, 2026-03-02) |
-| V4-SCI-001 | in_progress | design_required | 8 | 0/1/2/client | lane:v4-sci-001:run | no |  | V4 Scientific Method Track (Grok Intake Normalized, 2026-03-02) |
-| V4-SCI-005 | in_progress | design_required | 6 | 0/1/2/client | lane:v4-sci-005:run | no |  | V4 Scientific Method Track (Grok Intake Normalized, 2026-03-02) |
-| V4-SCI-006 | in_progress | design_required | 9 | 0/1/2/client | lane:v4-sci-006:run | no |  | V4 Scientific Method Track (Grok Intake Normalized, 2026-03-02) |
-| V4-SCI-008 | in_progress | design_required | 6 | 0/1/2/client | lane:v4-sci-008:run | no |  | V4 Scientific Method Track (Grok Intake Normalized, 2026-03-02) |
-| V4-UX-003 | in_progress | design_required | 9 | 0/1/2/client | lane:v4-ux-003:run | no |  | V4 Launch Polish Track (Google Doc `19aVNHH1MHRDd6nmpuakTv14Hi36jaL1O9JTS7ep7MUE`, 2026-03-02) |
-| V4-FORT-003 | in_progress | design_required | 9 | 0/1/2/client | lane:v4-fort-003:run | no |  | V4 Empty Fort Artifact Program (Operator Directive, 2026-03-02) |
-| V4-FORT-004 | in_progress | design_required | 9 | 0/1/2/client | lane:v4-fort-004:run | no |  | V4 Empty Fort Artifact Program (Operator Directive, 2026-03-02) |
-| V4-MIGR-001 | in_progress | design_required | 8 | 0/1/2/adapter/client | lane:v4-migr-001:run | no |  | V4 Migration & Ecosystem Porting Track (Google Doc `16j8PyjyYt3CpzfR11jpQkG3fAhIPifQBUlBO_pYxfR0`, 2026-03-02) |
-| V4-RUST-003 | in_progress | design_required | 9 | 0/1/2/client | lane:v4-rust-003:run | no |  | V4 Rust Acceleration Track (Grok Intake Normalized, 2026-03-02) |
-| V3-ASSIM-007 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-assim-007:run | no |  | Holo-viz Track (Separated from Core Protheus) |
-| V3-ASSIM-013 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-assim-013:run | no |  | Holo-viz Track (Separated from Core Protheus) |
-| V3-ASSIM-017 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-assim-017:run | no |  | Holo-viz Track (Separated from Core Protheus) |
-| V3-TASK-002 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-task-002:run | no |  | Holo-viz Track (Separated from Core Protheus) |
-| V3-ADD-UEP-DBG-001 | in_progress | design_required | 6 | 0/1/2/adapter/client | lane:v3-add-uep-dbg-001:run | no |  | Devin Comparative Intake (Normalized to Primitive-First) |
-| V3-XAI-002 | in_progress | design_required | 8 | 0/1/2/adapter/client | lane:v3-xai-002:run | no |  | X AI Feature Abstraction Intake (Normalized, 2026-02-27) |
-| V3-XAI-004 | in_progress | design_required | 8 | 0/1/2/adapter/client | lane:v3-xai-004:run | no |  | X AI Feature Abstraction Intake (Normalized, 2026-02-27) |
-| V3-XAI-006 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-xai-006:run | no |  | X AI Feature Abstraction Intake (Normalized, 2026-02-27) |
-| V3-LOOP-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-loop-001:run | no |  | Controlled Self-Improvement Intake (Normalized, 2026-02-27) |
-| V3-RED-001 | in_progress | design_required | 6 | 0/1/2/adapter/client | lane:v3-red-001:run | no |  | LLM Economy + Red-Team Co-Evolution Intake (Normalized, 2026-02-28) |
-| V3-ACT-002 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-act-002:run | no |  | Actuation Gap Closure Intake (Normalized, 2026-02-28) |
-| V3-CRT-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-crt-001:run | no |  | 100/100 Polish Pack (Normalized, 2026-02-28) |
-| V3-CU-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-cu-001:run | no |  | Frontier Capability Closure Intake (Normalized, 2026-02-28) |
-| V3-MAC-001 | in_progress | design_required | 8 | 0/1/2/adapter/client | lane:v3-mac-001:run | no |  | Frontier Capability Closure Intake (Normalized, 2026-02-28) |
 | V3-TTS-001 | queued | design_required | 6 | 0/1/2 | lane:v3-tts-001:run | no |  | Intelligence Requirement Intake (Deduplicated, 2026-02-28) |
 | V3-MAD-001 | queued | design_required | 6 | 0/1/2 | lane:v3-mad-001:run | no |  | Intelligence Requirement Intake (Deduplicated, 2026-02-28) |
 | V3-PCU-001 | queued | design_required | 9 | 0/1/2 | lane:v3-pcu-001:run | no |  | Intelligence Requirement Intake (Deduplicated, 2026-02-28) |
@@ -422,102 +155,13 @@ Generated: 2026-03-11T18:50:31.809Z
 | V3-MCG-001 | queued | design_required | 9 | 0/1/2 | lane:v3-mcg-001:run | no |  | Intelligence Requirement Intake (Deduplicated, 2026-02-28) |
 | V3-HLM-001 | queued | design_required | 9 | 0/1/2 | lane:v3-hlm-001:run | no |  | Intelligence Requirement Intake (Deduplicated, 2026-02-28) |
 | V3-DCS-001 | queued | design_required | 6 | 0/1/2 | lane:v3-dcs-001:run | no |  | Intelligence Requirement Intake (Deduplicated, 2026-02-28) |
-| V3-BIN-002 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-bin-002:run | no |  | Binary Runtime Hardening Intake (Normalized, 2026-02-27) |
-| V3-SK-002 | in_progress | design_required | 7 | 0/1/2/adapter/client | lane:v3-sk-002:run | no |  | State Kernel Hardening Track (SQLite State Plane) |
-| V3-SK-004 | in_progress | design_required | 7 | 0/1/2/adapter/client | lane:v3-sk-004:run | no |  | State Kernel Hardening Track (SQLite State Plane) |
-| V3-OPS-003 | in_progress | design_required | 8 | 0/1/2/adapter/client | lane:v3-ops-003:run | no |  | Post-Soak Runtime Closure Hardening (Queued, 2026-02-28) |
-| V3-OPS-013 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-ops-013:run | no |  | Post-Soak Runtime Closure Hardening (Queued, 2026-02-28) |
-| V3-OPS-005 | in_progress | design_required | 8 | 0/1/2/adapter/client | lane:v3-ops-005:run | no |  | Operator-System Feel Pack (Normalized, Queued, 2026-02-28) |
-| V3-OPS-008 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-ops-008:run | no |  | Operator-System Feel Pack (Normalized, Queued, 2026-02-28) |
-| V3-MEM-001 | in_progress | design_required | 8 | 0/1/2/adapter/client | lane:v3-mem-001:run | no |  | Post-Soak Memory & Burn Efficiency Pack (Queued, 2026-02-28) |
-| V3-MEM-004 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-mem-004:run | no |  | Post-Soak Memory & Burn Efficiency Pack (Queued, 2026-02-28) |
-| V3-MEM-007 | in_progress | design_required | 7 | 0/1/2/adapter/client | lane:v3-mem-007:run | no |  | Post-Soak Memory & Burn Efficiency Pack (Queued, 2026-02-28) |
-| V3-MEM-008 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-mem-008:run | no |  | Post-Soak Memory & Burn Efficiency Pack (Queued, 2026-02-28) |
-| V3-ARC-006 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-arc-006:run | no |  | Architecture Refinement Intake (Normalized, Queued, 2026-02-28) |
-| V3-ENT-001 | in_progress | design_required | 6 | 0/1/2/adapter/client | lane:v3-ent-001:run | no |  | Enterprise Readiness Intake (Normalized, Queued, 2026-02-28) |
-| V3-ENT-004 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-ent-004:run | no |  | Enterprise Readiness Intake (Normalized, Queued, 2026-02-28) |
-| V3-AEX-001 | in_progress | design_required | 7 | 0/1/2/adapter/client | lane:v3-aex-001:run | no |  | Benchmark-Gated Auto-Execution Intake (Normalized, Queued, 2026-02-28) |
-| V3-AEX-002 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-aex-002:run | no |  | Benchmark-Gated Auto-Execution Intake (Normalized, Queued, 2026-02-28) |
-| V3-RACE-023 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-023:run | no |  | Rust Memory Transition Intake (Normalized, Queued, 2026-02-28) |
-| V3-RACE-023 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-023:run | no |  | Rust Memory Transition Intake (Normalized, Queued, 2026-02-28) |
-| V3-RACE-023 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-023:run | no |  | Rust Memory Transition Intake (Normalized, Queued, 2026-02-28) |
-| V3-RACE-023 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-023:run | no |  | Rust Memory Transition Intake (Normalized, Queued, 2026-02-28) |
-| V3-DOC-007 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-doc-007:run | no |  | Enterprise Documentation Structure Intake (Deduplicated, 2026-02-28) |
-| V3-OF-001 | in_progress | design_required | 6 | 0/1/2/adapter/client | lane:v3-of-001:run | no |  | OpenFang Capability Intake (Normalized, 2026-02-28) |
-| V3-OF-005 | in_progress | design_required | 8 | app | lane:v3-of-005:run | no |  | OpenFang Capability Intake (Normalized, 2026-02-28) |
-| V3-OF-006 | in_progress | design_required | 6 | 0/1/2/adapter/client | lane:v3-of-006:run | no |  | OpenFang Capability Intake (Normalized, 2026-02-28) |
-| V3-DEP-001 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-dep-001:run | no |  | OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28) |
-| V3-RTE-004 | in_progress | design_required | 7 | 0/1/2/adapter/client | lane:v3-rte-004:run | no |  | OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28) |
-| V3-BENCH-001 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-bench-001:run | no |  | OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28) |
-| V3-CPY-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-cpy-001:run | no |  | Anti-Copy / Reverse-Engineering Hardening Intake (Normalized, 2026-02-28) |
-| V3-CPY-003 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-cpy-003:run | no |  | Anti-Copy / Reverse-Engineering Hardening Intake (Normalized, 2026-02-28) |
-| V3-CPY-004 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-cpy-004:run | no |  | Anti-Copy / Reverse-Engineering Hardening Intake (Normalized, 2026-02-28) |
-| V3-CPY-006 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-cpy-006:run | no |  | Anti-Copy / Reverse-Engineering Hardening Intake (Normalized, 2026-02-28) |
-| V3-CPY-007 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-cpy-007:run | no |  | Anti-Copy / Reverse-Engineering Hardening Intake (Normalized, 2026-02-28) |
-| V3-SKIN-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-skin-001:run | no |  | Selective Copying Hardening (Skin Protection Layer) |
-| V3-VENOM-004 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-venom-004:run | no |  | Poison Dart Frog Defensive Layer (Active Internal Containment, Defensive-Only) |
-| V3-RED-ESC-003 | in_progress | design_required | 6 | 0/1/2/adapter/client | lane:v3-red-esc-003:run | no |  | Red Team Cost-Escalation Evolution (Increasingly Costly Defenses) |
-| V3-RACE-014 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-014:run | no |  | AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01) |
-| V3-RACE-017 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-017:run | no |  | Grok Frontier Gaps Intake (2026-02-28) |
-| V3-RACE-020 | in_progress | design_required | 9 | -1/0/1/2/3/adapter | lane:v3-race-020:run | no |  | Grok Frontier Gaps Intake (2026-02-28) |
-| V3-RACE-067 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-race-067:run | no |  | Deep Audit Gap Intake (Codex full-system review, 2026-03-01) |
-| V3-RACE-086 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-086:run | no |  | Analysis Learning Kernel Intake (Detector Quality Compounding, 2026-03-01) |
-| V3-RACE-089 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-089:run | no |  | Analysis Learning Kernel Intake (Detector Quality Compounding, 2026-03-01) |
-| V3-RACE-091 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-091:run | no |  | Analysis Learning Kernel Intake (Detector Quality Compounding, 2026-03-01) |
-| V3-RACE-115 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-race-115:run | no |  | Technical Quality Intake (Valid Grok-Derived Requirements, 2026-03-01) |
-| V3-RACE-122 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-122:run | no |  | Technical Quality Intake (Valid Grok-Derived Requirements, 2026-03-01) |
-| V3-RACE-127 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-127:run | no |  | Technical Quality Intake (Valid Grok-Derived Requirements, 2026-03-01) |
-| V3-RACE-128 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-128:run | no |  | Technical Quality Intake (Valid Grok-Derived Requirements, 2026-03-01) |
-| V3-RACE-163 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-race-163:run | no |  | External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02) |
-| V3-RACE-185 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-185:run | no |  | External Requirements Intake (Google Doc `1zxYaW0wNMbFnnpx_Ps0WCVgMf-uGraobSctE7cCGx80`, 2026-03-02) |
-| V3-RACE-187 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-race-187:run | no |  | External Requirements Intake (Google Doc `1zxYaW0wNMbFnnpx_Ps0WCVgMf-uGraobSctE7cCGx80`, 2026-03-02) |
-| V3-048 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-048:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-ACT-002 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-act-002:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-AEX-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-aex-001:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-AEX-002 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-aex-002:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-BENCH-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-bench-001:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-CPY-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-cpy-001:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-CPY-006 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-cpy-006:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-DEP-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-dep-001:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-DOC-007 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-doc-007:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-ENT-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-ent-001:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-LOOP-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-loop-001:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-MAC-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-mac-001:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-MEM-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-mem-001:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-MEM-004 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-mem-004:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-MEM-008 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-mem-008:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-OPS-003 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-ops-003:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-OPS-005 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-ops-005:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-RACE-023 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-race-023:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-SK-002 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-sk-002:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-XAI-002 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-xai-002:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-RACE-163 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-race-163:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V4-RUST-003 | in_progress | design_required | 8 | 0/1/2/client | lane:v4-rust-003:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V5-HOLD-005 | in_progress | design_required | 10 | 0/1/2/client | lane:v5-hold-005:run | no |  | Hold-Rate Reduction Program (2026-03-03) |
-| V4-ETH-002 | in_progress | design_required | 9 | -1/0/1/2/3/adapter | lane:v4-eth-002:run | no |  | Ethereal Runtime Program (Google Doc Intake 2026-03-03) |
-| V4-PKG-001 | in_progress | design_required | 8 | -1/0/1/2/3/adapter | lane:v4-pkg-001:run | no |  | Packaging & Lens Opacity Program (Google Doc Intake 2026-03-03) |
-| V4-PKG-002 | in_progress | design_required | 10 | -1/0/1/2/3/adapter | lane:v4-pkg-002:run | no |  | Packaging & Lens Opacity Program (Google Doc Intake 2026-03-03) |
-| V4-PKG-005 | in_progress | design_required | 8 | 0/1/2/client | lane:v4-pkg-005:run | no |  | LensMap Standalone Suite Program (Google Doc Intake 2026-03-03) |
-| V4-SUITE-006 | in_progress | design_required | 9 | 0/1/2/client | lane:v4-suite-006:run | no |  | Productized CLI Suite Program (Google Doc Intake 2026-03-03) |
-| V4-SUITE-007 | in_progress | design_required | 8 | 0/1/2/client | lane:v4-suite-007:run | no |  | Productized CLI Suite Program (Google Doc Intake 2026-03-03) |
-| V4-SUITE-008 | in_progress | design_required | 9 | 0/1/2/client | lane:v4-suite-008:run | no |  | Productized CLI Suite Program (Google Doc Intake 2026-03-03) |
 | V6-RUST50-CONF-004 | blocked | blocked_external | 9 | 0/1/2/client |  | no |  | External Requirements Intake (Mega Sprint 1: Public 50 Percent Visible Rust, 2026-03-03) |
-| V6-F100-002 | in_progress | design_required | 9 | 0/1/2/client | lane:v6-f100-002:run | no |  | Fortune-100 Software Readiness Path (Queued, 2026-03-03) |
-| V6-F100-003 | in_progress | design_required | 10 | 0/1/2/client | lane:v6-f100-003:run | no |  | Fortune-100 Software Readiness Path (Queued, 2026-03-03) |
-| V6-F100-005 | in_progress | design_required | 9 | 0/1/2/client | lane:v6-f100-005:run | no |  | Fortune-100 Software Readiness Path (Queued, 2026-03-03) |
-| V6-PERS-SEAM-003 | in_progress | design_required | 8 | 0/1/2/client | lane:v6-pers-seam-003:run | no |  | Persona Seamless Workflow Integration Pack (2026-03-03) |
-| V6-CONDUIT-008 | in_progress | design_required | 10 | 0/1/2/client | lane:v6-conduit-008:run | no |  | Protheus Conduit Program (Requirements Intake 2026-03-05) |
-| V6-SEC-007 | queued | design_required | 10 | 0/1/2 | lane:v6-sec-007:run | no |  | Security Credibility And Verification Program (2026-03-06) |
-| V6-SEC-009 | queued | design_required | 10 | 0/1/2 | lane:v6-sec-009:run | no |  | Security Credibility And Verification Program (2026-03-06) |
 | V6-SEC-010 | queued | design_required | 10 | 0/1/2/adapter/client | lane:v6-sec-010:run | no |  | ZeroLeaks Injection Hardening Source Coverage Intake (Doc `143v84ci3rHjP7WtbYi9tJ2KeJZUkNTIsFTye1NHrheA`, 2026-03-11) |
 | V6-SEC-011 | queued | design_required | 10 | 0/1/2 | lane:v6-sec-011:run | no |  | ZeroLeaks Injection Hardening Source Coverage Intake (Doc `143v84ci3rHjP7WtbYi9tJ2KeJZUkNTIsFTye1NHrheA`, 2026-03-11) |
 | V6-SEC-012 | queued | design_required | 10 | 0/1/2/adapter/client | lane:v6-sec-012:run | no |  | ZeroLeaks Injection Hardening Source Coverage Intake (Doc `143v84ci3rHjP7WtbYi9tJ2KeJZUkNTIsFTye1NHrheA`, 2026-03-11) |
 | V6-SEC-013 | queued | design_required | 10 | 0/1/2/client | lane:v6-sec-013:run | no |  | ZeroLeaks Injection Hardening Source Coverage Intake (Doc `143v84ci3rHjP7WtbYi9tJ2KeJZUkNTIsFTye1NHrheA`, 2026-03-11) |
 | V6-SEC-014 | queued | design_required | 10 | 0/1/2 | lane:v6-sec-014:run | no |  | ZeroLeaks Injection Hardening Source Coverage Intake (Doc `143v84ci3rHjP7WtbYi9tJ2KeJZUkNTIsFTye1NHrheA`, 2026-03-11) |
 | V6-SEC-015 | queued | design_required | 10 | app | lane:v6-sec-015:run | no |  | ZeroLeaks Injection Hardening Source Coverage Intake (Doc `143v84ci3rHjP7WtbYi9tJ2KeJZUkNTIsFTye1NHrheA`, 2026-03-11) |
-| V6-PRIM-001 | in_progress | design_required | 9 | 0/1/2/client | lane:v6-prim-001:run | no |  | Rust Core Primitive Source-Of-Truth Program (2026-03-06) |
-| V6-PRIM-002 | in_progress | design_required | 9 | 0/1/2/client | lane:v6-prim-002:run | no |  | Rust Core Primitive Source-Of-Truth Program (2026-03-06) |
-| V6-GAP-002 | in_progress | design_required | 8 | 0/1/2/client | lane:v6-gap-002:run | no |  | Testing + Documentation + Installer Gap Closer (2026-03-06) |
 | V6-GAP-006 | blocked | blocked_external | 10 | 0/1/2/client |  | no |  | Testing + Documentation + Installer Gap Closer (2026-03-06) |
 | V6-TECH-301 | in_progress | design_required | 6 | 1/2/client | lane:v6-tech-301:run | no |  | Technical Excellence Roadmap Intake (Google Doc `19DO7nvxizNJmLuoRUFrYYTNOmMnHJCGKI44AlGHbcSw`, 2026-03-08) |
 | V6-TECH-302 | in_progress | design_required | 6 | 1/2/client | lane:v6-tech-302:run | no |  | Technical Excellence Roadmap Intake (Google Doc `19DO7nvxizNJmLuoRUFrYYTNOmMnHJCGKI44AlGHbcSw`, 2026-03-08) |
