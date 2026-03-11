@@ -1,0 +1,9 @@
+{
+  "version": "v1",
+  "kind": "quantum_broker_domain",
+  "operations": ["compile", "estimate", "submit", "session", "batch", "measure"],
+  "classical_fallback": {
+    "enabled": true,
+    "receipt_required": true
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "version": "v1",
+  "kind": "effect_journal_policy",
+  "commit_before_actuate_required": true,
+  "required_entry_fields": ["id", "kind", "ts"],
+  "required_effect_fields": ["type", "journal_ref", "commit_before_actuate"]
+}

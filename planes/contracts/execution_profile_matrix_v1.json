@@ -1,0 +1,9 @@
+{
+  "version": "v1",
+  "kind": "execution_profile_matrix",
+  "profiles": [
+    { "id": "mcu", "harness": "harness/mcu_conformance", "determinism": "high" },
+    { "id": "edge", "harness": "harness/edge_conformance", "determinism": "high" },
+    { "id": "cloud", "harness": "harness/cloud_conformance", "determinism": "medium" }
+  ]
+}

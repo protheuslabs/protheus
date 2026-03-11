@@ -1,0 +1,24 @@
+{
+  "value": {
+    "fact": "metakernel.contracts.loaded",
+    "state": "true"
+  },
+  "schema": "epistemic_object_v1",
+  "provenance": {
+    "source": "planes/contracts/examples/epistemic_object.minimal.json",
+    "digest": "sha256:example"
+  },
+  "confidence": 0.98,
+  "policy": {
+    "label": "internal"
+  },
+  "retention": {
+    "ttl_days": 365
+  },
+  "export": {
+    "allowed": false
+  },
+  "rollback": {
+    "pointer": "state://rollback/example"
+  }
+}

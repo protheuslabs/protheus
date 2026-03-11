@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Epistemic Object v1",
+  "type": "object",
+  "required": [
+    "value",
+    "schema",
+    "provenance",
+    "confidence",
+    "policy",
+    "retention",
+    "export",
+    "rollback"
+  ],
+  "properties": {
+    "value": {},
+    "schema": { "type": "string" },
+    "provenance": { "type": "object" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "policy": { "type": "object" },
+    "retention": { "type": "object" },
+    "export": { "type": "object" },
+    "rollback": { "type": "object" }
+  }
+}

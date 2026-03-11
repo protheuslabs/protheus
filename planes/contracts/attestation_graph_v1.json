@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "kind": "attestation_graph",
+  "edges": [
+    { "from": "code:core/layer0/ops", "to": "policy:client/runtime/config/dependency_boundary_manifest.json" },
+    { "from": "policy:client/runtime/config/dependency_boundary_manifest.json", "to": "effect:conduit_dispatch" },
+    { "from": "model:router/default", "to": "effect:inference_call" },
+    { "from": "data:state/client/cognition/adaptive/rsi/merkle.json", "to": "effect:receipt_state_binding" }
+  ]
+}

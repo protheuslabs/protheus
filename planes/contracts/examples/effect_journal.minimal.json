@@ -1,0 +1,17 @@
+{
+  "journal_entries": [
+    {
+      "id": "jrnl-001",
+      "kind": "actuation_commit",
+      "ts": "2026-03-11T18:00:00Z"
+    }
+  ],
+  "effects": [
+    {
+      "type": "actuate",
+      "target": "ops.restart",
+      "journal_ref": "jrnl-001",
+      "commit_before_actuate": true
+    }
+  ]
+}

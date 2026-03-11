@@ -1,6 +1,6 @@
 # TODO (Maintenance + Policy + SRS Execution Order)
 
-Updated: 2026-03-11 18:13 America/Denver
+Updated: 2026-03-11 18:44 America/Denver
 
 ## Ordering policy
 - Priority first (`P0` > `P1` > `P2` > `P3`)
@@ -8,7 +8,7 @@ Updated: 2026-03-11 18:13 America/Denver
 - Then dependency order
 
 ## Live baseline
-- `rust_share_pct`: `75.027%` (`npm run -s metrics:rust-share`)
+- `rust_share_pct`: `75.088%` (`npm run -s metrics:rust-share`)
 - `client total ts files`: `231`
 - `runtime_system_surface`: `116`
 - `cognition_surface`: `0`
@@ -28,17 +28,17 @@ Updated: 2026-03-11 18:13 America/Denver
 - Full execution queue (all actionable items, sorted): [docs/workspace/TODO_EXECUTION_FULL.md](/Users/jay/.openclaw/workspace/docs/workspace/TODO_EXECUTION_FULL.md)
 - Machine-readable execution queue: [artifacts/todo_execution_full_current.json](/Users/jay/.openclaw/workspace/artifacts/todo_execution_full_current.json)
 - Map summary snapshot:
-- `actionable_total=829`
-- `queued=591`
+- `actionable_total=820`
+- `queued=582`
 - `in_progress=211`
 - `blocked=27`
 - `execute_now=0`
 - `repair_lane=0`
-- `design_required=802`
+- `design_required=793`
 - `blocked_external=27`
 
 ## Full TODO queue contract
-- The TODO list now includes **all** actionable SRS work as the canonical generated queue in `TODO_EXECUTION_FULL.md` (`829` rows).
+- The TODO list now includes **all** actionable SRS work as the canonical generated queue in `TODO_EXECUTION_FULL.md` (`820` rows).
 - Sorting policy used in that queue:
 - `todoBucket` order: `execute_now -> repair_lane -> design_required -> blocked_external`
 - then `status`: `in_progress -> queued -> blocked`
@@ -92,12 +92,31 @@ Updated: 2026-03-11 18:13 America/Denver
 - Moved temporary source file from `tmp/lensmap_tooling_test/src/demo.ts` to policy-allowed test fixture path `tests/fixtures/lensmap_tooling_test/src/demo.ts`.
 - `repo_surface_policy_audit` restored to pass and full `./verify.sh` pass retained.
 
+10. `P1-EXEC-006` Continue metakernel tranche (`V7-META-007..010`) and continue queue depletion. `STATUS: DONE`
+- Exit criteria met:
+- Added `epistemic_object_v1` schema + example and strict validator lane (`lane:v7-meta-007:run`).
+- Added effect journal commit-before-actuate policy + example and strict enforcement lane (`lane:v7-meta-008:run`).
+- Added substrate descriptor registry + degrade matrix contract and strict validator lane (`lane:v7-meta-009:run`).
+- Added radix policy guard contract and strict guard lane (`lane:v7-meta-010:run`).
+- Marked `V7-META-007..010` as `done` in `SRS.md` and `UPGRADE_BACKLOG.md`.
+
+11. `P1-EXEC-007` Continue metakernel tranche (`V7-META-011..015`) and continue queue depletion. `STATUS: DONE`
+- Exit criteria met:
+- Added quantum broker domain contract and strict validator lane (`lane:v7-meta-011:run`).
+- Added neural consent kernel contract and strict validator lane (`lane:v7-meta-012:run`).
+- Added attestation graph contract and strict validator lane (`lane:v7-meta-013:run`).
+- Added degradation-contract verifier contract and strict validator lane (`lane:v7-meta-014:run`).
+- Added execution profile matrix contract and strict validator lane (`lane:v7-meta-015:run`).
+- Marked `V7-META-011..015` as `done` in `SRS.md` and `UPGRADE_BACKLOG.md`.
+
 ## Executed in this pass
 - Added `scripts/ci/srs_actionable_map.mjs` to produce canonical remaining-work mapping and executability buckets.
 - Reviewed enforcer policy and kept DoD evidence gates strict.
 - Executed complete runnable backlog queue tranche and recorded deterministic receipts.
 - Executed metakernel tranche (`V7-META-001..003`) with deterministic receipts and passing invariants.
 - Executed metakernel tranche (`V7-META-004..006`) with deterministic receipts and passing lanes.
+- Executed metakernel tranche (`V7-META-007..010`) with deterministic receipts and passing lanes.
+- Executed metakernel tranche (`V7-META-011..015`) with deterministic receipts and passing lanes.
 - Added generated full TODO queue artifacts (`TODO_EXECUTION_FULL.md` + `todo_execution_full_current.json`) and kept ordering deterministic.
 - Kept client/core policy audits and full regression suite passing after state transitions.
 

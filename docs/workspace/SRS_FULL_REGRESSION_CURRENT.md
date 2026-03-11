@@ -2,7 +2,7 @@
 
 - Source SRS items scanned: **1998**
 - Regression severities: **fail=0**, **warn=0**, **pass=1998**
-- Done rows: **1169**
+- Done rows: **1178**
 - Done rows without non-backlog evidence: **0**
 - Done rows without code/test evidence: **0**
 - Machine report: `artifacts/srs_full_regression_current.json`
@@ -15,15 +15,15 @@
 | 4 | V7-META-004 | done | 13 | 2 | 1 | pass |
 | 5 | V7-META-005 | done | 6 | 1 | 1 | pass |
 | 6 | V7-META-006 | done | 6 | 1 | 1 | pass |
-| 7 | V7-META-007 | queued | 8 | 3 | 1 | pass |
-| 8 | V7-META-008 | queued | 8 | 3 | 1 | pass |
-| 9 | V7-META-009 | queued | 8 | 3 | 1 | pass |
-| 10 | V7-META-010 | queued | 8 | 3 | 1 | pass |
-| 11 | V7-META-011 | queued | 9 | 4 | 1 | pass |
-| 12 | V7-META-012 | queued | 11 | 6 | 1 | pass |
-| 13 | V7-META-013 | queued | 9 | 4 | 1 | pass |
-| 14 | V7-META-014 | queued | 9 | 4 | 1 | pass |
-| 15 | V7-META-015 | queued | 9 | 4 | 1 | pass |
+| 7 | V7-META-007 | done | 12 | 1 | 1 | pass |
+| 8 | V7-META-008 | done | 6 | 1 | 1 | pass |
+| 9 | V7-META-009 | done | 6 | 1 | 1 | pass |
+| 10 | V7-META-010 | done | 6 | 1 | 1 | pass |
+| 11 | V7-META-011 | done | 8 | 3 | 1 | pass |
+| 12 | V7-META-012 | done | 10 | 5 | 1 | pass |
+| 13 | V7-META-013 | done | 8 | 3 | 1 | pass |
+| 14 | V7-META-014 | done | 8 | 3 | 1 | pass |
+| 15 | V7-META-015 | done | 8 | 3 | 1 | pass |
 | 16 | V7-META-016 | blocked | 9 | 4 | 0 | pass |
 | 17 | V7-META-017 | blocked | 9 | 4 | 0 | pass |
 | 18 | V7-META-018 | blocked | 10 | 5 | 0 | pass |

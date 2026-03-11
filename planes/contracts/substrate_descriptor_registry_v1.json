@@ -1,0 +1,30 @@
+{
+  "version": "v1",
+  "kind": "substrate_descriptor_registry",
+  "descriptors": [
+    {
+      "id": "edge.mcu.v1",
+      "determinism": "high",
+      "latency_ms": 10,
+      "energy_mw": 250,
+      "isolation": "sandboxed",
+      "observability": "receipt-only",
+      "privacy_locality": "local-only"
+    },
+    {
+      "id": "cloud.vm.v1",
+      "determinism": "medium",
+      "latency_ms": 40,
+      "energy_mw": 5000,
+      "isolation": "vm",
+      "observability": "full",
+      "privacy_locality": "policy-scoped"
+    }
+  ],
+  "degrade_matrix": {
+    "no-network": "local-only runtime profile",
+    "no-ternary": "binary fallback profile",
+    "no-qpu": "classical fallback profile",
+    "neural-link-loss": "silicon-only fallback profile"
+  }
+}

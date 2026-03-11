@@ -1,28 +1,19 @@
 # SRS Actionable Map (Current)
 
-Generated: 2026-03-11T18:14:20.383Z
+Generated: 2026-03-11T18:43:36.336Z
 
 ## Summary
-- actionable_total: 829
-- queued: 591
+- actionable_total: 820
+- queued: 582
 - in_progress: 211
 - blocked: 27
 - execute_now: 0
 - repair_lane: 0
-- design_required: 802
+- design_required: 793
 - blocked_external: 27
 
 | ID | Status | Bucket | Impact | Layer | Lane | Runnable | Missing Entrypoint | Section |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| V7-META-007 | queued | design_required | 10 | 0/1/2 | lane:v7-meta-007:run | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
-| V7-META-008 | queued | design_required | 10 | 0/1/2 | lane:v7-meta-008:run | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
-| V7-META-009 | queued | design_required | 10 | 0/1/2 | lane:v7-meta-009:run | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
-| V7-META-010 | queued | design_required | 10 | 0/1/2 | lane:v7-meta-010:run | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
-| V7-META-011 | queued | design_required | 10 | 0/1/2 | lane:v7-meta-011:run | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
-| V7-META-012 | queued | design_required | 10 | 0/1/2 | lane:v7-meta-012:run | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
-| V7-META-013 | queued | design_required | 10 | 0/1/2 | lane:v7-meta-013:run | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
-| V7-META-014 | queued | design_required | 10 | 0/1/2 | lane:v7-meta-014:run | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
-| V7-META-015 | queued | design_required | 10 | 0/1/2 | lane:v7-meta-015:run | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
 | V7-META-016 | blocked | blocked_external | 10 | 0/1/2 |  | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
 | V7-META-017 | blocked | blocked_external | 10 | 0/1/2 |  | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
 | V7-META-018 | blocked | blocked_external | 10 | 0/1/2 |  | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |

@@ -1,0 +1,21 @@
+{
+  "version": "v1",
+  "kind": "degradation_contracts",
+  "critical_lanes": [
+    {
+      "id": "conduit_dispatch",
+      "fallback": "local_receipt_queue",
+      "fallback_widens_privilege": false
+    },
+    {
+      "id": "model_router",
+      "fallback": "safe_local_model",
+      "fallback_widens_privilege": false
+    },
+    {
+      "id": "scheduler",
+      "fallback": "local_cron_runtime",
+      "fallback_widens_privilege": false
+    }
+  ]
+}

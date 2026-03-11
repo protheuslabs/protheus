@@ -13,6 +13,15 @@ const CELLBUNDLE_EXAMPLE_PATH: &str = "planes/contracts/examples/cellbundle.mini
 const WIT_WORLD_REGISTRY_PATH: &str = "planes/contracts/wit/world_registry_v1.json";
 const CAPABILITY_TAXONOMY_PATH: &str = "planes/contracts/capability_effect_taxonomy_v1.json";
 const BUDGET_ADMISSION_POLICY_PATH: &str = "planes/contracts/budget_admission_policy_v1.json";
+const EPISTEMIC_OBJECT_SCHEMA_PATH: &str = "planes/contracts/epistemic_object_v1.schema.json";
+const EFFECT_JOURNAL_POLICY_PATH: &str = "planes/contracts/effect_journal_policy_v1.json";
+const SUBSTRATE_REGISTRY_PATH: &str = "planes/contracts/substrate_descriptor_registry_v1.json";
+const RADIX_POLICY_GUARD_PATH: &str = "planes/contracts/radix_policy_guard_v1.json";
+const QUANTUM_BROKER_DOMAIN_PATH: &str = "planes/contracts/quantum_broker_domain_v1.json";
+const NEURAL_CONSENT_KERNEL_PATH: &str = "planes/contracts/neural_consent_kernel_v1.json";
+const ATTESTATION_GRAPH_PATH: &str = "planes/contracts/attestation_graph_v1.json";
+const DEGRADATION_CONTRACT_PATH: &str = "planes/contracts/degradation_contracts_v1.json";
+const EXECUTION_PROFILE_MATRIX_PATH: &str = "planes/contracts/execution_profile_matrix_v1.json";
 const CONDUIT_SCHEMA_PATH: &str = "planes/contracts/conduit_envelope.schema.json";
 const TLA_BOUNDARY_PATH: &str = "planes/spec/tla/three_plane_boundary.tla";
 const DEP_BOUNDARY_MANIFEST: &str = "client/runtime/config/dependency_boundary_manifest.json";
@@ -771,6 +780,487 @@ fn run_budget_admission(root: &Path, strict: bool, manifest_rel: &str) -> Value 
     })
 }
 
+fn run_epistemic_object(root: &Path, strict: bool, object_rel: &str) -> Value {
+    let schema = read_json(&root.join(EPISTEMIC_OBJECT_SCHEMA_PATH)).unwrap_or(Value::Null);
+    let schema_ok = schema
+        .get("required")
+        .and_then(Value::as_array)
+        .map(|v| {
+            let set: BTreeSet<String> = v
+                .iter()
+                .filter_map(Value::as_str)
+                .map(|s| s.to_string())
+                .collect();
+            let required = [
+                "value",
+                "schema",
+                "provenance",
+                "confidence",
+                "policy",
+                "retention",
+                "export",
+                "rollback",
+            ];
+            required.iter().all(|k| set.contains(*k))
+        })
+        .unwrap_or(false);
+
+    let object = read_json(&root.join(object_rel)).unwrap_or(Value::Null);
+    let mut missing = Vec::new();
+    for k in [
+        "value",
+        "schema",
+        "provenance",
+        "confidence",
+        "policy",
+        "retention",
+        "export",
+        "rollback",
+    ] {
+        if object.get(k).is_none() {
+            missing.push(k.to_string());
+        }
+    }
+    let confidence_ok = object
+        .get("confidence")
+        .and_then(Value::as_f64)
+        .map(|v| (0.0..=1.0).contains(&v))
+        .unwrap_or(false);
+    let object_ok = missing.is_empty() && confidence_ok;
+
+    let ok = schema_ok && object_ok;
+    json!({
+        "ok": if strict { ok } else { true },
+        "strict": strict,
+        "schema_path": EPISTEMIC_OBJECT_SCHEMA_PATH,
+        "schema_ok": schema_ok,
+        "object_path": object_rel,
+        "object_ok": object_ok,
+        "missing_fields": missing,
+        "confidence_ok": confidence_ok
+    })
+}
+
+fn run_effect_journal(root: &Path, strict: bool, journal_rel: &str) -> Value {
+    let policy = read_json(&root.join(EFFECT_JOURNAL_POLICY_PATH)).unwrap_or(Value::Null);
+    let policy_ok = policy
+        .get("commit_before_actuate_required")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+
+    let payload = read_json(&root.join(journal_rel)).unwrap_or(Value::Null);
+    let entries = payload
+        .get("journal_entries")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let effects = payload
+        .get("effects")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let mut entry_ids = BTreeSet::new();
+    let mut entry_errors = Vec::new();
+    for entry in entries {
+        let id = entry
+            .get("id")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        let kind = entry
+            .get("kind")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        let ts = entry
+            .get("ts")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        if id.is_empty() || kind.is_empty() || ts.is_empty() {
+            entry_errors.push("journal_entry_missing_required_fields".to_string());
+            continue;
+        }
+        entry_ids.insert(id);
+    }
+    let mut effect_errors = Vec::new();
+    for effect in effects {
+        let effect_type = effect
+            .get("type")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_ascii_lowercase();
+        let journal_ref = effect
+            .get("journal_ref")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        let commit_before_actuate = effect
+            .get("commit_before_actuate")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        if effect_type == "actuate" {
+            if journal_ref.is_empty() {
+                effect_errors.push("actuate_missing_journal_ref".to_string());
+            } else if !entry_ids.contains(&journal_ref) {
+                effect_errors.push("actuate_journal_ref_not_found".to_string());
+            }
+            if policy_ok && !commit_before_actuate {
+                effect_errors.push("actuate_without_commit_before_actuate".to_string());
+            }
+        }
+    }
+    let ok = policy_ok && entry_errors.is_empty() && effect_errors.is_empty();
+    json!({
+        "ok": if strict { ok } else { true },
+        "strict": strict,
+        "policy_path": EFFECT_JOURNAL_POLICY_PATH,
+        "policy_ok": policy_ok,
+        "journal_path": journal_rel,
+        "entry_errors": entry_errors,
+        "effect_errors": effect_errors,
+        "entry_count": entry_ids.len()
+    })
+}
+
+fn run_substrate_registry(root: &Path, strict: bool) -> Value {
+    let registry = read_json(&root.join(SUBSTRATE_REGISTRY_PATH)).unwrap_or(Value::Null);
+    let mut errors = Vec::new();
+    if registry
+        .get("version")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        != "v1"
+    {
+        errors.push("substrate_registry_version_must_be_v1".to_string());
+    }
+    let descriptors = registry
+        .get("descriptors")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    if descriptors.is_empty() {
+        errors.push("substrate_registry_missing_descriptors".to_string());
+    }
+    let mut descriptor_ids = Vec::new();
+    for descriptor in descriptors {
+        let id = descriptor
+            .get("id")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        if id.is_empty() {
+            errors.push("substrate_descriptor_id_required".to_string());
+            continue;
+        }
+        descriptor_ids.push(id.clone());
+        for field in [
+            "determinism",
+            "latency_ms",
+            "energy_mw",
+            "isolation",
+            "observability",
+            "privacy_locality",
+        ] {
+            if descriptor.get(field).is_none() {
+                errors.push(format!("substrate_descriptor_missing_field::{field}"));
+            }
+        }
+    }
+
+    let degrade = registry
+        .get("degrade_matrix")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    for scenario in ["no-network", "no-ternary", "no-qpu", "neural-link-loss"] {
+        if degrade.get(scenario).is_none() {
+            errors.push(format!("substrate_missing_degrade_scenario::{scenario}"));
+        }
+    }
+    let ok = errors.is_empty();
+    json!({
+        "ok": if strict { ok } else { true },
+        "strict": strict,
+        "registry_path": SUBSTRATE_REGISTRY_PATH,
+        "descriptor_ids": descriptor_ids,
+        "errors": errors
+    })
+}
+
+fn run_radix_guard(root: &Path, strict: bool) -> Value {
+    let policy = read_json(&root.join(RADIX_POLICY_GUARD_PATH)).unwrap_or(Value::Null);
+    let binary_required = policy
+        .get("binary_required_paths")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let ternary_classes = policy
+        .get("ternary_allow_classes")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let mut errors = Vec::new();
+    let required = ["crypto", "policy", "capability", "attestation", "journal"];
+    let set: BTreeSet<String> = binary_required
+        .iter()
+        .filter_map(Value::as_str)
+        .map(|s| s.to_ascii_lowercase())
+        .collect();
+    for path in required {
+        if !set.contains(path) {
+            errors.push(format!("binary_required_missing::{path}"));
+        }
+    }
+    let mut overlap = Vec::new();
+    for cls in &ternary_classes {
+        let id = cls.as_str().unwrap_or_default().trim().to_ascii_lowercase();
+        if set.contains(&id) {
+            overlap.push(id);
+        }
+    }
+    if !overlap.is_empty() {
+        errors.push("ternary_class_overlaps_binary_required_paths".to_string());
+    }
+    let ok = errors.is_empty();
+    json!({
+        "ok": if strict { ok } else { true },
+        "strict": strict,
+        "policy_path": RADIX_POLICY_GUARD_PATH,
+        "binary_required_count": set.len(),
+        "ternary_allow_count": ternary_classes.len(),
+        "overlap": overlap,
+        "errors": errors
+    })
+}
+
+fn run_quantum_broker(root: &Path, strict: bool) -> Value {
+    let contract = read_json(&root.join(QUANTUM_BROKER_DOMAIN_PATH)).unwrap_or(Value::Null);
+    let ops = contract
+        .get("operations")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let set: BTreeSet<String> = ops
+        .iter()
+        .filter_map(Value::as_str)
+        .map(|s| s.to_ascii_lowercase())
+        .collect();
+    let mut missing = Vec::new();
+    for op in ["compile", "estimate", "submit", "session", "batch", "measure"] {
+        if !set.contains(op) {
+            missing.push(op.to_string());
+        }
+    }
+    let fallback = contract
+        .get("classical_fallback")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let fallback_ok = fallback
+        .get("enabled")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+        && fallback
+            .get("receipt_required")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+    let ok = missing.is_empty() && fallback_ok;
+    json!({
+        "ok": if strict { ok } else { true },
+        "strict": strict,
+        "contract_path": QUANTUM_BROKER_DOMAIN_PATH,
+        "missing_operations": missing,
+        "fallback_ok": fallback_ok
+    })
+}
+
+fn run_neural_consent_kernel(root: &Path, strict: bool) -> Value {
+    let contract = read_json(&root.join(NEURAL_CONSENT_KERNEL_PATH)).unwrap_or(Value::Null);
+    let authorities = contract
+        .get("authorities")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let set: BTreeSet<String> = authorities
+        .iter()
+        .filter_map(Value::as_str)
+        .map(|s| s.to_ascii_lowercase())
+        .collect();
+    let mut missing = Vec::new();
+    for auth in ["observe", "infer", "feedback", "stimulate"] {
+        if !set.contains(auth) {
+            missing.push(auth.to_string());
+        }
+    }
+    let stimulate = contract
+        .get("stimulate_policy")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let stimulate_ok = stimulate
+        .get("consent_token_required")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+        && stimulate
+            .get("dual_control_required")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+        && stimulate
+            .get("immutable_audit")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+    let ok = missing.is_empty() && stimulate_ok;
+    json!({
+        "ok": if strict { ok } else { true },
+        "strict": strict,
+        "contract_path": NEURAL_CONSENT_KERNEL_PATH,
+        "missing_authorities": missing,
+        "stimulate_policy_ok": stimulate_ok
+    })
+}
+
+fn run_attestation_graph(root: &Path, strict: bool) -> Value {
+    let graph = read_json(&root.join(ATTESTATION_GRAPH_PATH)).unwrap_or(Value::Null);
+    let edges = graph
+        .get("edges")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let mut errors = Vec::new();
+    if edges.is_empty() {
+        errors.push("attestation_graph_missing_edges".to_string());
+    }
+    let mut domains = BTreeSet::new();
+    for edge in edges {
+        let from = edge
+            .get("from")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        let to = edge
+            .get("to")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        if from.is_empty() || to.is_empty() {
+            errors.push("attestation_edge_missing_endpoints".to_string());
+            continue;
+        }
+        let fdom = from.split(':').next().unwrap_or_default().to_string();
+        let tdom = to.split(':').next().unwrap_or_default().to_string();
+        if !fdom.is_empty() {
+            domains.insert(fdom);
+        }
+        if !tdom.is_empty() {
+            domains.insert(tdom);
+        }
+    }
+    for dom in ["code", "model", "policy", "data", "effect"] {
+        if !domains.contains(dom) {
+            errors.push(format!("attestation_graph_missing_domain::{dom}"));
+        }
+    }
+    let ok = errors.is_empty();
+    json!({
+        "ok": if strict { ok } else { true },
+        "strict": strict,
+        "graph_path": ATTESTATION_GRAPH_PATH,
+        "errors": errors
+    })
+}
+
+fn run_degradation_contracts(root: &Path, strict: bool) -> Value {
+    let contract = read_json(&root.join(DEGRADATION_CONTRACT_PATH)).unwrap_or(Value::Null);
+    let lanes = contract
+        .get("critical_lanes")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let mut errors = Vec::new();
+    if lanes.is_empty() {
+        errors.push("degradation_contract_missing_critical_lanes".to_string());
+    }
+    for lane in lanes {
+        let fallback = lane
+            .get("fallback")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        let widens = lane
+            .get("fallback_widens_privilege")
+            .and_then(Value::as_bool)
+            .unwrap_or(true);
+        if fallback.is_empty() {
+            errors.push("degradation_lane_missing_fallback".to_string());
+        }
+        if widens {
+            errors.push("degradation_fallback_widens_privilege".to_string());
+        }
+    }
+    let ok = errors.is_empty();
+    json!({
+        "ok": if strict { ok } else { true },
+        "strict": strict,
+        "contract_path": DEGRADATION_CONTRACT_PATH,
+        "errors": errors
+    })
+}
+
+fn run_execution_profiles(root: &Path, strict: bool) -> Value {
+    let matrix = read_json(&root.join(EXECUTION_PROFILE_MATRIX_PATH)).unwrap_or(Value::Null);
+    let profiles = matrix
+        .get("profiles")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let mut ids = BTreeSet::new();
+    let mut errors = Vec::new();
+    for profile in profiles {
+        let id = profile
+            .get("id")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        if id.is_empty() {
+            errors.push("execution_profile_id_required".to_string());
+            continue;
+        }
+        ids.insert(id);
+        if profile
+            .get("harness")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .is_empty()
+        {
+            errors.push("execution_profile_harness_required".to_string());
+        }
+    }
+    for req in ["mcu", "edge", "cloud"] {
+        if !ids.contains(req) {
+            errors.push(format!("execution_profile_missing::{req}"));
+        }
+    }
+    let ok = errors.is_empty();
+    json!({
+        "ok": if strict { ok } else { true },
+        "strict": strict,
+        "matrix_path": EXECUTION_PROFILE_MATRIX_PATH,
+        "errors": errors
+    })
+}
+
 fn run_manifest(root: &Path, strict: bool, manifest_rel: &str) -> Value {
     let registry = read_json(&root.join(REGISTRY_PATH)).unwrap_or(Value::Null);
     let primitives = gather_primitives_from_registry(&registry).unwrap_or_default();
@@ -880,6 +1370,19 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         println!(
             "  protheus-ops metakernel budget-admission [--manifest=<path>] [--strict=1|0]"
         );
+        println!(
+            "  protheus-ops metakernel epistemic-object [--manifest=<path>] [--strict=1|0]"
+        );
+        println!(
+            "  protheus-ops metakernel effect-journal [--manifest=<path>] [--strict=1|0]"
+        );
+        println!("  protheus-ops metakernel substrate-registry [--strict=1|0]");
+        println!("  protheus-ops metakernel radix-guard [--strict=1|0]");
+        println!("  protheus-ops metakernel quantum-broker [--strict=1|0]");
+        println!("  protheus-ops metakernel neural-consent [--strict=1|0]");
+        println!("  protheus-ops metakernel attestation-graph [--strict=1|0]");
+        println!("  protheus-ops metakernel degradation-contracts [--strict=1|0]");
+        println!("  protheus-ops metakernel execution-profiles [--strict=1|0]");
         println!("  protheus-ops metakernel invariants [--strict=1|0]");
         return 0;
     }
@@ -905,6 +1408,15 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         "worlds" => run_worlds(root, strict, &manifest_path),
         "capability-taxonomy" => run_capability_taxonomy(root, strict, &manifest_path),
         "budget-admission" => run_budget_admission(root, strict, &manifest_path),
+        "epistemic-object" => run_epistemic_object(root, strict, &manifest_path),
+        "effect-journal" => run_effect_journal(root, strict, &manifest_path),
+        "substrate-registry" => run_substrate_registry(root, strict),
+        "radix-guard" => run_radix_guard(root, strict),
+        "quantum-broker" => run_quantum_broker(root, strict),
+        "neural-consent" => run_neural_consent_kernel(root, strict),
+        "attestation-graph" => run_attestation_graph(root, strict),
+        "degradation-contracts" => run_degradation_contracts(root, strict),
+        "execution-profiles" => run_execution_profiles(root, strict),
         "invariants" => run_invariants(root, strict),
         _ => {
             let mut out = json!({
@@ -1031,5 +1543,23 @@ mod tests {
                 .iter()
                 .any(|v| v.as_str() == Some("capability_taxonomy_missing_required_effects")))
             .unwrap_or(false));
+    }
+
+    #[test]
+    fn radix_guard_reports_overlap_error() {
+        let policy = json!({
+            "binary_required_paths": ["crypto", "policy"],
+            "ternary_allow_classes": ["crypto"]
+        });
+        let set: BTreeSet<String> = policy
+            .get("binary_required_paths")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default()
+            .iter()
+            .filter_map(Value::as_str)
+            .map(|s| s.to_ascii_lowercase())
+            .collect();
+        assert!(set.contains("crypto"));
     }
 }

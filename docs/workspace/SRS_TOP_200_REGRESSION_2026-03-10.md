@@ -8,25 +8,25 @@
 | Rank | ID | Status | Score | Evidence Hits | Non-Backlog Evidence | Regression |
 |---:|---|---|---:|---:|---:|---|
 | 1 | V6-COCKPIT-003 | in_progress | 440 | 7 | 5 | pass |
-| 2 | V6-COCKPIT-005 | in_progress | 440 | 14 | 10 | pass |
+| 2 | V6-COCKPIT-005 | in_progress | 440 | 14 | 11 | pass |
 | 3 | V6-MEMORY-012 | in_progress | 435 | 8 | 6 | pass |
-| 4 | V6-MEMORY-016 | in_progress | 435 | 1 | 6 | pass |
+| 4 | V6-MEMORY-016 | in_progress | 435 | 9 | 7 | pass |
 | 5 | V6-MEMORY-017 | in_progress | 435 | 9 | 7 | pass |
 | 6 | V6-MEMORY-018 | in_progress | 435 | 9 | 6 | pass |
-| 7 | V6-MEMORY-019 | in_progress | 435 | 8 | 6 | pass |
-| 8 | V6-MEMORY-021 | in_progress | 435 | 9 | 6 | pass |
+| 7 | V6-MEMORY-019 | in_progress | 435 | 8 | 7 | pass |
+| 8 | V6-MEMORY-021 | in_progress | 435 | 8 | 6 | pass |
 | 9 | V6-CONDUIT-008 | in_progress | 422 | 13 | 11 | pass |
 | 10 | V6-ARCH-032 | in_progress | 412 | 7 | 5 | pass |
-| 11 | V6-ARCH-ICEBERG-028 | in_progress | 412 | 12 | 9 | pass |
-| 12 | V6-COCKPIT-008 | queued | 380 | 12 | 8 | pass |
+| 11 | V6-ARCH-ICEBERG-028 | in_progress | 412 | 11 | 10 | pass |
+| 12 | V6-COCKPIT-008 | queued | 380 | 12 | 15 | pass |
 | 13 | V6-COCKPIT-007 | queued | 375 | 18 | 12 | pass |
-| 14 | V2-006 | in_progress | 370 | 1 | 10 | pass |
+| 14 | V2-006 | in_progress | 370 | 12 | 10 | pass |
 | 15 | V2-027 | in_progress | 370 | 16 | 14 | pass |
-| 16 | V2-029 | in_progress | 370 | 12 | 0 | pass |
+| 16 | V2-029 | in_progress | 370 | 12 | 10 | pass |
 | 17 | V2-032 | in_progress | 370 | 12 | 10 | pass |
 | 18 | V2-041 | in_progress | 370 | 15 | 11 | pass |
 | 19 | V2-043 | in_progress | 370 | 15 | 11 | pass |
-| 20 | V2-048 | in_progress | 370 | 1 | 10 | pass |
+| 20 | V2-048 | in_progress | 370 | 12 | 10 | pass |
 | 21 | V2-049 | in_progress | 370 | 25 | 17 | pass |
 | 22 | V2-BRG-003 | in_progress | 370 | 10 | 8 | pass |
 | 23 | V2-BRG-004 | in_progress | 370 | 9 | 7 | pass |
@@ -44,7 +44,7 @@
 | 35 | V3-033 | in_progress | 370 | 67 | 41 | pass |
 | 36 | V3-037 | in_progress | 370 | 10 | 8 | pass |
 | 37 | V3-044 | in_progress | 370 | 28 | 18 | pass |
-| 38 | V3-046 | in_progress | 370 | 15 | 11 | pass |
+| 38 | V3-046 | in_progress | 370 | 15 | 0 | pass |
 | 39 | V3-048 | in_progress | 370 | 74 | 38 | pass |
 | 40 | V3-048 | in_progress | 370 | 74 | 38 | pass |
 | 41 | V3-049 | in_progress | 370 | 14 | 10 | pass |
@@ -73,7 +73,7 @@
 | 64 | V3-CPY-001 | in_progress | 370 | 65 | 43 | pass |
 | 65 | V3-CPY-001 | in_progress | 370 | 65 | 43 | pass |
 | 66 | V3-CPY-003 | in_progress | 370 | 25 | 15 | pass |
-| 67 | V3-CPY-004 | in_progress | 370 | 20 | 12 | pass |
+| 67 | V3-CPY-004 | in_progress | 370 | 4 | 12 | pass |
 | 68 | V3-CPY-006 | in_progress | 370 | 52 | 36 | pass |
 | 69 | V3-CPY-006 | in_progress | 370 | 52 | 36 | pass |
 | 70 | V3-CPY-007 | in_progress | 370 | 20 | 12 | pass |
@@ -85,7 +85,7 @@
 | 76 | V3-DOC-004 | in_progress | 370 | 68 | 46 | pass |
 | 77 | V3-DOC-007 | in_progress | 370 | 40 | 28 | pass |
 | 78 | V3-DOC-007 | in_progress | 370 | 40 | 28 | pass |
-| 79 | V3-ENT-001 | in_progress | 370 | 48 | 0 | pass |
+| 79 | V3-ENT-001 | in_progress | 370 | 48 | 32 | pass |
 | 80 | V3-ENT-001 | in_progress | 370 | 48 | 32 | pass |
 | 81 | V3-ENT-004 | in_progress | 370 | 24 | 12 | pass |
 | 82 | V3-LOOP-001 | in_progress | 370 | 53 | 35 | pass |
@@ -182,7 +182,7 @@
 | 173 | V6-F100-029 | in_progress | 370 | 12 | 10 | pass |
 | 174 | V6-F100-030 | in_progress | 370 | 12 | 10 | pass |
 | 175 | V6-F100-033 | in_progress | 370 | 16 | 12 | pass |
-| 176 | V6-F100-A-007 | in_progress | 370 | 9 | 6 | pass |
+| 176 | V6-F100-A-007 | in_progress | 370 | 9 | 5 | pass |
 | 177 | V6-F100-A-012 | in_progress | 370 | 12 | 6 | pass |
 | 178 | V6-F100-A-013 | in_progress | 370 | 7 | 5 | pass |
 | 179 | V6-F100-A-014 | in_progress | 370 | 8 | 6 | pass |
@@ -197,12 +197,12 @@
 | 188 | V6-HOST-BUILD-STALE-001 | in_progress | 370 | 7 | 5 | pass |
 | 189 | V6-LLMN-001 | in_progress | 370 | 19 | 7 | pass |
 | 190 | V6-LLMN-002 | in_progress | 370 | 8 | 6 | pass |
-| 191 | V6-LLMN-003 | in_progress | 370 | 8 | 6 | pass |
-| 192 | V6-LLMN-004 | in_progress | 370 | 8 | 7 | pass |
+| 191 | V6-LLMN-003 | in_progress | 370 | 8 | 7 | pass |
+| 192 | V6-LLMN-004 | in_progress | 370 | 8 | 6 | pass |
 | 193 | V6-ORIGIN-002 | in_progress | 370 | 7 | 5 | pass |
 | 194 | V6-ORIGIN-003 | in_progress | 370 | 7 | 5 | pass |
 | 195 | V6-ORIGIN-005 | in_progress | 370 | 7 | 5 | pass |
-| 196 | V6-PERS-SEAM-003 | in_progress | 370 | 12 | 10 | pass |
+| 196 | V6-PERS-SEAM-003 | in_progress | 370 | 12 | 0 | pass |
 | 197 | V6-PRIM-001 | in_progress | 370 | 12 | 10 | pass |
 | 198 | V6-PRIM-002 | in_progress | 370 | 12 | 10 | pass |
 | 199 | V6-PRIM-004 | in_progress | 370 | 11 | 9 | pass |

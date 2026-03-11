@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "kind": "radix_policy_guard",
+  "binary_required_paths": [
+    "crypto",
+    "policy",
+    "capability",
+    "attestation",
+    "journal"
+  ],
+  "ternary_allow_classes": [
+    "creative_search",
+    "heuristic_planning"
+  ]
+}

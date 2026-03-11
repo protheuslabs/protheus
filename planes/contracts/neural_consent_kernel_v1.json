@@ -1,0 +1,11 @@
+{
+  "version": "v1",
+  "kind": "neural_consent_kernel",
+  "authorities": ["observe", "infer", "feedback", "stimulate"],
+  "stimulate_policy": {
+    "consent_token_required": true,
+    "dual_control_required": true,
+    "immutable_audit": true,
+    "rate_limit_per_minute": 5
+  }
+}
