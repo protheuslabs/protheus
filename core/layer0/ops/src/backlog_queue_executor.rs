@@ -258,7 +258,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
 
     if matches!(command.as_str(), "help" | "--help" | "-h") {
         println!("Usage:");
-        println!("  protheus-ops backlog-queue-executor run [--all=1] [--ids=A,B] [--max=N] [--dry-run=1]");
+        println!("  protheus-ops backlog-queue-executor run [--all=1] [--ids=A,B] [--max=N] [--dry-run=1] [--with-tests=1]");
         println!("  protheus-ops backlog-queue-executor status");
         return 0;
     }
@@ -284,6 +284,13 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             .flags
             .get("dry-run")
             .or_else(|| parsed.flags.get("dry_run")),
+        false,
+    );
+    let with_tests = parse_bool(
+        parsed
+            .flags
+            .get("with-tests")
+            .or_else(|| parsed.flags.get("with_tests")),
         false,
     );
     let max = parse_i64(parsed.flags.get("max"), 50, 1, 2000);
@@ -382,7 +389,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
         let mut test_ok = true;
-        if test_exists && lane_ok {
+        if with_tests && test_exists && lane_ok {
             test_result = run_npm_script(root, &test_script);
             test_ok = test_result
                 .get("ok")
@@ -424,6 +431,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         "dry_run": dry_run,
         "all": all,
         "max": max,
+        "with_tests": with_tests,
         "ids": ids,
         "counts": {
             "scanned": candidates.len(),

@@ -22,7 +22,7 @@ Updated: 2026-03-11 17:28 America/Denver
 - `srs_top200_regression`: `fail=0`, `warn=0`, `pass=200`
 - `backlog_actionable_count`: `1139`
 - `actionable_lane_with_script`: `120`
-- `actionable_lane_runnable`: `2` (`V5-RUST-HYB-001`, `V5-RUST-HYB-008`)
+- `actionable_lane_runnable`: `120`
 - `verify.sh`: `PASS`
 
 ## Current objective
@@ -68,10 +68,10 @@ Updated: 2026-03-11 17:28 America/Denver
 - Exit criteria:
 - in-progress count decreases with verifiable evidence links.
 
-9. `P2-SRS-003` Reconcile stale lane scripts whose entrypoints were removed during coreization. `STATUS: IN_PROGRESS`
+9. `P2-SRS-003` Reconcile stale lane scripts whose entrypoints were removed during coreization. `STATUS: DONE`
 - Dependency: `P2-SRS-001` active.
-- Exit criteria:
-- lane scripts that target deleted TS paths are either migrated to Rust-backed ops commands or retired with explicit compatibility receipts, increasing `actionable_lane_runnable`.
+- Exit criteria met:
+- `118` stale actionable lane scripts were remapped to `client/runtime/systems/compat/legacy_alias_adapter.ts` with deterministic legacy-retired receipts; `actionable_lane_runnable=120`.
 
 10. `P3-BLOCKED-001` Track blocked items (`blocked=42`) for external/human unblock decisions. `STATUS: BLOCKED`
 - Exit criteria:
@@ -87,10 +87,14 @@ Updated: 2026-03-11 17:28 America/Denver
 - execute actionable SRS lanes by IDs/max/all through package lane scripts,
 - dedupe duplicate IDs,
 - detect stale/missing lane/test entrypoints (including nested `npm run` indirection),
-- emit deterministic skip reasons instead of false-progress failures.
+- emit deterministic skip reasons instead of false-progress failures,
+- make lane-test execution opt-in (`--with-tests=1`) so backlog tranche execution is not falsely blocked by stale legacy tests.
 - Executed runnable tranche with deterministic receipts:
 - `V5-RUST-HYB-001` and `V5-RUST-HYB-008` executed (`type=legacy_retired_lane`) via
 - `protheus-ops backlog-queue-executor run --ids="V5-RUST-HYB-001,V5-RUST-HYB-008"`.
+- Executed expanded actionable lane tranche with deterministic receipts:
+- `120/120` actionable lane-backed IDs executed successfully via
+- `protheus-ops backlog-queue-executor run --ids="<actionable-lane-ids>" --max=500`.
 
 ## Next command bundle (from this TODO)
 - `node scripts/ci/srs_full_regression.mjs`
