@@ -1,115 +1,115 @@
 {
   "allowlist_roots": [
     "/Users/jay/.openclaw/workspace/skills",
-    "/Users/jay/.openclaw/workspace/client/memory/tools",
+    "/Users/jay/.openclaw/workspace/scripts/memory",
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts",
     "/Users/jay/.openclaw/workspace/config"
   ],
   "trusted_files": {
-    "/Users/jay/.openclaw/workspace/client/memory/tools/rebuild_exclusive.js": {
-      "sha256": "5343859a41ebaa1c3e92a91c6ea85469e09bac83407c1606af59f5dce5827f21",
+    "/Users/jay/.openclaw/workspace/scripts/memory/rebuild_exclusive.ts": {
+      "sha256": "12f8dcd5be429e6bb5460b6c99ebbbcd1ce8a4fe787d5815833d45edc38b06b3",
       "approved_by": "jay",
       "approved_at": "2026-02-14",
       "note": "Core memory index rebuild tool - system critical"
     },
     "/Users/jay/.openclaw/workspace/tests/client-memory-tools/enforcement.smoke.test.js": {
-      "sha256": "fabb2a774ebf1131ec33c236965bd6e5c46c2f3a087f50397bd001a2f2d94b91",
+      "sha256": "0fb66c1e1a9bf2980f6613127458c7a2bc16cc91769cf79c9e2a39c8379684d6",
       "approved_by": "jay",
       "approved_at": "2026-02-14",
       "note": "Enforcement smoke test - validates format/bloat/registry/decisions"
     },
-    "/Users/jay/.openclaw/workspace/client/memory/tools/lint_memory.js": {
-      "sha256": "d0bf2db484705abcea25eb4451aa2e1e6989890fb1911b3a091b941f3061dceb",
+    "/Users/jay/.openclaw/workspace/scripts/memory/lint_memory.ts": {
+      "sha256": "7f1da079e4897ec080696edc5d446cd87c780a03a13cf6b735baa1456d92e283",
       "approved_by": "jay",
       "approved_at": "2026-02-14",
       "note": "Memory linting tool - validates node format"
     },
-    "/Users/jay/.openclaw/workspace/client/memory/tools/normalize_nodes.js": {
-      "sha256": "d15eee92d5c893579f574a8cd780761888074f3c41a38ff24618cc8b7a7b7350",
+    "/Users/jay/.openclaw/workspace/scripts/memory/normalize_nodes.ts": {
+      "sha256": "7617eba391a3410a3dbd596e88cde4afce849d2157215be01c70fb71ed4e27a7",
       "approved_by": "jay",
       "approved_at": "2026-02-14",
       "note": "Node normalization utility"
     },
-    "/Users/jay/.openclaw/workspace/client/memory/tools/health_check_quarterly.js": {
-      "sha256": "579cd2686599ec0694320b2fa8ee3d3fd3073bab5ace6066416b88f55d8ec693",
+    "/Users/jay/.openclaw/workspace/scripts/memory/health_check_quarterly.ts": {
+      "sha256": "2c0c589fda98b1ec366af5485791dbbb30da3aa22b15bf1b58edd5c158f09535",
       "approved_by": "jay",
       "approved_at": "2026-02-14",
       "note": "Quarterly health check diagnostic"
     },
-    "/Users/jay/.openclaw/workspace/client/memory/tools/skill_gate.js": {
-      "sha256": "d3a74d0074e9fea3b5f9d033a430677f478f8f60d711739f3617f42b416c3ba9",
+    "/Users/jay/.openclaw/workspace/scripts/memory/skill_gate.ts": {
+      "sha256": "e7b3652456e886817d80c0cfd3b7129c48ae2a061b6635789374ecd28b72a9a6",
       "approved_by": "jay",
       "approved_at": "2026-02-14",
       "note": "Skill supply-chain security gate - self-trusted"
     },
-    "/Users/jay/.openclaw/workspace/client/memory/tools/trust_add.js": {
-      "sha256": "6cde615be3d4f3d01e36fdddbd4d8dc1a0c721671cd8de23ff5b599d06324336",
+    "/Users/jay/.openclaw/workspace/scripts/memory/trust_add.ts": {
+      "sha256": "e7e24769734bc8b00e8a07122e3ff4de2155d985268b1c599465c2ecac3fe301",
       "approved_by": "jay",
       "approved_at": "2026-02-14",
       "note": "CLI tool to add trusted skills"
     },
-    "/Users/jay/.openclaw/workspace/client/memory/tools/trust_list.js": {
+    "/Users/jay/.openclaw/workspace/scripts/memory/trust_list.ts": {
       "sha256": "f0dd30efb43f5b7587bc73f78e5f246e91d7f315d13133bd1639328f714e25f2",
       "approved_by": "jay",
       "approved_at": "2026-02-14",
       "note": "CLI tool to list trusted skills"
     },
-    "/Users/jay/.openclaw/workspace/client/memory/tools/skill_runner.js": {
-      "sha256": "7efed57c129ca39db07023bf194ab2996aaef1a4eed045dbf6e5f4c35563f6d0",
+    "/Users/jay/.openclaw/workspace/scripts/memory/skill_runner.ts": {
+      "sha256": "5408b432e30d29a65c14305439a526675ebbe6626db97ea212ee08fbe0db98c7",
       "approved_by": "jay",
       "approved_at": "2026-02-16",
       "note": "Added runtime exec detection warning"
     },
     "/Users/jay/.openclaw/workspace/tests/client-memory-tools/skill_gate.smoke.test.js": {
-      "sha256": "faef61cde53920cfe2df995644fb12f3807344d836d583a7e384a1255b91e274",
+      "sha256": "49bc65bf32610252f6c25e2340a371f6288cfb7da87b26a4fe93ecef586070fd",
       "approved_by": "jay",
       "approved_at": "2026-02-14",
       "note": "Skill gate smoke tests"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/run_habit.js": {
-      "sha256": "db82aa98ad1450a803f1a4e50399b044e355592aa38620ec8a978bceb6189945",
+      "sha256": "d7cbd2c6c11a286fa1a99e9f38a6a8d33b501d064fad52fbad454dd076e7c65b",
       "approved_by": "jay",
       "approved_at": "2026-02-14",
       "note": "Habit runner v1.5 - executes with clear triggers, promotion/demotion, cooldown"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/doctor.js": {
-      "sha256": "0e1dc377f11ccd935c78cb877f25d8f1c43b41f97edc1d7865e349e45b003945",
+      "sha256": "7965a12d470fbda594d077daac5f54a3464f7d737c7a5a419e6ccefb5b886949",
       "approved_by": "jay",
       "approved_at": "2026-02-14",
       "note": "Habit system doctor v1.5 + Governance v1.0: INFO support, legacy=INFO, doc drift with fixed B_TOKENS extraction, Unicode >= patterns, GOV=OK"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/propose_habit.js": {
-      "sha256": "43a2f6b5e74addbe1343ffcb40c910abd337e02f8ecf2f062c5d27526bb045cf",
+      "sha256": "650d7e9c3f001613ec94ad295006f35b582aa03552e04689480c66544000dfb4",
       "approved_by": "jay",
       "approved_at": "2026-02-14",
       "note": "Habit proposal v1.5: ANY A/B/C, valid JSON, thresholds (A:3+500,B:2000,C:2)"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/habit_gc.js": {
-      "sha256": "0992cad19138dd020fcc5cf3b4b62f73b53dac5a54aed56ed808c49502a9c364",
+      "sha256": "3a9e80c0643e283cdd7fbcc9c72421884fb4def16abcb3f7baa026752373e17a",
       "approved_by": "jay",
       "approved_at": "2026-02-14",
       "note": "Habit garbage collector v1.5 - clear archive triggers, hard cap, state-change SNIPs"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/habit_list.js": {
-      "sha256": "d69d89949e91b5311a285e266bf040a1da336e67bf1f6fd757a06fa9bfcca83a",
+      "sha256": "1de19d8f3933782b8836811710fdc0bd35dfb326ae4a54f8c5c92c6421f3f817",
       "approved_by": "jay",
       "approved_at": "2026-02-14",
       "note": "Habit registry lister - shows active/archived habits"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/trust_add_habit.js": {
-      "sha256": "967492228f1cc476a75abc7ddded976b685aeab64cb6397ca3408c6f9963a5aa",
+      "sha256": "a97b30b1a027e210b23982085e5244630aa02762790cd98bf4f477e04f6702f2",
       "approved_by": "jay",
       "approved_at": "2026-02-14",
       "note": "Trust add wrapper for habits - pins SHA-256 hashes"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/trust_list_habits.js": {
-      "sha256": "f916b42ea9d137b1b7d87faf2ec8f381c2ec2d9af95608b9fa88d690b6245a39",
+      "sha256": "b3102f9e3e362d9aca9033445a878c70ce46407c802de2ab5385ad78a5fe46fa",
       "approved_by": "jay",
       "approved_at": "2026-02-14",
       "note": "Trust list wrapper for habits - shows trusted habit files"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/route_task.js": {
-      "sha256": "ea423953f900f8935986f54fd8ddedebb5e5f9cc3a9541cec2b9ccc40ca27435",
+      "sha256": "5d029fdbfdb210bfc8f4c7c4bc4ae33d45b138f0508434f4d211f75869dac743",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.1 - Fixed template literals, integrated directive gate"
@@ -124,7 +124,7 @@
       "sha256": "95ff2909b8ffddfff80b76be84cea9c998bafe3e6002fac0f4c9f87dab5bb675",
       "approved_by": "jay",
       "approved_at": "2026-02-14",
-      "note": "Agent routing rules (control plane) - risk/complexity → slot mapping"
+      "note": "Agent routing rules (control plane) - risk/complexity \u2192 slot mapping"
     },
     "/Users/jay/.openclaw/workspace/tests/client-memory-tools/test_moltbook_api.js": {
       "sha256": "d865c39d1386f66c45936d120df3878c194edda79e127c60930807469edd81aa",
@@ -139,13 +139,13 @@
       "note": "Test large output for compaction - fixed token length"
     },
     "/Users/jay/.openclaw/workspace/tests/client-memory-tools/moltbook_exec_wrapper.js": {
-      "sha256": "0740b9e452704f2dcbdb64a7b53f45313a174878d96591ae6deed60d4a81cfa5",
+      "sha256": "9ba44e277730a42e14074cb0195984357d7f0e57dbef6830e7ebadcb888577ff",
       "approved_by": "jay",
       "approved_at": "2026-02-16",
       "note": "Fixed require path"
     },
-    "/Users/jay/.openclaw/workspace/client/memory/tools/audit_exec_usage.js": {
-      "sha256": "534190e827506d8f7777b20c43a83fea8f952ad88024b94c1815fb11b2c208c9",
+    "/Users/jay/.openclaw/workspace/scripts/memory/audit_exec_usage.ts": {
+      "sha256": "7993ca6a7d15430b10b2b82f215ba49b78e9016569ce1c742d647d7a6f36dfcf",
       "approved_by": "jay",
       "approved_at": "2026-02-16",
       "note": "CI-style audit for child_process usage"
@@ -157,19 +157,19 @@
       "note": "Test runtime exec warning"
     },
     "/Users/jay/.openclaw/workspace/tests/client-memory-tools/directive_enforcement.test.js": {
-      "sha256": "4d65d5b27b87fb5b6a5449be58311343de141b4ca99b9dde4709b33db081a2ce",
+      "sha256": "2f029f249ccc064cf6693c2f99fae0da827aec33d6f029eadb5ce4b4a8c3b527",
       "approved_by": "jay",
       "approved_at": "2026-02-16",
       "note": "Fixed test 5"
     },
     "/Users/jay/.openclaw/workspace/tests/client-memory-tools/dopamine_engine.test.js": {
-      "sha256": "2774aaae119e02fe018b6de655d0a4070eda218a51398e6a1e9c3adb134b377c",
+      "sha256": "2aad8e43c1e0dc61fc2e828227553758f5fda3acdee9139db1916bd749980218",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.2.0 tests - agent mode + 3 new tests (26 total)"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/dopamine_engine.js": {
-      "sha256": "d4f4dc9af4d24ef83fbd4704bfb47461d300769aa55755efc5b55b14722c38cc",
+      "sha256": "5d14576cd144f26771721a70e2b85fb44d1bc2cfb5c335b7c73a15c2590693cc",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.2.0 + sensory hook - closeout triggers sensory capture (18h lookback)"
@@ -181,7 +181,7 @@
       "note": "v1.2.1/1.3.0 - Added QUEUE and EXTERNAL EYES features"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/check_versions.js": {
-      "sha256": "31e12c1581854c163142893c789b952931bdc4ed0713f4b37962398249d73ad6",
+      "sha256": "d32a7d178aacf70bd96663ba295f5918783ff1a5ff173588f31df7853c8295ac",
       "approved_by": "jay",
       "approved_at": "2026-02-16",
       "note": "Layer version checker script"
@@ -199,19 +199,19 @@
       "note": "Zero-friction CLI wrapper for dopamine engine"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/dopamine-git-hook.sh": {
-      "sha256": "d54c5cb4c96bf23341428f0ba1a0d8127244b372a3e9beed4c8caf4965988661",
+      "sha256": "47667d0c2ac365172f3a63c5192fe37fb5882ac0a27a6e23f3dce72c1cf68f62",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "Git post-commit hook - auto-captures artifacts on every commit"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/sensory_capture.js": {
-      "sha256": "6d03a4f8f309aa437b4a446c363b1cf986a4558e1f886201648885c4b8c32c32",
+      "sha256": "c1a8d415af85409f51eb94a2ee20cdbac96164e90e110428727c4d0adf352883",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.3.0 - Added External Eyes auto-run hook (post-capture, best-effort)"
     },
     "/Users/jay/.openclaw/workspace/tests/client-memory-tools/sensory_capture.test.js": {
-      "sha256": "f56cd4116f8361207a947aecec36653772b70455277dc5330516401eb1e47e8b",
+      "sha256": "337bcf3b8f1d75f5374c265c663ee0fac963057805bdec857b2f79c263683837",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.0 tests - sensory layer capture functionality"
@@ -229,61 +229,61 @@
       "note": "v1.0.2 - Added test_run event type with +6/-6 scoring"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/aie_logger.js": {
-      "sha256": "cb134b0959f3a0444ef212296687ad9c39a1ec46d512e5e099d0279abb70f38e",
+      "sha256": "7c008f50958e9abca7c6bd9574b559b72b7f9091c631c37b0a679596af1ff14a",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.0.2 - Auto-compute hash by default; fix hex string parsing"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/aie_scorer.js": {
-      "sha256": "88d666692f0b5d0eb69d9f1809821109a2d7122889da0586b98b3f750b79cf1a",
+      "sha256": "d75fc87eb052aa1abe73bf42d07d4d14c8a4301cc68f38223d198ed5c9fcefb3",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.0.2 - Added test_run event scoring (+6/-6)"
     },
     "/Users/jay/.openclaw/workspace/tests/client-memory-tools/aie.test.js": {
-      "sha256": "bd28cbecccd4d8076038a6d149466c9baa5dd66701cc31685bf33d3b50f0018e",
+      "sha256": "d15288da9fc03a50246522a86e690184ebf67dd94c28fb6ad2dd22be12c1ecd9",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.0.2 tests - 9 tests including aie_run wrapper"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/aie_run.js": {
-      "sha256": "c34f9a1c0334013ddfd30c2f764cd180cf69ada7f72e90d8cc03d947a2eec73e",
+      "sha256": "e1c52e0f92607c255cedfbb05f80aeda634c1117c4d84c57d855daee032053f5",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.0.2 - NEW: Auto-capture wrapper for test runs"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/sensory_digest.js": {
-      "sha256": "cbff2dba8bfd7c9102a7cc467a8d0c8f4dd8bdd26e65066283cd969b06a08537",
+      "sha256": "48b62c7c1639de55f24fbf712a05ff050f3496ee9ee047b70d5541c40b869c2f",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.1.1 - Metric integrity: explicit git_dirty_* fields, signal_ratio NUMBER type"
     },
     "/Users/jay/.openclaw/workspace/tests/client-memory-tools/sensory_digest.test.js": {
-      "sha256": "e94783cbaf934c1e5dc9aa812bae1cb83b111b1be5cc48876fb01c0c67e5514a",
+      "sha256": "0cdacbc8f9ff209021da597b451d21c157c115d48e9f7e35851bc04cb4693ce6",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.1.3 tests - 5 tests, truthful PASS/FAIL, exit code 1 on failure"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/sensory_insight.js": {
-      "sha256": "1b13875ee691cb38deb45c4cff33b34ee7de20a64b281943fd2f9db9fd750178",
+      "sha256": "d1c6635e93c5ffa92ccdac207b6bf10f7148c7818792f7eda8862a914a4ea95c",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.2.1 - Template literals verified correct, auto-ingest to queue"
     },
     "/Users/jay/.openclaw/workspace/tests/client-memory-tools/sensory_insight.test.js": {
-      "sha256": "88f088e6df31c1148643a58a1704301ace49d82a92f6eabae8bf28e8506e6b85",
+      "sha256": "0cc50036bdf6d757d0292fc3b98926752aced415d667ebb11228141c206be614",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.2.0 tests - 5 tests, NO raw JSONL enforcement, truthful PASS/FAIL"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/directive_gate.js": {
-      "sha256": "c4b76b960a7bc68c568d1f7d0e953224666aa7311b81c814a89a1395aaa5ca1c",
+      "sha256": "f62ef89615329921cdbd3e9442c9be73a6ad99aedab260118ab0df6d73981c26",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.0 - Fixed trust detection and git remote patterns, all tests pass"
     },
     "/Users/jay/.openclaw/workspace/tests/client-memory-tools/directive_gate.test.js": {
-      "sha256": "dac78cdc739190b34ae9e661e5c4782b0b2b0b5c1e97c8b81cfd09b42e0b123d",
+      "sha256": "5ef959a5698223b729458301528d331b8cbcb0d7b3c739923d69fa9a2f919f60",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.0 - 14 tests, truthful PASS/FAIL, exit code 1 on failure"
@@ -295,31 +295,31 @@
       "note": "v1.1 - External Eyes catalog runtime moved to client/runtime/local/adaptive/sensory/eyes/catalog.json"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/external_eyes.js": {
-      "sha256": "944c7c74a59774b869ef8fa0de2cf7933069fd394f07d07ad3346dd14b1f6fde",
+      "sha256": "9a994d1e98cc1febd9869527135196655b24cbaf86f36c3be11b768cab7e3841",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.0.1 - Added computeOutcomeSignals for proposal_queue integration, outcome-based score adjustments"
     },
     "/Users/jay/.openclaw/workspace/tests/client-memory-tools/external_eyes.test.js": {
-      "sha256": "effe066a7b8835c9ceaace1e7241b68c8732e1cebccc5ad9ef8b7cf096073354",
+      "sha256": "b1e525548a4bc124663ef13911c853f89dbf798290892f720bd3ad76a79aed0b",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.0 - 8 tests for External Eyes: registry, budgets, JSONL events, metrics, evolve, domain validation, hashing, propose"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/sensory_queue.js": {
-      "sha256": "d7bf29a956334c4d279207cfee47d9ded7a04cd8c662fe614364ee65880b4dc5",
+      "sha256": "c8139ef0476a58c39326d0fed45c7b3d9fc6104bced57ce4ba5e65541f7e08e3",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.2.1a - Added normalizeProposalsJson for wrapper objects/single proposals"
     },
     "/Users/jay/.openclaw/workspace/tests/client-memory-tools/sensory_queue.test.js": {
-      "sha256": "015be6fbb54450e4cb192d1a470e06dd8dca6396c45c8bf4a3d7adaf2389ec40",
+      "sha256": "4469712a11e3d3d097cabecbbf8c7f44e3954434d3610a435f63eef4d2836094",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.2.1 - 8 tests: ingest, idempotent, accept/reject/done/snooze, stats, recurring"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/proposal_queue.js": {
-      "sha256": "33f1328660f9af52f79a82a97e662930f0b5f74419d103f6be5dfff51da50196",
+      "sha256": "145d544c3000b6cc709dc9d6f4dd708aa56e8e68e58cb332115ea7dd6f887433",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.0 - Decision + Outcome Tracking for closed-loop evolution"
@@ -331,13 +331,13 @@
       "note": "v1.0 - 7 tests: decision, outcome, overlay, status, proposals (array/wrapper), metrics"
     },
     "/Users/jay/.openclaw/workspace/client/cognition/habits/scripts/eyes_insight.js": {
-      "sha256": "01d1a618e74ad43cb34543cfb9ddeaae8e8c91273e1c0c357d3678a589e8b595",
+      "sha256": "ed6462069cdd08c12ab6aa8571e04327adcdd50611f6d7f5f2d126c6bac303c8",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
-      "note": "v1.0 - Eyes → Proposals bridge, deterministic scoring, dedupe by URL, evidence_ref includes eye:<id>"
+      "note": "v1.0 - Eyes \u2192 Proposals bridge, deterministic scoring, dedupe by URL, evidence_ref includes eye:<id>"
     },
     "/Users/jay/.openclaw/workspace/tests/client-memory-tools/eyes_insight.test.js": {
-      "sha256": "3f6af9d7b1aa5fd4d9b1f0c6fcac6da3e8f82adc8d8ea4a2f8448fb7ff03386d",
+      "sha256": "1f60980fa48e50adf2cb6c3bfb1d5d66079932cb7e46218ff7e1ab656f8ab835",
       "approved_by": "jay",
       "approved_at": "2026-02-17",
       "note": "v1.0 - 8 tests: merge, dedupe, EYE-* IDs, evidence_ref, scoreItem 0..100, wrapper tolerance"

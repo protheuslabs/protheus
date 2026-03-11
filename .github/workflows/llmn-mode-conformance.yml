@@ -17,4 +17,4 @@ jobs:
         with:
           node-version: '22'
       - name: Run LLMN conformance smoke
-        run: node client/memory/tools/tests/llmn_mode_conformance.test.js
+        run: node tests/client-memory-tools/llmn_mode_conformance.test.js

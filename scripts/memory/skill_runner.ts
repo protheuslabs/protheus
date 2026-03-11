@@ -161,7 +161,7 @@ async function main() {
     console.error(`Reason: ${err.message}`);
     console.error('');
     console.error('To approve this skill:');
-    console.error(`  node /Users/jay/.openclaw/workspace/client/memory/tools/trust_add.js ${skillPath} "approval note"`);
+    console.error(`  node /Users/jay/.openclaw/workspace/scripts/memory/trust_add.ts ${skillPath} "approval note"`);
     console.error('');
     process.exit(1);
   }

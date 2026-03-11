@@ -239,7 +239,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: security_threat_pack
-        run: node client/memory/tools/tests/security_threat_pack.test.js
+        run: node tests/client-memory-tools/security_threat_pack.test.js
 
   enterprise_hardening_gate:
     runs-on: ubuntu-latest

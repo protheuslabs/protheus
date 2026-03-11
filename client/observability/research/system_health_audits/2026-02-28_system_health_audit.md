@@ -10,7 +10,7 @@ Mode: Manual framework audit (scored 1-10)
 | 2. Efficiency & Resource Usage | 8.5 | Runtime efficiency pass (`cold_start_p95_ms=213`, `idle_rss_p95_mb=37.75`, install artifact 3.323 MB); token economics allow with low defer ratio |
 | 3. Wiring & Architectural Integrity | 7.5 | No TS circular deps detected in `systems` (0 cycles); cross-organ imports present (88), mostly expected governance links |
 | 4. Bugs & Reliability | 7.0 | Critical targeted tests green; explicit fail/deny events exist in last 24h (budget denies, llm gateway fails, eye command denies) |
-| 5. Primitive-First Purity | 6.5 | Core strict roots are TS-paired; advisory JS holdouts remain high in `client/cognition/habits/scripts` + `client/memory/tools/tests` (430 unpaired) |
+| 5. Primitive-First Purity | 6.5 | Core strict roots are TS-paired; advisory JS holdouts remain high in `client/cognition/habits/scripts` + `tests/client-memory-tools` (430 unpaired) |
 | 6. Governance, Alignment & Duality | 8.0 | Duality seeded and integrated across key lanes; echo/weaver shadow outputs include duality and gate behavior |
 | 7. Security & Sovereignty | 7.5 | Helix clear, red team active, sandbox enforce mode; integrity reseal check currently reports 2 hash mismatches |
 | 8. Observability & Explainability | 6.5 | Many status lanes are observable; explanation primitive enabled but currently empty (`index_entries=0`) |

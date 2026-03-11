@@ -10,7 +10,7 @@
     "memory": ["client/memory"],
     "state": ["client/runtime/local/state", "core/local/state"],
     "docs": ["docs"],
-    "tests": ["client/tests", "client/memory/tools/tests"]
+    "tests": ["client/tests", "tests/client-memory-tools"]
   },
   "allow_imports": {
     "core": ["core", "config", "systems"],
@@ -26,7 +26,7 @@
   "enforce_layers": ["core", "systems", "adaptive"],
   "enforce_cycles": false,
   "scan": {
-    "include_dirs": ["client/runtime/systems", "client/runtime/lib", "client/cognition/adaptive", "client/cognition/habits", "client/memory/tools", "client/tests"],
+    "include_dirs": ["client/runtime/systems", "client/runtime/lib", "client/cognition/adaptive", "client/cognition/habits", "scripts/memory", "client/tests"],
     "include_ext": [".ts", ".js"],
     "exclude_contains": [".bak.", ".tmp", "node_modules", "dist/"]
   },

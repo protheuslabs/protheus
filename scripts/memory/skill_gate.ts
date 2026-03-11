@@ -95,7 +95,7 @@ function verifySkillOrThrow(targetPath) {
   if (!isPathAllowlisted(resolvedPath, config.allowlist_roots)) {
     throw new Error(
       `NOT_ALLOWLISTED: ${resolvedPath} is not within any allowlist root. ` +
-      `To approve: node /Users/jay/.openclaw/workspace/client/memory/tools/trust_add.js ${resolvedPath} "approval note"`
+      `To approve: node /Users/jay/.openclaw/workspace/scripts/memory/trust_add.ts ${resolvedPath} "approval note"`
     );
   }
   
@@ -104,7 +104,7 @@ function verifySkillOrThrow(targetPath) {
   if (!trustedEntry) {
     throw new Error(
       `NOT_TRUSTED: ${resolvedPath} has no pinned hash. ` +
-      `To approve: node /Users/jay/.openclaw/workspace/client/memory/tools/trust_add.js ${resolvedPath} "approval note"`
+      `To approve: node /Users/jay/.openclaw/workspace/scripts/memory/trust_add.ts ${resolvedPath} "approval note"`
     );
   }
   
@@ -114,7 +114,7 @@ function verifySkillOrThrow(targetPath) {
     throw new Error(
       `HASH_MISMATCH: ${resolvedPath} has been modified since approval. ` +
       `Expected: ${trustedEntry.sha256}, Got: ${currentHash}. ` +
-      `To re-approve: node /Users/jay/.openclaw/workspace/client/memory/tools/trust_add.js ${resolvedPath} "re-approval note"`
+      `To re-approve: node /Users/jay/.openclaw/workspace/scripts/memory/trust_add.ts ${resolvedPath} "re-approval note"`
     );
   }
   

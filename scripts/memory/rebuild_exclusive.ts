@@ -3,14 +3,15 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 
-const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..', '..');
+const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..');
 const CLIENT_ROOT = path.join(WORKSPACE_ROOT, 'client');
-const memoryDir = path.resolve(process.env.MEMORY_DIR || path.join(CLIENT_ROOT, 'memory'));
+const STATE_ROOT = path.join(WORKSPACE_ROOT, 'state', 'memory');
+const memoryDir = path.resolve(process.env.MEMORY_DIR || path.join(WORKSPACE_ROOT, 'memory'));
 const SNAPSHOT_DIR = path.resolve(
-  process.env.MEMORY_SNAPSHOT_DIR || path.join(CLIENT_ROOT, 'local', 'memory', '_snapshots')
+  process.env.MEMORY_SNAPSHOT_DIR || path.join(STATE_ROOT, '_snapshots')
 );
 const DELTA_CACHE_PATH = path.resolve(
-  process.env.MEMORY_REBUILD_DELTA_CACHE_PATH || path.join(CLIENT_ROOT, 'local', 'memory', '.rebuild_delta_cache.json')
+  process.env.MEMORY_REBUILD_DELTA_CACHE_PATH || path.join(STATE_ROOT, '.rebuild_delta_cache.json')
 );
 const whitelistRegex = /^\d{4}-\d{2}-\d{2}\.md$/;
 const UID_PATTERN = /^[A-Za-z0-9]+$/;
@@ -776,7 +777,7 @@ function syncRootMemoryIndexCompat() {
 syncRootMemoryIndexCompat();
 console.log('Root MEMORY/TAGS compatibility indices synced');
 
-const matrixScript = path.join(CLIENT_ROOT, 'systems', 'memory', 'memory_matrix.js');
+const matrixScript = path.join(CLIENT_ROOT, 'runtime', 'systems', 'memory', 'memory_matrix.js');
 if (fs.existsSync(matrixScript)) {
   const matrixRun = spawnSync('node', [matrixScript, 'run', '--apply=1', '--reason=rebuild_exclusive'], {
     cwd: WORKSPACE_ROOT,
@@ -790,7 +791,7 @@ if (fs.existsSync(matrixScript)) {
   }
 }
 
-const sequencerScript = path.join(CLIENT_ROOT, 'systems', 'memory', 'dream_sequencer.js');
+const sequencerScript = path.join(CLIENT_ROOT, 'runtime', 'systems', 'memory', 'dream_sequencer.js');
 if (fs.existsSync(sequencerScript)) {
   const sequencerRun = spawnSync('node', [sequencerScript, 'run', '--apply=1', '--reason=rebuild_exclusive'], {
     cwd: WORKSPACE_ROOT,

@@ -5,8 +5,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const ROOT = path.resolve(__dirname, '..', '..', '..');
-const MEMORY_DIR = path.join(ROOT, 'client', 'memory');
+const ROOT = path.resolve(__dirname, '..', '..');
+const MEMORY_DIR = path.join(ROOT, 'memory');
 
 function parseArgs(argv) {
   const out = { apply: false, limit: 0 };

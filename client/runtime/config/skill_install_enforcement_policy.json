@@ -4,7 +4,7 @@
     "systems",
     "habits",
     "skills",
-    "client/memory/tools"
+    "scripts/memory"
   ],
   "target_files": [
     "README.md",

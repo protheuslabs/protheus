@@ -19,7 +19,7 @@ function mustInclude(needle, output) {
 (function main() {
   const workspace = "/Users/jay/.openclaw/workspace";
   const memoryDir = path.join(workspace, "memory");
-  const script = path.join(workspace, "client/memory/tools/rebuild_exclusive.js");
+  const script = path.join(workspace, "scripts/memory/rebuild_exclusive.ts");
 
   const out = run(`cd ${workspace} && node ${script} 2>&1`, { MEMORY_DIR: memoryDir });
   console.log(out);

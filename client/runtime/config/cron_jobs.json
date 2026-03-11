@@ -47,7 +47,7 @@
       "schedule": { "expr": "10 18 * * 0", "tz": "America/Denver" },
       "sessionTarget": "isolated",
       "wakeMode": "now",
-      "payload": { "kind": "agentTurn", "message": "cd ~/.openclaw/workspace && node client/memory/tools/rebuild_exclusive.js. Enforce: A) Whitelist: only top-level client/memory/YYYY-MM-DD.md, ignore client/memory/_archive/**. B) Exclusive categories: Projects > Rules > Concepts > System > Unassigned. Report completion + counts." },
+      "payload": { "kind": "agentTurn", "message": "cd ~/.openclaw/workspace && node scripts/memory/rebuild_exclusive.ts. Enforce: A) Whitelist: only top-level client/memory/YYYY-MM-DD.md, ignore client/memory/_archive/**. B) Exclusive categories: Projects > Rules > Concepts > System > Unassigned. Report completion + counts." },
       "delivery": { "mode": "announce", "channel": "main" },
       "enabled": true,
       "id": "ca358383-ce8d-4b50-aecb-82efc3393142"
@@ -77,7 +77,7 @@
       "schedule": { "expr": "0 9 1 * *", "tz": "America/Denver" },
       "sessionTarget": "isolated",
       "wakeMode": "now",
-      "payload": { "kind": "agentTurn", "message": "cd ~/.openclaw/workspace && node client/memory/tools/health_check_quarterly.js" },
+      "payload": { "kind": "agentTurn", "message": "cd ~/.openclaw/workspace && node scripts/memory/health_check_quarterly.ts" },
       "delivery": { "mode": "announce", "channel": "main" },
       "enabled": true,
       "id": "ec567010-8c1a-4f3f-b07e-ceeb98e37416"

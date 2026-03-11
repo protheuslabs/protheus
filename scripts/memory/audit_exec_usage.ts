@@ -18,7 +18,7 @@ const WORKSPACE_ROOT = path.join(__dirname, '..', '..');
 const EXCLUDED_DIRS = ['node_modules', '.git', '.clawhub', 'logs', 'tool_raw'];
 const ALLOWED_FILES = [
   'client/runtime/lib/exec_compacted.js',  // The authorized wrapper
-  'client/memory/tools/skill_runner.js', // Uses spawn for child process management (legitimate)
+  'scripts/memory/skill_runner.ts', // Uses spawn for child process management (legitimate)
 ];
 
 const DANGEROUS_PATTERNS = [

@@ -466,7 +466,7 @@ fn runtime_paths(root: &Path) -> RuntimePaths {
             .map(PathBuf::from)
             .filter(|p| !p.as_os_str().is_empty())
             .map(|p| if p.is_absolute() { p } else { root.join(p) })
-            .unwrap_or_else(|| root.join("client/memory/tools/tests")),
+            .unwrap_or_else(|| root.join("tests/client-memory-tools")),
         spine_runs_dir: std::env::var("AUTOTEST_SPINE_RUNS_DIR")
             .ok()
             .map(PathBuf::from)

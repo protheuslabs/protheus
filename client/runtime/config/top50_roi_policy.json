@@ -10,7 +10,7 @@
       "systems",
       "lib",
       "config",
-      "client/memory/tools/tests",
+      "tests/client-memory-tools",
       "types",
       "package.json",
       "tsconfig.runtime.json",

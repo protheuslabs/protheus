@@ -1964,7 +1964,7 @@ fn is_trust_registry_modification(task_lower: &str) -> bool {
         "trust registry",
         "trust_add",
         "trust_remove",
-        "client/memory/tools/trust_add.js",
+        "scripts/memory/trust_add.ts",
         "client/memory/trust/registry.json",
         "registry.json",
         "registry hashes",

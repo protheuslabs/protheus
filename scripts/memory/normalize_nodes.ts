@@ -4,13 +4,14 @@
  * Inserts <!-- NODE --> separators where missing
  * Ensures each node has YAML + # title line
  * 
- * Usage: node client/memory/tools/normalize_nodes.js [--dry-run]
+ * Usage: node scripts/memory/normalize_nodes.ts [--dry-run]
  */
 
 const fs = require('fs');
 const path = require('path');
 
-const memoryDir = '/Users/jay/.openclaw/workspace/memory';
+const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..');
+const memoryDir = path.join(WORKSPACE_ROOT, 'memory');
 const whitelistRegex = /^\d{4}-\d{2}-\d{2}\.md$/;
 
 const args = process.argv.slice(2);
@@ -113,4 +114,4 @@ if (dryRun) {
   console.log(`Normalization complete. ${totalChanges} changes made.`);
   console.log('Backups created with .backup-*.md suffix');
 }
-console.log('Next step: Run node client/memory/tools/lint_memory.js to verify');
+console.log('Next step: Run node scripts/memory/lint_memory.ts to verify');

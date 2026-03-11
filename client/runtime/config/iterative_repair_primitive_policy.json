@@ -10,7 +10,7 @@
     "systems",
     "lib",
     "config",
-    "client/memory/tools/tests"
+    "tests/client-memory-tools"
   ],
   "receipts_path": "state/primitives/iterative_repair/receipts.jsonl",
   "latest_path": "state/primitives/iterative_repair/latest.json",

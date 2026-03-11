@@ -11,7 +11,7 @@
     ]
   },
   "test_discovery": {
-    "root": "client/memory/tools/tests",
+    "root": "tests/client-memory-tools",
     "include_suffix": ".test.js",
     "ignore_prefixes": []
   },

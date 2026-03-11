@@ -17,4 +17,4 @@ jobs:
         with:
           node-version: '22'
       - name: Run memory burn SLO guard
-        run: node client/memory/tools/tests/memory_burn_slo_guard.test.js
+        run: node tests/client-memory-tools/memory_burn_slo_guard.test.js

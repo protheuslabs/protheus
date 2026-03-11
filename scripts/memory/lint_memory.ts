@@ -7,7 +7,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const memoryDir = process.env.MEMORY_DIR || '/Users/jay/.openclaw/workspace/memory';
+const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..');
+const memoryDir = process.env.MEMORY_DIR || path.join(WORKSPACE_ROOT, 'memory');
 const whitelistRegex = /^\d{4}-\d{2}-\d{2}\.md$/;
 const UID_PATTERN = /^[A-Za-z0-9]+$/;
 const UID_ENFORCE_SINCE = normalizeDate(process.env.MEMORY_UID_ENFORCE_SINCE || '2026-02-22');
