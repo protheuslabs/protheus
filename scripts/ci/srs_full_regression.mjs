@@ -1,17 +1,14 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
-import { execSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 
 const SRS_PATH = 'docs/workspace/SRS.md';
 const TODO_PATH = 'docs/workspace/TODO.md';
 const OUT_JSON = 'artifacts/srs_full_regression_current.json';
 const OUT_MD = 'docs/workspace/SRS_FULL_REGRESSION_CURRENT.md';
-
-function shell(cmd) {
-  return execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-}
 
 function read(path) {
   return readFileSync(resolve(path), 'utf8');
@@ -88,36 +85,55 @@ function parseTodoValidationCommands(todo) {
   return map;
 }
 
-function quoteForSingleShell(str) {
-  return `'${str.replace(/'/g, `'\"'\"'`)}'`;
-}
-
-function countIdHits(id, nonBacklog = false) {
-  const q = quoteForSingleShell(id);
-  if (nonBacklog) {
-    const out = shell(
-      `rg -F --no-messages -n ${q} core client apps adapters scripts tests .github docs ` +
-        `-g '!docs/workspace/SRS.md' -g '!docs/workspace/TODO.md' -g '!docs/workspace/UPGRADE_BACKLOG.md' ` +
-        `-g '!docs/workspace/SRS_*REGRESSION*.md' -g '!artifacts/srs_*regression*.json' | ` +
-        "wc -l | awk '{print $1}'",
-    );
-    return Number(out.trim() || '0');
+function parseRipgrepJsonMatches(raw, counts) {
+  const text = String(raw ?? '');
+  if (!text.trim()) return;
+  const lines = text.split('\n');
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    let event;
+    try {
+      event = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (event?.type !== 'match') continue;
+    const submatches = event?.data?.submatches ?? [];
+    for (const sub of submatches) {
+      const matched = sub?.match?.text;
+      if (!matched || !counts.has(matched)) continue;
+      counts.set(matched, (counts.get(matched) ?? 0) + 1);
+    }
   }
-  const out = shell(
-    `rg -F --no-messages -n ${q} docs/workspace/SRS.md docs/workspace/TODO.md core client apps adapters scripts tests .github docs | ` +
-      "wc -l | awk '{print $1}'",
-  );
-  return Number(out.trim() || '0');
 }
 
-function countCodeLikeHits(id) {
-  const q = quoteForSingleShell(id);
-  const out = shell(
-    `rg -F --no-messages -n ${q} core client apps adapters scripts tests .github ` +
-      `-g '!docs/workspace/SRS_*REGRESSION*.md' -g '!artifacts/srs_*regression*.json' ` +
-      "wc -l | awk '{print $1}'",
-  );
-  return Number(out.trim() || '0');
+function countHitsById(ids, paths, globs = []) {
+  const counts = new Map(ids.map((id) => [id, 0]));
+  if (ids.length === 0) return counts;
+
+  const tmp = mkdtempSync(join(tmpdir(), 'srs-full-regression-'));
+  const patternFile = join(tmp, 'id_patterns.txt');
+  writeFileSync(patternFile, `${ids.join('\n')}\n`, 'utf8');
+
+  const args = ['-F', '--no-messages', '-n', '--json', '-f', patternFile, ...paths];
+  for (const g of globs) args.push('-g', g);
+
+  try {
+    const out = execFileSync('rg', args, { encoding: 'utf8', maxBuffer: 1024 * 1024 * 512 });
+    parseRipgrepJsonMatches(out, counts);
+  } catch (err) {
+    // rg exits 1 when no matches are found; still parse any stdout if present.
+    if (err && typeof err === 'object') {
+      parseRipgrepJsonMatches(err.stdout, counts);
+      if (err.status !== 1) throw err;
+    } else {
+      throw err;
+    }
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+
+  return counts;
 }
 
 function loadPackageScripts() {
@@ -210,15 +226,47 @@ function main() {
   const srs = read(SRS_PATH);
   const todo = read(TODO_PATH);
   const srsRows = parseSrsRows(srs);
+  const uniqueIds = [...new Set(srsRows.map((row) => row.id))];
   const todoUnchecked = parseTodoUnchecked(todo);
   const commandsById = parseTodoValidationCommands(todo);
   const packageScripts = loadPackageScripts();
   const cmdResolution = commandResolution(commandsById, packageScripts);
 
+  const evidenceCounts = countHitsById(uniqueIds, [
+    'docs/workspace/SRS.md',
+    'docs/workspace/TODO.md',
+    'core',
+    'client',
+    'apps',
+    'adapters',
+    'scripts',
+    'tests',
+    '.github',
+    'docs',
+  ]);
+
+  const nonBacklogEvidenceCounts = countHitsById(
+    uniqueIds,
+    ['core', 'client', 'apps', 'adapters', 'scripts', 'tests', '.github', 'docs'],
+    [
+      '!docs/workspace/SRS.md',
+      '!docs/workspace/TODO.md',
+      '!docs/workspace/UPGRADE_BACKLOG.md',
+      '!docs/workspace/SRS_*REGRESSION*.md',
+      '!artifacts/srs_*regression*.json',
+    ],
+  );
+
+  const codeLikeEvidenceCounts = countHitsById(
+    uniqueIds,
+    ['core', 'client', 'apps', 'adapters', 'scripts', 'tests', '.github'],
+    ['!docs/workspace/SRS_*REGRESSION*.md', '!artifacts/srs_*regression*.json'],
+  );
+
   const rows = srsRows.map((row, index) => {
-    const evidenceCount = countIdHits(row.id, false);
-    const nonBacklogEvidenceCount = countIdHits(row.id, true);
-    const codeLikeEvidenceCount = countCodeLikeHits(row.id);
+    const evidenceCount = evidenceCounts.get(row.id) ?? 0;
+    const nonBacklogEvidenceCount = nonBacklogEvidenceCounts.get(row.id) ?? 0;
+    const codeLikeEvidenceCount = codeLikeEvidenceCounts.get(row.id) ?? 0;
     const cmdAudit = cmdResolution.get(row.id) ?? { resolved: [], unresolved: [] };
     const item = {
       rank: index + 1,

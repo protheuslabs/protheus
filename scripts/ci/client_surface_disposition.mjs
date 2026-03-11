@@ -36,9 +36,34 @@ function rel(p) {
   return path.relative(ROOT, p).replace(/\\/g, '/');
 }
 
+function isTsBootstrapShim(source) {
+  const withoutShebang = source.replace(/^#![^\n]*\n/, '');
+  const stripped = withoutShebang
+    .replace(/['"]use strict['"];?/g, '')
+    .replace(/export\s*\{\s*\};?/g, '')
+    .replace(/require\(['"][^'"]*ts_bootstrap\.ts['"]\)\.bootstrap\(__filename,\s*module\);?/g, '')
+    .replace(/\s+/g, '');
+  return stripped.length === 0;
+}
+
+function isLegacyAliasShim(source) {
+  return (
+    source.includes('runLegacyAlias({') &&
+    source.includes('alias_rel:') &&
+    source.includes('target_rel:')
+  );
+}
+
 function classify(file, source, policy) {
   const explicit = policy.allowlist_decisions || {};
   if (explicit[file]) return explicit[file];
+
+  if (isTsBootstrapShim(source)) {
+    return { bucket: 'keep_public_client', reason: 'TypeScript bootstrap compatibility shim only' };
+  }
+  if (isLegacyAliasShim(source)) {
+    return { bucket: 'keep_public_client', reason: 'legacy alias shim only (no authority logic)' };
+  }
 
   if (file.startsWith('client/cli/bin/')) {
     return { bucket: 'keep_public_client', reason: 'public CLI entrypoint' };

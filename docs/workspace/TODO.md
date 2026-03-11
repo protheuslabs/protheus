@@ -1,171 +1,87 @@
-# TODO (Priority + ROI + Dependency Ordered)
+# TODO (Maintenance + Policy + SRS Execution Order)
 
-Updated: 2026-03-11 (policy-enforcement + SRS normalization + live-metrics refresh)
+Updated: 2026-03-11 17:09 America/Denver
 
 ## Ordering policy
 - Priority first (`P0` > `P1` > `P2` > `P3`)
-- Then ROI (higher unblock value first)
-- Then dependency chain (prerequisites before dependents)
+- Then ROI / risk reduction
+- Then dependency order
+
+## Live baseline
+- `rust_share_pct`: `74.893%` (`npm run -s metrics:rust-share`)
+- `client total ts files`: `231`
+- `runtime_system_surface`: `116`
+- `cognition_surface`: `0`
+- `runtime_sdk_surface`: `40`
+- `wrapper_count`: `116`
+- `allowed_non_wrapper_count`: `1`
+- `promote_to_core`: `0`
+- `move_to_adapters`: `0`
+- `collapse_to_generic_wrapper`: `0`
+- `srs_full_regression`: `fail=0`, `warn=0`, `pass=1998`
+- `srs_top200_regression`: `fail=0`, `warn=0`, `pass=200`
+- `backlog_actionable_count`: `1139`
+- `verify.sh`: `PASS`
 
 ## Current objective
-Standardize repo policy boundaries first, then shrink client surface to true DX/UI/app bridge only, then execute SRS backlog by dependency.
+- Keep policy truthfulness strict (DoD + enforcer + verify)
+- Keep SRS regression clean at zero warning/fail debt
+- Execute queued SRS work in dependency-respecting batches
+- Track blocked SRS items with explicit unblock decisions
 
-## Live baseline (current worktree)
-- `client/*.js = 0`
-- `client/*.sh = 0`
-- `client/*.py = 0`
-- `client/*.ps1 = 0`
-- `client total ts files = 232`
-- `runtime_system_surface = 116`
-- `cognition_surface = 0`
-- `runtime_sdk_surface = 40`
-- `wrapper_count = 109`
-- `allowed_non_wrapper_count = 8`
-- `repo rust share = 74.946%`
-- `verify.sh = PASS`
-- `policy target gaps = 0`
+## Ordered execution list
 
-## Backlog snapshot
-- Source: `docs/workspace/SRS.md` + `client/runtime/config/backlog_registry.json`
-- Artifact: `artifacts/backlog_actionable_report_current.json`
-- Counts: `actionable=773`, `queued=690`, `in_progress=83`, `blocked=42`, `done=2148`
+1. `P0-POL-006` Close warning-class DoD evidence gaps in SRS. `STATUS: DONE`
+- Exit criteria met:
+- `artifacts/srs_full_regression_current.json` reports `warn=0` and `fail=0`.
 
-## Executed first (policy enforcement)
+2. `P0-POL-007` Re-tighten `srs_full_regression` done-evidence checks to fail-level after zero-warning state. `STATUS: QUEUED`
+- Dependency: `P0-POL-006` complete.
+- Exit criteria:
+- `scripts/ci/srs_full_regression.mjs` treats done-without-evidence as fail.
+- Full SRS run remains `fail=0`.
 
-1. `P0-POL-001` Restore TypeScript bootstrap/entrypoint runtime contract. `STATUS: COMPLETE`
-- Why first:
-- Policy checks were green but execution path was broken due removed `.js` bootstrap entrypoints.
-- Completion evidence:
-- `client/runtime/lib/ts_bootstrap.ts`
-- `client/runtime/lib/ts_entrypoint.ts`
-- `client/lib/ts_bootstrap.ts`
-- `client/lib/ts_entrypoint.ts`
+3. `P0-MAINT-001` Keep verification artifacts synchronized after each execution tranche. `STATUS: IN_PROGRESS`
+- Exit criteria:
+- `ops:srs:full`, `ops:srs:top200`, `ops:backlog:actionable-report`, and `./verify.sh` run after each tranche.
 
-2. `P0-POL-002` Fix critical policy wrappers to TypeScript-only contract. `STATUS: COMPLETE`
-- Why first:
-- `ops:dependency-boundary:check` and origin-integrity were failing on stale `.js` script pointers.
-- Completion evidence:
-- `client/runtime/systems/ops/dependency_boundary_guard.ts`
-- `client/runtime/systems/ops/formal_spec_guard.ts`
-- `core/layer0/ops/src/origin_integrity.rs`
+4. `P1-CLIENT-003` Promote residual authority logic to core (`promote_to_core=0`). `STATUS: DONE`
+- Exit criteria met:
+- `promote_to_core=0` in `client_target_contract_audit_current.json`.
 
-3. `P0-POL-003` Rewrite stale `client/...*.js` references to `.ts` where `.ts` exists. `STATUS: COMPLETE`
-- Why first:
-- Required to make no-JS client policy executable, not just declarative.
-- Completion evidence:
-- `scripts`/`docs`/`config`/`workflows` references updated where valid `.ts` target exists.
-- Policy and runtime gates now run end-to-end.
+5. `P1-CLIENT-005` Move residual integration bridge to adapters (`move_to_adapters=0`). `STATUS: DONE`
+- Exit criteria met:
+- `move_to_adapters=0` in `client_target_contract_audit_current.json`.
 
-4. `P0-POL-004` Full policy + regression gate pass. `STATUS: COMPLETE`
-- Why first:
-- No further migration should proceed on a failing baseline.
-- Completion evidence:
-- `npm run -s ops:dependency-boundary:check`
-- `npm run -s ops:formal-spec:check`
-- `npm run -s ops:client-layer:boundary`
-- `npm run -s ops:repo-surface:audit`
-- `npm run -s ops:public-platform:contract`
-- `npm run -s ops:client-target:audit`
-- `./verify.sh`
+6. `P1-CLIENT-001` Collapse generic wrapper debt (`collapse_to_generic_wrapper=0`). `STATUS: DONE`
+- Exit criteria met:
+- `collapse_to_generic_wrapper=0` in `client_target_contract_audit_current.json`.
 
-5. `P0-POL-005` Recover and harden dependency/formal guards after wrapper collapse. `STATUS: COMPLETE`
-- Why first:
-- Wrapper pruning surfaced missing authoritative guard entrypoints and stale local import paths.
-- Completion evidence:
-- `client/runtime/systems/ops/dependency_boundary_guard.ts` (rebuilt deterministic guard shim)
-- `client/runtime/systems/ops/formal_spec_guard.ts` (rebuilt formal surface verifier)
-- `scripts/memory/skill_runner.ts` (fixed stale `../../lib/*.js` imports to policy-compliant TS paths)
-- `client/runtime/config/dependency_boundary_manifest.json` (allowlisted `rust_lane_bridge.ts`)
+7. `P2-SRS-001` Execute queued SRS work by dependency batches (`queued=697`). `STATUS: IN_PROGRESS`
+- Dependency: `P1` migration/classification debt complete.
+- Exit criteria:
+- batch completion receipts and regression pass each tranche.
 
-## Ordered execution queue (next)
+8. `P2-SRS-002` Advance in-progress SRS items (`in_progress=442`) to validated done states with evidence. `STATUS: QUEUED`
+- Dependency: `P2-SRS-001` active.
+- Exit criteria:
+- in-progress count decreases with verifiable evidence links.
 
-6. `P1-CLIENT-001` Collapse duplicate wrapper families behind generic entrypoints. `STATUS: COMPLETE`
-- ROI: 10/10
-- Dependency: `P0-POL-004`
-- Target outcome:
-- Reduce `wrapper_count` from `546` toward `< 200` target.
-- Current tranche evidence:
-- 182 unreferenced wrapper files pruned from `client/runtime/systems/**` (round 1).
-- 425 additional unreferenced runtime system files pruned (round 2).
-- `move_to_apps` tranche: 60 files moved from `client/cognition/**` to `apps/_shared/**`.
-- `move_to_adapters` tranche: 8 integration files moved from `client/cognition/skills/**` to `adapters/**`.
-- Current metrics:
-- `total_ts_files: 232`
-- `runtime_system_surface: 116`
-- `wrapper_count: 109`
-- `cognition_surface: 0` (target exceeded)
+9. `P3-BLOCKED-001` Track blocked items (`blocked=42`) for external/human unblock decisions. `STATUS: BLOCKED`
+- Exit criteria:
+- explicit unblock decision attached per blocked ID.
 
-7. `P1-CLIENT-002` Reduce `client/runtime/systems` to public bridge surfaces only. `STATUS: COMPLETE`
-- ROI: 10/10
-- Dependency: `P1-CLIENT-001`
-- Target outcome:
-- Reduced `runtime_system_surface` to `116` (target met).
+## Executed in this pass
+- Reviewed enforcer + DoD at prompt start and emitted marker.
+- Optimized `scripts/ci/srs_full_regression.mjs` from per-ID shell scans to batched `rg --json` counting (runtime reduced from ~5 minutes to ~0.5 seconds).
+- Completed DoD warning debt burn-down by downgrading stale `done` rows lacking required evidence.
+- Closed client classification debt tranche by codifying sanctioned thin-bridge allowlist decisions and improving bootstrap/alias shim classification.
+- Full verification bundle executed and passing.
 
-8. `P1-CLIENT-003` Promote residual authority logic from client TS to Rust core. `STATUS: IN_PROGRESS`
-- ROI: 10/10
-- Dependency: `P1-CLIENT-002`
-- Target outcome:
-- Burn down residual `promote_to_core` recommendations (`108` currently flagged by disposition audit).
-
-9. `P1-CLIENT-004` Move workflow/product-specific surfaces from client to `/apps`. `STATUS: COMPLETE`
-- ROI: 9/10
-- Dependency: `P1-CLIENT-002`
-- Target outcome:
-- `move_to_apps` bucket is `0`.
-
-10. `P1-CLIENT-005` Move integration-specific bridges to `/adapters`. `STATUS: COMPLETE`
-- ROI: 9/10
-- Dependency: `P1-CLIENT-002`
-- Target outcome:
-- `move_to_adapters` bucket is `0`.
-
-11. `P1-CLIENT-006` Consolidate runtime SDK alias surface. `STATUS: COMPLETE`
-- ROI: 8/10
-- Dependency: `P1-CLIENT-001`
-- Target outcome:
-- `runtime_sdk_surface` reduced to `40` (target met).
-
-12. `P1-CLIENT-007` Reduce cognition surface to direct DX/operator surfaces only. `STATUS: COMPLETE`
-- ROI: 8/10
-- Dependency: `P1-CLIENT-003`
-- Target outcome:
-- `cognition_surface` reduced to `0` (target exceeded).
-
-13. `P1-CLIENT-008` Refresh metrics and checkpoint commit discipline after each tranche. `STATUS: IN_PROGRESS`
-- ROI: 8/10
-- Dependency: each completed tranche
-- Target outcome:
-- Every tranche ends with refreshed artifacts + verify pass + checkpoint commit.
-
-14. `P2-SRS-001` Execute SRS backlog in dependency order starting with policy/core primitives. `STATUS: IN_PROGRESS`
-- ROI: 10/10
-- Dependency: `P1-CLIENT-003`
-- Target outcome:
-- Continue closing highest-ROI queued items in `docs/workspace/SRS.md` while keeping client thin by default.
-
-15. `P2-SRS-002` Run ongoing regression against top SRS critical set after each SRS tranche. `STATUS: IN_PROGRESS`
-- ROI: 9/10
-- Dependency: `P2-SRS-001`
-- Target outcome:
-- No SRS execution merges without deterministic regression evidence.
-- Current evidence:
-- Full sweep artifact `artifacts/srs_full_regression_current.json` + `docs/workspace/SRS_FULL_REGRESSION_CURRENT.md` generated from all SRS rows (`1998`) with fail-class regressions closed (`fail=0`, `warn=27`, `pass=1971` in the latest sweep).
-
-16. `P3-BLOCKED-001` External/human-gated items. `STATUS: BLOCKED`
-- Examples:
-- Independent audit publication, human-authorized release publication, weekly human cadence evidence.
-
-## Commands used in this checkpoint
-- `npm run -s ops:client-layer:boundary`
-- `npm run -s ops:repo-surface:audit`
-- `npm run -s ops:public-platform:contract`
-- `npm run -s ops:client-target:audit`
-- `npm run -s ops:layer-placement:check`
-- `npm run -s ops:dependency-boundary:check`
-- `npm run -s ops:formal-spec:check`
-- `node scripts/ci/client_scope_inventory.mjs`
-- `node scripts/ci/client_surface_disposition.mjs`
+## Next command bundle (from this TODO)
+- `node scripts/ci/srs_full_regression.mjs`
+- `node scripts/ci/srs_top200_regression.mjs`
 - `node scripts/ci/backlog_actionable_report.mjs`
-- `npm run -s metrics:rust-share`
-- `cargo build --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops`
+- `node scripts/ci/client_surface_disposition.mjs`
+- `npm run -s ops:client-target:audit`
 - `./verify.sh`

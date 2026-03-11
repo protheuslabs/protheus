@@ -1,7 +1,7 @@
 {
   "type": "client_target_contract_audit",
-  "generated_at": "2026-03-11T15:57:02.004Z",
-  "revision": "e2d1e5e7466a68a81e70d562bc94fd963ba2e10d",
+  "generated_at": "2026-03-11T17:08:02.923Z",
+  "revision": "88d7b39918671f97aad19358057b40bb5136faaf",
   "policy_path": "client/runtime/config/client_target_contract_policy.json",
   "summary": {
     "hard_violation_count": 0,
@@ -39,11 +39,11 @@
     "sdk_surface": 58,
     "wrapper_count": 116,
     "allowed_non_wrapper_count": 1,
-    "keep_public_client": 119,
-    "promote_to_core": 102,
+    "keep_public_client": 231,
+    "promote_to_core": 0,
     "move_to_apps": 0,
-    "move_to_adapters": 1,
-    "collapse_to_generic_wrapper": 9
+    "move_to_adapters": 0,
+    "collapse_to_generic_wrapper": 0
   },
   "target_gaps": [],
   "hard_violations": []

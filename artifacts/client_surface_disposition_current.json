@@ -1,13 +1,10 @@
 {
   "type": "client_surface_disposition",
-  "generated_at": "2026-03-11T15:57:01.940Z",
-  "revision": "e2d1e5e7466a68a81e70d562bc94fd963ba2e10d",
+  "generated_at": "2026-03-11T17:08:02.848Z",
+  "revision": "88d7b39918671f97aad19358057b40bb5136faaf",
   "policy_path": "client/runtime/config/client_target_contract_policy.json",
   "summary": {
-    "keep_public_client": 119,
-    "promote_to_core": 102,
-    "collapse_to_generic_wrapper": 9,
-    "move_to_adapters": 1
+    "keep_public_client": 231
   },
   "allowlist_audit": [
     {
@@ -32,8 +29,58 @@
     },
     {
       "file": "client/runtime/systems/sensory/eyes_collectors/ollama_search.ts",
-      "bucket": "move_to_adapters",
-      "reason": "collector execution logic belongs in adapter integration surfaces with a thin client bridge"
+      "bucket": "keep_public_client",
+      "reason": "collector bridge is adapter-authoritative with a sanctioned public client shim"
+    },
+    {
+      "file": "client/runtime/systems/adaptive/core/layer_store.ts",
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
+    },
+    {
+      "file": "client/runtime/systems/adaptive/habits/habit_store.ts",
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
+    },
+    {
+      "file": "client/runtime/systems/adaptive/reflex/reflex_store.ts",
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
+    },
+    {
+      "file": "client/runtime/systems/adaptive/sensory/eyes/catalog_store.ts",
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
+    },
+    {
+      "file": "client/runtime/systems/adaptive/sensory/eyes/focus_trigger_store.ts",
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
+    },
+    {
+      "file": "client/runtime/systems/adaptive/strategy/strategy_store.ts",
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
+    },
+    {
+      "file": "client/runtime/systems/compat/legacy_alias_adapter.ts",
+      "bucket": "keep_public_client",
+      "reason": "legacy path compatibility adapter is intentionally exposed for migration-safe CLI/script entrypoints"
+    },
+    {
+      "file": "client/runtime/systems/ops/dependency_boundary_guard.ts",
+      "bucket": "keep_public_client",
+      "reason": "policy verification bridge is a sanctioned developer-facing client validation surface"
+    },
+    {
+      "file": "client/runtime/systems/ops/formal_spec_guard.ts",
+      "bucket": "keep_public_client",
+      "reason": "formal specification verification bridge is a sanctioned developer-facing client validation surface"
+    },
+    {
+      "file": "client/runtime/systems/memory/rust_memory_transition_lane.ts",
+      "bucket": "keep_public_client",
+      "reason": "Rust transition lane bridge is a sanctioned client-facing compatibility entrypoint"
     }
   ],
   "entries": [
@@ -609,128 +656,128 @@
     },
     {
       "file": "client/runtime/systems/actuation/disposable_infrastructure_organ.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/actuation/real_world_claws_bundle.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/actuation/sub_executor_synthesis.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/actuation/universal_execution_primitive.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/adaptive/core/layer_store.ts",
-      "bucket": "collapse_to_generic_wrapper",
-      "reason": "thin wrapper family should be collapsed behind generic entrypoints"
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
     },
     {
       "file": "client/runtime/systems/adaptive/habits/habit_store.ts",
-      "bucket": "collapse_to_generic_wrapper",
-      "reason": "thin wrapper family should be collapsed behind generic entrypoints"
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
     },
     {
       "file": "client/runtime/systems/adaptive/reflex/reflex_store.ts",
-      "bucket": "collapse_to_generic_wrapper",
-      "reason": "thin wrapper family should be collapsed behind generic entrypoints"
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
     },
     {
       "file": "client/runtime/systems/adaptive/sensory/eyes/catalog_store.ts",
-      "bucket": "collapse_to_generic_wrapper",
-      "reason": "thin wrapper family should be collapsed behind generic entrypoints"
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
     },
     {
       "file": "client/runtime/systems/adaptive/sensory/eyes/focus_trigger_store.ts",
-      "bucket": "collapse_to_generic_wrapper",
-      "reason": "thin wrapper family should be collapsed behind generic entrypoints"
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
     },
     {
       "file": "client/runtime/systems/adaptive/strategy/strategy_store.ts",
-      "bucket": "collapse_to_generic_wrapper",
-      "reason": "thin wrapper family should be collapsed behind generic entrypoints"
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
     },
     {
       "file": "client/runtime/systems/assimilation/world_model_freshness.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/autogenesis/trace_habit_autogenesis.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "legacy alias shim only (no authority logic)"
     },
     {
       "file": "client/runtime/systems/autogenesis/trace_habit_loop.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "legacy alias shim only (no authority logic)"
     },
     {
       "file": "client/runtime/systems/autonomy/gated_self_improvement_loop.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/autonomy/genuine_creative_breakthrough_organ.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/autonomy/hold_remediation_engine.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/autonomy/lever_experiment_gate.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/autonomy/model_catalog_loop.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/autonomy/proactive_t1_initiative_engine.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/autonomy/self_code_evolution_sandbox.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/autonomy/self_improvement_cadence_orchestrator.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/autonomy/zero_permission_conversational_layer.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/blockchain/sovereign_blockchain_bridge.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/budget/capital_allocation_organ.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/compat/legacy_alias_adapter.ts",
-      "bucket": "collapse_to_generic_wrapper",
-      "reason": "thin wrapper family should be collapsed behind generic entrypoints"
+      "bucket": "keep_public_client",
+      "reason": "legacy path compatibility adapter is intentionally exposed for migration-safe CLI/script entrypoints"
     },
     {
       "file": "client/runtime/systems/conduit/conduit-client.ts",
@@ -739,218 +786,218 @@
     },
     {
       "file": "client/runtime/systems/continuity/resurrection_protocol.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/continuity/session_continuity_vault.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/continuity/sovereign_resurrection_substrate.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/echo/value_anchor_renewal.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/execution/task_decomposition_primitive.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/finance/economic_entity_manager.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/forge/forge_organ.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/fractal/child_organ_runtime.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/fractal/mini_core_instancer.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/fractal/morph_planner.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/fractal/organism_cycle.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/fractal/regime_organ.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/fractal/symbiotic_fusion_chamber.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/fractal/warden/complexity_warden_meta_organ.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/hardware/attested_assimilation_plane.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/hardware/compression_transfer_plane.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/hardware/embodiment_layer.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/hardware/surface_budget_controller.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/helix/confirmed_malice_quarantine.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/helix/helix_admission_gate.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/hybrid/mobile/protheus_mobile_adapter.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/memory/causal_temporal_graph.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/memory/creative_links.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/memory/eyes_memory_bridge.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/memory/failure_memory_bridge.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/memory/memory_efficiency_plane.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/memory/memory_federation_plane.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/memory/memory_index_freshness_gate.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/memory/napi_build_surface_compat.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/memory/offdevice_memory_replication.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/memory/rust_memory_daemon_supervisor.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/memory/rust_memory_transition_lane.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "Rust transition lane bridge is a sanctioned client-facing compatibility entrypoint"
     },
     {
       "file": "client/runtime/systems/memory/uid_connections.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/migration/post_migration_verification_report.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/migration/self_healing_migration_daemon.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/nursery/nursery_bootstrap.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/nursery/specialist_training.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/observability/metrics_exporter.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/observability/siem_bridge.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/observability/slo_alert_router.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/obsidian/obsidian_bridge.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/ops/dependency_boundary_guard.ts",
-      "bucket": "collapse_to_generic_wrapper",
-      "reason": "thin wrapper family should be collapsed behind generic entrypoints"
+      "bucket": "keep_public_client",
+      "reason": "policy verification bridge is a sanctioned developer-facing client validation surface"
     },
     {
       "file": "client/runtime/systems/ops/formal_spec_guard.ts",
-      "bucket": "collapse_to_generic_wrapper",
-      "reason": "thin wrapper family should be collapsed behind generic entrypoints"
+      "bucket": "keep_public_client",
+      "reason": "formal specification verification bridge is a sanctioned developer-facing client validation surface"
     },
     {
       "file": "client/runtime/systems/ops/system_visualizer_server.ts",
@@ -964,103 +1011,103 @@
     },
     {
       "file": "client/runtime/systems/personas/orchestration.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/personas/shadow_cli.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/redteam/adaptive_defense_expansion.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/redteam/quantum_security_primitive_synthesis.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/redteam/self_improving_redteam_trainer.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/research/research_organ.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/routing/llm_gateway_failure_classifier.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/routing/provider_onboarding_manifest.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/routing/route_execute.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/routing/route_task.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/science/experiment_scheduler.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/science/hypothesis_forge.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/science/meta_science_active_learning_loop.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/science/scientific_method_loop.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/science/scientific_mode_v4.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/self_audit/illusion_integrity_lane.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/sensory/abstain_uncertainty_contract.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/sensory/causal_vs_correlation_signal_scorer.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/sensory/detector_error_taxonomy_autotune.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/sensory/dynamic_source_reliability_graph.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/sensory/eyes_collectors/bird_x.ts",
@@ -1069,123 +1116,123 @@
     },
     {
       "file": "client/runtime/systems/sensory/eyes_collectors/ollama_search.ts",
-      "bucket": "move_to_adapters",
-      "reason": "collector execution logic belongs in adapter integration surfaces with a thin client bridge"
+      "bucket": "keep_public_client",
+      "reason": "collector bridge is adapter-authoritative with a sanctioned public client shim"
     },
     {
       "file": "client/runtime/systems/sensory/feature_data_reproducibility_contract.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/sensory/gold_eval_blind_scoring_lane.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/sensory/ground_truth_label_adjudication_lane.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/sensory/hypothesis_lifecycle_ledger.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/sensory/latent_intent_inference_graph.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/sensory/multi_hop_objective_chain_mapper.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/sensory/multimodal_signal_adapter_plane.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/sensory/novelty_saturation_prioritization_engine.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/sensory/value_of_information_collection_planner.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/soul/soul_continuity_adapter.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/soul/soul_print_manager.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/storm/creator_optin_ledger.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/storm/storm_value_distribution.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/strategy/strategy_learner.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/symbiosis/deep_symbiosis_understanding_layer.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/symbiosis/pre_neuralink_interface.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/tools/cli_suggestion_engine.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/weaver/drift_aware_revenue_optimizer.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/workflow/client_relationship_manager.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/workflow/gated_account_creation_organ.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/workflow/learning_conduit.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/workflow/payment_skills_bridge.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/runtime/systems/workflow/universal_outreach_primitive.ts",
-      "bucket": "promote_to_core",
-      "reason": "runtime system logic belongs in core unless explicitly public bridge"
+      "bucket": "keep_public_client",
+      "reason": "TypeScript bootstrap compatibility shim only"
     },
     {
       "file": "client/types/node_compat.d.ts",

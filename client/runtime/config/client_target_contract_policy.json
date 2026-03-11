@@ -45,8 +45,48 @@
       "reason": "collector bridge remains in client until the underlying cognition collector is extracted cleanly"
     },
     "client/runtime/systems/sensory/eyes_collectors/ollama_search.ts": {
-      "bucket": "move_to_adapters",
-      "reason": "collector execution logic belongs in adapter integration surfaces with a thin client bridge"
+      "bucket": "keep_public_client",
+      "reason": "collector bridge is adapter-authoritative with a sanctioned public client shim"
+    },
+    "client/runtime/systems/adaptive/core/layer_store.ts": {
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
+    },
+    "client/runtime/systems/adaptive/habits/habit_store.ts": {
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
+    },
+    "client/runtime/systems/adaptive/reflex/reflex_store.ts": {
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
+    },
+    "client/runtime/systems/adaptive/sensory/eyes/catalog_store.ts": {
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
+    },
+    "client/runtime/systems/adaptive/sensory/eyes/focus_trigger_store.ts": {
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
+    },
+    "client/runtime/systems/adaptive/strategy/strategy_store.ts": {
+      "bucket": "keep_public_client",
+      "reason": "legacy adaptive entrypoint retained as thin compatibility bridge to core authority"
+    },
+    "client/runtime/systems/compat/legacy_alias_adapter.ts": {
+      "bucket": "keep_public_client",
+      "reason": "legacy path compatibility adapter is intentionally exposed for migration-safe CLI/script entrypoints"
+    },
+    "client/runtime/systems/ops/dependency_boundary_guard.ts": {
+      "bucket": "keep_public_client",
+      "reason": "policy verification bridge is a sanctioned developer-facing client validation surface"
+    },
+    "client/runtime/systems/ops/formal_spec_guard.ts": {
+      "bucket": "keep_public_client",
+      "reason": "formal specification verification bridge is a sanctioned developer-facing client validation surface"
+    },
+    "client/runtime/systems/memory/rust_memory_transition_lane.ts": {
+      "bucket": "keep_public_client",
+      "reason": "Rust transition lane bridge is a sanctioned client-facing compatibility entrypoint"
     }
   }
 }
