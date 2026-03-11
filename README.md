@@ -14,6 +14,8 @@ Protheus is an evidence-first Rust kernel for autonomous operations, workflow ex
 This repository is maintained under the Protheus Labs operating model.
 Protheus is the InfRing substrate and three-plane metakernel: deterministic safety core, probabilistic cognition userland, and substrate adapters for heterogeneous execution.
 
+> **Clarification:** The term "metakernel" refers to the architectural pattern where the runtime itself operates as a managed system layer, not a traditional monolithic kernel. This enables policy-driven, auditable execution across safety, cognition, and substrate planes.
+
 This repository is organized to run like an internal platform team: typed runtime lanes, deterministic receipts, strict governance surfaces, and operational guardrails that are reviewable in-source.
 
 ## What This Repo Includes
