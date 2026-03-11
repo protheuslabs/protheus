@@ -895,6 +895,38 @@ Notes:
 | V6-APP-018.5 | done | Curated LaTeX Workspace Template Governance Lane | Domain-specific writing workflows (papers, theses, reports) need signed starter templates to avoid inconsistent unsafe defaults. | Maintain signed template pack installable via governed URI (for example `latex://research-paper`) with quarterly human review, compatibility metadata, and deterministic install/update/deprecate receipts. | 6 | app |
 | V6-APP-018.6 | done | Conduit-Only LaTeX Workspace Boundary + `/apps` Placement Enforcement | Rich editor/compile features can drift into client-owned authority if policy and execution boundaries are not explicit. | Ship under `/apps/latex_workspace/`, keep client wrappers thin, and enforce conduit-only routing for edit/compile/assist/deploy actions with bypass-rejection tests and fail-closed policy checks. | 10 | 0/app |
 
+## Octree AI LaTeX Forge Reinforcement Intake (Doc `1zV2NzGP0HtzAMLh28IhjhGtDwq__UwJDgKErMnFbeuA`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1zV2NzGP0HtzAMLh28IhjhGtDwq__UwJDgKErMnFbeuA/edit?usp=sharing
+- https://github.com/octree-labs/octree
+
+Notes:
+- Source draft labels this as `V6-APP-006` (`Octree-Style LaTeX Studio`), but `V6-APP-006.*` is already occupied by the code-engineer app lane. To avoid parallel/duplicate functionality, this intake is normalized as reinforcement deltas under existing LaTeX lane `V6-APP-018.*`.
+- Covered by existing requirements:
+  - LaTeX workspace + AI assist + compile/preview: `V6-APP-018.1..018.3`
+  - deployment/auth/storage profile: `V6-APP-018.4`
+  - template governance + conduit boundary: `V6-APP-018.5..018.6`
+  - app placement and thin client boundary policy: `V6-APP-018.6`
+- Net-new deltas retained from this source:
+  - explicit Monaco-first editor profile contract (LaTeX snippets/diagnostics) as app-surface requirement
+  - explicit CLI alias contract (`protheus compile latex`, `protheus edit suggest`) mapped to the existing LaTeX app profile
+  - optional collaborative editing/session overlay over existing memory/runtime receipts
+- Default placement:
+  - Layer `0`: conduit-routed edit/suggest/compile/session actions with deterministic receipts
+  - Layer `1`: collaboration/privacy/consent + document provenance policies
+  - Layer `2`: edit-assist orchestration + compile stream routing + collaboration session coordinator
+  - Layer `3`: optional research-writing persona presets only
+  - `client`: thin launch/status/open wrappers only
+  - `app`: primary implementation remains `/apps/latex_workspace/` (and/or alias app wrapper)
+  - `adapter`: TeX compiler/backends and collaboration transport adapters
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-APP-018.7 | queued | Monaco-First LaTeX Editor Profile Contract | The source explicitly requires Monaco-native LaTeX affordances (syntax/snippets/diagnostics), which are not called out as an explicit contract in existing LaTeX rows. | `/apps/latex_workspace/` declares Monaco-first LaTeX editor profile with syntax-aware diagnostics/snippet behavior as a governed app-surface contract, with deterministic UI state receipts for edit/suggest events. | 5 | app |
+| V6-APP-018.8 | queued | CLI Alias Surface Contract for LaTeX Edit/Compile | Source specifies explicit command ergonomics (`protheus compile latex`, `protheus edit suggest`) that should map to existing LaTeX app workflow without creating duplicate authority paths. | Add thin alias commands mapping to LaTeX workspace actions through conduit, emitting deterministic receipts and reusing `V6-APP-018.*` execution paths (no duplicate backend logic). | 6 | app/client |
+| V6-APP-018.9 | queued | Collaborative Session Overlay Contract for LaTeX Workspace | Source includes real-time collaboration expectations that need explicit consent-scoped session behavior to avoid ad hoc sharing semantics. | Add optional collaboration session overlay profile for LaTeX workspace (presence/edits/suggestions), scoped by memory/runtime identity and policy gates, with deterministic collaboration receipts and fail-closed consent checks. | 7 | 0/1/2/app |
+
 ## Generative Workflow Sharing App Intake (Doc `10TMX_DfJhEhR1yJAJO0q08X44By_XIiabWtRZtMLAvY`, 2026-03-11)
 
 Source references:
@@ -1174,6 +1206,195 @@ Notes:
 | V6-MEMORY-004.5 | done | Thin client/app code-intelligence UX surface | Operators may want dedicated code-index or code-graph UIs, but they must remain consumers of the same core indexing/navigation primitives only. | Add optional thin wrappers (`protheus app run code-indexer`, `protheus app run code-graph`, search/traversal panels, result viewers) over the core code-index contracts; no AST parsing, ranking, graph mutation, or traversal authority lives in client/app code. | 8 | 1/2/client |
 | V6-MEMORY-004.6 | done | Conduit-only code-index build/query/traversal guardrails + audit continuity | Code indexing/search/graph traversal can leak scope or drift into duplicate tooling unless every operation stays inside the receipt/policy model. | Enforce Layer-0 conduit checks for index build/update/query/traversal/export actions, preserve provenance across incremental refreshes and graph projections, and emit deterministic receipts for every chunk mutation, traversal, query, and MCP/tool invocation. | 10 | 0/1/2/client |
 
+## Local Document RAG Engine Source Coverage Intake (Doc `1P1_-BSqoRU0Qt2ais5aUTHycK1wOdmZEhTkcBr1jDhI`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1P1_-BSqoRU0Qt2ais5aUTHycK1wOdmZEhTkcBr1jDhI/edit?usp=sharing
+- https://github.com/kwalus/Canopy
+
+Notes:
+- Primitive-first normalization: this intake extends existing memory/research/index primitives; it does not create a standalone document-memory authority stack in client.
+- Overlap handled explicitly:
+  - Existing ingestion/enrichment path: `V6-MEMORY-002.*`
+  - Existing graph-aware vault projection path: `V6-MEMORY-003.*`
+  - Existing semantic index/query contracts: `V6-MEMORY-004.*`
+  - Existing parser/extraction lane: `V6-PARSE-001.*`
+  - Existing always-on consolidation lane: `V6-MEMORY-006.*`
+- Net-new focus from this source:
+  - local-first document-format ingestion pipeline (PDF/Markdown/TXT and parser-adapter growth path)
+  - citation-first semantic retrieval over document chunk objects
+  - bounded merge of retrieved document knowledge into persistent vault graph without duplicating authority
+- Default placement:
+  - Layer `0`: conduit-routed ingest/chunk/index/query actions + immutable receipts
+  - Layer `1`: document chunk schema, retention/privacy policy, citation contract
+  - Layer `2`: parser/chunker/indexer/retrieval orchestration runtime
+  - Layer `3`: optional document-aware persona defaults only
+  - `client`: thin run/status/upload/query UX only
+  - `app`: optional `/apps/document_rag/` vertical profile
+  - `adapter`: format/parser backends and optional embedding acceleration adapters
+
+Objective: add local document indexing and citation-aware retrieval as a governed extension over existing memory primitives, preserving core authority and thin client/app surfaces.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-MEMORY-005.1 | queued | Document Ingestion + Typed Chunking Contract | Document reasoning quality collapses when source files remain opaque blobs without deterministic chunk/provenance extraction. | Add governed ingestion for local docs (PDF/Markdown/TXT initially) that parses and chunks into Epistemic Objects with source offsets, MIME metadata, and deterministic ingest receipts. | 8 | 0/1/2/client/app/adapter |
+| V6-MEMORY-005.2 | queued | Local Semantic Retrieval + Citation Bundle Contract | Answers over local documents are untrustworthy without explicit citation bundles and retrieval provenance. | Extend research/query lanes to retrieve ranked document chunks with citation bundles (`source`, `chunk_id`, `offset`, `confidence`) and deterministic retrieval receipts for each query run. | 8 | 0/1/2/client |
+| V6-MEMORY-005.3 | queued | Vault Graph Merge Contract for Document Knowledge | Document RAG becomes siloed if extracted knowledge does not feed the same persistent vault graph used by other memory lanes. | Merge selected document chunks/entities into the existing graph-aware vault projection with provenance-preserving links and deterministic merge receipts, avoiding duplicate memory truth paths. | 8 | 0/1/2 |
+| V6-MEMORY-005.4 | queued | Incremental Reindex + Drift Control Contract | Document indexes stale quickly without deterministic reindex policy for changed files and deleted artifacts. | Add policy-bounded incremental reindexing with change detection, tombstone handling, and deterministic reindex receipts; stale chunks are pruned or marked superseded without losing audit lineage. | 7 | 1/2/client |
+| V6-MEMORY-005.5 | queued | Thin Activation Surface Contract (`protheus app run document-rag`) | Adoption suffers when operators cannot enable and operate document RAG through thin UX surfaces. | Provide thin run/upload/status/query surfaces under client/app shells only; parser/chunk/index/query authority remains in core lanes. | 6 | 1/2/client/app |
+| V6-MEMORY-005.6 | queued | Conduit-Only Document RAG Boundary + Audit Continuity Contract | Document ingestion/retrieval can become a policy bypass path unless all operations remain conduit-governed and receipted. | Enforce conduit-only routing for ingest/chunk/index/query/merge actions with bypass-rejection tests and deterministic receipt lineage for every operation. | 10 | 0/1/2/client/app |
+
+## Always-On Structured Memory Agent Source Coverage Intake (Doc `1wnZiGMfWVFaAp-al7UgbwyM1JV_BhW6A3hox3GoGllw`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1wnZiGMfWVFaAp-al7UgbwyM1JV_BhW6A3hox3GoGllw/edit?usp=sharing
+- https://github.com/GoogleCloudPlatform/generative-ai/tree/main/gemini/agents/always-on-memory-agent
+
+Notes:
+- Primitive-first normalization: this intake extends existing memory/research/routing primitives; it does not introduce a parallel memory authority stack.
+- Overlap handled explicitly:
+  - Bookmark/memory ingestion patterns: `V6-MEMORY-002.*`
+  - Markdown vault + graph memory projections: `V6-MEMORY-003.*`
+  - Semantic code-index retrieval substrate: `V6-MEMORY-004.*`
+  - Automatic context-tree and continuity policies: `V6-MEMORY-007.*`
+  - Persistent scheduler/session continuity lanes: `V6-PERSIST-001.*`
+- Net-new focus from this source:
+  - continuously watched inbox/API ingestion into structured memory objects
+  - scheduled background consolidation of unconsolidated memory into connections/insights
+  - citation-aware retrieval answer flow over consolidated memory and provenance
+- Default placement:
+  - Layer `0`: conduit-routed ingest/consolidate/query actions + immutable receipts
+  - Layer `1`: structured memory schema, consolidation policy, retention/privacy/citation policy
+  - Layer `2`: watcher runtime, consolidation scheduler, citation-aware query composer
+  - Layer `3`: optional memory-agent persona defaults only
+  - `client`: thin run/status/watch/query UX only
+  - `app`: optional `/apps/always_on_memory/` vertical profile
+
+Objective: add always-on structured memory ingestion and consolidation as a governed extension over current memory primitives, preserving core authority and thin client/app boundaries.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-MEMORY-006.1 | queued | Continuous Ingestion + Structured Extraction Contract | Long-term memory quality decays when incoming notes/files/messages are not transformed into structured objects at ingest time. | Add governed watcher lanes (folder/API) that ingest new artifacts, extract summary/entities/topics/importance into Epistemic Objects, and emit deterministic ingest receipts linked to source provenance. | 8 | 0/1/2/client/app |
+| V6-MEMORY-006.2 | queued | Scheduled Background Consolidation Contract | Memory stores drift into fragmented raw items without periodic synthesis of links, clusters, and high-signal insights. | Add policy-bounded consolidation jobs (for example every 30 minutes) that review unconsolidated objects, create link/cluster/insight artifacts, and persist deterministic consolidation receipts with rollback pointers. | 8 | 0/1/2 |
+| V6-MEMORY-006.3 | queued | Citation-Aware Persistent Query Composition Contract | Cross-session answers are brittle if retrieval paths cannot cite exactly which memory objects and consolidation insights were used. | Extend research/query composition so relevant long-term memory + consolidation artifacts are retrieved with explicit citation bundles (object ids/provenance/confidence) and deterministic query receipts. | 8 | 0/1/2/client |
+| V6-MEMORY-006.4 | queued | Memory Freshness + Consolidation SLO Contract | Always-on memory can silently stale without measurable freshness targets and lag visibility. | Add freshness/lag metrics (ingest latency, unconsolidated backlog age, consolidation coverage) with threshold alerts and deterministic SLO receipts in observability surfaces. | 7 | 1/2/client |
+| V6-MEMORY-006.5 | queued | Thin App/Client Activation Surface Contract (`protheus app run always-on-memory`) | Adoption drops when operators cannot enable/inspect always-on memory without touching authority code paths. | Provide thin activation/status/query surfaces for always-on memory under client/app shells only; no extraction/consolidation authority logic is implemented outside core lanes. | 6 | 1/2/client/app |
+| V6-MEMORY-006.6 | queued | Conduit-Only Always-On Memory Boundary + Audit Continuity Contract | Continuous memory runtimes can become unaudited side channels unless every ingest/consolidate/query path remains conduit-governed. | Enforce conduit-only routing for watcher events, extraction, consolidation, and query composition with bypass-rejection tests; all actions emit deterministic receipts and immutable audit lineage. | 10 | 0/1/2/client/app |
+
+## One-Command Local RAG Platform with Visual Workflows Intake (Doc/Source `V6-MEMORY-008`, 2026-03-11)
+
+Source references:
+- https://x.com/hasantoxr/status/2031425579325731243
+- OpenRAG composition note (Langflow + Docling + OpenSearch style experience)
+
+Notes:
+- Primitive-first normalization: this intake is an orchestration/profile layer over existing memory, parse, flow, and deploy primitives; it does not introduce new core primitives.
+- Overlap handled explicitly:
+  - Document ingestion/retrieval/vault merge baseline: `V6-MEMORY-005.*`
+  - Always-on consolidation baseline: `V6-MEMORY-006.*`
+  - Context-tree continuity contracts: `V6-MEMORY-007.*`
+  - Visual flow compiler/runtime: `V6-FLOW-001.*`
+  - One-command deploy/bootstrap contracts: `V6-DEPLOY-001.*`
+  - Existing chat UI/runtime surfaces: `V6-APP-007.1`, `V6-APP-008.1`
+- Net-new focus from this source:
+  - one-command local RAG startup/profile contract (`start/ingest/chat with files`)
+  - prewired visual RAG workflow presets over existing flow compiler/runtime
+  - local-first dockerized operator profile that preserves conduit governance and receipts
+- Default placement:
+  - Layer `0`: conduit-routed ingest/search/chat/workflow execution + immutable receipts
+  - Layer `1`: RAG profile policy (source privacy, consent, citation, retention, budget)
+  - Layer `2`: orchestration profile that composes parse/index/retrieval/chat/flow/deploy primitives
+  - Layer `3`: optional research persona defaults only
+  - `client`: thin command and dashboard surfaces only
+  - `app`: `/apps/local_rag/` reference app profile
+  - `adapter`: optional parser/embedding/backend acceleration adapters
+
+Objective: deliver a polished one-command local RAG operating profile on top of existing primitives, with zero duplicate authority logic and full conduit/receipt governance.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-MEMORY-008.1 | queued | One-Command Local RAG Start Profile Contract (`protheus rag start`) | Local RAG adoption remains low when users must manually wire parser/index/retrieval/chat/deploy pieces. | Add a governed startup profile that boots local RAG dependencies and runtime wiring through existing deploy/orchestration primitives, emitting deterministic startup/config receipts with fail-closed policy checks. | 8 | 0/1/2/client/app |
+| V6-MEMORY-008.2 | queued | Unified Ingest Command Contract (`protheus rag ingest`) over Existing Parse/Memory Lanes | Document onboarding is inconsistent when ingest commands diverge from canonical parse/chunk/index contracts. | Route ingest command through `V6-PARSE-001` + `V6-MEMORY-005` contracts (no duplicate parser/index logic), producing deterministic per-file ingest/chunk/index receipts with provenance linkage. | 8 | 0/1/2/client/app |
+| V6-MEMORY-008.3 | queued | Chat-With-Files Operator Contract (`protheus chat with files`) | Users need a direct NL interface over local docs, but query authority must remain in core retrieval/citation lanes. | Provide a thin chat surface that composes existing retrieval/citation/query primitives (`V6-MEMORY-005/006`) and returns citation-bundled answers with deterministic request/response receipts. | 8 | 0/1/2/client/app |
+| V6-MEMORY-008.4 | queued | Visual RAG Workflow Preset Pack over Existing Flow Compiler | Visual workflow demand is high, but a parallel builder for RAG would duplicate existing flow authority and increase maintenance debt. | Ship prewired RAG visual presets on top of `V6-FLOW-001` compiler/runtime (drag-drop + inspect + run), with deterministic compile/run receipts and zero duplicate graph-execution code paths. | 7 | 1/2/client/app |
+| V6-MEMORY-008.5 | queued | Local Dockerized Operator Profile for RAG Runtime | One-command local RAG needs reproducible local startup environments without bypassing existing deployment governance. | Provide dockerized local profile wiring via `V6-DEPLOY-001` contracts, with deterministic profile launch/health receipts and fail-closed behavior on missing storage/policy prerequisites. | 7 | 0/1/2/client/app/adapter |
+| V6-MEMORY-008.6 | queued | Conduit-Only One-Command RAG Boundary Enforcement | Convenience commands and visual flows can accidentally move authority into client/app wrappers unless boundary rules are explicit and tested. | Enforce conduit-only routing for `rag start/ingest/chat/flow run` operations with bypass-rejection tests; keep client/app strictly non-authoritative UX/control layers. | 10 | 0/1/2/client/app |
+
+## Stable Memory Search Library with Versioned Core Intake (Doc/Source `V6-MEMORY-009`, 2026-03-11)
+
+Source references:
+- https://x.com/code_rams/status/2031663613652389968
+
+Notes:
+- Primitive-first normalization: this intake introduces a stability/versioning contract over existing memory search primitives; it does not create a second memory search engine.
+- Overlap handled explicitly:
+  - Local document + citation search baseline: `V6-MEMORY-005.*`
+  - Always-on consolidation/query baseline: `V6-MEMORY-006.*`
+  - Context continuity and curation lane: `V6-MEMORY-007.*`
+  - One-command local RAG operator profile: `V6-MEMORY-008.*`
+  - Existing protocol/interface lanes: `V6-MCP-001.*`, `V6-COCKPIT-021.*`
+  - Extension/registry governance lanes: `V6-EXT-704..709`, `V6-REGISTRY-001.*`
+- Net-new focus from this source:
+  - versioned, backward-compatible stable memory library contract as the canonical integration surface
+  - mandatory adapter layering so CLI/MCP/HTTP routes consume the same stable library interface
+  - explicit compatibility profile for OpenClaw-style external agents without silent breakage
+- Default placement:
+  - Layer `0`: conduit-routed calls + version pin enforcement + immutable receipts
+  - Layer `1`: API version policy, compatibility/deprecation policy, provenance contract
+  - Layer `2`: stable memory API facade and adapter routing (CLI/MCP/HTTP)
+  - Layer `3`: optional memory-heavy persona defaults only
+  - `client`: thin activation/inspection commands only
+  - `app`: optional `/apps/sovereign_cortex/` integration profile
+  - `adapter`: OpenClaw-compatible protocol bindings
+
+Objective: make memory search integrations durable across releases by introducing a versioned stable library contract over existing memory primitives, while preserving conduit governance and thin client/app boundaries.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-MEMORY-009.1 | queued | Versioned Stable Memory API Contract (Semantic/Graph/Context Queries) | Integrations break when internal memory search changes leak directly into external interfaces without compatibility boundaries. | Define a canonical versioned memory API facade (semantic search, graph traversal, context-tree queries) with strict backward-compat contracts and deterministic capability/version receipts. | 9 | 0/1/2 |
+| V6-MEMORY-009.2 | queued | CLI/MCP/HTTP Adapter Convergence on Stable Core | Drift appears when interfaces maintain separate query logic instead of one stable library-backed contract. | Route `protheus` CLI, MCP exposure, and HTTP chat/search endpoints through the stable memory API facade only; add conformance tests proving parity across all interface adapters. | 9 | 0/1/2/client/adapter |
+| V6-MEMORY-009.3 | queued | OpenClaw-Compatible Memory Search Profile Contract | External agents need predictable compatibility, but ad hoc shims cause fragile integration and maintenance churn. | Provide explicit OpenClaw-style compatibility profile mapping external request/response shapes to the stable memory API with deterministic translate/execute receipts and fail-closed schema validation. | 8 | 0/1/2/adapter |
+| V6-MEMORY-009.4 | queued | Version Pinning + Deprecation Governance Contract | Stable APIs still break trust if consumers cannot pin versions and receive deterministic deprecation/migration guidance. | Add version pin policy (`stable`, `vN`, compatibility window), deprecation receipts, and machine-readable migration hints; reject unsupported versions with deterministic denial receipts. | 8 | 0/1/2/client |
+| V6-MEMORY-009.5 | queued | Stability Regression Harness for Memory API Surface | Contract stability claims are unverifiable without fixed regression packs that detect schema/behavior drift before release. | Add regression harness covering request/response schemas, ranking/citation invariants, error codes, and adapter parity across versions; release gate fails on compatibility drift. | 9 | 0/1/2/adapter/client |
+| V6-MEMORY-009.6 | queued | Conduit-Only Stable Library Boundary + Thin Surface Enforcement | A stable interface still becomes unsafe if direct client/app execution bypasses conduit policy and receipt guarantees. | Enforce conduit-only routing for all stable library invocations and adapter bridges with bypass-rejection tests; keep client/app as non-authoritative control/render surfaces only. | 10 | 0/1/2/client/app/adapter |
+
+## ByteRover Production-Grade Context Tree + Hybrid Sync Intake (Doc/Source `V6-MEMORY-010`, 2026-03-11)
+
+Source references:
+- https://x.com/kevinnguyendn/status/2031415770073411648
+
+Notes:
+- Primitive-first normalization: this intake hardens existing context-tree and stable-memory lanes; it does not add a new memory primitive.
+- Overlap handled explicitly:
+  - Context-tree curation/continuity baseline: `V6-MEMORY-007.*`
+  - Stable API/versioning baseline: `V6-MEMORY-009.*`
+  - Persistent continuity/snapshot/scheduler lanes: `V6-PERSIST-001.*`
+  - Context strategy plugins and hot-swap governance: `V6-CONTEXT-001.*`
+  - Sovereign identity binding and `.cortex/` contracts: `V6-SOVEREIGN-001.*`
+- Net-new focus from this source:
+  - canonical `.brv/context-tree` projection/profile for coding-memory operations
+  - hybrid local-first + optional cloud sync contract over existing identity/persistence primitives
+  - selective high-accuracy retrieval tuning contract with explicit freshness scoring and token-burn limits
+- Default placement:
+  - Layer `0`: conduit-routed sync/retrieval/upgrade actions + immutable receipts
+  - Layer `1`: versioned context-tree node schema, sync/retention/privacy policy, freshness scoring policy
+  - Layer `2`: sync orchestrator, selective retrieval router, context-tree projection runtime
+  - Layer `3`: optional coding-persona defaults only
+  - `client`: thin upgrade/status/tune controls only
+  - `app`: optional `/apps/context_tree/` production profile extension
+  - `adapter`: optional cloud-sync transport adapters
+
+Objective: harden context-tree memory into a production profile with canonical structure, hybrid sync, selective retrieval tuning, and one-command activation while preserving conduit governance and thin client/app boundaries.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-MEMORY-010.1 | queued | Canonical `.brv/context-tree` Projection + Versioned Node Contract | Context-tree layouts drift across tools/sessions without one canonical projection and versioned node contract. | Add deterministic `.brv/context-tree` projection profile over existing context-tree primitives with versioned node classes (`timeline`, `facts`, `rules`, `meaning`) and deterministic projection/update receipts. | 8 | 0/1/2/client/app |
+| V6-MEMORY-010.2 | queued | Hybrid Local-First + Optional Cloud Sync Contract | Context continuity is fragile when sync behavior is all-or-nothing and not identity-scoped with conflict rules. | Add identity-bound hybrid sync policy (local authoritative default, optional cloud replica) with deterministic sync/conflict-resolution receipts, fail-closed privacy gates, and no data-loss guarantees through restore/snapshot checks. | 9 | 0/1/2/adapter/client |
+| V6-MEMORY-010.3 | queued | Selective Retrieval Accuracy + Freshness Tuning Contract | Token burn rises and answer quality degrades when retrieval pulls too much stale context. | Add selective retrieval tuner with freshness scoring and relevance thresholds over existing context-tree/query primitives, including benchmark gate targets (for example >=92% on curated retrieval-eval pack) and deterministic tuning receipts. | 8 | 0/1/2 |
+| V6-MEMORY-010.4 | queued | One-Command Production Upgrade Contract (`protheus memory upgrade byterover`) | Production hardening adoption is low without a single deterministic activation path. | Provide thin upgrade command that enables canonical projection + sync + retrieval profile via existing core lanes and emits deterministic activation/migration receipts with rollback plan pointers. | 7 | 1/2/client/app |
+| V6-MEMORY-010.5 | queued | Context-Tree Production Regression Harness Contract | Production-memory claims are unverifiable without fixed regression packs for continuity, sync integrity, and retrieval quality. | Add regression harness for restart continuity, sync drift/conflict scenarios, retrieval accuracy/freshness, and token-burn budget ceilings; release gates fail on regression with deterministic evidence artifacts. | 9 | 0/1/2/adapter/client |
+| V6-MEMORY-010.6 | queued | Conduit-Only ByteRover-Profile Boundary + Thin Surface Enforcement | Upgrade/sync flows can bypass policy if implemented in client wrappers instead of conduit-governed lanes. | Enforce conduit-only routing for projection/sync/retrieval/upgrade operations with bypass-rejection tests; keep client/app layers non-authoritative controls and views only. | 10 | 0/1/2/client/app/adapter |
+
 ## Production-Grade Checklist Addendum (2026-03-06)
 
 | ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
@@ -1317,6 +1538,143 @@ Notes:
 | V6-SWARM-004 | done | Queue-pressure auto-scaling planner | Parallel throughput is capped when worker scaling remains manual during backlog spikes. | Deterministic scaling planner (`ScalingPolicy`, `plan_scaling`) with reversible `scale_up/scale_down/hold` decisions in `core/layer0/swarm_router/src/lib.rs` and CLI `scale` command is validated by `cargo test --manifest-path core/layer0/swarm_router/Cargo.toml`. | 7 | 0/1/2/client |
 | V6-SWARM-005 | done | File-backed queue contract + priority ordering | Reliable worker handoff and scheduling need schema-backed queue artifacts and deterministic priority sorting. | File-backed queue artifact (`QueueArtifact`) with schema versioning (`swarm_queue_v1`), deterministic validation, and priority/tie-break ordering (`priority desc`, `id asc`) in `core/layer0/swarm_router/src/lib.rs` is validated by `cargo test --manifest-path core/layer0/swarm_router/Cargo.toml`. | 6 | 0/1/2 |
 | V6-SWARM-006 | done | Swarm observability and self-upgrade protocol | Router operations need auditable traces and safe upgrade/rollback controls to avoid orchestration drift. | Swarm receipt/metric primitives (`SwarmReceipt`, `SwarmMetrics`) and upgrade/rollback protocol (`apply_upgrade`, `apply_rollback`) in `core/layer0/swarm_router/src/lib.rs` with CLI surfaces in `src/main.rs` are validated by `cargo test --manifest-path core/layer0/swarm_router/Cargo.toml`. | 9 | 0/1/2/client |
+
+## Low-Overhead Swarm Coordination + Built-in Benchmarking Source Coverage Intake (Doc `1hQk69PCmqWKc8wRfrclek11mOTupAFlNtE1oWAgC0sI`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1hQk69PCmqWKc8wRfrclek11mOTupAFlNtE1oWAgC0sI/edit?usp=sharing
+- https://x.com/Strakyo/status/2031737456198910058
+
+Notes:
+- Primitive-first normalization: no new core primitive is introduced; this extends existing swarm router, scheduling/attention queue, and observability lanes.
+- Overlap handled explicitly:
+  - swarm router and lifecycle baseline: `V6-SWARM-001..006`
+  - competitive/public benchmark lanes: `V6-COMP-001`, `V6-COMP-003`
+  - command center and cockpit observability lanes: `V6-OBSERVABILITY-001.*`, `V6-COCKPIT-020.*`
+- Placement correction from source doc:
+  - source frames this as a client extension; normalized placement is core-authoritative coordination/benchmark logic with thin client and optional app dashboard UX only.
+- Default placement:
+  - Layer `0`: conduit-routed benchmark/coordination actions + deterministic receipts
+  - Layer `1`: benchmark policy (baseline mode, SLO thresholds, retention/provenance)
+  - Layer `2`: coordination fastpath, benchmark runner, delta-computation engine
+  - `client`: thin `swarm benchmark` and dashboard wrappers only
+  - `app`: optional `/apps/swarm_benchmark/` views only
+
+Objective: make swarm execution provably better than single-agent mode by enforcing low-overhead coordination and automatically collecting reproducible latency/failure/cost deltas on every benchmarked run.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-SWARM-007 | queued | Low-Overhead Coordination Fastpath Contract | Parallel worker gains collapse when scheduler and message overhead are not explicitly bounded and measured. | Add fastpath coordination mode (zero-copy envelope handling where applicable + priority-aware batching) and emit deterministic overhead telemetry per run; benchmarked overhead remains within policy threshold relative to single-agent baseline. | 9 | 0/1/2 |
+| V6-SWARM-008 | queued | Automatic Single-vs-Swarm Benchmark Runner Contract | Swarm claims are hard to trust when deltas are measured ad hoc instead of by one deterministic harness. | Add benchmark harness that runs paired single-agent and swarm executions over the same workload class and emits deterministic delta metrics (`latency`, `failure_rate`, `throughput`, `cost`) with run lineage. | 10 | 0/1/2/client |
+| V6-SWARM-009 | queued | Benchmark Epistemic Object + Provenance Ledger Contract | Performance trends regress silently when results are not stored as queryable, provenance-linked memory objects. | Persist benchmark outputs as Epistemic Objects with workload profile, router config, model profile, and confidence metadata; support reproducible trend queries over rolling windows. | 8 | 0/1/2 |
+| V6-SWARM-010 | queued | Command-Center Swarm Delta Dashboard Contract | Operators need immediate visibility into whether swarm mode is helping or hurting on real workloads. | Add command-center view for swarm vs baseline deltas with time-series graphs, threshold markers, and receipt-linked drilldowns via `protheus dashboard --swarm`. | 8 | 1/2/client/app |
+| V6-SWARM-011 | queued | Swarm Benchmark SLO Gate Contract (`overhead_pct` policy) | Without an executable SLO gate, low-overhead claims can drift while still reporting "successful" swarm runs. | Add policy-backed SLO gate (including `coordination_overhead_pct`) that can fail-close or auto-fallback to single-agent mode when thresholds are exceeded, with deterministic gate receipts. | 10 | 0/1/2 |
+| V6-SWARM-012 | queued | Conduit-Only Swarm Benchmark Boundary + Thin Surface Enforcement | Benchmark/control paths can bypass governance if implemented directly in client/app layers. | Enforce conduit-only routing for benchmark start/stop/compare/export operations, reject bypass paths in contract checks, and keep client/app layers non-authoritative UX surfaces. | 10 | 0/1/2/client/app |
+
+## Sovereign Agent Cortex & Identity Extension Source Coverage Intake (Doc `1Vq5Ofotuc3s1YKqXMp76VKwrqW4v4MVKDADP8PRUEl8`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1Vq5Ofotuc3s1YKqXMp76VKwrqW4v4MVKDADP8PRUEl8/edit?usp=sharing
+- https://github.com/0xNyk/awesome-agent-cortex
+
+Notes:
+- Primitive-first normalization: no new core primitive is introduced; this intake extends existing identity, memory graph, skills/persona bootstrap, and optional wallet/payment lanes.
+- Overlap handled explicitly:
+  - graph memory and vault semantics: `V6-MEMORY-003.*`, `V6-MEMORY-004.*`, `V6-STORAGE-001.*`
+  - identity and policy baselines: `V6-SOVEREIGN-002.*`, `V6-MPLAN-905`, `V7-META-001`
+  - skills/persona binding contracts: `V6-SKILLS-001.1..001.14`
+  - optional wallet/payment controls: `V6-PAY-001..007`, `V6-SOVEREIGN-003.*`
+- Placement correction from source doc:
+  - source frames this as client extension; normalized placement is core-authoritative identity/cortex execution with thin client/app setup surfaces only.
+- Default placement:
+  - Layer `0`: conduit-routed identity/cortex operations + deterministic receipts
+  - Layer `1`: sovereign identity policy, provenance policy, cortex retention/governance policy
+  - Layer `2`: cortex graph query/runtime orchestration, identity-bound playbook activator
+  - Layer `3`: persona bootstrap extensions for identity-bound cortex defaults
+  - `client`: thin `protheus cortex/identity/skill` wrappers only
+  - `app`: optional `/apps/sovereign_cortex/` UX only
+  - `adapter`: optional chain/wallet bindings only
+
+Objective: establish persistent sovereign identity and identity-bound graph cortex memory as governed default capabilities, with optional wallet/on-chain adapters and no authority leakage into client surfaces.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-SOVEREIGN-001.1 | queued | Sovereign Identity Kernel Contract (Persistent Cryptographic Persona) | Persona continuity and ownership guarantees degrade when identity is not persisted as a verifiable, provenance-linked object. | Add persistent identity objects (key material handles + provenance ledger references) for shadows/personas with deterministic create/bind/verify receipts that survive daemon restarts. | 10 | 0/1/2/3 |
+| V6-SOVEREIGN-001.2 | queued | Identity-Bound Graph Cortex Memory Contract | Long-term reasoning quality degrades when graph memory is detached from identity context and playbook semantics. | Bind cortex graph nodes/links/queries to sovereign identity scopes with governed backlinks/associations and deterministic query/update receipts over existing memory runtime primitives. | 9 | 0/1/2/3 |
+| V6-SOVEREIGN-001.3 | queued | `.cortex/` Playbook + Skill Manifest Activation Contract | Operator workflows fragment when playbooks/skills are not activated deterministically from identity-scoped configuration. | Add identity-scoped `.cortex/` manifest contract and activation flow (`protheus cortex init`, profile enable) that binds playbooks/skills at bootstrap with deterministic activation receipts and fail-closed schema checks. | 8 | 1/2/3/client/app |
+| V6-SOVEREIGN-001.4 | queued | Optional Wallet/On-Chain Binding Adapter Contract | On-chain identity/payment integration is useful but must remain optional and policy-scoped to avoid coupling core runtime to external chains. | Provide optional wallet binding adapters (e.g., EVM/Solana profile adapters) that attach to sovereign identity objects through conduit-only flows with deterministic bind/unbind/tx-provenance receipts. | 8 | 0/1/2/adapter/client |
+| V6-SOVEREIGN-001.5 | queued | Sovereign Cortex Bootstrap Governance Contract | Sovereign defaults can drift without one governance contract that validates required identity/cortex artifacts at startup. | Enforce startup governance checks for identity object presence, cortex manifest validity, and policy conformance; invalid bootstrap fails closed with deterministic denial receipts and remediation hints. | 9 | 0/1/2 |
+| V6-SOVEREIGN-001.6 | queued | Conduit-Only Sovereign Cortex Boundary + Thin Surface Enforcement | Sovereign identity and cortex operations can bypass policy if creation/query/bind logic is implemented directly in client/app wrappers. | Enforce conduit-only routing for all sovereign identity/cortex operations with bypass-rejection tests; keep client/app layers non-authoritative setup/inspection surfaces only. | 10 | 0/1/2/client/app/adapter |
+
+## Permanent Anti-Sycophancy & Truth-Seeking Identity Rule Source Coverage Intake (Doc `16UHULBODCtgIf8hFDo_KevvOvv6Ljr7umPlcC3-gfQw`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/16UHULBODCtgIf8hFDo_KevvOvv6Ljr7umPlcC3-gfQw/edit?usp=sharing
+- https://x.com/RoundtableSpace/status/2031667697751122321
+
+Notes:
+- Primitive-first normalization: no new core primitive is introduced; this intake extends existing identity bootstrap, policy gates, response verification, and receipt lanes.
+- Overlap handled explicitly:
+  - identity/bootstrap and persistent persona contracts: `V6-COCKPIT-012.1`, `V6-SKILLS-001.12`
+  - quality/evaluation and hallucination controls: `V6-OBSERVABILITY-003.*`, `V6-OBSERVABILITY-002.2/.5`
+  - conduit-only safety boundary enforcement: `V6-CONDUIT-002`, `V6-CONDUIT-006`, `V6-CONDUIT-007`
+  - constitutional/invariant style governance lanes: `V7-META-001..002`, `V6-MPLAN-905`
+- Placement correction from source doc:
+  - source frames this as client extension; normalized placement is core-authoritative policy/response enforcement with thin client activation/observability surfaces.
+- Default placement:
+  - Layer `0`: conduit-routed response gate and deterministic truth-enforcement receipts
+  - Layer `1`: truth-seeking invariant policy, challenge-evidence requirements, exception policy
+  - Layer `2`: pre-response verifier, correction/challenge classifier, evidence attachment orchestrator
+  - Layer `3`: persona bootstrap defaults that include rule object by default
+  - `client`: thin `identity enforce` and inspection wrappers only
+  - `app`: optional `/apps/sovereign_cortex/` governance dashboard only
+
+Objective: enforce a non-bypassable truth-seeking behavioral invariant so agents prioritize accuracy and evidence over agreement, with deterministic denial/challenge/correction receipts.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-SOVEREIGN-002.1 | queued | Truth-Seeking Rule Object Ingestion + Identity Binding Contract | Anti-sycophancy behavior drifts unless the rule is bound to identity/bootstrap state as a governed object rather than ad hoc prompt text. | Add signed truth-seeking rule object bound to each persona/shadow identity at create/boot time, persisted with provenance/version metadata, and verified on startup with deterministic bind/verify receipts. | 10 | 0/1/2/3 |
+| V6-SOVEREIGN-002.2 | queued | R0 Truth Gate Policy Contract (Agreement-Without-Verification Deny) | Accuracy guarantees fail when responses can pass without verification/challenge requirements on uncertain or contradictory claims. | Enforce top-tier policy gate that blocks unverified agreement and requires challenge/correction behavior when confidence or evidence thresholds fail; denials emit deterministic policy receipts with reason codes. | 10 | 0/1/2 |
+| V6-SOVEREIGN-002.3 | queued | Evidence-Linked Challenge/Correction Response Contract | Truth-seeking enforcement is untrustworthy if corrections are emitted without source/evidence linkage and explicit reasoning provenance. | Require correction/challenge outputs to include evidence references and structured rationale metadata under policy, with deterministic `TRUTH_SEEKING_ENFORCED` receipts for each triggered response. | 9 | 0/1/2/client |
+| V6-SOVEREIGN-002.4 | queued | Global + Persona-Scoped Activation Surface Contract | Operators need deterministic global/per-persona controls; otherwise enforcement becomes fragmented across runtime profiles. | Add thin command surfaces (`protheus identity enforce truth-seeking`, persona-scoped overrides) that apply governed policy toggles with deterministic activation/deactivation receipts and audit history. | 8 | 1/2/client |
+| V6-SOVEREIGN-002.5 | queued | Truth-Seeking Audit/Regression Harness Contract | Rule quality degrades without recurring measurement of false-agreement rate and correction efficacy over representative test suites. | Add regression harness that measures agreement-without-evidence violations, correction coverage, and false-positive challenge rate; enforce policy thresholds in CI/review with deterministic benchmark receipts. | 8 | 0/1/2/client |
+| V6-SOVEREIGN-002.6 | queued | Conduit-Only Truth-Gate Boundary + Thin Surface Enforcement | Truth policy can be bypassed if challenge/correction logic executes in client/app wrappers instead of core gates. | Enforce conduit-only routing for truth-gate evaluation and response tagging; bypass tests must fail closed, and client/app layers remain non-authoritative controls/UX only. | 10 | 0/1/2/client/app |
+
+## Production Reliability Fortress for Agentic DeFi Systems Source Coverage Intake (Doc `17nmf3l_DnDSoATBUl9SdrgQTLaqpM9G8EWEmlmKnuLY`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/17nmf3l_DnDSoATBUl9SdrgQTLaqpM9G8EWEmlmKnuLY/edit?usp=sharing
+- https://x.com/nyk_builderz/status/2031245095492792664
+
+Notes:
+- Primitive-first normalization: no new core primitive is introduced; this intake extends existing conduit, memory freshness, budget/policy, wallet/payment, and scheduler/observability lanes.
+- Overlap handled explicitly:
+  - tool/context routing and sandbox validation gates: `V6-TOOLS-001`, `V6-SBOX-001`, `V6-COCKPIT-020.5`
+  - memory freshness and low-burn retrieval contracts: `V6-MEMORY-013..018`
+  - budget/spend controls and payment policy surfaces: `V6-RUNTIME-002`, `V6-PAY-001..007`
+  - stress-aware execution and observability lanes: `V6-SWARM-007..012`, `V6-OBSERVABILITY-001.*`, `V6-OBSERVABILITY-002.*`
+- Placement correction from source doc:
+  - source frames this as client extension; normalized placement is core-authoritative risk/reliability execution with thin client/app controls only.
+- Default placement:
+  - Layer `0`: conduit-routed preflight/simulate/execute/pause/resume actions + deterministic receipts
+  - Layer `1`: risk policy, freshness policy, wallet governance policy, circuit-breaker policy
+  - Layer `2`: simulation gate, freshness scorer/refresher, stress-lane scheduler, breaker controller
+  - Layer `3`: DeFi/quant persona defaults only
+  - `client`: thin risk/status/dashboard wrappers only
+  - `app`: optional `/apps/sovereign_cortex/` risk console
+  - `adapter`: chain/DEX/provider adapters only
+
+Objective: harden high-stakes DeFi/quant agent execution against bad calls, stale context, wallet misuse, and volatility stress using deterministic, conduit-governed safeguards with auditable reliability deltas.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-SOVEREIGN-003.1 | queued | Tool-Call Preflight Simulation + Risk Gate Contract | High-stakes execution fails when contract/tool calls are issued without deterministic preflight simulation and policy scoring. | Add preflight simulation gate for swap/transfer/contract-call actions with risk scoring, auto-deny/escalate policy outcomes, and deterministic simulation/decision receipts before any live execution. | 10 | 0/1/2/adapter |
+| V6-SOVEREIGN-003.2 | queued | Real-Time Context Freshness Scoring + Auto-Refresh Contract | Trading/DeFi decisions degrade under stale prices/positions/orderbook context without explicit freshness contracts. | Add freshness scoring for critical market context with policy thresholds that force refresh or deny execution on stale data; every decision stores freshness provenance and refresh receipts. | 9 | 0/1/2 |
+| V6-SOVEREIGN-003.3 | queued | Wallet Spend Governance Hardening Contract (Identity-Bound Limits) | Wallet safety is insufficient when persona identity, spend ceilings, and confirmation tiers are not bound into one governed execution policy. | Enforce identity-bound spend/risk limits, confirmation tiers (single/multi-party), and authorized destination/instrument scopes; unauthorized wallet actions fail closed with deterministic denial receipts. | 10 | 0/1/2/3/adapter |
+| V6-SOVEREIGN-003.4 | queued | Market-Stress Priority Lanes + Circuit Breaker Contract | Volatility spikes can overwhelm normal scheduling paths and cause cascading execution failures. | Add stress-mode scheduler lanes with priority queuing and deterministic circuit-breaker pause/resume/escalation controls triggered by policy thresholds; stress transitions emit deterministic receipts and rollback pointers. | 10 | 0/1/2 |
+| V6-SOVEREIGN-003.5 | queued | Reliability Delta Harness for DeFi Agent Runs Contract | Reliability improvements are unproven without repeatable benchmark deltas under realistic market-stress fixtures. | Add benchmark harness comparing hardened vs baseline runs on latency/failure/slippage/risk-deny metrics with deterministic artifacts and trendable Epistemic objects for release gates. | 8 | 0/1/2/client/app |
+| V6-SOVEREIGN-003.6 | queued | Conduit-Only DeFi Fortress Boundary + Thin Surface Enforcement | Risk/wallet/scheduler controls can bypass governance if embedded in client/app logic. | Enforce conduit-only routing for risk gate, freshness, wallet, and breaker actions; reject bypass paths in contract tests and keep client/app layers non-authoritative UX/control surfaces only. | 10 | 0/1/2/client/app/adapter |
+
 | V6-COMP-001 | done | Competitive benchmark matrix with reproducible receipts | Comparative claims need timestamped, reproducible measurements instead of static marketing snapshots. | Implemented `REQ-13-002` lane `client/runtime/systems/ops/competitive_benchmark_matrix.{ts,js}`, policy `client/runtime/config/competitive_benchmark_matrix_policy.json`, benchmark harness docs/scripts under `benchmarks/competitive_matrix/`, and regression test `tests/client-memory-tools/competitive_benchmark_matrix.test.js` (pass). Receipts now emit deterministic metric snapshots (`cold_start_ms`, `idle_memory_mb`, `install_size_mb`, `evidence_verify_latency_ms`). | 9 | 0/1/2/client |
 | V6-COMP-002 | done | `protheus migrate --from openfang` importer lane | Lowering migration friction from competitor ecosystems improves adoption while preserving governance contracts. | Restored importer lane surfaces/wrappers (`client/runtime/systems/migration/universal_importers.ts`, `client/runtime/systems/migration/importers/*.js`) and added `protheusctl migrate --from=<engine>` alias routing in `client/runtime/systems/ops/protheusctl.ts`. Documentation updated (`docs/client/UNIVERSAL_IMPORTERS.md`) and regression verified by `tests/client-memory-tools/protheusctl_migrate_openfang_alias.test.js` (pass) plus `universal_importers.test.js` (pass). | 9 | 0/1/2/adapter/client |
 | V6-COMP-003 | done | Evidence-first audit dashboard drilldown | Enterprise buyers need fast, explicit claim->evidence->receipt traversal for trust and incident response. | Implemented `REQ-13-004` lane `client/runtime/systems/ops/evidence_audit_dashboard.{ts,js}`, policy `client/runtime/config/evidence_audit_dashboard_policy.json`, and docs `docs/client/EVIDENCE_AUDIT_DASHBOARD.md`. Lane now emits claim drilldowns with exportable JSON/Markdown artifacts and deterministic receipt links; regression verified by `tests/client-memory-tools/evidence_audit_dashboard.test.js` (pass). | 9 | 0/1/2/client |
@@ -6092,6 +6450,41 @@ Objective: add a conduit-governed decentralized data marketplace layer for disco
 | V6-NETWORK-002.4 | done | Knowledge Graph Provenance Index Integration | Shared datasets are not consistently indexed with lineage relationships, reducing traceability and downstream recall quality. | Integrate marketplace datasets into knowledge graph index with lineage edges and provenance links; search/assimilation outputs include graph relationships and source ancestry. | 8 | 0/1/2/adapter/client |
 | V6-NETWORK-002.5 | done | Conduit-Only Marketplace Enforcement + Receipts | Discovery/sharing/compute marketplace actions can bypass canonical audit flow without explicit conduit gating. | Enforce conduit-only routing for all marketplace operations with deterministic receipts, capability checks, and policy/budget gates; contract checker fails on bypass paths. | 10 | 0/1/2/adapter/client |
 
+## Decentralized Fork Convergence & Structured Feedback Pipeline Source Coverage Intake (Doc `1b2fSTI35W4dbOzJ5ZWAWw15dWGf-P_X9TuvgqL0qhhk`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1b2fSTI35W4dbOzJ5ZWAWw15dWGf-P_X9TuvgqL0qhhk/edit?usp=sharing
+- https://x.com/agent_wrapper/status/2031508924302860406
+
+Notes:
+- Primitive-first normalization: no new core primitive is introduced. This intake extends existing sovereign identity, Epistemic Object, conduit consent, swarm, and observability primitives.
+- Overlap handled explicitly:
+  - network collaboration and inter-node exchange: `V6-NETWORK-001.*`
+  - decentralized discovery/sharing/compute-to-data: `V6-NETWORK-002.*`
+  - swarm routing baseline: `V6-SWARM-001`
+  - company/ticket/delegation governance lanes: `V6-COMPANY-001.*`, `V6-ORCH-001.*`
+- Placement correction from source doc:
+  - source suggests a "client extension"; normalized placement is core-authoritative execution with thin client wrappers and optional app UX only.
+- Default placement:
+  - Layer `0`: conduit-routed report/issue/session/pr/fork/convergence actions + deterministic receipts
+  - Layer `1`: fork sovereignty policy, consent/approval policy, convergence metadata policy, review-tier policy
+  - Layer `2`: report->issue->session->pr orchestrator, convergence detector, fork lifecycle manager, review scheduler
+  - Layer `3`: fork-aware persona defaults only
+  - `client`: thin command/status/observability wrappers only
+  - `app`: optional `/apps/sovereign_cortex/` UX workflow only
+  - `adapter`: external forge/repo integration adapters only
+
+Objective: enable fork-native decentralized self-improvement where independent instances evolve with sovereignty, voluntarily converge when patterns match, and route all feedback-to-merge operations through consent-gated, receipt-backed core lanes.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-NETWORK-003.1 | queued | Structured Report -> Issue -> Session -> PR Pipeline Contract | Distributed improvement loops stay manual and inconsistent without one deterministic progression from observation to merge candidate. | Implement governed pipeline where any valid report object can promote through issue/session/PR stages with explicit state transitions, deterministic receipts, and policy-gated stage advancement. | 9 | 0/1/2/client/app |
+| V6-NETWORK-003.2 | queued | Cross-Fork Convergence Detection Contract | Independent forks duplicate work when common solution patterns are not detected and surfaced for voluntary convergence. | Add convergence detector that identifies semantically similar fixes across forks, emits ranked convergence proposals with provenance/confidence metadata, and routes proposals to consent-gated upstream contribution flow. | 8 | 0/1/2 |
+| V6-NETWORK-003.3 | queued | Fork Sovereignty Lifecycle Contract | Fork identity, health, and divergence are hard to govern without one lifecycle model tied to identity and policy scopes. | Define lifecycle operations (`create/register/track/diverge/archive`) bound to sovereign identity objects, with deterministic health/divergence receipts and fail-closed policy on unauthorized fork operations. | 9 | 0/1/2/3 |
+| V6-NETWORK-003.4 | queued | Consent-Gated Multi-Tier Review Contract | Autonomous merge loops are unsafe without explicit fast/deep review tiers and human consent control for high-impact changes. | Require two-tier review (`fast-pass`, `deep-arch`) with policy thresholds for auto-advance vs human approval, and deterministic review decision receipts linked to each PR candidate. | 10 | 0/1/2/client |
+| V6-NETWORK-003.5 | queued | Dogfooding Improvement Loop Contract | Infrastructure quality stalls when agents do not continuously exercise and validate their own improvement machinery in production-like flows. | Add governed dogfooding mode where orchestration, convergence, and review paths run against self-hosted infrastructure changes with failure routing, rollback hooks, and observability evidence artifacts. | 8 | 0/1/2/client/app |
+| V6-NETWORK-003.6 | queued | Conduit-Only Network Convergence Boundary + Thin-Surface Enforcement | Fork/convergence orchestration can bypass safety policy if implemented in client/app logic rather than authoritative core lanes. | Enforce conduit-only execution for all report/fork/convergence/review actions, reject bypass paths in contract checks, and keep client/app layers strictly non-authoritative UX/control surfaces. | 10 | 0/1/2/client/app/adapter |
+
 ## AI Video Ad Factory App Intake (Source: Nano Banana + MakeUGC + Veo 3 workflow, 2026-03-09)
 
 Objective: add a sandboxed ad-generation app that sits on top of the client runtime and is shipped as a default top-level app under `/apps` (not embedded inside `client/`), while all authority paths remain conduit-governed.
@@ -6109,10 +6502,13 @@ Objective: add a sandboxed ad-generation app that sits on top of the client runt
 Source references:
 - https://docs.google.com/document/d/1VFc_KcvdSM2ZXKe3D7QFOyPpwSkfmlyBKY1xtRhv3xw/edit?usp=sharing
 - https://docs.google.com/document/d/1HuddUbphNO9w0MCye3GTiCH5Eww4CAcYKkfOOAKBUbs/edit?usp=sharing
+- https://docs.google.com/document/d/1xAlRV_Q1t4imnEZX98pO4y76qaHcV029UnwV0A0IloQ/edit?usp=sharing
 - https://x.com/_avichawla/status/2031264340297527651
+- https://github.com/Gen-Verse/OpenClaw-RL
 
 Notes:
 - The `1Hudd...` source draft labeled this as `V6-APP-014` (`model-lab` app). It is normalized here as source coverage for `V6-COCKPIT-017.*` to avoid a duplicate training-authority branch.
+- The `1xAl...` source draft labeled this as `V6-APP-020` (`openclaw-rl` app). It is normalized here as source coverage for `V6-COCKPIT-017.*` to avoid a duplicate app-owned training authority branch.
 - The RL-policy-improvement source draft proposed a `client/apps/` extension. That placement is rejected for authority: reward capture, training orchestration, weight promotion, and hot-swap safety belong in core.
 - Primitive-first normalization: RL-style policy improvement is an extension of the existing self-improvement/training primitive family, not a separate app/runtime.
 - Layer placement:
@@ -6136,6 +6532,46 @@ Objective: add a safe, conduit-governed self-improvement engine where shadows ru
 | V6-COCKPIT-017.6 | done | Conversation correction/reward capture extension | RL-style improvement needs governed reward signals from real usage, but conversation feedback/corrections are not yet modeled as a canonical training signal contract. | Add reward-capture primitives that convert bounded user corrections/approvals/failures into redacted reward objects with provenance, privacy policy labels, and deterministic receipts; routine turns can be scored as `positive/negative/neutral` or token/span-level corrections without leaking raw sensitive content into training lanes. | 8 | 0/1/2/client |
 | V6-COCKPIT-017.7 | done | Async train/serve coexistence + hot-swap promotion contract | Background training only helps if serving remains stable and improved candidates can be promoted without interrupting live operation or widening failure blast radius. | Add async serving/training coexistence contract where candidate policies train in parallel, pass eval/policy gates, and promote through bounded hot-swap/canary/rollback flow with no serving interruption and deterministic promotion receipts. | 8 | 0/1/2/client |
 | V6-COCKPIT-017.8 | done | Hard-case targeting policy for policy-level failures | Self-improvement loops waste budget when they spend training cycles on memory/retrieval/skill failures that should be fixed elsewhere. | Add targeting policy that routes only policy-level failures (planning, tool ordering, ambiguity handling, sequencing) into RL/distillation queues while explicitly excluding memory/index/skill/config failures unless reclassified; targeting decisions emit deterministic receipts and budget telemetry. | 8 | 0/1/2/client |
+| V6-COCKPIT-017.9 | queued | Decoupled Async RL Loop Topology Contract (Serve/Rollout/Judge/Train) | Background policy learning remains fragile without a formal decoupled topology for serving, rollout collection, reward judging, and training loops. | Add governed four-loop async topology contract with bounded queue interfaces between loops, deterministic loop-state receipts, and non-blocking serve guarantees during training and promotion windows. | 8 | 0/1/2/client |
+| V6-COCKPIT-017.10 | queued | Policy Objective Mode Contract (Binary Reward vs Token-Distillation) | RL pipelines need explicit objective selection to avoid ad hoc switching between reward-style and distillation-style learning runs. | Add policy-bounded objective-mode selector (`binary_reward`, `token_distillation`) with deterministic run metadata receipts, per-mode guardrails, and compatibility checks before model promotion. | 7 | 0/1/2/client |
+
+## Persistent Unsupervised ML Research Harness with Wake-Up Loops Intake (Doc/Source `V6-AUTORESEARCH-002`, 2026-03-11)
+
+Source references:
+- https://x.com/snwy_me/status/2031347002773221673
+
+Notes:
+- Primitive-first normalization: this intake is a production harness profile over existing autoresearch/swarm/scheduling/research primitives; it does not create a second training authority stack.
+- Overlap handled explicitly:
+  - core autonomous improvement loop contracts: `V6-COCKPIT-017.*`
+  - persistent wake/scheduler/session lanes: `V6-PERSIST-001.*`
+  - swarm routing/parallel benchmark lanes: `V6-SWARM-001..012`
+  - observability and command-center graph surfaces: `V6-OBSERVABILITY-001.*`, `V6-APP-017.*`, `V6-COCKPIT-025.*`
+  - paper search and structured extraction lanes: `V6-RESEARCH-001/004/005/006`, `V6-PARSE-001.*`
+  - sovereign identity and machine binding contracts: `V6-SOVEREIGN-001.*`
+- Net-new focus from this source:
+  - self-retriggering wake-up loop profile for unattended overnight experiment continuation
+  - first-class multi-machine SSH orchestration profile for remote experiment routing and machine switching
+  - parallel experiment compare/graph cockpit profile plus consultation-aware paper-research loop
+- Default placement:
+  - Layer `0`: conduit-routed wake/dispatch/compare/consult actions + immutable receipts
+  - Layer `1`: experiment budget policy, machine access policy, consultation quorum policy, retention/privacy policy
+  - Layer `2`: wake-up scheduler, multi-machine dispatcher, parallel compare orchestrator, paper-consult pipeline
+  - Layer `3`: optional ML-research persona defaults only
+  - `client`: thin activation/status/compare controls only
+  - `app`: `/apps/autoresearch/` production harness extension
+  - `adapter`: SSH and remote-runner adapters
+
+Objective: harden autonomous ML research into an always-on production harness with wake-up loops, multi-machine orchestration, and parallel compare/consult flows while preserving conduit governance and thin client/app boundaries.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-AUTORESEARCH-002.1 | queued | Wake-Up Loop + Self-Re-Trigger Contract | Long-running research dies between manual interventions unless agents can deterministically re-wake and continue without user presence. | Add governed wake/retrigger loop profile (time/interval/condition triggers) over existing scheduler primitives with deterministic wake/resume receipts and policy-bounded idle/runtime windows. | 9 | 0/1/2/client/app |
+| V6-AUTORESEARCH-002.2 | queued | Multi-Machine SSH Orchestration + Machine-Switch Contract | Research throughput is capped when remote machine management and switching remain ad hoc and brittle. | Add identity-bound remote machine profile (register/select/switch/dispatch) over existing swarm/orchestration lanes via SSH adapters, with deterministic machine-route receipts and fail-closed access policy checks. | 8 | 0/1/2/adapter/client |
+| V6-AUTORESEARCH-002.3 | queued | Parallel Experiment Launch + Live Compare/Graph Contract | Parallel runs are hard to trust without one deterministic compare pipeline and graph-backed observability views. | Launch parallel experiments through existing swarm lanes, compute live deltas (loss/accuracy/cost/time), and render inline + full graph views with deterministic compare/render receipts and replayable evidence artifacts. | 8 | 0/1/2/client/app |
+| V6-AUTORESEARCH-002.4 | queued | Paper Search + Multi-Agent Consultation Decision Contract | Autonomous research quality degrades when key decisions skip structured literature retrieval and multi-agent critique. | Add consultation loop that retrieves papers via existing research lanes, runs bounded multi-agent analysis/critique, and emits deterministic decision receipts linked to cited evidence bundles. | 8 | 0/1/2/client/app |
+| V6-AUTORESEARCH-002.5 | queued | Overnight Autonomy Budget Guard + Cost Ceiling Contract | Unattended research can burn budgets quickly without explicit overnight caps and stop conditions. | Enforce per-run and overnight cost/time/resource ceilings with deterministic pause/stop/fallback receipts; trigger auto-throttle or halt on policy breach before spend runaway occurs. | 10 | 0/1/2 |
+| V6-AUTORESEARCH-002.6 | queued | Conduit-Only Helios-Profile Boundary + Thin Surface Enforcement | Harness convenience features can leak authority into client/app wrappers unless execution boundaries are explicit and tested. | Enforce conduit-only routing for wake, dispatch, compare, and consult operations with bypass-rejection tests; keep client/app layers non-authoritative control and visualization surfaces only. | 10 | 0/1/2/client/app/adapter |
 
 ## Native Desktop Control & Self-Learning Recipes Intake (Doc `1jq73YxPJ3_WiL4By6MkVor726RGIRDS0a1dMtrMAWIU`, 2026-03-11)
 
@@ -6578,6 +7014,39 @@ Objective: add native gateway-level deep tracing for context assembly, tool/dele
 | V6-OBSERVABILITY-004.4 | done | Per-Request Model + Cost + Thread Ledger Contract | Cost visibility is fragmented when usage is aggregated only at coarse time windows without request-level model/provider attribution. | Emit request-level cost ledger entries (model, provider, tokens, unit costs, totals, thread/session linkage) with exportable historical trend views and deterministic accounting receipts. | 7 | 0/1/2/client |
 | V6-OBSERVABILITY-004.5 | done | Curated Native Observability Plugin Template Governance Lane | Plugin quality and safety drift without signed curated templates and periodic review of tracing patterns/privacy controls. | Maintain signed plugin template pack installable via governed URI (for example `observability://opik-native`) with quarterly human review, compatibility metadata, and deterministic install/update/deprecate receipts. | 7 | 0/1/2/client |
 | V6-OBSERVABILITY-004.6 | done | Conduit-Only Deep-Trace Boundary + Thin Client Enforcement | Deep-tracing features can leak authority into client code paths unless plugin/tracing control is centrally enforced. | Enforce conduit-only routing for trace capture, plugin control, lineage queries, and ledger exports with fail-closed policy checks and bypass-rejection tests; client/app remain non-authoritative render/control surfaces. | 10 | 0/1/2/client |
+
+## Local Policy Enforcement & Hash-Chained Audit Trail Source Coverage Addendum (Doc `1jXTbAvxCT7NgxuGi4620HJT0zrfqW8mfYJE4jjDzP5s`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1jXTbAvxCT7NgxuGi4620HJT0zrfqW8mfYJE4jjDzP5s/edit?usp=sharing
+- https://x.com/luccasveg/status/2031410745959756246
+
+Notes:
+- Primitive-first normalization: this intake extends existing observability/policy/receipt primitives; it does not create a separate client-authority guardrail subsystem.
+- Overlap handled explicitly:
+  - Existing deep-trace observability lane: `V6-OBSERVABILITY-004.1..004.6`
+  - Existing safety/policy execution boundaries: `V6-PERSIST-001.6`, `V6-SEC-010..017`, `V6-CONDUIT-002`, `V6-CONDUIT-006`
+  - Existing context/lineage/event tracing lanes: `V6-OBSERVABILITY-001.*`, `V6-OBSERVABILITY-003.*`, `V6-CONTEXT-001.*`
+- Net-new focus from this source:
+  - user-authored local "commandment" rules as governed policy objects with bounded block/flag actions
+  - explicit violation-event linkage into the existing hash-chained receipt lineage
+  - operator-first live monitoring views focused on enforcement events and policy outcomes
+- Default placement:
+  - Layer `0`: final conduit-routed allow/deny enforcement + immutable receipt hash chain
+  - Layer `1`: commandment-rule schema, priority/conflict policy, retention/privacy policy for violation artifacts
+  - Layer `2`: policy evaluator and violation monitor/notification orchestrator
+  - Layer `3`: optional policy-aware persona defaults only
+  - `client`: thin status/watch/audit UX only
+  - `app`: optional `/apps/crabwise/` policy cockpit profile
+
+Objective: extend current observability and policy primitives with local commandment enforcement and violation-linked hash-chained audit review, while keeping authority in core and client/app layers thin.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-OBSERVABILITY-004.7 | queued | Local Commandment Rule Objects + Priority/Conflict Contract | Users need plain-language local rules ("never do X without confirmation"), but ad hoc prompt-only rules are brittle and non-auditable across long-running sessions. | Add governed commandment-rule objects (scope, action class, confirm/block mode, priority, conflict policy) evaluated in conduit policy flow; all rule evaluations emit deterministic allow/deny/override receipts. | 8 | 0/1/2/client/app |
+| V6-OBSERVABILITY-004.8 | queued | Violation-Linked Hash-Chain Audit Continuity Contract | Existing receipt chains lose policy intent visibility when violation events are not first-class linked artifacts. | Extend receipt lineage so commandment checks and violation decisions are appended as hash-linked events with actor/tool/action context and immutable replay continuity in `protheus audit`/`protheus-top`. | 8 | 0/1/2/client |
+| V6-OBSERVABILITY-004.9 | queued | Enforcement-Focused Live Monitor + Notification Contract | Operators cannot react quickly when policy blocks/flags are buried inside generic telemetry streams. | Add live monitor views for rule hits, block/allow rates, top violated commandments, and escalation notifications (terminal/connector routes) with deterministic event receipts and filter/query controls. | 7 | 1/2/client/app |
+| V6-OBSERVABILITY-004.10 | queued | Conduit-Only Commandment Enforcement + Thin Client/App Boundary Contract | Commandment UX extensions can accidentally move authority into client/app code unless execution boundaries are explicit and test-enforced. | Enforce that all rule parsing, evaluation, block/allow decisions, and audit writes run through conduit-governed core lanes; client/app remain render/control surfaces only, with bypass-rejection tests required. | 10 | 0/1/2/client/app |
 
 ## Local MoE Chat & Quantized Inference Intake (Doc `1fZdbo3uVCccuLDdWdWYCdbkasubqMSC2eJI0sR8RUXk`, 2026-03-11)
 
@@ -7265,3 +7734,488 @@ Objective: strengthen the advanced harness layer so skills and subagents are fas
 | V6-COCKPIT-020.4 | done | Slash Command Orchestration Compilation Contract | Workflow entrypoints are powerful but not yet normalized into concise slash-command ergonomics mapped to deterministic orchestration graphs. | Add slash command registry (for example `plan`, `tdd`, `security-scan`, `multi-plan`) that compiles commands into existing orchestration primitives with deterministic command->graph lineage receipts and bounded argument schemas. | 8 | 0/1/2/client |
 | V6-COCKPIT-020.5 | done | Skill/Subagent Security Scan Gate Contract | New skills/subagents can introduce unsafe patterns unless each artifact passes mandatory policy and vulnerability scan checks before activation. | Enforce scan-on-install/update gate for skills/subagents using policy-scoped rule packs; activation is denied on critical findings and all scan decisions emit deterministic receipts linked to skill/subagent versions. | 8 | 0/1/2/client |
 | V6-COCKPIT-020.6 | done | Conduit-Only Harness Boundary + Thin Client Enforcement | Harness features can drift into client-owned authority logic if hooks, learning, or slash routing are executed directly in wrappers. | Route all skill/hook/instinct/slash/scan actions through conduit with fail-closed policy checks, deterministic receipts, and bypass-rejection tests; keep client/app layers non-authoritative and UX-focused only. | 10 | 0/1/2/client |
+
+## Agent Command Center CLI with Resumable Sessions & Live Steering Source Coverage Intake (Doc `1NmUDaVaWU3DEJV2cUpqoT33k1fQptNSWJf96u0GwoFU`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1NmUDaVaWU3DEJV2cUpqoT33k1fQptNSWJf96u0GwoFU/edit?usp=sharing
+- https://x.com/elvissun/status/2031730194327982115
+
+Notes:
+- Source proposes `V6-COCKPIT-020`, but that ID is already occupied by harness intake; normalized to `V6-COCKPIT-025.*` to avoid collisions.
+- Primitive-first normalization: no new core primitive is introduced; this intake extends existing gateway attach/runtime, observability, scheduler, and session continuity lanes.
+- Overlap handled explicitly:
+  - persistent gateway/session attach runtime: `V6-COCKPIT-012.2`, `V6-PERSIST-001.3`, `V6-COCKPIT-001`
+  - command-center/dashboard surfaces: `V6-OBSERVABILITY-001.*`, `V6-SWARM-010`
+  - session tenancy and lifecycle controls: `V6-COCKPIT-021.2`, `V6-PERSIST-001.8`
+  - cockpit coding-mode/session control surfaces: `V6-COCKPIT-024.*`
+- Placement correction from source doc:
+  - source frames this as client extension; normalized placement is core-authoritative session orchestration with thin CLI/dashboard wrappers.
+- Default placement:
+  - Layer `0`: conduit-routed spawn/list/attach/steer/pause/kill/tail/inspect actions + deterministic receipts
+  - Layer `1`: session policy, steering authorization policy, task metadata retention policy
+  - Layer `2`: command center orchestrator, attach broker, lifecycle controller, tail/inspect stream router
+  - Layer `3`: optional monitoring persona defaults only
+  - `client`: thin command-center CLI and dashboard wrappers only
+  - `app`: optional `/apps/command_center/` visual cockpit only
+
+Objective: provide one-command, low-friction control over active agents/sessions (spawn/list/monitor/resume/steer) with deterministic governance and auditable lifecycle traces.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-COCKPIT-025.1 | queued | Unified Command-Center Session Registry Contract | Operators lose control when active agents/sessions are spread across ad hoc state surfaces with inconsistent status semantics. | Add unified registry for active sessions/agents exposing status, uptime, current task, token/cost counters, and health flags through deterministic query receipts and policy-scoped visibility filters. | 8 | 0/1/2/client |
+| V6-COCKPIT-025.2 | queued | Instant Session Resume + Live Steering Attach Contract | Human intervention is slow without deterministic attach/resume semantics for running sessions. | Add `protheus session resume <id>` attach flow that resumes live sessions without cold-start rehydration, supports steering commands, and emits deterministic attach/intervention receipts tied to session lineage. | 10 | 0/1/2/client |
+| V6-COCKPIT-025.3 | queued | Lifecycle Control Surface Contract (`spawn/list/status/send/kill/tail/inspect`) | Multi-agent operations remain brittle without one canonical lifecycle command set and bounded control semantics. | Implement full lifecycle command contract with authorization gates and deterministic action receipts for spawn/list/status/send/kill/tail/inspect operations; unauthorized or stale session actions fail closed. | 9 | 0/1/2/client |
+| V6-COCKPIT-025.4 | queued | Persistent Task/Session Metadata Ledger Contract | Session/task continuity weakens when metadata is not persisted as provenance-linked objects across daemon restarts. | Persist task/session metadata in governed Epistemic objects with restart-safe continuity, retention policy enforcement, and deterministic mutation/history receipts. | 8 | 0/1/2 |
+| V6-COCKPIT-025.5 | queued | Command-Center Dashboard Delta + Tail/Inspect Stream Contract | Terminal-only status checks are insufficient for rapid triage when multi-agent fleets need live drill-downs. | Add command-center dashboard mode (`protheus dashboard`, `protheus top`) showing live status grid + receipt-linked tail/inspect drill-down streams with bounded latency and role-scoped access controls. | 8 | 1/2/client/app |
+| V6-COCKPIT-025.6 | queued | Conduit-Only Command-Center Boundary + Thin Surface Enforcement | Session steering/lifecycle controls can bypass policy if implemented in client/app wrappers. | Enforce conduit-only routing for all command-center lifecycle and steering actions with bypass-rejection tests and deterministic denial receipts; keep client/app layers non-authoritative UX/control surfaces only. | 10 | 0/1/2/client/app |
+
+## PRD-to-Roadmap Autonomous Software Team Planner Source Coverage Intake (Doc `1z7TGqd7-fsYwiZY66xpxbnZTRQ-s1ZpSzEKuD-64VHc`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1z7TGqd7-fsYwiZY66xpxbnZTRQ-s1ZpSzEKuD-64VHc/edit?usp=sharing
+- https://x.com/Suryanshti777/status/2031312325660344779
+
+Notes:
+- Primitive-first normalization: no new core primitive is introduced; this intake extends existing research/assimilation, orchestration, workflow execution, and receipted merge lanes.
+- Overlap handled explicitly:
+  - code-engineer/project build orchestration: `V6-APP-006.1..006.8`
+  - visual/declarative workflow orchestration contracts: `V6-FLOW-001.*`
+  - deep execution harness and todo/graph execution lanes: `V6-COCKPIT-022.*`
+  - command center/session continuity and persistent execution: `V6-COCKPIT-025.*`, `V6-PERSIST-001.*`
+- Placement correction from source doc:
+  - source frames this as client extension; normalized placement is core-authoritative planning/execution flow with thin app/CLI wrappers.
+- Default placement:
+  - Layer `0`: conduit-routed ingest/plan/execute/merge actions + deterministic receipts
+  - Layer `1`: roadmap policy (scope, risk, budget, context-window limits), merge gate policy, provenance policy
+  - Layer `2`: PRD ingestor, story-point estimator, dependency batch planner, iterative execution orchestrator
+  - Layer `3`: coding persona defaults only
+  - `client`: thin `project-planner` command wrappers only
+  - `app`: primary UX in `/apps/project_planner/`
+
+Objective: produce and execute dependency-aware project roadmaps from PRD + tech-stack inputs with deterministic batching, iterative execution, and audit-ready receipts.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-WORKFLOW-003.1 | queued | PRD + Tech-Stack Ingestion Contract (`.planr/`) | Planning quality degrades when PRD and stack constraints are not ingested as structured, provenance-linked objects before orchestration. | Ingest `.planr/prd.md` and `.planr/tech-stack.md` (or explicit paths) into structured Epistemic objects with deterministic parse/summary receipts and policy-bound schema validation. | 8 | 0/1/2/client/app |
+| V6-WORKFLOW-003.2 | queued | Story-Point + Context-Budget Batch Planner Contract | Large project plans fail when task estimates and dependency batches ignore context-window and execution-budget constraints. | Add planner that computes story-point estimates, dependency-aware batches, and phase ordering under context/token/cost policy caps; emits deterministic roadmap-generation receipts and batch manifests. | 9 | 0/1/2 |
+| V6-WORKFLOW-003.3 | queued | Roadmap Artifact Contract (`.planr/roadmap.md` + machine schema) | Roadmaps lose downstream reliability when only human-readable output is emitted without stable machine-readable structure. | Emit roadmap artifacts in both markdown and governed machine schema (phase, batch, deps, estimate, acceptance criteria) with deterministic artifact hashes and provenance receipts. | 8 | 1/2/client/app |
+| V6-WORKFLOW-003.4 | queued | Iterative Batch Execution + Merge Gate Contract | Autonomous execution loops become unsafe when implementation/merge progression is not tied to explicit gates and context refresh between batches. | Execute each planned batch through bounded implement/test/merge/update cycles with deterministic per-step receipts; progression requires merge-policy pass and explicit context refresh before next batch. | 10 | 0/1/2 |
+| V6-WORKFLOW-003.5 | queued | One-Command Project Planner Activation Contract | Adoption remains low if project-planning flow requires manual multi-command composition each run. | Provide thin command surface (`protheus app run project-planner --prd <path> [--stack <path>]`) that launches full governed flow end-to-end and emits deterministic run/session receipts. | 7 | 1/2/client/app |
+| V6-WORKFLOW-003.6 | queued | Conduit-Only Project Planner Boundary + Thin Surface Enforcement | Planning/execution logic can bypass governance if implemented directly in client/app wrappers. | Enforce conduit-only routing for ingest/estimate/plan/execute/merge actions with bypass-rejection tests; keep client/app layers non-authoritative orchestration surfaces only. | 10 | 0/1/2/client/app |
+
+## Automatic Context-Tree Curation for Coding Agents Source Coverage Intake (Doc `1J_1zmz-_-DIF6Ok9AyVkbmO3PRPPVZb8vPT2LVZn_3Q`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1J_1zmz-_-DIF6Ok9AyVkbmO3PRPPVZb8vPT2LVZn_3Q/edit?usp=sharing
+- https://x.com/kevinnguyendn/status/2031339287472423167
+
+Notes:
+- Primitive-first normalization: no new standalone memory primitive is introduced; this intake extends existing memory/runtime/context contracts.
+- Overlap handled explicitly:
+  - graph-aware markdown memory + checkpoint lineage: `V6-MEMORY-003.*`
+  - semantic code context indexing/navigation: `V6-MEMORY-004.*`
+  - adaptive context compaction and plugin policy: `V6-COCKPIT-009.3`, `V6-CONTEXT-001.*`
+  - scheduling/persistent session continuity: `V6-PERSIST-001.*`
+- Placement correction from source doc:
+  - source frames this as client extension; normalized placement is core-authoritative context curation with thin skill/app activation surfaces only.
+- Default placement:
+  - Layer `0`: conduit-routed curation/index/update/query actions + deterministic receipts
+  - Layer `1`: context-tree schema, pin/retention policy, dedupe policy, provenance policy
+  - Layer `2`: curation runtime, timeline synthesizer, coding-session context optimizer
+  - Layer `3`: optional coding-persona defaults only
+  - `client`: thin CLI/UX wrappers only
+  - `app`: optional `/apps/context_tree/` inspector only
+
+Objective: eliminate long-session coding context drift by auto-curating a versioned context-tree that preserves architectural rules and facts while reducing token burn.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-MEMORY-007.1 | queued | Automatic Context-Tree Builder Contract over Existing Memory Primitives | Long coding sessions lose architectural continuity when facts/rules/timeline are not continuously consolidated into a governed tree. | Extend memory runtime to auto-build and maintain a versioned context-tree from coding session events + repository deltas with deterministic lineage receipts and no parallel memory authority path. | 9 | 0/1/2 |
+| V6-MEMORY-007.2 | queued | Rule Pinning + Redundancy Curation Contract | Token burn and context drift increase when high-value rules are buried and duplicate context proliferates. | Add curation policy that pins high-value architectural rules, consolidates near-duplicate context nodes, and emits deterministic prune/promote receipts with reversible history pointers. | 10 | 0/1/2 |
+| V6-MEMORY-007.3 | queued | Git-Linked Timeline Context Synthesis Contract | Agent memory quality degrades when conversation history and code evolution are not synchronized into one provenance trace. | Synthesize conversation turns, commits, and decision artifacts into a unified timeline-linked context-tree view with deterministic query receipts and bounded replay injection payloads. | 8 | 0/1/2 |
+| V6-MEMORY-007.4 | queued | Coding Skill Activation Surface Contract (`protheus skill enable context-tree`) | Adoption remains low if context-tree curation requires manual multi-step configuration across runtime and persona surfaces. | Provide thin activation surface that enables governed context-tree curation profile for coding personas in one command and records deterministic activation/deactivation receipts. | 7 | 1/2/client/app |
+| V6-MEMORY-007.5 | queued | Session-to-Session Context Continuity Contract | Context quality drops after detach/restart without deterministic replay of curated context-tree state. | Persist and restore curated context-tree state across daemon/client session boundaries with explicit freshness metadata, policy-bounded replay windows, and deterministic restore receipts. | 9 | 0/1/2 |
+| V6-MEMORY-007.6 | queued | Conduit-Only Context-Tree Boundary + Thin Surface Enforcement | Memory curation logic can bypass governance if implemented directly in client/app wrappers. | Enforce conduit-only routing for all context-tree build/curate/query/restore actions with bypass-rejection tests; keep client/app layers non-authoritative UX and activation surfaces only. | 10 | 0/1/2/client/app |
+
+## Graph Algorithms Toolkit Extension Source Coverage Intake (Doc `1xpMQoBvElxv4LPWu7vu8X94AnCq600h2JBFzYStB4BM`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1xpMQoBvElxv4LPWu7vu8X94AnCq600h2JBFzYStB4BM/edit?usp=sharing
+- Graph Algorithms: Practical Examples in Apache Spark & Neo4j (Needham/Hodler)
+
+Notes:
+- Source proposes `V6-TOOLS-005`, but that ID is already occupied; normalized to `V6-TOOLS-006.*` to preserve ID integrity.
+- Primitive-first normalization: no new graph-storage primitive is introduced; this intake extends existing graph/memory/research/inference lanes.
+- Overlap handled explicitly:
+  - graph memory and vault projections: `V6-MEMORY-003.*`
+  - semantic code-graph indexing/navigation: `V6-MEMORY-004.*`
+  - graph derivation and visualization surfaces: `V6-COCKPIT-015.10`, `V6-APP-017.*`
+  - research extraction/planning execution lanes: `V6-RESEARCH-004.*`, `V6-WORKFLOW-003.*`
+- Placement correction from source doc:
+  - source frames this as client extension; normalized placement is core-authoritative graph analytics with thin command/UX wrappers.
+- Default placement:
+  - Layer `0`: conduit-routed graph analytics jobs + deterministic receipts
+  - Layer `1`: graph-analytics policy (scope, cost, dataset eligibility, retention/provenance)
+  - Layer `2`: centrality/community/link-prediction execution runtime + cache/materialization
+  - Layer `3`: optional graph-aware persona defaults only
+  - `client`: thin `protheus graph ...` command wrappers and render surfaces only
+  - `app`: optional `/apps/graph_toolkit/` explorer only
+
+Objective: add first-class, governed graph analytics (centrality, community detection, link prediction) over existing Epistemic graph substrates without duplicating storage or reasoning primitives.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-TOOLS-006.1 | queued | Governed Centrality Suite Contract (Degree/Closeness/Betweenness/PageRank) | Influence/bottleneck analysis remains ad hoc without canonical centrality operators over existing graph substrates. | Add governed centrality job contract callable across memory/code/swarm graphs (`protheus graph centrality`) with deterministic run receipts, versioned parameters, and provenance-linked outputs stored as Epistemic objects. | 9 | 0/1/2/client |
+| V6-TOOLS-006.2 | queued | Governed Community Detection Suite Contract (Louvain/Label Propagation/Connected Components) | Cluster/group discovery is inconsistent without a standardized, policy-bound community-detection runtime. | Add community-detection job contract (`protheus graph communities`) with algorithm selection, determinism controls (seed/config), and materialized community artifacts with lineage receipts. | 8 | 0/1/2/client |
+| V6-TOOLS-006.3 | queued | Link-Prediction Feature + Scoring Contract | Missing-edge prediction is not reusable today across graph domains without a governed feature/scoring path. | Add link-prediction contract (`protheus graph predict-links`) using bounded feature families (common neighbors, preferential attachment, PageRank-derived signals) and deterministic score/provenance receipts. | 8 | 0/1/2/client |
+| V6-TOOLS-006.4 | queued | Graph Analytics Materialization + Cache Contract | Recomputing analytics on large graphs wastes budget and increases drift without artifact caching/version control. | Persist analytics outputs as versioned Epistemic graph artifacts with cache-key contract, TTL/refresh policy, and deterministic invalidation/update receipts. | 8 | 1/2 |
+| V6-TOOLS-006.5 | queued | Thin Command + Visualization Surface Contract | Operator adoption remains low without unified CLI/dashboard entrypoints for graph analytics workflows. | Provide thin command surfaces (`protheus graph centrality|communities|predict-links`) and optional dashboard views that consume core analytics artifacts only, with no client-side algorithm authority. | 7 | 1/2/client/app |
+| V6-TOOLS-006.6 | queued | Conduit-Only Graph Analytics Boundary + Thin Surface Enforcement | Graph analytics can bypass governance if algorithm execution is implemented in client/app layers. | Enforce conduit-only routing for graph analytics execution/materialization/query flows with bypass-rejection tests; keep client/app non-authoritative command/render surfaces only. | 10 | 0/1/2/client/app |
+
+## Native Tool-Use Gym with 503-Task Enterprise Benchmark Harness Intake (Doc/Source `V6-TOOLS-006` normalized to `V6-TOOLS-007`, 2026-03-11)
+
+Source references:
+- https://x.com/eigent_ai/status/2031827106707939374
+
+Notes:
+- Source proposes `V6-TOOLS-006`, but that ID is already occupied by graph analytics; normalized to `V6-TOOLS-007.*` to preserve ID integrity.
+- Primitive-first normalization: this intake composes existing MCP/swarm/research/autoresearch/observability primitives into a local benchmark-gym profile; it does not introduce a new core primitive.
+- Overlap handled explicitly:
+  - MCP capability/execution baselines: `V6-MCP-001.*`
+  - persistent scheduling/wake-up/session controls: `V6-PERSIST-001.*`, `V6-AUTORESEARCH-002.*`
+  - swarm orchestration and parallel benchmark lanes: `V6-SWARM-001..012`
+  - observability/compare dashboards and graph surfaces: `V6-OBSERVABILITY-001.*`, `V6-APP-017.*`
+  - sovereign risk/consent boundaries: `V6-SOVEREIGN-003.*`
+- Placement correction from source doc:
+  - source frames this as a client extension; normalized placement is core-authoritative gym execution with thin app/client controls only.
+- Default placement:
+  - Layer `0`: conduit-routed gym bootstrap/run/eval actions + immutable receipts
+  - Layer `1`: benchmark policy (task eligibility, budget/risk ceilings, trace retention, consent gates)
+  - Layer `2`: gym bootstrap runtime, task runner/evaluator, parallel compare orchestrator
+  - Layer `3`: optional tool-use training persona defaults only
+  - `client`: thin `protheus gym ...` command wrappers and status views only
+  - `app`: `/apps/tool_gym/` profile shell only
+  - `adapter`: local docker/mcp/postgres adapter pack
+
+Objective: ship a one-command, fully local, reproducible multi-tool benchmark/training gym so shadows can self-train/evaluate on realistic enterprise tool-use workflows with full receipt lineage.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-TOOLS-007.1 | queued | One-Command Tool Gym Bootstrap Contract (`protheus gym init toolathlon`) | Tool-use eval setups are brittle and inconsistent when local dependencies and server packs are manually assembled. | Add governed bootstrap profile that provisions local gym stack (compose/services/task pool) through existing deployment adapters, with deterministic bootstrap/health receipts and fail-closed policy checks. | 9 | 0/1/2/client/app/adapter |
+| V6-TOOLS-007.2 | queued | Automated Task Run + Ground-Truth Evaluation Contract | Multi-step tool-use competence is hard to measure when execution and evaluation are ad hoc and non-reproducible. | Add deterministic task runner/evaluator contract for gym tasks (preprocess -> execute -> evaluate) with receipted scoring outputs linked to task/version/run metadata. | 9 | 0/1/2 |
+| V6-TOOLS-007.3 | queued | Parallel Benchmark + Live Comparison Graph Contract | Improvement loops stall without side-by-side parallel comparison and graph-backed visibility into success/failure tradeoffs. | Run parallel task cohorts via existing swarm lanes, compute compare metrics (`success_rate`, `step_count`, coordination score, latency/cost), and render inline/full graphs with deterministic compare receipts. | 8 | 0/1/2/client/app |
+| V6-TOOLS-007.4 | queued | Gym Trace-to-Autoresearch Feedback Contract | Benchmark wins are wasted when successful traces are not fed into governed self-improvement loops. | Route selected successful gym traces into `V6-COCKPIT-017`/`V6-AUTORESEARCH-002` improvement queues with provenance-preserving transformation receipts and policy-bounded opt-in controls. | 9 | 0/1/2 |
+| V6-TOOLS-007.5 | queued | Offline Reproducibility + Baseline Ledger Contract | Claims of tool-use improvement are not trustworthy without offline reproducibility and stable baselines over time. | Persist benchmark baselines/results as Epistemic ledger artifacts (task set, environment hash, model/profile, score deltas) with deterministic replay checks and drift detection gates. | 8 | 1/2/client |
+| V6-TOOLS-007.6 | queued | Conduit-Only Tool Gym Boundary + Thin Surface Enforcement | Gym orchestration can bypass safety/policy if task execution paths are embedded directly in client/app wrappers. | Enforce conduit-only routing for init/run/eval/compare/export/feedback actions with bypass-rejection tests; keep client/app as non-authoritative control and visualization surfaces. | 10 | 0/1/2/client/app/adapter |
+
+## MiniMax M2.5 Open-Source MoE Model Integration Source Coverage Intake (Doc `1Ak5zUhBBYoCmKbKTlOFoP49AIycdALZref8Ygimj0_0`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1Ak5zUhBBYoCmKbKTlOFoP49AIycdALZref8Ygimj0_0/edit?usp=sharing
+- https://x.com/Sumanth_077/status/2031348503348392232
+
+Notes:
+- Primitive-first normalization: no new inference primitive is introduced; this intake extends existing local-MoE/runtime/routing lanes.
+- Overlap handled explicitly:
+  - local MoE runtime + quantized loading: `V6-COGNITION-003.*`, `V6-SUBSTRATE-003.*`
+  - cost-aware model routing + fallback policy: `V6-COCKPIT-018.2`, `V6-LLMN-001..004`
+  - multi-model compare/benchmark contracts: `V6-COGNITION-004.*`, `V6-OBSERVABILITY-003.*`
+- Placement correction from source doc:
+  - source frames this as client extension; normalized placement is core-authoritative model profile/routing execution with thin client/app selection surfaces only.
+- Default placement:
+  - Layer `0`: conduit-routed load/route/infer actions + deterministic receipts
+  - Layer `1`: model policy (allowlist, budget caps, privacy/egress constraints, benchmark provenance)
+  - Layer `2`: model profile loader, quantization selector, routing heuristics, benchmark capture
+  - Layer `3`: optional persona defaults only
+  - `client`: thin `protheus model use ...` wrappers and observability views only
+  - `app`: optional `/apps/model_profiles/` chooser only
+
+Objective: add governed MiniMax M2.5 profile support as a cost-efficient frontier MoE option while preserving existing inference/routing contracts and auditability.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-COGNITION-011.1 | queued | MiniMax M2.5 Model Profile Loader Contract | New frontier open models remain inaccessible if the runtime lacks canonical, governed profile metadata and loader hooks. | Add a governed `minimax-m25` model profile (artifacts, hash pins, quantization options) consumable by existing provisioning/load paths with deterministic load/provision receipts and fail-closed artifact validation. | 8 | 0/1/2 |
+| V6-COGNITION-011.2 | queued | Quantization + Hardware-Fit Selection Contract for MiniMax M2.5 | Cost/performance gains are lost when quantization selection is manual and not policy-bounded by hardware constraints. | Extend existing quantization selector to support MiniMax profile variants (4/8-bit where available) with deterministic hardware-fit decisions, fallback reasons, and policy-scoped memory/latency thresholds. | 9 | 0/1/2 |
+| V6-COGNITION-011.3 | queued | Cost/Performance Routing Overlay for MiniMax M2.5 | Routing does not realize frontier-cost gains unless low-cost/high-capability profiles are explicitly integrated into route scoring. | Add routing overlay that can select `minimax-m25` under task/cost/latency policies while preserving existing fallback chains and deterministic route-decision receipts. | 10 | 0/1/2 |
+| V6-COGNITION-011.4 | queued | Model Provenance + Benchmark Ledger Contract | Model adoption claims become unverifiable without versioned benchmark/cost telemetry tied to immutable receipts. | Persist MiniMax model version/benchmark/cost traces as Epistemic objects linked to inference sessions, with deterministic provenance receipts and reproducible benchmark metadata schema. | 8 | 1/2 |
+| V6-COGNITION-011.5 | queued | Thin Selection + Compare Surface Contract | Operators need a simple profile switch and evidence view without introducing client-side inference authority. | Provide thin command/view surfaces (`protheus model use minimax-m25`, compare panels) that call existing core paths only and display route/benchmark evidence from receipted artifacts. | 7 | 1/2/client/app |
+| V6-COGNITION-011.6 | queued | Conduit-Only MiniMax Execution Boundary + Thin Surface Enforcement | Model loading and routing can bypass policy if profile logic is implemented directly in client/app wrappers. | Enforce conduit-only routing for MiniMax load/route/infer/benchmark actions with bypass-rejection tests; keep client/app non-authoritative selection and visualization surfaces only. | 10 | 0/1/2/client/app |
+
+## One-Command Local AI CRM Extension Source Coverage Intake (Doc `1QNRrk3J6c0jDy0zJYgNl-ELzaaS2DhQpsx13hjdIO9I`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1QNRrk3J6c0jDy0zJYgNl-ELzaaS2DhQpsx13hjdIO9I/edit?usp=sharing
+- https://x.com/sitinme/status/2031243653209891023
+
+Notes:
+- Primitive-first normalization: this is an application composition lane; no new core primitive is introduced.
+- Overlap handled explicitly:
+  - creator-outreach app contracts: `V6-APP-001.*`
+  - agency/company orchestration + role packs: `V6-AGENCY-001.*`, `V6-COMPANY-001.*`, `V6-COCKPIT-013.*`
+  - workflow/build/orchestration baselines: `V6-APP-006.*`, `V6-WORKFLOW-003.*`
+  - scheduling/routing and connector policy gates: `V6-COCKPIT-018.1`, `V6-COCKPIT-018.2`, `V6-COCKPIT-011.*`
+- Placement correction from source doc:
+  - source frames as `client` extension; normalized placement is `/apps` default vertical app over existing core primitives with thin client launch surfaces only.
+- Default placement:
+  - Layer `0`: conduit-routed CRM mutations/outreach actions + deterministic receipts
+  - Layer `1`: tenant isolation, outreach policy, budget/privacy/connector policy
+  - Layer `2`: CRM orchestration flows, outreach scheduler, pipeline automation
+  - Layer `3`: optional CRM-aware persona defaults only
+  - `client`: thin `protheus app run crm` wrappers and dashboard bridges only
+  - `app`: primary implementation in `/apps/crm/`
+
+Objective: provide a one-command local CRM vertical app (contacts, pipeline, outreach automation) as an app-layer composition without duplicating core memory/orchestration authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-APP-022.1 | queued | One-Command CRM Bootstrap Contract (`protheus app run crm`) | CRM onboarding friction stays high without deterministic bootstrap of schema/workspace/templates. | `/apps/crm/` bootstrap creates tenant-scoped contact/pipeline/outreach template artifacts using existing core contracts; run emits deterministic bootstrap receipts and idempotent re-run behavior. | 8 | app/0/1/2/client |
+| V6-APP-022.2 | queued | Tenant-Isolated Contact + Pipeline Contract | CRM data integrity fails when contacts/deals/stages lack explicit tenancy boundaries and governed mutation paths. | Contact and pipeline entities are stored as tenant-scoped Epistemic objects with deterministic create/update/query receipts, isolation tests, and fail-closed cross-tenant access denials. | 9 | 0/1/2/app |
+| V6-APP-022.3 | queued | Governed Outreach Automation Contract | CRM automation is unsafe without policy-bounded generation/send/follow-up routing through existing outreach primitives. | Outreach generation/sending/follow-up scheduling in CRM routes through existing governed outreach/orchestration lanes with budget/privacy checks and deterministic action receipts. | 9 | 0/1/2/app |
+| V6-APP-022.4 | queued | Multi-Profile Local CRM Web UI Contract | A usable CRM needs profile-aware local UI flows, but UI must not carry business logic authority. | `/apps/crm/` ships local web UI for contacts/pipeline/outreach with profile switcher and receipt-linked activity views; all mutations invoke conduit-backed APIs only. | 7 | app/client |
+| V6-APP-022.5 | queued | Connector and Scheduling Reuse Contract | CRM verticals drift into duplicate connector/scheduler logic unless they reuse existing primitives. | CRM app reuses existing connector and scheduler contracts (`email/calendar/cron`) with no duplicated adapter authority; integration evidence links to existing lane receipts. | 8 | 0/1/2/app/adapter |
+| V6-APP-022.6 | queued | Conduit-Only CRM Boundary + App-Layer Placement Enforcement | Vertical CRM logic can leak into client/core or bypass policy without explicit placement and boundary enforcement. | Enforce app-layer placement (`/apps/crm/`) and conduit-only routing for CRM mutations/outreach/scheduling; bypass or client-owned authority paths fail CI boundary checks. | 10 | 0/1/2/app/client |
+
+## WiFi CSI Sensing & Environmental Perception Source Coverage Addendum (Doc `1pDSdNzn3YA0vaa7IhtENOPENc50Yl47pjo0v7SfTa_0`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1pDSdNzn3YA0vaa7IhtENOPENc50Yl47pjo0v7SfTa_0/edit?usp=sharing
+- https://github.com/ruvnet/RuView
+
+Notes:
+- Source proposes a new `V6-SUBSTRATE-008` branch, but this capability is already normalized in existing `V6-SUBSTRATE-001.*` WiFi CSI intake.
+- Primitive-first normalization: do not create a duplicate sensing subsystem; fold only net-new deltas into `V6-SUBSTRATE-001`.
+- Overlap already covered:
+  - CSI substrate capture/decode/events: `V6-SUBSTRATE-001.1`
+  - derived module registry (presence/gesture/activity/etc.): `V6-SUBSTRATE-001.2`
+  - low-power embedded profile: `V6-SUBSTRATE-001.3`
+  - privacy/consent/local-only policy: `V6-SUBSTRATE-001.4`
+  - persona Eye binding + thin client exposure: `V6-SUBSTRATE-001.5`
+- Net-new deltas from this source:
+  - ambient context projection contract into memory runtime/vault enrichment
+  - explicit WiFi chipset compatibility + self-test evidence matrix for commodity NIC adoption
+- Default placement:
+  - Layer `-1`: adapter compatibility/self-test contracts
+  - Layer `0`: conduit-routed sensing/projection actions + deterministic receipts
+  - Layer `1`: retention/privacy policy for ambient projection
+  - Layer `2`: projection runtime and compatibility diagnostics
+  - `client`: thin enable/status/diagnostic wrappers only
+  - `app`: optional `/apps/wifi_sensing/` observer only
+
+Objective: incorporate RuView-source deltas without parallelizing the existing WiFi CSI primitive family.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-SUBSTRATE-001.6 | queued | Ambient Context Projection Contract for CSI Events | Passive sensing value is reduced if CSI-derived events are not projected into persistent ambient context for downstream personas and workflows. | Extend memory/runtime projection so policy-allowed CSI events are ingested as ambient context objects with freshness windows, confidence tags, and deterministic projection receipts. | 8 | -1/0/1/2/client |
+| V6-SUBSTRATE-001.7 | queued | Commodity WiFi Adapter Compatibility + Self-Test Matrix Contract | Real-world adoption stalls without deterministic compatibility and diagnostics for diverse WiFi chipsets/NICs. | Add adapter capability/self-test matrix (supported chipset/driver/firmware profiles, signal quality thresholds, fail reasons) with deterministic diagnostic receipts and observability exposure via thin client status commands. | 8 | -1/0/1/2/adapter/client |
+
+## Universal App Compatibility Adapter Engine Source Coverage Intake (Doc `17smtxqjd33u66Dsnvq0Bti8hx1jxTirVLrGG23qzw28`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/17smtxqjd33u66Dsnvq0Bti8hx1jxTirVLrGG23qzw28/edit?usp=sharing
+
+Notes:
+- Primitive-first normalization: no new execution or migration primitive is introduced; this intake extends existing universal execution, computer-use, and adapter/importer lanes.
+- Overlap handled explicitly:
+  - universal execution and profile packs: `V3-039`, `V3-ADD-UEP-UI-001`, `V3-ASSIM-016`
+  - desktop/app-control and self-learning automation: `V6-APP-011.*`
+  - importer/adapter and migration baseline: `V6-COMP-002`, `V4-MIGR-003`
+  - adapter governance and compaction: `V3-040`, `V3-042`
+- Placement correction from source doc:
+  - source frames Layer 3 + client extension; normalized placement is core/adapter-authoritative wrapper contracts with optional app UX only.
+- Default placement:
+  - Layer `0`: conduit-routed detect/generate/run lifecycle actions + deterministic receipts
+  - Layer `1`: capability, permission, sandbox, and policy gating for wrapper execution
+  - Layer `2`: wrapper synthesis/planning, runtime lifecycle orchestration, compatibility diagnostics
+  - Layer `3`: optional persona defaults only (not authority)
+  - `client`: thin launch/status UX wrappers only
+  - `app`: optional `/apps/universal_app_adapter/` operator UI only
+  - `adapter`: primary implementation for platform/runtime specific wrappers
+
+Objective: let external apps run through a governed universal wrapper contract while preserving core safety boundaries and avoiding bespoke per-app authority logic in client.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-SUBSTRATE-007.1 | queued | Universal App-Wrapper Contract over Existing Execution Primitives | Cross-platform app compatibility remains fragmented without one canonical wrapper interface for lifecycle, IO mapping, and sandbox controls. | Define universal app-wrapper contract (spawn/attach/input/output/state/stop) compiled through existing execution primitives with deterministic lifecycle receipts and fail-closed permission gating. | 9 | 0/1/2/adapter |
+| V6-SUBSTRATE-007.2 | queued | Dynamic App-Type Detection + Wrapper Synthesis Contract | Manual adapter authoring does not scale to unknown app types and increases integration latency. | Add governed detect/synthesize lane that classifies target app/runtime type and generates adapter manifests from approved templates with deterministic generation receipts and reviewable diff artifacts. | 8 | 0/1/2/adapter |
+| V6-SUBSTRATE-007.3 | queued | Versioned Adapter Artifact Registry Contract | Generated wrappers are unreliable without versioned storage, provenance, and reuse semantics. | Persist generated adapters as versioned artifacts (Epistemic objects + adapter registry entries) with compatibility metadata, hash pins, rollback pointers, and deterministic load/update receipts. | 8 | 1/2/adapter |
+| V6-SUBSTRATE-007.4 | queued | Capability/Permission Boundary Contract for External App Control | Universal app control is high risk unless permissions/capabilities are explicitly bounded per adapter and invocation. | Enforce per-adapter capability manifests (filesystem/network/input/device/process scopes) with deny-by-default policy evaluation and deterministic denial receipts for out-of-scope actions. | 10 | 0/1/2/adapter |
+| V6-SUBSTRATE-007.5 | queued | Thin Operator Surface Contract (`protheus app run <target>`) | Adoption requires a simple launch interface, but launch surfaces must not own execution logic. | Provide thin client/app launch/status UX surfaces that delegate all detection/synthesis/run actions to conduit-backed adapter runtime only, with no client-side authority. | 7 | client/app/adapter |
+| V6-SUBSTRATE-007.6 | queued | Conduit-Only Universal Adapter Boundary + Placement Enforcement | Universal adapter logic can drift into client-owned code paths without explicit boundary enforcement. | Enforce conduit-only routing and adapter-layer authority checks for all universal wrapper actions; CI boundary tests reject direct client execution and non-adapter authority implementations. | 10 | 0/1/2/adapter/client/app |
+
+## Auto-Molting Substrate Adapter Engine Source Coverage Intake (Doc `1uGkRTsq9DE_6uA7twocPTDv03LmvywnYzpr2okR6IlM`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1uGkRTsq9DE_6uA7twocPTDv03LmvywnYzpr2okR6IlM/edit?usp=sharing
+
+Notes:
+- Primitive-first normalization: no new Layer-0 authority is introduced; this intake extends existing substrate templates, adapter governance, and runtime orchestration primitives.
+- Overlap handled explicitly:
+  - universal app-wrapper synthesis and registry lane: `V6-SUBSTRATE-007.*`
+  - adapter governance and defragmentation: `V3-040`, `V3-042`
+  - computer-use/runtime compatibility execution packs: `V3-ASSIM-016`, `V3-ADD-UEP-UI-001`
+  - migration/import adapter surfaces: `V6-COMP-002`, `V4-MIGR-003`
+- Placement correction from source doc:
+  - source frames Layer 3 as primary; normalized placement is adapter/layer-2 authoritative host compatibility synthesis with Layer 3 as optional persona defaults only.
+- Default placement:
+  - Layer `-1`: host capability probes and hardware/runtime descriptors
+  - Layer `0`: conduit-routed sensing/synthesis/load actions + deterministic receipts
+  - Layer `1`: compatibility policy, permission bounds, cache/retention policy
+  - Layer `2`: host sensing planner, adapter synthesis/orchestration, boot loader resolution
+  - Layer `3`: optional host-aware persona defaults only
+  - `client`: thin `molt detect/regenerate/status` wrappers only
+  - `app`: optional `/apps/universal_molt/` diagnostics UI
+  - `adapter`: generated and curated host adapter artifacts
+
+Objective: make core host compatibility self-configuring at boot via governed host sensing and adapter molting, while keeping authority in core/adapter layers and client surfaces thin.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-SUBSTRATE-005.1 | queued | Boot-Time Host Capability Sensing Contract | Portability degrades when host constraints (OS APIs, drivers, hardware capabilities) are not detected as first-class runtime facts. | Add boot-time host capability sensing over existing research/probe primitives with deterministic capability artifact receipts persisted as Epistemic objects and used for downstream adapter decisions. | 9 | -1/0/1/2/adapter |
+| V6-SUBSTRATE-005.2 | queued | Auto-Molting Host Adapter Synthesis Contract | Manual host adaptation cannot keep pace with heterogeneous environments and creates brittle one-off compatibility layers. | Add governed host adapter synthesis that maps detected capability envelopes into minimal compatible adapter manifests/config using existing template + inference primitives, with deterministic synthesis receipts and reviewable deltas. | 9 | -1/0/1/2/adapter |
+| V6-SUBSTRATE-005.3 | queued | Versioned Host Adapter Cache + Reuse Contract | Recomputing host adapters each boot increases cold-start cost and drift risk without deterministic cache/version semantics. | Persist synthesized host adapters as versioned artifacts with capability-hash keys, rollback pointers, and deterministic load/reuse receipts; unchanged hosts reuse cached adapters safely. | 8 | -1/1/2/adapter |
+| V6-SUBSTRATE-005.4 | queued | Adaptive Boot Loader Resolution Contract | Host compatibility remains fragile if adapter selection/loading is not policy-gated and deterministic during startup. | Boot flow resolves best-fit host adapter from cache/synthesis outputs under policy bounds, emits deterministic resolution receipts, and fails closed with explicit fallback/degraded mode reasons when compatibility is insufficient. | 10 | -1/0/1/2/adapter |
+| V6-SUBSTRATE-005.5 | queued | Thin Operator Molt Controls Contract (`protheus molt detect|regenerate`) | Operators need explicit control/visibility without embedding adaptation authority in client UX paths. | Provide thin control/status surfaces for detect/regenerate/inspect actions that call conduit-backed host-molt runtime only and expose receipted compatibility diagnostics. | 7 | 1/2/client/app/adapter |
+| V6-SUBSTRATE-005.6 | queued | Conduit-Only Host Molt Boundary + Adapter Authority Enforcement | Host adaptation can bypass governance if sensing/synthesis/loading occurs directly in client-side scripts. | Enforce conduit-only routing with adapter-authority boundaries for all host-molt operations; CI boundary checks reject direct client authority and require deterministic receipts for every adaptation step. | 10 | -1/0/1/2/adapter/client/app |
+
+## Bare-Metal Independent OS Mode Source Coverage Intake (Doc `1uGkRTsq9DE_6uA7twocPTDv03LmvywnYzpr2okR6IlM`, corrected-placement addendum `19It97DQDHCgYRM4eFj4r8qZ64IixOmGRBErapYsSXjE`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/19It97DQDHCgYRM4eFj4r8qZ64IixOmGRBErapYsSXjE/edit?usp=sharing
+
+Notes:
+- Primitive-first normalization: this intake extends existing substrate/adapter primitives; no new Layer-0 authority is added.
+- Overlap handled explicitly:
+  - host sensing + host-molt synthesis/cache/load: `V6-SUBSTRATE-005.*`
+  - universal app wrapper compatibility lane: `V6-SUBSTRATE-007.*`
+  - edge/bare-metal provisioning baselines: `V3-RACE-348`, `V3-RACE-351`
+- Net-new focus from this source:
+  - formal Layer-3 OS personality template contracts (process/VFS/driver/boot abstractions)
+  - self-host install/recovery image profile and rollback contract as first-class substrate artifact family
+- Placement correction from source:
+  - source proposes Layer 3 + client extension; normalized to Layer-3 template authority + adapter/layer-2 execution, with thin client UX only.
+- Default placement:
+  - Layer `-1`: hardware descriptors and boot/runtime substrate probes
+  - Layer `0`: conduit-routed install/boot/recover actions + deterministic receipts
+  - Layer `1`: policy gates for boot/install/recovery, capability boundaries, and rollback approvals
+  - Layer `2`: boot/install orchestration, adapter resolution, recovery workflows
+  - Layer `3`: primary home for abstract OS personality templates (process/VFS/driver/boot contracts)
+  - `client`: thin `protheus os install|recover|status` wrappers only
+  - `app`: optional `/apps/full_os_mode/` diagnostics installer UI
+  - `adapter`: platform-specific bootloader/driver/runtime adapters
+
+Objective: add a governed independent-OS profile by formalizing Layer-3 OS templates and self-host install/recovery workflows, while reusing existing host-molt/app-wrapper lanes.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-SUBSTRATE-006.1 | queued | Layer-3 OS Personality Template Contract (Process/VFS/Driver/Boot Abstractions) | Independent-OS operation is brittle without one formal abstract template contract for scheduler, filesystem, driver, and boot responsibilities. | Define Layer-3 abstract OS template schema with deterministic conformance checks for process lifecycle, VFS operations, driver capability declarations, and boot handoff interfaces. | 9 | 3/1/2/adapter |
+| V6-SUBSTRATE-006.2 | queued | Boot/Profile Materialization Contract from Host-Molt Outputs | Host sensing is insufficient unless detected capability envelopes materialize into valid OS profile compositions at boot. | Map `V6-SUBSTRATE-005` host-molt artifacts into concrete bootable profile manifests with deterministic materialization receipts and fail-closed incompatibility handling. | 9 | -1/0/1/2/3/adapter |
+| V6-SUBSTRATE-006.3 | queued | Independent OS Install + First-Boot Orchestration Contract | Running as primary OS needs deterministic install/first-boot orchestration instead of ad hoc provisioning scripts. | Add governed `protheus os install` flow that stages profile artifacts, validates compatibility gates, executes first-boot initialization, and emits deterministic install/boot receipts with rollback pointers. | 10 | -1/0/1/2/client/adapter |
+| V6-SUBSTRATE-006.4 | queued | Self-Hosting Recovery Image + Rollback Contract | OS-mode reliability requires recoverable reinstall/rollback paths anchored to signed artifacts and deterministic recovery steps. | Persist signed recovery bundles and boot config snapshots as versioned artifacts; `protheus os recover` restores known-good profile with deterministic recovery receipts and integrity verification proofs. | 10 | -1/0/1/2/adapter |
+| V6-SUBSTRATE-006.5 | queued | App Compatibility Binding Contract to Universal Wrapper Lane | Independent OS mode must still run third-party apps without duplicating compatibility logic. | Bind OS-mode app execution to `V6-SUBSTRATE-007` wrapper contracts so external apps run through the same governed adapter runtime, with deterministic bridge receipts and no parallel wrapper implementation. | 8 | 0/1/2/3/adapter |
+| V6-SUBSTRATE-006.6 | queued | Conduit-Only OS-Mode Boundary + Thin Surface Enforcement | OS install/boot/recovery workflows can bypass governance if implemented directly in client-side scripts. | Enforce conduit-only routing and adapter/core authority checks for all OS-mode actions; CI boundary tests reject client-owned install/boot/recover authority and require deterministic receipts on every path. | 10 | -1/0/1/2/3/adapter/client/app |
+
+## Autonomous Snowball Orchestration Engine Source Coverage Intake (Doc `1OA9Hu3dx9iheyIW-7JGrR4hd8bVJt0TE21Bv_fRNeFg`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1OA9Hu3dx9iheyIW-7JGrR4hd8bVJt0TE21Bv_fRNeFg/edit?usp=sharing
+
+Notes:
+- Source proposes `V6-APP-022`, but that ID is already assigned to CRM intake; normalized to `V6-APP-023.*`.
+- Primitive-first normalization: this is an app/workflow orchestration layer over existing planning/execution/verification primitives, not a new core authority subsystem.
+- Overlap handled explicitly:
+  - project planner + dependency-aware execution batching: `V6-WORKFLOW-003.*`
+  - deep execution harness + todo/runtime graph orchestration: `V6-COCKPIT-022.*`
+  - context compaction + plugin strategies: `V6-COCKPIT-009.3`, `V6-CONTEXT-001.*`
+  - persistent scheduling/session continuity: `V6-PERSIST-001.*`, `V6-COCKPIT-025.*`
+  - observability and regression evidence lanes: `V6-OBSERVABILITY-001..005`
+- Placement correction from source doc:
+  - source frames as client extension; normalized placement is `/apps` orchestration engine with core-authoritative execution via conduit.
+- Default placement:
+  - Layer `0`: conduit-routed drop/melt/compact/regression operations + deterministic receipts
+  - Layer `1`: cycle policy (risk/budget/parallelism limits, promotion gates, rollback policy)
+  - Layer `2`: cycle orchestrator, regression scheduler, compaction/backlog packer
+  - Layer `3`: optional self-improvement persona defaults only
+  - `client`: thin `protheus snowball ...` control and observability surfaces only
+  - `app`: primary implementation in `/apps/snowball_engine/`
+
+Objective: encode Snowball Method as a governed native orchestration app that runs parallel improvement cycles, melt/refine regression loops, and backlog compaction without duplicating core primitives.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-APP-023.1 | queued | Parallel Drop Orchestration Contract (`protheus snowball start`) | Large improvement waves are inconsistent without a deterministic parallel drop planner over existing execution lanes. | Add Snowball cycle runner that schedules bounded parallel drops with dependency and risk policy gates, emitting deterministic per-drop orchestration receipts and cycle manifests. | 8 | 0/1/2/app/client |
+| V6-APP-023.2 | queued | Melt/Refine Iteration + Regression Gate Contract | Parallel drops degrade quality unless every cycle includes deterministic refine/retest loops and full regression gates. | Execute automated melt/refine passes after each drop batch, require configured regression suites before promotion, and emit deterministic pass/fail/rollback receipts per iteration. | 10 | 0/1/2/app |
+| V6-APP-023.3 | queued | Compaction + Sphere-of-Ice Snapshot Contract | Continuous change creates context and artifact sprawl without explicit compaction/snapshot boundaries per cycle. | After successful cycle gates, compact artifacts/context into versioned cycle snapshots with deterministic provenance hashes and reversible restore pointers. | 8 | 1/2/app |
+| V6-APP-023.4 | queued | Next-Snow Backlog Packing Contract | Improvement momentum stalls when next-cycle backlog assembly is manual and disconnected from cycle evidence. | Auto-generate next snow backlog from unresolved findings/opportunities with dependency ordering, confidence scores, and deterministic backlog-pack receipts. | 9 | 1/2/app |
+| V6-APP-023.5 | queued | Live Cycle Visibility + Operator Control Contract (`protheus snowball status|compact`) | Operators need cycle transparency and intervention controls without embedding orchestration authority in client code. | Provide thin status/control surfaces showing current cycle stage, batch outcomes, regression state, and compact/backlog controls backed entirely by conduit-routed app runtime actions. | 7 | app/client |
+| V6-APP-023.6 | queued | Conduit-Only Snowball Boundary + App-Layer Placement Enforcement | Self-management orchestration can bypass policy if implemented directly as client-side scripts. | Enforce app-layer placement (`/apps/snowball_engine/`) and conduit-only routing for start/melt/compact/regress/pack actions; boundary tests reject client-owned authority paths. | 10 | 0/1/2/app/client |
+
+## Semantic Agent Skills Marketplace Source Coverage Addendum (Doc `1J8BwVaRmGlu8SK3fg5YOUoOknvQ4gtBQk4YX5GaIbTw`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1J8BwVaRmGlu8SK3fg5YOUoOknvQ4gtBQk4YX5GaIbTw/edit?usp=sharing
+- https://docs.google.com/document/d/1x9DlXuUM-dheXdK9wpJ-DkjpdGC6HHGLImYw9lNqyss/edit?usp=sharing
+- https://machina.directory/
+
+Notes:
+- Source proposes `V6-APP-021` as a client extension; normalized here as source coverage for existing `V6-SKILLS-001.*` + registry/marketplace lanes to avoid duplicate authority paths.
+- Source doc `1x9DlXuUM-dheXdK9wpJ-DkjpdGC6HHGLImYw9lNqyss` is semantically equivalent to `1J8BwVaRmGlu8SK3fg5YOUoOknvQ4gtBQk4YX5GaIbTw`; no additional net-new deltas were introduced beyond `V6-SKILLS-001.15..001.20`.
+- Primitive-first normalization: no new skill subsystem is introduced; this intake extends the existing skill library, import, governance, and activation contracts.
+- Overlap handled explicitly:
+  - curated skill ingest + one-click loader baseline: `V6-SKILLS-001.6`
+  - signed first-party skill sync and governance: `V6-SKILLS-001.10`, `V6-SKILLS-001.13`
+  - interop/import conversion and compatibility matrix: `V6-SKILLS-001.11`, `V6-SKILLS-001.14`
+  - tool/marketplace ingestion governance: `V6-DOM-405`, `V6-EXT-706..709`
+- Net-new deltas from this source:
+  - external semantic catalog sync contract for large public skill directories
+  - ranking surfaces (popular/recent/tag facets) as governed metadata views
+  - submission/review ingest lane for GitHub-backed community skills
+- Default placement:
+  - Layer `0`: conduit-routed search/install/activate/review actions + deterministic receipts
+  - Layer `1`: trust/signature/dependency/approval policy for external catalog items
+  - Layer `2`: semantic index/sync pipeline, ranking engine, install resolver, review queue
+  - Layer `3`: optional persona auto-activation hints only
+  - `client`: thin `skills marketplace` search/install/status wrappers only
+  - `app`: optional `/apps/skills_marketplace/` discovery UI only
+
+Objective: assimilate Machina-style semantic skill marketplace behavior into existing skill primitives without creating a second marketplace/skills authority system.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-SKILLS-001.15 | queued | External Semantic Skill Catalog Sync Contract | Skill discovery remains fragmented when large external catalogs are not mirrored/indexed under one governed sync path. | Add governed sync/mirror contract for external skill directories with deterministic ingest receipts, signature/provenance metadata capture, and fail-closed handling for malformed or untrusted entries. | 8 | 0/1/2/client/app |
+| V6-SKILLS-001.16 | queued | Natural-Language Skill Discovery + Faceted Ranking Contract | Users cannot efficiently find relevant skills without semantic search plus stable popular/recent/tag ranking views. | Extend skill search with semantic retrieval and deterministic ranking facets (`relevance`, `popular`, `recent`, `tags`) backed by receipted index metadata and policy-bounded query scopes. | 8 | 1/2/client/app |
+| V6-SKILLS-001.17 | queued | One-Click Install + Dependency Resolver Hardening for External Skills | External one-click installs are brittle without deterministic dependency/compatibility resolution and activation gates. | Add install resolver that validates dependency trees, runner compatibility, trust policy, and activation prerequisites before install; emits deterministic install/deny receipts with remediation hints. | 9 | 0/1/2/client/app |
+| V6-SKILLS-001.18 | queued | GitHub-Backed Community Submission + Review Queue Contract | Community skill growth is unsafe without governed intake/review lifecycle before catalog publication. | Add submission pipeline for GitHub-backed skills into a review queue with policy checks (signature, schema, safety tests), deterministic approve/reject receipts, and traceable catalog publication events. | 8 | 0/1/2/client/app |
+| V6-SKILLS-001.19 | queued | Persona-Aware Auto-Activation Hint Contract for Installed Skills | Installed skills are underused when persona routing cannot suggest or bind relevant skills safely at runtime. | Add persona-skill hint/binding recommendations that remain opt-in, policy-scoped, and receipt-linked, with deterministic explainability for why a skill was suggested/activated. | 7 | 1/2/3/client/app |
+| V6-SKILLS-001.20 | queued | Conduit-Only External Skill Marketplace Boundary + Thin Surface Enforcement | Marketplace discovery/install/review flows can bypass policy if implemented directly in client/app scripts. | Enforce conduit-only routing for external catalog sync/search/install/review/publish actions; boundary tests reject client-owned authority and require deterministic receipts for every marketplace mutation. | 10 | 0/1/2/client/app |
+
+## Anthropic Agent Skills Library Source Coverage Addendum (Doc `1hCPkhlg80Wdtv-qqFnsUqaeFz-RAQddOS5p7kxuschg`, 2026-03-11)
+
+Source references:
+- https://docs.google.com/document/d/1hCPkhlg80Wdtv-qqFnsUqaeFz-RAQddOS5p7kxuschg/edit?usp=sharing
+- https://github.com/anthropics/skills
+
+Notes:
+- Source proposes `V6-COGNITION-008` client extension; normalized here as source coverage over existing `V6-SKILLS-001.*` lanes to avoid duplicate cognition/skills authority branches.
+- Overlap already covered:
+  - skill package shape and runtime loading: `V6-SKILLS-001.1`, `V6-SKILLS-001.2`
+  - interop skill format + conversion: `V6-SKILLS-001.11`
+  - multi-runner compatibility: `V6-SKILLS-001.14`
+  - marketplace discovery/install/review contracts: `V6-SKILLS-001.15..001.20`
+- Net-new deltas from this source:
+  - workspace-mounted drop-in skill folder watch + hot-reload semantics
+  - explicit environment activation bridge contract for editor/runner surfaces on workspace open
+- Default placement:
+  - Layer `0`: conduit-routed mount/watch/load actions + deterministic receipts
+  - Layer `1`: trust/signature and auto-load policy gates for mounted folders
+  - Layer `2`: watcher/index/hot-reload runtime and environment bridge activator
+  - Layer `3`: optional skill-aware persona defaults only
+  - `client`: thin `skills mount/status` controls only
+  - `app`: optional `/apps/anthropic_skills/` discovery/activation UI
+
+Objective: absorb Anthropic skills-library patterns without creating a parallel skill system by extending existing skill runtime with mounted-folder hot-load and environment bridge contracts.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-SKILLS-001.21 | queued | Mounted Skill Folder Watch + Hot-Reload Contract | Drop-in skill packs are brittle without deterministic mounted-folder discovery and safe hot-reload semantics. | Add governed `skills mount <path>` contract with watcher/index/update pipeline that discovers `SKILL.md` packs, validates trust/schema gates, and hot-reloads skill registry entries with deterministic add/update/remove receipts. | 8 | 0/1/2/client/app |
+| V6-SKILLS-001.22 | queued | Workspace-Open Environment Activation Bridge Contract | Cross-runner skill usability remains inconsistent when activation bridges are manual per environment. | Add environment bridge contract that applies policy-scoped activation hooks for supported runtimes (CLI/API/SDK/editor contexts) on workspace open, with deterministic activation/deactivation receipts and compatibility-denial reasons. | 7 | 0/1/2/client/app |
