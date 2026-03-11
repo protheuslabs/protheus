@@ -121,6 +121,13 @@ Updated: 2026-03-11 20:39 America/Denver
 - Re-ran full regression and kept strict gates green: `doneWithoutNonBacklogEvidence=0`, `doneWithoutCodeEvidence=0`.
 - Reduced actionable queue from `786` to `430` in one deterministic pass.
 
+14. `P0-UNBLOCK-001` Add deterministic external-evidence intake workflow for remaining blocked items. `STATUS: DONE`
+- Exit criteria met:
+- Added `scripts/ci/blocked_external_evidence_status.mjs` to validate external-evidence readiness per blocked ID.
+- Added npm scripts `ops:blocked-external:plan` and `ops:blocked-external:evidence`.
+- Added intake policy doc at `evidence/external/README.md`.
+- Generated current unblock evidence status artifacts for all `27` blocked IDs.
+
 ## Executed in this pass
 - Added `scripts/ci/srs_actionable_map.mjs` to produce canonical remaining-work mapping and executability buckets.
 - Reviewed enforcer policy and kept DoD evidence gates strict.
@@ -134,10 +141,13 @@ Updated: 2026-03-11 20:39 America/Denver
 - Executed dynamic-legacy queue completion sweep (`P1-EXEC-010`): executed + promoted remaining `execute_now` rows (`403` bulk + `1` follow-up), leaving only explicit `blocked_external` items (`27` total actionable, `0` runnable).
 - Added deterministic status reconciler `scripts/ci/promote_executed_receipt_ids.mjs` and hardened regression scanners (`srs_full_regression` longest-first ID matching; `srs_top200_regression` consumes canonical full-regression counts) to eliminate prefix-collision and nondeterministic evidence drift.
 - Added generated full TODO queue artifacts (`TODO_EXECUTION_FULL.md` + `todo_execution_full_current.json`) and kept ordering deterministic.
+- Added deterministic blocked-external evidence intake/status pipeline (`scripts/ci/blocked_external_evidence_status.mjs`) with generated status artifacts and explicit evidence contract docs.
 - Kept client/core policy audits and full regression suite passing after state transitions.
 
 ## Next command bundle
 - `node scripts/ci/srs_actionable_map.mjs`
+- `node scripts/ci/blocked_external_unblock_plan.mjs`
+- `node scripts/ci/blocked_external_evidence_status.mjs`
 - `node scripts/ci/srs_full_regression.mjs`
 - `node scripts/ci/srs_top200_regression.mjs`
 - `node scripts/ci/backlog_actionable_report.mjs`

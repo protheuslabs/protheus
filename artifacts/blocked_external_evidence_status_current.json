@@ -1,10 +1,16 @@
 {
-  "generatedAt": "2026-03-11T21:56:26.742Z",
-  "source": {
-    "srs": "docs/workspace/SRS.md",
-    "actionable": "artifacts/srs_actionable_map_current.json"
+  "ok": true,
+  "type": "blocked_external_evidence_status",
+  "generatedAt": "2026-03-11T21:56:27.082Z",
+  "sourcePlan": "artifacts/blocked_external_unblock_plan_current.json",
+  "evidenceRoot": "evidence/external",
+  "summary": {
+    "total": 27,
+    "ready_for_reconcile": 0,
+    "partial_missing_readme": 0,
+    "partial_missing_artifact": 0,
+    "missing": 27
   },
-  "blockedExternalCount": 27,
   "rows": [
     {
       "id": "V7-META-016",
@@ -14,7 +20,12 @@
       "status": "blocked",
       "upgrade": "Live QPU provider validation campaign",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V7-META-016"
+      "unblockRef": "SRS:V7-META-016",
+      "evidenceDir": "evidence/external/V7-META-016",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V7-META-017",
@@ -24,7 +35,12 @@
       "status": "blocked",
       "upgrade": "Ternary hardware lowering validation campaign",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V7-META-017"
+      "unblockRef": "SRS:V7-META-017",
+      "evidenceDir": "evidence/external/V7-META-017",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V7-META-018",
@@ -34,7 +50,12 @@
       "status": "blocked",
       "upgrade": "Neural I/O safety validation campaign",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V7-META-018"
+      "unblockRef": "SRS:V7-META-018",
+      "evidenceDir": "evidence/external/V7-META-018",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V7-TOP1-009",
@@ -44,7 +65,12 @@
       "status": "blocked",
       "upgrade": "Independent third-party verification publication lane",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V7-TOP1-009"
+      "unblockRef": "SRS:V7-TOP1-009",
+      "evidenceDir": "evidence/external/V7-TOP1-009",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V7-TOP1-010",
@@ -54,7 +80,12 @@
       "status": "blocked",
       "upgrade": "High-assurance profile release gate (medical/defense-class)",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V7-TOP1-010"
+      "unblockRef": "SRS:V7-TOP1-010",
+      "evidenceDir": "evidence/external/V7-TOP1-010",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-SUBSTRATE-002.4",
@@ -64,7 +95,12 @@
       "status": "blocked",
       "upgrade": "Bioethics/consent policy gate contract for biological interaction",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-SUBSTRATE-002.4"
+      "unblockRef": "SRS:V6-SUBSTRATE-002.4",
+      "evidenceDir": "evidence/external/V6-SUBSTRATE-002.4",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-F100-022",
@@ -74,7 +110,12 @@
       "status": "blocked",
       "upgrade": "Live trading proof gate (30-day promotion evidence)",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-F100-022"
+      "unblockRef": "SRS:V6-F100-022",
+      "evidenceDir": "evidence/external/V6-F100-022",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-F100-023",
@@ -84,7 +125,12 @@
       "status": "blocked",
       "upgrade": "Third-party security audit publication",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-F100-023"
+      "unblockRef": "SRS:V6-F100-023",
+      "evidenceDir": "evidence/external/V6-F100-023",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-F100-024",
@@ -94,7 +140,12 @@
       "status": "blocked",
       "upgrade": "Horizontal scaling proof in production profile",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-F100-024"
+      "unblockRef": "SRS:V6-F100-024",
+      "evidenceDir": "evidence/external/V6-F100-024",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-F100-025",
@@ -104,7 +155,12 @@
       "status": "blocked",
       "upgrade": "Continuous chaos weekly evidence contract",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-F100-025"
+      "unblockRef": "SRS:V6-F100-025",
+      "evidenceDir": "evidence/external/V6-F100-025",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-F100-034",
@@ -114,7 +170,12 @@
       "status": "blocked",
       "upgrade": "First public semantic release + npm publish",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-F100-034"
+      "unblockRef": "SRS:V6-F100-034",
+      "evidenceDir": "evidence/external/V6-F100-034",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-F100-043",
@@ -124,7 +185,12 @@
       "status": "blocked",
       "upgrade": "External certification and attestation program (SOC2/ISO/FedRAMP/GDPR)",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-F100-043"
+      "unblockRef": "SRS:V6-F100-043",
+      "evidenceDir": "evidence/external/V6-F100-043",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-F100-044",
@@ -134,7 +200,12 @@
       "status": "blocked",
       "upgrade": "Commercial support/SLA contract lane (enterprise readiness)",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-F100-044"
+      "unblockRef": "SRS:V6-F100-044",
+      "evidenceDir": "evidence/external/V6-F100-044",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-F100-045",
@@ -144,7 +215,12 @@
       "status": "blocked",
       "upgrade": "Public compliance report publication lane",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-F100-045"
+      "unblockRef": "SRS:V6-F100-045",
+      "evidenceDir": "evidence/external/V6-F100-045",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-F100-A-008",
@@ -154,7 +230,12 @@
       "status": "blocked",
       "upgrade": "Enterprise legal packet publication (MSA/DPA/privacy/subprocessors)",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-F100-A-008"
+      "unblockRef": "SRS:V6-F100-A-008",
+      "evidenceDir": "evidence/external/V6-F100-A-008",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-F100-A-009",
@@ -164,7 +245,12 @@
       "status": "blocked",
       "upgrade": "First reference customer case study publication",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-F100-A-009"
+      "unblockRef": "SRS:V6-F100-A-009",
+      "evidenceDir": "evidence/external/V6-F100-A-009",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-F100-A-010",
@@ -174,7 +260,12 @@
       "status": "blocked",
       "upgrade": "Cloud marketplace listing publication (AWS/Azure/GCP)",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-F100-A-010"
+      "unblockRef": "SRS:V6-F100-A-010",
+      "evidenceDir": "evidence/external/V6-F100-A-010",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-F100-A-011",
@@ -184,7 +275,12 @@
       "status": "blocked",
       "upgrade": "Named 24x7 support roster activation",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-F100-A-011"
+      "unblockRef": "SRS:V6-F100-A-011",
+      "evidenceDir": "evidence/external/V6-F100-A-011",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-EDGE-005",
@@ -194,7 +290,12 @@
       "status": "blocked",
       "upgrade": "Third-party license and source-ingest decision for edge backend",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-EDGE-005"
+      "unblockRef": "SRS:V6-EDGE-005",
+      "evidenceDir": "evidence/external/V6-EDGE-005",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-COMP-005",
@@ -204,7 +305,12 @@
       "status": "blocked",
       "upgrade": "Public multi-release cadence target (9+ tags)",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-COMP-005"
+      "unblockRef": "SRS:V6-COMP-005",
+      "evidenceDir": "evidence/external/V6-COMP-005",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-SBOX-006",
@@ -214,7 +320,12 @@
       "status": "blocked",
       "upgrade": "Sandbox runtime substrate decision (container vs lightweight jail)",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-SBOX-006"
+      "unblockRef": "SRS:V6-SBOX-006",
+      "evidenceDir": "evidence/external/V6-SBOX-006",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-FLUX-007",
@@ -224,7 +335,12 @@
       "status": "blocked",
       "upgrade": "Advanced substrate live validation lane",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-FLUX-007"
+      "unblockRef": "SRS:V6-FLUX-007",
+      "evidenceDir": "evidence/external/V6-FLUX-007",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-TOOLS-005",
@@ -234,7 +350,12 @@
       "status": "blocked",
       "upgrade": "Optional reactions/worktree event automation track",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-TOOLS-005"
+      "unblockRef": "SRS:V6-TOOLS-005",
+      "evidenceDir": "evidence/external/V6-TOOLS-005",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-PAY-007",
@@ -244,7 +365,12 @@
       "status": "blocked",
       "upgrade": "Monero network/compliance profile decision for production rollout",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-PAY-007"
+      "unblockRef": "SRS:V6-PAY-007",
+      "evidenceDir": "evidence/external/V6-PAY-007",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V2-012",
@@ -254,7 +380,12 @@
       "status": "blocked",
       "upgrade": "[backlog / V2] External security assessment and pen-test cycle (canonical blocker)",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V2-012"
+      "unblockRef": "SRS:V2-012",
+      "evidenceDir": "evidence/external/V2-012",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-RUST50-CONF-004",
@@ -264,7 +395,12 @@
       "status": "blocked",
       "upgrade": "[primitive-upgrade / V6] Mega Sprint 1 Public 50 Percent Rust Migration (8 Crates + Blobized Core Paths)",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-RUST50-CONF-004"
+      "unblockRef": "SRS:V6-RUST50-CONF-004",
+      "evidenceDir": "evidence/external/V6-RUST50-CONF-004",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     },
     {
       "id": "V6-GAP-006",
@@ -274,7 +410,12 @@
       "status": "blocked",
       "upgrade": "Public Release + Announcement Publication Authority",
       "unblockOwner": "human_external",
-      "unblockRef": "SRS:V6-GAP-006"
+      "unblockRef": "SRS:V6-GAP-006",
+      "evidenceDir": "evidence/external/V6-GAP-006",
+      "evidenceStatus": "missing",
+      "hasReadme": false,
+      "hasArtifact": false,
+      "files": []
     }
   ]
 }
