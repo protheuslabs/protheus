@@ -1,15 +1,15 @@
 {
   "ok": true,
   "type": "blocked_external_evidence_status",
-  "generatedAt": "2026-03-11T21:56:27.082Z",
+  "generatedAt": "2026-03-11T21:57:36.921Z",
   "sourcePlan": "artifacts/blocked_external_unblock_plan_current.json",
   "evidenceRoot": "evidence/external",
   "summary": {
     "total": 27,
     "ready_for_reconcile": 0,
     "partial_missing_readme": 0,
-    "partial_missing_artifact": 0,
-    "missing": 27
+    "partial_missing_artifact": 27,
+    "missing": 0
   },
   "rows": [
     {
@@ -22,10 +22,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V7-META-016",
       "evidenceDir": "evidence/external/V7-META-016",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V7-META-016/README.md"
+      ]
     },
     {
       "id": "V7-META-017",
@@ -37,10 +39,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V7-META-017",
       "evidenceDir": "evidence/external/V7-META-017",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V7-META-017/README.md"
+      ]
     },
     {
       "id": "V7-META-018",
@@ -52,10 +56,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V7-META-018",
       "evidenceDir": "evidence/external/V7-META-018",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V7-META-018/README.md"
+      ]
     },
     {
       "id": "V7-TOP1-009",
@@ -67,10 +73,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V7-TOP1-009",
       "evidenceDir": "evidence/external/V7-TOP1-009",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V7-TOP1-009/README.md"
+      ]
     },
     {
       "id": "V7-TOP1-010",
@@ -82,10 +90,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V7-TOP1-010",
       "evidenceDir": "evidence/external/V7-TOP1-010",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V7-TOP1-010/README.md"
+      ]
     },
     {
       "id": "V6-SUBSTRATE-002.4",
@@ -97,10 +107,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-SUBSTRATE-002.4",
       "evidenceDir": "evidence/external/V6-SUBSTRATE-002.4",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-SUBSTRATE-002.4/README.md"
+      ]
     },
     {
       "id": "V6-F100-022",
@@ -112,10 +124,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-F100-022",
       "evidenceDir": "evidence/external/V6-F100-022",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-F100-022/README.md"
+      ]
     },
     {
       "id": "V6-F100-023",
@@ -127,10 +141,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-F100-023",
       "evidenceDir": "evidence/external/V6-F100-023",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-F100-023/README.md"
+      ]
     },
     {
       "id": "V6-F100-024",
@@ -142,10 +158,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-F100-024",
       "evidenceDir": "evidence/external/V6-F100-024",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-F100-024/README.md"
+      ]
     },
     {
       "id": "V6-F100-025",
@@ -157,10 +175,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-F100-025",
       "evidenceDir": "evidence/external/V6-F100-025",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-F100-025/README.md"
+      ]
     },
     {
       "id": "V6-F100-034",
@@ -172,10 +192,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-F100-034",
       "evidenceDir": "evidence/external/V6-F100-034",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-F100-034/README.md"
+      ]
     },
     {
       "id": "V6-F100-043",
@@ -187,10 +209,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-F100-043",
       "evidenceDir": "evidence/external/V6-F100-043",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-F100-043/README.md"
+      ]
     },
     {
       "id": "V6-F100-044",
@@ -202,10 +226,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-F100-044",
       "evidenceDir": "evidence/external/V6-F100-044",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-F100-044/README.md"
+      ]
     },
     {
       "id": "V6-F100-045",
@@ -217,10 +243,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-F100-045",
       "evidenceDir": "evidence/external/V6-F100-045",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-F100-045/README.md"
+      ]
     },
     {
       "id": "V6-F100-A-008",
@@ -232,10 +260,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-F100-A-008",
       "evidenceDir": "evidence/external/V6-F100-A-008",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-F100-A-008/README.md"
+      ]
     },
     {
       "id": "V6-F100-A-009",
@@ -247,10 +277,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-F100-A-009",
       "evidenceDir": "evidence/external/V6-F100-A-009",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-F100-A-009/README.md"
+      ]
     },
     {
       "id": "V6-F100-A-010",
@@ -262,10 +294,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-F100-A-010",
       "evidenceDir": "evidence/external/V6-F100-A-010",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-F100-A-010/README.md"
+      ]
     },
     {
       "id": "V6-F100-A-011",
@@ -277,10 +311,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-F100-A-011",
       "evidenceDir": "evidence/external/V6-F100-A-011",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-F100-A-011/README.md"
+      ]
     },
     {
       "id": "V6-EDGE-005",
@@ -292,10 +328,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-EDGE-005",
       "evidenceDir": "evidence/external/V6-EDGE-005",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-EDGE-005/README.md"
+      ]
     },
     {
       "id": "V6-COMP-005",
@@ -307,10 +345,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-COMP-005",
       "evidenceDir": "evidence/external/V6-COMP-005",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-COMP-005/README.md"
+      ]
     },
     {
       "id": "V6-SBOX-006",
@@ -322,10 +362,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-SBOX-006",
       "evidenceDir": "evidence/external/V6-SBOX-006",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-SBOX-006/README.md"
+      ]
     },
     {
       "id": "V6-FLUX-007",
@@ -337,10 +379,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-FLUX-007",
       "evidenceDir": "evidence/external/V6-FLUX-007",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-FLUX-007/README.md"
+      ]
     },
     {
       "id": "V6-TOOLS-005",
@@ -352,10 +396,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-TOOLS-005",
       "evidenceDir": "evidence/external/V6-TOOLS-005",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-TOOLS-005/README.md"
+      ]
     },
     {
       "id": "V6-PAY-007",
@@ -367,10 +413,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-PAY-007",
       "evidenceDir": "evidence/external/V6-PAY-007",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-PAY-007/README.md"
+      ]
     },
     {
       "id": "V2-012",
@@ -382,10 +430,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V2-012",
       "evidenceDir": "evidence/external/V2-012",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V2-012/README.md"
+      ]
     },
     {
       "id": "V6-RUST50-CONF-004",
@@ -397,10 +447,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-RUST50-CONF-004",
       "evidenceDir": "evidence/external/V6-RUST50-CONF-004",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-RUST50-CONF-004/README.md"
+      ]
     },
     {
       "id": "V6-GAP-006",
@@ -412,10 +464,12 @@
       "unblockOwner": "human_external",
       "unblockRef": "SRS:V6-GAP-006",
       "evidenceDir": "evidence/external/V6-GAP-006",
-      "evidenceStatus": "missing",
-      "hasReadme": false,
+      "evidenceStatus": "partial_missing_artifact",
+      "hasReadme": true,
       "hasArtifact": false,
-      "files": []
+      "files": [
+        "V6-GAP-006/README.md"
+      ]
     }
   ]
 }
