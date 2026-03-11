@@ -2,14 +2,14 @@
   "ok": true,
   "type": "srs_actionable_map",
   "summary": {
-    "generatedAt": "2026-03-11T18:43:36.336Z",
-    "actionable_total": 820,
-    "queued": 582,
-    "in_progress": 211,
+    "generatedAt": "2026-03-11T18:50:31.809Z",
+    "actionable_total": 786,
+    "queued": 576,
+    "in_progress": 183,
     "blocked": 27,
     "execute_now": 0,
     "repair_lane": 0,
-    "design_required": 793,
+    "design_required": 759,
     "blocked_external": 27
   },
   "rows": [
@@ -3738,48 +3738,6 @@
       "unblock": "no executable lane script; requires implementation lane definition"
     },
     {
-      "id": "V6-COCKPIT-005",
-      "status": "in_progress",
-      "upgrade": "Subscribe bridge timeout elimination under host pressure",
-      "impact": "8",
-      "layerMap": "0/1/2/client",
-      "section": "Production-Grade Checklist Addendum (2026-03-06)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v6-cockpit-005:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V6-COCKPIT-007",
-      "status": "queued",
-      "upgrade": "WebSocket-native conduit push stream (`REQ-37`)",
-      "impact": "8",
-      "layerMap": "0/1/2/client",
-      "section": "Production-Grade Checklist Addendum (2026-03-06)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v6-cockpit-007:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V6-COCKPIT-008",
-      "status": "queued",
-      "upgrade": "Rust/Node runtime unification contract (`REQ-37`)",
-      "impact": "8",
-      "layerMap": "0/1/2/client",
-      "section": "Production-Grade Checklist Addendum (2026-03-06)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v6-cockpit-008:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
       "id": "V6-COCKPIT-009",
       "status": "queued",
       "upgrade": "Fully deferred identity hydration (`REQ-37`)",
@@ -4942,20 +4900,6 @@
       "unblock": "no executable lane script; requires implementation lane definition"
     },
     {
-      "id": "V2-027",
-      "status": "in_progress",
-      "upgrade": "Evolution arena (spawn-broker A/B variant trials)",
-      "impact": "7",
-      "layerMap": "1/2/client/adapter",
-      "section": "V2",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v2-027:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
       "id": "V2-029",
       "status": "in_progress",
       "upgrade": "Full directive-to-system value currency propagation",
@@ -5097,7 +5041,7 @@
     },
     {
       "id": "V3-004b",
-      "status": "queued",
+      "status": "in_progress",
       "upgrade": "Dual-signature constitutional change gate",
       "impact": "7",
       "layerMap": "1/2/client/adapter",
@@ -5111,7 +5055,7 @@
     },
     {
       "id": "V3-004c",
-      "status": "queued",
+      "status": "in_progress",
       "upgrade": "Delayed activation + veto window",
       "impact": "7",
       "layerMap": "1/2/client/adapter",
@@ -5125,7 +5069,7 @@
     },
     {
       "id": "V3-004d",
-      "status": "queued",
+      "status": "in_progress",
       "upgrade": "Nursery red-team constitutional gauntlet",
       "impact": "7",
       "layerMap": "1/2/client/adapter",
@@ -5139,7 +5083,7 @@
     },
     {
       "id": "V3-004e",
-      "status": "queued",
+      "status": "in_progress",
       "upgrade": "Fractal inheritance lock enforcement",
       "impact": "7",
       "layerMap": "1/2/client/adapter",
@@ -5208,34 +5152,6 @@
       "unblock": "no executable lane script; requires implementation lane definition"
     },
     {
-      "id": "V3-030",
-      "status": "in_progress",
-      "upgrade": "Tool assimilation pipeline (Research -> Forge -> Nursery -> Doctor graft)",
-      "impact": "7",
-      "layerMap": "1/2/client/adapter",
-      "section": "V3 (Lamp / Super-Intelligence Containment)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-030:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V2-BRG-003",
-      "status": "in_progress",
-      "upgrade": "[V2] Client communication organ (light)",
-      "impact": "6",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "Constraint Bridge Track (Grok Intake, 2026-02-26)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v2-brg-003:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
       "id": "V2-BRG-004",
       "status": "in_progress",
       "upgrade": "[V2] Rate-limit intelligence layer",
@@ -5278,20 +5194,6 @@
       "unblock": "no executable lane script; requires implementation lane definition"
     },
     {
-      "id": "V3-033",
-      "status": "in_progress",
-      "upgrade": "[V3] Sentinel protocol + confirmed-malice permanent quarantine lane",
-      "impact": "10",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "Helix Codex Track (Immortal Helix + Sentinel Protocol)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-033:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
       "id": "V3-027",
       "status": "in_progress",
       "upgrade": "[V3] Formal Verification for Critical Paths",
@@ -5302,20 +5204,6 @@
       "hasLaneScript": false,
       "laneRunnable": false,
       "laneScript": "lane:v3-027:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V3-037",
-      "status": "in_progress",
-      "upgrade": "[V3] Verifiable Off-Device Memory Replication",
-      "impact": "9",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "Governance + Intelligence Gap Intake (Grok, 2026-02-26)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-037:run",
       "missingEntrypoint": null,
       "unblock": "no executable lane script; requires implementation lane definition"
     },
@@ -5386,20 +5274,6 @@
       "hasLaneScript": false,
       "laneRunnable": false,
       "laneScript": "lane:v3-050:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V3-058",
-      "status": "in_progress",
-      "upgrade": "[V3] Explanation Primitive (Human + Machine Verifiable)",
-      "impact": "10",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "Governance + Intelligence Gap Intake (Grok, 2026-02-26)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-058:run",
       "missingEntrypoint": null,
       "unblock": "no executable lane script; requires implementation lane definition"
     },
@@ -5558,20 +5432,6 @@
       "unblock": "no executable lane script; requires implementation lane definition"
     },
     {
-      "id": "V3-ASSIM-004",
-      "status": "in_progress",
-      "upgrade": "Memory Evolution Primitive (MemRL-inspired)",
-      "impact": "7",
-      "layerMap": "1/2/client/adapter",
-      "section": "Holo-viz Track (Separated from Core Protheus)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-assim-004:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
       "id": "V3-ASSIM-007",
       "status": "in_progress",
       "upgrade": "Collective Reasoning Primitive",
@@ -5610,20 +5470,6 @@
       "hasLaneScript": false,
       "laneRunnable": false,
       "laneScript": "lane:v3-assim-017:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V3-ASSIM-025",
-      "status": "in_progress",
-      "upgrade": "Assimilation Policy Enforcement Closure (Wire or Retire Dead Knobs)",
-      "impact": "7",
-      "layerMap": "1/2/client/adapter",
-      "section": "Holo-viz Track (Separated from Core Protheus)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-assim-025:run",
       "missingEntrypoint": null,
       "unblock": "no executable lane script; requires implementation lane definition"
     },
@@ -5880,20 +5726,6 @@
       "unblock": "no executable lane script; requires implementation lane definition"
     },
     {
-      "id": "V3-BIN-001",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Master-vs-Child Instance Binary Bootstrap Policy",
-      "impact": "7",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "Binary Runtime Hardening Intake (Normalized, 2026-02-27)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-bin-001:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
       "id": "V3-BIN-002",
       "status": "in_progress",
       "upgrade": "[extension / V3] Binary Compilation + Obfuscation Build Lane",
@@ -5932,34 +5764,6 @@
       "hasLaneScript": false,
       "laneRunnable": false,
       "laneScript": "lane:v3-sk-004:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V3-MLC-001",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Default-On Master Training Conduit Lane",
-      "impact": "10",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "Master Learning Conduit + Hereditary Federation (Normalized, 2026-02-28)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-mlc-001:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V3-MLC-002",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Hereditary + Master-Reviewed Federation Routing Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_mlc_002_anchor.ts`.",
-      "impact": "10",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "Master Learning Conduit + Hereditary Federation (Normalized, 2026-02-28)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-mlc-002:run",
       "missingEntrypoint": null,
       "unblock": "no executable lane script; requires implementation lane definition"
     },
@@ -6020,20 +5824,6 @@
       "unblock": "no executable lane script; requires implementation lane definition"
     },
     {
-      "id": "V3-OPS-010",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Plugin/Capability Registry with Version Pinning",
-      "impact": "10",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "Operator-System Feel Pack (Normalized, Queued, 2026-02-28)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-ops-010:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
       "id": "V3-MEM-001",
       "status": "in_progress",
       "upgrade": "[primitive-upgrade / V3] Content-Addressed Memory Dedupe Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_mem_001_anchor.ts`.",
@@ -6044,20 +5834,6 @@
       "hasLaneScript": false,
       "laneRunnable": false,
       "laneScript": "lane:v3-mem-001:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V3-MEM-002",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Two-Stage Retrieval Gate (metadata -> selective body fetch) Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_mem_002_anchor.ts`.",
-      "impact": "9",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "Post-Soak Memory & Burn Efficiency Pack (Queued, 2026-02-28)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-mem-002:run",
       "missingEntrypoint": null,
       "unblock": "no executable lane script; requires implementation lane definition"
     },
@@ -6230,20 +6006,6 @@
       "unblock": "no executable lane script; requires implementation lane definition"
     },
     {
-      "id": "V3-DOC-004",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Interface Contract Registry + Schema Governance Pack Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_doc_004_anchor.ts`.",
-      "impact": "9",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "Enterprise Documentation Structure Intake (Deduplicated, 2026-02-28)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-doc-004:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
       "id": "V3-DOC-007",
       "status": "in_progress",
       "upgrade": "[hardening / V3] Data Governance Matrix Pack Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_doc_007_anchor.ts`.",
@@ -6314,20 +6076,6 @@
       "unblock": "no executable lane script; requires implementation lane definition"
     },
     {
-      "id": "V3-RTE-001",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Warm-Start Snapshot Restore for Sub-Second Boot",
-      "impact": "10",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-rte-001:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
       "id": "V3-RTE-004",
       "status": "in_progress",
       "upgrade": "[extension / V3] Adaptive Idle Governor",
@@ -6342,20 +6090,6 @@
       "unblock": "no executable lane script; requires implementation lane definition"
     },
     {
-      "id": "V3-USE-001",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] First-Run Onboarding Doctor (`protheus init`)",
-      "impact": "10",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-use-001:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
       "id": "V3-BENCH-001",
       "status": "in_progress",
       "upgrade": "[hardening / V3] Public Benchmark Profile Registry + Replay Harness",
@@ -6366,20 +6100,6 @@
       "hasLaneScript": false,
       "laneRunnable": false,
       "laneScript": "lane:v3-bench-001:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V3-BLD-001",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Release Build Matrix Optimizer (LTO/PGO/musl/strip per target)",
-      "impact": "9",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-bld-001:run",
       "missingEntrypoint": null,
       "unblock": "no executable lane script; requires implementation lane definition"
     },
@@ -6664,20 +6384,6 @@
       "unblock": "no executable lane script; requires implementation lane definition"
     },
     {
-      "id": "V3-RACE-183",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Always-On Idle RSI Scheduler (Background Hands + Freshness Loop)",
-      "impact": "9",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "External Requirements Intake (Google Doc `1u2Oh8FVHI9joij7p4FXI3cUrUqY6at8AVcHdfeLHW84`, 2026-03-02)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-race-183:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
       "id": "V3-RACE-185",
       "status": "in_progress",
       "upgrade": "[primitive-upgrade / V3] `protheus-core` Rust Binding Plane (NAPI/WASM API-Parity Bridge)",
@@ -6702,48 +6408,6 @@
       "hasLaneScript": false,
       "laneRunnable": false,
       "laneScript": "lane:v3-race-187:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V3-RACE-194",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Mobile Competitive Benchmark & CI Matrix (Battery/Thermal/72h Autonomy)",
-      "impact": "10",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "External Requirements Intake (Google Doc `1lt6tGOofp1joh3JUQakKPvtise-3SW1pZ_qO6YOzbgE`, 2026-03-02)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-race-194:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V3-RACE-230",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Type-Derived Lane Docs Autogeneration (`typedoc` + `cargo-doc`)",
-      "impact": "9",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "External Requirements Intake (Google Doc `1iRVFyme2klr25ST5GHxr_WOz9WH5HYWBDlkZAfDGDZo`, 2026-03-02)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-race-230:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V3-033",
-      "status": "in_progress",
-      "upgrade": "[dependency-anchor / V3] Legacy dependency anchor (V3-033)",
-      "impact": "10",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "Backlog Registry Normalization (2026-03-03)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-033:run",
       "missingEntrypoint": null,
       "unblock": "no executable lane script; requires implementation lane definition"
     },
@@ -6818,20 +6482,6 @@
       "unblock": "no executable lane script; requires implementation lane definition"
     },
     {
-      "id": "V3-BLD-001",
-      "status": "in_progress",
-      "upgrade": "[dependency-anchor / V3] Legacy dependency anchor (V3-BLD-001)",
-      "impact": "10",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "Backlog Registry Normalization (2026-03-03)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-bld-001:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
       "id": "V3-CPY-001",
       "status": "in_progress",
       "upgrade": "[dependency-anchor / V3] Legacy dependency anchor (V3-CPY-001)",
@@ -6870,20 +6520,6 @@
       "hasLaneScript": false,
       "laneRunnable": false,
       "laneScript": "lane:v3-dep-001:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V3-DOC-004",
-      "status": "in_progress",
-      "upgrade": "[dependency-anchor / V3] Legacy dependency anchor (V3-DOC-004)",
-      "impact": "10",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "Backlog Registry Normalization (2026-03-03)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-doc-004:run",
       "missingEntrypoint": null,
       "unblock": "no executable lane script; requires implementation lane definition"
     },
@@ -6958,20 +6594,6 @@
       "unblock": "no executable lane script; requires implementation lane definition"
     },
     {
-      "id": "V3-MEM-002",
-      "status": "in_progress",
-      "upgrade": "[dependency-anchor / V3] Legacy dependency anchor (V3-MEM-002)",
-      "impact": "10",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "Backlog Registry Normalization (2026-03-03)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-mem-002:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
       "id": "V3-MEM-004",
       "status": "in_progress",
       "upgrade": "[dependency-anchor / V3] Legacy dependency anchor (V3-MEM-004)",
@@ -6996,20 +6618,6 @@
       "hasLaneScript": false,
       "laneRunnable": false,
       "laneScript": "lane:v3-mem-008:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V3-MLC-002",
-      "status": "in_progress",
-      "upgrade": "[dependency-anchor / V3] Legacy dependency anchor (V3-MLC-002)",
-      "impact": "10",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "Backlog Registry Normalization (2026-03-03)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-mlc-002:run",
       "missingEntrypoint": null,
       "unblock": "no executable lane script; requires implementation lane definition"
     },
@@ -7098,20 +6706,6 @@
       "unblock": "no executable lane script; requires implementation lane definition"
     },
     {
-      "id": "V3-RACE-230",
-      "status": "in_progress",
-      "upgrade": "[status-reconciliation / V3] Type-Derived Lane Docs Autogeneration (`typedoc` + `cargo-doc`)",
-      "impact": "9",
-      "layerMap": "0/1/2/adapter/client",
-      "section": "Backlog Registry Normalization (2026-03-03)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v3-race-230:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
       "id": "V4-RUST-003",
       "status": "in_progress",
       "upgrade": "[status-reconciliation / V4] Cargo Workspace Professionalization + Rust CI Quality Signal",
@@ -7196,20 +6790,6 @@
       "unblock": "no executable lane script; requires implementation lane definition"
     },
     {
-      "id": "V4-SUITE-002",
-      "status": "in_progress",
-      "upgrade": "[extension / V4] `protheus-mem` Long-Memory CLI Surface",
-      "impact": "9",
-      "layerMap": "0/1/2/client",
-      "section": "Productized CLI Suite Program (Google Doc Intake 2026-03-03)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v4-suite-002:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
       "id": "V4-SUITE-006",
       "status": "in_progress",
       "upgrade": "[hardening / V4] `protheus-redlegion` Adversarial Operations CLI",
@@ -7248,20 +6828,6 @@
       "hasLaneScript": false,
       "laneRunnable": false,
       "laneScript": "lane:v4-suite-008:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V4-SUITE-010",
-      "status": "in_progress",
-      "upgrade": "[launch-polish / V4] `protheus-soul` Public Export Mode",
-      "impact": "10",
-      "layerMap": "0/1/2/client",
-      "section": "Productized CLI Suite Program (Google Doc Intake 2026-03-03)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v4-suite-010:run",
       "missingEntrypoint": null,
       "unblock": "no executable lane script; requires implementation lane definition"
     },
@@ -7346,34 +6912,6 @@
       "hasLaneScript": false,
       "laneRunnable": false,
       "laneScript": "lane:v6-conduit-008:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V6-SEC-001",
-      "status": "in_progress",
-      "upgrade": "[hardening / V6] Audited Release + SBOM Bundle (`v0.2.0`)",
-      "impact": "10",
-      "layerMap": "0/1/2/client",
-      "section": "Security Credibility And Verification Program (2026-03-06)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v6-sec-001:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V6-SEC-004",
-      "status": "in_progress",
-      "upgrade": "[governance / V6] Independent Security Audit Publication",
-      "impact": "10",
-      "layerMap": "0/1/2",
-      "section": "Security Credibility And Verification Program (2026-03-06)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v6-sec-004:run",
       "missingEntrypoint": null,
       "unblock": "no executable lane script; requires implementation lane definition"
     },
@@ -7514,20 +7052,6 @@
       "hasLaneScript": false,
       "laneRunnable": false,
       "laneScript": "lane:v6-prim-002:run",
-      "missingEntrypoint": null,
-      "unblock": "no executable lane script; requires implementation lane definition"
-    },
-    {
-      "id": "V6-PRIM-004",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V6] IPC Primitive Rust Completion",
-      "impact": "9",
-      "layerMap": "-1/0/1/2/3/adapter",
-      "section": "Rust Core Primitive Source-Of-Truth Program (2026-03-06)",
-      "todoBucket": "design_required",
-      "hasLaneScript": false,
-      "laneRunnable": false,
-      "laneScript": "lane:v6-prim-004:run",
       "missingEntrypoint": null,
       "unblock": "no executable lane script; requires implementation lane definition"
     },

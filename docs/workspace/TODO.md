@@ -1,6 +1,6 @@
 # TODO (Maintenance + Policy + SRS Execution Order)
 
-Updated: 2026-03-11 18:44 America/Denver
+Updated: 2026-03-11 18:50 America/Denver
 
 ## Ordering policy
 - Priority first (`P0` > `P1` > `P2` > `P3`)
@@ -28,17 +28,17 @@ Updated: 2026-03-11 18:44 America/Denver
 - Full execution queue (all actionable items, sorted): [docs/workspace/TODO_EXECUTION_FULL.md](/Users/jay/.openclaw/workspace/docs/workspace/TODO_EXECUTION_FULL.md)
 - Machine-readable execution queue: [artifacts/todo_execution_full_current.json](/Users/jay/.openclaw/workspace/artifacts/todo_execution_full_current.json)
 - Map summary snapshot:
-- `actionable_total=820`
-- `queued=582`
-- `in_progress=211`
+- `actionable_total=786`
+- `queued=576`
+- `in_progress=183`
 - `blocked=27`
 - `execute_now=0`
 - `repair_lane=0`
-- `design_required=793`
+- `design_required=759`
 - `blocked_external=27`
 
 ## Full TODO queue contract
-- The TODO list now includes **all** actionable SRS work as the canonical generated queue in `TODO_EXECUTION_FULL.md` (`820` rows).
+- The TODO list now includes **all** actionable SRS work as the canonical generated queue in `TODO_EXECUTION_FULL.md` (`786` rows).
 - Sorting policy used in that queue:
 - `todoBucket` order: `execute_now -> repair_lane -> design_required -> blocked_external`
 - then `status`: `in_progress -> queued -> blocked`
@@ -109,6 +109,12 @@ Updated: 2026-03-11 18:44 America/Denver
 - Added execution profile matrix contract and strict validator lane (`lane:v7-meta-015:run`).
 - Marked `V7-META-011..015` as `done` in `SRS.md` and `UPGRADE_BACKLOG.md`.
 
+12. `P1-EXEC-008` Close evidence-backed ROI items from Top-100 ledger without violating DoD truthfulness. `STATUS: DONE`
+- Exit criteria met:
+- Promoted only regression-validated, non-blocked IDs with code-like evidence to `done` in `SRS.md` / `UPGRADE_BACKLOG.md`.
+- Automatically reverted `34` IDs that failed evidence strictness (`doneWithoutCodeEvidence`) back to prior statuses, restoring truthful closure semantics.
+- Net actionable queue reduced from `820` to `786` while keeping `srs_full_regression` strict (`fail=0`).
+
 ## Executed in this pass
 - Added `scripts/ci/srs_actionable_map.mjs` to produce canonical remaining-work mapping and executability buckets.
 - Reviewed enforcer policy and kept DoD evidence gates strict.
@@ -117,6 +123,7 @@ Updated: 2026-03-11 18:44 America/Denver
 - Executed metakernel tranche (`V7-META-004..006`) with deterministic receipts and passing lanes.
 - Executed metakernel tranche (`V7-META-007..010`) with deterministic receipts and passing lanes.
 - Executed metakernel tranche (`V7-META-011..015`) with deterministic receipts and passing lanes.
+- Executed ROI status-closure sweep with strict evidence rollback safeguards (`P1-EXEC-008`), reducing actionable queue by `34`.
 - Added generated full TODO queue artifacts (`TODO_EXECUTION_FULL.md` + `todo_execution_full_current.json`) and kept ordering deterministic.
 - Kept client/core policy audits and full regression suite passing after state transitions.
 

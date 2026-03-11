@@ -1,15 +1,15 @@
 # SRS Actionable Map (Current)
 
-Generated: 2026-03-11T18:43:36.336Z
+Generated: 2026-03-11T18:50:31.809Z
 
 ## Summary
-- actionable_total: 820
-- queued: 582
-- in_progress: 211
+- actionable_total: 786
+- queued: 576
+- in_progress: 183
 - blocked: 27
 - execute_now: 0
 - repair_lane: 0
-- design_required: 793
+- design_required: 759
 - blocked_external: 27
 
 | ID | Status | Bucket | Impact | Layer | Lane | Runnable | Missing Entrypoint | Section |
@@ -280,9 +280,6 @@ Generated: 2026-03-11T18:43:36.336Z
 | V6-MEMORY-004.6 | queued | design_required | 10 | 0/1/2/client | lane:v6-memory-004.6:run | no |  | Semantic Code Indexing & Search Intake (cocoindex-code, 2026-03-11) |
 | V6-F100-021 | in_progress | design_required | 9 | 0/1/2/client | lane:v6-f100-021:run | no |  | Production-Grade Checklist Addendum (2026-03-06) |
 | V6-COCKPIT-003 | in_progress | design_required | 8 | 0/1/2/client | lane:v6-cockpit-003:run | no |  | Production-Grade Checklist Addendum (2026-03-06) |
-| V6-COCKPIT-005 | in_progress | design_required | 8 | 0/1/2/client | lane:v6-cockpit-005:run | no |  | Production-Grade Checklist Addendum (2026-03-06) |
-| V6-COCKPIT-007 | queued | design_required | 8 | 0/1/2/client | lane:v6-cockpit-007:run | no |  | Production-Grade Checklist Addendum (2026-03-06) |
-| V6-COCKPIT-008 | queued | design_required | 8 | 0/1/2/client | lane:v6-cockpit-008:run | no |  | Production-Grade Checklist Addendum (2026-03-06) |
 | V6-COCKPIT-009 | queued | design_required | 8 | 0/1/2/client | lane:v6-cockpit-009:run | no |  | Production-Grade Checklist Addendum (2026-03-06) |
 | V6-COCKPIT-010 | queued | design_required | 8 | 0/1/2/client | lane:v6-cockpit-010:run | no |  | Production-Grade Checklist Addendum (2026-03-06) |
 | V6-COCKPIT-011 | queued | design_required | 8 | 0/1/2/client | lane:v6-cockpit-011:run | no |  | Production-Grade Checklist Addendum (2026-03-06) |
@@ -366,7 +363,6 @@ Generated: 2026-03-11T18:43:36.336Z
 | V2-006 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v2-006:run | no |  | V2 |
 | V2-012 | blocked | blocked_external | 8 | 1/2/client/adapter |  | no |  | V2 |
 | V2-018B | queued | design_required | 7 | 1/2/client/adapter | lane:v2-018b:run | no |  | V2 |
-| V2-027 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v2-027:run | no |  | V2 |
 | V2-029 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v2-029:run | no |  | V2 |
 | V2-032 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v2-032:run | no |  | V2 |
 | V2-041 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v2-041:run | no |  | V2 |
@@ -377,28 +373,23 @@ Generated: 2026-03-11T18:43:36.336Z
 | V3-002 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-002:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
 | V3-003 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-003:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
 | V3-004a | queued | design_required | 7 | 1/2/client/adapter | lane:v3-004a:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
-| V3-004b | queued | design_required | 7 | 1/2/client/adapter | lane:v3-004b:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
-| V3-004c | queued | design_required | 7 | 1/2/client/adapter | lane:v3-004c:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
-| V3-004d | queued | design_required | 7 | 1/2/client/adapter | lane:v3-004d:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
-| V3-004e | queued | design_required | 7 | 1/2/client/adapter | lane:v3-004e:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
+| V3-004b | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-004b:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
+| V3-004c | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-004c:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
+| V3-004d | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-004d:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
+| V3-004e | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-004e:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
 | V3-004f | queued | design_required | 7 | 1/2/client/adapter | lane:v3-004f:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
 | V3-014 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-014:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
 | V3-019 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-019:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
 | V3-020 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-020:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
-| V3-030 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-030:run | no |  | V3 (Lamp / Super-Intelligence Containment) |
-| V2-BRG-003 | in_progress | design_required | 6 | 0/1/2/adapter/client | lane:v2-brg-003:run | no |  | Constraint Bridge Track (Grok Intake, 2026-02-26) |
 | V2-BRG-004 | in_progress | design_required | 6 | 0/1/2/adapter/client | lane:v2-brg-004:run | no |  | Constraint Bridge Track (Grok Intake, 2026-02-26) |
 | V3-025 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-025:run | no |  | Security Fortress Intake (Normalized, 2026-02-26) |
 | V3-026 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-026:run | no |  | Security Fortress Intake (Normalized, 2026-02-26) |
-| V3-033 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-033:run | no |  | Helix Codex Track (Immortal Helix + Sentinel Protocol) |
 | V3-027 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-027:run | no |  | Governance + Intelligence Gap Intake (Grok, 2026-02-26) |
-| V3-037 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-037:run | no |  | Governance + Intelligence Gap Intake (Grok, 2026-02-26) |
 | V3-044 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-044:run | no |  | Governance + Intelligence Gap Intake (Grok, 2026-02-26) |
 | V3-046 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-046:run | no |  | Governance + Intelligence Gap Intake (Grok, 2026-02-26) |
 | V3-048 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-048:run | no |  | Governance + Intelligence Gap Intake (Grok, 2026-02-26) |
 | V3-049 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-049:run | no |  | Governance + Intelligence Gap Intake (Grok, 2026-02-26) |
 | V3-050 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-050:run | no |  | Governance + Intelligence Gap Intake (Grok, 2026-02-26) |
-| V3-058 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-058:run | no |  | Governance + Intelligence Gap Intake (Grok, 2026-02-26) |
 | V3-061 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-061:run | no |  | Governance + Intelligence Gap Intake (Grok, 2026-02-26) |
 | V4-CLEAN-002 | in_progress | design_required | 7 | 0/1/2/client | lane:v4-clean-002:run | no |  | V4 Cleanup Track (Corrected Grok Intake, 2026-03-02) |
 | V4-SCI-001 | in_progress | design_required | 8 | 0/1/2/client | lane:v4-sci-001:run | no |  | V4 Scientific Method Track (Grok Intake Normalized, 2026-03-02) |
@@ -410,11 +401,9 @@ Generated: 2026-03-11T18:43:36.336Z
 | V4-FORT-004 | in_progress | design_required | 9 | 0/1/2/client | lane:v4-fort-004:run | no |  | V4 Empty Fort Artifact Program (Operator Directive, 2026-03-02) |
 | V4-MIGR-001 | in_progress | design_required | 8 | 0/1/2/adapter/client | lane:v4-migr-001:run | no |  | V4 Migration & Ecosystem Porting Track (Google Doc `16j8PyjyYt3CpzfR11jpQkG3fAhIPifQBUlBO_pYxfR0`, 2026-03-02) |
 | V4-RUST-003 | in_progress | design_required | 9 | 0/1/2/client | lane:v4-rust-003:run | no |  | V4 Rust Acceleration Track (Grok Intake Normalized, 2026-03-02) |
-| V3-ASSIM-004 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-assim-004:run | no |  | Holo-viz Track (Separated from Core Protheus) |
 | V3-ASSIM-007 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-assim-007:run | no |  | Holo-viz Track (Separated from Core Protheus) |
 | V3-ASSIM-013 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-assim-013:run | no |  | Holo-viz Track (Separated from Core Protheus) |
 | V3-ASSIM-017 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-assim-017:run | no |  | Holo-viz Track (Separated from Core Protheus) |
-| V3-ASSIM-025 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-assim-025:run | no |  | Holo-viz Track (Separated from Core Protheus) |
 | V3-TASK-002 | in_progress | design_required | 7 | 1/2/client/adapter | lane:v3-task-002:run | no |  | Holo-viz Track (Separated from Core Protheus) |
 | V3-ADD-UEP-DBG-001 | in_progress | design_required | 6 | 0/1/2/adapter/client | lane:v3-add-uep-dbg-001:run | no |  | Devin Comparative Intake (Normalized to Primitive-First) |
 | V3-XAI-002 | in_progress | design_required | 8 | 0/1/2/adapter/client | lane:v3-xai-002:run | no |  | X AI Feature Abstraction Intake (Normalized, 2026-02-27) |
@@ -433,19 +422,14 @@ Generated: 2026-03-11T18:43:36.336Z
 | V3-MCG-001 | queued | design_required | 9 | 0/1/2 | lane:v3-mcg-001:run | no |  | Intelligence Requirement Intake (Deduplicated, 2026-02-28) |
 | V3-HLM-001 | queued | design_required | 9 | 0/1/2 | lane:v3-hlm-001:run | no |  | Intelligence Requirement Intake (Deduplicated, 2026-02-28) |
 | V3-DCS-001 | queued | design_required | 6 | 0/1/2 | lane:v3-dcs-001:run | no |  | Intelligence Requirement Intake (Deduplicated, 2026-02-28) |
-| V3-BIN-001 | in_progress | design_required | 7 | 0/1/2/adapter/client | lane:v3-bin-001:run | no |  | Binary Runtime Hardening Intake (Normalized, 2026-02-27) |
 | V3-BIN-002 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-bin-002:run | no |  | Binary Runtime Hardening Intake (Normalized, 2026-02-27) |
 | V3-SK-002 | in_progress | design_required | 7 | 0/1/2/adapter/client | lane:v3-sk-002:run | no |  | State Kernel Hardening Track (SQLite State Plane) |
 | V3-SK-004 | in_progress | design_required | 7 | 0/1/2/adapter/client | lane:v3-sk-004:run | no |  | State Kernel Hardening Track (SQLite State Plane) |
-| V3-MLC-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-mlc-001:run | no |  | Master Learning Conduit + Hereditary Federation (Normalized, 2026-02-28) |
-| V3-MLC-002 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-mlc-002:run | no |  | Master Learning Conduit + Hereditary Federation (Normalized, 2026-02-28) |
 | V3-OPS-003 | in_progress | design_required | 8 | 0/1/2/adapter/client | lane:v3-ops-003:run | no |  | Post-Soak Runtime Closure Hardening (Queued, 2026-02-28) |
 | V3-OPS-013 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-ops-013:run | no |  | Post-Soak Runtime Closure Hardening (Queued, 2026-02-28) |
 | V3-OPS-005 | in_progress | design_required | 8 | 0/1/2/adapter/client | lane:v3-ops-005:run | no |  | Operator-System Feel Pack (Normalized, Queued, 2026-02-28) |
 | V3-OPS-008 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-ops-008:run | no |  | Operator-System Feel Pack (Normalized, Queued, 2026-02-28) |
-| V3-OPS-010 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-ops-010:run | no |  | Operator-System Feel Pack (Normalized, Queued, 2026-02-28) |
 | V3-MEM-001 | in_progress | design_required | 8 | 0/1/2/adapter/client | lane:v3-mem-001:run | no |  | Post-Soak Memory & Burn Efficiency Pack (Queued, 2026-02-28) |
-| V3-MEM-002 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-mem-002:run | no |  | Post-Soak Memory & Burn Efficiency Pack (Queued, 2026-02-28) |
 | V3-MEM-004 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-mem-004:run | no |  | Post-Soak Memory & Burn Efficiency Pack (Queued, 2026-02-28) |
 | V3-MEM-007 | in_progress | design_required | 7 | 0/1/2/adapter/client | lane:v3-mem-007:run | no |  | Post-Soak Memory & Burn Efficiency Pack (Queued, 2026-02-28) |
 | V3-MEM-008 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-mem-008:run | no |  | Post-Soak Memory & Burn Efficiency Pack (Queued, 2026-02-28) |
@@ -458,17 +442,13 @@ Generated: 2026-03-11T18:43:36.336Z
 | V3-RACE-023 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-023:run | no |  | Rust Memory Transition Intake (Normalized, Queued, 2026-02-28) |
 | V3-RACE-023 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-023:run | no |  | Rust Memory Transition Intake (Normalized, Queued, 2026-02-28) |
 | V3-RACE-023 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-023:run | no |  | Rust Memory Transition Intake (Normalized, Queued, 2026-02-28) |
-| V3-DOC-004 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-doc-004:run | no |  | Enterprise Documentation Structure Intake (Deduplicated, 2026-02-28) |
 | V3-DOC-007 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-doc-007:run | no |  | Enterprise Documentation Structure Intake (Deduplicated, 2026-02-28) |
 | V3-OF-001 | in_progress | design_required | 6 | 0/1/2/adapter/client | lane:v3-of-001:run | no |  | OpenFang Capability Intake (Normalized, 2026-02-28) |
 | V3-OF-005 | in_progress | design_required | 8 | app | lane:v3-of-005:run | no |  | OpenFang Capability Intake (Normalized, 2026-02-28) |
 | V3-OF-006 | in_progress | design_required | 6 | 0/1/2/adapter/client | lane:v3-of-006:run | no |  | OpenFang Capability Intake (Normalized, 2026-02-28) |
 | V3-DEP-001 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-dep-001:run | no |  | OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28) |
-| V3-RTE-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-rte-001:run | no |  | OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28) |
 | V3-RTE-004 | in_progress | design_required | 7 | 0/1/2/adapter/client | lane:v3-rte-004:run | no |  | OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28) |
-| V3-USE-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-use-001:run | no |  | OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28) |
 | V3-BENCH-001 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-bench-001:run | no |  | OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28) |
-| V3-BLD-001 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-bld-001:run | no |  | OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28) |
 | V3-CPY-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-cpy-001:run | no |  | Anti-Copy / Reverse-Engineering Hardening Intake (Normalized, 2026-02-28) |
 | V3-CPY-003 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-cpy-003:run | no |  | Anti-Copy / Reverse-Engineering Hardening Intake (Normalized, 2026-02-28) |
 | V3-CPY-004 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-cpy-004:run | no |  | Anti-Copy / Reverse-Engineering Hardening Intake (Normalized, 2026-02-28) |
@@ -489,57 +469,44 @@ Generated: 2026-03-11T18:43:36.336Z
 | V3-RACE-127 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-127:run | no |  | Technical Quality Intake (Valid Grok-Derived Requirements, 2026-03-01) |
 | V3-RACE-128 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-128:run | no |  | Technical Quality Intake (Valid Grok-Derived Requirements, 2026-03-01) |
 | V3-RACE-163 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-race-163:run | no |  | External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02) |
-| V3-RACE-183 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-183:run | no |  | External Requirements Intake (Google Doc `1u2Oh8FVHI9joij7p4FXI3cUrUqY6at8AVcHdfeLHW84`, 2026-03-02) |
 | V3-RACE-185 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-185:run | no |  | External Requirements Intake (Google Doc `1zxYaW0wNMbFnnpx_Ps0WCVgMf-uGraobSctE7cCGx80`, 2026-03-02) |
 | V3-RACE-187 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-race-187:run | no |  | External Requirements Intake (Google Doc `1zxYaW0wNMbFnnpx_Ps0WCVgMf-uGraobSctE7cCGx80`, 2026-03-02) |
-| V3-RACE-194 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-race-194:run | no |  | External Requirements Intake (Google Doc `1lt6tGOofp1joh3JUQakKPvtise-3SW1pZ_qO6YOzbgE`, 2026-03-02) |
-| V3-RACE-230 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-230:run | no |  | External Requirements Intake (Google Doc `1iRVFyme2klr25ST5GHxr_WOz9WH5HYWBDlkZAfDGDZo`, 2026-03-02) |
-| V3-033 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-033:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-048 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-048:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-ACT-002 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-act-002:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-AEX-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-aex-001:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-AEX-002 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-aex-002:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-BENCH-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-bench-001:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-BLD-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-bld-001:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-CPY-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-cpy-001:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-CPY-006 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-cpy-006:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-DEP-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-dep-001:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-DOC-004 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-doc-004:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-DOC-007 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-doc-007:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-ENT-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-ent-001:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-LOOP-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-loop-001:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-MAC-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-mac-001:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-MEM-001 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-mem-001:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-MEM-002 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-mem-002:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-MEM-004 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-mem-004:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-MEM-008 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-mem-008:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-MLC-002 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-mlc-002:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-OPS-003 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-ops-003:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-OPS-005 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-ops-005:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-RACE-023 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-race-023:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-SK-002 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-sk-002:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-XAI-002 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-xai-002:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V3-RACE-163 | in_progress | design_required | 10 | 0/1/2/adapter/client | lane:v3-race-163:run | no |  | Backlog Registry Normalization (2026-03-03) |
-| V3-RACE-230 | in_progress | design_required | 9 | 0/1/2/adapter/client | lane:v3-race-230:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V4-RUST-003 | in_progress | design_required | 8 | 0/1/2/client | lane:v4-rust-003:run | no |  | Backlog Registry Normalization (2026-03-03) |
 | V5-HOLD-005 | in_progress | design_required | 10 | 0/1/2/client | lane:v5-hold-005:run | no |  | Hold-Rate Reduction Program (2026-03-03) |
 | V4-ETH-002 | in_progress | design_required | 9 | -1/0/1/2/3/adapter | lane:v4-eth-002:run | no |  | Ethereal Runtime Program (Google Doc Intake 2026-03-03) |
 | V4-PKG-001 | in_progress | design_required | 8 | -1/0/1/2/3/adapter | lane:v4-pkg-001:run | no |  | Packaging & Lens Opacity Program (Google Doc Intake 2026-03-03) |
 | V4-PKG-002 | in_progress | design_required | 10 | -1/0/1/2/3/adapter | lane:v4-pkg-002:run | no |  | Packaging & Lens Opacity Program (Google Doc Intake 2026-03-03) |
 | V4-PKG-005 | in_progress | design_required | 8 | 0/1/2/client | lane:v4-pkg-005:run | no |  | LensMap Standalone Suite Program (Google Doc Intake 2026-03-03) |
-| V4-SUITE-002 | in_progress | design_required | 9 | 0/1/2/client | lane:v4-suite-002:run | no |  | Productized CLI Suite Program (Google Doc Intake 2026-03-03) |
 | V4-SUITE-006 | in_progress | design_required | 9 | 0/1/2/client | lane:v4-suite-006:run | no |  | Productized CLI Suite Program (Google Doc Intake 2026-03-03) |
 | V4-SUITE-007 | in_progress | design_required | 8 | 0/1/2/client | lane:v4-suite-007:run | no |  | Productized CLI Suite Program (Google Doc Intake 2026-03-03) |
 | V4-SUITE-008 | in_progress | design_required | 9 | 0/1/2/client | lane:v4-suite-008:run | no |  | Productized CLI Suite Program (Google Doc Intake 2026-03-03) |
-| V4-SUITE-010 | in_progress | design_required | 10 | 0/1/2/client | lane:v4-suite-010:run | no |  | Productized CLI Suite Program (Google Doc Intake 2026-03-03) |
 | V6-RUST50-CONF-004 | blocked | blocked_external | 9 | 0/1/2/client |  | no |  | External Requirements Intake (Mega Sprint 1: Public 50 Percent Visible Rust, 2026-03-03) |
 | V6-F100-002 | in_progress | design_required | 9 | 0/1/2/client | lane:v6-f100-002:run | no |  | Fortune-100 Software Readiness Path (Queued, 2026-03-03) |
 | V6-F100-003 | in_progress | design_required | 10 | 0/1/2/client | lane:v6-f100-003:run | no |  | Fortune-100 Software Readiness Path (Queued, 2026-03-03) |
 | V6-F100-005 | in_progress | design_required | 9 | 0/1/2/client | lane:v6-f100-005:run | no |  | Fortune-100 Software Readiness Path (Queued, 2026-03-03) |
 | V6-PERS-SEAM-003 | in_progress | design_required | 8 | 0/1/2/client | lane:v6-pers-seam-003:run | no |  | Persona Seamless Workflow Integration Pack (2026-03-03) |
 | V6-CONDUIT-008 | in_progress | design_required | 10 | 0/1/2/client | lane:v6-conduit-008:run | no |  | Protheus Conduit Program (Requirements Intake 2026-03-05) |
-| V6-SEC-001 | in_progress | design_required | 10 | 0/1/2/client | lane:v6-sec-001:run | no |  | Security Credibility And Verification Program (2026-03-06) |
-| V6-SEC-004 | in_progress | design_required | 10 | 0/1/2 | lane:v6-sec-004:run | no |  | Security Credibility And Verification Program (2026-03-06) |
 | V6-SEC-007 | queued | design_required | 10 | 0/1/2 | lane:v6-sec-007:run | no |  | Security Credibility And Verification Program (2026-03-06) |
 | V6-SEC-009 | queued | design_required | 10 | 0/1/2 | lane:v6-sec-009:run | no |  | Security Credibility And Verification Program (2026-03-06) |
 | V6-SEC-010 | queued | design_required | 10 | 0/1/2/adapter/client | lane:v6-sec-010:run | no |  | ZeroLeaks Injection Hardening Source Coverage Intake (Doc `143v84ci3rHjP7WtbYi9tJ2KeJZUkNTIsFTye1NHrheA`, 2026-03-11) |
@@ -550,7 +517,6 @@ Generated: 2026-03-11T18:43:36.336Z
 | V6-SEC-015 | queued | design_required | 10 | app | lane:v6-sec-015:run | no |  | ZeroLeaks Injection Hardening Source Coverage Intake (Doc `143v84ci3rHjP7WtbYi9tJ2KeJZUkNTIsFTye1NHrheA`, 2026-03-11) |
 | V6-PRIM-001 | in_progress | design_required | 9 | 0/1/2/client | lane:v6-prim-001:run | no |  | Rust Core Primitive Source-Of-Truth Program (2026-03-06) |
 | V6-PRIM-002 | in_progress | design_required | 9 | 0/1/2/client | lane:v6-prim-002:run | no |  | Rust Core Primitive Source-Of-Truth Program (2026-03-06) |
-| V6-PRIM-004 | in_progress | design_required | 9 | -1/0/1/2/3/adapter | lane:v6-prim-004:run | no |  | Rust Core Primitive Source-Of-Truth Program (2026-03-06) |
 | V6-GAP-002 | in_progress | design_required | 8 | 0/1/2/client | lane:v6-gap-002:run | no |  | Testing + Documentation + Installer Gap Closer (2026-03-06) |
 | V6-GAP-006 | blocked | blocked_external | 10 | 0/1/2/client |  | no |  | Testing + Documentation + Installer Gap Closer (2026-03-06) |
 | V6-TECH-301 | in_progress | design_required | 6 | 1/2/client | lane:v6-tech-301:run | no |  | Technical Excellence Roadmap Intake (Google Doc `19DO7nvxizNJmLuoRUFrYYTNOmMnHJCGKI44AlGHbcSw`, 2026-03-08) |

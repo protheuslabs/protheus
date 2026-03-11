@@ -1,43 +1,43 @@
 # SRS Full Regression Audit
 
 - Source SRS items scanned: **1998**
-- Regression severities: **fail=0**, **warn=0**, **pass=1998**
-- Done rows: **1178**
+- Regression severities: **fail=0**, **warn=4**, **pass=1994**
+- Done rows: **1212**
 - Done rows without non-backlog evidence: **0**
 - Done rows without code/test evidence: **0**
 - Machine report: `artifacts/srs_full_regression_current.json`
 
 | # | ID | Status | Evidence | Non-Backlog | Code/Test | Regression |
 |---:|---|---|---:|---:|---:|---|
-| 1 | V7-META-001 | done | 12 | 1 | 1 | pass |
-| 2 | V7-META-002 | done | 6 | 1 | 1 | pass |
-| 3 | V7-META-003 | done | 6 | 1 | 1 | pass |
-| 4 | V7-META-004 | done | 13 | 2 | 1 | pass |
-| 5 | V7-META-005 | done | 6 | 1 | 1 | pass |
-| 6 | V7-META-006 | done | 6 | 1 | 1 | pass |
-| 7 | V7-META-007 | done | 12 | 1 | 1 | pass |
-| 8 | V7-META-008 | done | 6 | 1 | 1 | pass |
-| 9 | V7-META-009 | done | 6 | 1 | 1 | pass |
-| 10 | V7-META-010 | done | 6 | 1 | 1 | pass |
-| 11 | V7-META-011 | done | 8 | 3 | 1 | pass |
-| 12 | V7-META-012 | done | 10 | 5 | 1 | pass |
-| 13 | V7-META-013 | done | 8 | 3 | 1 | pass |
-| 14 | V7-META-014 | done | 8 | 3 | 1 | pass |
-| 15 | V7-META-015 | done | 8 | 3 | 1 | pass |
-| 16 | V7-META-016 | blocked | 9 | 4 | 0 | pass |
-| 17 | V7-META-017 | blocked | 9 | 4 | 0 | pass |
-| 18 | V7-META-018 | blocked | 10 | 5 | 0 | pass |
-| 19 | V6-LLMN-001 | in_progress | 20 | 5 | 1 | pass |
-| 20 | V6-LLMN-002 | in_progress | 9 | 4 | 1 | pass |
-| 21 | V6-LLMN-003 | in_progress | 9 | 4 | 1 | pass |
-| 22 | V6-LLMN-004 | in_progress | 9 | 4 | 1 | pass |
-| 23 | V6-MEMORY-013 | done | 11 | 3 | 1 | pass |
-| 24 | V6-MEMORY-014 | done | 6 | 2 | 1 | pass |
-| 25 | V6-MEMORY-015 | done | 6 | 2 | 1 | pass |
-| 26 | V6-MEMORY-016 | in_progress | 9 | 4 | 1 | pass |
-| 27 | V6-MEMORY-017 | in_progress | 9 | 4 | 1 | pass |
-| 28 | V6-MEMORY-018 | in_progress | 9 | 4 | 1 | pass |
-| 29 | V6-MEMORY-019 | in_progress | 9 | 4 | 1 | pass |
+| 1 | V7-META-001 | done | 12 | 2 | 1 | pass |
+| 2 | V7-META-002 | done | 6 | 2 | 1 | pass |
+| 3 | V7-META-003 | done | 6 | 2 | 1 | pass |
+| 4 | V7-META-004 | done | 13 | 3 | 1 | pass |
+| 5 | V7-META-005 | done | 6 | 2 | 1 | pass |
+| 6 | V7-META-006 | done | 6 | 2 | 1 | pass |
+| 7 | V7-META-007 | done | 12 | 2 | 1 | pass |
+| 8 | V7-META-008 | done | 6 | 2 | 1 | pass |
+| 9 | V7-META-009 | done | 6 | 2 | 1 | pass |
+| 10 | V7-META-010 | done | 6 | 2 | 1 | pass |
+| 11 | V7-META-011 | done | 13 | 3 | 1 | pass |
+| 12 | V7-META-012 | done | 9 | 5 | 1 | pass |
+| 13 | V7-META-013 | done | 7 | 3 | 1 | pass |
+| 14 | V7-META-014 | done | 7 | 3 | 1 | pass |
+| 15 | V7-META-015 | done | 7 | 3 | 1 | pass |
+| 16 | V7-META-016 | blocked | 10 | 5 | 0 | pass |
+| 17 | V7-META-017 | blocked | 10 | 5 | 0 | pass |
+| 18 | V7-META-018 | blocked | 11 | 6 | 0 | pass |
+| 19 | V6-LLMN-001 | in_progress | 20 | 6 | 1 | pass |
+| 20 | V6-LLMN-002 | in_progress | 9 | 5 | 1 | pass |
+| 21 | V6-LLMN-003 | in_progress | 9 | 5 | 1 | pass |
+| 22 | V6-LLMN-004 | in_progress | 9 | 5 | 1 | pass |
+| 23 | V6-MEMORY-013 | done | 11 | 8 | 1 | pass |
+| 24 | V6-MEMORY-014 | done | 6 | 3 | 1 | pass |
+| 25 | V6-MEMORY-015 | done | 6 | 3 | 1 | pass |
+| 26 | V6-MEMORY-016 | in_progress | 9 | 5 | 1 | pass |
+| 27 | V6-MEMORY-017 | in_progress | 9 | 5 | 1 | pass |
+| 28 | V6-MEMORY-018 | in_progress | 9 | 5 | 1 | pass |
+| 29 | V6-MEMORY-019 | in_progress | 9 | 5 | 1 | pass |
 | 30 | V7-TOP1-001 | queued | 8 | 3 | 1 | pass |
 | 31 | V7-TOP1-002 | queued | 6 | 3 | 1 | pass |
 | 32 | V7-TOP1-003 | queued | 6 | 3 | 1 | pass |
@@ -152,7 +152,7 @@
 | 141 | V6-SUBSTRATE-002.1 | queued | 7 | 3 | 1 | pass |
 | 142 | V6-SUBSTRATE-002.2 | queued | 7 | 3 | 1 | pass |
 | 143 | V6-SUBSTRATE-002.3 | queued | 7 | 3 | 1 | pass |
-| 144 | V6-SUBSTRATE-002.4 | blocked | 9 | 3 | 0 | pass |
+| 144 | V6-SUBSTRATE-002.4 | blocked | 10 | 3 | 0 | pass |
 | 145 | V6-SUBSTRATE-002.5 | queued | 7 | 3 | 1 | pass |
 | 146 | V6-OBSERVABILITY-001.1 | queued | 7 | 3 | 1 | pass |
 | 147 | V6-OBSERVABILITY-001.2 | queued | 9 | 3 | 1 | pass |
@@ -232,10 +232,10 @@
 | 221 | V6-APP-004.2 | queued | 5 | 2 | 0 | pass |
 | 222 | V6-APP-004.3 | queued | 5 | 2 | 0 | pass |
 | 223 | V6-APP-003.1 | queued | 5 | 2 | 0 | pass |
-| 224 | V6-COCKPIT-012.1 | queued | 8 | 4 | 0 | pass |
-| 225 | V6-COCKPIT-012.2 | queued | 16 | 4 | 0 | pass |
-| 226 | V6-COCKPIT-012.3 | queued | 7 | 3 | 0 | pass |
-| 227 | V6-COCKPIT-012.4 | queued | 7 | 3 | 0 | pass |
+| 224 | V6-COCKPIT-012.1 | queued | 9 | 4 | 0 | pass |
+| 225 | V6-COCKPIT-012.2 | queued | 17 | 4 | 0 | pass |
+| 226 | V6-COCKPIT-012.3 | queued | 8 | 3 | 0 | pass |
+| 227 | V6-COCKPIT-012.4 | queued | 8 | 3 | 0 | pass |
 | 228 | V6-COCKPIT-012.5 | queued | 7 | 3 | 0 | pass |
 | 229 | V6-COCKPIT-012.6 | queued | 6 | 3 | 0 | pass |
 | 230 | V6-COCKPIT-012.7 | queued | 6 | 3 | 0 | pass |
@@ -303,26 +303,26 @@
 | 292 | V6-COCKPIT-002 | done | 5 | 2 | 1 | pass |
 | 293 | V6-COCKPIT-003 | in_progress | 7 | 3 | 0 | pass |
 | 294 | V6-COCKPIT-004 | done | 5 | 2 | 1 | pass |
-| 295 | V6-COCKPIT-005 | in_progress | 18 | 7 | 2 | pass |
-| 296 | V6-COCKPIT-006 | done | 14 | 2 | 1 | pass |
-| 297 | V6-COCKPIT-007 | queued | 22 | 5 | 1 | pass |
-| 298 | V6-COCKPIT-008 | queued | 19 | 5 | 1 | pass |
-| 299 | V6-COCKPIT-009 | queued | 80 | 29 | 0 | pass |
-| 300 | V6-COCKPIT-010 | queued | 17 | 4 | 0 | pass |
-| 301 | V6-COCKPIT-011 | queued | 26 | 3 | 0 | pass |
+| 295 | V6-COCKPIT-005 | done | 15 | 6 | 2 | pass |
+| 296 | V6-COCKPIT-006 | done | 14 | 3 | 1 | pass |
+| 297 | V6-COCKPIT-007 | done | 19 | 7 | 1 | pass |
+| 298 | V6-COCKPIT-008 | done | 16 | 10 | 1 | pass |
+| 299 | V6-COCKPIT-009 | queued | 87 | 45 | 0 | pass |
+| 300 | V6-COCKPIT-010 | queued | 18 | 8 | 0 | pass |
+| 301 | V6-COCKPIT-011 | queued | 27 | 11 | 0 | pass |
 | 302 | V6-COCKPIT-009.1 | queued | 0 | 0 | 0 | pass |
 | 303 | V6-COCKPIT-009.2 | queued | 0 | 0 | 0 | pass |
 | 304 | V6-COCKPIT-009.3 | queued | 0 | 0 | 0 | pass |
 | 305 | V6-COCKPIT-009.4 | queued | 0 | 0 | 0 | pass |
 | 306 | V6-COCKPIT-009.5 | queued | 0 | 0 | 0 | pass |
 | 307 | V6-COCKPIT-009.6 | queued | 0 | 0 | 0 | pass |
-| 308 | V6-MEMORY-020 | queued | 7 | 3 | 0 | pass |
-| 309 | V6-MEMORY-021 | in_progress | 9 | 4 | 0 | pass |
-| 310 | V6-HOST-BUILD-STALE-001 | in_progress | 10 | 3 | 0 | pass |
-| 311 | V6-VALIDATION-HOST-001 | in_progress | 8 | 3 | 0 | pass |
+| 308 | V6-MEMORY-020 | queued | 7 | 4 | 0 | pass |
+| 309 | V6-MEMORY-021 | in_progress | 9 | 5 | 0 | pass |
+| 310 | V6-HOST-BUILD-STALE-001 | in_progress | 10 | 6 | 0 | pass |
+| 311 | V6-VALIDATION-HOST-001 | in_progress | 9 | 5 | 0 | pass |
 | 312 | V6-MEMORY-011 | done | 10 | 6 | 3 | pass |
-| 313 | V6-INITIATIVE-013 | done | 13 | 9 | 3 | pass |
-| 314 | V6-ARCH-ICEBERG-028 | in_progress | 12 | 7 | 1 | pass |
+| 313 | V6-INITIATIVE-013 | done | 13 | 10 | 3 | pass |
+| 314 | V6-ARCH-ICEBERG-028 | in_progress | 12 | 8 | 1 | pass |
 | 315 | V6-ARCH-LAYERING-031 | done | 5 | 2 | 1 | pass |
 | 316 | V6-ARCH-032 | in_progress | 7 | 3 | 0 | pass |
 | 317 | V6-ORIGIN-001 | done | 5 | 2 | 1 | pass |
@@ -356,11 +356,11 @@
 | 345 | V6-F100-043 | blocked | 18 | 11 | 1 | pass |
 | 346 | V6-F100-044 | blocked | 18 | 9 | 1 | pass |
 | 347 | V6-F100-045 | blocked | 13 | 8 | 1 | pass |
-| 348 | V6-F100-A-007 | in_progress | 10 | 3 | 0 | pass |
-| 349 | V6-F100-A-008 | blocked | 13 | 5 | 0 | pass |
-| 350 | V6-F100-A-009 | blocked | 10 | 4 | 0 | pass |
-| 351 | V6-F100-A-010 | blocked | 12 | 4 | 0 | pass |
-| 352 | V6-F100-A-011 | blocked | 16 | 6 | 0 | pass |
+| 348 | V6-F100-A-007 | in_progress | 10 | 4 | 0 | pass |
+| 349 | V6-F100-A-008 | blocked | 13 | 6 | 0 | pass |
+| 350 | V6-F100-A-009 | blocked | 10 | 5 | 0 | pass |
+| 351 | V6-F100-A-010 | blocked | 12 | 5 | 0 | pass |
+| 352 | V6-F100-A-011 | blocked | 16 | 7 | 0 | pass |
 | 353 | V6-F100-A-012 | in_progress | 12 | 4 | 0 | pass |
 | 354 | V6-F100-A-013 | in_progress | 7 | 3 | 0 | pass |
 | 355 | V6-F100-A-014 | in_progress | 8 | 4 | 0 | pass |
@@ -371,30 +371,30 @@
 | 360 | V6-EDGE-001 | done | 15 | 11 | 9 | pass |
 | 361 | V6-EDGE-002 | done | 11 | 7 | 5 | pass |
 | 362 | V6-EDGE-003 | done | 11 | 7 | 5 | pass |
-| 363 | V6-EDGE-004 | done | 11 | 6 | 3 | pass |
+| 363 | V6-EDGE-004 | done | 11 | 7 | 3 | pass |
 | 364 | V6-EDGE-005 | blocked | 12 | 8 | 3 | pass |
-| 365 | V6-SWARM-001 | done | 20 | 15 | 8 | pass |
+| 365 | V6-SWARM-001 | done | 20 | 16 | 8 | pass |
 | 366 | V6-SWARM-002 | done | 15 | 11 | 7 | pass |
 | 367 | V6-SWARM-003 | done | 13 | 9 | 5 | pass |
 | 368 | V6-SWARM-004 | done | 11 | 7 | 3 | pass |
 | 369 | V6-SWARM-005 | done | 17 | 13 | 9 | pass |
 | 370 | V6-SWARM-006 | done | 13 | 9 | 4 | pass |
-| 371 | V6-COMP-001 | done | 21 | 12 | 7 | pass |
-| 372 | V6-COMP-002 | done | 12 | 7 | 3 | pass |
-| 373 | V6-COMP-003 | done | 13 | 8 | 3 | pass |
+| 371 | V6-COMP-001 | done | 21 | 13 | 7 | pass |
+| 372 | V6-COMP-002 | done | 12 | 8 | 3 | pass |
+| 373 | V6-COMP-003 | done | 13 | 9 | 3 | pass |
 | 374 | V6-COMP-004 | done | 9 | 5 | 3 | pass |
-| 375 | V6-COMP-005 | blocked | 17 | 11 | 3 | pass |
+| 375 | V6-COMP-005 | blocked | 18 | 11 | 3 | pass |
 | 376 | V6-RUNTIME-001 | done | 11 | 7 | 5 | pass |
 | 377 | V6-RUNTIME-002 | in_progress | 12 | 7 | 3 | pass |
-| 378 | V6-RUNTIME-003 | in_progress | 15 | 11 | 7 | pass |
-| 379 | V6-RUNTIME-004 | in_progress | 11 | 7 | 3 | pass |
-| 380 | V6-SBOX-001 | in_progress | 17 | 13 | 9 | pass |
-| 381 | V6-SBOX-002 | in_progress | 16 | 11 | 5 | pass |
-| 382 | V6-SBOX-003 | done | 12 | 7 | 3 | pass |
-| 383 | V6-SBOX-004 | done | 12 | 7 | 3 | pass |
-| 384 | V6-SBOX-005 | done | 12 | 7 | 3 | pass |
+| 378 | V6-RUNTIME-003 | in_progress | 16 | 11 | 7 | pass |
+| 379 | V6-RUNTIME-004 | in_progress | 12 | 7 | 3 | pass |
+| 380 | V6-SBOX-001 | in_progress | 18 | 13 | 9 | pass |
+| 381 | V6-SBOX-002 | in_progress | 17 | 12 | 5 | pass |
+| 382 | V6-SBOX-003 | done | 12 | 8 | 3 | pass |
+| 383 | V6-SBOX-004 | done | 12 | 8 | 3 | pass |
+| 384 | V6-SBOX-005 | done | 12 | 8 | 3 | pass |
 | 385 | V6-SBOX-006 | blocked | 12 | 8 | 3 | pass |
-| 386 | V6-BROWSER-001 | done | 20 | 15 | 11 | pass |
+| 386 | V6-BROWSER-001 | done | 20 | 16 | 11 | pass |
 | 387 | V6-BROWSER-002 | done | 17 | 13 | 9 | pass |
 | 388 | V6-BROWSER-003 | done | 15 | 11 | 7 | pass |
 | 389 | V6-BROWSER-004 | done | 13 | 9 | 5 | pass |
@@ -439,7 +439,7 @@
 | 428 | V6-ADAPT-001 | done | 15 | 11 | 8 | pass |
 | 429 | V6-ADAPT-002 | done | 13 | 9 | 6 | pass |
 | 430 | V6-ADAPT-003 | done | 13 | 9 | 6 | pass |
-| 431 | V6-ADAPT-CORE-001 | queued | 12 | 8 | 2 | pass |
+| 431 | V6-ADAPT-CORE-001 | queued | 12 | 9 | 2 | pass |
 | 432 | V6-ADAPT-004 | done | 14 | 10 | 6 | pass |
 | 433 | V6-ADAPT-005 | done | 12 | 8 | 4 | pass |
 | 434 | V6-ADAPT-006 | done | 12 | 8 | 4 | pass |
@@ -475,7 +475,7 @@
 | 464 | V2-023 | done | 9 | 5 | 3 | pass |
 | 465 | V2-025 | done | 10 | 6 | 3 | pass |
 | 466 | V2-026 | done | 13 | 6 | 3 | pass |
-| 467 | V2-027 | in_progress | 16 | 11 | 5 | pass |
+| 467 | V2-027 | done | 13 | 9 | 5 | pass |
 | 468 | V2-028 | done | 10 | 6 | 3 | pass |
 | 469 | V2-029 | in_progress | 12 | 7 | 3 | pass |
 | 470 | V2-030 | done | 10 | 6 | 3 | pass |
@@ -503,12 +503,12 @@
 | 492 | V3-001 | in_progress | 21 | 7 | 3 | pass |
 | 493 | V3-002 | in_progress | 15 | 7 | 3 | pass |
 | 494 | V3-003 | in_progress | 15 | 7 | 3 | pass |
-| 495 | V3-004 | done | 86 | 43 | 13 | pass |
+| 495 | V3-004 | done | 94 | 43 | 13 | pass |
 | 496 | V3-004a | queued | 0 | 0 | 0 | pass |
-| 497 | V3-004b | queued | 0 | 0 | 0 | pass |
-| 498 | V3-004c | queued | 0 | 0 | 0 | pass |
-| 499 | V3-004d | queued | 0 | 0 | 0 | pass |
-| 500 | V3-004e | queued | 0 | 0 | 0 | pass |
+| 497 | V3-004b | in_progress | 0 | 0 | 0 | warn |
+| 498 | V3-004c | in_progress | 0 | 0 | 0 | warn |
+| 499 | V3-004d | in_progress | 0 | 0 | 0 | warn |
+| 500 | V3-004e | in_progress | 0 | 0 | 0 | warn |
 | 501 | V3-004f | queued | 0 | 0 | 0 | pass |
 | 502 | V3-005 | done | 15 | 5 | 3 | pass |
 | 503 | V3-006 | done | 18 | 5 | 3 | pass |
@@ -526,13 +526,13 @@
 | 515 | V3-019 | in_progress | 31 | 11 | 6 | pass |
 | 516 | V3-020 | in_progress | 18 | 7 | 3 | pass |
 | 517 | V3-021 | done | 19 | 6 | 3 | pass |
-| 518 | V3-030 | in_progress | 19 | 8 | 3 | pass |
+| 518 | V3-030 | done | 16 | 6 | 3 | pass |
 | 519 | V2-WVR-001 | done | 6 | 2 | 1 | pass |
 | 520 | V2-WVR-002 | done | 10 | 3 | 2 | pass |
 | 521 | V2-WVR-003 | done | 13 | 3 | 2 | pass |
 | 522 | V2-BRG-001 | done | 15 | 2 | 1 | pass |
 | 523 | V2-BRG-002 | done | 9 | 2 | 1 | pass |
-| 524 | V2-BRG-003 | in_progress | 10 | 5 | 1 | pass |
+| 524 | V2-BRG-003 | done | 7 | 3 | 1 | pass |
 | 525 | V2-BRG-004 | in_progress | 9 | 4 | 1 | pass |
 | 526 | V2-BRG-005 | done | 6 | 2 | 1 | pass |
 | 527 | V3-BRG-001 | done | 7 | 3 | 1 | pass |
@@ -560,7 +560,7 @@
 | 549 | V2-HLX-003 | done | 24 | 3 | 1 | pass |
 | 550 | V3-031 | done | 17 | 4 | 2 | pass |
 | 551 | V3-032 | done | 7 | 3 | 1 | pass |
-| 552 | V3-033 | in_progress | 72 | 26 | 13 | pass |
+| 552 | V3-033 | done | 66 | 22 | 13 | pass |
 | 553 | V3-034 | done | 39 | 8 | 4 | pass |
 | 554 | V3-038 | done | 112 | 29 | 19 | pass |
 | 555 | V2-060 | done | 27 | 2 | 1 | pass |
@@ -576,7 +576,7 @@
 | 565 | V3-027 | in_progress | 9 | 4 | 1 | pass |
 | 566 | V3-028 | done | 6 | 2 | 1 | pass |
 | 567 | V3-029 | done | 6 | 2 | 1 | pass |
-| 568 | V3-037 | in_progress | 10 | 5 | 1 | pass |
+| 568 | V3-037 | done | 7 | 3 | 1 | pass |
 | 569 | V3-039 | done | 39 | 8 | 7 | pass |
 | 570 | V3-040 | done | 11 | 4 | 3 | pass |
 | 571 | V3-041 | done | 13 | 3 | 1 | pass |
@@ -596,7 +596,7 @@
 | 585 | V3-055 | done | 9 | 2 | 1 | pass |
 | 586 | V3-056 | done | 14 | 4 | 3 | pass |
 | 587 | V3-057 | done | 14 | 4 | 3 | pass |
-| 588 | V3-058 | in_progress | 19 | 8 | 3 | pass |
+| 588 | V3-058 | done | 16 | 6 | 3 | pass |
 | 589 | V3-059 | done | 43 | 17 | 11 | pass |
 | 590 | V3-060 | done | 12 | 5 | 3 | pass |
 | 591 | V3-061 | in_progress | 16 | 5 | 1 | pass |
@@ -676,7 +676,7 @@
 | 665 | V3-ATTR-002 | done | 24 | 5 | 3 | pass |
 | 666 | V3-ATTR-003 | done | 9 | 5 | 3 | pass |
 | 667 | V3-TASK-001 | done | 33 | 5 | 3 | pass |
-| 668 | V3-ASSIM-004 | in_progress | 44 | 12 | 6 | pass |
+| 668 | V3-ASSIM-004 | done | 41 | 10 | 6 | pass |
 | 669 | V3-ASSIM-005 | done | 15 | 5 | 3 | pass |
 | 670 | V3-ASSIM-006 | done | 12 | 5 | 3 | pass |
 | 671 | V3-ASSIM-007 | in_progress | 21 | 7 | 3 | pass |
@@ -697,7 +697,7 @@
 | 686 | V3-ASSIM-022 | done | 9 | 5 | 3 | pass |
 | 687 | V3-ASSIM-023 | done | 9 | 5 | 3 | pass |
 | 688 | V3-ASSIM-024 | done | 9 | 5 | 3 | pass |
-| 689 | V3-ASSIM-025 | in_progress | 13 | 8 | 3 | pass |
+| 689 | V3-ASSIM-025 | done | 10 | 6 | 3 | pass |
 | 690 | V3-ASSIM-026 | done | 12 | 5 | 3 | pass |
 | 691 | V3-RED-003 | done | 12 | 5 | 3 | pass |
 | 692 | V3-TASK-002 | in_progress | 15 | 7 | 3 | pass |
@@ -742,7 +742,7 @@
 | 731 | V3-MCG-001 | queued | 6 | 2 | 0 | pass |
 | 732 | V3-HLM-001 | queued | 6 | 2 | 0 | pass |
 | 733 | V3-DCS-001 | queued | 6 | 2 | 0 | pass |
-| 734 | V3-BIN-001 | in_progress | 16 | 5 | 1 | pass |
+| 734 | V3-BIN-001 | done | 13 | 3 | 1 | pass |
 | 735 | V3-BIN-002 | in_progress | 26 | 6 | 2 | pass |
 | 736 | V3-BIN-003 | done | 20 | 4 | 2 | pass |
 | 737 | V3-BIN-004 | done | 20 | 4 | 2 | pass |
@@ -758,8 +758,8 @@
 | 747 | V3-FCH-002 | done | 51 | 8 | 5 | pass |
 | 748 | V3-FCH-003 | done | 14 | 2 | 1 | pass |
 | 749 | V3-FCH-004 | done | 24 | 2 | 1 | pass |
-| 750 | V3-MLC-001 | in_progress | 13 | 5 | 1 | pass |
-| 751 | V3-MLC-002 | in_progress | 49 | 21 | 11 | pass |
+| 750 | V3-MLC-001 | done | 10 | 3 | 1 | pass |
+| 751 | V3-MLC-002 | done | 43 | 17 | 11 | pass |
 | 752 | V3-MLC-003 | done | 9 | 2 | 1 | pass |
 | 753 | V3-GOV-001 | done | 13 | 3 | 1 | pass |
 | 754 | V3-GOV-002 | done | 36 | 16 | 11 | pass |
@@ -776,10 +776,10 @@
 | 765 | V3-OPS-007 | done | 12 | 2 | 1 | pass |
 | 766 | V3-OPS-008 | in_progress | 21 | 4 | 1 | pass |
 | 767 | V3-OPS-009 | done | 9 | 2 | 1 | pass |
-| 768 | V3-OPS-010 | in_progress | 22 | 5 | 1 | pass |
+| 768 | V3-OPS-010 | done | 19 | 3 | 1 | pass |
 | 769 | V3-OPS-012 | done | 12 | 2 | 1 | pass |
 | 770 | V3-MEM-001 | in_progress | 51 | 20 | 11 | pass |
-| 771 | V3-MEM-002 | in_progress | 46 | 21 | 11 | pass |
+| 771 | V3-MEM-002 | done | 40 | 17 | 11 | pass |
 | 772 | V3-MEM-003 | done | 9 | 2 | 1 | pass |
 | 773 | V3-MEM-004 | in_progress | 45 | 20 | 11 | pass |
 | 774 | V3-MEM-005 | done | 12 | 2 | 1 | pass |
@@ -826,7 +826,7 @@
 | 815 | V3-DOC-001 | done | 52 | 20 | 14 | pass |
 | 816 | V3-DOC-002 | done | 13 | 3 | 1 | pass |
 | 817 | V3-DOC-003 | done | 15 | 2 | 1 | pass |
-| 818 | V3-DOC-004 | in_progress | 73 | 33 | 20 | pass |
+| 818 | V3-DOC-004 | done | 67 | 29 | 20 | pass |
 | 819 | V3-DOC-005 | done | 50 | 21 | 14 | pass |
 | 820 | V3-DOC-006 | done | 25 | 9 | 4 | pass |
 | 821 | V3-DOC-007 | in_progress | 45 | 20 | 11 | pass |
@@ -844,15 +844,15 @@
 | 833 | V3-DEP-001 | in_progress | 59 | 25 | 15 | pass |
 | 834 | V3-DEP-002 | done | 9 | 2 | 1 | pass |
 | 835 | V3-DEP-003 | done | 9 | 2 | 1 | pass |
-| 836 | V3-RTE-001 | in_progress | 13 | 5 | 1 | pass |
+| 836 | V3-RTE-001 | done | 10 | 3 | 1 | pass |
 | 837 | V3-RTE-002 | done | 12 | 2 | 1 | pass |
 | 838 | V3-RTE-003 | done | 9 | 2 | 1 | pass |
 | 839 | V3-RTE-004 | in_progress | 12 | 4 | 1 | pass |
-| 840 | V3-USE-001 | in_progress | 14 | 6 | 1 | pass |
+| 840 | V3-USE-001 | done | 11 | 4 | 1 | pass |
 | 841 | V3-USE-002 | done | 17 | 4 | 2 | pass |
 | 842 | V3-USE-003 | done | 10 | 3 | 1 | pass |
 | 843 | V3-BENCH-001 | in_progress | 59 | 25 | 14 | pass |
-| 844 | V3-BLD-001 | in_progress | 39 | 17 | 8 | pass |
+| 844 | V3-BLD-001 | done | 33 | 13 | 8 | pass |
 | 845 | V3-CPY-001 | in_progress | 70 | 30 | 15 | pass |
 | 846 | V3-CPY-002 | done | 17 | 4 | 2 | pass |
 | 847 | V3-CPY-003 | in_progress | 25 | 8 | 3 | pass |
@@ -1073,7 +1073,7 @@
 | 1062 | V3-RACE-180 | done | 61 | 27 | 18 | pass |
 | 1063 | V3-RACE-181 | done | 69 | 28 | 20 | pass |
 | 1064 | V3-RACE-182 | done | 46 | 18 | 12 | pass |
-| 1065 | V3-RACE-183 | in_progress | 38 | 18 | 9 | pass |
+| 1065 | V3-RACE-183 | done | 35 | 16 | 9 | pass |
 | 1066 | V3-RACE-184 | done | 57 | 27 | 18 | pass |
 | 1067 | V3-RACE-185 | in_progress | 42 | 16 | 9 | pass |
 | 1068 | V3-RACE-186 | done | 39 | 13 | 9 | pass |
@@ -1084,7 +1084,7 @@
 | 1073 | V3-RACE-191 | done | 76 | 33 | 24 | pass |
 | 1074 | V3-RACE-192 | done | 38 | 15 | 11 | pass |
 | 1075 | V3-RACE-193 | done | 88 | 42 | 30 | pass |
-| 1076 | V3-RACE-194 | in_progress | 29 | 15 | 6 | pass |
+| 1076 | V3-RACE-194 | done | 26 | 13 | 6 | pass |
 | 1077 | V3-RACE-195 | done | 35 | 13 | 9 | pass |
 | 1078 | V3-RACE-196 | done | 16 | 5 | 3 | pass |
 | 1079 | V3-RACE-197 | done | 50 | 21 | 15 | pass |
@@ -1120,7 +1120,7 @@
 | 1109 | V3-RACE-227 | done | 46 | 17 | 12 | pass |
 | 1110 | V3-RACE-228 | done | 86 | 37 | 27 | pass |
 | 1111 | V3-RACE-229 | done | 68 | 27 | 20 | pass |
-| 1112 | V3-RACE-230 | in_progress | 37 | 15 | 6 | pass |
+| 1112 | V3-RACE-230 | done | 31 | 11 | 6 | pass |
 | 1113 | V3-RACE-231 | done | 29 | 9 | 6 | pass |
 | 1114 | V3-RACE-232 | done | 29 | 13 | 9 | pass |
 | 1115 | V3-RACE-233 | done | 28 | 11 | 8 | pass |
@@ -1255,7 +1255,7 @@
 | 1244 | V2-062 | done | 58 | 20 | 14 | pass |
 | 1245 | V2-063 | done | 138 | 22 | 15 | pass |
 | 1246 | V2-069 | done | 43 | 20 | 14 | pass |
-| 1247 | V3-033 | in_progress | 72 | 26 | 13 | pass |
+| 1247 | V3-033 | done | 66 | 22 | 13 | pass |
 | 1248 | V3-038 | done | 112 | 29 | 19 | pass |
 | 1249 | V3-048 | in_progress | 79 | 18 | 10 | pass |
 | 1250 | V3-051 | done | 43 | 20 | 14 | pass |
@@ -1265,7 +1265,7 @@
 | 1254 | V3-AEX-001 | in_progress | 66 | 29 | 17 | pass |
 | 1255 | V3-AEX-002 | in_progress | 118 | 48 | 32 | pass |
 | 1256 | V3-BENCH-001 | in_progress | 59 | 25 | 14 | pass |
-| 1257 | V3-BLD-001 | in_progress | 39 | 17 | 8 | pass |
+| 1257 | V3-BLD-001 | done | 33 | 13 | 8 | pass |
 | 1258 | V3-BLK-001 | done | 152 | 54 | 38 | pass |
 | 1259 | V3-BUD-001 | done | 156 | 49 | 32 | pass |
 | 1260 | V3-CPY-001 | in_progress | 70 | 30 | 15 | pass |
@@ -1273,7 +1273,7 @@
 | 1262 | V3-CPY-006 | in_progress | 57 | 26 | 15 | pass |
 | 1263 | V3-DEP-001 | in_progress | 59 | 25 | 15 | pass |
 | 1264 | V3-DOC-001 | done | 52 | 20 | 14 | pass |
-| 1265 | V3-DOC-004 | in_progress | 73 | 33 | 20 | pass |
+| 1265 | V3-DOC-004 | done | 67 | 29 | 20 | pass |
 | 1266 | V3-DOC-005 | done | 50 | 21 | 14 | pass |
 | 1267 | V3-DOC-007 | in_progress | 45 | 20 | 11 | pass |
 | 1268 | V3-ECO-001 | done | 43 | 17 | 11 | pass |
@@ -1284,10 +1284,10 @@
 | 1273 | V3-LOOP-004 | done | 42 | 16 | 11 | pass |
 | 1274 | V3-MAC-001 | in_progress | 57 | 20 | 11 | pass |
 | 1275 | V3-MEM-001 | in_progress | 51 | 20 | 11 | pass |
-| 1276 | V3-MEM-002 | in_progress | 46 | 21 | 11 | pass |
+| 1276 | V3-MEM-002 | done | 40 | 17 | 11 | pass |
 | 1277 | V3-MEM-004 | in_progress | 45 | 20 | 11 | pass |
 | 1278 | V3-MEM-008 | in_progress | 45 | 20 | 11 | pass |
-| 1279 | V3-MLC-002 | in_progress | 49 | 21 | 11 | pass |
+| 1279 | V3-MLC-002 | done | 43 | 17 | 11 | pass |
 | 1280 | V3-OBS-002 | done | 67 | 24 | 17 | pass |
 | 1281 | V3-OF-008 | done | 46 | 20 | 14 | pass |
 | 1282 | V3-OPS-003 | in_progress | 73 | 24 | 14 | pass |
@@ -1311,7 +1311,7 @@
 | 1300 | V3-RACE-163 | in_progress | 62 | 25 | 15 | pass |
 | 1301 | V3-RACE-186 | done | 39 | 13 | 9 | pass |
 | 1302 | V3-RACE-220 | done | 143 | 54 | 39 | pass |
-| 1303 | V3-RACE-230 | in_progress | 37 | 15 | 6 | pass |
+| 1303 | V3-RACE-230 | done | 31 | 11 | 6 | pass |
 | 1304 | V4-RUST-001 | done | 74 | 30 | 21 | pass |
 | 1305 | V4-RUST-003 | in_progress | 54 | 26 | 15 | pass |
 | 1306 | V3-RACE-260 | done | 30 | 9 | 6 | pass |
@@ -1633,7 +1633,7 @@
 | 1622 | V4-PKG-006 | done | 13 | 9 | 7 | pass |
 | 1623 | V4-PKG-007 | done | 13 | 9 | 7 | pass |
 | 1624 | V4-SUITE-001 | done | 29 | 17 | 11 | pass |
-| 1625 | V4-SUITE-002 | in_progress | 22 | 14 | 8 | pass |
+| 1625 | V4-SUITE-002 | done | 19 | 12 | 8 | pass |
 | 1626 | V4-SUITE-003 | done | 25 | 15 | 11 | pass |
 | 1627 | V4-SUITE-004 | done | 32 | 19 | 14 | pass |
 | 1628 | V4-SUITE-005 | done | 11 | 7 | 5 | pass |
@@ -1641,7 +1641,7 @@
 | 1630 | V4-SUITE-007 | in_progress | 14 | 9 | 5 | pass |
 | 1631 | V4-SUITE-008 | in_progress | 14 | 9 | 5 | pass |
 | 1632 | V4-SUITE-009 | done | 18 | 11 | 8 | pass |
-| 1633 | V4-SUITE-010 | in_progress | 15 | 10 | 5 | pass |
+| 1633 | V4-SUITE-010 | done | 12 | 8 | 5 | pass |
 | 1634 | V4-SUITE-011 | done | 25 | 15 | 11 | pass |
 | 1635 | V4-SUITE-012 | done | 40 | 24 | 17 | pass |
 | 1636 | V4-BRAND-001 | done | 26 | 16 | 11 | pass |
@@ -1696,10 +1696,10 @@
 | 1685 | V6-CONDUIT-006 | done | 23 | 13 | 11 | pass |
 | 1686 | V6-CONDUIT-007 | done | 20 | 9 | 6 | pass |
 | 1687 | V6-CONDUIT-008 | in_progress | 13 | 8 | 3 | pass |
-| 1688 | V6-SEC-001 | in_progress | 37 | 20 | 6 | pass |
+| 1688 | V6-SEC-001 | done | 35 | 18 | 6 | pass |
 | 1689 | V6-SEC-002 | done | 12 | 5 | 2 | pass |
 | 1690 | V6-SEC-003 | done | 17 | 7 | 3 | pass |
-| 1691 | V6-SEC-004 | in_progress | 28 | 18 | 3 | pass |
+| 1691 | V6-SEC-004 | done | 26 | 16 | 3 | pass |
 | 1692 | V6-SEC-005 | done | 19 | 7 | 2 | pass |
 | 1693 | V6-SEC-006 | done | 16 | 7 | 4 | pass |
 | 1694 | V6-SEC-007 | queued | 10 | 6 | 1 | pass |
@@ -1714,7 +1714,7 @@
 | 1703 | V6-PRIM-001 | in_progress | 12 | 7 | 1 | pass |
 | 1704 | V6-PRIM-002 | in_progress | 12 | 7 | 1 | pass |
 | 1705 | V6-PRIM-003 | done | 9 | 5 | 1 | pass |
-| 1706 | V6-PRIM-004 | in_progress | 11 | 6 | 1 | pass |
+| 1706 | V6-PRIM-004 | done | 8 | 4 | 1 | pass |
 | 1707 | V6-PRIM-005 | done | 7 | 3 | 1 | pass |
 | 1708 | V6-PRIM-006 | done | 9 | 5 | 1 | pass |
 | 1709 | V6-PRIM-007 | done | 7 | 3 | 1 | pass |
@@ -1726,11 +1726,11 @@
 | 1715 | V6-GAP-004 | done | 8 | 3 | 1 | pass |
 | 1716 | V6-GAP-005 | done | 11 | 6 | 2 | pass |
 | 1717 | V6-GAP-006 | blocked | 14 | 11 | 1 | pass |
-| 1718 | V6-TECH-301 | in_progress | 10 | 3 | 0 | pass |
-| 1719 | V6-TECH-302 | in_progress | 6 | 3 | 0 | pass |
-| 1720 | V6-TECH-303 | in_progress | 6 | 3 | 0 | pass |
-| 1721 | V6-TECH-304 | in_progress | 6 | 3 | 0 | pass |
-| 1722 | V6-TECH-305 | in_progress | 6 | 3 | 0 | pass |
+| 1718 | V6-TECH-301 | in_progress | 11 | 3 | 0 | pass |
+| 1719 | V6-TECH-302 | in_progress | 7 | 3 | 0 | pass |
+| 1720 | V6-TECH-303 | in_progress | 7 | 3 | 0 | pass |
+| 1721 | V6-TECH-304 | in_progress | 7 | 3 | 0 | pass |
+| 1722 | V6-TECH-305 | in_progress | 7 | 3 | 0 | pass |
 | 1723 | V6-FORT-219-001 | in_progress | 9 | 5 | 0 | pass |
 | 1724 | V6-FORT-219-002 | in_progress | 8 | 4 | 0 | pass |
 | 1725 | V6-FORT-219-003 | in_progress | 7 | 3 | 0 | pass |
@@ -2013,3 +2013,7 @@
 
 ## Warn Findings
 
+- `V3-004b` (in_progress): in_progress_without_evidence
+- `V3-004c` (in_progress): in_progress_without_evidence
+- `V3-004d` (in_progress): in_progress_without_evidence
+- `V3-004e` (in_progress): in_progress_without_evidence
