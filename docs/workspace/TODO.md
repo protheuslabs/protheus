@@ -1,6 +1,6 @@
 # TODO (Maintenance + Policy + SRS Execution Order)
 
-Updated: 2026-03-11 17:45 America/Denver
+Updated: 2026-03-11 17:58 America/Denver
 
 ## Ordering policy
 - Priority first (`P0` > `P1` > `P2` > `P3`)
@@ -26,13 +26,13 @@ Updated: 2026-03-11 17:45 America/Denver
 - Full per-item mapping (remaining work only): [docs/workspace/SRS_ACTIONABLE_MAP_CURRENT.md](/Users/jay/.openclaw/workspace/docs/workspace/SRS_ACTIONABLE_MAP_CURRENT.md)
 - Machine-readable map: [artifacts/srs_actionable_map_current.json](/Users/jay/.openclaw/workspace/artifacts/srs_actionable_map_current.json)
 - Map summary snapshot:
-- `actionable_total=835`
-- `queued=597`
+- `actionable_total=832`
+- `queued=594`
 - `in_progress=211`
 - `blocked=27`
 - `execute_now=0`
 - `repair_lane=0`
-- `design_required=808`
+- `design_required=805`
 - `blocked_external=27`
 
 ## Ordered execution list
@@ -60,14 +60,22 @@ Updated: 2026-03-11 17:45 America/Denver
 
 6. `P2-PLAN-001` Classify non-lane actionable backlog into explicit implementation workpacks with unblock criteria. `STATUS: DONE`
 - Exit criteria met:
-- `808` items mapped to `design_required` (no executable lane yet).
+- `805` items mapped to `design_required` (no executable lane yet).
 - `27` items mapped to `blocked_external` (explicit external dependencies).
 - All remaining work is visible and auditable in the actionable map artifacts.
+
+7. `P1-EXEC-004` Execute metakernel tranche (`V7-META-001..003`) and retire runnable intake debt. `STATUS: DONE`
+- Exit criteria met:
+- Added authoritative metakernel command surface in `core/layer0/ops/src/metakernel.rs` and wired commands in `core/layer0/ops/src/main.rs`/`lib.rs`.
+- Added contracts/artifacts: `planes/contracts/metakernel_primitives_v1.json`, `planes/contracts/cellbundle.schema.json`, `planes/contracts/examples/cellbundle.minimal.json`.
+- Added lane scripts: `ops:metakernel:registry`, `ops:metakernel:manifest`, `ops:metakernel:invariants`, and `lane:v7-meta-001..003:run`.
+- Marked `V7-META-001..003` as `done` in `docs/workspace/SRS.md` and `docs/workspace/UPGRADE_BACKLOG.md` with receipt-backed evidence.
 
 ## Executed in this pass
 - Added `scripts/ci/srs_actionable_map.mjs` to produce canonical remaining-work mapping and executability buckets.
 - Reviewed enforcer policy and kept DoD evidence gates strict.
 - Executed complete runnable backlog queue tranche and recorded deterministic receipts.
+- Executed metakernel tranche (`V7-META-001..003`) with deterministic receipts and passing invariants.
 - Kept client/core policy audits and full regression suite passing after state transitions.
 
 ## Next command bundle

@@ -45,6 +45,7 @@ pub mod inversion_controller;
 pub mod legacy_retired_lane;
 pub mod llm_economy_organ;
 pub mod memory_ambient;
+pub mod metakernel;
 pub mod model_router;
 pub mod narrow_agent_parity_harness;
 pub mod offline_runtime_guard;

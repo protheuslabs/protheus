@@ -1,0 +1,29 @@
+{
+  "bundle_id": "cell.core.metakernel.minimal",
+  "version": "1.0.0",
+  "world": "infring.metakernel.v1",
+  "capabilities": [
+    "node",
+    "cell",
+    "task",
+    "policy",
+    "journal",
+    "budget",
+    "attestation"
+  ],
+  "budgets": {
+    "cpu_ms": 100,
+    "ram_mb": 128,
+    "storage_mb": 64,
+    "network_kb": 16,
+    "tokens": 200,
+    "power_mw": 500,
+    "privacy_points": 5,
+    "cognitive_load": 2
+  },
+  "provenance": {
+    "source": "planes/contracts/examples/cellbundle.minimal.json",
+    "digest": "sha256:example"
+  }
+}
+

@@ -1397,7 +1397,13 @@
     "test:ops:system-map-generator": "node tests/client-memory-tools/system_map_generator.test.js",
     "ops:cockpit:inside": "node client/runtime/systems/ops/cockpit_inside_probe.ts",
     "ops:client-surface:disposition": "node scripts/ci/client_surface_disposition.mjs --out=artifacts/client_surface_disposition_current.json",
-    "ops:client-target:audit": "npm run -s ops:client-scope:inventory >/dev/null && node scripts/ci/client_layer_boundary_audit.mjs --strict=1 --out=artifacts/client_layer_boundary_audit_current.json >/dev/null && npm run -s ops:client-surface:disposition >/dev/null && node scripts/ci/client_target_contract_audit.mjs --strict=1 --scope=artifacts/client_scope_inventory_current.json --boundary=artifacts/client_layer_boundary_audit_current.json --disposition=artifacts/client_surface_disposition_current.json --out=artifacts/client_target_contract_audit_current.json"
+    "ops:client-target:audit": "npm run -s ops:client-scope:inventory >/dev/null && node scripts/ci/client_layer_boundary_audit.mjs --strict=1 --out=artifacts/client_layer_boundary_audit_current.json >/dev/null && npm run -s ops:client-surface:disposition >/dev/null && node scripts/ci/client_target_contract_audit.mjs --strict=1 --scope=artifacts/client_scope_inventory_current.json --boundary=artifacts/client_layer_boundary_audit_current.json --disposition=artifacts/client_surface_disposition_current.json --out=artifacts/client_target_contract_audit_current.json",
+    "ops:metakernel:registry": "cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- metakernel registry --strict=1",
+    "ops:metakernel:invariants": "cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- metakernel invariants --strict=1",
+    "ops:metakernel:manifest": "cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- metakernel manifest --manifest=planes/contracts/examples/cellbundle.minimal.json --strict=1",
+    "lane:v7-meta-001:run": "npm run -s ops:metakernel:registry",
+    "lane:v7-meta-002:run": "npm run -s ops:metakernel:invariants",
+    "lane:v7-meta-003:run": "npm run -s ops:metakernel:manifest"
   },
   "bin": {
     "protheus": "./client/cli/bin/protheus.ts",

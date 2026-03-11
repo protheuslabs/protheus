@@ -1,0 +1,55 @@
+{
+  "version": "v1",
+  "kind": "metakernel_primitives_registry",
+  "primitives": [
+    {
+      "id": "node",
+      "description": "Execution host identity and health envelope."
+    },
+    {
+      "id": "cell",
+      "description": "Portable unit of deployment and lifecycle ownership."
+    },
+    {
+      "id": "task",
+      "description": "Deterministic executable plan node."
+    },
+    {
+      "id": "capability",
+      "description": "Effect-typed authority grant boundary."
+    },
+    {
+      "id": "object",
+      "description": "Durable epistemic state container."
+    },
+    {
+      "id": "stream",
+      "description": "Ordered event channel for runtime signals."
+    },
+    {
+      "id": "journal",
+      "description": "Append-only effect and decision ledger."
+    },
+    {
+      "id": "budget",
+      "description": "Resource and risk envelope for execution admission."
+    },
+    {
+      "id": "policy",
+      "description": "Fail-closed governance contract surface."
+    },
+    {
+      "id": "model",
+      "description": "Inference/training endpoint abstraction."
+    },
+    {
+      "id": "supervisor",
+      "description": "Control-plane arbitrator and recovery authority."
+    },
+    {
+      "id": "attestation",
+      "description": "Signed provenance and trust-chain proof object."
+    }
+  ]
+}
+

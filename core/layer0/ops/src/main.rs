@@ -36,6 +36,7 @@ fn usage() {
     println!("  protheus-ops offsite-backup <sync|restore-drill|status|diagnose|list> [flags]");
     println!("  protheus-ops settlement-program <list|run|run-all|settle|revert|edit-core|edit-module|status> [flags]");
     println!("  protheus-ops llm-economy-organ <run|status> [flags]");
+    println!("  protheus-ops metakernel <status|registry|manifest|invariants> [flags]");
     println!("  protheus-ops backlog-queue-executor <run|status> [flags]");
     println!("  protheus-ops backlog-runtime-anchor <build|verify> --lane-id=<V3-RACE-XXX>");
     println!("  protheus-ops legacy-retired-lane <build|verify> --lane-id=<SYSTEMS-OPS-...>");
@@ -350,6 +351,11 @@ fn main() {
         "llm-economy-organ" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::llm_economy_organ::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "metakernel" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::metakernel::run(&cwd, &rest);
             std::process::exit(exit);
         }
         "backlog-queue-executor" => {
