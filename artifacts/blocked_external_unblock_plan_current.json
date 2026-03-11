@@ -1,0 +1,280 @@
+{
+  "generatedAt": "2026-03-11T21:10:21.865Z",
+  "source": {
+    "srs": "docs/workspace/SRS.md",
+    "actionable": "artifacts/srs_actionable_map_current.json"
+  },
+  "blockedExternalCount": 27,
+  "rows": [
+    {
+      "id": "V7-META-016",
+      "impact": "10",
+      "layerMap": "0/1/2",
+      "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
+      "status": "blocked",
+      "upgrade": "Live QPU provider validation campaign",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V7-META-016"
+    },
+    {
+      "id": "V7-META-017",
+      "impact": "10",
+      "layerMap": "0/1/2",
+      "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
+      "status": "blocked",
+      "upgrade": "Ternary hardware lowering validation campaign",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V7-META-017"
+    },
+    {
+      "id": "V7-META-018",
+      "impact": "10",
+      "layerMap": "0/1/2",
+      "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
+      "status": "blocked",
+      "upgrade": "Neural I/O safety validation campaign",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V7-META-018"
+    },
+    {
+      "id": "V7-TOP1-009",
+      "impact": "10",
+      "layerMap": "0/1/2",
+      "section": "Technical Excellence #1 Intake (Doc `12_nnoI-1YXaxVc6YSgYRCMRKXNIWCcP1XKCJHv_NBeY`, 2026-03-09)",
+      "status": "blocked",
+      "upgrade": "Independent third-party verification publication lane",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V7-TOP1-009"
+    },
+    {
+      "id": "V7-TOP1-010",
+      "impact": "10",
+      "layerMap": "0/1/2",
+      "section": "Technical Excellence #1 Intake (Doc `12_nnoI-1YXaxVc6YSgYRCMRKXNIWCcP1XKCJHv_NBeY`, 2026-03-09)",
+      "status": "blocked",
+      "upgrade": "High-assurance profile release gate (medical/defense-class)",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V7-TOP1-010"
+    },
+    {
+      "id": "V6-SUBSTRATE-002.4",
+      "impact": "9",
+      "layerMap": "-1/0/1/2/3/adapter",
+      "section": "Biological Neural Hybrid Integration Intake (x.com/Crypto_Jargon 2030603197237387411, 2026-03-09)",
+      "status": "blocked",
+      "upgrade": "Bioethics/consent policy gate contract for biological interaction",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-SUBSTRATE-002.4"
+    },
+    {
+      "id": "V6-F100-022",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "Live trading proof gate (30-day promotion evidence)",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-F100-022"
+    },
+    {
+      "id": "V6-F100-023",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "Third-party security audit publication",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-F100-023"
+    },
+    {
+      "id": "V6-F100-024",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "Horizontal scaling proof in production profile",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-F100-024"
+    },
+    {
+      "id": "V6-F100-025",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "Continuous chaos weekly evidence contract",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-F100-025"
+    },
+    {
+      "id": "V6-F100-034",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "First public semantic release + npm publish",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-F100-034"
+    },
+    {
+      "id": "V6-F100-043",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "External certification and attestation program (SOC2/ISO/FedRAMP/GDPR)",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-F100-043"
+    },
+    {
+      "id": "V6-F100-044",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "Commercial support/SLA contract lane (enterprise readiness)",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-F100-044"
+    },
+    {
+      "id": "V6-F100-045",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "Public compliance report publication lane",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-F100-045"
+    },
+    {
+      "id": "V6-F100-A-008",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "Enterprise legal packet publication (MSA/DPA/privacy/subprocessors)",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-F100-A-008"
+    },
+    {
+      "id": "V6-F100-A-009",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "First reference customer case study publication",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-F100-A-009"
+    },
+    {
+      "id": "V6-F100-A-010",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "Cloud marketplace listing publication (AWS/Azure/GCP)",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-F100-A-010"
+    },
+    {
+      "id": "V6-F100-A-011",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "Named 24x7 support roster activation",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-F100-A-011"
+    },
+    {
+      "id": "V6-EDGE-005",
+      "impact": "10",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "Third-party license and source-ingest decision for edge backend",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-EDGE-005"
+    },
+    {
+      "id": "V6-COMP-005",
+      "impact": "9",
+      "layerMap": "0/1/2",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "Public multi-release cadence target (9+ tags)",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-COMP-005"
+    },
+    {
+      "id": "V6-SBOX-006",
+      "impact": "10",
+      "layerMap": "-1/0/1/2/3/adapter",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "Sandbox runtime substrate decision (container vs lightweight jail)",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-SBOX-006"
+    },
+    {
+      "id": "V6-FLUX-007",
+      "impact": "7",
+      "layerMap": "-1/0/1/2/3/adapter",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "Advanced substrate live validation lane",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-FLUX-007"
+    },
+    {
+      "id": "V6-TOOLS-005",
+      "impact": "8",
+      "layerMap": "0/1/2",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "Optional reactions/worktree event automation track",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-TOOLS-005"
+    },
+    {
+      "id": "V6-PAY-007",
+      "impact": "9",
+      "layerMap": "0/1/2/adapter/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "status": "blocked",
+      "upgrade": "Monero network/compliance profile decision for production rollout",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-PAY-007"
+    },
+    {
+      "id": "V2-012",
+      "impact": "8",
+      "layerMap": "1/2/client/adapter",
+      "section": "V2",
+      "status": "blocked",
+      "upgrade": "[backlog / V2] External security assessment and pen-test cycle (canonical blocker)",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V2-012"
+    },
+    {
+      "id": "V6-RUST50-CONF-004",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "External Requirements Intake (Mega Sprint 1: Public 50 Percent Visible Rust, 2026-03-03)",
+      "status": "blocked",
+      "upgrade": "[primitive-upgrade / V6] Mega Sprint 1 Public 50 Percent Rust Migration (8 Crates + Blobized Core Paths)",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-RUST50-CONF-004"
+    },
+    {
+      "id": "V6-GAP-006",
+      "impact": "10",
+      "layerMap": "0/1/2/client",
+      "section": "Testing + Documentation + Installer Gap Closer (2026-03-06)",
+      "status": "blocked",
+      "upgrade": "Public Release + Announcement Publication Authority",
+      "unblockOwner": "human_external",
+      "unblockRef": "SRS:V6-GAP-006"
+    }
+  ]
+}
