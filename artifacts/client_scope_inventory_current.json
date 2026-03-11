@@ -1,9 +1,9 @@
 {
   "type": "client_scope_inventory",
-  "generated_at": "2026-03-11T12:48:32.418Z",
-  "revision": "b59b04c01ace87366c15f9ed306c83aa849b4cdb",
+  "generated_at": "2026-03-11T15:47:41.389Z",
+  "revision": "f154f1a58174b4050f5b2106e0698176eb049aeb",
   "summary": {
-    "total_ts_files": 232,
+    "total_ts_files": 231,
     "by_category": {
       "runtime_system_surface": 116,
       "sdk_surface": 58,
@@ -11,7 +11,6 @@
       "cli_surface": 11,
       "runtime_patch_surface": 3,
       "platform_surface": 2,
-      "misplaced_test_surface": 1,
       "type_support_surface": 1
     },
     "top_dirs": [
@@ -1097,10 +1096,6 @@
     {
       "file": "client/runtime/systems/workflow/universal_outreach_primitive.ts",
       "category": "runtime_system_surface"
-    },
-    {
-      "file": "client/tests/vitest/conduit_primitives_gap_closer.test.ts",
-      "category": "misplaced_test_surface"
     },
     {
       "file": "client/types/node_compat.d.ts",

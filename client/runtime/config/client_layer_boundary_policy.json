@@ -26,16 +26,8 @@
     "createLaneModule("
   ],
   "allowed_non_wrapper_paths": [
-    "client/runtime/systems/adaptive/core/layer_store.ts",
-    "client/runtime/systems/adaptive/habits/habit_store.ts",
-    "client/runtime/systems/adaptive/reflex/reflex_store.ts",
-    "client/runtime/systems/adaptive/sensory/eyes/catalog_store.ts",
-    "client/runtime/systems/adaptive/sensory/eyes/focus_trigger_store.ts",
-    "client/runtime/systems/adaptive/strategy/strategy_store.ts",
-    "client/runtime/systems/conduit/conduit-client.ts",
-    "client/runtime/systems/sensory/eyes_collectors/bird_x.ts",
-    "client/runtime/systems/sensory/eyes_collectors/ollama_search.ts"
+    "client/runtime/systems/conduit/conduit-client.ts"
   ],
   "allowed_non_wrapper_roots": [],
-  "max_allowed_non_wrapper_count": 8
+  "max_allowed_non_wrapper_count": 1
 }

@@ -1,7 +1,7 @@
 {
   "type": "client_target_contract_audit",
-  "generated_at": "2026-03-11T12:48:32.703Z",
-  "revision": "b59b04c01ace87366c15f9ed306c83aa849b4cdb",
+  "generated_at": "2026-03-11T15:47:41.680Z",
+  "revision": "f154f1a58174b4050f5b2106e0698176eb049aeb",
   "policy_path": "client/runtime/config/client_target_contract_policy.json",
   "summary": {
     "hard_violation_count": 0,
@@ -13,7 +13,7 @@
     "1771315386": 2,
     "1771315610": 2,
     "<none>": 56,
-    "ts": 232,
+    "ts": 231,
     "template": 2,
     "md": 806,
     "json": 801,
@@ -32,18 +32,18 @@
     "blob": 5
   },
   "metrics": {
-    "total_ts_files": 232,
+    "total_ts_files": 231,
     "runtime_system_surface": 116,
     "cognition_surface": 0,
     "runtime_sdk_surface": 40,
     "sdk_surface": 58,
-    "wrapper_count": 109,
-    "allowed_non_wrapper_count": 8,
-    "keep_public_client": 121,
-    "promote_to_core": 108,
+    "wrapper_count": 116,
+    "allowed_non_wrapper_count": 1,
+    "keep_public_client": 119,
+    "promote_to_core": 102,
     "move_to_apps": 0,
-    "move_to_adapters": 0,
-    "collapse_to_generic_wrapper": 3
+    "move_to_adapters": 1,
+    "collapse_to_generic_wrapper": 9
   },
   "target_gaps": [],
   "hard_violations": []

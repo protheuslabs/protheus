@@ -1,24 +1,17 @@
 {
   "type": "client_layer_boundary_audit",
-  "generated_at": "2026-03-11T12:48:32.473Z",
-  "revision": "b59b04c01ace87366c15f9ed306c83aa849b4cdb",
+  "generated_at": "2026-03-11T15:47:41.443Z",
+  "revision": "f154f1a58174b4050f5b2106e0698176eb049aeb",
   "policy_path": "client/runtime/config/client_layer_boundary_policy.json",
   "summary": {
     "scanned_files": 117,
-    "wrapper_count": 109,
-    "allowed_non_wrapper_count": 8,
+    "wrapper_count": 116,
+    "allowed_non_wrapper_count": 1,
     "violation_count": 0,
     "pass": true
   },
   "allowed_non_wrapper_paths": [
-    "client/runtime/systems/adaptive/core/layer_store.ts",
-    "client/runtime/systems/adaptive/habits/habit_store.ts",
-    "client/runtime/systems/adaptive/reflex/reflex_store.ts",
-    "client/runtime/systems/adaptive/sensory/eyes/catalog_store.ts",
-    "client/runtime/systems/adaptive/sensory/eyes/focus_trigger_store.ts",
-    "client/runtime/systems/adaptive/strategy/strategy_store.ts",
-    "client/runtime/systems/conduit/conduit-client.ts",
-    "client/runtime/systems/sensory/eyes_collectors/ollama_search.ts"
+    "client/runtime/systems/conduit/conduit-client.ts"
   ],
   "violations": []
 }

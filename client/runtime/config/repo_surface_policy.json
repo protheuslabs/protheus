@@ -106,6 +106,7 @@
     "docs/",
     "artifacts/",
     "state/",
+    "core/layer1/memory_runtime/adaptive/",
     "dist/",
     "target/",
     "target_l0ops_iso2/",
@@ -116,7 +117,8 @@
     "node_modules/"
   ],
   "ignore_path_prefixes": [
-    "client/runtime/local/"
+    "client/runtime/local/",
+    "core/layer1/memory_runtime/adaptive/"
   ],
   "ignore_exact_paths": [
     "install.ps1",

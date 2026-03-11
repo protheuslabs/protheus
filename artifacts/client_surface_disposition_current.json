@@ -1,44 +1,15 @@
 {
   "type": "client_surface_disposition",
-  "generated_at": "2026-03-11T12:48:32.636Z",
-  "revision": "b59b04c01ace87366c15f9ed306c83aa849b4cdb",
+  "generated_at": "2026-03-11T15:47:41.612Z",
+  "revision": "f154f1a58174b4050f5b2106e0698176eb049aeb",
   "policy_path": "client/runtime/config/client_target_contract_policy.json",
   "summary": {
-    "keep_public_client": 121,
-    "promote_to_core": 108,
-    "collapse_to_generic_wrapper": 3
+    "keep_public_client": 119,
+    "promote_to_core": 102,
+    "collapse_to_generic_wrapper": 9,
+    "move_to_adapters": 1
   },
   "allowlist_audit": [
-    {
-      "file": "client/runtime/systems/adaptive/core/layer_store.ts",
-      "bucket": "promote_to_core",
-      "reason": "adaptive state store is internal runtime truth, not public client surface"
-    },
-    {
-      "file": "client/runtime/systems/adaptive/habits/habit_store.ts",
-      "bucket": "promote_to_core",
-      "reason": "habit state store is internal runtime truth, not public client surface"
-    },
-    {
-      "file": "client/runtime/systems/adaptive/reflex/reflex_store.ts",
-      "bucket": "promote_to_core",
-      "reason": "reflex state store is internal runtime truth, not public client surface"
-    },
-    {
-      "file": "client/runtime/systems/adaptive/sensory/eyes/catalog_store.ts",
-      "bucket": "promote_to_core",
-      "reason": "eye catalog store is internal runtime truth, not public client surface"
-    },
-    {
-      "file": "client/runtime/systems/adaptive/sensory/eyes/focus_trigger_store.ts",
-      "bucket": "promote_to_core",
-      "reason": "focus trigger store is internal runtime truth, not public client surface"
-    },
-    {
-      "file": "client/runtime/systems/adaptive/strategy/strategy_store.ts",
-      "bucket": "promote_to_core",
-      "reason": "strategy store is internal runtime truth, not public client surface"
-    },
     {
       "file": "client/runtime/systems/conduit/conduit-client.ts",
       "bucket": "keep_public_client",
@@ -61,8 +32,8 @@
     },
     {
       "file": "client/runtime/systems/sensory/eyes_collectors/ollama_search.ts",
-      "bucket": "keep_public_client",
-      "reason": "collector bridge remains in client until the underlying cognition collector is extracted cleanly"
+      "bucket": "move_to_adapters",
+      "reason": "collector execution logic belongs in adapter integration surfaces with a thin client bridge"
     }
   ],
   "entries": [
@@ -658,33 +629,33 @@
     },
     {
       "file": "client/runtime/systems/adaptive/core/layer_store.ts",
-      "bucket": "promote_to_core",
-      "reason": "adaptive state store is internal runtime truth, not public client surface"
+      "bucket": "collapse_to_generic_wrapper",
+      "reason": "thin wrapper family should be collapsed behind generic entrypoints"
     },
     {
       "file": "client/runtime/systems/adaptive/habits/habit_store.ts",
-      "bucket": "promote_to_core",
-      "reason": "habit state store is internal runtime truth, not public client surface"
+      "bucket": "collapse_to_generic_wrapper",
+      "reason": "thin wrapper family should be collapsed behind generic entrypoints"
     },
     {
       "file": "client/runtime/systems/adaptive/reflex/reflex_store.ts",
-      "bucket": "promote_to_core",
-      "reason": "reflex state store is internal runtime truth, not public client surface"
+      "bucket": "collapse_to_generic_wrapper",
+      "reason": "thin wrapper family should be collapsed behind generic entrypoints"
     },
     {
       "file": "client/runtime/systems/adaptive/sensory/eyes/catalog_store.ts",
-      "bucket": "promote_to_core",
-      "reason": "eye catalog store is internal runtime truth, not public client surface"
+      "bucket": "collapse_to_generic_wrapper",
+      "reason": "thin wrapper family should be collapsed behind generic entrypoints"
     },
     {
       "file": "client/runtime/systems/adaptive/sensory/eyes/focus_trigger_store.ts",
-      "bucket": "promote_to_core",
-      "reason": "focus trigger store is internal runtime truth, not public client surface"
+      "bucket": "collapse_to_generic_wrapper",
+      "reason": "thin wrapper family should be collapsed behind generic entrypoints"
     },
     {
       "file": "client/runtime/systems/adaptive/strategy/strategy_store.ts",
-      "bucket": "promote_to_core",
-      "reason": "strategy store is internal runtime truth, not public client surface"
+      "bucket": "collapse_to_generic_wrapper",
+      "reason": "thin wrapper family should be collapsed behind generic entrypoints"
     },
     {
       "file": "client/runtime/systems/assimilation/world_model_freshness.ts",
@@ -1098,8 +1069,8 @@
     },
     {
       "file": "client/runtime/systems/sensory/eyes_collectors/ollama_search.ts",
-      "bucket": "keep_public_client",
-      "reason": "collector bridge remains in client until the underlying cognition collector is extracted cleanly"
+      "bucket": "move_to_adapters",
+      "reason": "collector execution logic belongs in adapter integration surfaces with a thin client bridge"
     },
     {
       "file": "client/runtime/systems/sensory/feature_data_reproducibility_contract.ts",
@@ -1215,11 +1186,6 @@
       "file": "client/runtime/systems/workflow/universal_outreach_primitive.ts",
       "bucket": "promote_to_core",
       "reason": "runtime system logic belongs in core unless explicitly public bridge"
-    },
-    {
-      "file": "client/tests/vitest/conduit_primitives_gap_closer.test.ts",
-      "bucket": "keep_public_client",
-      "reason": "public client/platform surface"
     },
     {
       "file": "client/types/node_compat.d.ts",

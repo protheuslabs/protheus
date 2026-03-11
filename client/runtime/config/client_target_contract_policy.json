@@ -23,35 +23,11 @@
       "reason": "wrapper duplication should be collapsed behind generic entrypoints"
     },
     "allowed_non_wrapper_count": {
-      "target": 8,
-      "reason": "non-wrapper exceptions should be rare and explicit"
+      "target": 1,
+      "reason": "only conduit transport authority remains non-wrapper inside client/runtime/systems"
     }
   },
   "allowlist_decisions": {
-    "client/runtime/systems/adaptive/core/layer_store.ts": {
-      "bucket": "promote_to_core",
-      "reason": "adaptive state store is internal runtime truth, not public client surface"
-    },
-    "client/runtime/systems/adaptive/habits/habit_store.ts": {
-      "bucket": "promote_to_core",
-      "reason": "habit state store is internal runtime truth, not public client surface"
-    },
-    "client/runtime/systems/adaptive/reflex/reflex_store.ts": {
-      "bucket": "promote_to_core",
-      "reason": "reflex state store is internal runtime truth, not public client surface"
-    },
-    "client/runtime/systems/adaptive/sensory/eyes/catalog_store.ts": {
-      "bucket": "promote_to_core",
-      "reason": "eye catalog store is internal runtime truth, not public client surface"
-    },
-    "client/runtime/systems/adaptive/sensory/eyes/focus_trigger_store.ts": {
-      "bucket": "promote_to_core",
-      "reason": "focus trigger store is internal runtime truth, not public client surface"
-    },
-    "client/runtime/systems/adaptive/strategy/strategy_store.ts": {
-      "bucket": "promote_to_core",
-      "reason": "strategy store is internal runtime truth, not public client surface"
-    },
     "client/runtime/systems/conduit/conduit-client.ts": {
       "bucket": "keep_public_client",
       "reason": "public client-to-core transport bridge"
@@ -69,8 +45,8 @@
       "reason": "collector bridge remains in client until the underlying cognition collector is extracted cleanly"
     },
     "client/runtime/systems/sensory/eyes_collectors/ollama_search.ts": {
-      "bucket": "keep_public_client",
-      "reason": "collector bridge remains in client until the underlying cognition collector is extracted cleanly"
+      "bucket": "move_to_adapters",
+      "reason": "collector execution logic belongs in adapter integration surfaces with a thin client bridge"
     }
   }
 }

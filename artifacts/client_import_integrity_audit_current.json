@@ -1,9 +1,9 @@
 {
   "type": "client_import_integrity_audit",
-  "generated_at": "2026-03-11T12:48:32.080Z",
+  "generated_at": "2026-03-11T15:47:41.069Z",
   "revision": null,
   "summary": {
-    "scanned_files": 233,
+    "scanned_files": 232,
     "missing_import_count": 0,
     "pass": true
   },

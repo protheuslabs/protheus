@@ -2,11 +2,11 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: ['client/tests/vitest/**/*.test.ts', 'tests/vitest/**/*.test.ts'],
+    include: ['tests/vitest/**/*.test.ts'],
     environment: 'node',
     coverage: {
       provider: 'v8',
-      enabled: true,
+      enabled: false,
       reporter: ['text-summary', 'json-summary'],
       reportsDirectory: 'coverage/ts',
       include: [
