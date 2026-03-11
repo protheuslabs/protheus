@@ -107,6 +107,12 @@ function shouldFallbackToLocalCore(status, payload, stderr, domain = '') {
   if (status === 0) return false;
   const normalizedDomain = String(domain || '').trim().toLowerCase();
   const failClosed = payload && typeof payload === 'object' && payload.fail_closed === true;
+  if (failClosed) {
+    // New native core domains can fail closed at the conduit layer before the
+    // transport manifest catches up. Falling back to the local core binary keeps
+    // authority in Rust while avoiding stale bridge manifests.
+    return true;
+  }
   if (normalizedDomain === 'legacy-retired-lane' && failClosed) {
     // Legacy-retired lanes are authoritative in core and must fail over to
     // direct core execution when conduit returns bare fail_closed receipts.
@@ -228,8 +234,11 @@ function runBridge(config, args = [], cliMode = false) {
 
   if (config.mode === 'ops_domain') {
     const runnerCandidates = [
+      path.join(root, 'client', 'runtime', 'lib', 'ops_domain_conduit_runner.ts'),
       path.join(root, 'client', 'runtime', 'lib', 'ops_domain_conduit_runner.js'),
+      path.join(root, 'client', 'lib', 'ops_domain_conduit_runner.ts'),
       path.join(root, 'client', 'lib', 'ops_domain_conduit_runner.js'),
+      path.join(root, 'lib', 'ops_domain_conduit_runner.ts'),
       path.join(root, 'lib', 'ops_domain_conduit_runner.js')
     ];
     const runner = runnerCandidates.find((candidate) => fs.existsSync(candidate));

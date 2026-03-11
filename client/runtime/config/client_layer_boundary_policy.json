@@ -33,16 +33,9 @@
     "client/runtime/systems/adaptive/sensory/eyes/focus_trigger_store.ts",
     "client/runtime/systems/adaptive/strategy/strategy_store.ts",
     "client/runtime/systems/conduit/conduit-client.ts",
-    "client/runtime/systems/contracts/adaptive_contract_version_governance_closure.ts",
-    "client/runtime/systems/economy/contribution_oracle.ts",
-    "client/runtime/systems/ops/observability_slo_runbook_closure_pass.ts",
-    "client/runtime/systems/ops/release_gate_canary_rollback_enforcer.ts",
-    "client/runtime/systems/ops/system_visualizer_server.ts",
-    "client/runtime/systems/ops/visualizer/app.ts",
     "client/runtime/systems/sensory/eyes_collectors/bird_x.ts",
-    "client/runtime/systems/sensory/eyes_collectors/cache_store.ts",
     "client/runtime/systems/sensory/eyes_collectors/ollama_search.ts"
   ],
   "allowed_non_wrapper_roots": [],
-  "max_allowed_non_wrapper_count": 15
+  "max_allowed_non_wrapper_count": 8
 }

@@ -1,9 +1,13 @@
 'use strict';
+export {};
+
+// TypeScript compatibility shim only.
+// Layer ownership: client/cognition/adaptive/sensory/eyes/collectors (authoritative bridge target)
 
 const path = require('path');
 const fs = require('fs');
 
-const ADAPTIVE_DIR = path.join(__dirname, '..', '..', '..', 'adaptive', 'sensory', 'eyes', 'collectors');
+const ADAPTIVE_DIR = path.resolve(process.cwd(), 'client/cognition/adaptive/sensory/eyes/collectors');
 
 function resolveAdaptivePath() {
   const tsPath = path.join(ADAPTIVE_DIR, 'bird_x.ts');
@@ -29,4 +33,3 @@ module.exports = {
   collectBirdX,
   preflightBirdX
 };
-export {};

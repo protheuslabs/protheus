@@ -63,7 +63,11 @@ function classify(file, source, policy) {
     'createCognitionModule',
     'createOpsLaneBridge',
     'createLaneModule',
-    'legacy-retired-lane'
+    'legacy-retired-lane',
+    'TypeScript compatibility shim only.',
+    'module.exports = require(',
+    'Layer ownership: core/',
+    'Layer ownership: apps/'
   ].some((marker) => source.includes(marker))) {
     return { bucket: 'collapse_to_generic_wrapper', reason: 'thin wrapper family should be collapsed behind generic entrypoints' };
   }

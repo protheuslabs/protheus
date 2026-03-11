@@ -1,4 +1,9 @@
 #!/usr/bin/env node
+'use strict';
+
+// TypeScript compatibility shim only.
+// Layer ownership: apps/agent-holo-viz (authoritative)
+
 /**
  * Compatibility launcher.
  *

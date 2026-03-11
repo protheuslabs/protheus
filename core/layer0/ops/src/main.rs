@@ -66,7 +66,10 @@ fn usage() {
     println!("  protheus-ops protheusctl <command> [flags]");
     println!("  protheus-ops personas-cli <command> [flags]");
     println!("  protheus-ops autophagy-auto-approval <evaluate|monitor|commit|rollback|status> [flags]");
+    println!("  protheus-ops adaptive-contract-version-governance <run|status> [flags]");
     println!("  protheus-ops assimilation-controller <command> [flags]");
+    println!("  protheus-ops collector-cache <load|save|status> [flags]");
+    println!("  protheus-ops contribution-oracle <validate|status> [flags]");
     println!("  protheus-ops sensory-eyes-intake <command> [flags]");
     println!("  protheus-ops spawn-broker <status|request|release> [flags]");
     println!("  protheus-ops execution-yield-recovery <command> [flags]");
@@ -87,6 +90,7 @@ fn usage() {
     println!("  protheus-ops wifi-csi-engine <run|status> [flags]");
     println!("  protheus-ops biological-computing-adapter <run|status> [flags]");
     println!("  protheus-ops observability-automation-engine <run|status> [flags]");
+    println!("  protheus-ops observability-slo-runbook-closure <run|status> [flags]");
     println!("  protheus-ops persistent-background-runtime <run|status> [flags]");
     println!("  protheus-ops workspace-gateway-runtime <run|status> [flags]");
     println!("  protheus-ops p2p-gossip-seed <run|status> [flags]");
@@ -101,6 +105,7 @@ fn usage() {
     println!("  protheus-ops autoresearch-loop <run|status> [flags]");
     println!("  protheus-ops intel-sweep-router <run|status> [flags]");
     println!("  protheus-ops gui-drift-manager <run|status> [flags]");
+    println!("  protheus-ops release-gate-canary-rollback-enforcer <gate|status> [flags]");
 }
 
 fn print_json(value: &serde_json::Value) {
@@ -475,10 +480,23 @@ fn main() {
         "autophagy-auto-approval" => {
             exit_domain!(&cwd, &args, protheus_ops_core_v1::autophagy_auto_approval::run);
         }
+        "adaptive-contract-version-governance" => {
+            exit_domain!(
+                &cwd,
+                &args,
+                protheus_ops_core_v1::adaptive_contract_version_governance::run
+            );
+        }
         "assimilation-controller" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::assimilation_controller::run(&cwd, &rest);
             std::process::exit(exit);
+        }
+        "collector-cache" => {
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::collector_cache::run);
+        }
+        "contribution-oracle" => {
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::contribution_oracle::run);
         }
         "sensory-eyes-intake" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
@@ -572,6 +590,13 @@ fn main() {
                 protheus_ops_core_v1::observability_automation_engine::run
             );
         }
+        "observability-slo-runbook-closure" => {
+            exit_domain!(
+                &cwd,
+                &args,
+                protheus_ops_core_v1::observability_slo_runbook_closure::run
+            );
+        }
         "persistent-background-runtime" => {
             exit_domain!(
                 &cwd,
@@ -645,6 +670,13 @@ fn main() {
         }
         "gui-drift-manager" => {
             exit_domain!(&cwd, &args, protheus_ops_core_v1::gui_drift_manager::run);
+        }
+        "release-gate-canary-rollback-enforcer" => {
+            exit_domain!(
+                &cwd,
+                &args,
+                protheus_ops_core_v1::release_gate_canary_rollback_enforcer::run
+            );
         }
         _ => {
             print_json(&cli_error_receipt("unknown_domain", 1, Some(domain), None));

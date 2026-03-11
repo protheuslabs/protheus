@@ -56,22 +56,6 @@
       "bucket": "keep_public_client",
       "reason": "public client-to-core transport bridge"
     },
-    "client/runtime/systems/contracts/adaptive_contract_version_governance_closure.ts": {
-      "bucket": "promote_to_core",
-      "reason": "contract governance closure is system truth, not DX surface"
-    },
-    "client/runtime/systems/economy/contribution_oracle.ts": {
-      "bucket": "promote_to_core",
-      "reason": "economy oracle is authoritative runtime logic"
-    },
-    "client/runtime/systems/ops/observability_slo_runbook_closure_pass.ts": {
-      "bucket": "promote_to_core",
-      "reason": "operational closure logic is authoritative ops truth"
-    },
-    "client/runtime/systems/ops/release_gate_canary_rollback_enforcer.ts": {
-      "bucket": "promote_to_core",
-      "reason": "release rollback enforcement is authoritative ops truth"
-    },
     "client/runtime/systems/ops/system_visualizer_server.ts": {
       "bucket": "keep_public_client",
       "reason": "operator-facing visualization service belongs to client UX"
@@ -83,10 +67,6 @@
     "client/runtime/systems/sensory/eyes_collectors/bird_x.ts": {
       "bucket": "keep_public_client",
       "reason": "collector bridge remains in client until the underlying cognition collector is extracted cleanly"
-    },
-    "client/runtime/systems/sensory/eyes_collectors/cache_store.ts": {
-      "bucket": "promote_to_core",
-      "reason": "collector cache store is runtime truth, not a client UX surface"
     },
     "client/runtime/systems/sensory/eyes_collectors/ollama_search.ts": {
       "bucket": "keep_public_client",
