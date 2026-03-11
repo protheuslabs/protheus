@@ -215,7 +215,9 @@ function regressionSummary(item, cmdAudit, todoUnchecked) {
   if (findings.length > 0) severity = 'warn';
   if (
     findings.includes('unresolved_validation_commands') ||
-    findings.includes('invalid_status_value')
+    findings.includes('invalid_status_value') ||
+    findings.includes('done_without_non_backlog_evidence') ||
+    findings.includes('done_without_code_or_test_evidence')
   ) {
     severity = 'fail';
   }

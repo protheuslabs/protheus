@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-03-11T17:08:10.006Z",
+    "generatedAt": "2026-03-11T17:09:31.838Z",
     "source": {
       "srs": "docs/workspace/SRS.md",
       "todo": "docs/workspace/TODO.md"
@@ -34004,7 +34004,7 @@
       "impact": "8",
       "layerMap": "0/1/2/client",
       "section": "Packaging & Lens Opacity Program (Google Doc Intake 2026-03-03)",
-      "evidenceCount": 29,
+      "evidenceCount": 28,
       "nonBacklogEvidenceCount": 19,
       "codeLikeEvidenceCount": 14,
       "todoUnchecked": false,

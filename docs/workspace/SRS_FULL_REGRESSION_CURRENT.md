@@ -1627,7 +1627,7 @@
 | 1616 | V4-PKG-001 | in_progress | 35 | 22 | 16 | pass |
 | 1617 | V4-PKG-002 | in_progress | 34 | 21 | 16 | pass |
 | 1618 | V4-PKG-003 | done | 104 | 61 | 46 | pass |
-| 1619 | V4-LENS-006 | done | 29 | 19 | 14 | pass |
+| 1619 | V4-LENS-006 | done | 28 | 19 | 14 | pass |
 | 1620 | V4-PKG-004 | done | 34 | 21 | 16 | pass |
 | 1621 | V4-PKG-005 | in_progress | 34 | 21 | 16 | pass |
 | 1622 | V4-PKG-006 | done | 13 | 9 | 7 | pass |

@@ -35,11 +35,10 @@ Updated: 2026-03-11 17:09 America/Denver
 - Exit criteria met:
 - `artifacts/srs_full_regression_current.json` reports `warn=0` and `fail=0`.
 
-2. `P0-POL-007` Re-tighten `srs_full_regression` done-evidence checks to fail-level after zero-warning state. `STATUS: QUEUED`
-- Dependency: `P0-POL-006` complete.
-- Exit criteria:
-- `scripts/ci/srs_full_regression.mjs` treats done-without-evidence as fail.
-- Full SRS run remains `fail=0`.
+2. `P0-POL-007` Re-tighten `srs_full_regression` done-evidence checks to fail-level after zero-warning state. `STATUS: DONE`
+- Exit criteria met:
+- `scripts/ci/srs_full_regression.mjs` marks `done_without_non_backlog_evidence` and `done_without_code_or_test_evidence` as fail-level findings.
+- Full SRS run remains `fail=0`, `warn=0`.
 
 3. `P0-MAINT-001` Keep verification artifacts synchronized after each execution tranche. `STATUS: IN_PROGRESS`
 - Exit criteria:

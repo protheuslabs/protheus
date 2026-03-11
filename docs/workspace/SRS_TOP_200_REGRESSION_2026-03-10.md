@@ -8,22 +8,22 @@
 | Rank | ID | Status | Score | Evidence Hits | Non-Backlog Evidence | Regression |
 |---:|---|---|---:|---:|---:|---|
 | 1 | V6-COCKPIT-003 | in_progress | 440 | 5 | 3 | pass |
-| 2 | V6-COCKPIT-005 | in_progress | 440 | 13 | 9 | pass |
-| 3 | V6-MEMORY-012 | in_progress | 435 | 1 | 4 | pass |
-| 4 | V6-MEMORY-016 | in_progress | 435 | 6 | 3 | pass |
-| 5 | V6-MEMORY-017 | in_progress | 435 | 1 | 3 | pass |
-| 6 | V6-MEMORY-018 | in_progress | 435 | 6 | 3 | pass |
-| 7 | V6-MEMORY-019 | in_progress | 435 | 5 | 3 | pass |
-| 8 | V6-MEMORY-021 | in_progress | 435 | 6 | 4 | pass |
+| 2 | V6-COCKPIT-005 | in_progress | 440 | 13 | 8 | pass |
+| 3 | V6-MEMORY-012 | in_progress | 435 | 6 | 4 | pass |
+| 4 | V6-MEMORY-016 | in_progress | 435 | 5 | 4 | pass |
+| 5 | V6-MEMORY-017 | in_progress | 435 | 6 | 3 | pass |
+| 6 | V6-MEMORY-018 | in_progress | 435 | 5 | 3 | pass |
+| 7 | V6-MEMORY-019 | in_progress | 435 | 5 | 4 | pass |
+| 8 | V6-MEMORY-021 | in_progress | 435 | 7 | 5 | pass |
 | 9 | V6-CONDUIT-008 | in_progress | 422 | 11 | 9 | pass |
 | 10 | V6-ARCH-032 | in_progress | 412 | 5 | 3 | pass |
 | 11 | V6-ARCH-ICEBERG-028 | in_progress | 412 | 9 | 7 | pass |
-| 12 | V6-COCKPIT-008 | queued | 380 | 10 | 13 | pass |
+| 12 | V6-COCKPIT-008 | queued | 380 | 17 | 6 | pass |
 | 13 | V6-COCKPIT-007 | queued | 375 | 20 | 6 | pass |
 | 14 | V2-006 | in_progress | 370 | 10 | 8 | pass |
 | 15 | V2-027 | in_progress | 370 | 14 | 12 | pass |
 | 16 | V2-029 | in_progress | 370 | 10 | 8 | pass |
-| 17 | V2-032 | in_progress | 370 | 1 | 8 | pass |
+| 17 | V2-032 | in_progress | 370 | 10 | 8 | pass |
 | 18 | V2-041 | in_progress | 370 | 13 | 9 | pass |
 | 19 | V2-043 | in_progress | 370 | 13 | 9 | pass |
 | 20 | V2-048 | in_progress | 370 | 10 | 8 | pass |
@@ -32,7 +32,7 @@
 | 23 | V2-BRG-004 | in_progress | 370 | 7 | 5 | pass |
 | 24 | V3-001 | in_progress | 370 | 19 | 11 | pass |
 | 25 | V3-002 | in_progress | 370 | 13 | 9 | pass |
-| 26 | V3-003 | in_progress | 370 | 2 | 9 | pass |
+| 26 | V3-003 | in_progress | 370 | 13 | 9 | pass |
 | 27 | V3-014 | in_progress | 370 | 13 | 9 | pass |
 | 28 | V3-019 | in_progress | 370 | 29 | 17 | pass |
 | 29 | V3-020 | in_progress | 370 | 16 | 10 | pass |
@@ -63,7 +63,7 @@
 | 54 | V3-ASSIM-007 | in_progress | 370 | 19 | 11 | pass |
 | 55 | V3-ASSIM-013 | in_progress | 370 | 16 | 10 | pass |
 | 56 | V3-ASSIM-017 | in_progress | 370 | 13 | 9 | pass |
-| 57 | V3-ASSIM-025 | in_progress | 370 | 11 | 9 | pass |
+| 57 | V3-ASSIM-025 | in_progress | 370 | 1 | 9 | pass |
 | 58 | V3-BENCH-001 | in_progress | 370 | 50 | 32 | pass |
 | 59 | V3-BENCH-001 | in_progress | 370 | 50 | 32 | pass |
 | 60 | V3-BIN-001 | in_progress | 370 | 14 | 8 | pass |
@@ -72,7 +72,7 @@
 | 63 | V3-BLD-001 | in_progress | 370 | 30 | 20 | pass |
 | 64 | V3-CPY-001 | in_progress | 370 | 61 | 39 | pass |
 | 65 | V3-CPY-001 | in_progress | 370 | 61 | 39 | pass |
-| 66 | V3-CPY-003 | in_progress | 370 | 23 | 13 | pass |
+| 66 | V3-CPY-003 | in_progress | 370 | 23 | 0 | pass |
 | 67 | V3-CPY-004 | in_progress | 370 | 18 | 10 | pass |
 | 68 | V3-CPY-006 | in_progress | 370 | 48 | 32 | pass |
 | 69 | V3-CPY-006 | in_progress | 370 | 48 | 32 | pass |
@@ -121,7 +121,7 @@
 | 112 | V3-RACE-004 | in_progress | 370 | 41 | 23 | pass |
 | 113 | V3-RACE-004 | in_progress | 370 | 41 | 23 | pass |
 | 114 | V3-RACE-007 | in_progress | 370 | 25 | 17 | pass |
-| 115 | V3-RACE-007 | in_progress | 370 | 4 | 17 | pass |
+| 115 | V3-RACE-007 | in_progress | 370 | 25 | 17 | pass |
 | 116 | V3-RACE-009 | in_progress | 370 | 25 | 17 | pass |
 | 117 | V3-RACE-009 | in_progress | 370 | 25 | 17 | pass |
 | 118 | V3-RACE-013 | in_progress | 370 | 25 | 17 | pass |
@@ -158,7 +158,7 @@
 | 149 | V3-RACE-064 | in_progress | 370 | 42 | 28 | pass |
 | 150 | V3-RACE-067 | in_progress | 370 | 16 | 10 | pass |
 | 151 | V3-RACE-070 | in_progress | 370 | 21 | 13 | pass |
-| 152 | V3-RACE-070 | in_progress | 370 | 21 | 0 | pass |
+| 152 | V3-RACE-070 | in_progress | 370 | 21 | 13 | pass |
 | 153 | V3-RACE-071 | in_progress | 370 | 31 | 19 | pass |
 | 154 | V3-RACE-071 | in_progress | 370 | 31 | 19 | pass |
 | 155 | V3-RACE-080 | in_progress | 370 | 56 | 38 | pass |
@@ -173,7 +173,7 @@
 | 164 | V3-RACE-137 | in_progress | 370 | 99 | 63 | pass |
 | 165 | V3-RACE-137 | in_progress | 370 | 99 | 63 | pass |
 | 166 | V3-RACE-139 | in_progress | 370 | 33 | 23 | pass |
-| 167 | V3-RACE-139 | in_progress | 370 | 5 | 23 | pass |
+| 167 | V3-RACE-139 | in_progress | 370 | 33 | 23 | pass |
 | 168 | V3-RACE-141 | in_progress | 370 | 40 | 26 | pass |
 | 169 | V3-RACE-141 | in_progress | 370 | 40 | 26 | pass |
 | 170 | V3-RACE-146 | in_progress | 370 | 42 | 28 | pass |
@@ -197,7 +197,7 @@
 | 188 | V3-RACE-162 | in_progress | 370 | 32 | 22 | pass |
 | 189 | V3-RACE-162 | in_progress | 370 | 32 | 22 | pass |
 | 190 | V3-RACE-163 | in_progress | 370 | 58 | 36 | pass |
-| 191 | V3-RACE-163 | in_progress | 370 | 58 | 0 | pass |
+| 191 | V3-RACE-163 | in_progress | 370 | 58 | 36 | pass |
 | 192 | V3-RACE-166 | in_progress | 370 | 43 | 29 | pass |
 | 193 | V3-RACE-166 | in_progress | 370 | 43 | 29 | pass |
 | 194 | V3-RACE-171 | in_progress | 370 | 42 | 28 | pass |
