@@ -1,0 +1,29 @@
+{
+  "version": "v1",
+  "kind": "capability_effect_taxonomy",
+  "effects": [
+    { "id": "observe", "risk_default": "R0" },
+    { "id": "infer", "risk_default": "R1" },
+    { "id": "store", "risk_default": "R1" },
+    { "id": "communicate", "risk_default": "R2" },
+    { "id": "actuate", "risk_default": "R4" },
+    { "id": "train", "risk_default": "R4" },
+    { "id": "quantum", "risk_default": "R4" },
+    { "id": "admin", "risk_default": "R4" }
+  ],
+  "primitive_effects": {
+    "node": ["observe"],
+    "cell": ["store"],
+    "task": ["infer"],
+    "capability": ["admin"],
+    "object": ["store"],
+    "stream": ["communicate"],
+    "journal": ["store"],
+    "budget": ["observe"],
+    "policy": ["observe"],
+    "model": ["infer"],
+    "supervisor": ["admin"],
+    "attestation": ["observe"]
+  },
+  "high_risk_requires_policy_gate": true
+}

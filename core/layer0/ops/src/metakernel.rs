@@ -10,6 +10,9 @@ use walkdir::WalkDir;
 const REGISTRY_PATH: &str = "planes/contracts/metakernel_primitives_v1.json";
 const CELLBUNDLE_SCHEMA_PATH: &str = "planes/contracts/cellbundle.schema.json";
 const CELLBUNDLE_EXAMPLE_PATH: &str = "planes/contracts/examples/cellbundle.minimal.json";
+const WIT_WORLD_REGISTRY_PATH: &str = "planes/contracts/wit/world_registry_v1.json";
+const CAPABILITY_TAXONOMY_PATH: &str = "planes/contracts/capability_effect_taxonomy_v1.json";
+const BUDGET_ADMISSION_POLICY_PATH: &str = "planes/contracts/budget_admission_policy_v1.json";
 const CONDUIT_SCHEMA_PATH: &str = "planes/contracts/conduit_envelope.schema.json";
 const TLA_BOUNDARY_PATH: &str = "planes/spec/tla/three_plane_boundary.tla";
 const DEP_BOUNDARY_MANIFEST: &str = "client/runtime/config/dependency_boundary_manifest.json";
@@ -349,6 +352,159 @@ fn validate_manifest_payload(
     )
 }
 
+fn validate_world_registry_payload(registry: &Value) -> (bool, Value) {
+    let mut errors: Vec<String> = Vec::new();
+    if registry
+        .get("version")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        != "v1"
+    {
+        errors.push("world_registry_version_must_be_v1".to_string());
+    }
+    let worlds = registry
+        .get("worlds")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    if worlds.is_empty() {
+        errors.push("world_registry_missing_worlds".to_string());
+    }
+    let mut world_ids = Vec::new();
+    for world in worlds {
+        let id = world
+            .get("id")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        let abi = world
+            .get("abi_version")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        if id.is_empty() {
+            errors.push("world_registry_world_id_required".to_string());
+            continue;
+        }
+        if abi.is_empty() {
+            errors.push("world_registry_world_abi_required".to_string());
+        }
+        world_ids.push(id);
+    }
+    let mut seen = BTreeSet::new();
+    let mut duplicates = Vec::new();
+    for id in &world_ids {
+        if !seen.insert(id.clone()) {
+            duplicates.push(id.clone());
+        }
+    }
+    if !duplicates.is_empty() {
+        errors.push("world_registry_duplicate_ids".to_string());
+    }
+    (
+        errors.is_empty(),
+        json!({
+            "errors": errors,
+            "world_ids": world_ids,
+            "duplicate_ids": duplicates
+        }),
+    )
+}
+
+fn validate_capability_taxonomy_payload(taxonomy: &Value) -> (bool, Value) {
+    let mut errors: Vec<String> = Vec::new();
+    if taxonomy
+        .get("version")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        != "v1"
+    {
+        errors.push("capability_taxonomy_version_must_be_v1".to_string());
+    }
+    let effects = taxonomy
+        .get("effects")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    if effects.is_empty() {
+        errors.push("capability_taxonomy_effects_required".to_string());
+    }
+    let required_effects = [
+        "observe",
+        "infer",
+        "store",
+        "communicate",
+        "actuate",
+        "train",
+        "quantum",
+        "admin",
+    ];
+    let mut effect_ids = BTreeSet::new();
+    for effect in effects {
+        let id = effect
+            .get("id")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_ascii_lowercase();
+        let risk = effect
+            .get("risk_default")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_ascii_uppercase();
+        if id.is_empty() {
+            errors.push("capability_taxonomy_effect_id_required".to_string());
+            continue;
+        }
+        if !matches!(risk.as_str(), "R0" | "R1" | "R2" | "R3" | "R4") {
+            errors.push("capability_taxonomy_invalid_risk_class".to_string());
+        }
+        effect_ids.insert(id);
+    }
+    let expected: BTreeSet<String> = required_effects.iter().map(|v| v.to_string()).collect();
+    let missing_effects: Vec<String> = expected.difference(&effect_ids).cloned().collect();
+    if !missing_effects.is_empty() {
+        errors.push("capability_taxonomy_missing_required_effects".to_string());
+    }
+
+    let primitive_effects = taxonomy
+        .get("primitive_effects")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let expected_primitives: BTreeSet<String> =
+        EXPECTED_PRIMITIVES.iter().map(|v| v.to_string()).collect();
+    for (primitive, effects) in primitive_effects {
+        if !expected_primitives.contains(&primitive) {
+            errors.push("capability_taxonomy_unknown_primitive_mapping".to_string());
+        }
+        for effect in effects.as_array().cloned().unwrap_or_default() {
+            let id = effect
+                .as_str()
+                .unwrap_or_default()
+                .trim()
+                .to_ascii_lowercase();
+            if !expected.contains(&id) {
+                errors.push("capability_taxonomy_unknown_effect_mapping".to_string());
+            }
+        }
+    }
+    (
+        errors.is_empty(),
+        json!({
+            "errors": errors,
+            "missing_required_effects": missing_effects
+        }),
+    )
+}
+
+fn parse_nonneg_i64_field(map: &serde_json::Map<String, Value>, key: &str) -> Option<i64> {
+    map.get(key).and_then(Value::as_i64).filter(|v| *v >= 0)
+}
+
 fn run_registry(root: &Path, strict: bool) -> Value {
     let registry_path = root.join(REGISTRY_PATH);
     let registry = read_json(&registry_path).unwrap_or(Value::Null);
@@ -367,6 +523,251 @@ fn run_registry(root: &Path, strict: bool) -> Value {
         "registry_report": registry_report,
         "unknown_primitive_usage_count": unknown_usage.len(),
         "unknown_primitive_usage": unknown_usage
+    })
+}
+
+fn run_worlds(root: &Path, strict: bool, manifest_rel: &str) -> Value {
+    let registry_path = root.join(WIT_WORLD_REGISTRY_PATH);
+    let registry = read_json(&registry_path).unwrap_or(Value::Null);
+    let (registry_ok, registry_report) = validate_world_registry_payload(&registry);
+
+    let worlds = registry
+        .get("worlds")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let mut world_table: serde_json::Map<String, Value> = serde_json::Map::new();
+    for world in worlds {
+        let id = world
+            .get("id")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        if id.is_empty() {
+            continue;
+        }
+        world_table.insert(id, world);
+    }
+
+    let manifest_path = root.join(manifest_rel);
+    let manifest = read_json(&manifest_path).unwrap_or(Value::Null);
+    let world_id = manifest
+        .get("world")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .trim()
+        .to_string();
+    let world_entry = world_table.get(&world_id);
+    let world_declared = !world_id.is_empty();
+    let world_exists = world_entry.is_some();
+
+    let manifest_caps: BTreeSet<String> = manifest
+        .get("capabilities")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+        .iter()
+        .filter_map(Value::as_str)
+        .map(|v| v.trim().to_ascii_lowercase())
+        .filter(|v| !v.is_empty())
+        .collect();
+    let supported_caps: BTreeSet<String> = world_entry
+        .and_then(|w| w.get("supported_capabilities"))
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+        .iter()
+        .filter_map(Value::as_str)
+        .map(|v| v.trim().to_ascii_lowercase())
+        .filter(|v| !v.is_empty())
+        .collect();
+    let unsupported_caps: Vec<String> = manifest_caps
+        .difference(&supported_caps)
+        .cloned()
+        .collect();
+    let compatibility_ok = if supported_caps.is_empty() {
+        true
+    } else {
+        unsupported_caps.is_empty()
+    };
+
+    let ok = registry_ok && world_declared && world_exists && compatibility_ok;
+    json!({
+        "ok": if strict { ok } else { true },
+        "strict": strict,
+        "registry_path": WIT_WORLD_REGISTRY_PATH,
+        "registry_ok": registry_ok,
+        "registry_report": registry_report,
+        "manifest_path": manifest_rel,
+        "world_declared": world_declared,
+        "world_id": world_id,
+        "world_exists": world_exists,
+        "compatibility_ok": compatibility_ok,
+        "unsupported_capabilities": unsupported_caps
+    })
+}
+
+fn run_capability_taxonomy(root: &Path, strict: bool, manifest_rel: &str) -> Value {
+    let taxonomy_path = root.join(CAPABILITY_TAXONOMY_PATH);
+    let taxonomy = read_json(&taxonomy_path).unwrap_or(Value::Null);
+    let (taxonomy_ok, taxonomy_report) = validate_capability_taxonomy_payload(&taxonomy);
+    let effects = taxonomy
+        .get("effects")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let mut effect_risk = std::collections::HashMap::new();
+    for effect in effects {
+        let id = effect
+            .get("id")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_ascii_lowercase();
+        let risk = effect
+            .get("risk_default")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_ascii_uppercase();
+        if !id.is_empty() && !risk.is_empty() {
+            effect_risk.insert(id, risk);
+        }
+    }
+    let primitive_effects = taxonomy
+        .get("primitive_effects")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+
+    let manifest_path = root.join(manifest_rel);
+    let manifest = read_json(&manifest_path).unwrap_or(Value::Null);
+    let manifest_caps = manifest
+        .get("capabilities")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let mut derived_effects = BTreeSet::new();
+    for cap in manifest_caps {
+        let id = cap
+            .as_str()
+            .unwrap_or_default()
+            .trim()
+            .to_ascii_lowercase();
+        if id.is_empty() {
+            continue;
+        }
+        for effect in primitive_effects
+            .get(&id)
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default()
+        {
+            let eid = effect
+                .as_str()
+                .unwrap_or_default()
+                .trim()
+                .to_ascii_lowercase();
+            if !eid.is_empty() {
+                derived_effects.insert(eid);
+            }
+        }
+    }
+
+    let mut highest_risk = "R0".to_string();
+    let mut high_risk_effects = Vec::new();
+    for effect in &derived_effects {
+        let risk = effect_risk
+            .get(effect)
+            .cloned()
+            .unwrap_or_else(|| "R4".to_string());
+        if risk > highest_risk {
+            highest_risk = risk.clone();
+        }
+        if matches!(risk.as_str(), "R3" | "R4") {
+            high_risk_effects.push(effect.clone());
+        }
+    }
+    let capability_gate = manifest
+        .get("policy_checks")
+        .and_then(Value::as_object)
+        .and_then(|m| m.get("capability_gate"))
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    let policy_gate_ok = high_risk_effects.is_empty() || capability_gate;
+    let ok = taxonomy_ok && policy_gate_ok;
+    json!({
+        "ok": if strict { ok } else { true },
+        "strict": strict,
+        "taxonomy_path": CAPABILITY_TAXONOMY_PATH,
+        "taxonomy_ok": taxonomy_ok,
+        "taxonomy_report": taxonomy_report,
+        "manifest_path": manifest_rel,
+        "derived_effects": derived_effects.into_iter().collect::<Vec<_>>(),
+        "highest_risk": highest_risk,
+        "high_risk_effects": high_risk_effects,
+        "policy_gate_present": capability_gate,
+        "policy_gate_ok": policy_gate_ok
+    })
+}
+
+fn run_budget_admission(root: &Path, strict: bool, manifest_rel: &str) -> Value {
+    let policy_path = root.join(BUDGET_ADMISSION_POLICY_PATH);
+    let policy = read_json(&policy_path).unwrap_or(Value::Null);
+    let hard_limits = policy
+        .get("hard_limits")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let required = [
+        "cpu_ms",
+        "ram_mb",
+        "storage_mb",
+        "network_kb",
+        "tokens",
+        "power_mw",
+        "privacy_points",
+        "cognitive_load",
+    ];
+    let mut policy_missing = Vec::new();
+    for field in required {
+        if parse_nonneg_i64_field(&hard_limits, field).is_none() {
+            policy_missing.push(field.to_string());
+        }
+    }
+    let policy_ok = policy_missing.is_empty();
+
+    let manifest_path = root.join(manifest_rel);
+    let manifest = read_json(&manifest_path).unwrap_or(Value::Null);
+    let budgets = manifest
+        .get("budgets")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+
+    let mut reason_codes = Vec::new();
+    for field in required {
+        let actual = parse_nonneg_i64_field(&budgets, field).unwrap_or(-1);
+        let limit = parse_nonneg_i64_field(&hard_limits, field).unwrap_or(-1);
+        if actual < 0 {
+            reason_codes.push(format!("budget_missing::{field}"));
+            continue;
+        }
+        if limit >= 0 && actual > limit {
+            reason_codes.push(format!("budget_exceeded::{field}"));
+        }
+    }
+    let admitted = policy_ok && reason_codes.is_empty();
+    json!({
+        "ok": if strict { admitted } else { true },
+        "strict": strict,
+        "policy_path": BUDGET_ADMISSION_POLICY_PATH,
+        "policy_ok": policy_ok,
+        "policy_missing_fields": policy_missing,
+        "manifest_path": manifest_rel,
+        "admitted": admitted,
+        "reason_codes": reason_codes
     })
 }
 
@@ -472,6 +873,13 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         println!(
             "  protheus-ops metakernel manifest [--manifest=<path>] [--strict=1|0]"
         );
+        println!("  protheus-ops metakernel worlds [--manifest=<path>] [--strict=1|0]");
+        println!(
+            "  protheus-ops metakernel capability-taxonomy [--manifest=<path>] [--strict=1|0]"
+        );
+        println!(
+            "  protheus-ops metakernel budget-admission [--manifest=<path>] [--strict=1|0]"
+        );
         println!("  protheus-ops metakernel invariants [--strict=1|0]");
         return 0;
     }
@@ -494,6 +902,9 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
     let payload = match command.as_str() {
         "registry" => run_registry(root, strict),
         "manifest" => run_manifest(root, strict, &manifest_path),
+        "worlds" => run_worlds(root, strict, &manifest_path),
+        "capability-taxonomy" => run_capability_taxonomy(root, strict, &manifest_path),
+        "budget-admission" => run_budget_admission(root, strict, &manifest_path),
         "invariants" => run_invariants(root, strict),
         _ => {
             let mut out = json!({
@@ -580,5 +991,45 @@ mod tests {
                 .any(|v| v.as_str() == Some("capabilities_include_unknown_primitive")))
             .unwrap_or(false));
     }
-}
 
+    #[test]
+    fn world_registry_validation_accepts_expected_shape() {
+        let registry = json!({
+            "version": "v1",
+            "worlds": [
+                {
+                    "id": "infring.metakernel.v1",
+                    "abi_version": "1.0.0",
+                    "supported_capabilities": EXPECTED_PRIMITIVES
+                }
+            ]
+        });
+        let (ok, report) = validate_world_registry_payload(&registry);
+        assert!(ok);
+        assert_eq!(
+            report
+                .get("duplicate_ids")
+                .and_then(Value::as_array)
+                .map(|v| v.len()),
+            Some(0)
+        );
+    }
+
+    #[test]
+    fn capability_taxonomy_requires_required_effects() {
+        let taxonomy = json!({
+            "version": "v1",
+            "effects": [{"id": "observe", "risk_default": "R0"}],
+            "primitive_effects": {"node": ["observe"]}
+        });
+        let (ok, report) = validate_capability_taxonomy_payload(&taxonomy);
+        assert!(!ok);
+        assert!(report
+            .get("errors")
+            .and_then(Value::as_array)
+            .map(|rows| rows
+                .iter()
+                .any(|v| v.as_str() == Some("capability_taxonomy_missing_required_effects")))
+            .unwrap_or(false));
+    }
+}

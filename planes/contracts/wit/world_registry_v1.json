@@ -1,0 +1,28 @@
+{
+  "version": "v1",
+  "kind": "wit_world_registry",
+  "worlds": [
+    {
+      "id": "infring.metakernel.v1",
+      "abi_version": "1.0.0",
+      "supported_capabilities": [
+        "node",
+        "cell",
+        "task",
+        "capability",
+        "object",
+        "stream",
+        "journal",
+        "budget",
+        "policy",
+        "model",
+        "supervisor",
+        "attestation"
+      ],
+      "component_targets": [
+        "wasm32-wasi",
+        "wasm32-unknown-unknown"
+      ]
+    }
+  ]
+}

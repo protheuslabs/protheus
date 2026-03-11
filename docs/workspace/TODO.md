@@ -1,6 +1,6 @@
 # TODO (Maintenance + Policy + SRS Execution Order)
 
-Updated: 2026-03-11 17:58 America/Denver
+Updated: 2026-03-11 18:13 America/Denver
 
 ## Ordering policy
 - Priority first (`P0` > `P1` > `P2` > `P3`)
@@ -8,7 +8,7 @@ Updated: 2026-03-11 17:58 America/Denver
 - Then dependency order
 
 ## Live baseline
-- `rust_share_pct`: `74.939%` (`npm run -s metrics:rust-share`)
+- `rust_share_pct`: `75.027%` (`npm run -s metrics:rust-share`)
 - `client total ts files`: `231`
 - `runtime_system_surface`: `116`
 - `cognition_surface`: `0`
@@ -25,15 +25,24 @@ Updated: 2026-03-11 17:58 America/Denver
 ## Canonical actionable inventory mapping
 - Full per-item mapping (remaining work only): [docs/workspace/SRS_ACTIONABLE_MAP_CURRENT.md](/Users/jay/.openclaw/workspace/docs/workspace/SRS_ACTIONABLE_MAP_CURRENT.md)
 - Machine-readable map: [artifacts/srs_actionable_map_current.json](/Users/jay/.openclaw/workspace/artifacts/srs_actionable_map_current.json)
+- Full execution queue (all actionable items, sorted): [docs/workspace/TODO_EXECUTION_FULL.md](/Users/jay/.openclaw/workspace/docs/workspace/TODO_EXECUTION_FULL.md)
+- Machine-readable execution queue: [artifacts/todo_execution_full_current.json](/Users/jay/.openclaw/workspace/artifacts/todo_execution_full_current.json)
 - Map summary snapshot:
-- `actionable_total=832`
-- `queued=594`
+- `actionable_total=829`
+- `queued=591`
 - `in_progress=211`
 - `blocked=27`
 - `execute_now=0`
 - `repair_lane=0`
-- `design_required=805`
+- `design_required=802`
 - `blocked_external=27`
+
+## Full TODO queue contract
+- The TODO list now includes **all** actionable SRS work as the canonical generated queue in `TODO_EXECUTION_FULL.md` (`829` rows).
+- Sorting policy used in that queue:
+- `todoBucket` order: `execute_now -> repair_lane -> design_required -> blocked_external`
+- then `status`: `in_progress -> queued -> blocked`
+- then `impact` desc and section/ID tie-breakers.
 
 ## Ordered execution list
 
@@ -71,11 +80,25 @@ Updated: 2026-03-11 17:58 America/Denver
 - Added lane scripts: `ops:metakernel:registry`, `ops:metakernel:manifest`, `ops:metakernel:invariants`, and `lane:v7-meta-001..003:run`.
 - Marked `V7-META-001..003` as `done` in `docs/workspace/SRS.md` and `docs/workspace/UPGRADE_BACKLOG.md` with receipt-backed evidence.
 
+8. `P1-EXEC-005` Continue metakernel tranche (`V7-META-004..006`) and continue queue depletion. `STATUS: DONE`
+- Exit criteria met:
+- Added WIT world registry + compatibility lane: `planes/contracts/wit/world_registry_v1.json`, `ops:metakernel:worlds`, `lane:v7-meta-004:run`.
+- Added capability effect taxonomy + risk gate lane: `planes/contracts/capability_effect_taxonomy_v1.json`, `ops:metakernel:capability-taxonomy`, `lane:v7-meta-005:run`.
+- Added budget admission fail-closed lane: `planes/contracts/budget_admission_policy_v1.json`, `ops:metakernel:budget-admission`, `lane:v7-meta-006:run`.
+- Marked `V7-META-004..006` as `done` in `docs/workspace/SRS.md` and `docs/workspace/UPGRADE_BACKLOG.md` with receipt-backed evidence.
+
+9. `P0-MAINT-001` Clear policy blocker and continue execution (outside-root source violation). `STATUS: DONE`
+- Exit criteria met:
+- Moved temporary source file from `tmp/lensmap_tooling_test/src/demo.ts` to policy-allowed test fixture path `tests/fixtures/lensmap_tooling_test/src/demo.ts`.
+- `repo_surface_policy_audit` restored to pass and full `./verify.sh` pass retained.
+
 ## Executed in this pass
 - Added `scripts/ci/srs_actionable_map.mjs` to produce canonical remaining-work mapping and executability buckets.
 - Reviewed enforcer policy and kept DoD evidence gates strict.
 - Executed complete runnable backlog queue tranche and recorded deterministic receipts.
 - Executed metakernel tranche (`V7-META-001..003`) with deterministic receipts and passing invariants.
+- Executed metakernel tranche (`V7-META-004..006`) with deterministic receipts and passing lanes.
+- Added generated full TODO queue artifacts (`TODO_EXECUTION_FULL.md` + `todo_execution_full_current.json`) and kept ordering deterministic.
 - Kept client/core policy audits and full regression suite passing after state transitions.
 
 ## Next command bundle

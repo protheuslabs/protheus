@@ -1401,9 +1401,16 @@
     "ops:metakernel:registry": "cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- metakernel registry --strict=1",
     "ops:metakernel:invariants": "cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- metakernel invariants --strict=1",
     "ops:metakernel:manifest": "cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- metakernel manifest --manifest=planes/contracts/examples/cellbundle.minimal.json --strict=1",
+    "ops:metakernel:worlds": "cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- metakernel worlds --manifest=planes/contracts/examples/cellbundle.minimal.json --strict=1",
+    "ops:metakernel:capability-taxonomy": "cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- metakernel capability-taxonomy --manifest=planes/contracts/examples/cellbundle.minimal.json --strict=1",
+    "ops:metakernel:budget-admission": "cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- metakernel budget-admission --manifest=planes/contracts/examples/cellbundle.minimal.json --strict=1",
     "lane:v7-meta-001:run": "npm run -s ops:metakernel:registry",
     "lane:v7-meta-002:run": "npm run -s ops:metakernel:invariants",
-    "lane:v7-meta-003:run": "npm run -s ops:metakernel:manifest"
+    "lane:v7-meta-003:run": "npm run -s ops:metakernel:manifest",
+    "lane:v7-meta-004:run": "npm run -s ops:metakernel:worlds",
+    "lane:v7-meta-005:run": "npm run -s ops:metakernel:capability-taxonomy",
+    "lane:v7-meta-006:run": "npm run -s ops:metakernel:budget-admission",
+    "ops:todo:full-queue": "node scripts/ci/todo_full_queue.mjs"
   },
   "bin": {
     "protheus": "./client/cli/bin/protheus.ts",

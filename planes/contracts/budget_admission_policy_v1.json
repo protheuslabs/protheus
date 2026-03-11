@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "kind": "budget_admission_policy",
+  "hard_limits": {
+    "cpu_ms": 5000,
+    "ram_mb": 2048,
+    "storage_mb": 4096,
+    "network_kb": 1048576,
+    "tokens": 200000,
+    "power_mw": 50000,
+    "privacy_points": 1000,
+    "cognitive_load": 100
+  },
+  "fail_closed": true
+}

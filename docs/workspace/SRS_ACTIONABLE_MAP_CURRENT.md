@@ -1,22 +1,19 @@
 # SRS Actionable Map (Current)
 
-Generated: 2026-03-11T17:58:41.780Z
+Generated: 2026-03-11T18:14:20.383Z
 
 ## Summary
-- actionable_total: 832
-- queued: 594
+- actionable_total: 829
+- queued: 591
 - in_progress: 211
 - blocked: 27
 - execute_now: 0
 - repair_lane: 0
-- design_required: 805
+- design_required: 802
 - blocked_external: 27
 
 | ID | Status | Bucket | Impact | Layer | Lane | Runnable | Missing Entrypoint | Section |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| V7-META-004 | queued | design_required | 10 | 0/1/2 | lane:v7-meta-004:run | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
-| V7-META-005 | queued | design_required | 10 | 0/1/2 | lane:v7-meta-005:run | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
-| V7-META-006 | queued | design_required | 10 | 0/1/2 | lane:v7-meta-006:run | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
 | V7-META-007 | queued | design_required | 10 | 0/1/2 | lane:v7-meta-007:run | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
 | V7-META-008 | queued | design_required | 10 | 0/1/2 | lane:v7-meta-008:run | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
 | V7-META-009 | queued | design_required | 10 | 0/1/2 | lane:v7-meta-009:run | no |  | Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08) |
