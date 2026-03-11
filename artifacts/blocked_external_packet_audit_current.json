@@ -1,0 +1,259 @@
+{
+  "ok": true,
+  "type": "blocked_external_packet_audit",
+  "generatedAt": "2026-03-11T22:05:34.123Z",
+  "source": "artifacts/blocked_external_evidence_status_current.json",
+  "summary": {
+    "total": 27,
+    "ready_for_reconcile": 0,
+    "template_only": 27,
+    "readme_only": 0,
+    "artifact_present_readme_unfilled": 0,
+    "missing": 0
+  },
+  "rows": [
+    {
+      "id": "V7-META-016",
+      "evidenceDir": "evidence/external/V7-META-016",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V7-META-017",
+      "evidenceDir": "evidence/external/V7-META-017",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V7-META-018",
+      "evidenceDir": "evidence/external/V7-META-018",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V7-TOP1-009",
+      "evidenceDir": "evidence/external/V7-TOP1-009",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V7-TOP1-010",
+      "evidenceDir": "evidence/external/V7-TOP1-010",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-SUBSTRATE-002.4",
+      "evidenceDir": "evidence/external/V6-SUBSTRATE-002.4",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-F100-022",
+      "evidenceDir": "evidence/external/V6-F100-022",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-F100-023",
+      "evidenceDir": "evidence/external/V6-F100-023",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-F100-024",
+      "evidenceDir": "evidence/external/V6-F100-024",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-F100-025",
+      "evidenceDir": "evidence/external/V6-F100-025",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-F100-034",
+      "evidenceDir": "evidence/external/V6-F100-034",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-F100-043",
+      "evidenceDir": "evidence/external/V6-F100-043",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-F100-044",
+      "evidenceDir": "evidence/external/V6-F100-044",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-F100-045",
+      "evidenceDir": "evidence/external/V6-F100-045",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-F100-A-008",
+      "evidenceDir": "evidence/external/V6-F100-A-008",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-F100-A-009",
+      "evidenceDir": "evidence/external/V6-F100-A-009",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-F100-A-010",
+      "evidenceDir": "evidence/external/V6-F100-A-010",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-F100-A-011",
+      "evidenceDir": "evidence/external/V6-F100-A-011",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-EDGE-005",
+      "evidenceDir": "evidence/external/V6-EDGE-005",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-COMP-005",
+      "evidenceDir": "evidence/external/V6-COMP-005",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-SBOX-006",
+      "evidenceDir": "evidence/external/V6-SBOX-006",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-FLUX-007",
+      "evidenceDir": "evidence/external/V6-FLUX-007",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-TOOLS-005",
+      "evidenceDir": "evidence/external/V6-TOOLS-005",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-PAY-007",
+      "evidenceDir": "evidence/external/V6-PAY-007",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V2-012",
+      "evidenceDir": "evidence/external/V2-012",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-RUST50-CONF-004",
+      "evidenceDir": "evidence/external/V6-RUST50-CONF-004",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    },
+    {
+      "id": "V6-GAP-006",
+      "evidenceDir": "evidence/external/V6-GAP-006",
+      "packetStatus": "template_only",
+      "readmeExists": true,
+      "templateReadme": true,
+      "artifactCount": 0,
+      "artifactFiles": []
+    }
+  ]
+}

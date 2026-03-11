@@ -1,0 +1,112 @@
+{
+  "ok": true,
+  "type": "blocked_external_top10",
+  "generatedAt": "2026-03-11T22:05:33.714Z",
+  "source": {
+    "plan": "artifacts/blocked_external_unblock_plan_current.json",
+    "evidence": "artifacts/blocked_external_evidence_status_current.json"
+  },
+  "totalBlocked": 27,
+  "top10": [
+    {
+      "id": "V6-EDGE-005",
+      "impact": 10,
+      "layerMap": "0/1/2/client",
+      "upgrade": "Third-party license and source-ingest decision for edge backend",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-EDGE-005",
+      "actionHint": "upload_decision_artifact"
+    },
+    {
+      "id": "V6-GAP-006",
+      "impact": 10,
+      "layerMap": "0/1/2/client",
+      "upgrade": "Public Release + Announcement Publication Authority",
+      "section": "Testing + Documentation + Installer Gap Closer (2026-03-06)",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-GAP-006",
+      "actionHint": "upload_publication_proof"
+    },
+    {
+      "id": "V6-SBOX-006",
+      "impact": 10,
+      "layerMap": "-1/0/1/2/3/adapter",
+      "upgrade": "Sandbox runtime substrate decision (container vs lightweight jail)",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-SBOX-006",
+      "actionHint": "upload_decision_artifact"
+    },
+    {
+      "id": "V7-META-016",
+      "impact": 10,
+      "layerMap": "0/1/2",
+      "upgrade": "Live QPU provider validation campaign",
+      "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V7-META-016",
+      "actionHint": "upload_validation_evidence"
+    },
+    {
+      "id": "V7-META-017",
+      "impact": 10,
+      "layerMap": "0/1/2",
+      "upgrade": "Ternary hardware lowering validation campaign",
+      "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V7-META-017",
+      "actionHint": "upload_validation_evidence"
+    },
+    {
+      "id": "V7-META-018",
+      "impact": 10,
+      "layerMap": "0/1/2",
+      "upgrade": "Neural I/O safety validation campaign",
+      "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V7-META-018",
+      "actionHint": "upload_validation_evidence"
+    },
+    {
+      "id": "V7-TOP1-009",
+      "impact": 10,
+      "layerMap": "0/1/2",
+      "upgrade": "Independent third-party verification publication lane",
+      "section": "Technical Excellence #1 Intake (Doc `12_nnoI-1YXaxVc6YSgYRCMRKXNIWCcP1XKCJHv_NBeY`, 2026-03-09)",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V7-TOP1-009",
+      "actionHint": "upload_decision_artifact"
+    },
+    {
+      "id": "V7-TOP1-010",
+      "impact": 10,
+      "layerMap": "0/1/2",
+      "upgrade": "High-assurance profile release gate (medical/defense-class)",
+      "section": "Technical Excellence #1 Intake (Doc `12_nnoI-1YXaxVc6YSgYRCMRKXNIWCcP1XKCJHv_NBeY`, 2026-03-09)",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V7-TOP1-010",
+      "actionHint": "upload_decision_artifact"
+    },
+    {
+      "id": "V6-COMP-005",
+      "impact": 9,
+      "layerMap": "0/1/2",
+      "upgrade": "Public multi-release cadence target (9+ tags)",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-COMP-005",
+      "actionHint": "upload_decision_artifact"
+    },
+    {
+      "id": "V6-F100-022",
+      "impact": 9,
+      "layerMap": "0/1/2/client",
+      "upgrade": "Live trading proof gate (30-day promotion evidence)",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-F100-022",
+      "actionHint": "upload_validation_evidence"
+    }
+  ]
+}

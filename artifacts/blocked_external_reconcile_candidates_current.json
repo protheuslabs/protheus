@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "blocked_external_reconcile_candidates",
-  "generatedAt": "2026-03-11T21:59:57.770Z",
+  "generatedAt": "2026-03-11T22:05:34.583Z",
   "source": "artifacts/blocked_external_evidence_status_current.json",
   "summary": {
     "blocked_total": 27,
