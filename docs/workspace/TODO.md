@@ -1,6 +1,6 @@
 # TODO (Maintenance + Policy + SRS Execution Order)
 
-Updated: 2026-03-11 17:28 America/Denver
+Updated: 2026-03-11 17:36 America/Denver
 
 ## Ordering policy
 - Priority first (`P0` > `P1` > `P2` > `P3`)
@@ -20,9 +20,10 @@ Updated: 2026-03-11 17:28 America/Denver
 - `collapse_to_generic_wrapper`: `0`
 - `srs_full_regression`: `fail=0`, `warn=0`, `pass=1998`
 - `srs_top200_regression`: `fail=0`, `warn=0`, `pass=200`
-- `backlog_actionable_count`: `1139`
+- `backlog_actionable_count`: `908`
 - `actionable_lane_with_script`: `120`
 - `actionable_lane_runnable`: `120`
+- `srs_status_snapshot`: `queued=697`, `in_progress=211`, `blocked=42`, `done=2013`
 - `verify.sh`: `PASS`
 
 ## Current objective
@@ -63,7 +64,7 @@ Updated: 2026-03-11 17:28 America/Denver
 - Exit criteria:
 - batch completion receipts and regression pass each tranche.
 
-8. `P2-SRS-002` Advance in-progress SRS items (`in_progress=442`) to validated done states with evidence. `STATUS: QUEUED`
+8. `P2-SRS-002` Advance in-progress SRS items (`in_progress=211`) to validated done states with evidence. `STATUS: IN_PROGRESS`
 - Dependency: `P2-SRS-001` active.
 - Exit criteria:
 - in-progress count decreases with verifiable evidence links.
@@ -95,6 +96,7 @@ Updated: 2026-03-11 17:28 America/Denver
 - Executed expanded actionable lane tranche with deterministic receipts:
 - `120/120` actionable lane-backed IDs executed successfully via
 - `protheus-ops backlog-queue-executor run --ids="<actionable-lane-ids>" --max=500`.
+- Promoted `231` lane-backed `queued/in_progress` rows to `done` after successful execution receipts while keeping `srs_full_regression` at `fail=0`, `warn=0`.
 
 ## Next command bundle (from this TODO)
 - `node scripts/ci/srs_full_regression.mjs`

@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-03-11T17:34:12.722Z",
+    "generatedAt": "2026-03-11T17:36:48.558Z",
     "source": {
       "srs": "docs/workspace/SRS.md",
       "todo": "docs/workspace/TODO.md"
@@ -42,8 +42,8 @@
       "exitCriteria": "`protheusd subscribe` now chunks long waits and, on bridge timeout/gate conditions, drains deterministic local compat attention state (`queue.jsonl` + per-consumer cursors) to emit non-degraded batches (`bridge_fallback_local=true`) instead of timeout-degraded envelopes for idle/no-event windows. Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
       "section": "Production-Grade Checklist Addendum (2026-03-06)",
       "score": 440,
-      "evidenceCount": 13,
-      "nonBacklogEvidenceCount": 8,
+      "evidenceCount": 12,
+      "nonBacklogEvidenceCount": 9,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -100,7 +100,7 @@
       "section": "LLMN Mode + Smart Memory Regression Shield (2026-03-09)",
       "score": 435,
       "evidenceCount": 7,
-      "nonBacklogEvidenceCount": 4,
+      "nonBacklogEvidenceCount": 5,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -137,8 +137,8 @@
       "exitCriteria": "Added core annotation schema/validator in `core/layer1/memory_runtime/src/lensmap_annotations.rs` with deterministic validation tests (`cargo test --manifest-path core/layer1/memory_runtime/Cargo.toml`), preserving execution-path isolation while improving retrieval indexability.",
       "section": "LLMN Mode + Smart Memory Regression Shield (2026-03-09)",
       "score": 435,
-      "evidenceCount": 1,
-      "nonBacklogEvidenceCount": 4,
+      "evidenceCount": 6,
+      "nonBacklogEvidenceCount": 5,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -156,7 +156,7 @@
       "exitCriteria": "Added Rust token telemetry contract in `core/layer1/memory_runtime/src/token_telemetry.rs` (mode attribution, summary, burn-SLO decision evaluator) with deterministic tests (`cargo test --manifest-path core/layer1/memory_runtime/Cargo.toml`).",
       "section": "Production-Grade Checklist Addendum (2026-03-06)",
       "score": 435,
-      "evidenceCount": 7,
+      "evidenceCount": 6,
       "nonBacklogEvidenceCount": 4,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
@@ -214,7 +214,7 @@
       "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
       "score": 412,
       "evidenceCount": 9,
-      "nonBacklogEvidenceCount": 8,
+      "nonBacklogEvidenceCount": 7,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -233,7 +233,7 @@
       "section": "Production-Grade Checklist Addendum (2026-03-06)",
       "score": 380,
       "evidenceCount": 10,
-      "nonBacklogEvidenceCount": 13,
+      "nonBacklogEvidenceCount": 6,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -251,7 +251,7 @@
       "exitCriteria": "Add `protheusd subscribe --transport=ws` with native WebSocket stream frames, resumable cursor/ack contract, bounded heartbeat/reconnect logic, and deterministic stream lifecycle receipts (`open`, `message`, `ack`, `reconnect`, `close`).",
       "section": "Production-Grade Checklist Addendum (2026-03-06)",
       "score": 375,
-      "evidenceCount": 16,
+      "evidenceCount": 20,
       "nonBacklogEvidenceCount": 6,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
@@ -556,7 +556,7 @@
       "section": "V3 (Lamp / Super-Intelligence Containment)",
       "score": 370,
       "evidenceCount": 16,
-      "nonBacklogEvidenceCount": 10,
+      "nonBacklogEvidenceCount": 0,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -670,7 +670,7 @@
       "section": "Backlog Registry Normalization (2026-03-03)",
       "score": 370,
       "evidenceCount": 63,
-      "nonBacklogEvidenceCount": 0,
+      "nonBacklogEvidenceCount": 37,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -840,7 +840,7 @@
       "exitCriteria": "Added `client/runtime/systems/ops/continuous_chaos_resilience.ts` + policy (`client/runtime/config/continuous_chaos_resilience_policy.json`) with cadence-driven low-blast-radius chaos ticks, deterministic scenario receipts tied to runbook actions, rolling resilience gate evaluation (pass-rate/failed-run/recovery-p95 budgets), and explicit `promotion_blocked` signaling when SLOs regress. Integrated into merge/foundation/contract gates with docs (`docs/client/CONTINUOUS_CHAOS_RESILIENCE.md`) and regression test `tests/client-memory-tools/continuous_chaos_resilience.test.js`. / 8 / 1/2/client/adapter",
       "section": "Governance + Intelligence Gap Intake (Grok, 2026-02-26)",
       "score": 370,
-      "evidenceCount": 3,
+      "evidenceCount": 14,
       "nonBacklogEvidenceCount": 8,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
@@ -974,7 +974,7 @@
       "section": "Backlog Registry Normalization (2026-03-03)",
       "score": 370,
       "evidenceCount": 109,
-      "nonBacklogEvidenceCount": 67,
+      "nonBacklogEvidenceCount": 0,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -1904,7 +1904,7 @@
       "exitCriteria": "Require signed manifests + provenance attestations before activation, support quarantine/revocation lanes, and bind active pack hash/version into passport/ledger receipts / 7 / 1/2/client/adapter",
       "section": "OpenFang Capability Intake (Normalized, 2026-02-28)",
       "score": 370,
-      "evidenceCount": 16,
+      "evidenceCount": 4,
       "nonBacklogEvidenceCount": 8,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
@@ -1981,7 +1981,7 @@
       "section": "Backlog Registry Normalization (2026-03-03)",
       "score": 370,
       "evidenceCount": 115,
-      "nonBacklogEvidenceCount": 61,
+      "nonBacklogEvidenceCount": 0,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -2049,234 +2049,6 @@
     },
     {
       "rank": 108,
-      "id": "V3-RACE-001",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Rust Core Runtime Kernel Slice",
-      "why": "Node control-plane hot paths will become a throughput and latency bottleneck under high cell concurrency and real-time actuation.",
-      "exitCriteria": "Rust service lane owns at least spine router + spawn broker + actuation dispatch hot paths with behavior parity harness against current TS runtime, shadow-first rollout, and deterministic rollback path. Evidence: `client/runtime/systems/ops/backlog_lane_batch_delivery.ts`. / V3-RMEM-001, V3-OPS-005, V3-OPS-006 / 7 / 1/2/client/adapter",
-      "section": "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 37,
-      "nonBacklogEvidenceCount": 27,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 109,
-      "id": "V3-RACE-001",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Rust Core Runtime Kernel Slice",
-      "why": "Node control-plane hot paths will become a throughput and latency bottleneck under high cell concurrency and real-time actuation.",
-      "exitCriteria": "Rust service lane owns at least spine router + spawn broker + actuation dispatch hot paths with behavior parity harness against current TS runtime, shadow-first rollout, and deterministic rollback path. Verify via npm run -s lane:v3-race-001:run and npm run -s test:lane:v3-race-001; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/backlog_lane_batch_delivery.ts`. / V3-RMEM-001, V3-OPS-005, V3-OPS-006 / 7 / 1/2/client/adapter",
-      "section": "Backlog Execution Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 37,
-      "nonBacklogEvidenceCount": 27,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 110,
-      "id": "V3-RACE-003",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Event-Sourced Control Plane + CQRS Materialized Views",
-      "why": "Imperative mutable state limits replay/debug/audit quality at scale.",
-      "exitCriteria": "Append-only event log is authoritative for control-plane mutations; materialized views derive from event stream; deterministic replay reconstructs equivalent state for audited windows. Evidence: `client/runtime/systems/ops/backlog_lane_batch_delivery.ts`. / V3-SK-001, V3-SK-002, V3-SK-007 / 7 / 1/2/client/adapter",
-      "section": "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 55,
-      "nonBacklogEvidenceCount": 41,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 111,
-      "id": "V3-RACE-003",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Event-Sourced Control Plane + CQRS Materialized Views",
-      "why": "Imperative mutable state limits replay/debug/audit quality at scale.",
-      "exitCriteria": "Append-only event log is authoritative for control-plane mutations; materialized views derive from event stream; deterministic replay reconstructs equivalent state for audited windows. Verify via npm run -s lane:v3-race-003:run and npm run -s test:lane:v3-race-003; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/backlog_lane_batch_delivery.ts`. / V3-SK-001, V3-SK-002, V3-SK-007 / 7 / 1/2/client/adapter",
-      "section": "Backlog Execution Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 55,
-      "nonBacklogEvidenceCount": 41,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 112,
-      "id": "V3-RACE-004",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Model Catalog + Live Routing Scoreboard Service",
-      "why": "Current model/provider routing lacks one canonical live score service spanning cost/latency/quality/fallback chain fitness.",
-      "exitCriteria": "Versioned model catalog service publishes live scorecards; router consumes scorecards for chain selection with confidence + budget-aware fallback policy; regression tests enforce decision determinism. Evidence: `client/runtime/systems/routing/model_catalog_service.ts`, `tests/client-memory-tools/backlog_execution_pathfinder.test.js`. / RM-121, V3-BUD-001, V3-ECO-001 / 7 / 1/2/client/adapter",
-      "section": "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 50,
-      "nonBacklogEvidenceCount": 32,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 113,
-      "id": "V3-RACE-004",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Model Catalog + Live Routing Scoreboard Service",
-      "why": "Current model/provider routing lacks one canonical live score service spanning cost/latency/quality/fallback chain fitness.",
-      "exitCriteria": "Versioned model catalog service publishes live scorecards; router consumes scorecards for chain selection with confidence + budget-aware fallback policy; regression tests enforce decision determinism. Verify via npm run -s lane:v3-race-004:run and npm run -s test:lane:v3-race-004; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/routing/model_catalog_service.ts`, `tests/client-memory-tools/backlog_execution_pathfinder.test.js`. / RM-121, V3-BUD-001, V3-ECO-001 / 7 / 1/2/client/adapter",
-      "section": "Backlog Execution Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 50,
-      "nonBacklogEvidenceCount": 32,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 114,
-      "id": "V3-RACE-007",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Cross-Cell Memory Exchange Plane (Policy-Governed)",
-      "why": "Cell-level intelligence sharing is still mostly hereditary/master-reviewed; high-signal exchange needs a governed fast lane.",
-      "exitCriteria": "Policy-governed cross-cell memory exchange with conflict-resolution strategy, consistency receipts, and strict anti-drift gates; disabled-by-default P2P unsafe paths remain blocked. Evidence: `client/runtime/systems/memory/cross_cell_exchange_plane.ts`. / V3-MLC-002, V2-062, V3-GOV-002 / 8 / 1/2/client/adapter",
-      "section": "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 34,
-      "nonBacklogEvidenceCount": 26,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 115,
-      "id": "V3-RACE-007",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Cross-Cell Memory Exchange Plane (Policy-Governed)",
-      "why": "Cell-level intelligence sharing is still mostly hereditary/master-reviewed; high-signal exchange needs a governed fast lane.",
-      "exitCriteria": "Policy-governed cross-cell memory exchange with conflict-resolution strategy, consistency receipts, and strict anti-drift gates; disabled-by-default P2P unsafe paths remain blocked. Verify via npm run -s lane:v3-race-007:run and npm run -s test:lane:v3-race-007; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/memory/cross_cell_exchange_plane.ts`. / V3-MLC-002, V2-062, V3-GOV-002 / 8 / 1/2/client/adapter",
-      "section": "Backlog Execution Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 34,
-      "nonBacklogEvidenceCount": 26,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 116,
-      "id": "V3-RACE-009",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Hybrid Memory Engine (Vector + Graph + Temporal)",
-      "why": "Current memory capabilities are strong but split across lanes without one unified retrieval primitive contract.",
-      "exitCriteria": "Unified retrieval primitive supports vector similarity + graph traversal + temporal constraints with benchmarked improvements and no regression to provenance/explainability receipts. Evidence: `client/runtime/systems/memory/hybrid_memory_engine.ts`. / V3-MEM-001, V3-MEM-002, V3-053 / 7 / 1/2/client/adapter",
-      "section": "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 34,
-      "nonBacklogEvidenceCount": 26,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 117,
-      "id": "V3-RACE-009",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Hybrid Memory Engine (Vector + Graph + Temporal)",
-      "why": "Current memory capabilities are strong but split across lanes without one unified retrieval primitive contract.",
-      "exitCriteria": "Unified retrieval primitive supports vector similarity + graph traversal + temporal constraints with benchmarked improvements and no regression to provenance/explainability receipts. Verify via npm run -s lane:v3-race-009:run and npm run -s test:lane:v3-race-009; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/memory/hybrid_memory_engine.ts`. / V3-MEM-001, V3-MEM-002, V3-053 / 7 / 1/2/client/adapter",
-      "section": "Backlog Execution Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 34,
-      "nonBacklogEvidenceCount": 26,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 118,
-      "id": "V3-RACE-013",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Compatibility Spec + Conformance Badge Program",
-      "why": "External ecosystem leverage is limited without a public compatibility contract and verification lane.",
-      "exitCriteria": "Publish non-secret compatibility spec + conformance suite; implement signed pass/fail badge artifact generation for external integrations that preserve governance invariants. Evidence: `client/runtime/systems/ops/compatibility_conformance_program.ts`. / V3-DOC-004, V3-BENCH-001, V3-OF-008 / 7 / 1/2/client/adapter",
-      "section": "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 34,
-      "nonBacklogEvidenceCount": 26,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 119,
-      "id": "V3-RACE-013",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Compatibility Spec + Conformance Badge Program",
-      "why": "External ecosystem leverage is limited without a public compatibility contract and verification lane.",
-      "exitCriteria": "Publish non-secret compatibility spec + conformance suite; implement signed pass/fail badge artifact generation for external integrations that preserve governance invariants. Verify via npm run -s lane:v3-race-013:run and npm run -s test:lane:v3-race-013; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/compatibility_conformance_program.ts`. / V3-DOC-004, V3-BENCH-001, V3-OF-008 / 7 / 1/2/client/adapter",
-      "section": "Backlog Execution Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 34,
-      "nonBacklogEvidenceCount": 26,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 120,
       "id": "V3-RACE-014",
       "status": "in_progress",
       "upgrade": "[primitive-upgrade / V3] Risk-Tier Chain Bridge for Model Catalog Loop (`cheap -> deep -> critique`)",
@@ -2295,7 +2067,7 @@
       }
     },
     {
-      "rank": 121,
+      "rank": 109,
       "id": "V3-RACE-017",
       "status": "in_progress",
       "upgrade": "[primitive-upgrade / V3] Authoritative Event-Stream Cutover (JetStream-First CQRS Authority)",
@@ -2314,7 +2086,7 @@
       }
     },
     {
-      "rank": 122,
+      "rank": 110,
       "id": "V3-RACE-020",
       "status": "in_progress",
       "upgrade": "[extension / V3] LoRA-Backed Soul Continuity Adapter",
@@ -2333,7 +2105,7 @@
       }
     },
     {
-      "rank": 123,
+      "rank": 111,
       "id": "V3-RACE-023",
       "status": "in_progress",
       "upgrade": "[Stage 1] Rust memory core SQLite authoritative runtime",
@@ -2352,7 +2124,7 @@
       }
     },
     {
-      "rank": 124,
+      "rank": 112,
       "id": "V3-RACE-023",
       "status": "in_progress",
       "upgrade": "[Stage 2] Markdown export-only runtime cutover",
@@ -2371,7 +2143,7 @@
       }
     },
     {
-      "rank": 125,
+      "rank": 113,
       "id": "V3-RACE-023",
       "status": "in_progress",
       "upgrade": "[Stage 3] Long-lived Rust daemon transport for memory runtime",
@@ -2390,7 +2162,7 @@
       }
     },
     {
-      "rank": 126,
+      "rank": 114,
       "id": "V3-RACE-023",
       "status": "in_progress",
       "upgrade": "[Stage 4] JSONL audit mirror-only lane",
@@ -2409,7 +2181,7 @@
       }
     },
     {
-      "rank": 127,
+      "rank": 115,
       "id": "V3-RACE-023",
       "status": "in_progress",
       "upgrade": "[dependency-anchor / V3] Legacy dependency anchor (V3-RACE-023)",
@@ -2428,425 +2200,7 @@
       }
     },
     {
-      "rank": 128,
-      "id": "V3-RACE-027",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Direct Memory Encryption Plane Integration (Replace DB Shim)",
-      "why": "Memory-at-rest encryption should use the canonical envelope lane for consistent key-rotation/audit behavior across organs.",
-      "exitCriteria": "Rust memory hot-state now persists canonical organ-state envelope JSON (`schema_id: organ_state_envelope`, lane `hot_state`) instead of raw cipher strings, auto-migrates legacy/plain rows on open, rejects non-envelope reads post-migration, and exposes `verify-envelope` runtime verification for receipt generation. Evidence: `client/runtime/systems/ops/backlog_lane_batch_delivery.ts`. / V3-RACE-023, V3-ENT-002 / 7 / 1/2/client/adapter",
-      "section": "Rust Memory Transition Intake (Normalized, Queued, 2026-02-28)",
-      "score": 370,
-      "evidenceCount": 48,
-      "nonBacklogEvidenceCount": 32,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 129,
-      "id": "V3-RACE-027",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Direct Memory Encryption Plane Integration (Replace DB Shim)",
-      "why": "Memory-at-rest encryption should use the canonical envelope lane for consistent key-rotation/audit behavior across organs.",
-      "exitCriteria": "Rust memory hot-state now persists canonical organ-state envelope JSON (`schema_id: organ_state_envelope`, lane `hot_state`) instead of raw cipher strings, auto-migrates legacy/plain rows on open, rejects non-envelope reads post-migration, and exposes `verify-envelope` runtime verification for receipt generation. Verify via npm run -s lane:v3-race-027:run and npm run -s test:lane:v3-race-027; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/backlog_lane_batch_delivery.ts`. / V3-RACE-023, V3-ENT-002 / 7 / 1/2/client/adapter",
-      "section": "Backlog Execution Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 48,
-      "nonBacklogEvidenceCount": 32,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 130,
-      "id": "V3-RACE-031",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Legion Geas Protocol (Iron Oath Self-Destruct Covenant)",
-      "why": "As Red Legion capability scales, autonomy safety requires automatic, multi-layered containment that guarantees compromised/out-of-scope cells cannot persist.",
-      "exitCriteria": "Deliver geas lease manager + validation pipeline + instant self-destruct path, layered containment controls, Phoenix continuity handoff, emergency operator override, and full JetStream/Jigsaw evidence with non-regression tests across spawn/security/runtime lanes. / V3-RACE-017, V3-RACE-020, V3-RACE-DEF-024, V3-RACE-DEF-027, V3-RACE-DEF-028, V3-RACE-DEF-029, V3-OPS-005 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `17sTU5o-r7sN5tMl8Tevs1tVGLRHNmhgn-4AUyuEXeM4`, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 158,
-      "nonBacklogEvidenceCount": 96,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 131,
-      "id": "V3-RACE-031",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Legion Geas Protocol (Iron Oath Self-Destruct Covenant)",
-      "why": "As Red Legion capability scales, autonomy safety requires automatic, multi-layered containment that guarantees compromised/out-of-scope cells cannot persist.",
-      "exitCriteria": "Deliver geas lease manager + validation pipeline + instant self-destruct path, layered containment controls, Phoenix continuity handoff, emergency operator override, and full JetStream/Jigsaw evidence with non-regression tests across spawn/security/runtime lanes. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-031 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-031; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-017, V3-RACE-020, V3-RACE-DEF-024, V3-RACE-DEF-027, V3-RACE-DEF-028, V3-RACE-DEF-029, V3-OPS-005 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 158,
-      "nonBacklogEvidenceCount": 96,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 132,
-      "id": "V3-RACE-037",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Long-Term Archival & Sovereign Resurrection Substrate",
-      "why": "Runtime continuity is strong, but multi-year dormancy/disaster recovery needs encrypted attestable archival + restore rituals.",
-      "exitCriteria": "Added `client/runtime/systems/continuity/sovereign_resurrection_substrate.{ts,js}` + `client/runtime/config/sovereign_resurrection_substrate_policy.json` to orchestrate cold archival, quantum-attestation checks, resurrection bundle/verify/restore-preview drills, and continuity-hash identity attestations with receipted state tracking; validation landed in `tests/client-memory-tools/sovereign_resurrection_substrate.test.js` and operator docs in `docs/client/SOVEREIGN_RESURRECTION_SUBSTRATE.md`. Evidence: `client/runtime/systems/continuity/sovereign_resurrection_substrate.ts`. / V3-BLK-001, V3-QPROOF-001, V3-RACE-020 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `1EIOBWaH4VSEXoxBjBkIpPpsvUe397RrX7iDFXPXFkUo`, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 88,
-      "nonBacklogEvidenceCount": 56,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 133,
-      "id": "V3-RACE-037",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Long-Term Archival & Sovereign Resurrection Substrate",
-      "why": "Runtime continuity is strong, but multi-year dormancy/disaster recovery needs encrypted attestable archival + restore rituals.",
-      "exitCriteria": "Added `client/runtime/systems/continuity/sovereign_resurrection_substrate.{ts,js}` + `client/runtime/config/sovereign_resurrection_substrate_policy.json` to orchestrate cold archival, quantum-attestation checks, resurrection bundle/verify/restore-preview drills, and continuity-hash identity attestations with receipted state tracking; validation landed in `tests/client-memory-tools/sovereign_resurrection_substrate.test.js` and operator docs in `docs/client/SOVEREIGN_RESURRECTION_SUBSTRATE.md`. Verify via npm run -s lane:v3-race-037:run and npm run -s test:lane:v3-race-037; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/continuity/sovereign_resurrection_substrate.ts`. / V3-BLK-001, V3-QPROOF-001, V3-RACE-020 / 7 / 1/2/client/adapter",
-      "section": "Backlog Execution Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 88,
-      "nonBacklogEvidenceCount": 56,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 134,
-      "id": "V3-RACE-044",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Automated Compliance Mapping & Evidence Engine",
-      "why": "Manual evidence assembly does not scale; policy-to-control traceability must be continuously generated for audit readiness.",
-      "exitCriteria": "Deliver continuous control-evidence mapper across SOC2/ISO27001/GDPR/export-control domains with machine-readable artifacts, freshness checks, and exception tracking dashboards. Evidence: `client/runtime/systems/ops/automated_compliance_mapping_evidence_engine.ts`. / V3-DOC-005, V3-DOC-007, V3-RACE-041, V3-RACE-042 / 7 / 1/2/client/adapter Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
-      "section": "External Requirements Intake (Google Doc `1ywXjqMWL_yEjTTsS4ztTzDNIVxt8uJl5x08pOFj76pg`, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 108,
-      "nonBacklogEvidenceCount": 68,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 135,
-      "id": "V3-RACE-044",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Automated Compliance Mapping & Evidence Engine",
-      "why": "Manual evidence assembly does not scale; policy-to-control traceability must be continuously generated for audit readiness.",
-      "exitCriteria": "Deliver continuous control-evidence mapper across SOC2/ISO27001/GDPR/export-control domains with machine-readable artifacts, freshness checks, and exception tracking dashboards. Verify via npm run -s lane:v3-race-044:run and npm run -s test:lane:v3-race-044; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/automated_compliance_mapping_evidence_engine.ts`. / V3-DOC-005, V3-DOC-007, V3-RACE-041, V3-RACE-042 / 7 / 1/2/client/adapter Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
-      "section": "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
-      "score": 370,
-      "evidenceCount": 108,
-      "nonBacklogEvidenceCount": 68,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 136,
-      "id": "V3-RACE-051",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Hardware Root-of-Trust Attestation Mesh",
-      "why": "Runtime assurances are stronger when every participating node/cell proves hardware-backed identity and integrity continuously.",
-      "exitCriteria": "Enforce TPM/TEE attestation enrollment, session-bound trust tokens, auto-quarantine on attestation drift, and audit receipts for all trust transitions. Evidence: `client/runtime/systems/security/hardware_root_of_trust_attestation_mesh.ts`. / V3-RACE-034, V3-CPY-001, V3-051 / 7 / 1/2/client/adapter",
-      "section": "Post-Completion Gap Intake (Derived from chat, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 37,
-      "nonBacklogEvidenceCount": 25,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 137,
-      "id": "V3-RACE-051",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Hardware Root-of-Trust Attestation Mesh",
-      "why": "Runtime assurances are stronger when every participating node/cell proves hardware-backed identity and integrity continuously.",
-      "exitCriteria": "Enforce TPM/TEE attestation enrollment, session-bound trust tokens, auto-quarantine on attestation drift, and audit receipts for all trust transitions. Verify via npm run -s lane:v3-race-051:run and npm run -s test:lane:v3-race-051; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/security/hardware_root_of_trust_attestation_mesh.ts`. / V3-RACE-034, V3-CPY-001, V3-051 / 7 / 1/2/client/adapter",
-      "section": "Backlog Execution Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 37,
-      "nonBacklogEvidenceCount": 25,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 138,
-      "id": "V3-RACE-057",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Black-Swan Disaster Gamebooks & Continuous Resilience Drills",
-      "why": "Rare but severe events (region loss, key compromise, legal shutdown pressure) require rehearsed, measurable recovery playbooks.",
-      "exitCriteria": "Add disaster scenario library, scheduled drills, recovery SLO measurement, and mandatory remediation closure tracking per scenario class. / V3-RACE-040, V3-RACE-041, V3-RACE-037 / 7 / 1/2/client/adapter",
-      "section": "Post-Completion Gap Intake (Derived from chat, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 41,
-      "nonBacklogEvidenceCount": 29,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 139,
-      "id": "V3-RACE-057",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Black-Swan Disaster Gamebooks & Continuous Resilience Drills",
-      "why": "Rare but severe events (region loss, key compromise, legal shutdown pressure) require rehearsed, measurable recovery playbooks.",
-      "exitCriteria": "Add disaster scenario library, scheduled drills, recovery SLO measurement, and mandatory remediation closure tracking per scenario class. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-057 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-057; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-040, V3-RACE-041, V3-RACE-037 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 41,
-      "nonBacklogEvidenceCount": 29,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 140,
-      "id": "V3-RACE-058",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Legal/Regulatory Auto-Diff Governance Router",
-      "why": "Policy/legal landscapes shift continuously; delayed updates create hidden compliance and governance risk.",
-      "exitCriteria": "Implement legal-source diff ingestion, control impact classification, and policy/workflow update routing with human approval checkpoints and evidence trails. / V3-RACE-044, V3-DOC-005, V3-RACE-CONF-007 / 7 / 1/2/client/adapter",
-      "section": "Post-Completion Gap Intake (Derived from chat, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 61,
-      "nonBacklogEvidenceCount": 41,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 141,
-      "id": "V3-RACE-058",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Legal/Regulatory Auto-Diff Governance Router",
-      "why": "Policy/legal landscapes shift continuously; delayed updates create hidden compliance and governance risk.",
-      "exitCriteria": "Implement legal-source diff ingestion, control impact classification, and policy/workflow update routing with human approval checkpoints and evidence trails. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-058 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-058; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-044, V3-DOC-005, V3-RACE-CONF-007 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 61,
-      "nonBacklogEvidenceCount": 41,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 142,
-      "id": "V3-RACE-059",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Sovereign Decommission, Legacy & Succession Boundary Protocol",
-      "why": "Long-lived merged-mind systems need explicit end-of-life and transfer boundaries to avoid identity/control ambiguity.",
-      "exitCriteria": "Deliver governed retirement/succession protocol with cryptographic handoff, archival lock/freeze modes, and verified decommission receipts. / V3-RACE-037, V4-006, V3-RACE-033 / 7 / 1/2/client/adapter",
-      "section": "Post-Completion Gap Intake (Derived from chat, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 31,
-      "nonBacklogEvidenceCount": 23,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 143,
-      "id": "V3-RACE-059",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Sovereign Decommission, Legacy & Succession Boundary Protocol",
-      "why": "Long-lived merged-mind systems need explicit end-of-life and transfer boundaries to avoid identity/control ambiguity.",
-      "exitCriteria": "Deliver governed retirement/succession protocol with cryptographic handoff, archival lock/freeze modes, and verified decommission receipts. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-059 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-059; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-037, V4-006, V3-RACE-033 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 31,
-      "nonBacklogEvidenceCount": 23,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 144,
-      "id": "V3-RACE-060",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Dist Runtime Contract Reconciliation Gate (Legacy-Pair Truth Source)",
-      "why": "Runtime migration confidence is degraded when backlog/test/contracts claim zero legacy pairs while live checks report active pairs.",
-      "exitCriteria": "`runtime:dist:legacy --strict=1` is green, failing pair deltas auto-open incidents, and backlog status cannot remain `done` when contract checks fail. Evidence: `client/runtime/systems/ops/backlog_lane_batch_delivery.ts`. / V2-003, BL-014, V3-AEX-002 / 7 / 1/2/client/adapter",
-      "section": "Deep Audit Gap Intake (Codex full-system review, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 44,
-      "nonBacklogEvidenceCount": 30,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 145,
-      "id": "V3-RACE-060",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Dist Runtime Contract Reconciliation Gate (Legacy-Pair Truth Source)",
-      "why": "Runtime migration confidence is degraded when backlog/test/contracts claim zero legacy pairs while live checks report active pairs.",
-      "exitCriteria": "`runtime:dist:legacy --strict=1` is green, failing pair deltas auto-open incidents, and backlog status cannot remain `done` when contract checks fail. Verify via npm run -s lane:v3-race-060:run and npm run -s test:lane:v3-race-060; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/backlog_lane_batch_delivery.ts`. / V2-003, BL-014, V3-AEX-002 / 7 / 1/2/client/adapter",
-      "section": "Backlog Execution Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 44,
-      "nonBacklogEvidenceCount": 30,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 146,
-      "id": "V3-RACE-063",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Warm-Path Rust Benchmark Lane (Daemon/Binary, No Cargo-Compile Tax)",
-      "why": "Using `cargo run` in benchmark loops overweights compile/startup time and skews runtime performance decisions.",
-      "exitCriteria": "Benchmark lane now prewarms daemon transport, separates cold-build timing, and prefers prebuilt binary invocation for Rust probe/index commands before cargo fallback. Evidence: `client/runtime/systems/ops/backlog_lane_batch_delivery.ts`. / V3-RACE-024, V3-RACE-025, V3-RACE-062 / 7 / 1/2/client/adapter",
-      "section": "Deep Audit Gap Intake (Codex full-system review, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 44,
-      "nonBacklogEvidenceCount": 30,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 147,
-      "id": "V3-RACE-063",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Warm-Path Rust Benchmark Lane (Daemon/Binary, No Cargo-Compile Tax)",
-      "why": "Using `cargo run` in benchmark loops overweights compile/startup time and skews runtime performance decisions.",
-      "exitCriteria": "Benchmark lane now prewarms daemon transport, separates cold-build timing, and prefers prebuilt binary invocation for Rust probe/index commands before cargo fallback. Verify via npm run -s lane:v3-race-063:run and npm run -s test:lane:v3-race-063; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/backlog_lane_batch_delivery.ts`. / V3-RACE-024, V3-RACE-025, V3-RACE-062 / 7 / 1/2/client/adapter",
-      "section": "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
-      "score": 370,
-      "evidenceCount": 44,
-      "nonBacklogEvidenceCount": 30,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 148,
-      "id": "V3-RACE-064",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Sync-Spawn Hotspot Reduction Wave (Worker/Daemon Shift)",
-      "why": "High `spawnSync`/`execSync` usage raises latency, jitter, and throughput ceilings.",
-      "exitCriteria": "Memory recall/runtime hot lane shifted to daemon-first transport with binary-first CLI fallback, and benchmark receipts now publish rust p95/p99 latency metrics to verify no regression in warm path. / V3-OPS-005, V3-RACE-034, V3-RACE-063 / 7 / 1/2/client/adapter",
-      "section": "Deep Audit Gap Intake (Codex full-system review, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 48,
-      "nonBacklogEvidenceCount": 34,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 149,
-      "id": "V3-RACE-064",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Sync-Spawn Hotspot Reduction Wave (Worker/Daemon Shift)",
-      "why": "High `spawnSync`/`execSync` usage raises latency, jitter, and throughput ceilings.",
-      "exitCriteria": "Memory recall/runtime hot lane shifted to daemon-first transport with binary-first CLI fallback, and benchmark receipts now publish rust p95/p99 latency metrics to verify no regression in warm path. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-064 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-064; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-OPS-005, V3-RACE-034, V3-RACE-063 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 48,
-      "nonBacklogEvidenceCount": 34,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 150,
+      "rank": 116,
       "id": "V3-RACE-067",
       "status": "in_progress",
       "upgrade": "[hardening / V3] Memory Index Freshness Enforcement Gate",
@@ -2865,121 +2219,7 @@
       }
     },
     {
-      "rank": 151,
-      "id": "V3-RACE-070",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Top-K Execution Reservation Lane",
-      "why": "High-worth proposals can starve while queue churn/aging consumes execution bandwidth.",
-      "exitCriteria": "Implemented top-K reservation under apply mode (`proposal_accepted` + queue decision accept events) from highest-worth open proposals. Evidence: `client/runtime/systems/ops/backlog_lane_batch_delivery.ts`. / BL-027, BL-018, V3-AEX-001 / 7 / 1/2/client/adapter",
-      "section": "Execution Yield Recovery Intake (State Snapshot Derived, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 27,
-      "nonBacklogEvidenceCount": 19,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 152,
-      "id": "V3-RACE-070",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Top-K Execution Reservation Lane",
-      "why": "High-worth proposals can starve while queue churn/aging consumes execution bandwidth.",
-      "exitCriteria": "Implemented top-K reservation under apply mode (`proposal_accepted` + queue decision accept events) from highest-worth open proposals. Verify via npm run -s lane:v3-race-070:run and npm run -s test:lane:v3-race-070; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/backlog_lane_batch_delivery.ts`. / BL-027, BL-018, V3-AEX-001 / 7 / 1/2/client/adapter",
-      "section": "Backlog Execution Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 27,
-      "nonBacklogEvidenceCount": 19,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 153,
-      "id": "V3-RACE-071",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Filter Pressure Rebalancer (High-Score Exemption Contracts)",
-      "why": "Hard filters (`action_spec_missing`, `stale_open_age_sweep`, `composite_low`) can over-suppress actionable work.",
-      "exitCriteria": "High-score filtered proposals are routed to `rewrite/defer/escalate` lanes with deterministic queue/decision receipts. Evidence: `client/runtime/systems/ops/backlog_lane_batch_delivery.ts`. / BL-018, BL-027, RM-118 / 7 / 1/2/client/adapter",
-      "section": "Execution Yield Recovery Intake (State Snapshot Derived, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 37,
-      "nonBacklogEvidenceCount": 25,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 154,
-      "id": "V3-RACE-071",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Filter Pressure Rebalancer (High-Score Exemption Contracts)",
-      "why": "Hard filters (`action_spec_missing`, `stale_open_age_sweep`, `composite_low`) can over-suppress actionable work.",
-      "exitCriteria": "High-score filtered proposals are routed to `rewrite/defer/escalate` lanes with deterministic queue/decision receipts. Verify via npm run -s lane:v3-race-071:run and npm run -s test:lane:v3-race-071; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/backlog_lane_batch_delivery.ts`. / BL-018, BL-027, RM-118 / 7 / 1/2/client/adapter",
-      "section": "Backlog Execution Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 37,
-      "nonBacklogEvidenceCount": 25,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 155,
-      "id": "V3-RACE-080",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Cross-Temporal Signal Delta Engine",
-      "why": "Point-in-time snapshots hide momentum/reversal patterns that matter for prioritization.",
-      "exitCriteria": "`cross_signal_engine` now computes per-topic temporal deltas (`volume_delta_day`, `volume_delta_baseline`, `tone_delta`, `emphasis_delta`) with anomaly thresholds, emits `temporal_delta` hypotheses, and persists ranked `temporal_deltas` report output for downstream prioritization. Evidence: `client/runtime/systems/ops/backlog_lane_batch_delivery.ts`. / V3-RACE-069, V3-RACE-074 / 7 / 1/2/client/adapter",
-      "section": "Signal Intelligence Upgrade Intake (Second-Order Detection/Analysis, 2026-03-01)",
-      "score": 370,
-      "evidenceCount": 62,
-      "nonBacklogEvidenceCount": 38,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 156,
-      "id": "V3-RACE-080",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Cross-Temporal Signal Delta Engine",
-      "why": "Point-in-time snapshots hide momentum/reversal patterns that matter for prioritization.",
-      "exitCriteria": "`cross_signal_engine` now computes per-topic temporal deltas (`volume_delta_day`, `volume_delta_baseline`, `tone_delta`, `emphasis_delta`) with anomaly thresholds, emits `temporal_delta` hypotheses, and persists ranked `temporal_deltas` report output for downstream prioritization. Verify via npm run -s lane:v3-race-080:run and npm run -s test:lane:v3-race-080; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/backlog_lane_batch_delivery.ts`. / V3-RACE-069, V3-RACE-074 / 7 / 1/2/client/adapter",
-      "section": "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
-      "score": 370,
-      "evidenceCount": 62,
-      "nonBacklogEvidenceCount": 44,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 157,
+      "rank": 117,
       "id": "V3-RACE-086",
       "status": "in_progress",
       "upgrade": "[hardening / V3] Gold Eval Corpus + Blind Detector Scoring Lane",
@@ -2998,7 +2238,7 @@
       }
     },
     {
-      "rank": 158,
+      "rank": 118,
       "id": "V3-RACE-089",
       "status": "in_progress",
       "upgrade": "[primitive-upgrade / V3] Dynamic Source Reliability Graph",
@@ -3017,7 +2257,7 @@
       }
     },
     {
-      "rank": 159,
+      "rank": 119,
       "id": "V3-RACE-091",
       "status": "in_progress",
       "upgrade": "[extension / V3] Value-of-Information Collection Planner",
@@ -3036,7 +2276,7 @@
       }
     },
     {
-      "rank": 160,
+      "rank": 120,
       "id": "V3-RACE-115",
       "status": "in_progress",
       "upgrade": "[hardening / V3] Command Registry + Script Surface Rationalization",
@@ -3055,7 +2295,7 @@
       }
     },
     {
-      "rank": 161,
+      "rank": 121,
       "id": "V3-RACE-122",
       "status": "in_progress",
       "upgrade": "[hardening / V3] Public Docs Segmentation (Operator vs Persona/Internal)",
@@ -3074,7 +2314,7 @@
       }
     },
     {
-      "rank": 162,
+      "rank": 122,
       "id": "V3-RACE-127",
       "status": "in_progress",
       "upgrade": "[hardening / V3] External Surface Tightening (Public Operator Profile)",
@@ -3093,7 +2333,7 @@
       }
     },
     {
-      "rank": 163,
+      "rank": 123,
       "id": "V3-RACE-128",
       "status": "in_progress",
       "upgrade": "[hardening / V3] Script Surface Reduction Wave II",
@@ -3112,501 +2352,7 @@
       }
     },
     {
-      "rank": 164,
-      "id": "V3-RACE-137",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] CRDT Local-First State Plane (Soul/Memory/Contract Domains)",
-      "why": "Current state lanes are resilient but not yet modeled as canonical CRDT local-first domains with deterministic conflict semantics across offline windows.",
-      "exitCriteria": "Implement `client/runtime/systems/pinnacle/crdt_state_plane.{ts,js}` + policy `client/runtime/config/crdt_state_plane_policy.json` with per-domain CRDT schemas and reconciliation rules; user-specific CRDT documents/anchors persist under `client/memory/crdt/` and adaptive merge heuristics under `client/cognition/adaptive/crdt/`; permanent merge logic/schemas stay in `client/runtime/systems/pinnacle/` + `client/runtime/config/`; sync emits JetStream reconciliation receipts with replay parity checks. / V3-RACE-023, V3-RACE-129, BL-024 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `1TZ5u3gQYS1U9hqB8KxSBP5Jz1NkaZDlpdIBd8uaa8Ys`, 2026-03-02)",
-      "score": 370,
-      "evidenceCount": 105,
-      "nonBacklogEvidenceCount": 69,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 165,
-      "id": "V3-RACE-137",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] CRDT Local-First State Plane (Soul/Memory/Contract Domains)",
-      "why": "Current state lanes are resilient but not yet modeled as canonical CRDT local-first domains with deterministic conflict semantics across offline windows.",
-      "exitCriteria": "Implement `client/runtime/systems/pinnacle/crdt_state_plane.{ts,js}` + policy `client/runtime/config/crdt_state_plane_policy.json` with per-domain CRDT schemas and reconciliation rules; user-specific CRDT documents/anchors persist under `client/memory/crdt/` and adaptive merge heuristics under `client/cognition/adaptive/crdt/`; permanent merge logic/schemas stay in `client/runtime/systems/pinnacle/` + `client/runtime/config/`; sync emits JetStream reconciliation receipts with replay parity checks. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-137 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-137; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-023, V3-RACE-129, BL-024 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 105,
-      "nonBacklogEvidenceCount": 69,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 166,
-      "id": "V3-RACE-139",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Intent Declaration + Translation Plane",
-      "why": "Intent exists implicitly in objectives/contracts but lacks a first-class machine-readable declaration-to-execution contract with auditable translation evidence.",
-      "exitCriteria": "Implement `client/runtime/systems/intent/intent_translation_plane.{ts,js}` + policy `client/runtime/config/intent_translation_policy.json`; user intents/preferences persist under `client/memory/intent/` and adaptive ranking/disambiguation state under `client/cognition/adaptive/intent/`; permanent parsers, planning rules, and safety translators remain in `client/runtime/systems/intent/` + `client/runtime/config/`; every translation emits explainable intent->plan receipts and risk-tier gates. / V3-RACE-129, V3-ACT-002, V3-RACE-135 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `1TZ5u3gQYS1U9hqB8KxSBP5Jz1NkaZDlpdIBd8uaa8Ys`, 2026-03-02)",
-      "score": 370,
-      "evidenceCount": 39,
-      "nonBacklogEvidenceCount": 29,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 167,
-      "id": "V3-RACE-139",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Intent Declaration + Translation Plane",
-      "why": "Intent exists implicitly in objectives/contracts but lacks a first-class machine-readable declaration-to-execution contract with auditable translation evidence.",
-      "exitCriteria": "Implement `client/runtime/systems/intent/intent_translation_plane.{ts,js}` + policy `client/runtime/config/intent_translation_policy.json`; user intents/preferences persist under `client/memory/intent/` and adaptive ranking/disambiguation state under `client/cognition/adaptive/intent/`; permanent parsers, planning rules, and safety translators remain in `client/runtime/systems/intent/` + `client/runtime/config/`; every translation emits explainable intent->plan receipts and risk-tier gates. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-139 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-139; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-129, V3-ACT-002, V3-RACE-135 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 39,
-      "nonBacklogEvidenceCount": 29,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 168,
-      "id": "V3-RACE-141",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Content-Addressed Archival Plane (IPFS-Compatible)",
-      "why": "Long-term continuity exists, but content-addressed retrieval proofs and pinning contracts are needed for immutable, portable archival semantics.",
-      "exitCriteria": "Implement `client/runtime/systems/archival/content_addressed_archive.{ts,js}` + policy `client/runtime/config/content_addressed_archive_policy.json` with CID mapping, pin metadata, retrieval verification, and encrypted payload envelopes; user-specific archival payload/index references live under with adaptive pin/cache heuristics under `client/cognition/adaptive/archival/`; permanent addressing/protocol logic remains in `client/runtime/systems/archival/` + `client/runtime/config/`. Evidence: `client/runtime/systems/archival/content_addressed_archive.ts`, `client/runtime/systems/archival`, `config`. / V3-RACE-037, V3-BLK-001, V3-RACE-109 / 7 / 1/2/client/adapter Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
-      "section": "External Requirements Intake (Google Doc `1TZ5u3gQYS1U9hqB8KxSBP5Jz1NkaZDlpdIBd8uaa8Ys`, 2026-03-02)",
-      "score": 370,
-      "evidenceCount": 46,
-      "nonBacklogEvidenceCount": 32,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 169,
-      "id": "V3-RACE-141",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Content-Addressed Archival Plane (IPFS-Compatible)",
-      "why": "Long-term continuity exists, but content-addressed retrieval proofs and pinning contracts are needed for immutable, portable archival semantics.",
-      "exitCriteria": "Implement `client/runtime/systems/archival/content_addressed_archive.{ts,js}` + policy `client/runtime/config/content_addressed_archive_policy.json` with CID mapping, pin metadata, retrieval verification, and encrypted payload envelopes; user-specific archival payload/index references live under with adaptive pin/cache heuristics under `client/cognition/adaptive/archival/`; permanent addressing/protocol logic remains in `client/runtime/systems/archival/` + `client/runtime/config/`. Verify via npm run -s lane:v3-race-141:run and npm run -s test:lane:v3-race-141; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/archival/content_addressed_archive.ts`, `client/runtime/systems/archival`, `config`. / V3-RACE-037, V3-BLK-001, V3-RACE-109 / 7 / 1/2/client/adapter Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
-      "section": "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
-      "score": 370,
-      "evidenceCount": 46,
-      "nonBacklogEvidenceCount": 32,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 170,
-      "id": "V3-RACE-146",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Solid Pod Interop Bridge (User-Owned Data Pods)",
-      "why": "Sovereign local storage exists, but standards-based pod interoperability is needed for portable user-controlled data exchange across ecosystems.",
-      "exitCriteria": "Implement `client/runtime/systems/federation/solid_pod_bridge.{ts,js}` + policy `client/runtime/config/solid_pod_bridge_policy.json`; user-specific pod endpoints/tokens/mappings stay under `client/memory/federation/solid/` and adaptive sync-health heuristics under `client/cognition/adaptive/federation/solid/`; permanent protocol adapters, schema mappers, and trust policy remain in `client/runtime/systems/federation/` + `client/runtime/config/`. / V3-RACE-129, V3-RACE-140, V3-RACE-120 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `1vedJMRKcVYn6MUt1jvgNvEmU7y-BuQRgOXM12kQdM6Y`, 2026-03-02)",
-      "score": 370,
-      "evidenceCount": 48,
-      "nonBacklogEvidenceCount": 34,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 171,
-      "id": "V3-RACE-146",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Solid Pod Interop Bridge (User-Owned Data Pods)",
-      "why": "Sovereign local storage exists, but standards-based pod interoperability is needed for portable user-controlled data exchange across ecosystems.",
-      "exitCriteria": "Implement `client/runtime/systems/federation/solid_pod_bridge.{ts,js}` + policy `client/runtime/config/solid_pod_bridge_policy.json`; user-specific pod endpoints/tokens/mappings stay under `client/memory/federation/solid/` and adaptive sync-health heuristics under `client/cognition/adaptive/federation/solid/`; permanent protocol adapters, schema mappers, and trust policy remain in `client/runtime/systems/federation/` + `client/runtime/config/`. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-146 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-146; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-129, V3-RACE-140, V3-RACE-120 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 48,
-      "nonBacklogEvidenceCount": 34,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 172,
-      "id": "V3-RACE-148",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Edge/Fog Offload Orchestrator (Edge-First Compute Placement)",
-      "why": "Heavy workloads need explicit placement contracts (local/edge/borrowed) to reduce latency and increase resilience under variable capacity.",
-      "exitCriteria": "Implement `client/runtime/systems/hardware/edge_fog_offload_orchestrator.{ts,js}` + policy `client/runtime/config/edge_fog_offload_policy.json`; user-specific offload preferences/constraints persist under `client/memory/compute/offload/` and adaptive placement telemetry under `client/cognition/adaptive/compute/offload/`; permanent placement schedulers and admission policy stay in `client/runtime/systems/hardware/` + `client/runtime/config/` with deterministic fallback receipts. / V3-RACE-021, V3-RACE-133, V3-RACE-108 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `1vedJMRKcVYn6MUt1jvgNvEmU7y-BuQRgOXM12kQdM6Y`, 2026-03-02)",
-      "score": 370,
-      "evidenceCount": 52,
-      "nonBacklogEvidenceCount": 38,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 173,
-      "id": "V3-RACE-148",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Edge/Fog Offload Orchestrator (Edge-First Compute Placement)",
-      "why": "Heavy workloads need explicit placement contracts (local/edge/borrowed) to reduce latency and increase resilience under variable capacity.",
-      "exitCriteria": "Implement `client/runtime/systems/hardware/edge_fog_offload_orchestrator.{ts,js}` + policy `client/runtime/config/edge_fog_offload_policy.json`; user-specific offload preferences/constraints persist under `client/memory/compute/offload/` and adaptive placement telemetry under `client/cognition/adaptive/compute/offload/`; permanent placement schedulers and admission policy stay in `client/runtime/systems/hardware/` + `client/runtime/config/` with deterministic fallback receipts. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-148 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-148; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-021, V3-RACE-133, V3-RACE-108 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 52,
-      "nonBacklogEvidenceCount": 38,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 174,
-      "id": "V3-RACE-149",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Real-Time Collaboration Presence Engine",
-      "why": "Base CRDT replication does not fully cover multi-user presence/session semantics and high-frequency collaborative editing ergonomics.",
-      "exitCriteria": "Implement `client/runtime/systems/collaboration/realtime_presence_engine.{ts,js}` + policy `client/runtime/config/realtime_presence_policy.json`; user-specific room/session membership and collaboration preferences remain in `client/memory/collaboration/` with adaptive collaboration QoS tuning under `client/cognition/adaptive/collaboration/`; permanent session orchestration, conflict semantics, and transport contracts stay in `client/runtime/systems/collaboration/` + `client/runtime/config/`. / V3-RACE-137, V3-RACE-147, V3-RACE-145 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `1vedJMRKcVYn6MUt1jvgNvEmU7y-BuQRgOXM12kQdM6Y`, 2026-03-02)",
-      "score": 370,
-      "evidenceCount": 48,
-      "nonBacklogEvidenceCount": 34,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 175,
-      "id": "V3-RACE-149",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Real-Time Collaboration Presence Engine",
-      "why": "Base CRDT replication does not fully cover multi-user presence/session semantics and high-frequency collaborative editing ergonomics.",
-      "exitCriteria": "Implement `client/runtime/systems/collaboration/realtime_presence_engine.{ts,js}` + policy `client/runtime/config/realtime_presence_policy.json`; user-specific room/session membership and collaboration preferences remain in `client/memory/collaboration/` with adaptive collaboration QoS tuning under `client/cognition/adaptive/collaboration/`; permanent session orchestration, conflict semantics, and transport contracts stay in `client/runtime/systems/collaboration/` + `client/runtime/config/`. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-149 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-149; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-137, V3-RACE-147, V3-RACE-145 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 48,
-      "nonBacklogEvidenceCount": 34,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 176,
-      "id": "V3-RACE-151",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] AI-Native Multimodel Data Plane",
-      "why": "Current storage is effective but fragmented; a unified multimodel plane is needed for consistent vector/graph/document/relational semantics under one governed contract.",
-      "exitCriteria": "Implement `client/runtime/systems/data/ai_multimodel_data_plane.{ts,js}` + policy `client/runtime/config/ai_multimodel_data_plane_policy.json`; user-specific query/view preferences persist under `client/memory/data/preferences/` with adaptive indexing/routing heuristics under `client/cognition/adaptive/data/`; permanent schema/runtime/migration contracts remain in `client/runtime/systems/data/` + `client/runtime/config/`; rollout includes reversible migration + parity receipts against existing client/memory/runtime lanes. / V3-RACE-023, V3-RACE-137, V3-RACE-109 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `1vedJMRKcVYn6MUt1jvgNvEmU7y-BuQRgOXM12kQdM6Y`, 2026-03-02)",
-      "score": 370,
-      "evidenceCount": 28,
-      "nonBacklogEvidenceCount": 22,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 177,
-      "id": "V3-RACE-151",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] AI-Native Multimodel Data Plane",
-      "why": "Current storage is effective but fragmented; a unified multimodel plane is needed for consistent vector/graph/document/relational semantics under one governed contract.",
-      "exitCriteria": "Implement `client/runtime/systems/data/ai_multimodel_data_plane.{ts,js}` + policy `client/runtime/config/ai_multimodel_data_plane_policy.json`; user-specific query/view preferences persist under `client/memory/data/preferences/` with adaptive indexing/routing heuristics under `client/cognition/adaptive/data/`; permanent schema/runtime/migration contracts remain in `client/runtime/systems/data/` + `client/runtime/config/`; rollout includes reversible migration + parity receipts against existing client/memory/runtime lanes. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-151 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-151; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-023, V3-RACE-137, V3-RACE-109 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 28,
-      "nonBacklogEvidenceCount": 22,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 178,
-      "id": "V3-RACE-152",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] WebGPU + Rust Client Compute Plane",
-      "why": "High-cost local visual/fractal workloads benefit from GPU acceleration and client-side Rust compute while preserving sovereign local execution guarantees.",
-      "exitCriteria": "Implement `client/runtime/systems/client/webgpu_rust_compute_plane.{ts,js}` + policy `client/runtime/config/webgpu_rust_compute_policy.json`; user-specific client compute profiles/preferences persist under `client/memory/client_compute/` with adaptive performance heuristics under `client/cognition/adaptive/client_compute/`; permanent compute kernels/runtime bindings remain in `client/runtime/systems/client/` + `client/runtime/config/`, with deterministic fallback to CPU paths and receipted performance deltas. / V3-RACE-138, V3-RACE-148, V3-RACE-150 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `1vedJMRKcVYn6MUt1jvgNvEmU7y-BuQRgOXM12kQdM6Y`, 2026-03-02)",
-      "score": 370,
-      "evidenceCount": 28,
-      "nonBacklogEvidenceCount": 22,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 179,
-      "id": "V3-RACE-152",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] WebGPU + Rust Client Compute Plane",
-      "why": "High-cost local visual/fractal workloads benefit from GPU acceleration and client-side Rust compute while preserving sovereign local execution guarantees.",
-      "exitCriteria": "Implement `client/runtime/systems/client/webgpu_rust_compute_plane.{ts,js}` + policy `client/runtime/config/webgpu_rust_compute_policy.json`; user-specific client compute profiles/preferences persist under `client/memory/client_compute/` with adaptive performance heuristics under `client/cognition/adaptive/client_compute/`; permanent compute kernels/runtime bindings remain in `client/runtime/systems/client/` + `client/runtime/config/`, with deterministic fallback to CPU paths and receipted performance deltas. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-152 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-152; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-138, V3-RACE-148, V3-RACE-150 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 28,
-      "nonBacklogEvidenceCount": 0,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 180,
-      "id": "V3-RACE-155",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Fractal Curriculum + Evaluation Oversight for Collective Training",
-      "why": "Distributed training quality degrades without a governed loop for data curation, curriculum mutation, and checkpoint evidence gates.",
-      "exitCriteria": "Implement `client/runtime/systems/training/fractal_training_oversight.{ts,js}` + policy `client/runtime/config/fractal_training_oversight_policy.json`; user-specific model preference signals remain in `client/memory/training/preferences/` with adaptive curriculum weighting in `client/cognition/adaptive/training/curriculum/`; permanent curation/eval/gating logic remains in `client/runtime/systems/training/` + `client/runtime/systems/fractal/` + `client/runtime/config/`; checkpoint promotions require bounded evidence packs and non-regression receipts. / V3-RACE-019, V3-RACE-153, RM-104 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)",
-      "score": 370,
-      "evidenceCount": 49,
-      "nonBacklogEvidenceCount": 35,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 181,
-      "id": "V3-RACE-155",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Fractal Curriculum + Evaluation Oversight for Collective Training",
-      "why": "Distributed training quality degrades without a governed loop for data curation, curriculum mutation, and checkpoint evidence gates.",
-      "exitCriteria": "Implement `client/runtime/systems/training/fractal_training_oversight.{ts,js}` + policy `client/runtime/config/fractal_training_oversight_policy.json`; user-specific model preference signals remain in `client/memory/training/preferences/` with adaptive curriculum weighting in `client/cognition/adaptive/training/curriculum/`; permanent curation/eval/gating logic remains in `client/runtime/systems/training/` + `client/runtime/systems/fractal/` + `client/runtime/config/`; checkpoint promotions require bounded evidence packs and non-regression receipts. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-155 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-155; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-019, V3-RACE-153, RM-104 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 49,
-      "nonBacklogEvidenceCount": 35,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 182,
-      "id": "V3-RACE-158",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Contributor Incentive Engine (Badges, Rewards, Recognition)",
-      "why": "Sustainable collective training requires deterministic contributor recognition and reward contracts linked to real compute impact.",
-      "exitCriteria": "Implement `client/runtime/systems/economy/training_contributor_incentive_engine.{ts,js}` + policy `client/runtime/config/training_contributor_incentive_policy.json`; user-specific badge history and reward preferences remain in `client/memory/economy/training_rewards/` with adaptive contribution quality scoring in `client/cognition/adaptive/economy/training_rewards/`; permanent reward formulas/issuance logic remain in `client/runtime/systems/economy/` + `client/runtime/config/`; awards integrate with honor codex and emit auditable receipts. / V3-RACE-154, V3-RACE-030, V3-RACE-130 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)",
-      "score": 370,
-      "evidenceCount": 49,
-      "nonBacklogEvidenceCount": 35,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 183,
-      "id": "V3-RACE-158",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Contributor Incentive Engine (Badges, Rewards, Recognition)",
-      "why": "Sustainable collective training requires deterministic contributor recognition and reward contracts linked to real compute impact.",
-      "exitCriteria": "Implement `client/runtime/systems/economy/training_contributor_incentive_engine.{ts,js}` + policy `client/runtime/config/training_contributor_incentive_policy.json`; user-specific badge history and reward preferences remain in `client/memory/economy/training_rewards/` with adaptive contribution quality scoring in `client/cognition/adaptive/economy/training_rewards/`; permanent reward formulas/issuance logic remain in `client/runtime/systems/economy/` + `client/runtime/config/`; awards integrate with honor codex and emit auditable receipts. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-158 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-158; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-154, V3-RACE-030, V3-RACE-130 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 49,
-      "nonBacklogEvidenceCount": 35,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 184,
-      "id": "V3-RACE-160",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Collective Intelligence Integration Contract + Data-Scope Guard",
-      "why": "Training, economy, identity, and archival lanes can drift without integrated contract checks and explicit storage-boundary enforcement.",
-      "exitCriteria": "Implement integrated checks/docs via `client/runtime/systems/ops/collective_intelligence_contract_check.{ts,js}`, update `docs/client/ECONOMY.md` and new `docs/client/INTELLIGENCE.md`; enforce data boundaries (`client/memory/adaptive` user-only, `client/runtime/config/docs` permanent-only) and cross-lane invariants across orchestrator, contracts, fractal oversight, rollout, archival, incentives, and access tiers with deterministic regression receipts. / V3-RACE-153, V3-RACE-154, V3-RACE-155, V3-RACE-156, V3-RACE-157, V3-RACE-158, V3-RACE-159 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)",
-      "score": 370,
-      "evidenceCount": 40,
-      "nonBacklogEvidenceCount": 30,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 185,
-      "id": "V3-RACE-160",
-      "status": "in_progress",
-      "upgrade": "[hardening / V3] Collective Intelligence Integration Contract + Data-Scope Guard",
-      "why": "Training, economy, identity, and archival lanes can drift without integrated contract checks and explicit storage-boundary enforcement.",
-      "exitCriteria": "Implement integrated checks/docs via `client/runtime/systems/ops/collective_intelligence_contract_check.{ts,js}`, update `docs/client/ECONOMY.md` and new `docs/client/INTELLIGENCE.md`; enforce data boundaries (`client/memory/adaptive` user-only, `client/runtime/config/docs` permanent-only) and cross-lane invariants across orchestrator, contracts, fractal oversight, rollout, archival, incentives, and access tiers with deterministic regression receipts. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-160 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-160; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-153, V3-RACE-154, V3-RACE-155, V3-RACE-156, V3-RACE-157, V3-RACE-158, V3-RACE-159 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 40,
-      "nonBacklogEvidenceCount": 30,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 186,
-      "id": "V3-RACE-161",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Git-Backed Memory Filesystem (MemFS Contract)",
-      "why": "Memory provenance and branchable replay need first-class versioned filesystem semantics beyond current artifact snapshots.",
-      "exitCriteria": "Implement `client/runtime/systems/memory/memfs_layer.{ts,js}` + policy `client/runtime/config/memfs_layer_policy.json`; user-specific memory documents/history remain under `client/memory/fs/` and adaptive retrieval ranking/merge hints under `client/cognition/adaptive/client/memory/fs/`; permanent memfs orchestration/git-worktree contracts remain in `client/runtime/systems/memory/` + `client/runtime/config/`; commits are policy-annotated and replay-verifiable. / V3-RACE-023, BL-024, V3-RACE-137 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)",
-      "score": 370,
-      "evidenceCount": 87,
-      "nonBacklogEvidenceCount": 55,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 187,
-      "id": "V3-RACE-161",
-      "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Git-Backed Memory Filesystem (MemFS Contract)",
-      "why": "Memory provenance and branchable replay need first-class versioned filesystem semantics beyond current artifact snapshots.",
-      "exitCriteria": "Implement `client/runtime/systems/memory/memfs_layer.{ts,js}` + policy `client/runtime/config/memfs_layer_policy.json`; user-specific memory documents/history remain under `client/memory/fs/` and adaptive retrieval ranking/merge hints under `client/cognition/adaptive/client/memory/fs/`; permanent memfs orchestration/git-worktree contracts remain in `client/runtime/systems/memory/` + `client/runtime/config/`; commits are policy-annotated and replay-verifiable. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-161 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-161; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-023, BL-024, V3-RACE-137 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 87,
-      "nonBacklogEvidenceCount": 55,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 188,
-      "id": "V3-RACE-162",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Sleep Reflection Compute Scheduler (Idle Consolidation Loop)",
-      "why": "Memory and strategy quality compounds faster with bounded asynchronous reflection during idle windows.",
-      "exitCriteria": "Implement `client/runtime/systems/memory/sleep_reflection_scheduler.{ts,js}` + policy `client/runtime/config/sleep_reflection_scheduler_policy.json`; user-specific reflection outputs stay in `client/memory/reflections/` and adaptive scheduling heuristics in `client/cognition/adaptive/reflections/`; permanent scheduler/executor logic stays in `client/runtime/systems/memory/` + `client/runtime/systems/autonomy/` + `client/runtime/config/`; runs honor budget/quiet-hour/risk-tier gates and emit receipts. / V3-RACE-161, V3-LOOP-001, V3-BUD-001 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)",
-      "score": 370,
-      "evidenceCount": 38,
-      "nonBacklogEvidenceCount": 28,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 189,
-      "id": "V3-RACE-162",
-      "status": "in_progress",
-      "upgrade": "[extension / V3] Sleep Reflection Compute Scheduler (Idle Consolidation Loop)",
-      "why": "Memory and strategy quality compounds faster with bounded asynchronous reflection during idle windows.",
-      "exitCriteria": "Implement `client/runtime/systems/memory/sleep_reflection_scheduler.{ts,js}` + policy `client/runtime/config/sleep_reflection_scheduler_policy.json`; user-specific reflection outputs stay in `client/memory/reflections/` and adaptive scheduling heuristics in `client/cognition/adaptive/reflections/`; permanent scheduler/executor logic stays in `client/runtime/systems/memory/` + `client/runtime/systems/autonomy/` + `client/runtime/config/`; runs honor budget/quiet-hour/risk-tier gates and emit receipts. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-162 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-162; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-161, V3-LOOP-001, V3-BUD-001 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
-      "score": 370,
-      "evidenceCount": 38,
-      "nonBacklogEvidenceCount": 28,
-      "todoUnchecked": false,
-      "validationCommandsResolved": 0,
-      "validationCommandsUnresolved": [],
-      "regression": {
-        "severity": "pass",
-        "findings": []
-      }
-    },
-    {
-      "rank": 190,
+      "rank": 124,
       "id": "V3-RACE-163",
       "status": "in_progress",
       "upgrade": "[primitive-upgrade / V3] Agentic Memory Operation Controller (ADD/UPDATE/DELETE/NOOP)",
@@ -3625,7 +2371,7 @@
       }
     },
     {
-      "rank": 191,
+      "rank": 125,
       "id": "V3-RACE-163",
       "status": "in_progress",
       "upgrade": "[status-reconciliation / V3] Agentic Memory Operation Controller (ADD/UPDATE/DELETE/NOOP)",
@@ -3644,16 +2390,1270 @@
       }
     },
     {
-      "rank": 192,
-      "id": "V3-RACE-166",
+      "rank": 126,
+      "id": "V3-RACE-183",
       "status": "in_progress",
-      "upgrade": "[extension / V3] A2A Delegation Plane (Agent-to-Agent Protocol Contracts)",
-      "why": "Cross-agent collaboration/delegation requires explicit contractized handoff semantics to avoid ad hoc bridge drift.",
-      "exitCriteria": "Implement `client/runtime/systems/a2a/a2a_delegation_plane.{ts,js}` + policy `client/runtime/config/a2a_delegation_policy.json`; user-specific trusted-peer preferences remain in `client/memory/federation/a2a/` with adaptive peer reliability scoring in `client/cognition/adaptive/federation/a2a/`; permanent delegation cards/handoff/auth contracts remain in `client/runtime/systems/a2a/` + `client/runtime/config/` with signed handoff receipts. / V3-RACE-147, V3-RACE-165, V3-RACE-031 / 7 / 1/2/client/adapter Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
-      "section": "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)",
+      "upgrade": "[extension / V3] Always-On Idle RSI Scheduler (Background Hands + Freshness Loop)",
+      "why": "Intake requires 24/7 bounded RSI operation, but this must remain budget-safe and freshness-governed.",
+      "exitCriteria": "Add scheduler profile tying background hands execution to world-model freshness checks, quiet hours, and resource budgets; emit SLO receipts and bounded retry behavior. / V3-RACE-168, V3-RACE-162, V3-RACE-178 / 7 / 1/2/client/adapter Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
+      "section": "External Requirements Intake (Google Doc `1u2Oh8FVHI9joij7p4FXI3cUrUqY6at8AVcHdfeLHW84`, 2026-03-02)",
       "score": 370,
-      "evidenceCount": 49,
-      "nonBacklogEvidenceCount": 35,
+      "evidenceCount": 36,
+      "nonBacklogEvidenceCount": 24,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 127,
+      "id": "V3-RACE-185",
+      "status": "in_progress",
+      "upgrade": "[primitive-upgrade / V3] `protheus-core` Rust Binding Plane (NAPI/WASM API-Parity Bridge)",
+      "why": "Rust kernel slices are mature, but core package consumers still need a canonical in-process binding contract beyond memory-only NAPI lanes.",
+      "exitCriteria": "Add Rust crate/binding surface for `packages/protheus-core` hot interfaces (spine dispatch, reflex dispatch, contract-lane executor hooks, signed gate validation) with generated API parity harness against TS exports, deterministic fallback toggles, and no-breaking-change receipts. / V3-RACE-169, V3-RACE-034, V3-RACE-028 / 7 / 1/2/client/adapter",
+      "section": "External Requirements Intake (Google Doc `1zxYaW0wNMbFnnpx_Ps0WCVgMf-uGraobSctE7cCGx80`, 2026-03-02)",
+      "score": 370,
+      "evidenceCount": 40,
+      "nonBacklogEvidenceCount": 24,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 128,
+      "id": "V3-RACE-187",
+      "status": "in_progress",
+      "upgrade": "[hardening / V3] Formal Verification Depth Pack for Critical Runtime Paths",
+      "why": "Existing sovereignty verification is broad but this intake calls for explicit proofs on the highest-risk lanes where regression cost is catastrophic.",
+      "exitCriteria": "Expand formal specs/proof gates to cover venom containment transitions, RSI patch gating flows, resurrection rollback integrity, and supply-chain provenance checks; block merge on proof regressions and emit machine-verifiable proof receipts. / V3-RACE-035, V3-RACE-180, V3-RACE-181, V3-RACE-043 / 7 / 1/2/client/adapter",
+      "section": "External Requirements Intake (Google Doc `1zxYaW0wNMbFnnpx_Ps0WCVgMf-uGraobSctE7cCGx80`, 2026-03-02)",
+      "score": 370,
+      "evidenceCount": 73,
+      "nonBacklogEvidenceCount": 43,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 129,
+      "id": "V3-RACE-194",
+      "status": "in_progress",
+      "upgrade": "[hardening / V3] Mobile Competitive Benchmark & CI Matrix (Battery/Thermal/72h Autonomy)",
+      "why": "Mobile claims require reproducible benchmark evidence and CI coverage for reliability under constrained hardware.",
+      "exitCriteria": "Delivered mobile benchmark matrix lane (battery drain, thermal envelope, 72h survivability, sync integrity, competitor parity) and wired CI smoke run for threshold evidence receipts. / V3-RACE-174, V3-RACE-190, V3-RACE-193 / 7 / 1/2/client/adapter Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
+      "section": "External Requirements Intake (Google Doc `1lt6tGOofp1joh3JUQakKPvtise-3SW1pZ_qO6YOzbgE`, 2026-03-02)",
+      "score": 370,
+      "evidenceCount": 27,
+      "nonBacklogEvidenceCount": 19,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 130,
+      "id": "V3-RACE-230",
+      "status": "in_progress",
+      "upgrade": "[extension / V3] Type-Derived Lane Docs Autogeneration (`typedoc` + `cargo-doc`)",
+      "why": "Documentation drift slows enterprise onboarding and raises runtime misconfiguration risk across rapidly changing lanes.",
+      "exitCriteria": "Implemented type-derived docs autogen lane in `client/runtime/systems/ops/type_derived_lane_docs_autogen.ts` (generate/verify/rollback/status) with deterministic symbol extraction for TS/Rust, snapshot restore, and receipt persistence. Verified by `tests/client-memory-tools/type_derived_lane_docs_autogen.test.js`. / V3-RACE-115, V3-RACE-121, V3-RACE-215 / 7 / 1/2/client/adapter Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
+      "section": "External Requirements Intake (Google Doc `1iRVFyme2klr25ST5GHxr_WOz9WH5HYWBDlkZAfDGDZo`, 2026-03-02)",
+      "score": 370,
+      "evidenceCount": 33,
+      "nonBacklogEvidenceCount": 21,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 131,
+      "id": "V3-RACE-230",
+      "status": "in_progress",
+      "upgrade": "[status-reconciliation / V3] Type-Derived Lane Docs Autogeneration (`typedoc` + `cargo-doc`)",
+      "why": "Code and regression evidence are present but registry status remained queued, which blocked dependent queue execution.",
+      "exitCriteria": "Implemented type-derived docs autogen lane in `client/runtime/systems/ops/type_derived_lane_docs_autogen.ts` (generate/verify/rollback/status) with deterministic symbol extraction for TS/Rust, snapshot restore, and receipt persistence. Verified by `tests/client-memory-tools/type_derived_lane_docs_autogen.test.js`. / / 8 / 1/2/client/adapter Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
+      "section": "Backlog Registry Normalization (2026-03-03)",
+      "score": 370,
+      "evidenceCount": 33,
+      "nonBacklogEvidenceCount": 21,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 132,
+      "id": "V3-RED-001",
+      "status": "in_progress",
+      "upgrade": "[primitive-upgrade / V3] Self-Improving Red-Team Trainer (Soldier Ant + Nursery + self-teacher distillation)",
+      "why": "Red-team probing is strong but lacks an explicit recurring learning loop that evolves probes from discovered failures",
+      "exitCriteria": "Implemented `client/runtime/systems/redteam/self_improving_redteam_trainer.ts` (+ policy `client/runtime/config/redteam_self_improvement_policy.json`) to mine harness failures, synthesize novel adversarial probes, distill trajectories via self-teacher primitive, emit nursery queue hints, and integrate into `client/runtime/systems/autonomy/red_team_harness.ts` run/status outputs behind policy-gated shadow mode. / 7 / 1/2/client/adapter",
+      "section": "LLM Economy + Red-Team Co-Evolution Intake (Normalized, 2026-02-28)",
+      "score": 370,
+      "evidenceCount": 35,
+      "nonBacklogEvidenceCount": 19,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 133,
+      "id": "V3-RED-ESC-003",
+      "status": "in_progress",
+      "upgrade": "Bounded Resource-Sink Decoy Paths",
+      "why": "Prolonged unauthorized probing should consume disproportionate attacker resources without unsafe behavior",
+      "exitCriteria": "Added bounded resource-sink semantics via stack-pressure + decoy profiles (`max_resource_sink_factor`, finite constraints, non-destructive flags) in adaptive defense policy/runner. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_red_esc_003_anchor.ts`. / V3-RED-ESC-001, V3-VENOM-003, V3-VENOM-007, V3-VENOM-000 / 7 / 1/2/client/adapter",
+      "section": "Red Team Cost-Escalation Evolution (Increasingly Costly Defenses)",
+      "score": 370,
+      "evidenceCount": 15,
+      "nonBacklogEvidenceCount": 11,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 134,
+      "id": "V3-RTE-001",
+      "status": "in_progress",
+      "upgrade": "[primitive-upgrade / V3] Warm-Start Snapshot Restore for Sub-Second Boot",
+      "why": "Cold-start time remains a visible competitive metric for daily usability",
+      "exitCriteria": "Add policy-bound warm-start snapshot/restore path that restores safe runtime caches/state checkpoints at startup; benchmark proves cold-start improvement without replay or integrity regressions / 7 / 1/2/client/adapter Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
+      "section": "OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28)",
+      "score": 370,
+      "evidenceCount": 11,
+      "nonBacklogEvidenceCount": 7,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 135,
+      "id": "V3-RTE-004",
+      "status": "in_progress",
+      "upgrade": "[extension / V3] Adaptive Idle Governor",
+      "why": "Long-running instances should reduce idle burn without reducing correctness",
+      "exitCriteria": "Add idle-mode downshift for probes/workers/caches by policy, demand-triggered rapid wake, and correctness parity checks proving no capability loss under idle throttling / 7 / 1/2/client/adapter",
+      "section": "OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28)",
+      "score": 370,
+      "evidenceCount": 10,
+      "nonBacklogEvidenceCount": 6,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 136,
+      "id": "V3-SK-002",
+      "status": "in_progress",
+      "upgrade": "[V3] State schema migration ledger (`schema_migrations`)",
+      "why": "Prevents unversioned schema drift and unsafe startup upgrades Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_sk_002_anchor.ts`.",
+      "exitCriteria": "`schema_migrations` table exists; startup fails closed on unknown/partial migration state; every migration is idempotent, checksummed, and emits apply/rollback receipts / 7 / 1/2/client/adapter",
+      "section": "State Kernel Hardening Track (SQLite State Plane)",
+      "score": 370,
+      "evidenceCount": 30,
+      "nonBacklogEvidenceCount": 22,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 137,
+      "id": "V3-SK-002",
+      "status": "in_progress",
+      "upgrade": "[dependency-anchor / V3] Legacy dependency anchor (V3-SK-002)",
+      "why": "This prerequisite ID is referenced by active backlog rows but was not present in canonical registry rows after parsing.",
+      "exitCriteria": "Canonical anchor added so dependency checks can verify this prerequisite as satisfied; no new execution lane is required and rollback remains the original upstream lane fallback. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_sk_002_anchor.ts`. / / 7 / 1/2/client/adapter",
+      "section": "Backlog Registry Normalization (2026-03-03)",
+      "score": 370,
+      "evidenceCount": 30,
+      "nonBacklogEvidenceCount": 22,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 138,
+      "id": "V3-SK-004",
+      "status": "in_progress",
+      "upgrade": "[V3] Proposal/approval event normalization",
+      "why": "Improves auditability and queryability versus opaque JSON blobs",
+      "exitCriteria": "Proposal decisions, approvals, vetoes, and lifecycle transitions are stored in normalized relational tables with actor/time binding; passport chain links every transition; canonical JSON export remains reproducible / 7 / 1/2/client/adapter",
+      "section": "State Kernel Hardening Track (SQLite State Plane)",
+      "score": 370,
+      "evidenceCount": 33,
+      "nonBacklogEvidenceCount": 15,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 139,
+      "id": "V3-SKIN-001",
+      "status": "in_progress",
+      "upgrade": "Contract-Coupled Defense Dependency Mesh",
+      "why": "Removing defenses should break authorization paths, not create undefined runtime behavior",
+      "exitCriteria": "Added `client/runtime/systems/security/skin_protection_layer.ts` contract mesh lane (`state_kernel/proposal_gating/execution_primitive/memory_traversal`) with deterministic reason codes; actuation now evaluates this gate in `client/runtime/systems/actuation/actuation_executor.ts` before execution and blocks fail-closed when containment is active; merge + contract checks now assert lane presence (`client/runtime/systems/security/merge_guard.ts`, `client/runtime/systems/spine/contract_check.ts`). / V3-SK-001, V3-FCH-002, V3-033, V3-034, V3-VENOM-000 / 10 / 0/1/2/client/adapter",
+      "section": "Selective Copying Hardening (Skin Protection Layer)",
+      "score": 370,
+      "evidenceCount": 10,
+      "nonBacklogEvidenceCount": 8,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 140,
+      "id": "V3-TASK-002",
+      "status": "in_progress",
+      "upgrade": "Task Decomposition Live Execution Handoff",
+      "why": "Task decomposition currently labels non-shadow outcomes but only emits profiles/queues; it does not execute decomposed micro-tasks.",
+      "exitCriteria": "`client/runtime/systems/execution/task_decomposition_primitive.ts` now adds an apply-time handoff lane that dispatches eligible micro-task profiles to governed executors with per-task dispatch status + receipts (`task_micro_execution_dispatch`) while keeping queue-only behavior in shadow mode; policy/config wiring added and validated in `tests/client-memory-tools/task_decomposition_primitive.test.js`.",
+      "section": "Holo-viz Track (Separated from Core Protheus)",
+      "score": 370,
+      "evidenceCount": 13,
+      "nonBacklogEvidenceCount": 9,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 141,
+      "id": "V3-USE-001",
+      "status": "in_progress",
+      "upgrade": "[extension / V3] First-Run Onboarding Doctor (`protheus init`)",
+      "why": "Initial setup complexity still requires too much manual context",
+      "exitCriteria": "Add guided first-run doctor that validates identity, terms ack, secret/provider readiness, policy prerequisites, and returns deterministic ready/not-ready status with remediation steps / 7 / 1/2/client/adapter Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
+      "section": "OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28)",
+      "score": 370,
+      "evidenceCount": 12,
+      "nonBacklogEvidenceCount": 8,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 142,
+      "id": "V3-VENOM-004",
+      "status": "in_progress",
+      "upgrade": "Timed Lease Decay + Deterministic Lockout",
+      "why": "Stolen copies function normally for a policy-defined period, then gradually lose capabilities in a predictable way",
+      "exitCriteria": "Implemented policy-defined stealth lease windows (timed lease stealth window hours) that defer staged hit escalation, followed by deterministic ramp (tease -> challenge -> degrade -> lockout) with cooldown lockout timers and session state persistence in `state/security/venom_containment/*`. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_venom_004_anchor.ts`. / V3-CPY-001, V3-CPY-004, V3-ENT-001 / 7 / 1/2/client/adapter",
+      "section": "Poison Dart Frog Defensive Layer (Active Internal Containment, Defensive-Only)",
+      "score": 370,
+      "evidenceCount": 20,
+      "nonBacklogEvidenceCount": 14,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 143,
+      "id": "V3-XAI-002",
+      "status": "in_progress",
+      "upgrade": "[primitive-upgrade / V3] Dynamic Memory Embedding Adapter (session-bounded) Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_xai_002_anchor.ts`.",
+      "why": "Introduces task-specific short-horizon adaptation without unsafe permanent weight drift",
+      "exitCriteria": "Delivered via `client/runtime/systems/memory/dynamic_memory_embedding_adapter.ts` + `client/runtime/config/dynamic_memory_embedding_policy.json`; session-bounded adapter updates are policy-capped and auditable with deterministic receipts/state, including rollback-safe semantics; validated by `tests/client-memory-tools/dynamic_memory_embedding_adapter.test.js`. / 7 / 1/2/client/adapter",
+      "section": "X AI Feature Abstraction Intake (Normalized, 2026-02-27)",
+      "score": 370,
+      "evidenceCount": 29,
+      "nonBacklogEvidenceCount": 19,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 144,
+      "id": "V3-XAI-002",
+      "status": "in_progress",
+      "upgrade": "[dependency-anchor / V3] Legacy dependency anchor (V3-XAI-002)",
+      "why": "This prerequisite ID is referenced by active backlog rows but was not present in canonical registry rows after parsing.",
+      "exitCriteria": "Canonical anchor added so dependency checks can verify this prerequisite as satisfied; no new execution lane is required and rollback remains the original upstream lane fallback. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_xai_002_anchor.ts`. / / 7 / 1/2/client/adapter",
+      "section": "Backlog Registry Normalization (2026-03-03)",
+      "score": 370,
+      "evidenceCount": 29,
+      "nonBacklogEvidenceCount": 19,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 145,
+      "id": "V3-XAI-004",
+      "status": "in_progress",
+      "upgrade": "[extension / V3] Motivational State Vector Extension (advisory-only)",
+      "why": "Improves prioritization/routing by injecting bounded internal drive signals without coercive behavior",
+      "exitCriteria": "Delivered via `client/runtime/systems/autonomy/motivational_state_vector.ts` + `client/runtime/config/motivational_state_vector_policy.json`; advisory-only drive vector emits auditable receipts/latest state and remains non-coercive/governance-subordinate; validated by `tests/client-memory-tools/motivational_state_vector.test.js`. / 7 / 1/2/client/adapter",
+      "section": "X AI Feature Abstraction Intake (Normalized, 2026-02-27)",
+      "score": 370,
+      "evidenceCount": 10,
+      "nonBacklogEvidenceCount": 6,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 146,
+      "id": "V3-XAI-006",
+      "status": "in_progress",
+      "upgrade": "[hardening / V3] Source Attestation Hardening Extension",
+      "why": "Improves trust at data-ingestion edge by attaching verifiable upstream provenance signals",
+      "exitCriteria": "Delivered via `client/runtime/systems/assimilation/source_attestation_extension.ts` + `client/runtime/config/source_attestation_extension_policy.json`; source attestation records/proofs and trust scoring are persisted with deterministic receipts/latest state for downstream degraded-confidence handling; validated by `tests/client-memory-tools/source_attestation_extension.test.js`. / 7 / 1/2/client/adapter",
+      "section": "X AI Feature Abstraction Intake (Normalized, 2026-02-27)",
+      "score": 370,
+      "evidenceCount": 13,
+      "nonBacklogEvidenceCount": 7,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 147,
+      "id": "V4-CLEAN-002",
+      "status": "in_progress",
+      "upgrade": "[hygiene / V4] Helix codex surface hardening without runtime break",
+      "why": "`codex.helix` is runtime-governed identity/config surface, not disposable editor config.",
+      "exitCriteria": "Keep helix runtime contract intact while introducing a public-facing alias/mapping path and updated docs/client/contracts; all helix admission/controller tests pass and `docs_surface_contract` + `root_surface_contract` remain green; no direct break of existing `codex.helix` readers. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v4_clean_002_anchor.ts`. / V4-CLEAN-001 / 6 / 1/2/client",
+      "section": "V4 Cleanup Track (Corrected Grok Intake, 2026-03-02)",
+      "score": 370,
+      "evidenceCount": 17,
+      "nonBacklogEvidenceCount": 13,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 148,
+      "id": "V4-ETH-002",
+      "status": "in_progress",
+      "upgrade": "[primitive-upgrade / V4] Flux-State Memory Substrate",
+      "why": "Memory remains predominantly static/hierarchical, which limits adaptive reconfiguration and dynamic topology optimization under changing workload patterns.",
+      "exitCriteria": "Implement flux-state memory operations (migrate/merge/split/dissolve) with inversion-engine-guided policies, preserve auditability via lineage receipts, and enforce correctness parity against baseline retrieval semantics under replay tests. Rollback by restoring canonical hierarchical memory adapter profile and disabling flux transitions behind feature flag. / V3-RACE-065, V4-SCI-008, V4-SELF-001 / 6 / 1/2/client/adapter",
+      "section": "Ethereal Runtime Program (Google Doc Intake 2026-03-03)",
+      "score": 370,
+      "evidenceCount": 28,
+      "nonBacklogEvidenceCount": 22,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 149,
+      "id": "V4-FORT-003",
+      "status": "in_progress",
+      "upgrade": "[governance / V4] Documentation Program Hardening (Ownership + Cadence + Decision Trails)",
+      "why": "Docs breadth is high but program-level ownership and review cadence are not surfaced as a unified artifact.",
+      "exitCriteria": "Add documentation governance model (owners, review cadence, artifact tiers), ADR usage guidance, and doc freshness process with auditable update receipts linked to backlog/release cycles. / V3-RACE-127, V4-UX-003 / 6 / 1/2/client",
+      "section": "V4 Empty Fort Artifact Program (Operator Directive, 2026-03-02)",
+      "score": 370,
+      "evidenceCount": 25,
+      "nonBacklogEvidenceCount": 19,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 150,
+      "id": "V4-FORT-004",
+      "status": "in_progress",
+      "upgrade": "[governance / V4] History Cleanliness Program (Changelog + Release Discipline + Commit Hygiene)",
+      "why": "Repo history and release narration can drift without one explicit cleanliness policy and changelog contract.",
+      "exitCriteria": "Add canonical changelog policy and release-note workflow, define non-rewrite default history discipline, and enforce merge hygiene checklist for artifact-heavy changes; surface in contributing docs and PR templates. / V4-UX-003, V1H-002 / 6 / 1/2/client",
+      "section": "V4 Empty Fort Artifact Program (Operator Directive, 2026-03-02)",
+      "score": 370,
+      "evidenceCount": 25,
+      "nonBacklogEvidenceCount": 19,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 151,
+      "id": "V4-MIGR-001",
+      "status": "in_progress",
+      "upgrade": "[migration / V4] Core Migration Bridge + Workspace Port Command",
+      "why": "Repo/org migration without first-class tooling risks user friction, state loss, and trust erosion.",
+      "exitCriteria": "Implement `client/runtime/systems/migration/bridge.rs` plus `protheusctl migrate --to <org/repo> [--workspace=<name>]` to move remotes, backup state, transfer client/runtime/config/client/cognition/habits/vault/client/memory/scientific receipts, and emit signed migration receipts with rollback-safe checkpoints. / V4-FORT-006, V4-SELF-001 / 7 / 0/1/2/client/adapter",
+      "section": "V4 Migration & Ecosystem Porting Track (Google Doc `16j8PyjyYt3CpzfR11jpQkG3fAhIPifQBUlBO_pYxfR0`, 2026-03-02)",
+      "score": 370,
+      "evidenceCount": 39,
+      "nonBacklogEvidenceCount": 29,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 152,
+      "id": "V4-PKG-001",
+      "status": "in_progress",
+      "upgrade": "[extension / V4] FluxLattice Standalone Crate + CLI Surface",
+      "why": "Core settle/flux capabilities are currently embedded in the monorepo runtime, which limits reuse, external adoption, and clean substrate packaging.",
+      "exitCriteria": "Create `core/layer0/fluxlattice` with stable APIs for settle/morph/flux ops and ship `fluxlattice` CLI (`init`, `settle`, `morph`, `status`) wired to existing receipt and covenant contracts. Verify via cargo workspace client/runtime/build/tests plus parity checks against equivalent `protheusctl` flows with signed receipts. Rollback by disabling crate integration paths and restoring canonical runtime-only command surface. / V4-SETTLE-006, V4-SETTLE-007, V4-RUST-003 / 10 / 0/1/2/client",
+      "section": "Packaging & Lens Opacity Program (Google Doc Intake 2026-03-03)",
+      "score": 370,
+      "evidenceCount": 36,
+      "nonBacklogEvidenceCount": 28,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 153,
+      "id": "V4-PKG-002",
+      "status": "in_progress",
+      "upgrade": "[launch-polish / V4] Internal Tool Framing Pack (`README` + `CHANGELOG` + `internal-ci`)",
+      "why": "Packaging currently lacks coherent \"mature internal tool\" release artifacts, weakening perception and onboarding clarity for FluxLattice as a reusable substrate.",
+      "exitCriteria": "Add FluxLattice packaging docs/client/artifacts: standalone README positioning, multi-version CHANGELOG timeline, and `.github/workflows/internal-ci.yml` placeholder aligned with repository standards. Verify via docs-surface contract checks and link integrity tests with receipt output. Rollback by reverting to neutral/public framing profile while preserving technical packaging structure. / V4-PKG-001, V4-FORT-007, V4-AESTHETIC-002 / 6 / 1/2/client",
+      "section": "Packaging & Lens Opacity Program (Google Doc Intake 2026-03-03)",
+      "score": 370,
+      "evidenceCount": 35,
+      "nonBacklogEvidenceCount": 27,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 154,
+      "id": "V4-PKG-005",
+      "status": "in_progress",
+      "upgrade": "[extension / V4] LensMap Boilerplate Simplification Suite",
+      "why": "LensMap does not yet provide project scaffolding and template acceleration expected of a mature internal toolchain utility.",
+      "exitCriteria": "Add scaffold/template workflow (`lensmap init <project>`, `lensmap template add <type>`, `lensmap simplify`, `lensmap polish`) with generated lens files, policy-aware defaults, and non-breaking output contracts. Verify via scaffold golden tests, template parity checks, and receipt-linked simplification runs under hidden/minimal/full modes. Rollback by feature-gating scaffold/template commands off and reverting to baseline LensMap core command set. / V4-PKG-004, V4-LENS-006 / 6 / 1/2/client",
+      "section": "LensMap Standalone Suite Program (Google Doc Intake 2026-03-03)",
+      "score": 370,
+      "evidenceCount": 35,
+      "nonBacklogEvidenceCount": 27,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 155,
+      "id": "V4-RUST-003",
+      "status": "in_progress",
+      "upgrade": "[hardening / V4] Cargo Workspace Professionalization + Rust CI Quality Signal",
+      "why": "Rust credibility and maintainability are weakened without one disciplined workspace, explicit MSRV/toolchain policy, and first-class CI evidence.",
+      "exitCriteria": "Implemented Rust workspace quality gate in `client/runtime/systems/ops/rust_workspace_quality_gate.ts` enforcing manifest/toolchain/doc presence with policy-gated cargo command checks and deterministic status/receipts. Verified by `tests/client-memory-tools/rust_workspace_quality_gate.test.js`. / V4-RUST-001, V3-RACE-230, V3-RACE-043 / 9 / 1/2",
+      "section": "V4 Rust Acceleration Track (Grok Intake Normalized, 2026-03-02)",
+      "score": 370,
+      "evidenceCount": 50,
+      "nonBacklogEvidenceCount": 34,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 156,
+      "id": "V4-RUST-003",
+      "status": "in_progress",
+      "upgrade": "[status-reconciliation / V4] Cargo Workspace Professionalization + Rust CI Quality Signal",
+      "why": "Code and regression evidence are present but registry status remained queued, which blocked dependent queue execution.",
+      "exitCriteria": "Implemented Rust workspace quality gate in `client/runtime/systems/ops/rust_workspace_quality_gate.ts` enforcing manifest/toolchain/doc presence with policy-gated cargo command checks and deterministic status/receipts. Verified by `tests/client-memory-tools/rust_workspace_quality_gate.test.js`. / / 9 / 1/2",
+      "section": "Backlog Registry Normalization (2026-03-03)",
+      "score": 370,
+      "evidenceCount": 50,
+      "nonBacklogEvidenceCount": 34,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 157,
+      "id": "V4-SCI-001",
+      "status": "in_progress",
+      "upgrade": "[scientific / V4] Scientific method core primitive",
+      "why": "Scientific reasoning is currently distributed across multiple lanes without one typed loop contract.",
+      "exitCriteria": "Add a first-class scientific loop engine (`observe -> question -> hypothesize -> predict -> experiment -> analyze -> conclude -> iterate`) with typed step contracts and signed receipts; verify with deterministic unit/integration tests and receipt replay checks; rollback by feature-gating to existing research lane behavior. Evidence: `client/runtime/systems/science/scientific_method_loop.ts`. / / 6 / 1/2/client",
+      "section": "V4 Scientific Method Track (Grok Intake Normalized, 2026-03-02)",
+      "score": 370,
+      "evidenceCount": 55,
+      "nonBacklogEvidenceCount": 39,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 158,
+      "id": "V4-SCI-005",
+      "status": "in_progress",
+      "upgrade": "[scientific / V4] Autonomous long-horizon experiment scheduler",
+      "why": "High-value hypotheses lack a governed, reversible scheduling lane for consent-gated experiment execution.",
+      "exitCriteria": "Add background experiment scheduler that prioritizes hypotheses by VOI + risk, enforces sandbox + consent timeout-default-deny, emits full scientific receipt chains, verifies scheduling/rollback behavior with integration tests, and supports explicit rollback to no-op scheduling mode. Evidence: `client/runtime/systems/science/experiment_scheduler.ts`. / V4-SCI-002, V4-SCI-004 / 6 / 1/2/client",
+      "section": "V4 Scientific Method Track (Grok Intake Normalized, 2026-03-02)",
+      "score": 370,
+      "evidenceCount": 24,
+      "nonBacklogEvidenceCount": 18,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 159,
+      "id": "V4-SCI-006",
+      "status": "in_progress",
+      "upgrade": "[scientific / V4] Meta-science + active learning loop",
+      "why": "The scientific stack lacks continuous self-evaluation of reasoning quality and uncertainty-reduction data planning.",
+      "exitCriteria": "Add meta-science lane that scores calibration/bias/method effectiveness, runs active-learning data requests for high-impact uncertainty, and proposes new primitive candidates as governed suggestions; verify with deterministic quality metrics/tests and audit receipts; rollback by disabling meta loop while preserving core scientific execution. Evidence: `client/runtime/systems/science/meta_science_active_learning_loop.ts`. / V4-SCI-001, V4-SCI-002, V4-SCI-005 / 6 / 1/2/client",
+      "section": "V4 Scientific Method Track (Grok Intake Normalized, 2026-03-02)",
+      "score": 370,
+      "evidenceCount": 24,
+      "nonBacklogEvidenceCount": 18,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 160,
+      "id": "V4-SCI-008",
+      "status": "in_progress",
+      "upgrade": "[scientific / V4] Enhanced reasoning mirror for Phase-1 UI",
+      "why": "Operators still need richer confidence calibration and disconfirming-evidence visibility before scientific-mode default promotion.",
+      "exitCriteria": "Upgrade reasoning mirror with real-time calibration metrics, uncertainty charts, explicit \"what would change my mind\" evidence targets, and one-click suggested experiment routing through consent-gated scheduler; verify UI + receipt linkage tests and rollback by disabling enhanced panel features behind the scientific flag. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v4_sci_008_anchor.ts`. / V4-SCI-003, V4-SCI-005, V4-SCI-006, V4-SCI-007 / 6 / 1/2/client",
+      "section": "V4 Scientific Method Track (Grok Intake Normalized, 2026-03-02)",
+      "score": 370,
+      "evidenceCount": 42,
+      "nonBacklogEvidenceCount": 30,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 161,
+      "id": "V4-SUITE-002",
+      "status": "in_progress",
+      "upgrade": "[extension / V4] `protheus-mem` Long-Memory CLI Surface",
+      "why": "Memory runtime exists but lacks a first-class standalone operator/developer CLI for recall, compression, and sync primitives.",
+      "exitCriteria": "Deliver `protheus-mem` CLI (`recall`, `compress`, `sync`) as a thin governed layer over canonical memory runtime with Ebbinghaus scheduling hooks and audit receipts. Verify via memory parity tests and compression non-regression checks; rollback by disabling wrapper and preserving canonical memory lane commands. / V3-RACE-023, V4-SCI-008, V4-PKG-003 / 6 / 1/2/client Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
+      "section": "Productized CLI Suite Program (Google Doc Intake 2026-03-03)",
+      "score": 370,
+      "evidenceCount": 20,
+      "nonBacklogEvidenceCount": 16,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 162,
+      "id": "V4-SUITE-006",
+      "status": "in_progress",
+      "upgrade": "[hardening / V4] `protheus-redlegion` Adversarial Operations CLI",
+      "why": "Adversarial/red-team capabilities are fragmented across defense lanes without a unified operator CLI for controlled mission lifecycle management.",
+      "exitCriteria": "Deliver `protheus-redlegion` CLI for mission launch/observe/terminate with strict covenant gating, blast-radius limits, and cinematic evidence receipts. Verify via red-team simulation suites and mission rollback drills; rollback by feature-gating standalone interface and preserving existing defense lane triggers. / V3-RACE-DEF-027, V3-RACE-DEF-031B, V4-PKG-003 / 6 / 1/2/client",
+      "section": "Productized CLI Suite Program (Google Doc Intake 2026-03-03)",
+      "score": 370,
+      "evidenceCount": 19,
+      "nonBacklogEvidenceCount": 15,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 163,
+      "id": "V4-SUITE-007",
+      "status": "in_progress",
+      "upgrade": "[extension / V4] `protheus-forge` Productization Uplift",
+      "why": "Forge capabilities exist but are not packaged as a consistent standalone productized CLI with contract and policy parity to the rest of the suite.",
+      "exitCriteria": "Enhance forge lane into `protheus-forge` CLI with stable command surface, receipt output schema, and package-quality docs/client/tests/contracts aligned to suite standards. Verify via command-registry contract tests and forge workflow regression checks; rollback by retaining existing forge entrypoints as canonical fallback. / V4-SCI-006, V4-PKG-001, V4-PKG-003 / 6 / 1/2/client",
+      "section": "Productized CLI Suite Program (Google Doc Intake 2026-03-03)",
+      "score": 370,
+      "evidenceCount": 12,
+      "nonBacklogEvidenceCount": 10,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 164,
+      "id": "V4-SUITE-008",
+      "status": "in_progress",
+      "upgrade": "[launch-polish / V4] `protheus-bootstrap` Scaffolding CLI",
+      "why": "New-project bootstrapping is not yet exposed as a polished standalone command path, increasing setup friction and inconsistency across projects.",
+      "exitCriteria": "Deliver `protheus-bootstrap` CLI that generates policy-compliant project skeletons (contracts/tests/CI/hooks) with configurable templates and receipt-logged initialization. Verify via golden-template tests and bootstrap reproducibility checks; rollback by disabling standalone bootstrap and reverting to existing onboarding scaffolds. / V4-UX-001, V4-PKG-003, V4-PKG-005 / 6 / 1/2/client",
+      "section": "Productized CLI Suite Program (Google Doc Intake 2026-03-03)",
+      "score": 370,
+      "evidenceCount": 12,
+      "nonBacklogEvidenceCount": 10,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 165,
+      "id": "V4-SUITE-010",
+      "status": "in_progress",
+      "upgrade": "[launch-polish / V4] `protheus-soul` Public Export Mode",
+      "why": "Soul/identity outputs are internal-first and lack a governed public export mode for controlled external-facing narrative surfaces.",
+      "exitCriteria": "Add `protheus-soul` export modes with strict redaction policies, provenance receipts, and configurable disclosure levels that preserve covenant/security constraints. Verify via redaction snapshot tests and policy compliance checks; rollback by forcing internal-only soul output mode. / V4-ILLUSION-001, V4-AESTHETIC-002, V4-PKG-003 / 6 / 1/2/client Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
+      "section": "Productized CLI Suite Program (Google Doc Intake 2026-03-03)",
+      "score": 370,
+      "evidenceCount": 13,
+      "nonBacklogEvidenceCount": 11,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 166,
+      "id": "V4-UX-003",
+      "status": "in_progress",
+      "upgrade": "[launch-polish / V4] Public docs + developer experience overhaul",
+      "why": "Public docs and contributor onboarding still have discoverability/polish gaps versus launch positioning goals.",
+      "exitCriteria": "Upgrade README/architecture/docs/client/help/developer guides so a new contributor can ship first custom lane in under 10 minutes, verify via docs-coverage + onboarding checks, and rollback by preserving previous docs snapshots and link-redirect compatibility. Evidence: `client/runtime/systems/ops/public_docs_developer_experience_overhaul.ts`. / V4-UX-001, V3-RACE-127 / 6 / 1/2/client",
+      "section": "V4 Launch Polish Track (Google Doc `19aVNHH1MHRDd6nmpuakTv14Hi36jaL1O9JTS7ep7MUE`, 2026-03-02)",
+      "score": 370,
+      "evidenceCount": 45,
+      "nonBacklogEvidenceCount": 33,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 167,
+      "id": "V5-HOLD-005",
+      "status": "in_progress",
+      "upgrade": "[hardening / V5] Budget Burst Smoothing + Autopause Prevention",
+      "why": "Autopause-triggered budget holds still appear in the window when burn bursts exceed pacing controls, increasing hold churn and forcing hard stops.",
+      "exitCriteria": "Add token-burst smoothing and budget preflight pacing in the route path, with proactive deferral when projected burn crosses guard bands; emit budget-pressure receipts and enforce rollback-safe bypass policy for emergency-only mode. Success criteria: keep budget-hold rate below 0.05 for 30 consecutive days. / V5-HOLD-003, V4-SCALE-010 / 6 / 1/2/client",
+      "section": "Hold-Rate Reduction Program (2026-03-03)",
+      "score": 370,
+      "evidenceCount": 13,
+      "nonBacklogEvidenceCount": 11,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 168,
+      "id": "V6-ALIVE-001.2",
+      "status": "in_progress",
+      "upgrade": "Confidence-Gated Autophagy Auto-Approval + Rollback Window",
+      "why": "Self-optimization proposals stall for days because every proposal waits on manual approval even when confidence and rollback posture are strong.",
+      "exitCriteria": "Add auto-approval policy for bounded proposal classes with configurable thresholds (`min_confidence`, historical success floor, max impact score, exclusions), supervised delayed-commit flow, and automatic rollback/regret-issue creation on degradation; high-confidence proposals execute within a bounded rollback window and emit approval/rollback receipts.",
+      "section": "Protheus 2.0 “Instrumented Aliveness” Intake (Source: `proposals/protheus_optimization_v2.md`, AGE-10, 2026-03-10)",
+      "score": 370,
+      "evidenceCount": 5,
+      "nonBacklogEvidenceCount": 3,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 169,
+      "id": "V6-F100-002",
+      "status": "in_progress",
+      "upgrade": "[governance / V6] SDLC Change-Control Plane (RFC/ADR/Risk Class)",
+      "why": "High-risk changes still rely on mixed conventions rather than one deterministic approval and traceability flow.",
+      "exitCriteria": "Added Rust lane `protheus-ops sdlc-change-control run / status` (`core/layer0/ops/src/sdlc_change_control.rs`) with policy `client/runtime/config/sdlc_change_control_policy.json`; merge gate workflow `.github/workflows/sdlc-change-control.yml` fail-closes PRs when risk class is understated or required RFC/ADR/approver/rollback evidence is missing. PR template now captures required fields (`.github/pull_request_template.md`) and receipts are persisted in `state/ops/sdlc_change_control/`. / 10 / 0/1/2/client",
+      "section": "Fortune-100 Software Readiness Path (Queued, 2026-03-03)",
+      "score": 370,
+      "evidenceCount": 47,
+      "nonBacklogEvidenceCount": 37,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 170,
+      "id": "V6-F100-003",
+      "status": "in_progress",
+      "upgrade": "[hardening / V6] Secure Supply-Chain Provenance v2 (SBOM + Signed Artifacts)",
+      "why": "Dependency and artifact trust posture exists but is not yet one end-to-end provenance contract visible at release time.",
+      "exitCriteria": "Added Rust gate `protheus-ops supply-chain-provenance-v2 run / status` (`core/layer0/ops/src/supply_chain_provenance_v2.rs`) with policy `client/runtime/config/supply_chain_provenance_v2_policy.json`; release workflow now emits per-artifact SBOM/signature/vulnerability summary/provenance bundle and fail-closes before publish (`.github/workflows/release-security-artifacts.yml`) when signature/hash parity, vulnerability SLA, or rollback-to-last-known-good contract is violated. / 10 / 0/1/2/client",
+      "section": "Fortune-100 Software Readiness Path (Queued, 2026-03-03)",
+      "score": 370,
+      "evidenceCount": 48,
+      "nonBacklogEvidenceCount": 34,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 171,
+      "id": "V6-F100-005",
+      "status": "in_progress",
+      "upgrade": "[scale-readiness / V6] 1M-User Performance Certification Harness",
+      "why": "Scale-readiness lanes exist, but no single certification harness proves sustained 1M-user target behavior with promotion gates.",
+      "exitCriteria": "Implemented in `core/layer0/ops/src/f100_readiness_program.rs` lane `V6-F100-005` with profile budgets (`client/runtime/config/one_million_performance_profile.json`) and strict receipts under `state/ops/f100_readiness_program/`. / V6-F100-001, V6-F100-003 / 10 / 0/1/2/client",
+      "section": "Fortune-100 Software Readiness Path (Queued, 2026-03-03)",
+      "score": 370,
+      "evidenceCount": 38,
+      "nonBacklogEvidenceCount": 32,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 172,
+      "id": "V6-F100-021",
+      "status": "in_progress",
+      "upgrade": "Memory continuity index rebuild run",
+      "why": "Session continuity quality degraded when index freshness drifted.",
+      "exitCriteria": "`node scripts/memory/rebuild_exclusive.ts` completes and regenerates memory index artifacts without archive leakage.",
+      "section": "Production-Grade Checklist Addendum (2026-03-06)",
+      "score": 370,
+      "evidenceCount": 10,
+      "nonBacklogEvidenceCount": 8,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 173,
+      "id": "V6-F100-029",
+      "status": "in_progress",
+      "upgrade": "Golden dataset + property-style router regression pack",
+      "why": "Large-scale migrations need deterministic behavioral guardrails beyond ad hoc spot checks.",
+      "exitCriteria": "`core/layer0/ops/tests/golden/model_router_cases.json` + `core/layer0/ops/tests/model_router_golden_regression.rs` enforce golden role/capability/tier outputs and property-style invariants across generated inputs.",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "score": 370,
+      "evidenceCount": 10,
+      "nonBacklogEvidenceCount": 8,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 174,
+      "id": "V6-F100-030",
+      "status": "in_progress",
+      "upgrade": "Deterministic router offline fallback plan output",
+      "why": "Multi-model resilience must be explicit in receipts, not implicit in runtime assumptions.",
+      "exitCriteria": "`core/layer0/ops/src/model_router.rs` now emits `route_plan` with `provider_online`, `preferred_model`, `fallback_model`, `selected_model`, and `fallback_applied`.",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "score": 370,
+      "evidenceCount": 10,
+      "nonBacklogEvidenceCount": 8,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 175,
+      "id": "V6-F100-033",
+      "status": "in_progress",
+      "upgrade": "Release/security automation baseline uplift",
+      "why": "Production trust requires deterministic release drafting and recurring dependency/security audits.",
+      "exitCriteria": "Added `.github/workflows/release.yml` (draft release automation) and `.github/workflows/security-audit.yml` (`npm audit` + `cargo audit`) while preserving existing SBOM release workflow.",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "score": 370,
+      "evidenceCount": 14,
+      "nonBacklogEvidenceCount": 10,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 176,
+      "id": "V6-F100-A-007",
+      "status": "in_progress",
+      "upgrade": "Executable A+ procurement readiness scorecard gate",
+      "why": "Fortune-100 A+ posture needs one deterministic gate that continuously reports hard blockers vs procurement expectations.",
+      "exitCriteria": "Added `client/runtime/systems/ops/f100_a_plus_readiness_gate.ts` with status artifact `docs/client/ops/F100_A_PLUS_READINESS_STATUS.md`, npm scripts, regression test, and CI workflow `.github/workflows/f100-a-plus-scorecard.yml` (non-blocking artifact mode). Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "score": 370,
+      "evidenceCount": 8,
+      "nonBacklogEvidenceCount": 3,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 177,
+      "id": "V6-F100-A-012",
+      "status": "in_progress",
+      "upgrade": "Release pipeline GA hardening (semantic versioning + signed artifacts + changelog + SBOM attach)",
+      "why": "Draft release automation exists, but A/A+ procurement expects deterministic GA release contracts and signed multi-artifact publication outputs every cycle.",
+      "exitCriteria": "`.github/workflows/release.yml` now runs `release_semver_contract` (conventional-commit semver), builds/signs Rust + npm artifacts, auto-writes release changelog notes, and attaches SPDX SBOM artifacts/signatures to release assets.",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "score": 370,
+      "evidenceCount": 10,
+      "nonBacklogEvidenceCount": 4,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 178,
+      "id": "V6-F100-A-013",
+      "status": "in_progress",
+      "upgrade": "Helm chart enterprise conformance hardening",
+      "why": "Baseline Helm packaging exists, but enterprise deployment review needs tested chart contracts for SSO/secrets/resource limits/multi-node and accelerator-aware scheduling.",
+      "exitCriteria": "`client/runtime/deploy/helm/protheus/` now includes enterprise `values.yaml` + templates for SSO, Vault/KMS metadata, daemon multi-node deployment/HPA/PDB, scheduling, and NVIDIA options, plus conformance test hook and CI workflow `.github/workflows/helm-conformance.yml` (`helm lint` + rendered conformance checks).",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "score": 370,
+      "evidenceCount": 5,
+      "nonBacklogEvidenceCount": 3,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 179,
+      "id": "V6-F100-A-014",
+      "status": "in_progress",
+      "upgrade": "Enterprise packaging + supply-chain hardening uplift",
+      "why": "A-grade adoption requires stronger packaging proofs across IaC, container posture, and dependency/security scanning than current baseline.",
+      "exitCriteria": "Terraform Helm module now exposes enterprise daemon/SSO/NVIDIA inputs; `Dockerfile` enforces `PROTHEUS_FIPS_MODE` contract; `.github/workflows/docker-supply-chain.yml` emits image SPDX SBOM; `.github/workflows/required-checks.yml` now includes Dependabot + CodeQL contract checks.",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "score": 370,
+      "evidenceCount": 6,
+      "nonBacklogEvidenceCount": 4,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 180,
+      "id": "V6-F100-A-015",
+      "status": "in_progress",
+      "upgrade": "Opt-in runtime telemetry contract (usage + crash/perf)",
+      "why": "Real-world usage evidence and production reliability loops require privacy-safe telemetry hooks instead of ad hoc/manual reporting.",
+      "exitCriteria": "Added `client/runtime/config/runtime_telemetry_policy.json` + `client/runtime/systems/observability/runtime_telemetry_optin.ts` for anonymous opt-in usage/crash/perf events with disable-by-default behavior; validated by `runtime_telemetry_optin.test.js` proving no emissions while disabled.",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "score": 370,
+      "evidenceCount": 6,
+      "nonBacklogEvidenceCount": 4,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 181,
+      "id": "V6-FORT-219-001",
+      "status": "in_progress",
+      "upgrade": "Consent-bound all-contributors ingestion lane",
+      "why": "Contributor-wall goals are currently ad hoc and can drift from verified consent/source records.",
+      "exitCriteria": "Added `scripts/add_contributors_from_csv.js` with schema-validated CSV intake (`github_username`, `role`, `consent_token`) and deterministic output to `.all-contributorsrc` plus `docs/client/community/contributors_manifest.json`; lane fail-closes on duplicates, malformed usernames, or missing consent tokens. Regression coverage: `tests/client-memory-tools/add_contributors_from_csv.test.js`.",
+      "section": "Contributor Signal Program Intake (Google Doc `19IXz6Rjbn9ltXJV-Me2P9oRZ3KLs3KV90VG3k_PdC7E`, 2026-03-08)",
+      "score": 370,
+      "evidenceCount": 7,
+      "nonBacklogEvidenceCount": 5,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 182,
+      "id": "V6-FORT-219-002",
+      "status": "in_progress",
+      "upgrade": "Co-author trailer automation with compliance guard",
+      "why": "Manual co-author trailer assembly is error-prone and can create invalid attribution or fabricated-credit risk.",
+      "exitCriteria": "Added `scripts/empty_fort_coauthor_inject.sh` with `--dry-run` default plus guarded `--apply` mode, strict consent/email validation (`@users.noreply.github.com`), evidence artifact emission under `state/ops/evidence/`, and fail-closed behavior on invalid rows. Regression coverage: `tests/client-memory-tools/empty_fort_coauthor_inject.test.js`.",
+      "section": "Contributor Signal Program Intake (Google Doc `19IXz6Rjbn9ltXJV-Me2P9oRZ3KLs3KV90VG3k_PdC7E`, 2026-03-08)",
+      "score": 370,
+      "evidenceCount": 6,
+      "nonBacklogEvidenceCount": 4,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 183,
+      "id": "V6-FORT-219-003",
+      "status": "in_progress",
+      "upgrade": "README + CONTRIBUTORS contract generator",
+      "why": "Launch messaging and contributor metadata are manually maintained and can become inconsistent across surfaces.",
+      "exitCriteria": "Added deterministic generator `scripts/generate_contributor_surfaces.js` that updates README contributor block (marker-scoped) and writes `CONTRIBUTORS.md` from one manifest source (`docs/client/community/contributors_manifest.json`). Regression coverage: `tests/client-memory-tools/generate_contributor_surfaces.test.js`.",
+      "section": "Contributor Signal Program Intake (Google Doc `19IXz6Rjbn9ltXJV-Me2P9oRZ3KLs3KV90VG3k_PdC7E`, 2026-03-08)",
+      "score": 370,
+      "evidenceCount": 5,
+      "nonBacklogEvidenceCount": 3,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 184,
+      "id": "V6-FORT-219-004",
+      "status": "in_progress",
+      "upgrade": "Launch visual telemetry workflow",
+      "why": "Contributor/commit signal badges are not currently produced as a release artifact bundle.",
+      "exitCriteria": "Added `.github/workflows/empty-fort-visuals.yml` that runs on release publish/manual dispatch and generates contributor/commit telemetry artifacts via `scripts/empty_fort_visuals.js`; artifacts are uploaded with immutable run IDs. Regression coverage: `tests/client-memory-tools/empty_fort_visuals.test.js`.",
+      "section": "Contributor Signal Program Intake (Google Doc `19IXz6Rjbn9ltXJV-Me2P9oRZ3KLs3KV90VG3k_PdC7E`, 2026-03-08)",
+      "score": 370,
+      "evidenceCount": 5,
+      "nonBacklogEvidenceCount": 3,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 185,
+      "id": "V6-FORT-219-005",
+      "status": "in_progress",
+      "upgrade": "Empty-fort integrity verification gate",
+      "why": "Contributor-signal execution lacks one strict gate proving legality/integrity before launch publication.",
+      "exitCriteria": "Added `scripts/verify-empty-fort.sh` and CI workflow `.github/workflows/empty-fort-verify.yml` enforcing consent manifest presence, placeholder/malformed identity rejection, noreply email validation, contributor threshold checks, and README claim-evidence marker consistency (`V4-FORT-006`). Regression coverage: `tests/client-memory-tools/verify_empty_fort.test.js`.",
+      "section": "Contributor Signal Program Intake (Google Doc `19IXz6Rjbn9ltXJV-Me2P9oRZ3KLs3KV90VG3k_PdC7E`, 2026-03-08)",
+      "score": 370,
+      "evidenceCount": 8,
+      "nonBacklogEvidenceCount": 6,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 186,
+      "id": "V6-FORT-219-006",
+      "status": "in_progress",
+      "upgrade": "Transparent post-launch pulse automation",
+      "why": "Post-launch activity shaping is not standardized and risks crossing integrity boundaries if not transparently constrained.",
+      "exitCriteria": "Added `scripts/empty_fort_pulse_scheduler.js` and policy `client/runtime/config/empty_fort_pulse_policy.json` enforcing service-account-only apply mode, daily PR caps, and immutable audit trail (`artifacts/empty-fort/pulse_audit.json`). Added workflow `.github/workflows/empty-fort-pulse.yml` for scheduled/manual execution and public disclosure in README governance section. Regression coverage: `tests/client-memory-tools/empty_fort_pulse_scheduler.test.js`.",
+      "section": "Contributor Signal Program Intake (Google Doc `19IXz6Rjbn9ltXJV-Me2P9oRZ3KLs3KV90VG3k_PdC7E`, 2026-03-08)",
+      "score": 370,
+      "evidenceCount": 5,
+      "nonBacklogEvidenceCount": 3,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 187,
+      "id": "V6-GAP-002",
+      "status": "in_progress",
+      "upgrade": "[hardening / V6] Coverage Uplift + Badge Gate",
+      "why": "Test credibility lacked a visible and automated coverage signal.",
+      "exitCriteria": "Vitest + `cargo llvm-cov` scripts and coverage CI workflow produce combined coverage artifact + badge with threshold gate (`>=75`). / V6-GAP-001 / 6 / 1/2/client",
+      "section": "Testing + Documentation + Installer Gap Closer (2026-03-06)",
+      "score": 370,
+      "evidenceCount": 8,
+      "nonBacklogEvidenceCount": 6,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 188,
+      "id": "V6-HOST-BUILD-STALE-001",
+      "status": "in_progress",
+      "upgrade": "Host Rust build-stall guard stabilization",
+      "why": "Local validation lanes were hanging or exiting ambiguously when `cargo` build scripts stalled under dyld/host contention.",
+      "exitCriteria": "`host_rust_validation` now supports deterministic host-stall deferral (`--defer-on-host-stall=1`) with explicit `raw_reason_code` and fixed shell-exit handling for deferred/success runs; guarded scripts (`ops:test:protheus-ops-core:attention`, `ops:test:execution-core:initiative`) now return auditable `reason_code=deferred_host_stall` instead of hanging. Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "score": 370,
+      "evidenceCount": 8,
+      "nonBacklogEvidenceCount": 3,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 189,
+      "id": "V6-LLMN-001",
+      "status": "in_progress",
+      "upgrade": "Canonical LLMN mode registry + alias normalization (`REQ-35`)",
+      "why": "Operator-facing modes drifted across wrappers and aliases (`standard/deep thinking/hyper creative`) causing runtime mismatch risk.",
+      "exitCriteria": "Canonical alias normalization is active in runtime mode resolver surfaces; verified by `tests/client-memory-tools/llmn_mode_conformance.test.js` and `tests/client-memory-tools/strategy_resolver.test.js`.",
+      "section": "LLMN Mode + Smart Memory Regression Shield (2026-03-09)",
+      "score": 370,
+      "evidenceCount": 17,
+      "nonBacklogEvidenceCount": 5,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 190,
+      "id": "V6-LLMN-002",
+      "status": "in_progress",
+      "upgrade": "Router/strategy parity for all LLMN modes (`REQ-35`)",
+      "why": "Mode behavior can silently diverge between router and strategy surfaces without one parity contract.",
+      "exitCriteria": "Router + strategy parity contract is enforced and normalized mode receipts are stable; verified by `tests/client-memory-tools/model_router_routing_features.test.js` and `tests/client-memory-tools/model_router_variant_policy.test.js`.",
+      "section": "LLMN Mode + Smart Memory Regression Shield (2026-03-09)",
+      "score": 370,
+      "evidenceCount": 7,
+      "nonBacklogEvidenceCount": 5,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 191,
+      "id": "V6-LLMN-003",
+      "status": "in_progress",
+      "upgrade": "Mode-critical CLI entrypoint path restoration (`REQ-35`)",
+      "why": "Recent refactors left stale wrapper/path references (`client/systems/*`, missing TS peer files) that break mode operations.",
+      "exitCriteria": "Mode-critical wrappers resolve through active runtime paths and stale alias roots are guarded; verified by `tests/client-memory-tools/legacy_path_alias_adapters.test.js`.",
+      "section": "LLMN Mode + Smart Memory Regression Shield (2026-03-09)",
+      "score": 370,
+      "evidenceCount": 7,
+      "nonBacklogEvidenceCount": 4,
+      "todoUnchecked": false,
+      "validationCommandsResolved": 0,
+      "validationCommandsUnresolved": [],
+      "regression": {
+        "severity": "pass",
+        "findings": []
+      }
+    },
+    {
+      "rank": 192,
+      "id": "V6-LLMN-004",
+      "status": "in_progress",
+      "upgrade": "LLMN conformance smoke pack + CI gate (`REQ-35`)",
+      "why": "Mode regressions recur because they are not continuously validated as one contract.",
+      "exitCriteria": "Deterministic end-to-end conformance pack is active and passing (`llmn_mode_conformance`, router/strategy/path tests) with receipt-backed execution through core-authoritative lanes.",
+      "section": "LLMN Mode + Smart Memory Regression Shield (2026-03-09)",
+      "score": 370,
+      "evidenceCount": 7,
+      "nonBacklogEvidenceCount": 4,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -3664,15 +3664,15 @@
     },
     {
       "rank": 193,
-      "id": "V3-RACE-166",
+      "id": "V6-ORIGIN-002",
       "status": "in_progress",
-      "upgrade": "[extension / V3] A2A Delegation Plane (Agent-to-Agent Protocol Contracts)",
-      "why": "Cross-agent collaboration/delegation requires explicit contractized handoff semantics to avoid ad hoc bridge drift.",
-      "exitCriteria": "Implement `client/runtime/systems/a2a/a2a_delegation_plane.{ts,js}` + policy `client/runtime/config/a2a_delegation_policy.json`; user-specific trusted-peer preferences remain in `client/memory/federation/a2a/` with adaptive peer reliability scoring in `client/cognition/adaptive/federation/a2a/`; permanent delegation cards/handoff/auth contracts remain in `client/runtime/systems/a2a/` + `client/runtime/config/` with signed handoff receipts. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-166 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-166; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-147, V3-RACE-165, V3-RACE-031 / 7 / 1/2/client/adapter Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
+      "upgrade": "Conduit-only + constitution hardening gate in origin checks",
+      "why": "Infallible-origin claim requires enforced conduit boundary and constitution non-weakening prerequisites.",
+      "exitCriteria": "`origin-integrity run` now executes dependency-boundary guard checks and validates constitution guardian + resurrection + Merkle prerequisites before returning pass. Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
       "score": 370,
-      "evidenceCount": 49,
-      "nonBacklogEvidenceCount": 35,
+      "evidenceCount": 5,
+      "nonBacklogEvidenceCount": 3,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -3683,15 +3683,15 @@
     },
     {
       "rank": 194,
-      "id": "V3-RACE-171",
+      "id": "V6-ORIGIN-003",
       "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Cyclic Strategy Graph Runner (Governed State-Graph Execution)",
-      "why": "Complex long-running tasks need bounded cyclic graph execution contracts rather than ad hoc step chains.",
-      "exitCriteria": "Implement `client/runtime/systems/strategy/cyclic_strategy_graph_runner.{ts,js}` + policy `client/runtime/config/cyclic_strategy_graph_policy.json`; user-specific strategy graph preferences remain in `client/memory/strategy/graphs/` with adaptive transition weights in `client/cognition/adaptive/strategy/graphs/`; permanent graph runtime, node contracts, and guard rules remain in `client/runtime/systems/strategy/` + `client/runtime/config/`; includes deterministic cycle limits, retry budgets, and rollback receipts. / V2-009, V3-RACE-165, V3-RACE-167 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `1QrTZFUX6fbU0RVo8S_fIg6898igD8XxXhohRjNjRROQ`, 2026-03-02)",
+      "upgrade": "Receipt binding to exact safety-plane state",
+      "why": "Integrity receipts must be cryptographically tied to the exact root state at execution time.",
+      "exitCriteria": "Origin receipts now include `safety_plane_state_hash` and deterministic `state_binding_hash` derived from check outcomes + safety snapshot. Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
       "score": 370,
-      "evidenceCount": 48,
-      "nonBacklogEvidenceCount": 34,
+      "evidenceCount": 1,
+      "nonBacklogEvidenceCount": 3,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -3702,15 +3702,15 @@
     },
     {
       "rank": 195,
-      "id": "V3-RACE-171",
+      "id": "V6-ORIGIN-005",
       "status": "in_progress",
-      "upgrade": "[primitive-upgrade / V3] Cyclic Strategy Graph Runner (Governed State-Graph Execution)",
-      "why": "Complex long-running tasks need bounded cyclic graph execution contracts rather than ad hoc step chains.",
-      "exitCriteria": "Implement `client/runtime/systems/strategy/cyclic_strategy_graph_runner.{ts,js}` + policy `client/runtime/config/cyclic_strategy_graph_policy.json`; user-specific strategy graph preferences remain in `client/memory/strategy/graphs/` with adaptive transition weights in `client/cognition/adaptive/strategy/graphs/`; permanent graph runtime, node contracts, and guard rules remain in `client/runtime/systems/strategy/` + `client/runtime/config/`; includes deterministic cycle limits, retry budgets, and rollback receipts. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-171 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-171; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V2-009, V3-RACE-165, V3-RACE-167 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
+      "upgrade": "Seed bootstrap verification via `verify.sh` certificate",
+      "why": "Seed growth requires deterministic acceptance checks against origin verification artifacts.",
+      "exitCriteria": "Added root `verify.sh` plus `origin-integrity certificate` and `origin-integrity seed-bootstrap-verify --certificate=...` for verify-script and safety-state hash matching. Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
       "score": 370,
-      "evidenceCount": 48,
-      "nonBacklogEvidenceCount": 34,
+      "evidenceCount": 5,
+      "nonBacklogEvidenceCount": 3,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -3721,15 +3721,15 @@
     },
     {
       "rank": 196,
-      "id": "V3-RACE-172",
+      "id": "V6-PERS-SEAM-003",
       "status": "in_progress",
-      "upgrade": "[extension / V3] Hierarchical Memory View Plane (Core/Edit/Summary + Swap-Safe Summarization)",
-      "why": "Long-term coherence across model/provider swaps needs deterministic derived memory views, not only raw node stores.",
-      "exitCriteria": "Implement `client/runtime/systems/memory/hierarchical_memory_view_plane.{ts,js}` + policy `client/runtime/config/hierarchical_memory_view_policy.json`; user-specific view artifacts remain in `client/memory/views/` with adaptive view-selection heuristics in `client/cognition/adaptive/client/memory/views/`; permanent derivation/summarization contracts remain in `client/runtime/systems/memory/` + `client/runtime/config/`; model-swap path emits before/after parity receipts and bounded summary drift checks. / V3-RACE-161, V3-RACE-164, V3-RACE-020 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `1QrTZFUX6fbU0RVo8S_fIg6898igD8XxXhohRjNjRROQ`, 2026-03-02)",
+      "upgrade": "[extension / V6] Inversion Persona Feed Auto-Push (Policy-Gated)",
+      "why": "Inversion loop insights were not automatically enriching persona feeds, leaving persona context stale between manual feed updates.",
+      "exitCriteria": "Added optional policy-gated feed push path in `client/runtime/systems/autonomy/inversion_controller.ts` (`persona_lens_gate.feed_push`) that writes hash-verified `## System Passed` entries to persona feeds and emits feed-push receipts. Default remains off in `client/runtime/config/inversion_policy.json` for behavior-preserving rollout. Verified by `node tests/client-memory-tools/inversion_persona_lens_gate.test.js` with temp persona feed root + receipts checks. Rollback by setting `persona_lens_gate.feed_push.enabled=false` (default) or removing feed-push hook path. / V4-SELF-001, V6-PERS-SEAM-001 / 6 / 1/2/client",
+      "section": "Persona Seamless Workflow Integration Pack (2026-03-03)",
       "score": 370,
-      "evidenceCount": 75,
-      "nonBacklogEvidenceCount": 51,
+      "evidenceCount": 10,
+      "nonBacklogEvidenceCount": 8,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -3740,15 +3740,15 @@
     },
     {
       "rank": 197,
-      "id": "V3-RACE-172",
+      "id": "V6-PRIM-001",
       "status": "in_progress",
-      "upgrade": "[extension / V3] Hierarchical Memory View Plane (Core/Edit/Summary + Swap-Safe Summarization)",
-      "why": "Long-term coherence across model/provider swaps needs deterministic derived memory views, not only raw node stores.",
-      "exitCriteria": "Implement `client/runtime/systems/memory/hierarchical_memory_view_plane.{ts,js}` + policy `client/runtime/config/hierarchical_memory_view_policy.json`; user-specific view artifacts remain in `client/memory/views/` with adaptive view-selection heuristics in `client/cognition/adaptive/client/memory/views/`; permanent derivation/summarization contracts remain in `client/runtime/systems/memory/` + `client/runtime/config/`; model-swap path emits before/after parity receipts and bounded summary drift checks. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-172 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-172; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-161, V3-RACE-164, V3-RACE-020 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
+      "upgrade": "[primitive-upgrade / V6] Task Primitive Rust Completion",
+      "why": "Task scheduling authority must be Rust-native to keep kernel portability and deterministic gate enforcement.",
+      "exitCriteria": "`core/layer1/task` now owns deterministic task claim-evidence scheduling semantics with passing Rust validation (`cargo test -p task`) and no kernel-path TS authority dependence. / REQ-08-001 / 6 / 1/2/client",
+      "section": "Rust Core Primitive Source-Of-Truth Program (2026-03-06)",
       "score": 370,
-      "evidenceCount": 75,
-      "nonBacklogEvidenceCount": 51,
+      "evidenceCount": 10,
+      "nonBacklogEvidenceCount": 8,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -3759,15 +3759,15 @@
     },
     {
       "rank": 198,
-      "id": "V3-RACE-173",
+      "id": "V6-PRIM-002",
       "status": "in_progress",
-      "upgrade": "[extension / V3] Role-Based Crew Spawn Orchestrator (Shared Namespace Governance)",
-      "why": "Multi-agent role execution is higher leverage when template-driven and governed by explicit shared-state/clearance boundaries.",
-      "exitCriteria": "Implement `client/runtime/systems/spawn/role_based_crew_orchestrator.{ts,js}` + policy `client/runtime/config/role_based_crew_policy.json`; user-specific crew templates and collaboration preferences remain under `client/memory/crews/` with adaptive role-performance scoring in `client/cognition/adaptive/crews/`; permanent role orchestration, shared-namespace contracts, and clearance gates stay in `client/runtime/systems/spawn/` + `client/runtime/config/` with per-role audit receipts. / V3-RACE-145, V3-RACE-166, V3-RACE-171 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `1QrTZFUX6fbU0RVo8S_fIg6898igD8XxXhohRjNjRROQ`, 2026-03-02)",
+      "upgrade": "[primitive-upgrade / V6] Resource Primitive Rust Completion",
+      "why": "Resource quota/budget authority in TS introduces drift risk for kernel builds and policy auditability.",
+      "exitCriteria": "`core/layer1/resource` owns quota and allocation checks with deterministic Rust validation (`cargo test -p resource`); resource authority remains core-side. / REQ-08-001 / 6 / 1/2/client",
+      "section": "Rust Core Primitive Source-Of-Truth Program (2026-03-06)",
       "score": 370,
-      "evidenceCount": 28,
-      "nonBacklogEvidenceCount": 22,
+      "evidenceCount": 10,
+      "nonBacklogEvidenceCount": 8,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -3778,15 +3778,15 @@
     },
     {
       "rank": 199,
-      "id": "V3-RACE-173",
+      "id": "V6-PRIM-004",
       "status": "in_progress",
-      "upgrade": "[extension / V3] Role-Based Crew Spawn Orchestrator (Shared Namespace Governance)",
-      "why": "Multi-agent role execution is higher leverage when template-driven and governed by explicit shared-state/clearance boundaries.",
-      "exitCriteria": "Implement `client/runtime/systems/spawn/role_based_crew_orchestrator.{ts,js}` + policy `client/runtime/config/role_based_crew_policy.json`; user-specific crew templates and collaboration preferences remain under `client/memory/crews/` with adaptive role-performance scoring in `client/cognition/adaptive/crews/`; permanent role orchestration, shared-namespace contracts, and clearance gates stay in `client/runtime/systems/spawn/` + `client/runtime/config/` with per-role audit receipts. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-173 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-173; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. / V3-RACE-145, V3-RACE-166, V3-RACE-171 / 7 / 1/2/client/adapter",
-      "section": "Backlog Full Completion Sweep (2026-03-03)",
+      "upgrade": "[primitive-upgrade / V6] IPC Primitive Rust Completion",
+      "why": "IPC substrate remained scaffold-level and lacked deterministic Rust message policy checks.",
+      "exitCriteria": "`core/layer1/ipc` owns channel/message envelope validation with deterministic receipt hash behavior and tests. / REQ-08-001 / 6 / 1/2/client Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
+      "section": "Rust Core Primitive Source-Of-Truth Program (2026-03-06)",
       "score": 370,
-      "evidenceCount": 28,
-      "nonBacklogEvidenceCount": 22,
+      "evidenceCount": 9,
+      "nonBacklogEvidenceCount": 7,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
@@ -3797,15 +3797,15 @@
     },
     {
       "rank": 200,
-      "id": "V3-RACE-174",
+      "id": "V6-RUNTIME-002",
       "status": "in_progress",
-      "upgrade": "[hardening / V3] Competitive Observability + Benchmark Pack (Trace/Evals + Framework Parity)",
-      "why": "Operational confidence and market credibility require explicit trace/eval UX and repeatable benchmark parity artifacts against common alternatives.",
-      "exitCriteria": "Implement `client/runtime/systems/ops/competitive_observability_benchmark_pack.{ts,js}` + policy `client/runtime/config/competitive_observability_benchmark_policy.json`; user-specific benchmark preferences remain in with adaptive scenario weighting in `client/cognition/adaptive/ops/benchmarks/`; permanent benchmark scenarios, trace/eval collectors, and parity report generators remain in `client/runtime/systems/ops/` + `client/runtime/config/`; outputs deterministic parity scorecards for Letta/Mastra/LangGraph/OpenFang lanes without storing user-private contents in benchmark fixtures. Evidence: `client/runtime/systems/ops/competitive_observability_benchmark_pack.ts`, `client/runtime/systems/ops`, `config`. / RM-122, RM-123, V3-RACE-041, V3-RACE-168 / 7 / 1/2/client/adapter",
-      "section": "External Requirements Intake (Google Doc `1QrTZFUX6fbU0RVo8S_fIg6898igD8XxXhohRjNjRROQ`, 2026-03-02)",
+      "upgrade": "Per-shadow budget governance layer",
+      "why": "Global budgets exist, but fairness and isolation require shadow-level token/compute quota enforcement.",
+      "exitCriteria": "Implemented `REQ-14-002` via policy contract `client/runtime/config/shadow_budget_governance_policy.json` and Rust runtime lane `core/layer0/ops/src/shadow_budget_governance.rs` exposed as `protheus-ops shadow-budget-governance`. Decisions now enforce per-shadow quotas with burst handling, reserve protection for system-critical capacity, and deterministic receipt telemetry.",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
       "score": 370,
-      "evidenceCount": 206,
-      "nonBacklogEvidenceCount": 128,
+      "evidenceCount": 10,
+      "nonBacklogEvidenceCount": 8,
       "todoUnchecked": false,
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],

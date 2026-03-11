@@ -1,7 +1,7 @@
 {
   "type": "client_surface_disposition",
-  "generated_at": "2026-03-11T17:34:02.130Z",
-  "revision": "a9193f38340a735ff54b1a742e6dbe1f37405f8a",
+  "generated_at": "2026-03-11T17:36:57.660Z",
+  "revision": "1ac5ece9919245a306748549d0e6a1b6f5e60014",
   "policy_path": "client/runtime/config/client_target_contract_policy.json",
   "summary": {
     "keep_public_client": 231
