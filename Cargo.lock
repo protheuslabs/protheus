@@ -913,6 +913,7 @@ dependencies = [
 name = "protheus-ops-core-v1"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "hex",
  "serde_json",
  "sha2",
