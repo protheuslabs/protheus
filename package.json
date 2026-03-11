@@ -20,6 +20,7 @@
     "ops:blocked-external:plan": "node scripts/ci/blocked_external_unblock_plan.mjs",
     "ops:blocked-external:scaffold": "node scripts/ci/blocked_external_scaffold.mjs",
     "ops:blocked-external:evidence": "node scripts/ci/blocked_external_evidence_status.mjs",
+    "ops:blocked-external:reconcile": "node scripts/ci/blocked_external_reconcile.mjs",
     "ops:dod:gate": "node scripts/ci/dod_policy_gate.mjs --strict=1",
     "metrics:heartbeat-kpi": "node scripts/metrics/heartbeat_kpi_report.js",
     "test:metrics:heartbeat-kpi": "node tests/client-memory-tools/heartbeat_kpi_report.test.js",

@@ -134,6 +134,12 @@ Updated: 2026-03-11 20:39 America/Denver
 - Materialized scaffold directories/readme templates for all `27` blocked IDs under `evidence/external/<ID>/README.md`.
 - Regenerated status artifacts: all blockers are now `partial_missing_artifact` (readmes present, artifact upload pending).
 
+16. `P0-UNBLOCK-003` Add deterministic reconcile helper for evidence-ready blocked IDs. `STATUS: DONE`
+- Exit criteria met:
+- Added `scripts/ci/blocked_external_reconcile.mjs` and npm script `ops:blocked-external:reconcile`.
+- Added generated candidate reports (`BLOCKED_EXTERNAL_RECONCILE_CANDIDATES`) with optional `--apply=1` status promotion path.
+- Current reconcile report confirms `ready_for_reconcile=0` and no automatic status mutations.
+
 ## Executed in this pass
 - Added `scripts/ci/srs_actionable_map.mjs` to produce canonical remaining-work mapping and executability buckets.
 - Reviewed enforcer policy and kept DoD evidence gates strict.
@@ -149,6 +155,7 @@ Updated: 2026-03-11 20:39 America/Denver
 - Added generated full TODO queue artifacts (`TODO_EXECUTION_FULL.md` + `todo_execution_full_current.json`) and kept ordering deterministic.
 - Added deterministic blocked-external evidence intake/status pipeline (`scripts/ci/blocked_external_evidence_status.mjs`) with generated status artifacts and explicit evidence contract docs.
 - Added deterministic blocked-external scaffold generator (`scripts/ci/blocked_external_scaffold.mjs`) and pre-created `evidence/external/<ID>/README.md` packets for all 27 blockers.
+- Added deterministic blocked-external reconcile helper (`scripts/ci/blocked_external_reconcile.mjs`) to promote evidence-ready IDs with controlled `--apply=1` mutation path.
 - Kept client/core policy audits and full regression suite passing after state transitions.
 
 ## Next command bundle
@@ -156,6 +163,7 @@ Updated: 2026-03-11 20:39 America/Denver
 - `node scripts/ci/blocked_external_unblock_plan.mjs`
 - `node scripts/ci/blocked_external_scaffold.mjs`
 - `node scripts/ci/blocked_external_evidence_status.mjs`
+- `node scripts/ci/blocked_external_reconcile.mjs`
 - `node scripts/ci/srs_full_regression.mjs`
 - `node scripts/ci/srs_top200_regression.mjs`
 - `node scripts/ci/backlog_actionable_report.mjs`

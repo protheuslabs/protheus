@@ -1,0 +1,179 @@
+{
+  "ok": true,
+  "type": "blocked_external_reconcile_candidates",
+  "generatedAt": "2026-03-11T21:59:57.770Z",
+  "source": "artifacts/blocked_external_evidence_status_current.json",
+  "summary": {
+    "blocked_total": 27,
+    "ready_for_reconcile": 0,
+    "pending_external_artifact": 27,
+    "apply_mode": false,
+    "srs_rows_updated": 0,
+    "backlog_rows_updated": 0
+  },
+  "rows": [
+    {
+      "id": "V7-META-016",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V7-META-016",
+      "candidate": false
+    },
+    {
+      "id": "V7-META-017",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V7-META-017",
+      "candidate": false
+    },
+    {
+      "id": "V7-META-018",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V7-META-018",
+      "candidate": false
+    },
+    {
+      "id": "V7-TOP1-009",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V7-TOP1-009",
+      "candidate": false
+    },
+    {
+      "id": "V7-TOP1-010",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V7-TOP1-010",
+      "candidate": false
+    },
+    {
+      "id": "V6-SUBSTRATE-002.4",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-SUBSTRATE-002.4",
+      "candidate": false
+    },
+    {
+      "id": "V6-F100-022",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-F100-022",
+      "candidate": false
+    },
+    {
+      "id": "V6-F100-023",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-F100-023",
+      "candidate": false
+    },
+    {
+      "id": "V6-F100-024",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-F100-024",
+      "candidate": false
+    },
+    {
+      "id": "V6-F100-025",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-F100-025",
+      "candidate": false
+    },
+    {
+      "id": "V6-F100-034",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-F100-034",
+      "candidate": false
+    },
+    {
+      "id": "V6-F100-043",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-F100-043",
+      "candidate": false
+    },
+    {
+      "id": "V6-F100-044",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-F100-044",
+      "candidate": false
+    },
+    {
+      "id": "V6-F100-045",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-F100-045",
+      "candidate": false
+    },
+    {
+      "id": "V6-F100-A-008",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-F100-A-008",
+      "candidate": false
+    },
+    {
+      "id": "V6-F100-A-009",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-F100-A-009",
+      "candidate": false
+    },
+    {
+      "id": "V6-F100-A-010",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-F100-A-010",
+      "candidate": false
+    },
+    {
+      "id": "V6-F100-A-011",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-F100-A-011",
+      "candidate": false
+    },
+    {
+      "id": "V6-EDGE-005",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-EDGE-005",
+      "candidate": false
+    },
+    {
+      "id": "V6-COMP-005",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-COMP-005",
+      "candidate": false
+    },
+    {
+      "id": "V6-SBOX-006",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-SBOX-006",
+      "candidate": false
+    },
+    {
+      "id": "V6-FLUX-007",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-FLUX-007",
+      "candidate": false
+    },
+    {
+      "id": "V6-TOOLS-005",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-TOOLS-005",
+      "candidate": false
+    },
+    {
+      "id": "V6-PAY-007",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-PAY-007",
+      "candidate": false
+    },
+    {
+      "id": "V2-012",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V2-012",
+      "candidate": false
+    },
+    {
+      "id": "V6-RUST50-CONF-004",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-RUST50-CONF-004",
+      "candidate": false
+    },
+    {
+      "id": "V6-GAP-006",
+      "evidenceStatus": "partial_missing_artifact",
+      "evidenceDir": "evidence/external/V6-GAP-006",
+      "candidate": false
+    }
+  ],
+  "candidateIds": []
+}
