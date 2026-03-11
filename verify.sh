@@ -90,6 +90,7 @@ run_origin_integrity() {
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:public-platform:contract
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:client-import-integrity:audit
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:client-target:audit
+  run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:dod:gate
 )
 
 run_origin_integrity run --strict=1

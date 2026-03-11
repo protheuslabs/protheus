@@ -9,6 +9,17 @@ Scope: All backlog and sprint execution
 2. Run an explicit enforcer preflight check before implementation.
 3. If blocked, state: `BLOCKED — <exact reason>` and stop.
 
+## Definition of Done Reference
+- Canonical DoD policy: `docs/workspace/DEFINITION_OF_DONE.md`
+- `done` claims must satisfy both this enforcer and the DoD policy.
+- If there is any conflict, use the stricter rule.
+
+## Prompt-Start Review Hook
+For every incoming user prompt:
+1. Re-read this enforcer before implementation.
+2. Emit marker: `[codex_enforcer] reviewed`
+3. Then continue with preflight + execution.
+
 ## Honesty and Completion Rules
 - Never mark any backlog item `done` unless it is fully implemented in code and verified.
 - Never claim work that was not implemented.

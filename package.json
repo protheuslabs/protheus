@@ -16,6 +16,8 @@
     "ops:backlog:actionable-report": "node scripts/ci/backlog_actionable_report.mjs",
     "ops:backlog:actionable-gate": "node scripts/ci/backlog_actionable_report.mjs --fail-on-actionable",
     "ops:srs:top200:regression": "node scripts/ci/srs_top200_regression.mjs",
+    "ops:srs:full:regression": "node scripts/ci/srs_full_regression.mjs",
+    "ops:dod:gate": "node scripts/ci/dod_policy_gate.mjs --strict=1",
     "metrics:heartbeat-kpi": "node scripts/metrics/heartbeat_kpi_report.js",
     "test:metrics:heartbeat-kpi": "node tests/client-memory-tools/heartbeat_kpi_report.test.js",
     "test:memory:idle-dream-core-wrapper": "node tests/client-memory-tools/idle_dream_cycle_core_wrapper.test.js",
