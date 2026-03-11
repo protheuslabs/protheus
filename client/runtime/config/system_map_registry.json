@@ -94,7 +94,7 @@
       "inbound": ["client lane request", "daemon probes"],
       "outbound": ["typed conduit response", "runtime gate diagnostics"],
       "failure_mode": "conduit_stdio_timeout_or_runtime_gate",
-      "health_check": "node client/runtime/lib/conduit_full_lifecycle_probe.ts",
+      "health_check": "node client/lib/conduit_full_lifecycle_probe.ts",
       "srs": ["V6-COCKPIT-005", "V6-CONDUIT-RUNTIME-STALL-001"]
     },
     {

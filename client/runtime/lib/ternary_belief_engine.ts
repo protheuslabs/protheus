@@ -8,7 +8,7 @@ import {
   consensusTrit,
   propagateTrit,
   serializeTritVector
-} from './trit.ts';
+} from '../../lib/trit.ts';
 type AnyObj = Record<string, any>;
 let dualityEvaluate: null | ((context: AnyObj, opts?: AnyObj) => AnyObj) = null;
 let registerDualityObservation: null | ((input: AnyObj, opts?: AnyObj) => AnyObj) = null;

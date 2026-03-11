@@ -935,7 +935,7 @@
       "wave": "BL"
     },
     {
-      "acceptance": "`client/runtime/systems/ops/backlog_queue_executor.ts` now writes queue items/events/receipts into SQLite via `client/runtime/lib/queue_sqlite_runtime.ts` with WAL, idempotent history migration, and optional JSONL mirroring. Regression and concurrency tests pass (`tests/client-memory-tools/backlog_queue_executor.test.js`, `tests/client-memory-tools/backlog_queue_executor_sqlite_concurrency.test.js`). Verified in March 2026 migration proof run.",
+      "acceptance": "`client/runtime/systems/ops/backlog_queue_executor.ts` now writes queue items/events/receipts into SQLite via `client/lib/queue_sqlite_runtime.ts` with WAL, idempotent history migration, and optional JSONL mirroring. Regression and concurrency tests pass (`tests/client-memory-tools/backlog_queue_executor.test.js`, `tests/client-memory-tools/backlog_queue_executor_sqlite_concurrency.test.js`). Verified in March 2026 migration proof run.",
       "class": "backlog",
       "dependencies": [],
       "id": "BL-046",
@@ -4171,7 +4171,7 @@
       "wave": "V2"
     },
     {
-      "acceptance": "`client/runtime/lib/trit.ts` + `client/runtime/lib/ternary_belief_engine.ts` are integrated into spine state modeling (`client/runtime/systems/spine/spine.ts`) with dedicated tests and daily telemetry",
+      "acceptance": "`client/lib/trit.ts` + `client/runtime/lib/ternary_belief_engine.ts` are integrated into spine state modeling (`client/runtime/systems/spine/spine.ts`) with dedicated tests and daily telemetry",
       "class": "backlog",
       "dependencies": [],
       "id": "V2-018",
@@ -4293,7 +4293,7 @@
       "wave": "V2"
     },
     {
-      "acceptance": "Outcome-fitness now feeds currency-policy overlays and calibration receipts (`client/runtime/systems/autonomy/outcome_fitness_loop.ts`, `client/runtime/lib/outcome_fitness.ts`, `client/runtime/lib/strategy_resolver.ts`) so value-currency adaptation closes the loop",
+      "acceptance": "Outcome-fitness now feeds currency-policy overlays and calibration receipts (`client/runtime/systems/autonomy/outcome_fitness_loop.ts`, `client/lib/outcome_fitness.ts`, `client/runtime/lib/strategy_resolver.ts`) so value-currency adaptation closes the loop",
       "class": "backlog",
       "dependencies": [],
       "id": "V2-029",

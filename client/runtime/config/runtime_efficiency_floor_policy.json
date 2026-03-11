@@ -6,7 +6,7 @@
   "cold_start_probe": {
     "command": [
       "node",
-      "client/runtime/lib/conduit_full_lifecycle_probe.ts"
+      "client/lib/conduit_full_lifecycle_probe.ts"
     ],
     "samples": 5,
     "max_ms": 500,

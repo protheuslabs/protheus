@@ -7241,7 +7241,7 @@
       "status": "done",
       "title": "Queue persistence migration (JSONL -> SQLite WAL concurrency)",
       "problem": "JSONL-only queue writes bottleneck multi-shadow execution and prevent safe concurrent writers",
-      "acceptance": "`client/runtime/systems/ops/backlog_queue_executor.ts` now writes queue items/events/receipts into SQLite via `client/runtime/lib/queue_sqlite_runtime.ts` with WAL, idempotent history migration, and optional JSONL mirroring. Regression and concurrency tests pass (`tests/client-memory-tools/backlog_queue_executor.test.js`, `tests/client-memory-tools/backlog_queue_executor_sqlite_concurrency.test.js`). Verified in March 2026 migration proof run.",
+      "acceptance": "`client/runtime/systems/ops/backlog_queue_executor.ts` now writes queue items/events/receipts into SQLite via `client/lib/queue_sqlite_runtime.ts` with WAL, idempotent history migration, and optional JSONL mirroring. Regression and concurrency tests pass (`tests/client-memory-tools/backlog_queue_executor.test.js`, `tests/client-memory-tools/backlog_queue_executor_sqlite_concurrency.test.js`). Verified in March 2026 migration proof run.",
       "dependencies": [],
       "impact_score": 15,
       "risk_score": 8,
@@ -10140,7 +10140,7 @@
       "status": "done",
       "title": "Full directive-to-system value currency propagation",
       "problem": "Let each objective define its own success currency (revenue, delivery, quality, etc.) while preserving strong money prioritization when applicable",
-      "acceptance": "Outcome-fitness now feeds currency-policy overlays and calibration receipts (`client/runtime/systems/autonomy/outcome_fitness_loop.ts`, `client/runtime/lib/outcome_fitness.ts`, `client/runtime/lib/strategy_resolver.ts`) so value-currency adaptation closes the loop",
+      "acceptance": "Outcome-fitness now feeds currency-policy overlays and calibration receipts (`client/runtime/systems/autonomy/outcome_fitness_loop.ts`, `client/lib/outcome_fitness.ts`, `client/runtime/lib/strategy_resolver.ts`) so value-currency adaptation closes the loop",
       "dependencies": [],
       "impact_score": 6,
       "risk_score": 12,
@@ -16851,7 +16851,7 @@
       "status": "done",
       "title": "Ternary belief reasoning engine for spine state modeling",
       "problem": "Representation efficiency: balanced ternary {-1, 0, +1} maps directly to {pain, unknown, ok} states with cleaner consensus/propagation logic than binary",
-      "acceptance": "`client/runtime/lib/trit.ts` + `client/runtime/lib/ternary_belief_engine.ts` are integrated into spine state modeling (`client/runtime/systems/spine/spine.ts`) with dedicated tests and daily telemetry",
+      "acceptance": "`client/lib/trit.ts` + `client/runtime/lib/ternary_belief_engine.ts` are integrated into spine state modeling (`client/runtime/systems/spine/spine.ts`) with dedicated tests and daily telemetry",
       "dependencies": [],
       "impact_score": 3,
       "risk_score": 0,
@@ -26137,13 +26137,13 @@
       "review_result": "pass",
       "evidence_refs": [
         "client/runtime/systems/ops/backlog_queue_executor.ts",
-        "client/runtime/lib/queue_sqlite_runtime.ts",
+        "client/lib/queue_sqlite_runtime.ts",
         "tests/client-memory-tools/backlog_queue_executor.test.js",
         "tests/client-memory-tools/backlog_queue_executor_sqlite_concurrency.test.js"
       ],
       "evidence_found": [
         "client/runtime/systems/ops/backlog_queue_executor.ts",
-        "client/runtime/lib/queue_sqlite_runtime.ts",
+        "client/lib/queue_sqlite_runtime.ts",
         "tests/client-memory-tools/backlog_queue_executor.test.js",
         "tests/client-memory-tools/backlog_queue_executor_sqlite_concurrency.test.js"
       ],
@@ -29634,12 +29634,12 @@
       "review_result": "pass",
       "evidence_refs": [
         "client/runtime/systems/autonomy/outcome_fitness_loop.ts",
-        "client/runtime/lib/outcome_fitness.ts",
+        "client/lib/outcome_fitness.ts",
         "client/runtime/lib/strategy_resolver.ts"
       ],
       "evidence_found": [
         "client/runtime/systems/autonomy/outcome_fitness_loop.ts",
-        "client/runtime/lib/outcome_fitness.ts",
+        "client/lib/outcome_fitness.ts",
         "client/runtime/lib/strategy_resolver.ts"
       ],
       "evidence_missing": [],
@@ -37372,12 +37372,12 @@
       "reviewed": true,
       "review_result": "pass",
       "evidence_refs": [
-        "client/runtime/lib/trit.ts",
+        "client/lib/trit.ts",
         "client/runtime/lib/ternary_belief_engine.ts",
         "client/runtime/systems/spine/spine.ts"
       ],
       "evidence_found": [
-        "client/runtime/lib/trit.ts",
+        "client/lib/trit.ts",
         "client/runtime/lib/ternary_belief_engine.ts",
         "client/runtime/systems/spine/spine.ts"
       ],

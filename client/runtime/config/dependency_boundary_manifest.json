@@ -37,11 +37,11 @@
     "exclude_contains": [".bak.", ".tmp", "node_modules", "dist/", "/tests/", ".test."],
     "allowlisted_files": [
       "client/runtime/lib/direct_conduit_lane_bridge.ts",
-      "client/runtime/lib/legacy_retired_lane_bridge.ts",
+      "client/lib/legacy_retired_lane_bridge.ts",
       "client/runtime/lib/spine_conduit_bridge.ts",
       "client/runtime/lib/rust_lane_bridge.ts",
       "client/runtime/lib/ops_domain_conduit_runner.ts",
-      "client/runtime/lib/conduit_full_lifecycle_probe.ts",
+      "client/lib/conduit_full_lifecycle_probe.ts",
       "client/runtime/systems/ops/protheusd.ts",
       "client/runtime/systems/ops/dependency_boundary_guard.ts",
       "client/runtime/systems/ops/rust50_sprint_contract.ts",
