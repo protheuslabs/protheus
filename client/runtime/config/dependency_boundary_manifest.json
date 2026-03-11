@@ -44,10 +44,7 @@
       "client/runtime/lib/conduit_full_lifecycle_probe.ts",
       "client/runtime/systems/ops/protheusd.ts",
       "client/runtime/systems/ops/dependency_boundary_guard.ts",
-      "client/runtime/systems/ops/rust50_conf001_execution_cutover.ts",
-      "client/runtime/systems/ops/rust50_sprint1_batch.ts",
       "client/runtime/systems/ops/rust50_sprint_contract.ts",
-      "client/runtime/systems/ops/rust_hybrid_migration_program.ts",
       "client/runtime/systems/conduit/conduit-client.ts",
       "client/runtime/systems/conduit/conduit-client.ts"
     ],
