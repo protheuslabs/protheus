@@ -7,7 +7,7 @@ const https = require('https');
 const { spawnSync } = require('child_process');
 
 const pkgRoot = path.resolve(__dirname, '..');
-const workspaceRoot = path.resolve(pkgRoot, '..');
+const workspaceRoot = path.resolve(pkgRoot, '..', '..');
 const pkg = require(path.join(pkgRoot, 'package.json'));
 
 function exeName() {
@@ -96,7 +96,7 @@ async function tryDownload(outPath) {
 }
 
 function tryBuildLocal(outPath) {
-  const manifestPath = path.join(workspaceRoot, 'crates', 'ops', 'Cargo.toml');
+  const manifestPath = path.join(workspaceRoot, 'core', 'layer0', 'ops', 'Cargo.toml');
   if (!fs.existsSync(manifestPath)) return false;
 
   const build = spawnSync(

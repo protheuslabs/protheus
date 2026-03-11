@@ -25,12 +25,24 @@ function findBinary() {
 
   const envPath = String(process.env.PROTHEUS_NPM_BINARY || '').trim();
   if (envPath && isFile(envPath)) return envPath;
+
+   const repoRoot = path.resolve(pkgRoot, '..', '..');
+   const localCandidates = [
+    path.join(repoRoot, 'target', 'debug', exe),
+    path.join(repoRoot, 'target', 'release', exe)
+   ];
+   for (const candidate of localCandidates) {
+    if (isFile(candidate)) return candidate;
+   }
   return null;
 }
 
 function hasRuntimeAssets(rootDir) {
   if (!rootDir) return false;
-  return isFile(path.join(rootDir, 'systems', 'ops', 'protheusctl.js'));
+  return (
+    isFile(path.join(rootDir, 'client', 'runtime', 'systems', 'ops', 'protheusctl.js')) ||
+    isFile(path.join(rootDir, 'runtime', 'systems', 'ops', 'protheusctl.js'))
+  );
 }
 
 function resolveRuntimeRoot(pkgRoot) {
@@ -40,10 +52,10 @@ function resolveRuntimeRoot(pkgRoot) {
   const cwd = process.cwd();
   if (hasRuntimeAssets(cwd)) return cwd;
 
-  const repoRootCandidate = path.resolve(pkgRoot, '..');
+  const repoRootCandidate = path.resolve(pkgRoot, '..', '..');
   if (hasRuntimeAssets(repoRootCandidate)) return repoRootCandidate;
 
-  const bundled = path.join(pkgRoot, 'runtime');
+  const bundled = pkgRoot;
   if (hasRuntimeAssets(bundled)) return bundled;
 
   return null;

@@ -34,7 +34,7 @@
       ]
     },
     "V6-F100-009": {
-      "bootstrap_script": "client/cli/bin/protheus_onboarding_bootstrap.sh",
+      "bootstrap_script": "scripts/onboarding/protheus_onboarding_bootstrap.sh",
       "metrics_path": "state/ops/onboarding_portal/success_metrics.json",
       "track_docs": [
         "docs/client/onboarding/operator.md",

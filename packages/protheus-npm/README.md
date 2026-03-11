@@ -9,6 +9,7 @@ npm install -g protheus
 or from source:
 
 ```bash
+cd packages/protheus-npm
 npm install -g .
 ```
 

@@ -73,7 +73,7 @@ npm install -g protheus
 For local source installs from this repository:
 
 ```bash
-cd client/cli/npm
+cd packages/protheus-npm
 npm install -g .
 protheus --help
 ```

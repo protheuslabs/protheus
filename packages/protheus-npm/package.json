@@ -12,17 +12,17 @@
     "url": "https://github.com/protheuslabs/protheus/issues"
   },
   "bin": {
-    "protheus": "./client/cli/bin/protheus.js"
+    "protheus": "./bin/protheus.ts"
   },
   "files": [
-    "client/cli/bin/",
+    "bin/",
     "scripts/",
     "vendor/",
     "README.md"
   ],
   "scripts": {
-    "postinstall": "node ./scripts/install.js",
-    "test:smoke": "node ./scripts/smoke.js"
+    "postinstall": "node ./scripts/install.ts",
+    "test:smoke": "node ./scripts/smoke.ts"
   },
   "engines": {
     "node": ">=20.0.0"

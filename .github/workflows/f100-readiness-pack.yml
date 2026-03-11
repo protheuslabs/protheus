@@ -16,7 +16,7 @@ on:
       - "docs/client/ops/operator_surface_consistency_snapshot.json"
       - "runbooks/INCIDENT_COMMAND.md"
       - "runbooks/POSTMORTEM_TEMPLATE.md"
-      - "client/cli/bin/protheus_onboarding_bootstrap.sh"
+      - "scripts/onboarding/protheus_onboarding_bootstrap.sh"
       - ".github/workflows/f100-readiness-pack.yml"
   pull_request:
     paths:
@@ -33,7 +33,7 @@ on:
       - "docs/client/ops/operator_surface_consistency_snapshot.json"
       - "runbooks/INCIDENT_COMMAND.md"
       - "runbooks/POSTMORTEM_TEMPLATE.md"
-      - "client/cli/bin/protheus_onboarding_bootstrap.sh"
+      - "scripts/onboarding/protheus_onboarding_bootstrap.sh"
       - ".github/workflows/f100-readiness-pack.yml"
 
 jobs:
