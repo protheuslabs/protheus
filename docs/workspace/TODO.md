@@ -1,6 +1,6 @@
 # TODO (Maintenance + Policy + SRS Execution Order)
 
-Updated: 2026-03-11 17:09 America/Denver
+Updated: 2026-03-11 17:28 America/Denver
 
 ## Ordering policy
 - Priority first (`P0` > `P1` > `P2` > `P3`)
@@ -21,6 +21,8 @@ Updated: 2026-03-11 17:09 America/Denver
 - `srs_full_regression`: `fail=0`, `warn=0`, `pass=1998`
 - `srs_top200_regression`: `fail=0`, `warn=0`, `pass=200`
 - `backlog_actionable_count`: `1139`
+- `actionable_lane_with_script`: `120`
+- `actionable_lane_runnable`: `2` (`V5-RUST-HYB-001`, `V5-RUST-HYB-008`)
 - `verify.sh`: `PASS`
 
 ## Current objective
@@ -66,7 +68,12 @@ Updated: 2026-03-11 17:09 America/Denver
 - Exit criteria:
 - in-progress count decreases with verifiable evidence links.
 
-9. `P3-BLOCKED-001` Track blocked items (`blocked=42`) for external/human unblock decisions. `STATUS: BLOCKED`
+9. `P2-SRS-003` Reconcile stale lane scripts whose entrypoints were removed during coreization. `STATUS: IN_PROGRESS`
+- Dependency: `P2-SRS-001` active.
+- Exit criteria:
+- lane scripts that target deleted TS paths are either migrated to Rust-backed ops commands or retired with explicit compatibility receipts, increasing `actionable_lane_runnable`.
+
+10. `P3-BLOCKED-001` Track blocked items (`blocked=42`) for external/human unblock decisions. `STATUS: BLOCKED`
 - Exit criteria:
 - explicit unblock decision attached per blocked ID.
 
@@ -76,6 +83,14 @@ Updated: 2026-03-11 17:09 America/Denver
 - Completed DoD warning debt burn-down by downgrading stale `done` rows lacking required evidence.
 - Closed client classification debt tranche by codifying sanctioned thin-bridge allowlist decisions and improving bootstrap/alias shim classification.
 - Full verification bundle executed and passing.
+- Upgraded Rust `backlog_queue_executor` to:
+- execute actionable SRS lanes by IDs/max/all through package lane scripts,
+- dedupe duplicate IDs,
+- detect stale/missing lane/test entrypoints (including nested `npm run` indirection),
+- emit deterministic skip reasons instead of false-progress failures.
+- Executed runnable tranche with deterministic receipts:
+- `V5-RUST-HYB-001` and `V5-RUST-HYB-008` executed (`type=legacy_retired_lane`) via
+- `protheus-ops backlog-queue-executor run --ids="V5-RUST-HYB-001,V5-RUST-HYB-008"`.
 
 ## Next command bundle (from this TODO)
 - `node scripts/ci/srs_full_regression.mjs`
