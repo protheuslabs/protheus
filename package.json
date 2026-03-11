@@ -1369,7 +1369,7 @@
     "test:memory:matrix": "node tests/client-memory-tools/memory_matrix.test.js",
     "test:memory:auto-recall": "node tests/client-memory-tools/memory_auto_recall.test.js",
     "test:memory:context-budget": "node tests/client-memory-tools/memory_recall_context_budget.test.js",
-    "reflexes:list": "node client/cognition/reflexes/index.ts list",
+    "reflexes:list": "node apps/_shared/cognition/reflexes/index.ts list",
     "test:reflexes": "node tests/client-memory-tools/client_reflexes.test.js",
     "ops:release-semver:plan": "node client/runtime/systems/ops/release_semver_contract.ts run --strict=0 --write=1",
     "ops:release-semver:status": "node client/runtime/systems/ops/release_semver_contract.ts status",
