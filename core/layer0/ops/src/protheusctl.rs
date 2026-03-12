@@ -383,6 +383,19 @@ fn run_core_domain(root: &Path, domain: &str, args: &[String], forward_stdin: bo
     }
 }
 
+fn enforce_command_center_boundary(cmd: &str, route: &Route) -> Result<(), String> {
+    if route
+        .script_rel
+        .contains("client/runtime/systems/red_legion/command_center")
+    {
+        return Err("red_legion_client_authority_forbidden".to_string());
+    }
+    if cmd == "session" && !route.script_rel.starts_with("core://command-center-session") {
+        return Err("session_route_must_be_core_authoritative".to_string());
+    }
+    Ok(())
+}
+
 fn maybe_run_cli_suggestion_engine(root: &Path, cmd: &str, rest: &[String]) {
     if bool_env("PROTHEUS_GLOBAL_QUIET", false) {
         return;
@@ -1229,7 +1242,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         },
         _ => Route {
             script_rel: "client/runtime/systems/ops/protheus_unknown_guard.js".to_string(),
-            args: std::iter::once(cmd).chain(rest).collect(),
+            args: std::iter::once(cmd.clone()).chain(rest).collect(),
             forward_stdin: false,
         },
     };
@@ -1272,6 +1285,20 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             .any(|arg| arg == "--quiet" || arg.starts_with("--quiet="))
     {
         route.args.push("--quiet=1".to_string());
+    }
+
+    if let Err(reason) = enforce_command_center_boundary(&cmd, &route) {
+        eprintln!(
+            "{}",
+            json!({
+                "ok": false,
+                "type": "protheusctl_boundary_guard",
+                "error": clean(reason, 220),
+                "command": cmd,
+                "script_rel": route.script_rel
+            })
+        );
+        return 1;
     }
 
     let gate = evaluate_dispatch_security(root, &route.script_rel, &route.args);
@@ -1364,5 +1391,37 @@ mod tests {
 
         let paired = requested_lens_arg(&["--persona-lens".to_string(), "operator".to_string()]);
         assert_eq!(paired.as_deref(), Some("operator"));
+    }
+
+    #[test]
+    fn command_center_boundary_allows_core_session_route() {
+        let route = Route {
+            script_rel: "core://command-center-session".to_string(),
+            args: vec!["resume".to_string(), "session-1".to_string()],
+            forward_stdin: false,
+        };
+        assert!(enforce_command_center_boundary("session", &route).is_ok());
+    }
+
+    #[test]
+    fn command_center_boundary_rejects_client_red_legion_authority() {
+        let route = Route {
+            script_rel: "client/runtime/systems/red_legion/command_center.ts".to_string(),
+            args: vec!["resume".to_string(), "session-1".to_string()],
+            forward_stdin: false,
+        };
+        let err = enforce_command_center_boundary("session", &route).expect_err("must reject");
+        assert!(err.contains("red_legion_client_authority_forbidden"));
+    }
+
+    #[test]
+    fn command_center_boundary_rejects_non_core_session_route() {
+        let route = Route {
+            script_rel: "client/runtime/systems/ops/protheusd.js".to_string(),
+            args: vec!["status".to_string()],
+            forward_stdin: false,
+        };
+        let err = enforce_command_center_boundary("session", &route).expect_err("must reject");
+        assert!(err.contains("session_route_must_be_core_authoritative"));
     }
 }
