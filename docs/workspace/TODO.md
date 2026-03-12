@@ -1,6 +1,6 @@
 # TODO (Maintenance + Policy + SRS Execution Order)
 
-Updated: 2026-03-11 20:39 America/Denver
+Updated: 2026-03-12 01:55 America/Denver
 
 ## Ordering policy
 - Priority first (`P0` > `P1` > `P2` > `P3`)
@@ -8,7 +8,7 @@ Updated: 2026-03-11 20:39 America/Denver
 - Then dependency order
 
 ## Live baseline
-- `rust_share_pct`: `75.088%` (`npm run -s metrics:rust-share`)
+- `rust_share_pct`: `76.249%` (`npm run -s metrics:rust-share`)
 - `client total ts files`: `231`
 - `runtime_system_surface`: `116`
 - `cognition_surface`: `0`
@@ -18,7 +18,7 @@ Updated: 2026-03-11 20:39 America/Denver
 - `promote_to_core`: `0`
 - `move_to_adapters`: `0`
 - `collapse_to_generic_wrapper`: `0`
-- `srs_full_regression`: `fail=0`, `warn=0`, `pass=1998`
+- `srs_full_regression`: `fail=0`, `warn=0`, `pass=2197`
 - `srs_top200_regression`: `fail=0`, `warn=0`, `pass=200`
 - `verify.sh`: `PASS`
 
@@ -28,17 +28,17 @@ Updated: 2026-03-11 20:39 America/Denver
 - Full execution queue (all actionable items, sorted): [docs/workspace/TODO_EXECUTION_FULL.md](/Users/jay/.openclaw/workspace/docs/workspace/TODO_EXECUTION_FULL.md)
 - Machine-readable execution queue: [artifacts/todo_execution_full_current.json](/Users/jay/.openclaw/workspace/artifacts/todo_execution_full_current.json)
 - Map summary snapshot:
-- `actionable_total=27`
+- `actionable_total=1802`
 - `queued=0`
-- `in_progress=0`
+- `in_progress=1775`
 - `blocked=27`
-- `execute_now=0`
-- `repair_lane=0`
+- `execute_now=243`
+- `repair_lane=1532`
 - `design_required=0`
 - `blocked_external=27`
 
 ## Full TODO queue contract
-- The TODO list now includes **all** actionable SRS work as the canonical generated queue in `TODO_EXECUTION_FULL.md` (`27` rows).
+- The TODO list now includes **all** actionable SRS work as the canonical generated queue in `TODO_EXECUTION_FULL.md` (`1802` rows).
 - Sorting policy used in that queue:
 - `todoBucket` order: `execute_now -> repair_lane -> design_required -> blocked_external`
 - then `status`: `in_progress -> queued -> blocked`
