@@ -138,3 +138,16 @@ Apps and adapters should build against the contract, not against private impleme
   - `./verify.sh` must run boundary + repo-surface + public-platform contract gates before origin-integrity checks
 
 This rulebook is a live constitution artifact and must be kept aligned with the layered stack contract.
+
+### 7. Module Cohesion and Split Policy (Enforced)
+- The canonical policy is `docs/client/MODULE_COHESION_POLICY.md`.
+- Core authority modules should split by domain boundary when they exceed safe reviewability.
+- Client surfaces must remain thin adapters and intentionally small/explicit.
+- Size policy is guidance backed by CI:
+  - hard cap envelope: ~400-600 lines (client thin cap: 400),
+  - warning attention threshold: >800 lines,
+  - allowed exception class: generated output and simple/stable adapter glue.
+- Enforcement command:
+  - `npm run -s ops:module-cohesion:audit`
+- Verification path:
+  - `./verify.sh` must run the module-cohesion gate before origin-integrity checks.

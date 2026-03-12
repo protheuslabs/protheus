@@ -700,9 +700,13 @@ pub fn show_seed_state_wasm() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::sync::{
+        atomic::{AtomicU64, Ordering},
+        Mutex,
+    };
 
     static TEST_COUNTER: AtomicU64 = AtomicU64::new(0);
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     fn temp_blob_root() -> PathBuf {
         let counter = TEST_COUNTER.fetch_add(1, Ordering::Relaxed);
@@ -720,6 +724,7 @@ mod tests {
 
     #[test]
     fn cycle_runs_and_advances_generation() {
+        let _lock = ENV_LOCK.lock().expect("lock env");
         let root = temp_blob_root();
         std::env::set_var("PROTHEUS_SINGULARITY_BLOB_DIR", root.display().to_string());
 
@@ -735,6 +740,7 @@ mod tests {
 
     #[test]
     fn cycle_fail_closed_when_drift_exceeds_threshold() {
+        let _lock = ENV_LOCK.lock().expect("lock env");
         let root = temp_blob_root();
         std::env::set_var("PROTHEUS_SINGULARITY_BLOB_DIR", root.display().to_string());
 

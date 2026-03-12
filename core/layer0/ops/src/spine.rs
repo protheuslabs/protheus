@@ -1695,7 +1695,9 @@ mod tests {
         let code = emit_terminal_receipt(&mut ledger, &context, false, Some("guard_failed"));
         assert_eq!(code, 1);
 
-        let latest_path = root.path().join("state/spine/runs/latest.json");
+        let latest_path = root
+            .path()
+            .join("client/runtime/local/state/spine/runs/latest.json");
         let latest_raw = std::fs::read_to_string(latest_path).expect("latest json");
         let latest = serde_json::from_str::<Value>(&latest_raw).expect("valid json");
 

@@ -43,12 +43,31 @@ function parseArgs(argv) {
 function buildPassArgs(parsedArgs) {
   if (!parsedArgs || !Array.isArray(parsedArgs._)) return [];
   const positional = parsedArgs._.slice();
+  const controlKeys = new Set([
+    '_',
+    'domain',
+    'run-context',
+    'skip-runtime-gate',
+    'stdio-timeout-ms',
+    'timeout-ms'
+  ]);
+  const forwardedFlags = [];
+  for (const [key, value] of Object.entries(parsedArgs)) {
+    if (controlKeys.has(key)) continue;
+    if (value === true) {
+      forwardedFlags.push(`--${key}`);
+      continue;
+    }
+    if (value == null || value === false) continue;
+    forwardedFlags.push(`--${key}=${String(value)}`);
+  }
   // --domain=<name> keeps positional arguments untouched (`run --mode=daily`).
   if (parsedArgs.domain != null && String(parsedArgs.domain).trim()) {
-    return positional;
+    return positional.concat(forwardedFlags);
   }
   // Positional domain (`spine run`) should not leak the domain token into payload args.
-  return positional.length ? positional.slice(1) : [];
+  const args = positional.length ? positional.slice(1) : [];
+  return args.concat(forwardedFlags);
 }
 
 function buildRunOptions(parsedArgs) {

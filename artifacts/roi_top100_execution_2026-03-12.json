@@ -1,0 +1,941 @@
+{
+  "generated_at": "2026-03-12T16:42:48Z",
+  "implemented": [
+    {
+      "title": "Add canonical module cohesion policy with boundary-first split rules",
+      "evidence": "docs/client/MODULE_COHESION_POLICY.md"
+    },
+    {
+      "title": "Embed module cohesion enforcement contract into layer rulebook",
+      "evidence": "docs/client/architecture/LAYER_RULEBOOK.md"
+    },
+    {
+      "title": "Wire module cohesion policy into contributor required-reading surface",
+      "evidence": "docs/workspace/CONTRIBUTING.md"
+    },
+    {
+      "title": "Add strict module cohesion CI audit lane",
+      "evidence": "scripts/ci/module_cohesion_policy_audit.mjs"
+    },
+    {
+      "title": "Add module cohesion policy config",
+      "evidence": "client/runtime/config/module_cohesion_policy.json"
+    },
+    {
+      "title": "Add module cohesion legacy debt baseline",
+      "evidence": "client/runtime/config/module_cohesion_legacy_baseline.json"
+    },
+    {
+      "title": "Add npm module cohesion audit script entrypoint",
+      "evidence": "package.json"
+    },
+    {
+      "title": "Add verify.sh module cohesion gate step",
+      "evidence": "verify.sh"
+    },
+    {
+      "title": "Route origin-integrity dependency boundary check to mjs guard",
+      "evidence": "core/layer0/ops/src/origin_integrity.rs"
+    },
+    {
+      "title": "Fix ops-domain argument passthrough for flag-based lane commands",
+      "evidence": "client/runtime/lib/ops_domain_conduit_runner.ts"
+    },
+    {
+      "title": "Add regression test for ops-domain flag passthrough",
+      "evidence": "tests/client-memory-tools/ops_domain_conduit_runner_arg_passthrough.test.js"
+    }
+  ],
+  "validated": [
+    {
+      "id": "V3-RACE-023",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-RACE-023)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 203,
+      "impact": 10,
+      "evidence": 103,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-019",
+      "title": "[primitive / V3] Persistent Fractal Engine Meta-Organ (Loop-5 Autopilot)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 197,
+      "impact": 10,
+      "evidence": 97,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-031",
+      "title": "[hardening / V3] Legion Geas Protocol (Iron Oath Self-Destruct Covenant)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 159,
+      "impact": 10,
+      "evidence": 59,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-220",
+      "title": "[primitive-upgrade / V3] WASI2 Execution Completeness Gate (TS Lane -> WASM Runtime)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 158,
+      "impact": 10,
+      "evidence": 58,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-220",
+      "title": "[status-reconciliation / V3] WASI2 Execution Completeness Gate (TS Lane -> WASM Runtime)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 158,
+      "impact": 10,
+      "evidence": 58,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-BLK-001",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-BLK-001)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 158,
+      "impact": 10,
+      "evidence": 58,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-BUD-001",
+      "title": "[extension / V3] Dynamic Burn Budget Oracle Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_bud_001_anchor.ts`.",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 153,
+      "impact": 10,
+      "evidence": 53,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-BUD-001",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-BUD-001)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 153,
+      "impact": 10,
+      "evidence": 53,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-AEX-002",
+      "title": "[primitive-upgrade / V3] Backlog Execution Metadata Contract Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_aex_002_anchor.ts`.",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 148,
+      "impact": 10,
+      "evidence": 48,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-AEX-002",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-AEX-002)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 148,
+      "impact": 10,
+      "evidence": 48,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V4-FORT-006",
+      "title": "[hardening / V4] Empty Fort Integrity Guard (No Fabricated Claims)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 148,
+      "impact": 10,
+      "evidence": 48,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-DEF-024",
+      "title": "[hardening / V3] PsycheForge Adaptive Counter-Profile Defense Organ",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 145,
+      "impact": 10,
+      "evidence": 45,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-129",
+      "title": "[primitive-upgrade / V3] Soul Contracts Primitive (Immutable User Directive Ledger)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 144,
+      "impact": 10,
+      "evidence": 44,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V5-RUST-HYB-001",
+      "title": "[scale-readiness / V5] 15-25% Rust Share Control Plan",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 144,
+      "impact": 10,
+      "evidence": 44,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-200",
+      "title": "[primitive-upgrade / V3] Protheus Compute Mesh Broker (Network-Scale Task Sharding Plane)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 141,
+      "impact": 10,
+      "evidence": 41,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V4-SELF-001",
+      "title": "[hardening / V4] Internal Illusion & Integrity Auditor",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 140,
+      "impact": 10,
+      "evidence": 40,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V4-SCALE-007",
+      "title": "[scale-readiness / V4] Release Safety at Scale (Canary + Feature Flags + Schema Compatibility)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 139,
+      "impact": 10,
+      "evidence": 39,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-022",
+      "title": "[extension / V3] Compute-Tithe Flywheel (Tithe-as-Leverage GPU Donation System)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 138,
+      "impact": 10,
+      "evidence": 38,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-DEF-027",
+      "title": "[extension / V3] Project Jigsaw (AttackCinema Incident Replay Theater)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 138,
+      "impact": 10,
+      "evidence": 38,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-223",
+      "title": "[extension / V3] Microsoft Agent Interop Adapter (Typed Tool Surface + Reasoning Topologies)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 137,
+      "impact": 10,
+      "evidence": 37,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-245",
+      "title": "[hardening / V3] AWS Compliance Evidence Bridge (Audit Manager/Artifact/Well-Architected/Access Analyzer)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 137,
+      "impact": 10,
+      "evidence": 37,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V2-058",
+      "title": "[V2] Build watermark + soul-token anti-cloning guard",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 137,
+      "impact": 10,
+      "evidence": 37,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V2-058",
+      "title": "[dependency-anchor / V2] Legacy dependency anchor (V2-058)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 137,
+      "impact": 10,
+      "evidence": 37,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-OPS-005",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-OPS-005)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 136,
+      "impact": 10,
+      "evidence": 36,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-069",
+      "title": "[hardening / V3] Proposal Funnel SLO + Conversion Guard",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 135,
+      "impact": 10,
+      "evidence": 35,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-249",
+      "title": "[extension / V3] visionOS Spatial Runtime + Vision Framework Adapter",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 134,
+      "impact": 10,
+      "evidence": 34,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-168",
+      "title": "[hardening / V3] Ops Hardening Pack (Audit Chain + Background Hands + Skills UX)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 133,
+      "impact": 10,
+      "evidence": 33,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-250",
+      "title": "[extension / V3] iOS/iPadOS Ecosystem Bridge (Continuity/Handoff/Universal Control/Private Relay)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 133,
+      "impact": 10,
+      "evidence": 33,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-DOC-004",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-DOC-004)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 133,
+      "impact": 10,
+      "evidence": 33,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-038",
+      "title": "[V3] Gated Autonomous Self-Improvement Loop",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 133,
+      "impact": 10,
+      "evidence": 33,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-038",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-038)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 133,
+      "impact": 10,
+      "evidence": 33,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-125",
+      "title": "[hardening / V3] Legal/Trust Language Normalization Pack",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 131,
+      "impact": 10,
+      "evidence": 31,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-136",
+      "title": "[hardening / V3] Sovereign Economy/Identity Integration Contract + Data-Scope Guard",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 130,
+      "impact": 10,
+      "evidence": 30,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-181",
+      "title": "[hardening / V3] RSI Integrity Chain + Merkle Rollback + Resurrection Linkage",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 130,
+      "impact": 10,
+      "evidence": 30,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-CPY-001",
+      "title": "[hardening / V3] Attested Capability Lease Server Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_cpy_001_anchor.ts`.",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 130,
+      "impact": 10,
+      "evidence": 30,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-CPY-001",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-CPY-001)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 130,
+      "impact": 10,
+      "evidence": 30,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V6-F100-003",
+      "title": "[hardening / V6] Secure Supply-Chain Provenance v2 (SBOM + Signed Artifacts)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 129,
+      "impact": 10,
+      "evidence": 29,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-165",
+      "title": "[extension / V3] MCP Interoperability + Skill Discovery Gateway",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 129,
+      "impact": 10,
+      "evidence": 29,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-229",
+      "title": "[hardening / V3] Enterprise Identity/Compliance Bridge (SOC2 Type II + Defender + Entra Sovereignty)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 129,
+      "impact": 10,
+      "evidence": 29,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-270",
+      "title": "[hardening / V3] Digital-Twin Simulation Pre-Promotion Gate (Autogenesis Mandatory)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 129,
+      "impact": 10,
+      "evidence": 29,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-309",
+      "title": "[hardening / V3] Deterministic Execution + RAS Telemetry Hardening Lane",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 129,
+      "impact": 10,
+      "evidence": 29,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-315",
+      "title": "[hardening / V3] IBM Zero-Downtime Maintenance Deployment Lane (LinuxONE/Cloud Pak)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 129,
+      "impact": 10,
+      "evidence": 29,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-345",
+      "title": "[extension / V3] Ubuntu Enterprise Adaptation Pack (Snap/Core + Landscape/Juju + Pro/Livepatch + MAAS/MicroK8s)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 129,
+      "impact": 10,
+      "evidence": 29,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-180",
+      "title": "[hardening / V3] Safe Git-Patch Self-Modification Gate (Chaos + Constitution + Habit + Contract + Optional Human Approval)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 129,
+      "impact": 10,
+      "evidence": 29,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-AEX-001",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-AEX-001)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 129,
+      "impact": 10,
+      "evidence": 29,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V4-SCALE-010",
+      "title": "[scale-readiness / V4] Capacity + Unit Economics Governance (p95/p99 + Cost per User)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 128,
+      "impact": 10,
+      "evidence": 28,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V4-SEC-014",
+      "title": "[hardening / V4] Covenant Enforcement Across Flux/Morph/Shadow Operations",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 128,
+      "impact": 10,
+      "evidence": 28,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-187",
+      "title": "[hardening / V3] Formal Verification Depth Pack for Critical Runtime Paths",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 128,
+      "impact": 10,
+      "evidence": 28,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-OBS-002",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-OBS-002)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 128,
+      "impact": 10,
+      "evidence": 28,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-SK-001",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-SK-001)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 128,
+      "impact": 10,
+      "evidence": 28,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-033",
+      "title": "[hardening / V3] Mind Fortress Principle (Mind Sovereignty Covenant Anchor)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 127,
+      "impact": 10,
+      "evidence": 27,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-115",
+      "title": "[hardening / V3] Command Registry + Script Surface Rationalization",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 127,
+      "impact": 10,
+      "evidence": 27,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-DEF-026",
+      "title": "[hardening / V3] Lockweaver Eternal Flux Field (Origin-Lock Verified Structural Flux)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 127,
+      "impact": 10,
+      "evidence": 27,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-DEF-028",
+      "title": "[hardening / V3] Phoenix Protocol (Immortal Red-Team Respawn + Continuity Inheritance)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 127,
+      "impact": 10,
+      "evidence": 27,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-261",
+      "title": "[hardening / V3] Apple Release Security Gate (App Sandbox/TCC + Notarization/Gatekeeper + Privacy Manifest)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 127,
+      "impact": 10,
+      "evidence": 27,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-261",
+      "title": "[dependency-repair / V3] Apple Release Security Gate (App Sandbox/TCC + Notarization/Gatekeeper + Privacy Manifest)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 127,
+      "impact": 10,
+      "evidence": 27,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-VENOM-000",
+      "title": "No Offensive Behavior Invariant",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 127,
+      "impact": 10,
+      "evidence": 27,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V6-RUST50-004",
+      "title": "[hardening / V6] Vault and Security Shared Rust Core (ZK/FHE Envelope)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 126,
+      "impact": 10,
+      "evidence": 26,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V2-063",
+      "title": "[V2] Agent Passport + Verifiable Action Chain",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 126,
+      "impact": 10,
+      "evidence": 26,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V2-063",
+      "title": "[dependency-anchor / V2] Legacy dependency anchor (V2-063)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 126,
+      "impact": 10,
+      "evidence": 26,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-CPY-006",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-CPY-006)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 126,
+      "impact": 10,
+      "evidence": 26,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-033",
+      "title": "[V3] Sentinel protocol + confirmed-malice permanent quarantine lane",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 126,
+      "impact": 10,
+      "evidence": 26,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-033",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-033)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 126,
+      "impact": 10,
+      "evidence": 26,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-167",
+      "title": "[primitive-upgrade / V3] System-3 Executive Layer (Growth Journal + Intrinsic Goal Loop)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 125,
+      "impact": 10,
+      "evidence": 25,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-176",
+      "title": "[hardening / V3] MCP/A2A Contract-Lane and Venom-Gate Convergence",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 125,
+      "impact": 10,
+      "evidence": 25,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-297",
+      "title": "[extension / V3] Persistent Spatial Collaboration Layer (OpenXR + Quest SDK Avatars/Shared Memory)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 125,
+      "impact": 10,
+      "evidence": 25,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-303",
+      "title": "[extension / V3] IBM Mainframe Runtime Parity Pack (LinuxONE/IBM Z + RAS Contracts)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 125,
+      "impact": 10,
+      "evidence": 25,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-343",
+      "title": "[hardening / V3] Helix Promotion Hardening Gate (Immutability + SELinux/eBPF + Certified HW + Air-Gap Evidence)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 125,
+      "impact": 10,
+      "evidence": 25,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-DEP-001",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-DEP-001)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 125,
+      "impact": 10,
+      "evidence": 25,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-163",
+      "title": "[primitive-upgrade / V3] Agentic Memory Operation Controller (ADD/UPDATE/DELETE/NOOP)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 125,
+      "impact": 10,
+      "evidence": 25,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-163",
+      "title": "[status-reconciliation / V3] Agentic Memory Operation Controller (ADD/UPDATE/DELETE/NOOP)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 125,
+      "impact": 10,
+      "evidence": 25,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-BENCH-001",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-BENCH-001)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 125,
+      "impact": 10,
+      "evidence": 25,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-DOC-005",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-DOC-005)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 125,
+      "impact": 10,
+      "evidence": 25,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-ENT-002",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-ENT-002)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 125,
+      "impact": 10,
+      "evidence": 25,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-278",
+      "title": "[hardening / V3] NGC + NVIDIA AI Enterprise Image/Container Distribution Adapter",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 124,
+      "impact": 10,
+      "evidence": 24,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-RACE-332",
+      "title": "[hardening / V3] OSTree/rpm-ostree Signed Image + Atomic Rollback Lane",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 124,
+      "impact": 10,
+      "evidence": 24,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V2-062",
+      "title": "[dependency-anchor / V2] Legacy dependency anchor (V2-062)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 124,
+      "impact": 10,
+      "evidence": 24,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V2-069",
+      "title": "[dependency-anchor / V2] Legacy dependency anchor (V2-069)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 124,
+      "impact": 10,
+      "evidence": 24,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-051",
+      "title": "[V3] Crypto Agility + Key Lifecycle Governance",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 124,
+      "impact": 10,
+      "evidence": 24,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-051",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-051)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 124,
+      "impact": 10,
+      "evidence": 24,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-CPY-005",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-CPY-005)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 124,
+      "impact": 10,
+      "evidence": 24,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-DOC-001",
+      "title": "[hardening / V3] Canonical Docs Hub + Taxonomy (`docs/client/README.md`)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 124,
+      "impact": 10,
+      "evidence": 24,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-DOC-001",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-DOC-001)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 124,
+      "impact": 10,
+      "evidence": 24,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-LOOP-001",
+      "title": "[extension / V3] Self-Improvement Cadence Orchestrator Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_loop_001_anchor.ts`.",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 124,
+      "impact": 10,
+      "evidence": 24,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-LOOP-001",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-LOOP-001)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 124,
+      "impact": 10,
+      "evidence": 24,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-OF-008",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-OF-008)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 124,
+      "impact": 10,
+      "evidence": 24,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-OPS-003",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-OPS-003)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 124,
+      "impact": 10,
+      "evidence": 24,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V3-SK-007",
+      "title": "[dependency-anchor / V3] Legacy dependency anchor (V3-SK-007)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 124,
+      "impact": 10,
+      "evidence": 24,
+      "result": "existing-coverage-validated"
+    },
+    {
+      "id": "V4-SCALE-009",
+      "title": "[scale-readiness / V4] Abuse/Security Hardening at Scale (Rate-Limit + Tenant Isolation + Auth)",
+      "status": "existing-coverage-validated",
+      "regression": "pass",
+      "score": 123,
+      "impact": 10,
+      "evidence": 23,
+      "result": "existing-coverage-validated"
+    }
+  ]
+}

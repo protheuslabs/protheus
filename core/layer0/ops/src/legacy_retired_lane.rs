@@ -24,7 +24,20 @@ fn print_json_line(value: &Value) {
 }
 
 fn clean_lane_id(raw: &str) -> String {
-    raw.trim()
+    let normalized = raw.trim().replace('\\', "/");
+    let lowered = normalized.to_ascii_lowercase();
+    let stripped = if lowered.starts_with("client/runtime/local/") {
+        &normalized["client/runtime/local/".len()..]
+    } else if lowered.starts_with("client/runtime/") {
+        &normalized["client/runtime/".len()..]
+    } else if lowered.starts_with("runtime/") {
+        &normalized["runtime/".len()..]
+    } else if lowered.starts_with("client/") {
+        &normalized["client/".len()..]
+    } else {
+        normalized.as_str()
+    };
+    stripped
         .chars()
         .filter(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '.'))
         .collect::<String>()

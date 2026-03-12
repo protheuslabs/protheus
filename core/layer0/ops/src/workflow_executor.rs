@@ -73,6 +73,9 @@ fn status_receipt(root: &Path, cmd: &str, args: &[String]) -> Value {
             "mode": "workflow"
         }
     });
+    if let Some(map) = out.as_object_mut() {
+        map.remove("receipt_hash");
+    }
     out["receipt_hash"] = Value::String(receipt_hash(&out));
     out
 }

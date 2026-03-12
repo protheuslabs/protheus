@@ -8,6 +8,7 @@
     "metrics:rust-share:gate": "bash scripts/metrics/tracked_loc_report.sh --ref=HEAD --min-rust-share=60",
     "ops:layer-placement:check": "node scripts/ci/layer_placement_check.mjs",
     "ops:client-layer:boundary": "node scripts/ci/client_layer_boundary_audit.mjs --strict=1",
+    "ops:module-cohesion:audit": "node scripts/ci/module_cohesion_policy_audit.mjs --strict=1",
     "ops:simplicity:audit": "node scripts/ci/simplicity_drift_audit.mjs --strict=1",
     "ops:churn:guard": "node scripts/ci/churn_guard.mjs --strict=1",
     "ops:repo-surface:audit": "node scripts/ci/repo_surface_policy_audit.mjs --strict=1",

@@ -1,0 +1,37 @@
+{
+  "scan_roots": [
+    "core",
+    "client",
+    "adapters",
+    "apps",
+    "packages",
+    "scripts"
+  ],
+  "include_extensions": [
+    ".rs",
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx",
+    ".mjs",
+    ".cjs",
+    ".py",
+    ".sh"
+  ],
+  "ignore_path_prefixes": [
+    "client/runtime/local/",
+    "core/local/",
+    "scripts/generated/",
+    "packages/protheus-npm/dist/"
+  ],
+  "ignore_exact_paths": [],
+  "hard_cap_lines_default": 600,
+  "hard_cap_lines_by_prefix": {
+    "client/": 400
+  },
+  "warning_threshold_lines": 800,
+  "legacy_growth_slack_lines": 25,
+  "legacy_baseline_path": "client/runtime/config/module_cohesion_legacy_baseline.json",
+  "stable_simple_exempt_prefixes": [],
+  "stable_simple_exempt_paths": []
+}

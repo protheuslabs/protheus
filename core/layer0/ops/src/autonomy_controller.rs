@@ -116,6 +116,9 @@ fn native_receipt(root: &Path, cmd: &str, argv: &[String]) -> Value {
             }
         }
     ]);
+    if let Some(map) = out.as_object_mut() {
+        map.remove("receipt_hash");
+    }
     out["receipt_hash"] = Value::String(receipt_hash(&out));
     out
 }
@@ -152,6 +155,9 @@ fn native_pain_signal_receipt(root: &Path, argv: &[String]) -> Value {
             }
         }
     ]);
+    if let Some(map) = out.as_object_mut() {
+        map.remove("receipt_hash");
+    }
     out["receipt_hash"] = Value::String(receipt_hash(&out));
     out
 }

@@ -271,13 +271,8 @@ fn collect_safety_plane_state(root: &Path, policy: &OriginIntegrityPolicy) -> Va
 }
 
 fn run_dependency_boundary_check(root: &Path, policy: &OriginIntegrityPolicy) -> Value {
-    let js_script = root.join("client/runtime/systems/ops/dependency_boundary_guard.js");
-    let ts_script = root.join("client/runtime/systems/ops/dependency_boundary_guard.ts");
-    let script = if js_script.exists() {
-        js_script
-    } else {
-        ts_script
-    };
+    // Run the authoritative CI guard directly to avoid Node/TS loader ambiguity.
+    let script = root.join("scripts/ci/dependency_boundary_guard.mjs");
     if !script.exists() {
         return json!({
             "ok": false,
