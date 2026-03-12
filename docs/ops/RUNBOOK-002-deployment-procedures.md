@@ -184,6 +184,8 @@ Deployments are automatically logged. View recent history:
 - Create deployment calendar integration
 - Automate post-deployment metric collection
 - Build deployment correlation with incident reports
+- Document rollback testing procedures for staging environment
+- Add checklist for database migration validation
 
 ## Document History
 
