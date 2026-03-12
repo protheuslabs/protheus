@@ -2112,6 +2112,9 @@ fn run_daemon(args: &HashMap<String, String>) {
             "rag-ingest" => (rag_runtime::ingest_payload(&req_args), false),
             "rag-search" => (rag_runtime::search_payload(&req_args), false),
             "rag-chat" => (rag_runtime::chat_payload(&req_args), false),
+            "nano-chat" => (rag_runtime::nano_chat_payload(&req_args), false),
+            "nano-train" => (rag_runtime::nano_train_payload(&req_args), false),
+            "nano-fork" => (rag_runtime::nano_fork_payload(&req_args), false),
             "rag-status" => (rag_runtime::status_payload(&req_args), false),
             "rag-merge-vault" => (rag_runtime::merge_vault_payload(&req_args), false),
             "memory-upgrade-byterover" => {
@@ -2177,6 +2180,30 @@ fn run_daemon(args: &HashMap<String, String>) {
             "stable-rag-chat" => match rag_runtime::ensure_supported_version(&req_args) {
                 Ok(version) => {
                     let mut payload = rag_runtime::chat_payload(&req_args);
+                    payload["api_version"] = json!(version);
+                    (payload, false)
+                }
+                Err(err) => (err, false),
+            },
+            "stable-nano-chat" => match rag_runtime::ensure_supported_version(&req_args) {
+                Ok(version) => {
+                    let mut payload = rag_runtime::nano_chat_payload(&req_args);
+                    payload["api_version"] = json!(version);
+                    (payload, false)
+                }
+                Err(err) => (err, false),
+            },
+            "stable-nano-train" => match rag_runtime::ensure_supported_version(&req_args) {
+                Ok(version) => {
+                    let mut payload = rag_runtime::nano_train_payload(&req_args);
+                    payload["api_version"] = json!(version);
+                    (payload, false)
+                }
+                Err(err) => (err, false),
+            },
+            "stable-nano-fork" => match rag_runtime::ensure_supported_version(&req_args) {
+                Ok(version) => {
+                    let mut payload = rag_runtime::nano_fork_payload(&req_args);
                     payload["api_version"] = json!(version);
                     (payload, false)
                 }
@@ -2282,6 +2309,9 @@ fn main() {
         "rag-ingest" => run_value_payload(rag_runtime::ingest_payload(&kv)),
         "rag-search" => run_value_payload(rag_runtime::search_payload(&kv)),
         "rag-chat" => run_value_payload(rag_runtime::chat_payload(&kv)),
+        "nano-chat" => run_value_payload(rag_runtime::nano_chat_payload(&kv)),
+        "nano-train" => run_value_payload(rag_runtime::nano_train_payload(&kv)),
+        "nano-fork" => run_value_payload(rag_runtime::nano_fork_payload(&kv)),
         "rag-status" => run_value_payload(rag_runtime::status_payload(&kv)),
         "rag-merge-vault" => run_value_payload(rag_runtime::merge_vault_payload(&kv)),
         "memory-upgrade-byterover" => {
@@ -2341,6 +2371,30 @@ fn main() {
         "stable-rag-chat" => match rag_runtime::ensure_supported_version(&kv) {
             Ok(version) => {
                 let mut out = rag_runtime::chat_payload(&kv);
+                out["api_version"] = json!(version);
+                run_value_payload(out);
+            }
+            Err(err) => run_value_payload(err),
+        },
+        "stable-nano-chat" => match rag_runtime::ensure_supported_version(&kv) {
+            Ok(version) => {
+                let mut out = rag_runtime::nano_chat_payload(&kv);
+                out["api_version"] = json!(version);
+                run_value_payload(out);
+            }
+            Err(err) => run_value_payload(err),
+        },
+        "stable-nano-train" => match rag_runtime::ensure_supported_version(&kv) {
+            Ok(version) => {
+                let mut out = rag_runtime::nano_train_payload(&kv);
+                out["api_version"] = json!(version);
+                run_value_payload(out);
+            }
+            Err(err) => run_value_payload(err),
+        },
+        "stable-nano-fork" => match rag_runtime::ensure_supported_version(&kv) {
+            Ok(version) => {
+                let mut out = rag_runtime::nano_fork_payload(&kv);
                 out["api_version"] = json!(version);
                 run_value_payload(out);
             }

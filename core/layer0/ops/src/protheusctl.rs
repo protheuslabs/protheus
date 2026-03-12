@@ -582,6 +582,47 @@ fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route> {
         "chat"
             if rest
                 .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("nano"))
+                .unwrap_or(false) =>
+        {
+            let mut args = vec!["chat".to_string(), "nano".to_string()];
+            args.extend(rest.iter().skip(1).cloned());
+            Some(Route {
+                script_rel: "core://rag".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "train"
+            if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("nano"))
+                .unwrap_or(false) =>
+        {
+            let mut args = vec!["train".to_string(), "nano".to_string()];
+            args.extend(rest.iter().skip(1).cloned());
+            Some(Route {
+                script_rel: "core://rag".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "nano" => {
+            let mut args = vec!["nano".to_string()];
+            if rest.is_empty() {
+                args.push("chat".to_string());
+            } else {
+                args.extend(rest.iter().cloned());
+            }
+            Some(Route {
+                script_rel: "core://rag".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "chat"
+            if rest
+                .first()
                 .map(|v| v.trim().eq_ignore_ascii_case("with"))
                 .unwrap_or(false)
                 && rest
@@ -650,6 +691,63 @@ fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route> {
             args.extend(rest.iter().skip(1).cloned());
             Some(Route {
                 script_rel: "core://ab-lane-eval".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "model" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "status".to_string());
+            let args = match sub.as_str() {
+                "optimize"
+                    if rest
+                        .get(1)
+                        .map(|v| v.trim().eq_ignore_ascii_case("minimax"))
+                        .unwrap_or(false) =>
+                {
+                    std::iter::once("optimize".to_string())
+                        .chain(std::iter::once("--profile=minimax".to_string()))
+                        .chain(rest.iter().skip(2).cloned())
+                        .collect::<Vec<_>>()
+                }
+                "use"
+                    if rest
+                        .get(1)
+                        .map(|v| v.trim().eq_ignore_ascii_case("cheap"))
+                        .unwrap_or(false) =>
+                {
+                    std::iter::once("optimize".to_string())
+                        .chain(std::iter::once("--profile=minimax".to_string()))
+                        .chain(rest.iter().skip(2).cloned())
+                        .collect::<Vec<_>>()
+                }
+                _ => {
+                    if rest.is_empty() {
+                        vec!["status".to_string()]
+                    } else {
+                        rest.to_vec()
+                    }
+                }
+            };
+            Some(Route {
+                script_rel: "core://model-router".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "agent"
+            if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("reset"))
+                .unwrap_or(false) =>
+        {
+            let args = std::iter::once("reset-agent".to_string())
+                .chain(rest.iter().skip(1).cloned())
+                .collect::<Vec<_>>();
+            Some(Route {
+                script_rel: "core://model-router".to_string(),
                 args,
                 forward_stdin: false,
             })
@@ -1497,6 +1595,39 @@ mod tests {
     }
 
     #[test]
+    fn core_shortcut_routes_chat_nano_to_rag_domain() {
+        let route = resolve_core_shortcuts(
+            "chat",
+            &["nano".to_string(), "--q=hello".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://rag");
+        assert_eq!(route.args, vec!["chat", "nano", "--q=hello"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_train_nano_to_rag_domain() {
+        let route = resolve_core_shortcuts(
+            "train",
+            &["nano".to_string(), "--depth=12".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://rag");
+        assert_eq!(route.args, vec!["train", "nano", "--depth=12"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_nano_fork_to_rag_domain() {
+        let route = resolve_core_shortcuts(
+            "nano",
+            &["fork".to_string(), "--target=.nanochat/fork".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://rag");
+        assert_eq!(route.args, vec!["nano", "fork", "--target=.nanochat/fork"]);
+    }
+
+    #[test]
     fn core_shortcut_routes_eval_enable_neuralavb() {
         let route = resolve_core_shortcuts(
             "eval",
@@ -1531,6 +1662,35 @@ mod tests {
                 "--baseline-cost-usd=20"
             ]
         );
+    }
+
+    #[test]
+    fn core_shortcut_routes_model_optimize_minimax() {
+        let route = resolve_core_shortcuts(
+            "model",
+            &[
+                "optimize".to_string(),
+                "minimax".to_string(),
+                "--compact-lines=20".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://model-router");
+        assert_eq!(
+            route.args,
+            vec!["optimize", "--profile=minimax", "--compact-lines=20"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_agent_reset_to_model_router() {
+        let route = resolve_core_shortcuts(
+            "agent",
+            &["reset".to_string(), "--scope=routing".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://model-router");
+        assert_eq!(route.args, vec!["reset-agent", "--scope=routing"]);
     }
 
     #[test]

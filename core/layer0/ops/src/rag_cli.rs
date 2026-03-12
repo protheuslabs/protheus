@@ -20,6 +20,9 @@ fn usage() {
     eprintln!("  protheus-ops rag ingest [--path=<path>] [--chunk-size=<n>] [--chunk-overlap=<n>]");
     eprintln!("  protheus-ops rag search --q=<query> [--top=<n>]");
     eprintln!("  protheus-ops rag chat --q=<query> [--top=<n>]");
+    eprintln!("  protheus-ops rag chat nano [--q=<query>] [--top=<n>]");
+    eprintln!("  protheus-ops rag train nano [--depth=<n>] [--profile=<name>]");
+    eprintln!("  protheus-ops rag nano fork [--target=<path>]");
     eprintln!("  protheus-ops rag merge-vault [--max-merge=<n>]");
     eprintln!("  protheus-ops rag memory status");
     eprintln!("  protheus-ops rag memory search --q=<query> [--top=<n>]");
@@ -219,9 +222,62 @@ fn build_invocation(argv: &[String]) -> Result<Invocation, String> {
             memory_args: normalize_search_args(&argv.iter().skip(1).cloned().collect::<Vec<_>>()),
         }),
         "chat" => Ok(Invocation::MemoryRun {
-            memory_command: "stable-rag-chat".to_string(),
-            memory_args: normalize_search_args(&argv.iter().skip(1).cloned().collect::<Vec<_>>()),
+            memory_command: if argv
+                .get(1)
+                .map(|v| v.trim().eq_ignore_ascii_case("nano"))
+                .unwrap_or(false)
+            {
+                "stable-nano-chat".to_string()
+            } else {
+                "stable-rag-chat".to_string()
+            },
+            memory_args: normalize_search_args(
+                &argv
+                    .iter()
+                    .skip(if argv
+                        .get(1)
+                        .map(|v| v.trim().eq_ignore_ascii_case("nano"))
+                        .unwrap_or(false)
+                    {
+                        2
+                    } else {
+                        1
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>(),
+            ),
         }),
+        "train" => {
+            let target = argv
+                .get(1)
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_default();
+            if target == "nano" {
+                Ok(Invocation::MemoryRun {
+                    memory_command: "stable-nano-train".to_string(),
+                    memory_args: argv.iter().skip(2).cloned().collect(),
+                })
+            } else {
+                Err("train_unknown_target".to_string())
+            }
+        }
+        "nano" => {
+            let action = argv
+                .get(1)
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "chat".to_string());
+            match action.as_str() {
+                "fork" => Ok(Invocation::MemoryRun {
+                    memory_command: "stable-nano-fork".to_string(),
+                    memory_args: argv.iter().skip(2).cloned().collect(),
+                }),
+                "chat" => Ok(Invocation::MemoryRun {
+                    memory_command: "stable-nano-chat".to_string(),
+                    memory_args: normalize_search_args(&argv.iter().skip(2).cloned().collect::<Vec<_>>()),
+                }),
+                _ => Err("nano_unknown_action".to_string()),
+            }
+        }
         "merge" | "merge-vault" => Ok(Invocation::MemoryRun {
             memory_command: "rag-merge-vault".to_string(),
             memory_args: argv.iter().skip(1).cloned().collect(),
@@ -424,6 +480,66 @@ mod tests {
             } => {
                 assert_eq!(memory_command, "stable-memory-benchmark-ama");
                 assert!(memory_args.iter().any(|v| v == "--threshold=0.8"));
+            }
+            _ => panic!("expected memory run"),
+        }
+    }
+
+    #[test]
+    fn chat_nano_routes_to_stable_nano_chat() {
+        let inv = build_invocation(&[
+            "chat".to_string(),
+            "nano".to_string(),
+            "--q=teach me".to_string(),
+        ])
+        .expect("invocation");
+        match inv {
+            Invocation::MemoryRun {
+                memory_command,
+                memory_args,
+            } => {
+                assert_eq!(memory_command, "stable-nano-chat");
+                assert!(memory_args.iter().any(|v| v == "--q=teach me"));
+            }
+            _ => panic!("expected memory run"),
+        }
+    }
+
+    #[test]
+    fn train_nano_routes_to_stable_nano_train() {
+        let inv = build_invocation(&[
+            "train".to_string(),
+            "nano".to_string(),
+            "--depth=12".to_string(),
+        ])
+        .expect("invocation");
+        match inv {
+            Invocation::MemoryRun {
+                memory_command,
+                memory_args,
+            } => {
+                assert_eq!(memory_command, "stable-nano-train");
+                assert!(memory_args.iter().any(|v| v == "--depth=12"));
+            }
+            _ => panic!("expected memory run"),
+        }
+    }
+
+    #[test]
+    fn nano_fork_routes_to_stable_nano_fork() {
+        let inv = build_invocation(&[
+            "nano".to_string(),
+            "fork".to_string(),
+            "--target=.nanochat/fork".to_string(),
+        ])
+        .expect("invocation");
+        match inv {
+            Invocation::MemoryRun {
+                memory_command,
+                memory_args,
+            } => {
+                assert_eq!(memory_command, "stable-nano-fork");
+                assert!(memory_args.iter().any(|v| v == "--target=.nanochat/fork"));
             }
             _ => panic!("expected memory run"),
         }
