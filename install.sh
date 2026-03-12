@@ -82,6 +82,8 @@ download_asset() {
   asset_name="$2"
   asset_out="$3"
   url="$BASE_URL/$version_tag/$asset_name"
+  # TODO(rk): Consider adding retry logic with exponential backoff for transient network failures.
+  # This would improve install reliability in CI environments and regions with intermittent connectivity.
   if curl -fsSL "$url" -o "$asset_out"; then
     echo "[protheus install] downloaded $asset_name"
     return 0
