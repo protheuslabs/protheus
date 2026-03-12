@@ -1522,7 +1522,7 @@
     "lane:v6-observability-004.9:run": "node scripts/ci/srs_repair_lane_runner.mjs --id=V6-OBSERVABILITY-004.9 --strict=1",
     "lane:v6-observability-004.10:run": "node scripts/ci/srs_repair_lane_runner.mjs --id=V6-OBSERVABILITY-004.10 --strict=1",
     "lane:v6-cockpit-025.1:run": "cargo test -q -p protheus-ops-core-v1 register_resume_and_steer_persist_state",
-    "lane:v6-cockpit-025.2:run": "cargo test -q -p protheus-ops-core-v1 register_resume_and_steer_persist_state",
+    "lane:v6-cockpit-025.2:run": "npm run -s lane:v6-cockpit-025.1:run",
     "lane:v6-cockpit-025.3:run": "cargo test -q -p protheus-ops-core-v1 lifecycle_kill_tail_and_inspect_work",
     "lane:v6-cockpit-025.4:run": "cargo test -q -p protheus-ops-core-v1 register_resume_and_steer_persist_state && cargo test -q -p protheus-ops-core-v1 lifecycle_kill_tail_and_inspect_work",
     "lane:v6-cockpit-025.5:run": "node scripts/ci/srs_repair_lane_runner.mjs --id=V6-COCKPIT-025.5 --strict=1",
@@ -1599,7 +1599,9 @@
     "lane:v6-skills-001.22:run": "node scripts/ci/srs_repair_lane_runner.mjs --id=V6-SKILLS-001.22 --strict=1",
     "test:security:truth-gate": "node tests/client-memory-tools/truth_gate_security_plane_boundary.test.js",
     "ops:blocked-external:packet-gate": "node scripts/ci/blocked_external_packet_gate.mjs",
-    "test:ops:blocked-external:packet-gate": "node tests/client-memory-tools/blocked_external_packet_gate.test.js"
+    "test:ops:blocked-external:packet-gate": "node tests/client-memory-tools/blocked_external_packet_gate.test.js",
+    "ops:todo:audit-full": "node scripts/ci/todo_audit_full.mjs",
+    "ops:blocked-external:human-map": "node scripts/ci/blocked_external_human_action_map.mjs"
   },
   "bin": {
     "protheus": "./client/cli/bin/protheus.ts",

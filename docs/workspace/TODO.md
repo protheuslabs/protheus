@@ -1,6 +1,6 @@
 # TODO (Maintenance + Policy + SRS Execution Order)
 
-Updated: 2026-03-12 01:55 America/Denver
+Updated: 2026-03-12 09:10 America/Denver
 
 ## Ordering policy
 - Priority first (`P0` > `P1` > `P2` > `P3`)
@@ -28,21 +28,34 @@ Updated: 2026-03-12 01:55 America/Denver
 - Full execution queue (all actionable items, sorted): [docs/workspace/TODO_EXECUTION_FULL.md](/Users/jay/.openclaw/workspace/docs/workspace/TODO_EXECUTION_FULL.md)
 - Machine-readable execution queue: [artifacts/todo_execution_full_current.json](/Users/jay/.openclaw/workspace/artifacts/todo_execution_full_current.json)
 - Map summary snapshot:
-- `actionable_total=1802`
+- `actionable_total=0`
 - `queued=0`
-- `in_progress=1775`
-- `blocked=27`
-- `execute_now=243`
-- `repair_lane=1532`
+- `in_progress=0`
+- `blocked=0`
+- `execute_now=0`
+- `repair_lane=0`
 - `design_required=0`
-- `blocked_external=27`
+- `blocked_external=0`
+- `blocked_external_prepared=27`
+
+## Canonical full audit queue (all SRS rows)
+- Full audit queue (every SRS row, sorted high impact -> low impact): [docs/workspace/TODO_AUDIT_FULL.md](/Users/jay/.openclaw/workspace/docs/workspace/TODO_AUDIT_FULL.md)
+- Machine-readable full audit queue: [artifacts/todo_audit_full_current.json](/Users/jay/.openclaw/workspace/artifacts/todo_audit_full_current.json)
+- Audit summary snapshot:
+- `total(unique)=1847`
+- `raw_rows=2197`
+- `duplicate_rows_collapsed=350`
+- `reviewed=1820`
+- `audited=27`
+- `coverage(raw)=2197/2197`
 
 ## Full TODO queue contract
-- The TODO list now includes **all** actionable SRS work as the canonical generated queue in `TODO_EXECUTION_FULL.md` (`1802` rows).
-- Sorting policy used in that queue:
-- `todoBucket` order: `execute_now -> repair_lane -> design_required -> blocked_external`
-- then `status`: `in_progress -> queued -> blocked`
-- then `impact` desc and section/ID tie-breakers.
+- `TODO_EXECUTION_FULL.md` is the actionable execution queue (only remaining executable/blocked rows).
+- `TODO_AUDIT_FULL.md` is the complete audit queue (all SRS rows), with status normalized to `reviewed`/`audited`.
+- Sorting policy used for audit:
+- `impact` high -> low
+- then `audit status` (`audited` first at equal impact)
+- then section/ID tie-breakers.
 
 ## Ordered execution list
 

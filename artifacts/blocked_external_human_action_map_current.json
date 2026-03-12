@@ -1,0 +1,414 @@
+{
+  "ok": true,
+  "type": "blocked_external_human_action_map",
+  "source": {
+    "srsRegression": "artifacts/srs_full_regression_current.json",
+    "humanActions": "docs/client/HUMAN_ONLY_ACTIONS.md"
+  },
+  "summary": {
+    "total": 27,
+    "missing_human_mapping": 13,
+    "mapped_no_evidence_artifacts": 13,
+    "waiting_on_human_evidence": 1,
+    "ready_for_external_reconcile": 0
+  },
+  "rows": [
+    {
+      "id": "V7-META-016",
+      "impact": "10",
+      "layerMap": "0/1/2",
+      "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
+      "hmanRefs": [
+        "HMAN-084"
+      ],
+      "hmanDetails": [
+        {
+          "id": "HMAN-084",
+          "action": "Contract quantum provider access and approve spend/risk budget for live broker validation",
+          "evidencePath": "state/ops/evidence/metakernel_quantum_provider_contract_<date>.pdf",
+          "evidenceExists": false
+        }
+      ],
+      "status": "mapped_no_evidence_artifacts"
+    },
+    {
+      "id": "V7-META-017",
+      "impact": "10",
+      "layerMap": "0/1/2",
+      "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
+      "hmanRefs": [
+        "HMAN-081"
+      ],
+      "hmanDetails": [
+        {
+          "id": "HMAN-081",
+          "action": "Approve and fund substrate hardware access matrix (MCU, ternary candidate hardware, and lab infrastructure)",
+          "evidencePath": "state/ops/evidence/metakernel_substrate_hardware_matrix_approval_<date>.md",
+          "evidenceExists": false
+        }
+      ],
+      "status": "mapped_no_evidence_artifacts"
+    },
+    {
+      "id": "V7-META-018",
+      "impact": "10",
+      "layerMap": "0/1/2",
+      "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
+      "hmanRefs": [
+        "HMAN-082",
+        "HMAN-083"
+      ],
+      "hmanDetails": [
+        {
+          "id": "HMAN-082",
+          "action": "Approve neural-I/O ethics, consent, and legal governance envelope",
+          "evidencePath": "state/ops/evidence/metakernel_neural_governance_approval_<date>.md",
+          "evidenceExists": false
+        },
+        {
+          "id": "HMAN-083",
+          "action": "Designate dual-control approver roster + physical revoke path owner for neural stimulation class actions",
+          "evidencePath": "state/ops/evidence/metakernel_neural_dual_control_roster_<date>.md",
+          "evidenceExists": false
+        }
+      ],
+      "status": "mapped_no_evidence_artifacts"
+    },
+    {
+      "id": "V7-TOP1-009",
+      "impact": "10",
+      "layerMap": "0/1/2",
+      "section": "Technical Excellence #1 Intake (Doc `12_nnoI-1YXaxVc6YSgYRCMRKXNIWCcP1XKCJHv_NBeY`, 2026-03-09)",
+      "hmanRefs": [
+        "HMAN-087"
+      ],
+      "hmanDetails": [
+        {
+          "id": "HMAN-087",
+          "action": "Contract and authorize independent third-party kernel/security verification publication",
+          "evidencePath": "state/ops/evidence/independent_kernel_verification_contract_<date>.pdf",
+          "evidenceExists": false
+        }
+      ],
+      "status": "mapped_no_evidence_artifacts"
+    },
+    {
+      "id": "V7-TOP1-010",
+      "impact": "10",
+      "layerMap": "0/1/2",
+      "section": "Technical Excellence #1 Intake (Doc `12_nnoI-1YXaxVc6YSgYRCMRKXNIWCcP1XKCJHv_NBeY`, 2026-03-09)",
+      "hmanRefs": [
+        "HMAN-086"
+      ],
+      "hmanDetails": [
+        {
+          "id": "HMAN-086",
+          "action": "Approve high-assurance profile scope and public claim boundaries (e.g., medical/defense variant)",
+          "evidencePath": "state/ops/evidence/high_assurance_profile_scope_approval_<date>.md",
+          "evidenceExists": false
+        }
+      ],
+      "status": "mapped_no_evidence_artifacts"
+    },
+    {
+      "id": "V6-SUBSTRATE-002.4",
+      "impact": "9",
+      "layerMap": "-1/0/1/2/3/adapter",
+      "section": "Biological Neural Hybrid Integration Intake (x.com/Crypto_Jargon 2030603197237387411, 2026-03-09)",
+      "hmanRefs": [
+        "HMAN-BIO-001"
+      ],
+      "hmanDetails": [
+        {
+          "id": "HMAN-BIO-001",
+          "action": "",
+          "evidencePath": "",
+          "evidenceExists": false
+        }
+      ],
+      "status": "waiting_on_human_evidence"
+    },
+    {
+      "id": "V6-F100-022",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "hmanRefs": [],
+      "hmanDetails": [],
+      "status": "missing_human_mapping"
+    },
+    {
+      "id": "V6-F100-023",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "hmanRefs": [],
+      "hmanDetails": [],
+      "status": "missing_human_mapping"
+    },
+    {
+      "id": "V6-F100-024",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "hmanRefs": [],
+      "hmanDetails": [],
+      "status": "missing_human_mapping"
+    },
+    {
+      "id": "V6-F100-025",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "hmanRefs": [],
+      "hmanDetails": [],
+      "status": "missing_human_mapping"
+    },
+    {
+      "id": "V6-F100-034",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "hmanRefs": [],
+      "hmanDetails": [],
+      "status": "missing_human_mapping"
+    },
+    {
+      "id": "V6-F100-043",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "hmanRefs": [
+        "HMAN-026",
+        "HMAN-027"
+      ],
+      "hmanDetails": [
+        {
+          "id": "HMAN-026",
+          "action": "Engage and sign independent certification path for SOC2 Type II / ISO 27001",
+          "evidencePath": "state/ops/evidence/soc2_iso_certification_engagement_<date>.pdf",
+          "evidenceExists": false
+        },
+        {
+          "id": "HMAN-027",
+          "action": "Approve regulated-market certification strategy (FedRAMP/GDPR attestation scope)",
+          "evidencePath": "state/ops/evidence/regulated_certification_scope_<date>.md",
+          "evidenceExists": false
+        }
+      ],
+      "status": "mapped_no_evidence_artifacts"
+    },
+    {
+      "id": "V6-F100-044",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "hmanRefs": [
+        "HMAN-028"
+      ],
+      "hmanDetails": [
+        {
+          "id": "HMAN-028",
+          "action": "Approve enterprise commercial support envelope (SLA tiers, indemnity, support contact)",
+          "evidencePath": "state/ops/evidence/enterprise_support_envelope_<date>.md",
+          "evidenceExists": false
+        }
+      ],
+      "status": "mapped_no_evidence_artifacts"
+    },
+    {
+      "id": "V6-F100-045",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "hmanRefs": [
+        "HMAN-026",
+        "HMAN-027"
+      ],
+      "hmanDetails": [
+        {
+          "id": "HMAN-026",
+          "action": "Engage and sign independent certification path for SOC2 Type II / ISO 27001",
+          "evidencePath": "state/ops/evidence/soc2_iso_certification_engagement_<date>.pdf",
+          "evidenceExists": false
+        },
+        {
+          "id": "HMAN-027",
+          "action": "Approve regulated-market certification strategy (FedRAMP/GDPR attestation scope)",
+          "evidencePath": "state/ops/evidence/regulated_certification_scope_<date>.md",
+          "evidenceExists": false
+        }
+      ],
+      "status": "mapped_no_evidence_artifacts"
+    },
+    {
+      "id": "V6-F100-A-008",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "hmanRefs": [
+        "HMAN-032"
+      ],
+      "hmanDetails": [
+        {
+          "id": "HMAN-032",
+          "action": "Approve and publish enterprise legal packet (MSA + DPA + privacy + subprocessor list)",
+          "evidencePath": "state/ops/evidence/enterprise_legal_packet_publish_<date>.md",
+          "evidenceExists": false
+        }
+      ],
+      "status": "mapped_no_evidence_artifacts"
+    },
+    {
+      "id": "V6-F100-A-009",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "hmanRefs": [
+        "HMAN-033"
+      ],
+      "hmanDetails": [
+        {
+          "id": "HMAN-033",
+          "action": "Secure reference-customer publication rights and publish first case study",
+          "evidencePath": "state/ops/evidence/reference_case_study_publish_<date>.md",
+          "evidenceExists": false
+        }
+      ],
+      "status": "mapped_no_evidence_artifacts"
+    },
+    {
+      "id": "V6-F100-A-010",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "hmanRefs": [
+        "HMAN-034"
+      ],
+      "hmanDetails": [
+        {
+          "id": "HMAN-034",
+          "action": "Approve and execute cloud marketplace listings (AWS/Azure/GCP)",
+          "evidencePath": "state/ops/evidence/cloud_marketplace_listing_<date>.md",
+          "evidenceExists": false
+        }
+      ],
+      "status": "mapped_no_evidence_artifacts"
+    },
+    {
+      "id": "V6-F100-A-011",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "hmanRefs": [
+        "HMAN-035"
+      ],
+      "hmanDetails": [
+        {
+          "id": "HMAN-035",
+          "action": "Activate named 24x7 enterprise support roster and escalation channels",
+          "evidencePath": "state/ops/evidence/enterprise_support_roster_<date>.md",
+          "evidenceExists": false
+        }
+      ],
+      "status": "mapped_no_evidence_artifacts"
+    },
+    {
+      "id": "V6-EDGE-005",
+      "impact": "10",
+      "layerMap": "0/1/2/client",
+      "section": "OpenDev Dual-Agent Coding Patterns Intake (2026-03-09)",
+      "hmanRefs": [],
+      "hmanDetails": [],
+      "status": "missing_human_mapping"
+    },
+    {
+      "id": "V6-COMP-005",
+      "impact": "9",
+      "layerMap": "0/1/2",
+      "section": "Production Reliability Fortress for Agentic DeFi Systems Source Coverage Intake (Doc `17nmf3l_DnDSoATBUl9SdrgQTLaqpM9G8EWEmlmKnuLY`, 2026-03-11)",
+      "hmanRefs": [],
+      "hmanDetails": [],
+      "status": "missing_human_mapping"
+    },
+    {
+      "id": "V6-SBOX-006",
+      "impact": "10",
+      "layerMap": "-1/0/1/2/3/adapter",
+      "section": "Production Reliability Fortress for Agentic DeFi Systems Source Coverage Intake (Doc `17nmf3l_DnDSoATBUl9SdrgQTLaqpM9G8EWEmlmKnuLY`, 2026-03-11)",
+      "hmanRefs": [],
+      "hmanDetails": [],
+      "status": "missing_human_mapping"
+    },
+    {
+      "id": "V6-FLUX-007",
+      "impact": "7",
+      "layerMap": "-1/0/1/2/3/adapter",
+      "section": "Production Reliability Fortress for Agentic DeFi Systems Source Coverage Intake (Doc `17nmf3l_DnDSoATBUl9SdrgQTLaqpM9G8EWEmlmKnuLY`, 2026-03-11)",
+      "hmanRefs": [],
+      "hmanDetails": [],
+      "status": "missing_human_mapping"
+    },
+    {
+      "id": "V6-TOOLS-005",
+      "impact": "8",
+      "layerMap": "0/1/2",
+      "section": "Production Reliability Fortress for Agentic DeFi Systems Source Coverage Intake (Doc `17nmf3l_DnDSoATBUl9SdrgQTLaqpM9G8EWEmlmKnuLY`, 2026-03-11)",
+      "hmanRefs": [],
+      "hmanDetails": [],
+      "status": "missing_human_mapping"
+    },
+    {
+      "id": "V6-PAY-007",
+      "impact": "9",
+      "layerMap": "0/1/2/adapter/client",
+      "section": "Production Reliability Fortress for Agentic DeFi Systems Source Coverage Intake (Doc `17nmf3l_DnDSoATBUl9SdrgQTLaqpM9G8EWEmlmKnuLY`, 2026-03-11)",
+      "hmanRefs": [],
+      "hmanDetails": [],
+      "status": "missing_human_mapping"
+    },
+    {
+      "id": "V2-012",
+      "impact": "8",
+      "layerMap": "1/2/client/adapter",
+      "section": "V2",
+      "hmanRefs": [],
+      "hmanDetails": [],
+      "status": "missing_human_mapping"
+    },
+    {
+      "id": "V6-RUST50-CONF-004",
+      "impact": "9",
+      "layerMap": "0/1/2/client",
+      "section": "External Requirements Intake (Mega Sprint 1: Public 50 Percent Visible Rust, 2026-03-03)",
+      "hmanRefs": [],
+      "hmanDetails": [],
+      "status": "missing_human_mapping"
+    },
+    {
+      "id": "V6-GAP-006",
+      "impact": "10",
+      "layerMap": "0/1/2/client",
+      "section": "Testing + Documentation + Installer Gap Closer (2026-03-06)",
+      "hmanRefs": [
+        "HMAN-028",
+        "HMAN-029"
+      ],
+      "hmanDetails": [
+        {
+          "id": "HMAN-028",
+          "action": "Approve enterprise commercial support envelope (SLA tiers, indemnity, support contact)",
+          "evidencePath": "state/ops/evidence/enterprise_support_envelope_<date>.md",
+          "evidenceExists": false
+        },
+        {
+          "id": "HMAN-029",
+          "action": "Approve release authority model for public cadence (tagging, notes, emergency revocation)",
+          "evidencePath": "state/ops/evidence/release_authority_model_<date>.md",
+          "evidenceExists": false
+        }
+      ],
+      "status": "mapped_no_evidence_artifacts"
+    }
+  ]
+}
