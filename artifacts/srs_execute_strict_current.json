@@ -1,0 +1,80 @@
+{
+  "ok": true,
+  "type": "srs_execute_strict",
+  "generatedAt": "2026-03-12T05:06:17.730Z",
+  "summary": {
+    "execute_now_before": 143,
+    "queue_scanned": 143,
+    "queue_executed": 143,
+    "queue_failed": 0,
+    "queue_skipped": 0,
+    "queue_receipt_hash": "592c9f1a248acfe4e531bf975505ee938e69eaf0f4420be8ef61f439e233ee55",
+    "full_regression_fail": 0,
+    "top200_regression_fail": 0,
+    "execute_now_after": 143
+  },
+  "steps": [
+    {
+      "name": "srs_actionable_map:pre",
+      "command": "node scripts/ci/srs_actionable_map.mjs",
+      "ok": true,
+      "status": 0,
+      "stdout_tail": "{\n  \"ok\": true,\n  \"type\": \"srs_actionable_map\",\n  \"out_json\": \"artifacts/srs_actionable_map_current.json\",\n  \"out_md\": \"docs/workspace/SRS_ACTIONABLE_MAP_CURRENT.md\",\n  \"summary\": {\n    \"generatedAt\": \"2026-03-12T05:06:17.798Z\",\n    \"actionable_total\": 170,\n    \"queued\": 0,\n    \"in_progress\": 143,\n    \"blocked\": 27,\n    \"execute_now\": 143,\n    \"repair_lane\": 0,\n    \"design_required\": 0,\n    \"blocked_external\": 27\n  }\n}",
+      "stderr_tail": ""
+    },
+    {
+      "name": "backlog_queue_executor:run_all_with_tests",
+      "command": "cargo run -q -p protheus-ops-core --bin protheus-ops -- backlog-queue-executor run --all=1 --with-tests=1",
+      "ok": true,
+      "status": 0,
+      "stdout_tail": "liverables\\\":[{\\\"path\\\":\\\"planes/contracts/srs/V6-SKILLS-001.22.json\\\",\\\"type\\\":\\\"contract\\\"},{\\\"path\\\":\\\"state/ops/srs_contract_runtime/V6-SKILLS-001.22/latest.json\\\",\\\"type\\\":\\\"state_receipt\\\"},{\\\"path\\\":\\\"state/ops/srs_contract_runtime/history.jsonl\\\",\\\"type\\\":\\\"execution_history\\\"}],\\\"execution_contract\\\":{\\\"deterministic_receipt_required\\\":true,\\\"history_path\\\":\\\"state/ops/srs_contract_runtime/history.jsonl\\\",\\\"mutable_state_path\\\":\\\"state/ops/srs_contract_runtime/V6-SKILLS-001.22/latest.json\\\",\\\"runtime\\\":\\\"core/layer2/ops:srs_contract_runtime\\\"},\\\"generated_from\\\":{\\\"generated_at\\\":\\\"2026-03-12T04:04:37.417Z\\\",\\\"source_queue\\\":\\\"artifacts/todo_execution_full_current.json\\\"},\\\"id\\\":\\\"V6-SKILLS-001.22\\\",\\\"impact\\\":7,\\\"layer_map\\\":\\\"0/1/2/client/app\\\",\\\"section\\\":\\\"Anthropic Agent Skills Library Source Coverage Addendum (Doc `1hCPkhlg80Wdtv-qqFnsUqaeFz-RAQddOS5p7kxuschg`, 2026-03-11)\\\",\\\"todo_bucket\\\":\\\"execute_now\\\",\\\"upgrade\\\":\\\"Workspace-Open Environment Activation Bridge Contract\\\",\\\"validation\\\":{\\\"fail_closed_on_missing_contract\\\":true,\\\"lane_command\\\":\\\"protheus-ops srs-contract-runtime run --id=V6-SKILLS-001.22\\\",\\\"status_command\\\":\\\"protheus-ops srs-contract-runtime status --id=V6-SKILLS-001.22\\\"}},\\\"contract_digest\\\":\\\"sha256:0d38a91d61a172c4c2efa4037e9785a79e3566528e56d892d1cf324cda4502ff\\\",\\\"contract_path\\\":\\\"/Users/jay/.openclaw/workspace/planes/contracts/srs/V6-SKILLS-001.22.json\\\",\\\"id\\\":\\\"V6-SKILLS-001.22\\\",\\\"lane\\\":\\\"srs_contract_runtime\\\",\\\"ok\\\":true,\\\"receipt_hash\\\":\\\"456a66889f6aaa50fcdaa2e265008b070197ea19427d3ca0d8996ea0eec3e5e1\\\",\\\"ts_epoch_ms\\\":1773291978342,\\\"type\\\":\\\"srs_contract_runtime_receipt\\\"}\"\n      },\n      \"lane_route\": \"core_srs_contract_runtime\",\n      \"lane_script\": \"core:srs_contract_runtime:V6-SKILLS-001.22\",\n      \"status\": \"executed\",\n      \"test_result\": null,\n      \"test_script\": null,\n      \"test_skip_reason\": null\n    }\n  ],\n  \"ts\": \"2026-03-12T05:06:18.343Z\",\n  \"type\": \"backlog_queue_executor\",\n  \"with_tests\": true\n}",
+      "stderr_tail": "warning: variable does not need to be mutable\n  --> core/layer2/ops/src/collector_cache.rs:98:9\n   |\n98 |     let mut ok = true;\n   |         ----^^\n   |         |\n   |         help: remove this `mut`\n   |\n   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default\n\nwarning: variable does not need to be mutable\n    --> core/layer1/security/src/security_wave1.rs:2543:9\n     |\n2543 |     let mut candidate = format!(\"T{}_{}_{}_auto\", tier, stem, kind);\n     |         ----^^^^^^^^^\n     |         |\n     |         help: remove this `mut`\n     |\n     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default\n\nwarning: variable does not need to be mutable\n    --> core/layer1/security/src/lib.rs:1738:17\n     |\n1738 |             let mut expires_at = state.get(\"expires_at\").cloned().unwrap_or(Value::Null);\n     |                 ----^^^^^^^^^^\n     |                 |\n     |                 help: remove this `mut`\n\nwarning: value assigned to `active_rows` is never read\n   --> core/layer0/ops/src/attention_queue.rs:955:27\n    |\n955 |     let mut active_rows = Vec::new();\n    |                           ^^^^^^^^^^\n    |\n    = help: maybe it is overwritten before being read?\n    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default\n\nwarning: value assigned to `expired_pruned` is never read\n   --> core/layer0/ops/src/attention_queue.rs:956:30\n    |\n956 |     let mut expired_pruned = 0usize;\n    |                              ^^^^^^\n    |\n    = help: maybe it is overwritten before being read?\n\nwarning: function `parse_f64` is never used\n   --> core/layer0/ops/src/spawn_broker.rs:182:4\n    |\n182 | fn parse_f64(raw: Option<&str>, fallback: f64) -> f64 {\n    |    ^^^^^^^^^\n    |\n    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default"
+    },
+    {
+      "name": "srs_full_regression",
+      "command": "node scripts/ci/srs_full_regression.mjs",
+      "ok": true,
+      "status": 0,
+      "stdout_tail": "{\n  \"ok\": true,\n  \"type\": \"srs_full_regression\",\n  \"out_json\": \"artifacts/srs_full_regression_current.json\",\n  \"out_markdown\": \"docs/workspace/SRS_FULL_REGRESSION_CURRENT.md\",\n  \"summary\": {\n    \"generatedAt\": \"2026-03-12T05:06:19.065Z\",\n    \"source\": {\n      \"srs\": \"docs/workspace/SRS.md\",\n      \"todo\": \"docs/workspace/TODO.md\"\n    },\n    \"totalSrsRows\": 2149,\n    \"regression\": {\n      \"fail\": 0,\n      \"warn\": 0,\n      \"pass\": 2149\n    },\n    \"doneRows\": 1979,\n    \"doneWithoutNonBacklogEvidence\": 0,\n    \"doneWithoutCodeEvidence\": 0\n  }\n}",
+      "stderr_tail": ""
+    },
+    {
+      "name": "srs_top200_regression",
+      "command": "node scripts/ci/srs_top200_regression.mjs",
+      "ok": true,
+      "status": 0,
+      "stdout_tail": "{\n  \"ok\": true,\n  \"type\": \"srs_top200_regression\",\n  \"out_json\": \"artifacts/srs_top200_regression_2026-03-10.json\",\n  \"out_markdown\": \"docs/workspace/SRS_TOP_200_REGRESSION_2026-03-10.md\",\n  \"summary\": {\n    \"generatedAt\": \"2026-03-12T05:06:19.162Z\",\n    \"source\": {\n      \"srs\": \"docs/workspace/SRS.md\",\n      \"todo\": \"docs/workspace/TODO.md\"\n    },\n    \"totalSrsRows\": 2141,\n    \"top200Count\": 200,\n    \"regression\": {\n      \"fail\": 0,\n      \"warn\": 0,\n      \"pass\": 200\n    }\n  }\n}",
+      "stderr_tail": ""
+    },
+    {
+      "name": "srs_contract_runtime_evidence_test",
+      "command": "npm run -s test:ops:srs-contract-runtime-evidence",
+      "ok": true,
+      "status": 0,
+      "stdout_tail": "{\n  \"ok\": true,\n  \"type\": \"srs_contract_runtime_evidence_test\",\n  \"ids_scanned\": 347\n}",
+      "stderr_tail": ""
+    },
+    {
+      "name": "verify",
+      "command": "./verify.sh",
+      "ok": true,
+      "status": 0,
+      "stdout_tail": "y_manifest.json\",\n        \"sha256\": \"e3b44d6c5d45ff6073b7a68a50e1fa4ae15b28c19b65fe7055a6583b6dd33cb5\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"client/runtime/config/rust_source_of_truth_policy.json\",\n        \"sha256\": \"0eb47b65096aff4413dec2d9679b9bd0f33e14eee5de70aea66ee355945c25f3\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"client/runtime/config/constitution_guardian_policy.json\",\n        \"sha256\": \"e55e95f968af537f1b766a1e570fb7e4c632706611d7325d1783ee5ae604eefb\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"client/runtime/config/rsi_bootstrap_policy.json\",\n        \"sha256\": \"98348837061c227a610b0d2cf2ff51ebfb0df2b40b6b2a899cf7c18eaeae0638\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"core/layer0/ops/src/main.rs\",\n        \"sha256\": \"a1e0bef945a93517d563b2502b72a87e517f5e4153dd8c4d8ab808f702ff63ca\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"core/layer0/ops/src/contract_check.rs\",\n        \"sha256\": \"551bda5dd4c81cfb1691131378c98dbf48d8a67eed8595dc7d2ba61e56fc64f8\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"core/layer0/ops/src/foundation_contract_gate.rs\",\n        \"sha256\": \"5cf2dcc80644458e28af9dce46039fc4b6d69e42f333d9830df32994bed47f91\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"core/layer0/ops/src/spine.rs\",\n        \"sha256\": \"fa89f2f379bede28b9cd20a8e7f13ae27d85d7bd063360c7760f98745c7e267a\"\n      }\n    ],\n    \"state_hash\": \"696ea32618ec7a40909a9dca5cf174a422c5eaf2a481d4d2cb1857cb8e33d775\"\n  },\n  \"state_binding\": {\n    \"safety_plane_state_hash\": \"696ea32618ec7a40909a9dca5cf174a422c5eaf2a481d4d2cb1857cb8e33d775\",\n    \"state_binding_hash\": \"45a43017f51126854336253d2272398d743fba45c095b7f90ba26736305d7c67\"\n  },\n  \"ts\": \"2026-03-12T05:06:23.732Z\",\n  \"type\": \"origin_integrity_enforcer\"\n}",
+      "stderr_tail": ""
+    },
+    {
+      "name": "srs_actionable_map:post",
+      "command": "node scripts/ci/srs_actionable_map.mjs",
+      "ok": true,
+      "status": 0,
+      "stdout_tail": "{\n  \"ok\": true,\n  \"type\": \"srs_actionable_map\",\n  \"out_json\": \"artifacts/srs_actionable_map_current.json\",\n  \"out_md\": \"docs/workspace/SRS_ACTIONABLE_MAP_CURRENT.md\",\n  \"summary\": {\n    \"generatedAt\": \"2026-03-12T05:06:23.965Z\",\n    \"actionable_total\": 170,\n    \"queued\": 0,\n    \"in_progress\": 143,\n    \"blocked\": 27,\n    \"execute_now\": 143,\n    \"repair_lane\": 0,\n    \"design_required\": 0,\n    \"blocked_external\": 27\n  }\n}",
+      "stderr_tail": ""
+    }
+  ],
+  "artifacts": {
+    "actionable_map_json": "artifacts/srs_actionable_map_current.json",
+    "queue_latest_json": "client/local/state/ops/backlog_queue_executor/latest.json",
+    "full_regression_json": "artifacts/srs_full_regression_current.json",
+    "top200_regression_json": "artifacts/srs_top200_regression_2026-03-10.json"
+  }
+}
