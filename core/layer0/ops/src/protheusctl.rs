@@ -752,14 +752,94 @@ fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route> {
                 forward_stdin: false,
             })
         }
+        "agent"
+            if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("debate"))
+                .unwrap_or(false)
+                && rest
+                    .get(1)
+                    .map(|v| v.trim().eq_ignore_ascii_case("bullbear"))
+                    .unwrap_or(false) =>
+        {
+            let mut args = vec!["debate-bullbear".to_string()];
+            args.extend(rest.iter().skip(2).cloned());
+            Some(Route {
+                script_rel: "core://llm-economy-organ".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
         "economy" => {
-            let args = if rest.is_empty() {
+            let args = if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("upgrade"))
+                .unwrap_or(false)
+                && rest
+                    .get(1)
+                    .map(|v| v.trim().eq_ignore_ascii_case("trading-hand"))
+                    .unwrap_or(false)
+            {
+                let mut args = vec!["upgrade-trading-hand".to_string()];
+                args.extend(rest.iter().skip(2).cloned());
+                args
+            } else if rest.is_empty() {
                 vec!["dashboard".to_string()]
             } else {
                 rest.to_vec()
             };
             Some(Route {
                 script_rel: "core://llm-economy-organ".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "network" => {
+            let args = if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("join"))
+                .unwrap_or(false)
+                && rest
+                    .get(1)
+                    .map(|v| v.trim().eq_ignore_ascii_case("hyperspace"))
+                    .unwrap_or(false)
+            {
+                let mut args = vec![
+                    "discover".to_string(),
+                    "--profile=hyperspace".to_string(),
+                    "--apply=1".to_string(),
+                ];
+                args.extend(rest.iter().skip(2).cloned());
+                args
+            } else if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("dashboard"))
+                .unwrap_or(false)
+            {
+                let mut args = vec!["status".to_string(), "--dashboard=1".to_string()];
+                args.extend(rest.iter().skip(1).cloned());
+                args
+            } else if rest.is_empty() {
+                vec!["status".to_string()]
+            } else {
+                rest.to_vec()
+            };
+            Some(Route {
+                script_rel: "core://p2p-gossip-seed".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "compute"
+            if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("share"))
+                .unwrap_or(false) =>
+        {
+            let mut args = vec!["compute-proof".to_string(), "--share=1".to_string()];
+            args.extend(rest.iter().skip(1).cloned());
+            Some(Route {
+                script_rel: "core://p2p-gossip-seed".to_string(),
                 args,
                 forward_stdin: false,
             })
@@ -1764,6 +1844,73 @@ mod tests {
         .expect("route");
         assert_eq!(route.script_rel, "core://llm-economy-organ");
         assert_eq!(route.args, vec!["enable", "all", "--apply=1"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_economy_upgrade_trading_hand() {
+        let route = resolve_core_shortcuts(
+            "economy",
+            &[
+                "upgrade".to_string(),
+                "trading-hand".to_string(),
+                "--mode=paper".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://llm-economy-organ");
+        assert_eq!(
+            route.args,
+            vec!["upgrade-trading-hand", "--mode=paper"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_agent_debate_bullbear_to_economy() {
+        let route = resolve_core_shortcuts(
+            "agent",
+            &[
+                "debate".to_string(),
+                "bullbear".to_string(),
+                "--symbol=BTCUSD".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://llm-economy-organ");
+        assert_eq!(route.args, vec!["debate-bullbear", "--symbol=BTCUSD"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_network_join_hyperspace() {
+        let route = resolve_core_shortcuts(
+            "network",
+            &[
+                "join".to_string(),
+                "hyperspace".to_string(),
+                "--node=alpha".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://p2p-gossip-seed");
+        assert_eq!(
+            route.args,
+            vec![
+                "discover",
+                "--profile=hyperspace",
+                "--apply=1",
+                "--node=alpha"
+            ]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_compute_share_to_network_compute_proof() {
+        let route = resolve_core_shortcuts(
+            "compute",
+            &["share".to_string(), "--gpu=1".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://p2p-gossip-seed");
+        assert_eq!(route.args, vec!["compute-proof", "--share=1", "--gpu=1"]);
     }
 
     #[test]
