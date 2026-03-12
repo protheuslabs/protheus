@@ -1,7 +1,7 @@
 # SRS Full Regression Audit
 
 - Source SRS items scanned: **2197**
-- Regression severities: **fail=0**, **warn=2**, **pass=2195**
+- Regression severities: **fail=0**, **warn=0**, **pass=2197**
 - Done rows: **395**
 - Done rows without non-backlog evidence: **0**
 - Done rows without code/test evidence: **0**
@@ -2164,8 +2164,8 @@
 | 2153 | V6-EVAL-001.4 | done | 5 | 2 | 1 | pass |
 | 2154 | V6-ECONOMY-001.1 | done | 5 | 2 | 1 | pass |
 | 2155 | V6-ECONOMY-001.2 | done | 5 | 2 | 1 | pass |
-| 2156 | V6-ECONOMY-001.3 | done | 6 | 2 | 1 | warn |
-| 2157 | V6-ECONOMY-001.4 | done | 6 | 2 | 1 | warn |
+| 2156 | V6-ECONOMY-001.3 | done | 6 | 2 | 1 | pass |
+| 2157 | V6-ECONOMY-001.4 | done | 6 | 2 | 1 | pass |
 | 2158 | V6-ECONOMY-001.5 | done | 5 | 2 | 1 | pass |
 | 2159 | V6-ECONOMY-001.6 | done | 5 | 2 | 1 | pass |
 | 2160 | V6-ECONOMY-001.7 | done | 5 | 2 | 1 | pass |
@@ -2212,5 +2212,3 @@
 
 ## Warn Findings
 
-- `V6-ECONOMY-001.3` (done): missing_or_invalid_impact
-- `V6-ECONOMY-001.4` (done): missing_or_invalid_impact

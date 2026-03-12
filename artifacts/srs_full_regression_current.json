@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-03-12T07:51:14.473Z",
+    "generatedAt": "2026-03-12T07:52:46.309Z",
     "source": {
       "srs": "docs/workspace/SRS.md",
       "todo": "docs/workspace/TODO.md"
@@ -8,8 +8,8 @@
     "totalSrsRows": 2197,
     "regression": {
       "fail": 0,
-      "warn": 2,
-      "pass": 2195
+      "warn": 0,
+      "pass": 2197
     },
     "doneRows": 395,
     "doneWithoutNonBacklogEvidence": 0,
@@ -45277,9 +45277,9 @@
       "status": "done",
       "upgrade": "Nookplot/Owockibot Jobs Hand Contract",
       "why": "Job ingest/execution requires explicit queueing and assignment contracts.",
-      "exitCriteria": "`economy jobs-marketplace --source=nookplot",
-      "impact": "owocki` now emits deterministic job-hand receipts.",
-      "layerMap": "7",
+      "exitCriteria": "`economy jobs-marketplace --source=nookplot/owocki` now emits deterministic job-hand receipts.",
+      "impact": "7",
+      "layerMap": "0/1/2/client/app/adapter",
       "section": "Agent Economy Monetization Suite Intake (Doc/Source `V6-ECONOMY-001`, 2026-03-12)",
       "evidenceCount": 6,
       "nonBacklogEvidenceCount": 2,
@@ -45288,10 +45288,8 @@
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
       "regression": {
-        "severity": "warn",
-        "findings": [
-          "missing_or_invalid_impact"
-        ]
+        "severity": "pass",
+        "findings": []
       }
     },
     {
@@ -45300,9 +45298,9 @@
       "status": "done",
       "upgrade": "Heurist/Daydreams Skills Market Hand Contract",
       "why": "Marketplace listing/bid flows need explicit adapter contracts for production use.",
-      "exitCriteria": "`economy skills-marketplace --source=heurist",
-      "impact": "daydreams` now emits deterministic marketplace receipts.",
-      "layerMap": "7",
+      "exitCriteria": "`economy skills-marketplace --source=heurist/daydreams` now emits deterministic marketplace receipts.",
+      "impact": "7",
+      "layerMap": "0/1/2/client/app/adapter",
       "section": "Agent Economy Monetization Suite Intake (Doc/Source `V6-ECONOMY-001`, 2026-03-12)",
       "evidenceCount": 6,
       "nonBacklogEvidenceCount": 2,
@@ -45311,10 +45309,8 @@
       "validationCommandsResolved": 0,
       "validationCommandsUnresolved": [],
       "regression": {
-        "severity": "warn",
-        "findings": [
-          "missing_or_invalid_impact"
-        ]
+        "severity": "pass",
+        "findings": []
       }
     },
     {
