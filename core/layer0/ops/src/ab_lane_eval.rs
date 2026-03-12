@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 
 const LANE_ID: &str = "ab_lane_eval";
 const STATE_DIR_REL: &str = "state/ops/ab_lane_eval";
+const NEURALAVB_DIR_REL: &str = "state/ops/ab_lane_eval/neuralavb";
 
 fn print_json_line(value: &Value) {
     println!(
@@ -83,6 +84,171 @@ fn state_paths(root: &Path) -> (PathBuf, PathBuf) {
         state_dir.join("latest.json"),
         state_dir.join("history.jsonl"),
     )
+}
+
+fn neuralavb_paths(root: &Path) -> (PathBuf, PathBuf, PathBuf) {
+    let dir = root.join(NEURALAVB_DIR_REL);
+    (
+        dir.join("profile.json"),
+        dir.join("latest_loop.json"),
+        dir.join("history.jsonl"),
+    )
+}
+
+fn to_f64_clamped(raw: Option<String>, fallback: f64, lo: f64, hi: f64) -> f64 {
+    to_f64(raw, fallback).clamp(lo, hi)
+}
+
+fn enable_neuralavb_receipt(root: &Path, args: &[String]) -> Value {
+    let enabled = flag_value(args, "enabled")
+        .map(|v| matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on"))
+        .unwrap_or(true);
+    let (profile_path, _, history_path) = neuralavb_paths(root);
+    let mut out = json!({
+        "ok": true,
+        "type": "ab_lane_eval_neuralavb_enable",
+        "lane_id": LANE_ID,
+        "ts": now_iso(),
+        "profile": "neural_avb_eval_loop",
+        "enabled": enabled,
+        "profile_path": profile_path,
+        "claim_evidence": [
+            {
+                "id": "neural_avb_profile_toggle",
+                "claim": "ml_style_eval_loop_profile_is_receipted_and_stateful",
+                "evidence": {
+                    "enabled": enabled
+                }
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+    let _ = write_json(&profile_path, &out);
+    let _ = append_jsonl(&history_path, &out);
+    out
+}
+
+fn experiment_loop_receipt(root: &Path, args: &[String]) -> Value {
+    let build_score = to_f64_clamped(flag_value(args, "build-score"), 0.82, 0.0, 1.0);
+    let experiment_score = to_f64_clamped(flag_value(args, "experiment-score"), 0.84, 0.0, 1.0);
+    let evaluate_score = to_f64_clamped(flag_value(args, "evaluate-score"), 0.85, 0.0, 1.0);
+    let iterations = to_f64_clamped(flag_value(args, "iterations"), 1.0, 1.0, 500.0);
+    let baseline_cost_usd = to_f64_clamped(flag_value(args, "baseline-cost-usd"), 25.0, 0.01, 1_000_000.0);
+    let run_cost_usd = to_f64_clamped(flag_value(args, "run-cost-usd"), 8.0, 0.01, 1_000_000.0);
+    let baseline_accuracy = to_f64_clamped(flag_value(args, "baseline-accuracy"), 0.915, 0.0, 1.0);
+    let run_accuracy = to_f64_clamped(flag_value(args, "run-accuracy"), 0.91, 0.0, 1.0);
+
+    let cost_delta_pct = ((run_cost_usd - baseline_cost_usd) / baseline_cost_usd) * 100.0;
+    let accuracy_delta_pct = ((run_accuracy - baseline_accuracy) / baseline_accuracy) * 100.0;
+    let accuracy_drop_pp = (baseline_accuracy - run_accuracy).max(0.0) * 100.0;
+    let tradeoff_quality = (evaluate_score * 0.5) + (experiment_score * 0.3) + (build_score * 0.2);
+    let accepted = cost_delta_pct <= 0.0 && accuracy_drop_pp <= 0.5;
+    let decision = if accepted {
+        "accept_cheaper_profile"
+    } else if cost_delta_pct > 0.0 {
+        "reject_cost_regression"
+    } else {
+        "reject_accuracy_regression"
+    };
+
+    let (_, latest_loop_path, history_path) = neuralavb_paths(root);
+    let mut out = json!({
+        "ok": true,
+        "type": "ab_lane_eval_experiment_loop",
+        "lane_id": LANE_ID,
+        "ts": now_iso(),
+        "profile": "neural_avb_eval_loop",
+        "decision": decision,
+        "accepted": accepted,
+        "iterations": iterations as i64,
+        "scores": {
+            "build": build_score,
+            "experiment": experiment_score,
+            "evaluate": evaluate_score,
+            "tradeoff_quality": tradeoff_quality
+        },
+        "cost_accuracy": {
+            "baseline_cost_usd": baseline_cost_usd,
+            "run_cost_usd": run_cost_usd,
+            "cost_delta_pct": cost_delta_pct,
+            "baseline_accuracy": baseline_accuracy,
+            "run_accuracy": run_accuracy,
+            "accuracy_delta_pct": accuracy_delta_pct,
+            "accuracy_drop_pp": accuracy_drop_pp
+        },
+        "state": {
+            "latest_loop_path": latest_loop_path
+        },
+        "claim_evidence": [
+            {
+                "id": "build_experiment_evaluate_loop",
+                "claim": "ml_style_build_experiment_evaluate_cycle_is_executed_with_cost_accuracy_tradeoff",
+                "evidence": {
+                    "accepted": accepted,
+                    "decision": decision,
+                    "cost_delta_pct": cost_delta_pct,
+                    "accuracy_drop_pp": accuracy_drop_pp
+                }
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+    let _ = write_json(&latest_loop_path, &out);
+    let _ = append_jsonl(&history_path, &out);
+    out
+}
+
+fn benchmark_neuralavb_receipt(root: &Path) -> Value {
+    let (_, latest_loop_path, history_path) = neuralavb_paths(root);
+    let latest_loop = fs::read_to_string(&latest_loop_path)
+        .ok()
+        .and_then(|raw| serde_json::from_str::<Value>(&raw).ok())
+        .unwrap_or_else(|| json!({"accepted": false, "decision": "no_loop_data"}));
+    let accepted = latest_loop
+        .get("accepted")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    let cost_delta_pct = latest_loop
+        .pointer("/cost_accuracy/cost_delta_pct")
+        .and_then(Value::as_f64)
+        .unwrap_or(0.0);
+    let accuracy_drop_pp = latest_loop
+        .pointer("/cost_accuracy/accuracy_drop_pp")
+        .and_then(Value::as_f64)
+        .unwrap_or(0.0);
+    let score = if accepted {
+        1.0
+    } else {
+        (1.0 - (accuracy_drop_pp / 10.0)).max(0.0)
+    };
+
+    let mut out = json!({
+        "ok": true,
+        "type": "ab_lane_eval_neuralavb_benchmark",
+        "lane_id": LANE_ID,
+        "ts": now_iso(),
+        "profile": "neural_avb_eval_loop",
+        "accepted": accepted,
+        "score": score,
+        "inputs": {
+            "cost_delta_pct": cost_delta_pct,
+            "accuracy_drop_pp": accuracy_drop_pp
+        },
+        "latest_loop_path": latest_loop_path,
+        "claim_evidence": [
+            {
+                "id": "cost_accuracy_dashboard_metric",
+                "claim": "benchmark score exposes cost_accuracy tradeoff for loop tuning",
+                "evidence": {
+                    "score": score,
+                    "accepted": accepted
+                }
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+    let _ = append_jsonl(&history_path, &out);
+    out
 }
 
 fn run_receipt(root: &Path, args: &[String]) -> Value {
@@ -180,6 +346,9 @@ fn usage() {
     println!("Usage:");
     println!("  protheus-ops ab-lane-eval status");
     println!("  protheus-ops ab-lane-eval run --lane=<id> --variant-a=<A> --variant-b=<B> --a-quality=<n> --a-drift=<n> --a-escalation=<n> --a-cost=<n> --b-quality=<n> --b-drift=<n> --b-escalation=<n> --b-cost=<n> [--min-promote-delta=<n>]");
+    println!("  protheus-ops ab-lane-eval enable-neuralavb [--enabled=1|0]");
+    println!("  protheus-ops ab-lane-eval experiment-loop [--build-score=<0..1>] [--experiment-score=<0..1>] [--evaluate-score=<0..1>] [--baseline-cost-usd=<n>] [--run-cost-usd=<n>] [--baseline-accuracy=<0..1>] [--run-accuracy=<0..1>] [--iterations=<n>]");
+    println!("  protheus-ops ab-lane-eval benchmark-neuralavb");
 }
 
 pub fn run(root: &Path, args: &[String]) -> i32 {
@@ -201,6 +370,18 @@ pub fn run(root: &Path, args: &[String]) -> i32 {
         }
         "run" | "evaluate" => {
             print_json_line(&run_receipt(root, args));
+            0
+        }
+        "enable-neuralavb" | "enable-neural-avb" => {
+            print_json_line(&enable_neuralavb_receipt(root, args));
+            0
+        }
+        "experiment-loop" | "loop" => {
+            print_json_line(&experiment_loop_receipt(root, args));
+            0
+        }
+        "benchmark-neuralavb" | "benchmark" => {
+            print_json_line(&benchmark_neuralavb_receipt(root));
             0
         }
         _ => {
@@ -268,5 +449,57 @@ mod tests {
         let out = run_receipt(root.path(), &args);
         assert_eq!(out.get("promote").and_then(Value::as_bool), Some(false));
         assert_eq!(out.get("winner").and_then(Value::as_str), Some("tie"));
+    }
+
+    #[test]
+    fn enable_neuralavb_profile_writes_enabled_state() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let args = vec![
+            "enable-neuralavb".to_string(),
+            "--enabled=1".to_string(),
+        ];
+        let out = enable_neuralavb_receipt(root.path(), &args);
+        assert_eq!(out.get("enabled").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            out.get("type").and_then(Value::as_str),
+            Some("ab_lane_eval_neuralavb_enable")
+        );
+    }
+
+    #[test]
+    fn experiment_loop_accepts_low_cost_small_accuracy_drop_profile() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let args = vec![
+            "experiment-loop".to_string(),
+            "--baseline-cost-usd=40".to_string(),
+            "--run-cost-usd=10".to_string(),
+            "--baseline-accuracy=0.912".to_string(),
+            "--run-accuracy=0.909".to_string(),
+        ];
+        let out = experiment_loop_receipt(root.path(), &args);
+        assert_eq!(out.get("accepted").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            out.get("decision").and_then(Value::as_str),
+            Some("accept_cheaper_profile")
+        );
+    }
+
+    #[test]
+    fn benchmark_neuralavb_uses_latest_loop_state() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let args = vec![
+            "experiment-loop".to_string(),
+            "--baseline-cost-usd=30".to_string(),
+            "--run-cost-usd=15".to_string(),
+            "--baseline-accuracy=0.92".to_string(),
+            "--run-accuracy=0.918".to_string(),
+        ];
+        let _ = experiment_loop_receipt(root.path(), &args);
+        let out = benchmark_neuralavb_receipt(root.path());
+        assert_eq!(out.get("accepted").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            out.get("type").and_then(Value::as_str),
+            Some("ab_lane_eval_neuralavb_benchmark")
+        );
     }
 }

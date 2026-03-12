@@ -597,6 +597,63 @@ fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route> {
                 forward_stdin: false,
             })
         }
+        "eval" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "benchmark-neuralavb".to_string());
+            let args = match sub.as_str() {
+                "enable"
+                    if rest
+                        .get(1)
+                        .map(|v| v.trim().eq_ignore_ascii_case("neuralavb"))
+                        .unwrap_or(false) =>
+                {
+                    std::iter::once("enable-neuralavb".to_string())
+                        .chain(rest.iter().skip(2).cloned())
+                        .collect::<Vec<_>>()
+                }
+                "experiment"
+                    if rest
+                        .get(1)
+                        .map(|v| v.trim().eq_ignore_ascii_case("loop"))
+                        .unwrap_or(false) =>
+                {
+                    std::iter::once("experiment-loop".to_string())
+                        .chain(rest.iter().skip(2).cloned())
+                        .collect::<Vec<_>>()
+                }
+                "benchmark" => std::iter::once("benchmark-neuralavb".to_string())
+                    .chain(rest.iter().skip(1).cloned())
+                    .collect::<Vec<_>>(),
+                _ => {
+                    if rest.is_empty() {
+                        vec!["benchmark-neuralavb".to_string()]
+                    } else {
+                        rest.to_vec()
+                    }
+                }
+            };
+            Some(Route {
+                script_rel: "core://ab-lane-eval".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "experiment"
+            if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("loop"))
+                .unwrap_or(false) =>
+        {
+            let mut args = vec!["experiment-loop".to_string()];
+            args.extend(rest.iter().skip(1).cloned());
+            Some(Route {
+                script_rel: "core://ab-lane-eval".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
         _ => None,
     }
 }
@@ -1437,6 +1494,43 @@ mod tests {
         assert_eq!(route.script_rel, "core://rag");
         assert_eq!(route.args.first().map(String::as_str), Some("chat"));
         assert_eq!(route.args.get(1).map(String::as_str), Some("receipts"));
+    }
+
+    #[test]
+    fn core_shortcut_routes_eval_enable_neuralavb() {
+        let route = resolve_core_shortcuts(
+            "eval",
+            &[
+                "enable".to_string(),
+                "neuralavb".to_string(),
+                "--enabled=1".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://ab-lane-eval");
+        assert_eq!(route.args, vec!["enable-neuralavb", "--enabled=1"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_experiment_loop() {
+        let route = resolve_core_shortcuts(
+            "experiment",
+            &[
+                "loop".to_string(),
+                "--run-cost-usd=8".to_string(),
+                "--baseline-cost-usd=20".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://ab-lane-eval");
+        assert_eq!(
+            route.args,
+            vec![
+                "experiment-loop",
+                "--run-cost-usd=8",
+                "--baseline-cost-usd=20"
+            ]
+        );
     }
 
     #[test]
