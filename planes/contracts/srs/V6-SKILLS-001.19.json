@@ -1,0 +1,38 @@
+{
+  "id": "V6-SKILLS-001.19",
+  "upgrade": "Persona-Aware Auto-Activation Hint Contract for Installed Skills",
+  "section": "Semantic Agent Skills Marketplace Source Coverage Addendum (Doc `1J8BwVaRmGlu8SK3fg5YOUoOknvQ4gtBQk4YX5GaIbTw`, 2026-03-11)",
+  "impact": 7,
+  "layer_map": "1/2/3/client/app",
+  "conduit_only_boundary": false,
+  "todo_bucket": "execute_now",
+  "execution_contract": {
+    "runtime": "core/layer2/ops:srs_contract_runtime",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "state/ops/srs_contract_runtime/V6-SKILLS-001.19/latest.json",
+    "history_path": "state/ops/srs_contract_runtime/history.jsonl"
+  },
+  "deliverables": [
+    {
+      "type": "contract",
+      "path": "planes/contracts/srs/V6-SKILLS-001.19.json"
+    },
+    {
+      "type": "state_receipt",
+      "path": "state/ops/srs_contract_runtime/V6-SKILLS-001.19/latest.json"
+    },
+    {
+      "type": "execution_history",
+      "path": "state/ops/srs_contract_runtime/history.jsonl"
+    }
+  ],
+  "validation": {
+    "lane_command": "protheus-ops srs-contract-runtime run --id=V6-SKILLS-001.19",
+    "status_command": "protheus-ops srs-contract-runtime status --id=V6-SKILLS-001.19",
+    "fail_closed_on_missing_contract": true
+  },
+  "generated_from": {
+    "source_queue": "artifacts/todo_execution_full_current.json",
+    "generated_at": "2026-03-12T04:04:37.417Z"
+  }
+}

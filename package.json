@@ -1436,7 +1436,10 @@
     "lane:v7-meta-013:run": "npm run -s ops:metakernel:attestation-graph",
     "lane:v7-meta-014:run": "npm run -s ops:metakernel:degradation-contracts",
     "lane:v7-meta-015:run": "npm run -s ops:metakernel:execution-profiles",
-    "ops:todo:full-queue": "node scripts/ci/todo_full_queue.mjs"
+    "ops:todo:full-queue": "node scripts/ci/todo_full_queue.mjs",
+    "ops:srs-contract:scaffold": "node scripts/ci/srs_contract_scaffold.mjs",
+    "ops:srs-contract:audit": "node scripts/ci/srs_contract_registry_audit.mjs",
+    "test:ops:srs-contract-runtime-evidence": "node tests/client-memory-tools/srs_contract_runtime_evidence.test.js"
   },
   "bin": {
     "protheus": "./client/cli/bin/protheus.ts",

@@ -1,0 +1,38 @@
+{
+  "id": "V6-SUBSTRATE-002.1",
+  "upgrade": "Biological substrate interface lane (living-neuron signal -> model control)",
+  "section": "Biological Neural Hybrid Integration Intake (x.com/Crypto_Jargon 2030603197237387411, 2026-03-09)",
+  "impact": 9,
+  "layer_map": "-1/0/1/2/3/adapter",
+  "conduit_only_boundary": false,
+  "todo_bucket": "regression_done_evidence_repair",
+  "execution_contract": {
+    "runtime": "core/layer2/ops:srs_contract_runtime",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "state/ops/srs_contract_runtime/V6-SUBSTRATE-002.1/latest.json",
+    "history_path": "state/ops/srs_contract_runtime/history.jsonl"
+  },
+  "deliverables": [
+    {
+      "type": "contract",
+      "path": "planes/contracts/srs/V6-SUBSTRATE-002.1.json"
+    },
+    {
+      "type": "state_receipt",
+      "path": "state/ops/srs_contract_runtime/V6-SUBSTRATE-002.1/latest.json"
+    },
+    {
+      "type": "execution_history",
+      "path": "state/ops/srs_contract_runtime/history.jsonl"
+    }
+  ],
+  "validation": {
+    "lane_command": "protheus-ops srs-contract-runtime run --id=V6-SUBSTRATE-002.1",
+    "status_command": "protheus-ops srs-contract-runtime status --id=V6-SUBSTRATE-002.1",
+    "fail_closed_on_missing_contract": true
+  },
+  "generated_from": {
+    "source": "regression-fail-done",
+    "generated_at": "2026-03-12T04:12:22.620Z"
+  }
+}

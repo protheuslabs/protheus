@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "type": "srs_contract_manifest",
+  "generated_at": "2026-03-12T04:13:30.534Z",
+  "source": "todo",
+  "source_ref": "artifacts/todo_execution_full_current.json",
+  "row_count": 0,
+  "entries": []
+}

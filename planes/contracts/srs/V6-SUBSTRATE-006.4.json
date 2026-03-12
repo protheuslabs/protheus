@@ -1,0 +1,38 @@
+{
+  "id": "V6-SUBSTRATE-006.4",
+  "upgrade": "Self-Hosting Recovery Image + Rollback Contract",
+  "section": "Bare-Metal Independent OS Mode Source Coverage Intake (Doc `1uGkRTsq9DE_6uA7twocPTDv03LmvywnYzpr2okR6IlM`, corrected-placement addendum `19It97DQDHCgYRM4eFj4r8qZ64IixOmGRBErapYsSXjE`, 2026-03-11)",
+  "impact": 10,
+  "layer_map": "-1/0/1/2/adapter",
+  "conduit_only_boundary": false,
+  "todo_bucket": "execute_now",
+  "execution_contract": {
+    "runtime": "core/layer2/ops:srs_contract_runtime",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "state/ops/srs_contract_runtime/V6-SUBSTRATE-006.4/latest.json",
+    "history_path": "state/ops/srs_contract_runtime/history.jsonl"
+  },
+  "deliverables": [
+    {
+      "type": "contract",
+      "path": "planes/contracts/srs/V6-SUBSTRATE-006.4.json"
+    },
+    {
+      "type": "state_receipt",
+      "path": "state/ops/srs_contract_runtime/V6-SUBSTRATE-006.4/latest.json"
+    },
+    {
+      "type": "execution_history",
+      "path": "state/ops/srs_contract_runtime/history.jsonl"
+    }
+  ],
+  "validation": {
+    "lane_command": "protheus-ops srs-contract-runtime run --id=V6-SUBSTRATE-006.4",
+    "status_command": "protheus-ops srs-contract-runtime status --id=V6-SUBSTRATE-006.4",
+    "fail_closed_on_missing_contract": true
+  },
+  "generated_from": {
+    "source_queue": "artifacts/todo_execution_full_current.json",
+    "generated_at": "2026-03-12T04:04:37.417Z"
+  }
+}

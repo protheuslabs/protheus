@@ -1,0 +1,38 @@
+{
+  "id": "V6-APP-006.8",
+  "upgrade": "Curated Product-Builder Template Governance Lane (`builders://`)",
+  "section": "DeerFlow Product-Builder Source Coverage Intake (Doc `1nQS5TPPQfwllJDNSDcR1ll7zBNYpJ3uoDqn1-M8Fy5k`, 2026-03-11)",
+  "impact": 6,
+  "layer_map": "app",
+  "conduit_only_boundary": false,
+  "todo_bucket": "regression_done_evidence_repair",
+  "execution_contract": {
+    "runtime": "core/layer2/ops:srs_contract_runtime",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "state/ops/srs_contract_runtime/V6-APP-006.8/latest.json",
+    "history_path": "state/ops/srs_contract_runtime/history.jsonl"
+  },
+  "deliverables": [
+    {
+      "type": "contract",
+      "path": "planes/contracts/srs/V6-APP-006.8.json"
+    },
+    {
+      "type": "state_receipt",
+      "path": "state/ops/srs_contract_runtime/V6-APP-006.8/latest.json"
+    },
+    {
+      "type": "execution_history",
+      "path": "state/ops/srs_contract_runtime/history.jsonl"
+    }
+  ],
+  "validation": {
+    "lane_command": "protheus-ops srs-contract-runtime run --id=V6-APP-006.8",
+    "status_command": "protheus-ops srs-contract-runtime status --id=V6-APP-006.8",
+    "fail_closed_on_missing_contract": true
+  },
+  "generated_from": {
+    "source": "regression-fail-done",
+    "generated_at": "2026-03-12T04:12:22.620Z"
+  }
+}

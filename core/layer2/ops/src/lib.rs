@@ -27,6 +27,7 @@ pub mod p2p_gossip_seed;
 pub mod persistent_background_runtime;
 pub mod public_api_catalog;
 pub mod release_gate_canary_rollback_enforcer;
+pub mod srs_contract_runtime;
 pub mod startup_agency_builder;
 pub mod timeseries_receipt_engine;
 pub mod webgpu_inference_adapter;

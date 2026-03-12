@@ -291,6 +291,25 @@ fn run_dynamic_legacy_lane(root: &Path, id: &str) -> Value {
     }
 }
 
+fn run_core_srs_contract_lane(root: &Path, id: &str) -> Value {
+    match protheus_ops_core_v1::srs_contract_runtime::execute_contract(root, id) {
+        Ok(receipt) => json!({
+            "ok": true,
+            "status": 0,
+            "stdout": clean(&serde_json::to_string(&receipt).unwrap_or_else(|_| "{}".to_string()), 4000),
+            "stderr": "",
+            "route": "core_srs_contract_runtime"
+        }),
+        Err(err) => json!({
+            "ok": false,
+            "status": 1,
+            "stdout": "",
+            "stderr": clean(&format!("srs_contract_runtime_failed:{err}"), 4000),
+            "route": "core_srs_contract_runtime"
+        }),
+    }
+}
+
 pub fn run(root: &Path, argv: &[String]) -> i32 {
     let parsed = parse_args(argv);
     let command = parsed
@@ -369,19 +388,28 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
     for id in candidates.iter() {
         let lane_script = lane_script_name(id);
         let test_script = test_script_name(id);
-        let lane_cmd = scripts.get(&lane_script).and_then(|v| v.as_str()).unwrap_or("");
+        let lane_cmd = scripts
+            .get(&lane_script)
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
         let lane_exists = !lane_cmd.is_empty();
-        let test_cmd = scripts.get(&test_script).and_then(|v| v.as_str()).unwrap_or("");
+        let test_cmd = scripts
+            .get(&test_script)
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
         let mut test_exists = !test_cmd.is_empty();
 
-        let use_dynamic_lane = !lane_exists;
-        if use_dynamic_lane && !root
-            .join("client")
-            .join("runtime")
-            .join("systems")
-            .join("compat")
-            .join("legacy_alias_adapter.ts")
-            .exists()
+        let use_core_contract_lane =
+            protheus_ops_core_v1::srs_contract_runtime::contract_exists(root, id);
+        let use_dynamic_lane = !lane_exists && !use_core_contract_lane;
+        if use_dynamic_lane
+            && !root
+                .join("client")
+                .join("runtime")
+                .join("systems")
+                .join("compat")
+                .join("legacy_alias_adapter.ts")
+                .exists()
         {
             skipped += 1;
             rows.push(json!({
@@ -393,11 +421,15 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             continue;
         }
 
-        if !use_dynamic_lane {
+        if !use_dynamic_lane && !use_core_contract_lane {
             let mut lane_seen = std::collections::HashSet::new();
-            if let Some(missing_entry) =
-                detect_missing_entrypoint_for_script(root, &scripts, &lane_script, 0, &mut lane_seen)
-            {
+            if let Some(missing_entry) = detect_missing_entrypoint_for_script(
+                root,
+                &scripts,
+                &lane_script,
+                0,
+                &mut lane_seen,
+            ) {
                 skipped += 1;
                 rows.push(json!({
                     "id": id,
@@ -410,11 +442,15 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             }
         }
         let mut test_skip_reason = Value::Null;
-        if test_exists && !use_dynamic_lane {
+        if test_exists && !use_dynamic_lane && !use_core_contract_lane {
             let mut test_seen = std::collections::HashSet::new();
-            if let Some(missing_test_entry) =
-                detect_missing_entrypoint_for_script(root, &scripts, &test_script, 0, &mut test_seen)
-            {
+            if let Some(missing_test_entry) = detect_missing_entrypoint_for_script(
+                root,
+                &scripts,
+                &test_script,
+                0,
+                &mut test_seen,
+            ) {
                 test_exists = false;
                 test_skip_reason = json!({
                     "reason": "test_entrypoint_missing",
@@ -427,16 +463,24 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             skipped += 1;
             rows.push(json!({
                 "id": id,
-                "lane_script": if use_dynamic_lane { Value::String(format!("dynamic:legacy_alias_adapter:{id}")) } else { Value::String(lane_script.clone()) },
-                "test_script": if test_exists && !use_dynamic_lane { Value::String(test_script.clone()) } else { Value::Null },
+                "lane_script": if use_core_contract_lane {
+                    Value::String(format!("core:srs_contract_runtime:{id}"))
+                } else if use_dynamic_lane {
+                    Value::String(format!("dynamic:legacy_alias_adapter:{id}"))
+                } else {
+                    Value::String(lane_script.clone())
+                },
+                "test_script": if test_exists && !use_dynamic_lane && !use_core_contract_lane { Value::String(test_script.clone()) } else { Value::Null },
                 "status": "planned",
-                "lane_route": if use_dynamic_lane { "dynamic_legacy_adapter" } else { "npm_script" },
+                "lane_route": if use_core_contract_lane { "core_srs_contract_runtime" } else if use_dynamic_lane { "dynamic_legacy_adapter" } else { "npm_script" },
                 "test_skip_reason": test_skip_reason
             }));
             continue;
         }
 
-        let lane_result = if use_dynamic_lane {
+        let lane_result = if use_core_contract_lane {
+            run_core_srs_contract_lane(root, id)
+        } else if use_dynamic_lane {
             run_dynamic_legacy_lane(root, id)
         } else {
             run_npm_script(root, &lane_script)
@@ -447,7 +491,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
         let mut test_ok = true;
-        if with_tests && test_exists && lane_ok && !use_dynamic_lane {
+        if with_tests && test_exists && lane_ok && !use_dynamic_lane && !use_core_contract_lane {
             test_result = run_npm_script(root, &test_script);
             test_ok = test_result
                 .get("ok")
@@ -459,10 +503,16 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             executed += 1;
             rows.push(json!({
                 "id": id,
-                "lane_script": if use_dynamic_lane { Value::String(format!("dynamic:legacy_alias_adapter:{id}")) } else { Value::String(lane_script.clone()) },
-                "test_script": if test_exists && !use_dynamic_lane { Value::String(test_script.clone()) } else { Value::Null },
+                "lane_script": if use_core_contract_lane {
+                    Value::String(format!("core:srs_contract_runtime:{id}"))
+                } else if use_dynamic_lane {
+                    Value::String(format!("dynamic:legacy_alias_adapter:{id}"))
+                } else {
+                    Value::String(lane_script.clone())
+                },
+                "test_script": if test_exists && !use_dynamic_lane && !use_core_contract_lane { Value::String(test_script.clone()) } else { Value::Null },
                 "status": "executed",
-                "lane_route": if use_dynamic_lane { "dynamic_legacy_adapter" } else { "npm_script" },
+                "lane_route": if use_core_contract_lane { "core_srs_contract_runtime" } else if use_dynamic_lane { "dynamic_legacy_adapter" } else { "npm_script" },
                 "test_skip_reason": test_skip_reason,
                 "lane_result": lane_result,
                 "test_result": test_result
@@ -471,10 +521,16 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             failed += 1;
             rows.push(json!({
                 "id": id,
-                "lane_script": if use_dynamic_lane { Value::String(format!("dynamic:legacy_alias_adapter:{id}")) } else { Value::String(lane_script.clone()) },
-                "test_script": if test_exists && !use_dynamic_lane { Value::String(test_script.clone()) } else { Value::Null },
+                "lane_script": if use_core_contract_lane {
+                    Value::String(format!("core:srs_contract_runtime:{id}"))
+                } else if use_dynamic_lane {
+                    Value::String(format!("dynamic:legacy_alias_adapter:{id}"))
+                } else {
+                    Value::String(lane_script.clone())
+                },
+                "test_script": if test_exists && !use_dynamic_lane && !use_core_contract_lane { Value::String(test_script.clone()) } else { Value::Null },
                 "status": "failed",
-                "lane_route": if use_dynamic_lane { "dynamic_legacy_adapter" } else { "npm_script" },
+                "lane_route": if use_core_contract_lane { "core_srs_contract_runtime" } else if use_dynamic_lane { "dynamic_legacy_adapter" } else { "npm_script" },
                 "test_skip_reason": test_skip_reason,
                 "lane_result": lane_result,
                 "test_result": test_result

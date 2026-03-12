@@ -110,6 +110,7 @@ fn usage() {
     println!("  protheus-ops intel-sweep-router <run|status> [flags]");
     println!("  protheus-ops gui-drift-manager <run|status> [flags]");
     println!("  protheus-ops release-gate-canary-rollback-enforcer <gate|status> [flags]");
+    println!("  protheus-ops srs-contract-runtime <run|run-many|status> [--id=<V6-...>|--ids=<csv>|--ids-file=<path>] [flags]");
 }
 
 fn print_json(value: &serde_json::Value) {
@@ -697,6 +698,9 @@ fn main() {
                 &args,
                 protheus_ops_core_v1::release_gate_canary_rollback_enforcer::run
             );
+        }
+        "srs-contract-runtime" => {
+            exit_domain!(&cwd, &args, protheus_ops_core_v1::srs_contract_runtime::run);
         }
         _ => {
             print_json(&cli_error_receipt("unknown_domain", 1, Some(domain), None));

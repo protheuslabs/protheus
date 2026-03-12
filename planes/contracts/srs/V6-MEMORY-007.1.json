@@ -1,0 +1,38 @@
+{
+  "id": "V6-MEMORY-007.1",
+  "upgrade": "Automatic Context-Tree Builder Contract over Existing Memory Primitives",
+  "section": "Automatic Context-Tree Curation for Coding Agents Source Coverage Intake (Doc `1J_1zmz-_-DIF6Ok9AyVkbmO3PRPPVZb8vPT2LVZn_3Q`, 2026-03-11)",
+  "impact": 9,
+  "layer_map": "0/1/2",
+  "conduit_only_boundary": false,
+  "todo_bucket": "execute_now",
+  "execution_contract": {
+    "runtime": "core/layer2/ops:srs_contract_runtime",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "state/ops/srs_contract_runtime/V6-MEMORY-007.1/latest.json",
+    "history_path": "state/ops/srs_contract_runtime/history.jsonl"
+  },
+  "deliverables": [
+    {
+      "type": "contract",
+      "path": "planes/contracts/srs/V6-MEMORY-007.1.json"
+    },
+    {
+      "type": "state_receipt",
+      "path": "state/ops/srs_contract_runtime/V6-MEMORY-007.1/latest.json"
+    },
+    {
+      "type": "execution_history",
+      "path": "state/ops/srs_contract_runtime/history.jsonl"
+    }
+  ],
+  "validation": {
+    "lane_command": "protheus-ops srs-contract-runtime run --id=V6-MEMORY-007.1",
+    "status_command": "protheus-ops srs-contract-runtime status --id=V6-MEMORY-007.1",
+    "fail_closed_on_missing_contract": true
+  },
+  "generated_from": {
+    "source_queue": "artifacts/todo_execution_full_current.json",
+    "generated_at": "2026-03-12T04:04:37.417Z"
+  }
+}
