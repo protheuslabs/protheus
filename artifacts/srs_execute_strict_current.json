@@ -1,14 +1,14 @@
 {
   "ok": true,
   "type": "srs_execute_strict",
-  "generatedAt": "2026-03-12T08:20:06.278Z",
+  "generatedAt": "2026-03-12T14:15:07.907Z",
   "summary": {
     "execute_now_before": 0,
     "queue_scanned": 0,
     "queue_executed": 0,
     "queue_failed": 0,
     "queue_skipped": 0,
-    "queue_receipt_hash": "2014f3dbd0e49ef95885fc27ca271e4f3e844d0a350a5ad7b592861b1d4b32e3",
+    "queue_receipt_hash": "50401e2e407b6a668c32a8b5a0e7da043416b537ef23f882605e2bdf6ea14d8d",
     "full_regression_fail": 0,
     "top200_regression_fail": 0,
     "execute_now_after": 0
@@ -19,7 +19,7 @@
       "command": "node scripts/ci/srs_actionable_map.mjs",
       "ok": true,
       "status": 0,
-      "stdout_tail": "{\n  \"ok\": true,\n  \"type\": \"srs_actionable_map\",\n  \"out_json\": \"artifacts/srs_actionable_map_current.json\",\n  \"out_md\": \"docs/workspace/SRS_ACTIONABLE_MAP_CURRENT.md\",\n  \"summary\": {\n    \"generatedAt\": \"2026-03-12T08:20:06.314Z\",\n    \"actionable_total\": 27,\n    \"queued\": 0,\n    \"in_progress\": 0,\n    \"blocked\": 27,\n    \"existing_coverage_validated\": 2170,\n    \"execute_now\": 0,\n    \"repair_lane\": 0,\n    \"design_required\": 0,\n    \"blocked_external\": 27\n  }\n}",
+      "stdout_tail": "{\n  \"ok\": true,\n  \"type\": \"srs_actionable_map\",\n  \"out_json\": \"artifacts/srs_actionable_map_current.json\",\n  \"out_md\": \"docs/workspace/SRS_ACTIONABLE_MAP_CURRENT.md\",\n  \"summary\": {\n    \"generatedAt\": \"2026-03-12T14:15:07.952Z\",\n    \"actionable_total\": 0,\n    \"queued\": 0,\n    \"in_progress\": 0,\n    \"blocked\": 0,\n    \"existing_coverage_validated\": 2197,\n    \"execute_now\": 0,\n    \"repair_lane\": 0,\n    \"design_required\": 0,\n    \"blocked_external\": 0\n  }\n}",
       "stderr_tail": ""
     },
     {
@@ -27,7 +27,7 @@
       "command": "cargo run -q -p protheus-ops-core --bin protheus-ops -- backlog-queue-executor run --all=1 --with-tests=1",
       "ok": true,
       "status": 0,
-      "stdout_tail": "{\n  \"all\": true,\n  \"command\": \"run\",\n  \"counts\": {\n    \"executed\": 0,\n    \"failed\": 0,\n    \"scanned\": 0,\n    \"skipped\": 0\n  },\n  \"dry_run\": false,\n  \"ids\": \"\",\n  \"lane\": \"core/layer0/ops\",\n  \"max\": 50,\n  \"ok\": true,\n  \"receipt_hash\": \"2014f3dbd0e49ef95885fc27ca271e4f3e844d0a350a5ad7b592861b1d4b32e3\",\n  \"rows\": [],\n  \"ts\": \"2026-03-12T08:20:06.563Z\",\n  \"type\": \"backlog_queue_executor\",\n  \"with_tests\": true\n}",
+      "stdout_tail": "{\n  \"all\": true,\n  \"command\": \"run\",\n  \"counts\": {\n    \"executed\": 0,\n    \"failed\": 0,\n    \"scanned\": 0,\n    \"skipped\": 0\n  },\n  \"dry_run\": false,\n  \"ids\": \"\",\n  \"lane\": \"core/layer0/ops\",\n  \"max\": 50,\n  \"ok\": true,\n  \"receipt_hash\": \"50401e2e407b6a668c32a8b5a0e7da043416b537ef23f882605e2bdf6ea14d8d\",\n  \"rows\": [],\n  \"ts\": \"2026-03-12T14:15:08.907Z\",\n  \"type\": \"backlog_queue_executor\",\n  \"with_tests\": true\n}",
       "stderr_tail": "warning: variable does not need to be mutable\n  --> core/layer2/ops/src/collector_cache.rs:98:9\n   |\n98 |     let mut ok = true;\n   |         ----^^\n   |         |\n   |         help: remove this `mut`\n   |\n   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default\n\nwarning: variable does not need to be mutable\n    --> core/layer1/security/src/security_wave1.rs:2543:9\n     |\n2543 |     let mut candidate = format!(\"T{}_{}_{}_auto\", tier, stem, kind);\n     |         ----^^^^^^^^^\n     |         |\n     |         help: remove this `mut`\n     |\n     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default\n\nwarning: variable does not need to be mutable\n    --> core/layer1/security/src/lib.rs:1738:17\n     |\n1738 |             let mut expires_at = state.get(\"expires_at\").cloned().unwrap_or(Value::Null);\n     |                 ----^^^^^^^^^^\n     |                 |\n     |                 help: remove this `mut`\n\nwarning: value assigned to `active_rows` is never read\n   --> core/layer0/ops/src/attention_queue.rs:955:27\n    |\n955 |     let mut active_rows = Vec::new();\n    |                           ^^^^^^^^^^\n    |\n    = help: maybe it is overwritten before being read?\n    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default\n\nwarning: value assigned to `expired_pruned` is never read\n   --> core/layer0/ops/src/attention_queue.rs:956:30\n    |\n956 |     let mut expired_pruned = 0usize;\n    |                              ^^^^^^\n    |\n    = help: maybe it is overwritten before being read?\n\nwarning: function `parse_f64` is never used\n   --> core/layer0/ops/src/spawn_broker.rs:182:4\n    |\n182 | fn parse_f64(raw: Option<&str>, fallback: f64) -> f64 {\n    |    ^^^^^^^^^\n    |\n    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default"
     },
     {
@@ -35,7 +35,7 @@
       "command": "node scripts/ci/srs_full_regression.mjs",
       "ok": true,
       "status": 0,
-      "stdout_tail": "{\n  \"ok\": true,\n  \"type\": \"srs_full_regression\",\n  \"out_json\": \"artifacts/srs_full_regression_current.json\",\n  \"out_markdown\": \"docs/workspace/SRS_FULL_REGRESSION_CURRENT.md\",\n  \"summary\": {\n    \"generatedAt\": \"2026-03-12T08:20:07.059Z\",\n    \"source\": {\n      \"srs\": \"docs/workspace/SRS.md\",\n      \"todo\": \"docs/workspace/TODO.md\"\n    },\n    \"totalSrsRows\": 2197,\n    \"regression\": {\n      \"fail\": 0,\n      \"warn\": 0,\n      \"pass\": 2197\n    },\n    \"doneRows\": 0,\n    \"existingCoverageRows\": 2170,\n    \"doneWithoutNonBacklogEvidence\": 0,\n    \"doneWithoutCodeEvidence\": 0\n  }\n}",
+      "stdout_tail": "{\n  \"ok\": true,\n  \"type\": \"srs_full_regression\",\n  \"out_json\": \"artifacts/srs_full_regression_current.json\",\n  \"out_markdown\": \"docs/workspace/SRS_FULL_REGRESSION_CURRENT.md\",\n  \"summary\": {\n    \"generatedAt\": \"2026-03-12T14:15:09.522Z\",\n    \"source\": {\n      \"srs\": \"docs/workspace/SRS.md\",\n      \"todo\": \"docs/workspace/TODO.md\"\n    },\n    \"totalSrsRows\": 2197,\n    \"regression\": {\n      \"fail\": 0,\n      \"warn\": 0,\n      \"pass\": 2197\n    },\n    \"doneRows\": 0,\n    \"existingCoverageRows\": 2197,\n    \"doneWithoutNonBacklogEvidence\": 0,\n    \"doneWithoutCodeEvidence\": 0\n  }\n}",
       "stderr_tail": ""
     },
     {
@@ -43,7 +43,7 @@
       "command": "node scripts/ci/srs_top200_regression.mjs",
       "ok": true,
       "status": 0,
-      "stdout_tail": "{\n  \"ok\": true,\n  \"type\": \"srs_top200_regression\",\n  \"out_json\": \"artifacts/srs_top200_regression_2026-03-10.json\",\n  \"out_markdown\": \"docs/workspace/SRS_TOP_200_REGRESSION_2026-03-10.md\",\n  \"summary\": {\n    \"generatedAt\": \"2026-03-12T08:20:07.136Z\",\n    \"source\": {\n      \"srs\": \"docs/workspace/SRS.md\",\n      \"todo\": \"docs/workspace/TODO.md\"\n    },\n    \"totalSrsRows\": 2189,\n    \"top200Count\": 200,\n    \"regression\": {\n      \"fail\": 0,\n      \"warn\": 0,\n      \"pass\": 200\n    }\n  }\n}",
+      "stdout_tail": "{\n  \"ok\": true,\n  \"type\": \"srs_top200_regression\",\n  \"out_json\": \"artifacts/srs_top200_regression_2026-03-10.json\",\n  \"out_markdown\": \"docs/workspace/SRS_TOP_200_REGRESSION_2026-03-10.md\",\n  \"summary\": {\n    \"generatedAt\": \"2026-03-12T14:15:09.624Z\",\n    \"source\": {\n      \"srs\": \"docs/workspace/SRS.md\",\n      \"todo\": \"docs/workspace/TODO.md\"\n    },\n    \"totalSrsRows\": 2189,\n    \"top200Count\": 200,\n    \"regression\": {\n      \"fail\": 0,\n      \"warn\": 0,\n      \"pass\": 200\n    }\n  }\n}",
       "stderr_tail": ""
     },
     {
@@ -59,7 +59,7 @@
       "command": "./verify.sh",
       "ok": true,
       "status": 0,
-      "stdout_tail": "y_manifest.json\",\n        \"sha256\": \"e3b44d6c5d45ff6073b7a68a50e1fa4ae15b28c19b65fe7055a6583b6dd33cb5\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"client/runtime/config/rust_source_of_truth_policy.json\",\n        \"sha256\": \"0eb47b65096aff4413dec2d9679b9bd0f33e14eee5de70aea66ee355945c25f3\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"client/runtime/config/constitution_guardian_policy.json\",\n        \"sha256\": \"e55e95f968af537f1b766a1e570fb7e4c632706611d7325d1783ee5ae604eefb\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"client/runtime/config/rsi_bootstrap_policy.json\",\n        \"sha256\": \"98348837061c227a610b0d2cf2ff51ebfb0df2b40b6b2a899cf7c18eaeae0638\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"core/layer0/ops/src/main.rs\",\n        \"sha256\": \"4ebad4ce95908691997a4d95df8d5374ea52f783f8091869ba8e9d7dbb4eeb13\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"core/layer0/ops/src/contract_check.rs\",\n        \"sha256\": \"551bda5dd4c81cfb1691131378c98dbf48d8a67eed8595dc7d2ba61e56fc64f8\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"core/layer0/ops/src/foundation_contract_gate.rs\",\n        \"sha256\": \"5cf2dcc80644458e28af9dce46039fc4b6d69e42f333d9830df32994bed47f91\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"core/layer0/ops/src/spine.rs\",\n        \"sha256\": \"fa89f2f379bede28b9cd20a8e7f13ae27d85d7bd063360c7760f98745c7e267a\"\n      }\n    ],\n    \"state_hash\": \"a5d77a513164be93d7299413b267f83fd7d536e114cc52796bd5a6d8452a7cfa\"\n  },\n  \"state_binding\": {\n    \"safety_plane_state_hash\": \"a5d77a513164be93d7299413b267f83fd7d536e114cc52796bd5a6d8452a7cfa\",\n    \"state_binding_hash\": \"6703accfb45ba3c2d50abbbd8640581f52bfc15e0560316f48d2735843e4b8bf\"\n  },\n  \"ts\": \"2026-03-12T08:20:10.431Z\",\n  \"type\": \"origin_integrity_enforcer\"\n}",
+      "stdout_tail": "y_manifest.json\",\n        \"sha256\": \"e3b44d6c5d45ff6073b7a68a50e1fa4ae15b28c19b65fe7055a6583b6dd33cb5\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"client/runtime/config/rust_source_of_truth_policy.json\",\n        \"sha256\": \"0eb47b65096aff4413dec2d9679b9bd0f33e14eee5de70aea66ee355945c25f3\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"client/runtime/config/constitution_guardian_policy.json\",\n        \"sha256\": \"e55e95f968af537f1b766a1e570fb7e4c632706611d7325d1783ee5ae604eefb\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"client/runtime/config/rsi_bootstrap_policy.json\",\n        \"sha256\": \"98348837061c227a610b0d2cf2ff51ebfb0df2b40b6b2a899cf7c18eaeae0638\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"core/layer0/ops/src/main.rs\",\n        \"sha256\": \"4ebad4ce95908691997a4d95df8d5374ea52f783f8091869ba8e9d7dbb4eeb13\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"core/layer0/ops/src/contract_check.rs\",\n        \"sha256\": \"551bda5dd4c81cfb1691131378c98dbf48d8a67eed8595dc7d2ba61e56fc64f8\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"core/layer0/ops/src/foundation_contract_gate.rs\",\n        \"sha256\": \"5cf2dcc80644458e28af9dce46039fc4b6d69e42f333d9830df32994bed47f91\"\n      },\n      {\n        \"exists\": true,\n        \"missing\": false,\n        \"path\": \"core/layer0/ops/src/spine.rs\",\n        \"sha256\": \"fa89f2f379bede28b9cd20a8e7f13ae27d85d7bd063360c7760f98745c7e267a\"\n      }\n    ],\n    \"state_hash\": \"a5d77a513164be93d7299413b267f83fd7d536e114cc52796bd5a6d8452a7cfa\"\n  },\n  \"state_binding\": {\n    \"safety_plane_state_hash\": \"a5d77a513164be93d7299413b267f83fd7d536e114cc52796bd5a6d8452a7cfa\",\n    \"state_binding_hash\": \"6703accfb45ba3c2d50abbbd8640581f52bfc15e0560316f48d2735843e4b8bf\"\n  },\n  \"ts\": \"2026-03-12T14:15:15.327Z\",\n  \"type\": \"origin_integrity_enforcer\"\n}",
       "stderr_tail": ""
     },
     {
@@ -67,7 +67,7 @@
       "command": "node scripts/ci/srs_actionable_map.mjs",
       "ok": true,
       "status": 0,
-      "stdout_tail": "{\n  \"ok\": true,\n  \"type\": \"srs_actionable_map\",\n  \"out_json\": \"artifacts/srs_actionable_map_current.json\",\n  \"out_md\": \"docs/workspace/SRS_ACTIONABLE_MAP_CURRENT.md\",\n  \"summary\": {\n    \"generatedAt\": \"2026-03-12T08:20:10.599Z\",\n    \"actionable_total\": 27,\n    \"queued\": 0,\n    \"in_progress\": 0,\n    \"blocked\": 27,\n    \"existing_coverage_validated\": 2170,\n    \"execute_now\": 0,\n    \"repair_lane\": 0,\n    \"design_required\": 0,\n    \"blocked_external\": 27\n  }\n}",
+      "stdout_tail": "{\n  \"ok\": true,\n  \"type\": \"srs_actionable_map\",\n  \"out_json\": \"artifacts/srs_actionable_map_current.json\",\n  \"out_md\": \"docs/workspace/SRS_ACTIONABLE_MAP_CURRENT.md\",\n  \"summary\": {\n    \"generatedAt\": \"2026-03-12T14:15:15.540Z\",\n    \"actionable_total\": 0,\n    \"queued\": 0,\n    \"in_progress\": 0,\n    \"blocked\": 0,\n    \"existing_coverage_validated\": 2197,\n    \"execute_now\": 0,\n    \"repair_lane\": 0,\n    \"design_required\": 0,\n    \"blocked_external\": 0\n  }\n}",
       "stderr_tail": ""
     }
   ],
