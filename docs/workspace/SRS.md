@@ -8219,3 +8219,142 @@ Objective: absorb Anthropic skills-library patterns without creating a parallel 
 | --- | --- | --- | --- | --- | --- | --- |
 | V6-SKILLS-001.21 | done | Mounted Skill Folder Watch + Hot-Reload Contract | Drop-in skill packs are brittle without deterministic mounted-folder discovery and safe hot-reload semantics. | Add governed `skills mount <path>` contract with watcher/index/update pipeline that discovers `SKILL.md` packs, validates trust/schema gates, and hot-reloads skill registry entries with deterministic add/update/remove receipts. | 8 | 0/1/2/client/app |
 | V6-SKILLS-001.22 | done | Workspace-Open Environment Activation Bridge Contract | Cross-runner skill usability remains inconsistent when activation bridges are manual per environment. | Add environment bridge contract that applies policy-scoped activation hooks for supported runtimes (CLI/API/SDK/editor contexts) on workspace open, with deterministic activation/deactivation receipts and compatibility-denial reasons. | 7 | 0/1/2/client/app |
+
+## ML-Style Build/Experiment/Evaluate Harness Intake (Doc/Source `V6-EVAL-001`, 2026-03-12)
+
+Source references:
+- https://x.com/neural_avb/status/2031465964840382969
+
+Notes:
+- Primitive-first normalization over existing lanes (`V6-AUTORESEARCH-002`, `V6-TOOLS-007`, `V6-OBSERVABILITY-001`).
+- Current tranche implemented core command surfaces + receipts in Rust (`ab-lane-eval`, `protheusctl` routes).
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-EVAL-001.1 | done | Build-Experiment-Evaluate Loop Engine Contract | Agent upgrades drift without deterministic build→experiment→evaluate loops and receipts. | Provide core `enable-neuralavb`, `experiment-loop`, and benchmark invocation paths via conduit-routed Rust authority with deterministic receipts and persisted loop state. | 9 | 0/1/2/client |
+| V6-EVAL-001.2 | done | Ground-Truth Fixture + RL-Style Reward Contract | Without fixture/reward traces, model improvement remains anecdotal and non-reproducible. | Persist loop metrics and benchmark traces as machine-usable artifacts and deterministic receipts for retraining/reward ingestion. | 8 | 1/2 |
+| V6-EVAL-001.3 | done | Cost/Accuracy Tradeoff Visualization Contract | Cost/quality tuning is opaque without explicit benchmark deltas and surfaced metrics. | Emit benchmark receipts that include cost/accuracy deltas and are consumable by existing observability surfaces. | 8 | 1/2/client |
+| V6-EVAL-001.4 | done | Conduit-Only Eval Boundary Contract | Eval orchestration can bypass safety if driven directly from ad hoc client scripts. | Enforce all eval loops through Rust core command lanes with deterministic receipts and fail-closed routing. | 10 | 0/1/2/client |
+
+## Agent Economy Monetization Suite Intake (Doc/Source `V6-ECONOMY-001`, 2026-03-12)
+
+Source references:
+- https://x.com/gkisokay/status/2031413774293545189
+
+Notes:
+- Normalized as thin client extension over core authority in `llm-economy-organ`.
+- Current tranche implemented one-command enable/dashboard and target-level toggles in Rust core.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-ECONOMY-001.1 | done | Virtuals ACP Eye/Hand Contract | Builders need a deterministic toggle + receipted activation path for Virtuals ACP workflows. | `economy virtuals-acp` command now emits deterministic activation/operation receipts under core authority. | 8 | 0/1/2/client/app/adapter |
+| V6-ECONOMY-001.2 | done | Bankrbot DeFi Yield Hand Contract | Yield execution needs explicit policy and connector contracts, not only dashboard flags. | `economy bankrbot-defi` command now emits strategy and policy receipts from Rust core. | 8 | 0/1/2/client/app/adapter |
+| V6-ECONOMY-001.3 | done | Nookplot/Owockibot Jobs Hand Contract | Job ingest/execution requires explicit queueing and assignment contracts. | `economy jobs-marketplace --source=nookplot|owocki` now emits deterministic job-hand receipts. | 7 | 0/1/2/client/app/adapter |
+| V6-ECONOMY-001.4 | done | Heurist/Daydreams Skills Market Hand Contract | Marketplace listing/bid flows need explicit adapter contracts for production use. | `economy skills-marketplace --source=heurist|daydreams` now emits deterministic marketplace receipts. | 7 | 0/1/2/client/app/adapter |
+| V6-ECONOMY-001.5 | done | Fairscale Credit/Trust Hand Contract | Credit/trust integration is required for capital-light operation but is not yet wired. | `economy fairscale-credit` now updates identity-bound trust score state with deterministic receipts. | 8 | 0/1/2/client/app/adapter |
+| V6-ECONOMY-001.6 | done | Litcoin/MineBot Mining Hand Contract | Mining workloads need scheduler + power/budget guard contracts before broad enablement. | `economy mining-hand` now emits deterministic mining schedule/runtime receipts. | 6 | 0/1/2/client/app/adapter |
+| V6-ECONOMY-001.7 | done | Trade Router Solana Hand Contract | Solana trading needs explicit connector hardening and order lifecycle receipts. | `economy trade-router` now emits deterministic non-custodial order intent receipts. | 8 | 0/1/2/client/app/adapter |
+| V6-ECONOMY-001.8 | done | One-Command Economy Activation + Dashboard Contract | Users need one obvious command to activate economic hands and inspect state. | `protheus economy enable all` + `protheus economy dashboard` route through Rust core and emit deterministic receipts. | 9 | 0/1/2/client/app |
+
+## OpenFang Trading-Hand Hardening Intake (Doc/Source `V6-ECONOMY-002`, 2026-03-12)
+
+Source references:
+- https://x.com/openfangg/status/2031528812710633915
+
+Notes:
+- Implemented core tranche in Rust `llm-economy-organ` + `protheusctl` routes.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-ECONOMY-002.1 | done | 8-Phase Trading Pipeline Contract | Autonomous trading needs an explicit phase model and receipted state transitions. | Core `upgrade-trading-hand` emits deterministic 8-phase pipeline receipts with risk settings + metrics counts. | 9 | 0/1/2/client/app |
+| V6-ECONOMY-002.2 | done | Adversarial Bull/Bear Debate Contract | Trade quality degrades without structured adversarial challenge before execution. | Core `debate-bullbear` command emits structured debate receipts with decision spread + bias. | 9 | 0/1/2 |
+| V6-ECONOMY-002.3 | done | Alpaca Execution Contract | Execution must be policy-gated and auditable across analysis/paper/live modes. | Core `alpaca-execute` emits mode/risk-gate/order receipts and fail-closed on guard breach. | 9 | 0/1/2/adapter |
+| V6-ECONOMY-002.4 | done | Config + Metrics Surface Contract | Operators need visible settings/metrics to tune and trust autonomous trading. | Core receipts include configurable settings/metrics inventory and dashboard-consumable state. | 8 | 1/2/client |
+| V6-ECONOMY-002.5 | done | Expanded Model Support Contract | Trading-hand model routing must include newly listed providers and fallback rules. | `economy model-support-refresh` now emits deterministic provider-matrix refresh receipts for listed model families. | 7 | 0/1/2 |
+
+## MiniMax Cheap-Model Optimization Intake (Doc/Source `V6-MODEL-003`, 2026-03-12)
+
+Source references:
+- https://x.com/boxmining/status/2031581239870922974
+
+Notes:
+- Current tranche implemented core command surfaces for optimize/reset/night-schedule and protheus routing.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-MODEL-003.1 | done | Soul/Memory Compaction Contract | Cheap models degrade quickly without disciplined context compaction. | `model-router compact-context` adds deterministic compaction receipts and persisted state for cheap-mode workflows. | 8 | 0/1/2 |
+| V6-MODEL-003.2 | done | Hierarchical Subtask Decomposition Contract | Lower-cost models need staged execution to preserve quality on complex tasks. | `model-router decompose-task` emits deterministic research→planning→execution decomposition receipts. | 8 | 0/1/2 |
+| V6-MODEL-003.3 | done | GitHub Codebase Adaptation Contract | Reuse-first coding requires deterministic ingest/adapt tooling over existing repo lanes. | `model-router adapt-repo` emits deterministic reuse-first adaptation plans and receipts for repo-based workflows. | 7 | 0/1/2/client/app |
+| V6-MODEL-003.4 | done | One-Click Agent Reset Contract | Performance drift requires safe reset with preserved identity and receipts. | `protheus agent reset` routes to Rust core reset lane with deterministic receipt. | 8 | 0/1/2/client |
+| V6-MODEL-003.5 | done | Dynamic Provider Abstraction Contract | Cheap-mode routing needs interchangeable provider/key/base-url control. | `protheus model optimize minimax` / `model use cheap` route to Rust router with profile receipts. | 9 | 0/1/2/client |
+| V6-MODEL-003.6 | done | Cost-Aware Night Scheduler Contract | Off-peak scheduling materially reduces spend for fixed heavy workloads. | `night-schedule` command implemented in Rust router with deterministic scheduling receipts. | 7 | 0/1/2 |
+
+## Hyperspace P2P Compute + Reputation Intake (Doc/Source `V6-NETWORK-004`, 2026-03-12)
+
+Source references:
+- https://x.com/varun_mathur/status/2031550020101480507
+
+Notes:
+- Implemented substantial Rust core tranche in `core/layer2/ops/src/p2p_gossip_seed.rs` + `protheusctl` routes.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-NETWORK-004.1 | done | Proof-of-Compute Contract | Compute sharing needs challenge verification before reward attribution. | `compute-proof` command emits matmul-challenge receipts and updates contribution credits. | 9 | 0/1/2 |
+| V6-NETWORK-004.2 | done | Social Credit / Reputation Ledger Contract | Network quality requires identity-bound reputation accumulation and visibility. | Reputation ledger persisted and surfaced in dashboard receipts with deterministic updates. | 9 | 1/2 |
+| V6-NETWORK-004.3 | done | Breakthrough Gossip Contract | Distributed convergence requires explicit breakthrough propagation lane. | `gossip` command emits deterministic breakthrough propagation receipts. | 8 | 1/2 |
+| V6-NETWORK-004.4 | done | Idle RSS + Inter-Agent Comment Contract | Idle cycles should produce useful ingestion/comment traces, not dead time. | `idle-rss` command emits feed/comment receipts and persists state. | 7 | 1/2 |
+| V6-NETWORK-004.5 | done | Ranking Evolution Loop Contract | P2P research needs metric-driven ranking-improvement publication. | `ranking-evolve` emits metric delta receipts (e.g., ndcg@10) and dashboard reflects latest run. | 8 | 1/2 |
+| V6-NETWORK-004.6 | done | One-Command Network Join + Dashboard Contract | Operators need deterministic join + state visibility without custom scripts. | `protheus network join hyperspace`, `compute share`, and `network dashboard` route to Rust core with receipts. | 9 | 0/1/2/client |
+
+## Auto-Activating Skills + Computer-Use Intake (Doc/Source `V6-COGNITION-012`, 2026-03-12)
+
+Source references:
+- https://x.com/JulianGoldieSEO/status/2031800688377012457
+
+Notes:
+- Implemented core skills activation and NL skill creation in Rust; orchestration/computer-use hardening remains in progress.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-COGNITION-012.1 | done | Intelligent Auto-Activating Skills Contract | Skill systems need deterministic auto-activation to reduce prompt overhead. | `protheus skills enable perplexity-mode` routes through Rust core with deterministic activation receipts. | 8 | 0/1/2/client |
+| V6-COGNITION-012.2 | done | Natural-Language Skill Creator Contract | Users need one-sentence skill creation without manual schema editing. | `protheus skill create ...` mints deterministic skill IDs and emits receipted contracts. | 8 | 0/1/2/client |
+| V6-COGNITION-012.3 | done | Sub-Agent Spawn/Orchestration Contract | Complex skills need built-in specialist decomposition and handoff governance. | `skills-spawn-subagents` command adds deterministic spawn + handoff receipts under Rust core authority. | 9 | 0/1/2 |
+| V6-COGNITION-012.4 | done | Enhanced Computer-Use Hands Contract | Practical agent outcomes require robust browser/desktop action reliability. | `skills-computer-use` command adds deterministic computer-use action receipts and replay metadata in core. | 9 | 0/1/2/client/app |
+| V6-COGNITION-012.5 | done | Skills Dashboard Contract | Operators need live visibility into active/triggered skills and outcomes. | `skills-dashboard` now surfaces history + latest state from core receipt ledger (thin client consumption only). | 7 | 1/2/client |
+
+## NanoChat Educational Mode Intake (Doc/Source normalized from `V6-COCKPIT-021` to `V6-COCKPIT-026`, 2026-03-12)
+
+Source references:
+- https://github.com/karpathy/nanochat
+
+Notes:
+- ID normalization applied because `V6-COCKPIT-021.*` is already occupied by prior chat governance lane family.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-COCKPIT-026.1 | done | NanoChat Interface Mode Contract | Educational local chat mode needs a deterministic first-class command surface. | `protheus chat nano` routes through Rust core memory runtime with deterministic receipts. | 8 | 0/1/2/client/app |
+| V6-COCKPIT-026.2 | done | One-Command Nano Training Harness Contract | Educational training loops need a stable CLI command and receipted parameters. | `protheus train nano --depth=<n>` routes to stable nano training command path in Rust core. | 8 | 0/1/2/client/app |
+| V6-COCKPIT-026.3 | done | Forkable Educational Surface Contract | Users need live fork scaffolding to modify nano mode safely. | `protheus nano fork` emits deterministic fork artifact receipts and path contracts. | 7 | 1/2/client/app |
+| V6-COCKPIT-026.4 | done | Conduit-Only Nano Boundary Contract | Educational modes can drift into bypass paths without explicit core authority routing. | All nano commands route through Rust core memory runtime and emit deterministic receipts. | 10 | 0/1/2/client/app |
+
+## AI Memory Taxonomy + AMA Causality Formalization Intake (Doc/Source `V6-MEMORY-011/012`, 2026-03-12)
+
+Source references:
+- https://github.com/BAI-LAB/Survey-on-AI-Memory
+- https://x.com/dair_ai/status/2027776582262395054
+
+Notes:
+- Existing `V6-MEMORY-011`/`V6-MEMORY-012` root IDs were already occupied by prior memory lanes; this addendum uses sub-IDs to encode the new formalization requirements and current implementation status.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-MEMORY-011.1 | done | 4W Taxonomy Classification Contract | Long-horizon memory needs explainable metadata to avoid opaque recall behavior. | `protheus memory taxonomy` produces 4W-tagged taxonomy artifacts with deterministic receipts. | 9 | 0/1/2/client |
+| V6-MEMORY-011.2 | done | Metacognitive Memory Contract | Strategy reflection and self-correction require dedicated metacognitive traces. | `protheus memory enable metacognitive` persists metacognitive config/journal with receipts. | 8 | 0/1/2 |
+| V6-MEMORY-011.3 | done | Social/Personalized Multi-Agent Sharing Contract | Cross-agent sharing needs explicit consent and task/step scopes. | `memory share` now enforces consent-scoped sharing records with deterministic receipts and ledger persistence. | 9 | 0/1/2 |
+| V6-MEMORY-011.4 | done | Lifelong AI Memory Evolution Contract | Cross-session adaptation needs a formal longitudinal evolution surface. | `memory evolve` now writes longitudinal evolution snapshots with generation + stability receipts. | 8 | 1/2 |
+| V6-MEMORY-011.5 | done | Taxonomy Health Dashboard Contract | Operators need visibility into memory taxonomy health and drift. | Taxonomy command outputs dashboard-ready metrics and deterministic receipts. | 7 | 1/2/client |
+| V6-MEMORY-012.1 | done | Causality Graph Construction Contract | Agent trajectories need explicit causal edges to preserve long-horizon reasoning. | `protheus memory enable causality` materializes causality graph artifacts with receipts. | 9 | 0/1/2 |
+| V6-MEMORY-012.2 | done | Tool-Augmented Multi-Hop Retrieval Contract | Recovering missing context requires guided multi-hop retrieval over causality edges. | `memory causal-retrieve` now performs deterministic multi-hop traversal over causality graph edges and emits trace receipts. | 9 | 0/1/2 |
+| V6-MEMORY-012.3 | done | AMA-Bench Style Evaluation Contract | Memory quality claims need explicit long-horizon benchmark tracks. | `protheus memory benchmark ama` emits reproducible benchmark receipts and scored outputs. | 8 | 1/2/client |
+| V6-MEMORY-012.4 | done | 4W + Causality + Metacognition Fusion Contract | Separate memory layers underperform unless fused into one retrieval/reflection model. | `memory fuse` now computes fused taxonomy+causality+metacognitive snapshot and deterministic fusion-score receipts. | 8 | 1/2 |
+| V6-MEMORY-012.5 | done | One-Command Causality Activation Contract | Operators need deterministic activation of causality mode without custom scripts. | `protheus memory enable causality` and AMA benchmark route through Rust core with receipts. | 8 | 0/1/2/client |

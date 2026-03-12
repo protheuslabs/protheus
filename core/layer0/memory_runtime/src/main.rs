@@ -2130,6 +2130,12 @@ fn run_daemon(args: &HashMap<String, String>) {
             "memory-benchmark-ama" => {
                 (rag_runtime::memory_benchmark_ama_payload(&req_args), false)
             }
+            "memory-share" => (rag_runtime::memory_share_payload(&req_args), false),
+            "memory-evolve" => (rag_runtime::memory_evolve_payload(&req_args), false),
+            "memory-causal-retrieve" => {
+                (rag_runtime::memory_causal_retrieve_payload(&req_args), false)
+            }
+            "memory-fuse" => (rag_runtime::memory_fuse_payload(&req_args), false),
             "stable-status" => (rag_runtime::stable_status_payload(), false),
             "stable-search" => match rag_runtime::ensure_supported_version(&req_args) {
                 Ok(version) => {
@@ -2257,6 +2263,40 @@ fn run_daemon(args: &HashMap<String, String>) {
                     Err(err) => (err, false),
                 }
             }
+            "stable-memory-share" => match rag_runtime::ensure_supported_version(&req_args) {
+                Ok(version) => {
+                    let mut payload = rag_runtime::memory_share_payload(&req_args);
+                    payload["api_version"] = json!(version);
+                    (payload, false)
+                }
+                Err(err) => (err, false),
+            },
+            "stable-memory-evolve" => match rag_runtime::ensure_supported_version(&req_args) {
+                Ok(version) => {
+                    let mut payload = rag_runtime::memory_evolve_payload(&req_args);
+                    payload["api_version"] = json!(version);
+                    (payload, false)
+                }
+                Err(err) => (err, false),
+            },
+            "stable-memory-causal-retrieve" => {
+                match rag_runtime::ensure_supported_version(&req_args) {
+                    Ok(version) => {
+                        let mut payload = rag_runtime::memory_causal_retrieve_payload(&req_args);
+                        payload["api_version"] = json!(version);
+                        (payload, false)
+                    }
+                    Err(err) => (err, false),
+                }
+            }
+            "stable-memory-fuse" => match rag_runtime::ensure_supported_version(&req_args) {
+                Ok(version) => {
+                    let mut payload = rag_runtime::memory_fuse_payload(&req_args);
+                    payload["api_version"] = json!(version);
+                    (payload, false)
+                }
+                Err(err) => (err, false),
+            },
             "shutdown" => (
                 json!({
                     "ok": true,
@@ -2325,6 +2365,12 @@ fn main() {
             run_value_payload(rag_runtime::memory_causality_enable_payload(&kv))
         }
         "memory-benchmark-ama" => run_value_payload(rag_runtime::memory_benchmark_ama_payload(&kv)),
+        "memory-share" => run_value_payload(rag_runtime::memory_share_payload(&kv)),
+        "memory-evolve" => run_value_payload(rag_runtime::memory_evolve_payload(&kv)),
+        "memory-causal-retrieve" => {
+            run_value_payload(rag_runtime::memory_causal_retrieve_payload(&kv))
+        }
+        "memory-fuse" => run_value_payload(rag_runtime::memory_fuse_payload(&kv)),
         "stable-status" => run_value_payload(rag_runtime::stable_status_payload()),
         "stable-search" => match rag_runtime::ensure_supported_version(&kv) {
             Ok(version) => {
@@ -2435,6 +2481,38 @@ fn main() {
         "stable-memory-benchmark-ama" => match rag_runtime::ensure_supported_version(&kv) {
             Ok(version) => {
                 let mut out = rag_runtime::memory_benchmark_ama_payload(&kv);
+                out["api_version"] = json!(version);
+                run_value_payload(out);
+            }
+            Err(err) => run_value_payload(err),
+        },
+        "stable-memory-share" => match rag_runtime::ensure_supported_version(&kv) {
+            Ok(version) => {
+                let mut out = rag_runtime::memory_share_payload(&kv);
+                out["api_version"] = json!(version);
+                run_value_payload(out);
+            }
+            Err(err) => run_value_payload(err),
+        },
+        "stable-memory-evolve" => match rag_runtime::ensure_supported_version(&kv) {
+            Ok(version) => {
+                let mut out = rag_runtime::memory_evolve_payload(&kv);
+                out["api_version"] = json!(version);
+                run_value_payload(out);
+            }
+            Err(err) => run_value_payload(err),
+        },
+        "stable-memory-causal-retrieve" => match rag_runtime::ensure_supported_version(&kv) {
+            Ok(version) => {
+                let mut out = rag_runtime::memory_causal_retrieve_payload(&kv);
+                out["api_version"] = json!(version);
+                run_value_payload(out);
+            }
+            Err(err) => run_value_payload(err),
+        },
+        "stable-memory-fuse" => match rag_runtime::ensure_supported_version(&kv) {
+            Ok(version) => {
+                let mut out = rag_runtime::memory_fuse_payload(&kv);
                 out["api_version"] = json!(version);
                 run_value_payload(out);
             }

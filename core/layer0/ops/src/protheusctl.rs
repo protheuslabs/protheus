@@ -862,6 +862,52 @@ fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route> {
                 forward_stdin: false,
             })
         }
+        "skills"
+            if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("dashboard"))
+                .unwrap_or(false) =>
+        {
+            Some(Route {
+                script_rel: "core://assimilation-controller".to_string(),
+                args: vec!["skills-dashboard".to_string()],
+                forward_stdin: false,
+            })
+        }
+        "skills"
+            if rest
+                .first()
+                .map(|v| {
+                    let s = v.trim().to_ascii_lowercase();
+                    s == "spawn" || s == "spawn-subagents"
+                })
+                .unwrap_or(false) =>
+        {
+            let mut args = vec!["skills-spawn-subagents".to_string()];
+            args.extend(rest.iter().skip(1).cloned());
+            Some(Route {
+                script_rel: "core://assimilation-controller".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "skills"
+            if rest
+                .first()
+                .map(|v| {
+                    let s = v.trim().to_ascii_lowercase();
+                    s == "computer-use" || s == "hands"
+                })
+                .unwrap_or(false) =>
+        {
+            let mut args = vec!["skills-computer-use".to_string()];
+            args.extend(rest.iter().skip(1).cloned());
+            Some(Route {
+                script_rel: "core://assimilation-controller".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
         "skill"
             if rest
                 .first()
@@ -1928,6 +1974,58 @@ mod tests {
         assert_eq!(
             route.args,
             vec!["skills-enable", "perplexity-mode", "--apply=1"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_skills_dashboard_to_assimilation_controller() {
+        let route =
+            resolve_core_shortcuts("skills", &["dashboard".to_string()]).expect("route");
+        assert_eq!(route.script_rel, "core://assimilation-controller");
+        assert_eq!(route.args, vec!["skills-dashboard"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_skills_spawn_to_assimilation_controller() {
+        let route = resolve_core_shortcuts(
+            "skills",
+            &[
+                "spawn".to_string(),
+                "--task=launch".to_string(),
+                "--roles=researcher,executor".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://assimilation-controller");
+        assert_eq!(
+            route.args,
+            vec![
+                "skills-spawn-subagents",
+                "--task=launch",
+                "--roles=researcher,executor"
+            ]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_skills_computer_use_to_assimilation_controller() {
+        let route = resolve_core_shortcuts(
+            "skills",
+            &[
+                "computer-use".to_string(),
+                "--action=open browser".to_string(),
+                "--target=desktop".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://assimilation-controller");
+        assert_eq!(
+            route.args,
+            vec![
+                "skills-computer-use",
+                "--action=open browser",
+                "--target=desktop"
+            ]
         );
     }
 

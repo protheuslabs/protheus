@@ -181,6 +181,18 @@ fn ama_benchmark_path(root: &Path, args: &HashMap<String, String>) -> PathBuf {
     state_root(root, args).join("ama_benchmark_latest.json")
 }
 
+fn sharing_ledger_path(root: &Path, args: &HashMap<String, String>) -> PathBuf {
+    state_root(root, args).join("sharing_ledger.jsonl")
+}
+
+fn evolution_state_path(root: &Path, args: &HashMap<String, String>) -> PathBuf {
+    state_root(root, args).join("evolution_state.json")
+}
+
+fn fusion_state_path(root: &Path, args: &HashMap<String, String>) -> PathBuf {
+    state_root(root, args).join("fusion_snapshot.json")
+}
+
 fn nanochat_state_dir(root: &Path, args: &HashMap<String, String>) -> PathBuf {
     state_root(root, args).join("nanochat")
 }
@@ -449,6 +461,11 @@ fn load_history_rows(path: &Path) -> Vec<Value> {
     raw.lines()
         .filter_map(|line| serde_json::from_str::<Value>(line).ok())
         .collect::<Vec<Value>>()
+}
+
+fn read_json_file(path: &Path) -> Option<Value> {
+    let raw = fs::read_to_string(path).ok()?;
+    serde_json::from_str::<Value>(&raw).ok()
 }
 
 fn load_index(path: &Path) -> Option<RagIndex> {
@@ -1297,6 +1314,206 @@ pub fn memory_benchmark_ama_payload(args: &HashMap<String, String>) -> Value {
     out
 }
 
+pub fn memory_share_payload(args: &HashMap<String, String>) -> Value {
+    let root = root_from_args(args);
+    let persona = clean_text(args.get("persona").map_or("peer", String::as_str), 120);
+    let scope = clean_text(args.get("scope").map_or("task", String::as_str), 40);
+    let consent = parse_bool(args.get("consent"), false);
+    let reason = clean_text(args.get("reason").map_or("", String::as_str), 240);
+    let record = json!({
+        "ts": now_iso(),
+        "persona": persona,
+        "scope": scope,
+        "consent": consent,
+        "reason": reason
+    });
+    let path = sharing_ledger_path(&root, args);
+    append_history(&path, &record);
+    let out = receipt(json!({
+        "ok": consent,
+        "type": "memory_share",
+        "backend": "protheus_memory_core",
+        "persona": persona,
+        "scope": scope,
+        "consent": consent,
+        "sharing_ledger_path": normalize_rel_path(&root, &path),
+        "error": if consent { Value::Null } else { Value::String("consent_required".to_string()) }
+    }));
+    append_history(&history_path(&root, args), &out);
+    out
+}
+
+pub fn memory_evolve_payload(args: &HashMap<String, String>) -> Value {
+    let root = root_from_args(args);
+    let h_rows = load_history_rows(&history_path(&root, args));
+    let meta_path = metacognitive_journal_path(&root, args);
+    let meta_rows = load_history_rows(&meta_path);
+    let share_rows = load_history_rows(&sharing_ledger_path(&root, args));
+    let generation = parse_usize(args.get("generation"), 1, 100_000, 1);
+    let stability_score = ((h_rows.len() as f64 * 0.4
+        + meta_rows.len() as f64 * 0.3
+        + share_rows.len() as f64 * 0.3)
+        .sqrt()
+        / 10.0)
+        .clamp(0.0, 1.0);
+    let snapshot = json!({
+        "schema_version": "1.0",
+        "generated_at": now_iso(),
+        "generation": generation,
+        "history_events": h_rows.len(),
+        "metacognitive_events": meta_rows.len(),
+        "sharing_events": share_rows.len(),
+        "stability_score": ((stability_score * 1000.0).round() / 1000.0)
+    });
+    let out_path = evolution_state_path(&root, args);
+    if let Some(parent) = out_path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    let _ = fs::write(
+        &out_path,
+        format!(
+            "{}\n",
+            serde_json::to_string_pretty(&snapshot).unwrap_or_else(|_| "{}".to_string())
+        ),
+    );
+    let out = receipt(json!({
+        "ok": true,
+        "type": "memory_evolve",
+        "backend": "protheus_memory_core",
+        "generation": generation,
+        "stability_score": snapshot.get("stability_score").cloned().unwrap_or(Value::Null),
+        "evolution_state_path": normalize_rel_path(&root, &out_path)
+    }));
+    append_history(&history_path(&root, args), &out);
+    out
+}
+
+pub fn memory_causal_retrieve_payload(args: &HashMap<String, String>) -> Value {
+    let root = root_from_args(args);
+    let graph_path = causality_path(&root, args);
+    let Some(raw) = fs::read_to_string(&graph_path).ok() else {
+        return receipt(json!({
+            "ok": false,
+            "type": "memory_causal_retrieve",
+            "error": "causality_graph_missing",
+            "graph_path": normalize_rel_path(&root, &graph_path)
+        }));
+    };
+    let Ok(graph) = serde_json::from_str::<CausalityGraph>(&raw) else {
+        return receipt(json!({
+            "ok": false,
+            "type": "memory_causal_retrieve",
+            "error": "causality_graph_invalid",
+            "graph_path": normalize_rel_path(&root, &graph_path)
+        }));
+    };
+    let q = clean_text(args.get("q").map_or("", String::as_str), 200);
+    let depth = parse_usize(args.get("depth"), 1, 6, 2);
+    let seed = if !q.is_empty() {
+        graph
+            .nodes
+            .iter()
+            .find(|n| {
+                n.summary.to_ascii_lowercase().contains(&q.to_ascii_lowercase())
+                    || n.event_type.to_ascii_lowercase().contains(&q.to_ascii_lowercase())
+            })
+            .map(|n| n.id.clone())
+            .or_else(|| graph.nodes.first().map(|n| n.id.clone()))
+            .unwrap_or_default()
+    } else {
+        graph
+            .nodes
+            .first()
+            .map(|n| n.id.clone())
+            .unwrap_or_default()
+    };
+    let mut adjacency: HashMap<String, Vec<String>> = HashMap::new();
+    for edge in &graph.edges {
+        adjacency
+            .entry(edge.from.clone())
+            .or_default()
+            .push(edge.to.clone());
+    }
+    let mut visited = HashSet::new();
+    let mut queue: VecDeque<(String, usize)> = VecDeque::new();
+    queue.push_back((seed.clone(), 0));
+    let mut trace = Vec::new();
+    while let Some((cur, d)) = queue.pop_front() {
+        if !visited.insert(cur.clone()) {
+            continue;
+        }
+        if let Some(node) = graph.nodes.iter().find(|n| n.id == cur) {
+            trace.push(json!({
+                "id": node.id,
+                "depth": d,
+                "event_type": node.event_type,
+                "summary": node.summary
+            }));
+        }
+        if d >= depth {
+            continue;
+        }
+        for nxt in adjacency.get(&cur).cloned().unwrap_or_default() {
+            queue.push_back((nxt, d + 1));
+        }
+    }
+    let out = receipt(json!({
+        "ok": true,
+        "type": "memory_causal_retrieve",
+        "backend": "protheus_memory_core",
+        "query": q,
+        "seed": seed,
+        "depth": depth,
+        "trace_count": trace.len(),
+        "trace": trace,
+        "graph_path": normalize_rel_path(&root, &graph_path)
+    }));
+    append_history(&history_path(&root, args), &out);
+    out
+}
+
+pub fn memory_fuse_payload(args: &HashMap<String, String>) -> Value {
+    let root = root_from_args(args);
+    let taxonomy_rows = read_json_file(&taxonomy_path(&root, args))
+        .and_then(|v| v.get("rows").and_then(Value::as_array).map(|v| v.len()))
+        .unwrap_or(0usize);
+    let causality = read_json_file(&causality_path(&root, args))
+        .and_then(|v| v.get("node_count").and_then(Value::as_u64))
+        .unwrap_or(0) as usize;
+    let meta = load_history_rows(&metacognitive_journal_path(&root, args)).len();
+    let fusion_score = ((taxonomy_rows as f64 * 0.4 + causality as f64 * 0.4 + meta as f64 * 0.2)
+        / 100.0)
+        .clamp(0.0, 1.0);
+    let snapshot = json!({
+        "schema_version": "1.0",
+        "generated_at": now_iso(),
+        "taxonomy_rows": taxonomy_rows,
+        "causality_nodes": causality,
+        "metacognitive_events": meta,
+        "fusion_score": ((fusion_score * 1000.0).round() / 1000.0)
+    });
+    let out_path = fusion_state_path(&root, args);
+    if let Some(parent) = out_path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    let _ = fs::write(
+        &out_path,
+        format!(
+            "{}\n",
+            serde_json::to_string_pretty(&snapshot).unwrap_or_else(|_| "{}".to_string())
+        ),
+    );
+    let out = receipt(json!({
+        "ok": true,
+        "type": "memory_fuse",
+        "backend": "protheus_memory_core",
+        "fusion_score": snapshot.get("fusion_score").cloned().unwrap_or(Value::Null),
+        "fusion_state_path": normalize_rel_path(&root, &out_path)
+    }));
+    append_history(&history_path(&root, args), &out);
+    out
+}
+
 pub fn nano_chat_payload(args: &HashMap<String, String>) -> Value {
     let root = root_from_args(args);
     let query = clean_text(args.get("q").map_or("nano mode", String::as_str), 500);
@@ -1421,7 +1638,11 @@ pub fn stable_status_payload() -> Value {
             "stable-memory-taxonomy",
             "stable-memory-enable-metacognitive",
             "stable-memory-enable-causality",
-            "stable-memory-benchmark-ama"
+            "stable-memory-benchmark-ama",
+            "stable-memory-share",
+            "stable-memory-evolve",
+            "stable-memory-causal-retrieve",
+            "stable-memory-fuse"
         ]
     }))
 }
@@ -1451,10 +1672,11 @@ pub fn ensure_supported_version(args: &HashMap<String, String>) -> Result<String
 mod tests {
     use super::{
         byterover_upgrade_payload, chat_payload, ensure_supported_version, ingest_payload,
-        memory_benchmark_ama_payload, memory_causality_enable_payload,
-        memory_metacognitive_enable_payload, memory_taxonomy_payload, merge_vault_payload,
-        nano_chat_payload, nano_fork_payload, nano_train_payload, search_payload,
-        stable_status_payload, status_payload,
+        memory_benchmark_ama_payload, memory_causal_retrieve_payload,
+        memory_causality_enable_payload, memory_evolve_payload, memory_fuse_payload,
+        memory_metacognitive_enable_payload, memory_share_payload, memory_taxonomy_payload,
+        merge_vault_payload, nano_chat_payload, nano_fork_payload, nano_train_payload,
+        search_payload, stable_status_payload, status_payload,
     };
     use std::collections::HashMap;
     use std::fs;
@@ -1668,5 +1890,50 @@ mod tests {
         let fork = nano_fork_payload(&args);
         assert!(fork.get("ok").and_then(|v| v.as_bool()).unwrap_or(false));
         assert_eq!(fork.get("type").and_then(|v| v.as_str()), Some("nano_fork_mode"));
+    }
+
+    #[test]
+    fn memory_share_evolve_retrieve_and_fuse_emit_receipts() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let docs = dir.path().join("docs");
+        fs::create_dir_all(&docs).expect("mkdir docs");
+        fs::write(
+            docs.join("flow.md"),
+            "Step one causes step two; step two updates strategy.",
+        )
+        .expect("write");
+        let mut args = base_args(&dir.path().to_string_lossy());
+        let _ = ingest_payload(&args);
+        args.insert("q".to_string(), "strategy".to_string());
+        let _ = search_payload(&args);
+        let _ = chat_payload(&args);
+        let _ = memory_causality_enable_payload(&base_args(&dir.path().to_string_lossy()));
+        let mut share_args = base_args(&dir.path().to_string_lossy());
+        share_args.insert("persona".to_string(), "peer-shadow".to_string());
+        share_args.insert("scope".to_string(), "task".to_string());
+        share_args.insert("consent".to_string(), "true".to_string());
+        let share = memory_share_payload(&share_args);
+        assert!(share.get("ok").and_then(|v| v.as_bool()).unwrap_or(false));
+
+        let evolve = memory_evolve_payload(&base_args(&dir.path().to_string_lossy()));
+        assert!(evolve.get("ok").and_then(|v| v.as_bool()).unwrap_or(false));
+        assert!(evolve.get("stability_score").is_some());
+
+        let mut retrieve_args = base_args(&dir.path().to_string_lossy());
+        retrieve_args.insert("q".to_string(), "strategy".to_string());
+        retrieve_args.insert("depth".to_string(), "2".to_string());
+        let retrieve = memory_causal_retrieve_payload(&retrieve_args);
+        assert!(retrieve.get("ok").and_then(|v| v.as_bool()).unwrap_or(false));
+        assert!(
+            retrieve
+                .get("trace_count")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0)
+                >= 1
+        );
+
+        let fuse = memory_fuse_payload(&base_args(&dir.path().to_string_lossy()));
+        assert!(fuse.get("ok").and_then(|v| v.as_bool()).unwrap_or(false));
+        assert!(fuse.get("fusion_score").is_some());
     }
 }

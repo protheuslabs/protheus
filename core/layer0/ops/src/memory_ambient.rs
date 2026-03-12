@@ -528,6 +528,10 @@ fn is_allowed_memory_command(command: &str) -> bool {
             | "memory-enable-metacognitive"
             | "memory-enable-causality"
             | "memory-benchmark-ama"
+            | "memory-share"
+            | "memory-evolve"
+            | "memory-causal-retrieve"
+            | "memory-fuse"
             | "stable-status"
             | "stable-search"
             | "stable-get-node"
@@ -543,6 +547,10 @@ fn is_allowed_memory_command(command: &str) -> bool {
             | "stable-memory-enable-metacognitive"
             | "stable-memory-enable-causality"
             | "stable-memory-benchmark-ama"
+            | "stable-memory-share"
+            | "stable-memory-evolve"
+            | "stable-memory-causal-retrieve"
+            | "stable-memory-fuse"
             | "help"
     )
 }

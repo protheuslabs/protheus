@@ -33,6 +33,10 @@ fn usage() {
     eprintln!("  protheus-ops rag memory enable metacognitive");
     eprintln!("  protheus-ops rag memory enable causality");
     eprintln!("  protheus-ops rag memory benchmark ama");
+    eprintln!("  protheus-ops rag memory share --persona=<id> --scope=task|step --consent=true");
+    eprintln!("  protheus-ops rag memory evolve [--generation=<n>]");
+    eprintln!("  protheus-ops rag memory causal-retrieve --q=<query> [--depth=<n>]");
+    eprintln!("  protheus-ops rag memory fuse");
     eprintln!("  protheus-ops rag memory library enable stable");
 }
 
@@ -163,6 +167,22 @@ fn build_memory_library_invocation(argv: &[String]) -> Result<Invocation, String
                 Err("memory_benchmark_unknown_target".to_string())
             }
         }
+        "share" => Ok(Invocation::MemoryRun {
+            memory_command: "stable-memory-share".to_string(),
+            memory_args: argv.iter().skip(1).cloned().collect(),
+        }),
+        "evolve" => Ok(Invocation::MemoryRun {
+            memory_command: "stable-memory-evolve".to_string(),
+            memory_args: argv.iter().skip(1).cloned().collect(),
+        }),
+        "causal-retrieve" => Ok(Invocation::MemoryRun {
+            memory_command: "stable-memory-causal-retrieve".to_string(),
+            memory_args: normalize_search_args(&argv.iter().skip(1).cloned().collect::<Vec<_>>()),
+        }),
+        "fuse" => Ok(Invocation::MemoryRun {
+            memory_command: "stable-memory-fuse".to_string(),
+            memory_args: argv.iter().skip(1).cloned().collect(),
+        }),
         "upgrade" => {
             let target = argv
                 .get(1)
@@ -459,6 +479,35 @@ mod tests {
         match inv {
             Invocation::MemoryRun { memory_command, .. } => {
                 assert_eq!(memory_command, "stable-memory-enable-causality");
+            }
+            _ => panic!("expected memory run"),
+        }
+    }
+
+    #[test]
+    fn memory_share_routes_to_stable_share_command() {
+        let inv = build_invocation(&[
+            "memory".to_string(),
+            "share".to_string(),
+            "--persona=peer".to_string(),
+            "--scope=task".to_string(),
+            "--consent=true".to_string(),
+        ])
+        .expect("invocation");
+        match inv {
+            Invocation::MemoryRun { memory_command, .. } => {
+                assert_eq!(memory_command, "stable-memory-share");
+            }
+            _ => panic!("expected memory run"),
+        }
+    }
+
+    #[test]
+    fn memory_fuse_routes_to_stable_fuse_command() {
+        let inv = build_invocation(&["memory".to_string(), "fuse".to_string()]).expect("inv");
+        match inv {
+            Invocation::MemoryRun { memory_command, .. } => {
+                assert_eq!(memory_command, "stable-memory-fuse");
             }
             _ => panic!("expected memory run"),
         }
