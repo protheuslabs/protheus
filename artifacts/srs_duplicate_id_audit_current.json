@@ -1,0 +1,4464 @@
+{
+  "ok": true,
+  "type": "srs_duplicate_id_audit",
+  "source": "artifacts/srs_full_regression_current.json",
+  "summary": {
+    "totalRows": 2197,
+    "uniqueIds": 1847,
+    "duplicateIds": 342,
+    "duplicateRows": 350,
+    "duplicateStatusConflicts": 0
+  },
+  "duplicates": [
+    {
+      "id": "V3-RACE-023",
+      "count": 5,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Rust Memory Transition Intake (Normalized, Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-261",
+      "count": 3,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "Backlog Registry Normalization (2026-03-03)",
+        "External Requirements Intake (Google Doc `1sgyT2m4g0kR0aYN134mGm5W2s4RLjwHEFSi4WIVec3I`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-288",
+      "count": 3,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "Backlog Registry Normalization (2026-03-03)",
+        "External Requirements Intake (Google Doc `1MA8OT1cKyvS_wwvaxwpK60sEA2aFyvucu03FG1UgJyM`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-332",
+      "count": 3,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "Backlog Registry Normalization (2026-03-03)",
+        "External Requirements Intake (Google Doc `1qLw4MzGGUilF-IsnjSfo4RoEZP-SJcxzNRegk6wjujo`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-334",
+      "count": 3,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "Backlog Registry Normalization (2026-03-03)",
+        "External Requirements Intake (Google Doc `1qLw4MzGGUilF-IsnjSfo4RoEZP-SJcxzNRegk6wjujo`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-260",
+      "count": 3,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "Backlog Registry Normalization (2026-03-03)",
+        "External Requirements Intake (Google Doc `1sgyT2m4g0kR0aYN134mGm5W2s4RLjwHEFSi4WIVec3I`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V2-012",
+      "count": 2,
+      "statuses": [
+        "blocked_external_prepared"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V2"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V2-058",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Security Fortress Intake (Normalized, 2026-02-26)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V2-062",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Governance + Intelligence Gap Intake (Grok, 2026-02-26)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V2-063",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Governance + Intelligence Gap Intake (Grok, 2026-02-26)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V2-069",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Governance + Intelligence Gap Intake (Grok, 2026-02-26)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-033",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Helix Codex Track (Immortal Helix + Sentinel Protocol)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-038",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Helix Codex Track (Immortal Helix + Sentinel Protocol)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-048",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Governance + Intelligence Gap Intake (Grok, 2026-02-26)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-051",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Governance + Intelligence Gap Intake (Grok, 2026-02-26)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-053",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Governance + Intelligence Gap Intake (Grok, 2026-02-26)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-059",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Governance + Intelligence Gap Intake (Grok, 2026-02-26)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-ACT-002",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Actuation Gap Closure Intake (Normalized, 2026-02-28)",
+        "Backlog Registry Normalization (2026-03-03)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-AEX-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Benchmark-Gated Auto-Execution Intake (Normalized, Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-AEX-002",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Benchmark-Gated Auto-Execution Intake (Normalized, Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-BENCH-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-BLD-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-BLK-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Sovereign Economics + Anchoring Intake (Normalized, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-BUD-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Sovereign Economics + Anchoring Intake (Normalized, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-CPY-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Anti-Copy / Reverse-Engineering Hardening Intake (Normalized, 2026-02-28)",
+        "Backlog Registry Normalization (2026-03-03)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-CPY-005",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Anti-Copy / Reverse-Engineering Hardening Intake (Normalized, 2026-02-28)",
+        "Backlog Registry Normalization (2026-03-03)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-CPY-006",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Anti-Copy / Reverse-Engineering Hardening Intake (Normalized, 2026-02-28)",
+        "Backlog Registry Normalization (2026-03-03)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-DEP-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "OpenFang Parity+ Deployment/Usability/Runtime Pack (Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-DOC-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Enterprise Documentation Structure Intake (Deduplicated, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-DOC-004",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Enterprise Documentation Structure Intake (Deduplicated, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-DOC-005",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Enterprise Documentation Structure Intake (Deduplicated, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-DOC-007",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Enterprise Documentation Structure Intake (Deduplicated, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-ECO-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "LLM Economy + Red-Team Co-Evolution Intake (Normalized, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-ENT-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Enterprise Readiness Intake (Normalized, Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-ENT-002",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Enterprise Readiness Intake (Normalized, Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-GOV-002",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Post-Soak Governance Hardening (Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-LOOP-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Controlled Self-Improvement Intake (Normalized, 2026-02-27)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-LOOP-004",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Controlled Self-Improvement Intake (Normalized, 2026-02-27)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-MAC-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Frontier Capability Closure Intake (Normalized, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-MEM-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Post-Soak Memory & Burn Efficiency Pack (Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-MEM-002",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Post-Soak Memory & Burn Efficiency Pack (Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-MEM-004",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Post-Soak Memory & Burn Efficiency Pack (Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-MEM-008",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Post-Soak Memory & Burn Efficiency Pack (Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-MLC-002",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Master Learning Conduit + Hereditary Federation (Normalized, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-OBS-002",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "#1 Readiness Bridge Intake (Normalized, Queued, 2026-02-28)",
+        "Backlog Registry Normalization (2026-03-03)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-OF-008",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "OpenFang Capability Intake (Normalized, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-OPS-003",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Post-Soak Runtime Closure Hardening (Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-OPS-005",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Operator-System Feel Pack (Normalized, Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-OPS-006",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Operator-System Feel Pack (Normalized, Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-PRO-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "100/100 Polish Pack (Normalized, 2026-02-28)",
+        "Backlog Registry Normalization (2026-03-03)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-008",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
+        "Backlog Execution Completion Sweep (2026-03-03)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-013",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
+        "Backlog Execution Completion Sweep (2026-03-03)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-019",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "Grok Frontier Gaps Intake (2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-022",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "Grok Frontier Gaps Intake (2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-031",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `17sTU5o-r7sN5tMl8Tevs1tVGLRHNmhgn-4AUyuEXeM4`, 2026-03-01)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-038A",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1EIOBWaH4VSEXoxBjBkIpPpsvUe397RrX7iDFXPXFkUo`, 2026-03-01)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-043",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "External Requirements Intake (Google Doc `1ywXjqMWL_yEjTTsS4ztTzDNIVxt8uJl5x08pOFj76pg`, 2026-03-01)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-051",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "Post-Completion Gap Intake (Derived from chat, 2026-03-01)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-061",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "Deep Audit Gap Intake (Codex full-system review, 2026-03-01)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-068",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "Deep Audit Gap Intake (Codex full-system review, 2026-03-01)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-119",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "Technical Quality Intake (Valid Grok-Derived Requirements, 2026-03-01)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-129",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "External Requirements Intake (Google Doc `1cMaJfBYCTUvCmAbpe3npLqFABbK9zHHnPEoaQrZ5Xbs`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-136",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1cMaJfBYCTUvCmAbpe3npLqFABbK9zHHnPEoaQrZ5Xbs`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-138",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1TZ5u3gQYS1U9hqB8KxSBP5Jz1NkaZDlpdIBd8uaa8Ys`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-139",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1TZ5u3gQYS1U9hqB8KxSBP5Jz1NkaZDlpdIBd8uaa8Ys`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-144",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1TZ5u3gQYS1U9hqB8KxSBP5Jz1NkaZDlpdIBd8uaa8Ys`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-160",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-163",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-165",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-167",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-168",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-171",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1QrTZFUX6fbU0RVo8S_fIg6898igD8XxXhohRjNjRROQ`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-176",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1u2Oh8FVHI9joij7p4FXI3cUrUqY6at8AVcHdfeLHW84`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-181",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1u2Oh8FVHI9joij7p4FXI3cUrUqY6at8AVcHdfeLHW84`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-186",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "External Requirements Intake (Google Doc `1zxYaW0wNMbFnnpx_Ps0WCVgMf-uGraobSctE7cCGx80`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-192",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1lt6tGOofp1joh3JUQakKPvtise-3SW1pZ_qO6YOzbgE`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-196",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "External Requirements Intake (Google Doc `1qsY9ZcqDwE5R0gOd-qMl8XHajymG-mJVevICTpLnxpI`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-200",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1IHlaNNXYShvk83eToPgkJxOGGJ5UfbRYfYrf2iKKuGA`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-220",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "External Requirements Intake (Google Doc `1iRVFyme2klr25ST5GHxr_WOz9WH5HYWBDlkZAfDGDZo`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-221",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "External Requirements Intake (Google Doc `1iRVFyme2klr25ST5GHxr_WOz9WH5HYWBDlkZAfDGDZo`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-223",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1iRVFyme2klr25ST5GHxr_WOz9WH5HYWBDlkZAfDGDZo`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-225",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1iRVFyme2klr25ST5GHxr_WOz9WH5HYWBDlkZAfDGDZo`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-226",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1iRVFyme2klr25ST5GHxr_WOz9WH5HYWBDlkZAfDGDZo`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-229",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1iRVFyme2klr25ST5GHxr_WOz9WH5HYWBDlkZAfDGDZo`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-231",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "External Requirements Intake (Google Doc `1iRVFyme2klr25ST5GHxr_WOz9WH5HYWBDlkZAfDGDZo`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-240",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1f9sZqjqNBFqKrs682Gxp45VUQfR4NRS6gwOv2bWO5MI`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-242",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1f9sZqjqNBFqKrs682Gxp45VUQfR4NRS6gwOv2bWO5MI`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-245",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1f9sZqjqNBFqKrs682Gxp45VUQfR4NRS6gwOv2bWO5MI`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-247",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1f9sZqjqNBFqKrs682Gxp45VUQfR4NRS6gwOv2bWO5MI`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-249",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1sgyT2m4g0kR0aYN134mGm5W2s4RLjwHEFSi4WIVec3I`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-250",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1sgyT2m4g0kR0aYN134mGm5W2s4RLjwHEFSi4WIVec3I`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-252",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1sgyT2m4g0kR0aYN134mGm5W2s4RLjwHEFSi4WIVec3I`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-253",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1sgyT2m4g0kR0aYN134mGm5W2s4RLjwHEFSi4WIVec3I`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-254",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1sgyT2m4g0kR0aYN134mGm5W2s4RLjwHEFSi4WIVec3I`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-256",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1sgyT2m4g0kR0aYN134mGm5W2s4RLjwHEFSi4WIVec3I`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-259",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1sgyT2m4g0kR0aYN134mGm5W2s4RLjwHEFSi4WIVec3I`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-265",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "External Requirements Intake (Google Doc `1QzB6z0nbh4F5xLTYq2r1YiSHbyHFogex4aWp6vWw3nY`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-267",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1QzB6z0nbh4F5xLTYq2r1YiSHbyHFogex4aWp6vWw3nY`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-270",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1QzB6z0nbh4F5xLTYq2r1YiSHbyHFogex4aWp6vWw3nY`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-272",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1QzB6z0nbh4F5xLTYq2r1YiSHbyHFogex4aWp6vWw3nY`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-281",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1MA8OT1cKyvS_wwvaxwpK60sEA2aFyvucu03FG1UgJyM`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-284",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1MA8OT1cKyvS_wwvaxwpK60sEA2aFyvucu03FG1UgJyM`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-292",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1JQiEIm9-kGGG_c6IjywgZ9PsfdClNxEfIPv2RAoro_8`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-297",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1JQiEIm9-kGGG_c6IjywgZ9PsfdClNxEfIPv2RAoro_8`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-298",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1JQiEIm9-kGGG_c6IjywgZ9PsfdClNxEfIPv2RAoro_8`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-299",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1JQiEIm9-kGGG_c6IjywgZ9PsfdClNxEfIPv2RAoro_8`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-303",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1e5nmrpmV-RpHibLfpDcqi_XLtM2sWw0HZD1Q89vhmwY`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-305",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1e5nmrpmV-RpHibLfpDcqi_XLtM2sWw0HZD1Q89vhmwY`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-306",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1e5nmrpmV-RpHibLfpDcqi_XLtM2sWw0HZD1Q89vhmwY`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-309",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1e5nmrpmV-RpHibLfpDcqi_XLtM2sWw0HZD1Q89vhmwY`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-312",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1e5nmrpmV-RpHibLfpDcqi_XLtM2sWw0HZD1Q89vhmwY`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-315",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1e5nmrpmV-RpHibLfpDcqi_XLtM2sWw0HZD1Q89vhmwY`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-318",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1dQtA5B8QxnXcHnB_aoHiF1JNO2QZQii1HEDulyZ51z0`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-319",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1dQtA5B8QxnXcHnB_aoHiF1JNO2QZQii1HEDulyZ51z0`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-320",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1dQtA5B8QxnXcHnB_aoHiF1JNO2QZQii1HEDulyZ51z0`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-322",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1dQtA5B8QxnXcHnB_aoHiF1JNO2QZQii1HEDulyZ51z0`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-323",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1dQtA5B8QxnXcHnB_aoHiF1JNO2QZQii1HEDulyZ51z0`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-324",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1dQtA5B8QxnXcHnB_aoHiF1JNO2QZQii1HEDulyZ51z0`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-326",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1dQtA5B8QxnXcHnB_aoHiF1JNO2QZQii1HEDulyZ51z0`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-327",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1dQtA5B8QxnXcHnB_aoHiF1JNO2QZQii1HEDulyZ51z0`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-328",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1dQtA5B8QxnXcHnB_aoHiF1JNO2QZQii1HEDulyZ51z0`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-329",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1dQtA5B8QxnXcHnB_aoHiF1JNO2QZQii1HEDulyZ51z0`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-330",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1dQtA5B8QxnXcHnB_aoHiF1JNO2QZQii1HEDulyZ51z0`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-335",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1qLw4MzGGUilF-IsnjSfo4RoEZP-SJcxzNRegk6wjujo`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-336",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1qLw4MzGGUilF-IsnjSfo4RoEZP-SJcxzNRegk6wjujo`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-338",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1qLw4MzGGUilF-IsnjSfo4RoEZP-SJcxzNRegk6wjujo`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-342",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "External Requirements Intake (Google Doc `1qLw4MzGGUilF-IsnjSfo4RoEZP-SJcxzNRegk6wjujo`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-343",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1qLw4MzGGUilF-IsnjSfo4RoEZP-SJcxzNRegk6wjujo`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-345",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1yBWjrygvK0fVtgNoNvalKwS5j6lyd7wBivPHqvRElDQ`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-346",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1yBWjrygvK0fVtgNoNvalKwS5j6lyd7wBivPHqvRElDQ`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-349",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1yBWjrygvK0fVtgNoNvalKwS5j6lyd7wBivPHqvRElDQ`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-350",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1yBWjrygvK0fVtgNoNvalKwS5j6lyd7wBivPHqvRElDQ`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-353",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1yBWjrygvK0fVtgNoNvalKwS5j6lyd7wBivPHqvRElDQ`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-354",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1yBWjrygvK0fVtgNoNvalKwS5j6lyd7wBivPHqvRElDQ`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-355",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1yBWjrygvK0fVtgNoNvalKwS5j6lyd7wBivPHqvRElDQ`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-CONF-004",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1LKIU6Sci0FSzlETPx8caHz53a7DokCUthvlKiuiWn7A`, 2026-03-01)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-CONF-008",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "Deep Audit Gap Intake (Codex full-system review, 2026-03-01)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-DEF-025",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1qfcwkGo4sRZbe7lG8KW_XSPCHJ0KsiUTtGJdcjRIPU4`, 2026-03-01)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-DEF-027",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1tbKAmUTLs6D0ge7skbKev5hwRMmUvSFc-SDXuH0NZ5M`, 2026-03-01)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RMEM-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Rust Memory Transition Intake (Normalized, Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RMEM-005",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Rust Memory Transition Intake (Normalized, Queued, 2026-02-28)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-SK-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "State Kernel Hardening Track (SQLite State Plane)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-SK-002",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "State Kernel Hardening Track (SQLite State Plane)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-SK-007",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "State Kernel Hardening Track (SQLite State Plane)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-SYM-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "100/100 Polish Pack (Normalized, 2026-02-28)",
+        "Backlog Registry Normalization (2026-03-03)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-XAI-002",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "X AI Feature Abstraction Intake (Normalized, 2026-02-27)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-002",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Grok Intake (Normalized, 2026-02-26)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-006",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "Governance + Intelligence Gap Intake (Grok, 2026-02-26)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-AESTHETIC-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 Optional Illusion Reinforcement Track (Grok Intake Normalized, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-AUTO-010",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "V4 Launch Polish Track (Google Doc `19aVNHH1MHRDd6nmpuakTv14Hi36jaL1O9JTS7ep7MUE`, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SCALE-002",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 1M User Scale Readiness Track (Operator Directive, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SCALE-004",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 1M User Scale Readiness Track (Operator Directive, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SCALE-007",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 1M User Scale Readiness Track (Operator Directive, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SCALE-009",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 1M User Scale Readiness Track (Operator Directive, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SCALE-010",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 1M User Scale Readiness Track (Operator Directive, 2026-03-02)"
+      ],
+      "impactMax": 10,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
+        "Backlog Execution Completion Sweep (2026-03-03)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-003",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
+        "Backlog Execution Completion Sweep (2026-03-03)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-004",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
+        "Backlog Execution Completion Sweep (2026-03-03)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-005",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
+        "Backlog Execution Completion Sweep (2026-03-03)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-006",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
+        "Backlog Execution Completion Sweep (2026-03-03)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-007",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
+        "Backlog Execution Completion Sweep (2026-03-03)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-009",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
+        "Backlog Execution Completion Sweep (2026-03-03)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-010",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
+        "Backlog Execution Completion Sweep (2026-03-03)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-011",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
+        "Backlog Registry Normalization (2026-03-03)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-012",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "AI Race Fitness Uplift Pack (Normalized from external ruthless eval, 2026-03-01)",
+        "Backlog Execution Completion Sweep (2026-03-03)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-025",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "Rust Memory Transition Intake (Normalized, Queued, 2026-02-28)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-027",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "Rust Memory Transition Intake (Normalized, Queued, 2026-02-28)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-034",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "External Requirements Intake (Google Doc `1EIOBWaH4VSEXoxBjBkIpPpsvUe397RrX7iDFXPXFkUo`, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-037",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1EIOBWaH4VSEXoxBjBkIpPpsvUe397RrX7iDFXPXFkUo`, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-040",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1ywXjqMWL_yEjTTsS4ztTzDNIVxt8uJl5x08pOFj76pg`, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-041",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1ywXjqMWL_yEjTTsS4ztTzDNIVxt8uJl5x08pOFj76pg`, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-044",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "External Requirements Intake (Google Doc `1ywXjqMWL_yEjTTsS4ztTzDNIVxt8uJl5x08pOFj76pg`, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-052",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "Post-Completion Gap Intake (Derived from chat, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-053",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "Post-Completion Gap Intake (Derived from chat, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-055",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "Post-Completion Gap Intake (Derived from chat, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-057",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "Post-Completion Gap Intake (Derived from chat, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-058",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "Post-Completion Gap Intake (Derived from chat, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-059",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "Post-Completion Gap Intake (Derived from chat, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-060",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "Deep Audit Gap Intake (Codex full-system review, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-063",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "Deep Audit Gap Intake (Codex full-system review, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-064",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "Deep Audit Gap Intake (Codex full-system review, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-065",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "Deep Audit Gap Intake (Codex full-system review, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-070",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "Execution Yield Recovery Intake (State Snapshot Derived, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-071",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "Execution Yield Recovery Intake (State Snapshot Derived, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-072",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "Execution Yield Recovery Intake (State Snapshot Derived, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-073",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "Execution Yield Recovery Intake (State Snapshot Derived, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-074",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "Execution Yield Recovery Intake (State Snapshot Derived, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-075",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "Execution Yield Recovery Intake (State Snapshot Derived, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-076",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "Execution Yield Recovery Intake (State Snapshot Derived, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-077",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "Execution Yield Recovery Intake (State Snapshot Derived, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-078",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "Signal Intelligence Upgrade Intake (Second-Order Detection/Analysis, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-080",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "Signal Intelligence Upgrade Intake (Second-Order Detection/Analysis, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-103",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Analysis Governance & Reproducibility Intake (2026-03-01)",
+        "Backlog Full Completion Sweep (2026-03-03)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-130",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "External Requirements Intake (Google Doc `1cMaJfBYCTUvCmAbpe3npLqFABbK9zHHnPEoaQrZ5Xbs`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-131",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1cMaJfBYCTUvCmAbpe3npLqFABbK9zHHnPEoaQrZ5Xbs`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-132",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1cMaJfBYCTUvCmAbpe3npLqFABbK9zHHnPEoaQrZ5Xbs`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-133",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1cMaJfBYCTUvCmAbpe3npLqFABbK9zHHnPEoaQrZ5Xbs`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-134",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "External Requirements Intake (Google Doc `1cMaJfBYCTUvCmAbpe3npLqFABbK9zHHnPEoaQrZ5Xbs`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-137",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1TZ5u3gQYS1U9hqB8KxSBP5Jz1NkaZDlpdIBd8uaa8Ys`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-140",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1TZ5u3gQYS1U9hqB8KxSBP5Jz1NkaZDlpdIBd8uaa8Ys`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-141",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "External Requirements Intake (Google Doc `1TZ5u3gQYS1U9hqB8KxSBP5Jz1NkaZDlpdIBd8uaa8Ys`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-142",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1TZ5u3gQYS1U9hqB8KxSBP5Jz1NkaZDlpdIBd8uaa8Ys`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-143",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1TZ5u3gQYS1U9hqB8KxSBP5Jz1NkaZDlpdIBd8uaa8Ys`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-145",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1vedJMRKcVYn6MUt1jvgNvEmU7y-BuQRgOXM12kQdM6Y`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-146",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1vedJMRKcVYn6MUt1jvgNvEmU7y-BuQRgOXM12kQdM6Y`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-147",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1vedJMRKcVYn6MUt1jvgNvEmU7y-BuQRgOXM12kQdM6Y`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-148",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1vedJMRKcVYn6MUt1jvgNvEmU7y-BuQRgOXM12kQdM6Y`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-149",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1vedJMRKcVYn6MUt1jvgNvEmU7y-BuQRgOXM12kQdM6Y`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-150",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1vedJMRKcVYn6MUt1jvgNvEmU7y-BuQRgOXM12kQdM6Y`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-151",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1vedJMRKcVYn6MUt1jvgNvEmU7y-BuQRgOXM12kQdM6Y`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-152",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1vedJMRKcVYn6MUt1jvgNvEmU7y-BuQRgOXM12kQdM6Y`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-153",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-154",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-155",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-156",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-157",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-158",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-159",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-161",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-162",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-164",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-166",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1-ndEYjPrXYS2pFpIZDtq8Pc02UuhUk24XbTHvb_wPQA`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-172",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1QrTZFUX6fbU0RVo8S_fIg6898igD8XxXhohRjNjRROQ`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-173",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1QrTZFUX6fbU0RVo8S_fIg6898igD8XxXhohRjNjRROQ`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-174",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1QrTZFUX6fbU0RVo8S_fIg6898igD8XxXhohRjNjRROQ`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-177",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1u2Oh8FVHI9joij7p4FXI3cUrUqY6at8AVcHdfeLHW84`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-178",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1u2Oh8FVHI9joij7p4FXI3cUrUqY6at8AVcHdfeLHW84`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-179",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1u2Oh8FVHI9joij7p4FXI3cUrUqY6at8AVcHdfeLHW84`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-201",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1IHlaNNXYShvk83eToPgkJxOGGJ5UfbRYfYrf2iKKuGA`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-203",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1IHlaNNXYShvk83eToPgkJxOGGJ5UfbRYfYrf2iKKuGA`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-204",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "Internal Optimization Intake (Autonomy Execution Throughput Deadlock, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-205",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "Internal Optimization Intake (Autonomy Execution Throughput Deadlock, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-206",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "Internal Optimization Intake (Autonomy Execution Throughput Deadlock, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-207",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "Internal Optimization Intake (Autonomy Execution Throughput Deadlock, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-208",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "Internal Optimization Intake (Autonomy Execution Throughput Deadlock, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-209",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1bw6PoJqkftJhLRLjPanv4fLzSrI-h_Sht9UpxDLh0Ck`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-210",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1bw6PoJqkftJhLRLjPanv4fLzSrI-h_Sht9UpxDLh0Ck`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-211",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "External Requirements Intake (Google Doc `1bw6PoJqkftJhLRLjPanv4fLzSrI-h_Sht9UpxDLh0Ck`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-212",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1bw6PoJqkftJhLRLjPanv4fLzSrI-h_Sht9UpxDLh0Ck`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-213",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "External Requirements Intake (Google Doc `1bw6PoJqkftJhLRLjPanv4fLzSrI-h_Sht9UpxDLh0Ck`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-214",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1bw6PoJqkftJhLRLjPanv4fLzSrI-h_Sht9UpxDLh0Ck`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-215",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "External Requirements Intake (Google Doc `1iRVFyme2klr25ST5GHxr_WOz9WH5HYWBDlkZAfDGDZo`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-218",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "External Requirements Intake (Google Doc `1iRVFyme2klr25ST5GHxr_WOz9WH5HYWBDlkZAfDGDZo`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-222",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1iRVFyme2klr25ST5GHxr_WOz9WH5HYWBDlkZAfDGDZo`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-224",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1iRVFyme2klr25ST5GHxr_WOz9WH5HYWBDlkZAfDGDZo`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-227",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "External Requirements Intake (Google Doc `1iRVFyme2klr25ST5GHxr_WOz9WH5HYWBDlkZAfDGDZo`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-230",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "External Requirements Intake (Google Doc `1iRVFyme2klr25ST5GHxr_WOz9WH5HYWBDlkZAfDGDZo`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-233",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1f9sZqjqNBFqKrs682Gxp45VUQfR4NRS6gwOv2bWO5MI`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-235",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1f9sZqjqNBFqKrs682Gxp45VUQfR4NRS6gwOv2bWO5MI`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-236",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1f9sZqjqNBFqKrs682Gxp45VUQfR4NRS6gwOv2bWO5MI`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-237",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1f9sZqjqNBFqKrs682Gxp45VUQfR4NRS6gwOv2bWO5MI`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-238",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1f9sZqjqNBFqKrs682Gxp45VUQfR4NRS6gwOv2bWO5MI`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-239",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1f9sZqjqNBFqKrs682Gxp45VUQfR4NRS6gwOv2bWO5MI`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-241",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1f9sZqjqNBFqKrs682Gxp45VUQfR4NRS6gwOv2bWO5MI`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-243",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1f9sZqjqNBFqKrs682Gxp45VUQfR4NRS6gwOv2bWO5MI`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-246",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1f9sZqjqNBFqKrs682Gxp45VUQfR4NRS6gwOv2bWO5MI`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-248",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1sgyT2m4g0kR0aYN134mGm5W2s4RLjwHEFSi4WIVec3I`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-251",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1sgyT2m4g0kR0aYN134mGm5W2s4RLjwHEFSi4WIVec3I`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-255",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1sgyT2m4g0kR0aYN134mGm5W2s4RLjwHEFSi4WIVec3I`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-257",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1sgyT2m4g0kR0aYN134mGm5W2s4RLjwHEFSi4WIVec3I`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-258",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1sgyT2m4g0kR0aYN134mGm5W2s4RLjwHEFSi4WIVec3I`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-263",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1QzB6z0nbh4F5xLTYq2r1YiSHbyHFogex4aWp6vWw3nY`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-264",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1QzB6z0nbh4F5xLTYq2r1YiSHbyHFogex4aWp6vWw3nY`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-266",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1QzB6z0nbh4F5xLTYq2r1YiSHbyHFogex4aWp6vWw3nY`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-268",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1QzB6z0nbh4F5xLTYq2r1YiSHbyHFogex4aWp6vWw3nY`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-269",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1QzB6z0nbh4F5xLTYq2r1YiSHbyHFogex4aWp6vWw3nY`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-271",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1QzB6z0nbh4F5xLTYq2r1YiSHbyHFogex4aWp6vWw3nY`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-274",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1QzB6z0nbh4F5xLTYq2r1YiSHbyHFogex4aWp6vWw3nY`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-275",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1QzB6z0nbh4F5xLTYq2r1YiSHbyHFogex4aWp6vWw3nY`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-276",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1QzB6z0nbh4F5xLTYq2r1YiSHbyHFogex4aWp6vWw3nY`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-277",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1MA8OT1cKyvS_wwvaxwpK60sEA2aFyvucu03FG1UgJyM`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-279",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1MA8OT1cKyvS_wwvaxwpK60sEA2aFyvucu03FG1UgJyM`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-280",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1MA8OT1cKyvS_wwvaxwpK60sEA2aFyvucu03FG1UgJyM`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-282",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1MA8OT1cKyvS_wwvaxwpK60sEA2aFyvucu03FG1UgJyM`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-283",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1MA8OT1cKyvS_wwvaxwpK60sEA2aFyvucu03FG1UgJyM`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-285",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1MA8OT1cKyvS_wwvaxwpK60sEA2aFyvucu03FG1UgJyM`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-286",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1MA8OT1cKyvS_wwvaxwpK60sEA2aFyvucu03FG1UgJyM`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-287",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1MA8OT1cKyvS_wwvaxwpK60sEA2aFyvucu03FG1UgJyM`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-289",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1MA8OT1cKyvS_wwvaxwpK60sEA2aFyvucu03FG1UgJyM`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-290",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1MA8OT1cKyvS_wwvaxwpK60sEA2aFyvucu03FG1UgJyM`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-291",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1JQiEIm9-kGGG_c6IjywgZ9PsfdClNxEfIPv2RAoro_8`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-293",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1JQiEIm9-kGGG_c6IjywgZ9PsfdClNxEfIPv2RAoro_8`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-294",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1JQiEIm9-kGGG_c6IjywgZ9PsfdClNxEfIPv2RAoro_8`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-295",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "External Requirements Intake (Google Doc `1JQiEIm9-kGGG_c6IjywgZ9PsfdClNxEfIPv2RAoro_8`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-296",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1JQiEIm9-kGGG_c6IjywgZ9PsfdClNxEfIPv2RAoro_8`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-300",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1JQiEIm9-kGGG_c6IjywgZ9PsfdClNxEfIPv2RAoro_8`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-301",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1JQiEIm9-kGGG_c6IjywgZ9PsfdClNxEfIPv2RAoro_8`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-302",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1JQiEIm9-kGGG_c6IjywgZ9PsfdClNxEfIPv2RAoro_8`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-304",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1e5nmrpmV-RpHibLfpDcqi_XLtM2sWw0HZD1Q89vhmwY`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-307",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "External Requirements Intake (Google Doc `1e5nmrpmV-RpHibLfpDcqi_XLtM2sWw0HZD1Q89vhmwY`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-308",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1e5nmrpmV-RpHibLfpDcqi_XLtM2sWw0HZD1Q89vhmwY`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-310",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1e5nmrpmV-RpHibLfpDcqi_XLtM2sWw0HZD1Q89vhmwY`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-311",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1e5nmrpmV-RpHibLfpDcqi_XLtM2sWw0HZD1Q89vhmwY`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-313",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1e5nmrpmV-RpHibLfpDcqi_XLtM2sWw0HZD1Q89vhmwY`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-314",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1e5nmrpmV-RpHibLfpDcqi_XLtM2sWw0HZD1Q89vhmwY`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-316",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1e5nmrpmV-RpHibLfpDcqi_XLtM2sWw0HZD1Q89vhmwY`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-317",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1dQtA5B8QxnXcHnB_aoHiF1JNO2QZQii1HEDulyZ51z0`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-321",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1dQtA5B8QxnXcHnB_aoHiF1JNO2QZQii1HEDulyZ51z0`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-325",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1dQtA5B8QxnXcHnB_aoHiF1JNO2QZQii1HEDulyZ51z0`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-331",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1qLw4MzGGUilF-IsnjSfo4RoEZP-SJcxzNRegk6wjujo`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-333",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1qLw4MzGGUilF-IsnjSfo4RoEZP-SJcxzNRegk6wjujo`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-337",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1qLw4MzGGUilF-IsnjSfo4RoEZP-SJcxzNRegk6wjujo`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-339",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1qLw4MzGGUilF-IsnjSfo4RoEZP-SJcxzNRegk6wjujo`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-340",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1qLw4MzGGUilF-IsnjSfo4RoEZP-SJcxzNRegk6wjujo`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-341",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1qLw4MzGGUilF-IsnjSfo4RoEZP-SJcxzNRegk6wjujo`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-344",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1qLw4MzGGUilF-IsnjSfo4RoEZP-SJcxzNRegk6wjujo`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-347",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1yBWjrygvK0fVtgNoNvalKwS5j6lyd7wBivPHqvRElDQ`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-348",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1yBWjrygvK0fVtgNoNvalKwS5j6lyd7wBivPHqvRElDQ`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-351",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1yBWjrygvK0fVtgNoNvalKwS5j6lyd7wBivPHqvRElDQ`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-352",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1yBWjrygvK0fVtgNoNvalKwS5j6lyd7wBivPHqvRElDQ`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-356",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `10yHeUnXAygr6pRLknGTKF7YIhNgrVVU1wIDHo8ohMUA`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-357",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `10yHeUnXAygr6pRLknGTKF7YIhNgrVVU1wIDHo8ohMUA`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-358",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `10yHeUnXAygr6pRLknGTKF7YIhNgrVVU1wIDHo8ohMUA`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-360",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `10yHeUnXAygr6pRLknGTKF7YIhNgrVVU1wIDHo8ohMUA`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-CONF-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1kB5xBJGVm8isdFTsDh_6mivXNpCtRcUrUgALxCQa1Kc`, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-CONF-003",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1kB5xBJGVm8isdFTsDh_6mivXNpCtRcUrUgALxCQa1Kc`, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-CONF-005",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1LKIU6Sci0FSzlETPx8caHz53a7DokCUthvlKiuiWn7A`, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-CONF-007",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "External Requirements Delta Intake (Google Doc `1Vwn61mqX7p3I8pgZHtnB-KOlIFVdFJ7eRdDvj6v-7LE`, 2026-03-01 Follow-up)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V3-RACE-DEF-031B",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "External Requirements Intake (Google Doc `1QkJsJW4NiV7Q6TiFYFs_ChRo2QbqA5FIkw-OEHsA-L4`, 2026-03-01)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-AESTHETIC-002",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 Optional Illusion Reinforcement Track (Grok Intake Normalized, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-ILLUSION-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 Optional Illusion Reinforcement Track (Grok Intake Normalized, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-OBS-011",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 Launch Polish Track (Google Doc `19aVNHH1MHRDd6nmpuakTv14Hi36jaL1O9JTS7ep7MUE`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-RUST-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "V4 Rust Acceleration Track (Grok Intake Normalized, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-RUST-002",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "V4 Rust Acceleration Track (Grok Intake Normalized, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-RUST-003",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Registry Normalization (2026-03-03)",
+        "V4 Rust Acceleration Track (Grok Intake Normalized, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-RUST-004",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03)",
+        "V4 Rust Acceleration Track (Grok Intake Normalized, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SCALE-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Execution Completion Sweep (2026-03-03 Wave 2)",
+        "V4 1M User Scale Readiness Track (Operator Directive, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SCALE-003",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 1M User Scale Readiness Track (Operator Directive, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SCALE-005",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 1M User Scale Readiness Track (Operator Directive, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SCALE-006",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 1M User Scale Readiness Track (Operator Directive, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SCALE-008",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 1M User Scale Readiness Track (Operator Directive, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SETTLE-001",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 Settling Runtime Track (Google Doc `1IPYlZqAROFpN0bjJvaE3dJfU9EPugXFDI9KLS6PIa0Q`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SETTLE-002",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 Settling Runtime Track (Google Doc `1IPYlZqAROFpN0bjJvaE3dJfU9EPugXFDI9KLS6PIa0Q`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SETTLE-003",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 Settling Runtime Track (Google Doc `1IPYlZqAROFpN0bjJvaE3dJfU9EPugXFDI9KLS6PIa0Q`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SETTLE-004",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 Settling Runtime Track (Google Doc `1IPYlZqAROFpN0bjJvaE3dJfU9EPugXFDI9KLS6PIa0Q`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SETTLE-005",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 Settling Runtime Track (Google Doc `1IPYlZqAROFpN0bjJvaE3dJfU9EPugXFDI9KLS6PIa0Q`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SETTLE-006",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 Settling Runtime Track (Google Doc `1IPYlZqAROFpN0bjJvaE3dJfU9EPugXFDI9KLS6PIa0Q`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SETTLE-007",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 Settling Runtime Track (Google Doc `1IPYlZqAROFpN0bjJvaE3dJfU9EPugXFDI9KLS6PIa0Q`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SETTLE-008",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 Settling Runtime Track (Google Doc `1IPYlZqAROFpN0bjJvaE3dJfU9EPugXFDI9KLS6PIa0Q`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SETTLE-009",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 Settling Runtime Track (Google Doc `1IPYlZqAROFpN0bjJvaE3dJfU9EPugXFDI9KLS6PIa0Q`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SETTLE-010",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 Settling Runtime Track (Google Doc `1IPYlZqAROFpN0bjJvaE3dJfU9EPugXFDI9KLS6PIa0Q`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    },
+    {
+      "id": "V4-SETTLE-011",
+      "count": 2,
+      "statuses": [
+        "existing-coverage-validated"
+      ],
+      "sections": [
+        "Backlog Full Completion Sweep (2026-03-03)",
+        "V4 Settling Runtime Track (Google Doc `1IPYlZqAROFpN0bjJvaE3dJfU9EPugXFDI9KLS6PIa0Q`, 2026-03-02)"
+      ],
+      "impactMax": 9,
+      "hasStatusConflict": false
+    }
+  ]
+}

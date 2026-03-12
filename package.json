@@ -1601,7 +1601,9 @@
     "ops:blocked-external:packet-gate": "node scripts/ci/blocked_external_packet_gate.mjs",
     "test:ops:blocked-external:packet-gate": "node tests/client-memory-tools/blocked_external_packet_gate.test.js",
     "ops:todo:audit-full": "node scripts/ci/todo_audit_full.mjs",
-    "ops:blocked-external:human-map": "node scripts/ci/blocked_external_human_action_map.mjs"
+    "ops:blocked-external:human-map": "node scripts/ci/blocked_external_human_action_map.mjs",
+    "ops:srs:duplicate-id-audit": "node scripts/ci/srs_duplicate_id_audit.mjs",
+    "ops:client:wrapper-compaction-candidates": "node scripts/ci/client_wrapper_compaction_candidates.mjs"
   },
   "bin": {
     "protheus": "./client/cli/bin/protheus.ts",
