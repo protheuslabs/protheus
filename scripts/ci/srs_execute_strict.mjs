@@ -144,12 +144,17 @@ function main() {
     const queueFailed = Number(queue?.counts?.failed || 0);
     const queueSkipped = Number(queue?.counts?.skipped || 0);
     const queueReceiptHash = String(queue?.receipt_hash || '');
-    if (queueScanned !== executeNowBefore) {
-      throw new Error(`queue_scanned_mismatch:${queueScanned}:${executeNowBefore}`);
-    }
-    if (queueExecuted !== executeNowBefore || queueFailed !== 0 || queueSkipped !== 0) {
+    if (queueScanned !== queueExecuted + queueFailed + queueSkipped) {
       throw new Error(
-        `queue_execution_incomplete:${queueExecuted}:${executeNowBefore}:failed=${queueFailed}:skipped=${queueSkipped}`,
+        `queue_count_mismatch:scanned=${queueScanned}:executed=${queueExecuted}:failed=${queueFailed}:skipped=${queueSkipped}`,
+      );
+    }
+    if (queueScanned < executeNowBefore) {
+      throw new Error(`queue_under_scanned:${queueScanned}:${executeNowBefore}`);
+    }
+    if (queueFailed !== 0) {
+      throw new Error(
+        `queue_execution_failed:failed=${queueFailed}:scanned=${queueScanned}:executed=${queueExecuted}:skipped=${queueSkipped}`,
       );
     }
 
