@@ -1,6 +1,6 @@
 # Blocked External Unblock Plan
 
-Generated: 2026-03-11T22:05:33.454Z
+Generated: 2026-03-12T06:16:06.495Z
 
 - blocked_external_count: **27**
 - owner model: **human_external**
@@ -26,11 +26,11 @@ Generated: 2026-03-11T22:05:33.454Z
 | V6-F100-A-010 | 9 | 0/1/2/client | human_external | SRS:V6-F100-A-010 | Cloud marketplace listing publication (AWS/Azure/GCP) | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
 | V6-F100-A-011 | 9 | 0/1/2/client | human_external | SRS:V6-F100-A-011 | Named 24x7 support roster activation | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
 | V6-EDGE-005 | 10 | 0/1/2/client | human_external | SRS:V6-EDGE-005 | Third-party license and source-ingest decision for edge backend | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-COMP-005 | 9 | 0/1/2 | human_external | SRS:V6-COMP-005 | Public multi-release cadence target (9+ tags) | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-SBOX-006 | 10 | -1/0/1/2/3/adapter | human_external | SRS:V6-SBOX-006 | Sandbox runtime substrate decision (container vs lightweight jail) | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-FLUX-007 | 7 | -1/0/1/2/3/adapter | human_external | SRS:V6-FLUX-007 | Advanced substrate live validation lane | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-TOOLS-005 | 8 | 0/1/2 | human_external | SRS:V6-TOOLS-005 | Optional reactions/worktree event automation track | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
-| V6-PAY-007 | 9 | 0/1/2/adapter/client | human_external | SRS:V6-PAY-007 | Monero network/compliance profile decision for production rollout | OpenDev Dual-Agent Coding Patterns Intake (2026-03-09) |
+| V6-COMP-005 | 9 | 0/1/2 | human_external | SRS:V6-COMP-005 | Public multi-release cadence target (9+ tags) | Production Reliability Fortress for Agentic DeFi Systems Source Coverage Intake (Doc `17nmf3l_DnDSoATBUl9SdrgQTLaqpM9G8EWEmlmKnuLY`, 2026-03-11) |
+| V6-SBOX-006 | 10 | -1/0/1/2/3/adapter | human_external | SRS:V6-SBOX-006 | Sandbox runtime substrate decision (container vs lightweight jail) | Production Reliability Fortress for Agentic DeFi Systems Source Coverage Intake (Doc `17nmf3l_DnDSoATBUl9SdrgQTLaqpM9G8EWEmlmKnuLY`, 2026-03-11) |
+| V6-FLUX-007 | 7 | -1/0/1/2/3/adapter | human_external | SRS:V6-FLUX-007 | Advanced substrate live validation lane | Production Reliability Fortress for Agentic DeFi Systems Source Coverage Intake (Doc `17nmf3l_DnDSoATBUl9SdrgQTLaqpM9G8EWEmlmKnuLY`, 2026-03-11) |
+| V6-TOOLS-005 | 8 | 0/1/2 | human_external | SRS:V6-TOOLS-005 | Optional reactions/worktree event automation track | Production Reliability Fortress for Agentic DeFi Systems Source Coverage Intake (Doc `17nmf3l_DnDSoATBUl9SdrgQTLaqpM9G8EWEmlmKnuLY`, 2026-03-11) |
+| V6-PAY-007 | 9 | 0/1/2/adapter/client | human_external | SRS:V6-PAY-007 | Monero network/compliance profile decision for production rollout | Production Reliability Fortress for Agentic DeFi Systems Source Coverage Intake (Doc `17nmf3l_DnDSoATBUl9SdrgQTLaqpM9G8EWEmlmKnuLY`, 2026-03-11) |
 | V2-012 | 8 | 1/2/client/adapter | human_external | SRS:V2-012 | [backlog / V2] External security assessment and pen-test cycle (canonical blocker) | V2 |
 | V6-RUST50-CONF-004 | 9 | 0/1/2/client | human_external | SRS:V6-RUST50-CONF-004 | [primitive-upgrade / V6] Mega Sprint 1 Public 50 Percent Rust Migration (8 Crates + Blobized Core Paths) | External Requirements Intake (Mega Sprint 1: Public 50 Percent Visible Rust, 2026-03-03) |
 | V6-GAP-006 | 10 | 0/1/2/client | human_external | SRS:V6-GAP-006 | Public Release + Announcement Publication Authority | Testing + Documentation + Installer Gap Closer (2026-03-06) |

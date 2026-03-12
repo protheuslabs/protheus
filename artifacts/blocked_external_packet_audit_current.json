@@ -1,7 +1,7 @@
 {
   "ok": true,
   "type": "blocked_external_packet_audit",
-  "generatedAt": "2026-03-11T22:05:34.123Z",
+  "generatedAt": "2026-03-12T06:16:07.040Z",
   "source": "artifacts/blocked_external_evidence_status_current.json",
   "summary": {
     "total": 27,
