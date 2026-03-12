@@ -303,6 +303,10 @@ pub fn evaluate_dispatch_security(
 }
 
 fn run_node_script(root: &Path, script_rel: &str, args: &[String], forward_stdin: bool) -> i32 {
+    if let Some(domain) = script_rel.strip_prefix("core://") {
+        return run_core_domain(root, domain, args, forward_stdin);
+    }
+
     let script_abs = root.join(script_rel);
     let mut cmd = Command::new(node_bin());
     cmd.arg(script_abs)
@@ -326,6 +330,52 @@ fn run_node_script(root: &Path, script_rel: &str, args: &[String], forward_stdin
                     "ok": false,
                     "type": "protheusctl_dispatch",
                     "error": clean(format!("spawn_failed:{err}"), 220)
+                })
+            );
+            1
+        }
+    }
+}
+
+fn run_core_domain(root: &Path, domain: &str, args: &[String], forward_stdin: bool) -> i32 {
+    let exe = match env::current_exe() {
+        Ok(path) => path,
+        Err(err) => {
+            eprintln!(
+                "{}",
+                json!({
+                    "ok": false,
+                    "type": "protheusctl_dispatch",
+                    "error": clean(format!("current_exe_failed:{err}"), 220)
+                })
+            );
+            return 1;
+        }
+    };
+
+    let mut cmd = Command::new(exe);
+    cmd.arg(domain)
+        .args(args)
+        .current_dir(root)
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit());
+
+    if forward_stdin {
+        cmd.stdin(Stdio::inherit());
+    } else {
+        cmd.stdin(Stdio::null());
+    }
+
+    match cmd.status() {
+        Ok(status) => status.code().unwrap_or(1),
+        Err(err) => {
+            eprintln!(
+                "{}",
+                json!({
+                    "ok": false,
+                    "type": "protheusctl_dispatch",
+                    "error": clean(format!("core_spawn_failed:{err}"), 220),
+                    "domain": domain
                 })
             );
             1
@@ -704,6 +754,28 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                     args: std::iter::once("status".to_string()).chain(rest).collect(),
                     forward_stdin: false,
                 }
+            }
+        }
+        "session" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "status".to_string());
+            let normalized = if [
+                "register", "start", "resume", "attach", "send", "steer", "status", "list",
+            ]
+            .contains(&sub.as_str())
+            {
+                sub
+            } else {
+                "status".to_string()
+            };
+            Route {
+                script_rel: "core://command-center-session".to_string(),
+                args: std::iter::once(normalized)
+                    .chain(rest.into_iter().skip(1))
+                    .collect(),
+                forward_stdin: false,
             }
         }
         "debug" => Route {

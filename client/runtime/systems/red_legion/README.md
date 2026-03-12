@@ -1,10 +1,12 @@
 # Red Legion
 
-Operational namespace for Red Legion roster and mission coordination.
+Client-side namespace marker only. Red Legion command authority is core-owned.
 
 ## Commands
 
-- `node client/runtime/systems/red_legion/command_center.ts enlist --operator-id=<id> [--alias=<name>] [--rank=recruit]`
-- `node client/runtime/systems/red_legion/command_center.ts promote --operator-id=<id> --rank=<rank>`
-- `node client/runtime/systems/red_legion/command_center.ts mission --operator-id=<id> --objective=<text> [--risk-tier=1..4]`
-- `node client/runtime/systems/red_legion/command_center.ts status [--operator-id=<id>]`
+- `protheus session register --session-id=<id> [--lineage-id=<id>] [--task=<text>]`
+- `protheus session resume <id>`
+- `protheus session send <id> --message=<text>`
+- `protheus-ops command-center-session status [--session-id=<id>]`
+
+Do not add authoritative roster, mission, or session-control logic under `client/runtime/systems/red_legion/`.

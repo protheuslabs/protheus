@@ -5,23 +5,24 @@ use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub mod ops_lane_runtime;
-pub mod autoresearch_loop;
-pub mod autophagy_auto_approval;
 pub mod adaptive_contract_version_governance;
+pub mod autophagy_auto_approval;
+pub mod autoresearch_loop;
 pub mod biological_computing_adapter;
 pub mod bookmark_knowledge_pipeline;
 pub mod collector_cache;
+pub mod command_center_session;
 pub mod company_layer_orchestration;
-pub mod contribution_oracle;
 pub mod context_doctor;
+pub mod contribution_oracle;
 pub mod decentralized_data_marketplace;
 pub mod discord_swarm_orchestration;
 pub mod gui_drift_manager;
 pub mod intel_sweep_router;
-pub mod observability_slo_runbook_closure;
 pub mod observability_automation_engine;
+pub mod observability_slo_runbook_closure;
 pub mod opendev_dual_agent;
+pub mod ops_lane_runtime;
 pub mod p2p_gossip_seed;
 pub mod persistent_background_runtime;
 pub mod public_api_catalog;
@@ -64,6 +65,9 @@ mod tests {
     #[test]
     fn daemon_receipt_has_hash() {
         let payload = daemon_control_receipt("status", Some("persistent"));
-        assert!(payload.get("receipt_hash").and_then(Value::as_str).is_some());
+        assert!(payload
+            .get("receipt_hash")
+            .and_then(Value::as_str)
+            .is_some());
     }
 }
