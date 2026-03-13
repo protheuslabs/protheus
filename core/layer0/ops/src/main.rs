@@ -298,6 +298,11 @@ fn main() {
             let exit = protheus_ops_core::hermes_plane::run(&cwd, &rest);
             std::process::exit(exit);
         }
+        "eval-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::eval_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
         "ab-lane-eval" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::ab_lane_eval::run(&cwd, &rest);

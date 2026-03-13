@@ -137,12 +137,12 @@ fn parse_csv_unique(raw: Option<&String>, fallback: &[&str]) -> Vec<String> {
 
 fn claim_ids_for_action(action: &str) -> Vec<&'static str> {
     match action {
-        "start" => vec!["V6-APP-023.1", "V6-APP-023.5"],
-        "melt-refine" => vec!["V6-APP-023.2", "V6-APP-023.5"],
-        "compact" => vec!["V6-APP-023.3", "V6-APP-023.5"],
-        "backlog-pack" => vec!["V6-APP-023.4", "V6-APP-023.5"],
-        "control" | "status" => vec!["V6-APP-023.5"],
-        _ => vec!["V6-APP-023.5"],
+        "start" => vec!["V6-APP-023.1", "V6-APP-023.5", "V6-APP-023.6"],
+        "melt-refine" => vec!["V6-APP-023.2", "V6-APP-023.5", "V6-APP-023.6"],
+        "compact" => vec!["V6-APP-023.3", "V6-APP-023.5", "V6-APP-023.6"],
+        "backlog-pack" => vec!["V6-APP-023.4", "V6-APP-023.5", "V6-APP-023.6"],
+        "control" | "status" => vec!["V6-APP-023.5", "V6-APP-023.6"],
+        _ => vec!["V6-APP-023.5", "V6-APP-023.6"],
     }
 }
 
@@ -431,6 +431,14 @@ fn run_start(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
                 "evidence": {
                     "cycle_id": cycle_id
                 }
+            },
+            {
+                "id": "V6-APP-023.6",
+                "claim": "snowball_status_and_compact_controls_surface_cycle_stage_batch_outcomes_and_regression_state",
+                "evidence": {
+                    "cycle_id": cycle_id,
+                    "stage": "running"
+                }
             }
         ]
     });
@@ -513,6 +521,15 @@ fn run_melt_refine(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Val
                 "claim": "snowball_runtime_publishes_live_cycle_state_for_operator_controls",
                 "evidence": {
                     "cycle_id": cycle_id
+                }
+            },
+            {
+                "id": "V6-APP-023.6",
+                "claim": "snowball_status_and_compact_controls_surface_cycle_stage_batch_outcomes_and_regression_state",
+                "evidence": {
+                    "cycle_id": cycle_id,
+                    "stage": next_cycle.get("stage").cloned().unwrap_or(Value::Null),
+                    "regression_pass": regression_pass
                 }
             }
         ]
@@ -599,6 +616,15 @@ fn run_compact(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
                 "claim": "snowball_runtime_publishes_live_cycle_state_for_operator_controls",
                 "evidence": {
                     "cycle_id": cycle_id
+                }
+            },
+            {
+                "id": "V6-APP-023.6",
+                "claim": "snowball_status_and_compact_controls_surface_cycle_stage_batch_outcomes_and_regression_state",
+                "evidence": {
+                    "cycle_id": cycle_id,
+                    "stage": next_cycle.get("stage").cloned().unwrap_or(Value::Null),
+                    "snapshot_path": snapshot_path.display().to_string()
                 }
             }
         ]
@@ -698,6 +724,14 @@ fn run_backlog_pack(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Va
                 "evidence": {
                     "cycle_id": cycle_id
                 }
+            },
+            {
+                "id": "V6-APP-023.6",
+                "claim": "snowball_status_and_compact_controls_surface_cycle_stage_batch_outcomes_and_regression_state",
+                "evidence": {
+                    "cycle_id": cycle_id,
+                    "queued_items": backlog.get("items").and_then(Value::as_array).map(|rows| rows.len()).unwrap_or(0)
+                }
             }
         ]
     });
@@ -772,6 +806,15 @@ fn run_control(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
                     "cycle_id": cycle_id,
                     "op": op
                 }
+            },
+            {
+                "id": "V6-APP-023.6",
+                "claim": "snowball_status_and_compact_controls_surface_cycle_stage_batch_outcomes_and_regression_state",
+                "evidence": {
+                    "cycle_id": cycle_id,
+                    "op": op,
+                    "stage": cycle.get("stage").cloned().unwrap_or(Value::Null)
+                }
             }
         ]
     });
@@ -801,6 +844,14 @@ fn run_status(root: &Path, parsed: &crate::ParsedArgs) -> Value {
                 "claim": "snowball_status_and_controls_are_live_and_receipted_through_conduit",
                 "evidence": {
                     "active_cycle_id": cycles.get("active_cycle_id").cloned().unwrap_or(Value::Null)
+                }
+            },
+            {
+                "id": "V6-APP-023.6",
+                "claim": "snowball_status_and_compact_controls_surface_cycle_stage_batch_outcomes_and_regression_state",
+                "evidence": {
+                    "active_cycle_id": cycles.get("active_cycle_id").cloned().unwrap_or(Value::Null),
+                    "has_cycle": cycle.is_some()
                 }
             }
         ]

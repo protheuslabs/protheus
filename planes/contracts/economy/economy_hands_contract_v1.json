@@ -1,0 +1,32 @@
+{
+  "version": "v1",
+  "kind": "economy_hands_contract",
+  "entrypoint": "protheus economy <command>",
+  "allowed_actions": [
+    "status",
+    "dashboard",
+    "virtuals-acp",
+    "bankrbot-defi",
+    "jobs-marketplace",
+    "skills-marketplace"
+  ],
+  "safety": {
+    "conduit_only": true,
+    "fail_closed_on_bypass": true,
+    "strict_default": true
+  },
+  "hands": {
+    "virtuals-acp": {
+      "receipt_claim_id": "V6-ECONOMY-001.1"
+    },
+    "bankrbot-defi": {
+      "receipt_claim_id": "V6-ECONOMY-001.2"
+    },
+    "jobs-marketplace": {
+      "receipt_claim_id": "V6-ECONOMY-001.3"
+    },
+    "skills-marketplace": {
+      "receipt_claim_id": "V6-ECONOMY-001.4"
+    }
+  }
+}

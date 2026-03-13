@@ -43,6 +43,7 @@ pub mod dopamine_ambient;
 pub mod duality_seed;
 pub mod dynamic_burn_budget_oracle;
 pub mod enterprise_hardening;
+pub mod eval_plane;
 pub mod execution_yield_recovery;
 pub mod f100_readiness_program;
 pub mod f100_reliability_certification;

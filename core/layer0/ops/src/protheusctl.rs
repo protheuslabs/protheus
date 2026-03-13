@@ -1496,7 +1496,7 @@ mod tests {
             ],
         )
         .expect("route");
-        assert_eq!(route.script_rel, "core://ab-lane-eval");
+        assert_eq!(route.script_rel, "core://eval-plane");
         assert_eq!(route.args, vec!["enable-neuralavb", "--enabled=1"]);
     }
 
@@ -1511,7 +1511,7 @@ mod tests {
             ],
         )
         .expect("route");
-        assert_eq!(route.script_rel, "core://ab-lane-eval");
+        assert_eq!(route.script_rel, "core://eval-plane");
         assert_eq!(
             route.args,
             vec![

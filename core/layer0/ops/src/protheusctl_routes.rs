@@ -87,7 +87,7 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
             let sub = rest
                 .first()
                 .map(|v| v.trim().to_ascii_lowercase())
-                .unwrap_or_else(|| "benchmark-neuralavb".to_string());
+                .unwrap_or_else(|| "benchmark".to_string());
             let args = match sub.as_str() {
                 "enable"
                     if rest
@@ -109,19 +109,19 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                         .chain(rest.iter().skip(2).cloned())
                         .collect::<Vec<_>>()
                 }
-                "benchmark" => std::iter::once("benchmark-neuralavb".to_string())
+                "benchmark" => std::iter::once("benchmark".to_string())
                     .chain(rest.iter().skip(1).cloned())
                     .collect::<Vec<_>>(),
                 _ => {
                     if rest.is_empty() {
-                        vec!["benchmark-neuralavb".to_string()]
+                        vec!["benchmark".to_string()]
                     } else {
                         rest.to_vec()
                     }
                 }
             };
             Some(Route {
-                script_rel: "core://ab-lane-eval".to_string(),
+                script_rel: "core://eval-plane".to_string(),
                 args,
                 forward_stdin: false,
             })
@@ -135,7 +135,7 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
             let mut args = vec!["experiment-loop".to_string()];
             args.extend(rest.iter().skip(1).cloned());
             Some(Route {
-                script_rel: "core://ab-lane-eval".to_string(),
+                script_rel: "core://eval-plane".to_string(),
                 args,
                 forward_stdin: false,
             })

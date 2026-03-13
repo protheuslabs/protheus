@@ -43,6 +43,9 @@ pub(super) fn print_usage() {
     println!("  protheus-ops persist-plane <status|schedule|mobile-cockpit|continuity|connector|cowork> [flags]");
     println!("  protheus-ops binary-vuln-plane <status|scan|mcp-analyze> [flags]");
     println!("  protheus-ops hermes-plane <status|discover|continuity|delegate|cockpit> [flags]");
+    println!(
+        "  protheus-ops eval-plane <status|enable-neuralavb|experiment-loop|benchmark|run> [flags]"
+    );
     println!("  protheus-ops ab-lane-eval <status|run> [flags]");
     println!("  protheus-ops contract-check <args>");
     println!("  protheus-ops security-plane <guard|anti-sabotage-shield|constitution-guardian|remote-emergency-halt|soul-token-guard|integrity-reseal|integrity-reseal-assistant|capability-lease|startup-attestation|truth-seeking-gate|abac-policy-plane|status> [flags]");

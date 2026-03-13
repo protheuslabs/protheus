@@ -1,0 +1,41 @@
+{
+  "version": "v1",
+  "kind": "eval_loop_contract",
+  "entrypoint": "protheus eval run",
+  "allowed_actions": [
+    "status",
+    "enable-neuralavb",
+    "experiment-loop",
+    "benchmark",
+    "run"
+  ],
+  "limits": {
+    "max_iterations": 32,
+    "strict_default": true
+  },
+  "ground_truth": {
+    "fixture_required": true,
+    "fixture_schema": "neuralavb_ground_truth_v1"
+  },
+  "reward_model": {
+    "signals": [
+      "cost_gain_pct",
+      "accuracy_drop_pp"
+    ],
+    "accepted_threshold": 0.0
+  },
+  "observability": {
+    "emit_cost_accuracy_deltas": true,
+    "emit_tradeoff_score": true
+  },
+  "safety": {
+    "conduit_only": true,
+    "fail_closed_on_bypass": true
+  },
+  "claims": [
+    "V6-EVAL-001.1",
+    "V6-EVAL-001.2",
+    "V6-EVAL-001.3",
+    "V6-EVAL-001.4"
+  ]
+}

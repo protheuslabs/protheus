@@ -97,6 +97,17 @@ const ECONOMY_HANDS: [&str; 8] = [
     "fairscale_credit",
     "trade_router_solana",
 ];
+const ECONOMY_CONTRACT_PATH: &str = "planes/contracts/economy/economy_hands_contract_v1.json";
+
+fn load_contract(root: &Path) -> Value {
+    read_json(&root.join(ECONOMY_CONTRACT_PATH)).unwrap_or_else(|| {
+        json!({
+            "version": "v1",
+            "kind": "economy_hands_contract",
+            "hands": ["virtuals-acp", "bankrbot-defi", "jobs-marketplace", "skills-marketplace"]
+        })
+    })
+}
 
 fn normalize_target(raw: &str) -> String {
     match raw.trim().to_ascii_lowercase().as_str() {
@@ -121,6 +132,48 @@ fn current_enabled_map(latest: Option<&Value>) -> serde_json::Map<String, Value>
         .and_then(Value::as_object)
         .cloned()
         .unwrap_or_default()
+}
+
+fn claim_ids_for_command(command: &str) -> Vec<&'static str> {
+    match command {
+        "virtuals-acp" => vec!["V6-ECONOMY-001.1"],
+        "bankrbot-defi" => vec!["V6-ECONOMY-001.2"],
+        "jobs-marketplace" => vec!["V6-ECONOMY-001.3"],
+        "skills-marketplace" => vec!["V6-ECONOMY-001.4"],
+        _ => vec!["economy_core_authority"],
+    }
+}
+
+fn conduit_enforcement(parsed: &crate::ParsedArgs, strict: bool, command: &str) -> Value {
+    let bypass_requested = parse_bool(parsed.flags.get("bypass"), false)
+        || parse_bool(parsed.flags.get("direct"), false)
+        || parse_bool(parsed.flags.get("unsafe-client-route"), false)
+        || parse_bool(parsed.flags.get("client-bypass"), false);
+    let ok = !bypass_requested;
+    let claim_rows = claim_ids_for_command(command)
+        .iter()
+        .map(|id| {
+            json!({
+                "id": id,
+                "claim": "economy_hands_route_through_layer0_conduit_with_fail_closed_denials",
+                "evidence": {
+                    "command": clean(command, 80),
+                    "bypass_requested": bypass_requested
+                }
+            })
+        })
+        .collect::<Vec<_>>();
+    let mut out = json!({
+        "ok": if strict { ok } else { true },
+        "type": "llm_economy_conduit_enforcement",
+        "required_path": "core/layer0/ops/llm_economy_organ",
+        "command": clean(command, 80),
+        "bypass_requested": bypass_requested,
+        "errors": if ok { Value::Array(Vec::new()) } else { json!(["conduit_bypass_rejected"]) },
+        "claim_evidence": claim_rows
+    });
+    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+    out
 }
 
 pub fn run(root: &Path, argv: &[String]) -> i32 {
@@ -157,6 +210,28 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
 
     let latest = latest_path(root);
     let history = history_path(root);
+    let contract = load_contract(root);
+    let strict = parse_bool(parsed.flags.get("strict"), true);
+
+    if !matches!(command.as_str(), "status" | "dashboard") {
+        let conduit = conduit_enforcement(&parsed, strict, command.as_str());
+        if strict && !conduit.get("ok").and_then(Value::as_bool).unwrap_or(false) {
+            let mut out = json!({
+                "ok": false,
+                "strict": strict,
+                "type": "llm_economy_organ_conduit_gate",
+                "lane": "core/layer0/ops",
+                "command": command,
+                "errors": ["conduit_bypass_rejected"],
+                "conduit_enforcement": conduit
+            });
+            out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+            write_json(&latest, &out);
+            append_jsonl(&history, &out);
+            print_receipt(&out);
+            return 1;
+        }
+    }
 
     if command == "status" {
         let mut out = json!({
@@ -164,7 +239,11 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             "type": "llm_economy_organ_status",
             "lane": "core/layer0/ops",
             "ts": now_iso(),
-            "latest": read_json(&latest)
+            "latest": read_json(&latest),
+            "contract": {
+                "path": ECONOMY_CONTRACT_PATH,
+                "sha256": deterministic_receipt_hash(&contract)
+            }
         });
         out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
         print_receipt(&out);
@@ -186,6 +265,10 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             "enabled_count": enabled_count,
             "total_hands": ECONOMY_HANDS.len(),
             "enabled_hands": enabled_map,
+            "contract": {
+                "path": ECONOMY_CONTRACT_PATH,
+                "sha256": deterministic_receipt_hash(&contract)
+            },
             "claim_evidence": [
                 {
                     "id": "economy_dashboard_contract",
@@ -463,10 +546,11 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             "ts": now_iso(),
             "apply": apply,
             "action": action,
+            "contract_digest": deterministic_receipt_hash(&contract),
             "claim_evidence": [
                 {
-                    "id": "virtuals_acp_contract",
-                    "claim": "virtuals_acp_hand_is_routable_with_deterministic_receipts",
+                    "id": "V6-ECONOMY-001.1",
+                    "claim": "virtuals_acp_eye_hand_command_is_receipted_in_core_authority",
                     "evidence": {"action": action}
                 }
             ]
@@ -495,10 +579,11 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             "ts": now_iso(),
             "apply": apply,
             "strategy": strategy,
+            "contract_digest": deterministic_receipt_hash(&contract),
             "claim_evidence": [
                 {
-                    "id": "bankrbot_defi_contract",
-                    "claim": "bankrbot_defi_hand_is_policy_gated_with_receipts",
+                    "id": "V6-ECONOMY-001.2",
+                    "claim": "bankrbot_defi_yield_hand_is_policy_gated_with_deterministic_receipts",
                     "evidence": {"strategy": strategy}
                 }
             ]
@@ -527,10 +612,11 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             "ts": now_iso(),
             "apply": apply,
             "source": source,
+            "contract_digest": deterministic_receipt_hash(&contract),
             "claim_evidence": [
                 {
-                    "id": "jobs_marketplace_contract",
-                    "claim": "nookplot_owocki_job_hands_are_routable_with_receipts",
+                    "id": "V6-ECONOMY-001.3",
+                    "claim": "jobs_marketplace_hand_is_receipted_for_nookplot_owocki_routing",
                     "evidence": {"source": source}
                 }
             ]
@@ -559,10 +645,11 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             "ts": now_iso(),
             "apply": apply,
             "source": source,
+            "contract_digest": deterministic_receipt_hash(&contract),
             "claim_evidence": [
                 {
-                    "id": "skills_marketplace_contract",
-                    "claim": "heurist_daydreams_skill_hands_are_routable_with_receipts",
+                    "id": "V6-ECONOMY-001.4",
+                    "claim": "skills_marketplace_hand_is_receipted_for_heurist_daydreams_routing",
                     "evidence": {"source": source}
                 }
             ]
