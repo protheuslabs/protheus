@@ -14,5 +14,6 @@ Default apps:
 - `ad_factory/` — AI-powered video ad generation app scaffold.
 - `creator_outreach/` — autonomous creator discovery + outreach app scaffold.
 - `graph-toolkit/` — thin graph analytics workflow surface over core graph-toolkit runtime.
+- `intelligence-nexus/` — thin API-key vault + credit monitor + governed credit-buy workflow surface over core nexus runtime.
 - `lensmap/` — code-linked documentation and external annotation workflow tooling.
 - `local-rag/` — one-command local RAG + stable memory library app scaffold.

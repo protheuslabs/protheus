@@ -199,6 +199,10 @@ apps/*
 !apps/ad_factory/**
 !apps/creator_outreach/
 !apps/creator_outreach/**
+!apps/graph-toolkit/
+!apps/graph-toolkit/**
+!apps/intelligence-nexus/
+!apps/intelligence-nexus/**
 !apps/local-rag/
 !apps/local-rag/**
 

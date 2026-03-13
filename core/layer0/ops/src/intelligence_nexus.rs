@@ -40,6 +40,7 @@ fn default_ledger() -> Value {
         "credit_usage": {},
         "spend_limits": {},
         "purchase_history": [],
+        "key_events": [],
         "last_autobuy": null,
         "event_head": "genesis",
         "created_at": now_iso()
@@ -396,6 +397,37 @@ fn append_purchase_event(
     event
 }
 
+fn append_key_event(ledger: &mut Value, provider: &str, action: &str, detail: Value) -> Value {
+    let obj = ledger_obj_mut(ledger);
+    let prev_hash = obj
+        .get("event_head")
+        .and_then(Value::as_str)
+        .unwrap_or("genesis")
+        .to_string();
+    let event_base = json!({
+        "id": format!("key_{}", &sha256_hex_str(&format!("{}:{}:{}:{}", now_iso(), provider, action, prev_hash))[..16]),
+        "provider": provider,
+        "action": action,
+        "detail": detail,
+        "ts": now_iso()
+    });
+    let event_hash = next_chain_hash(Some(&prev_hash), &event_base);
+    let event = json!({
+        "event_hash": event_hash,
+        "prev_event_hash": prev_hash,
+        "event": event_base
+    });
+    array_mut(obj, "key_events").push(event.clone());
+    obj.insert(
+        "event_head".to_string(),
+        event
+            .get("event_hash")
+            .cloned()
+            .unwrap_or(Value::String("genesis".to_string())),
+    );
+    event
+}
+
 fn today_key() -> String {
     now_iso().chars().take(10).collect::<String>()
 }
@@ -525,6 +557,16 @@ fn command_add_key(root: &Path, parsed: &ParsedArgs) -> i32 {
     let masked = key_masked(&raw_key);
     let sealed = seal_key(&raw_key, &provider, &fingerprint);
     let mut ledger = load_ledger(root);
+    let key_event = append_key_event(
+        &mut ledger,
+        &provider,
+        "add",
+        json!({
+            "fingerprint": fingerprint,
+            "masked_key": masked,
+            "key_source": clean(key_source.clone(), 64)
+        }),
+    );
     {
         let obj = ledger_obj_mut(&mut ledger);
         map_mut(obj, "providers").insert(
@@ -563,7 +605,269 @@ fn command_add_key(root: &Path, parsed: &ParsedArgs) -> i32 {
             "provider": provider,
             "descriptor_only_client_persistence": true,
             "vault_encryption_enabled": vault_secret().is_some(),
-            "raw_key_persisted": false
+            "raw_key_persisted": false,
+            "key_event": key_event
+        }),
+    )
+}
+
+fn command_rotate_key(root: &Path, parsed: &ParsedArgs) -> i32 {
+    let provider = provider_name(parsed.flags.get("provider"));
+    let gate_action = format!("keys:rotate:{provider}");
+    if !directive_kernel::action_allowed(root, &gate_action) {
+        return emit(
+            root,
+            json!({
+                "ok": false,
+                "type": "intelligence_nexus_rotate_key",
+                "lane": "core/layer0/ops",
+                "provider": provider,
+                "error": "directive_gate_denied",
+                "action": gate_action
+            }),
+        );
+    }
+
+    let Some((raw_key, key_source)) = key_from_flags(parsed) else {
+        return emit(
+            root,
+            json!({
+                "ok": false,
+                "type": "intelligence_nexus_rotate_key",
+                "lane": "core/layer0/ops",
+                "provider": provider,
+                "error": "missing_key_material"
+            }),
+        );
+    };
+
+    let validation = validate_key(&provider, &raw_key);
+    if !validation.get("ok").and_then(Value::as_bool).unwrap_or(false) {
+        return emit(
+            root,
+            json!({
+                "ok": false,
+                "type": "intelligence_nexus_rotate_key",
+                "lane": "core/layer0/ops",
+                "provider": provider,
+                "validation": validation,
+                "error": "key_validation_failed"
+            }),
+        );
+    }
+
+    let apply = parse_bool(parsed.flags.get("apply"), true);
+    let allow_same = parse_bool(parsed.flags.get("allow-same"), false);
+    let mut ledger = load_ledger(root);
+    let existing = ledger
+        .get("providers")
+        .and_then(Value::as_object)
+        .and_then(|m| m.get(&provider))
+        .cloned();
+    let Some(previous_record) = existing else {
+        return emit(
+            root,
+            json!({
+                "ok": false,
+                "type": "intelligence_nexus_rotate_key",
+                "lane": "core/layer0/ops",
+                "provider": provider,
+                "error": "provider_not_found"
+            }),
+        );
+    };
+
+    let old_fingerprint = previous_record
+        .get("fingerprint")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    let old_masked = previous_record
+        .get("masked_key")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    let new_fingerprint = key_fingerprint(&raw_key);
+    if !allow_same && !old_fingerprint.is_empty() && old_fingerprint == new_fingerprint {
+        return emit(
+            root,
+            json!({
+                "ok": false,
+                "type": "intelligence_nexus_rotate_key",
+                "lane": "core/layer0/ops",
+                "provider": provider,
+                "error": "same_key_material",
+                "allow_same": allow_same
+            }),
+        );
+    }
+
+    let masked = key_masked(&raw_key);
+    let sealed = seal_key(&raw_key, &provider, &new_fingerprint);
+    let key_event = if apply {
+        let event = append_key_event(
+            &mut ledger,
+            &provider,
+            "rotate",
+            json!({
+                "from_fingerprint": old_fingerprint,
+                "to_fingerprint": new_fingerprint,
+                "from_masked_key": old_masked,
+                "to_masked_key": masked,
+                "key_source": clean(key_source.clone(), 64)
+            }),
+        );
+        {
+            let obj = ledger_obj_mut(&mut ledger);
+            map_mut(obj, "providers").insert(
+                provider.clone(),
+                json!({
+                    "provider": provider,
+                    "fingerprint": new_fingerprint,
+                    "masked_key": masked,
+                    "sealed_key": sealed,
+                    "seal_algorithm": if vault_secret().is_some() { "xor_sha256_v1" } else { "none_descriptor_only" },
+                    "key_source": clean(key_source, 64),
+                    "validation": validation,
+                    "updated_at": now_iso(),
+                    "rotated_from": old_fingerprint,
+                    "rotated_at": now_iso()
+                }),
+            );
+        }
+        event
+    } else {
+        Value::Null
+    };
+
+    if let Err(err) = store_ledger(root, &ledger) {
+        return emit(
+            root,
+            json!({
+                "ok": false,
+                "type": "intelligence_nexus_rotate_key",
+                "lane": "core/layer0/ops",
+                "provider": provider,
+                "error": clean(err, 200)
+            }),
+        );
+    }
+
+    emit(
+        root,
+        json!({
+            "ok": true,
+            "type": "intelligence_nexus_rotate_key",
+            "lane": "core/layer0/ops",
+            "provider": provider,
+            "apply": apply,
+            "raw_key_persisted": false,
+            "descriptor_only_client_persistence": true,
+            "key_event": key_event
+        }),
+    )
+}
+
+fn command_revoke_key(root: &Path, parsed: &ParsedArgs) -> i32 {
+    let provider = provider_name(parsed.flags.get("provider"));
+    let gate_action = format!("keys:revoke:{provider}");
+    if !directive_kernel::action_allowed(root, &gate_action) {
+        return emit(
+            root,
+            json!({
+                "ok": false,
+                "type": "intelligence_nexus_revoke_key",
+                "lane": "core/layer0/ops",
+                "provider": provider,
+                "error": "directive_gate_denied",
+                "action": gate_action
+            }),
+        );
+    }
+    let apply = parse_bool(parsed.flags.get("apply"), true);
+    let reason = clean(
+        parsed
+            .flags
+            .get("reason")
+            .cloned()
+            .unwrap_or_else(|| "operator_revoke".to_string()),
+        220,
+    );
+
+    let mut ledger = load_ledger(root);
+    let existing = ledger
+        .get("providers")
+        .and_then(Value::as_object)
+        .and_then(|m| m.get(&provider))
+        .cloned();
+    let Some(existing_record) = existing else {
+        return emit(
+            root,
+            json!({
+                "ok": false,
+                "type": "intelligence_nexus_revoke_key",
+                "lane": "core/layer0/ops",
+                "provider": provider,
+                "error": "provider_not_found"
+            }),
+        );
+    };
+
+    let removed_fingerprint = existing_record
+        .get("fingerprint")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    let removed_masked_key = existing_record
+        .get("masked_key")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    let key_event = if apply {
+        let event = append_key_event(
+            &mut ledger,
+            &provider,
+            "revoke",
+            json!({
+                "reason": reason,
+                "removed_fingerprint": removed_fingerprint,
+                "removed_masked_key": removed_masked_key
+            }),
+        );
+        {
+            let obj = ledger_obj_mut(&mut ledger);
+            map_mut(obj, "providers").remove(&provider);
+            map_mut(obj, "credit_balances").remove(&provider);
+            map_mut(obj, "credit_usage").remove(&provider);
+            map_mut(obj, "spend_limits").remove(&provider);
+        }
+        event
+    } else {
+        Value::Null
+    };
+
+    if let Err(err) = store_ledger(root, &ledger) {
+        return emit(
+            root,
+            json!({
+                "ok": false,
+                "type": "intelligence_nexus_revoke_key",
+                "lane": "core/layer0/ops",
+                "provider": provider,
+                "error": clean(err, 200)
+            }),
+        );
+    }
+
+    emit(
+        root,
+        json!({
+            "ok": true,
+            "type": "intelligence_nexus_revoke_key",
+            "lane": "core/layer0/ops",
+            "provider": provider,
+            "apply": apply,
+            "key_event": key_event
         }),
     )
 }
@@ -955,6 +1259,8 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         println!("  protheus-ops intelligence-nexus status");
         println!("  protheus-ops intelligence-nexus open");
         println!("  protheus-ops intelligence-nexus add-key [--provider=<id>] [--key=<value>|--key-env=<ENV>]");
+        println!("  protheus-ops intelligence-nexus rotate-key [--provider=<id>] [--key=<value>|--key-env=<ENV>] [--allow-same=1|0] [--apply=1|0]");
+        println!("  protheus-ops intelligence-nexus revoke-key [--provider=<id>] [--reason=<text>] [--apply=1|0]");
         println!("  protheus-ops intelligence-nexus credits-status [--provider=<id>] [--credits=<n>] [--burn-rate-per-day=<n>] [--probe-cmd=<shell>]");
         println!("  protheus-ops intelligence-nexus buy-credits [--provider=<id>] [--amount=<n>] [--spend-limit=<n>] [--rail=nexus|stripe|crypto] [--actor=<id>] [--apply=1|0]");
         println!("  protheus-ops intelligence-nexus autobuy-evaluate [--provider=<id>] [--threshold=<n>] [--refill=<n>] [--daily-cap=<n>] [--priority=low|normal|high] [--apply=1|0]");
@@ -964,7 +1270,9 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
     match command.as_str() {
         "status" => command_status(root),
         "open" | "keys-open" => command_open(root),
-        "add-key" => command_add_key(root, &parsed),
+        "add-key" | "add" => command_add_key(root, &parsed),
+        "rotate-key" | "rotate" => command_rotate_key(root, &parsed),
+        "revoke-key" | "revoke" | "remove-key" | "remove" => command_revoke_key(root, &parsed),
         "credits-status" | "credit-status" => command_credits_status(root, &parsed),
         "buy-credits" => command_buy_credits(root, &parsed),
         "autobuy-evaluate" | "auto-buy" => command_autobuy(root, &parsed),
@@ -1030,6 +1338,110 @@ mod tests {
         assert!(!ledger_raw.contains("sk-test-super-secret-key"));
         assert!(ledger_raw.contains("masked_key"));
         std::env::remove_var("TEST_NEXUS_KEY");
+        std::env::remove_var(VAULT_KEY_ENV);
+        std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn rotate_and_revoke_key_lifecycle_is_receipted() {
+        let root = temp_root("rotate_revoke");
+        allow(&root, "allow:keys:add");
+        allow(&root, "allow:keys:rotate");
+        allow(&root, "allow:keys:revoke");
+        std::env::set_var(VAULT_KEY_ENV, "vault-secret");
+        std::env::set_var("TEST_KEY_OLD", "sk-old-abcdef0123456789");
+        std::env::set_var("TEST_KEY_NEW", "sk-new-abcdef0123456790");
+
+        assert_eq!(
+            run(
+                &root,
+                &[
+                    "add-key".to_string(),
+                    "--provider=openai".to_string(),
+                    "--key-env=TEST_KEY_OLD".to_string(),
+                ],
+            ),
+            0
+        );
+
+        let before = read_json(&ledger_path(&root)).expect("ledger");
+        let old_fingerprint = before
+            .get("providers")
+            .and_then(Value::as_object)
+            .and_then(|m| m.get("openai"))
+            .and_then(|v| v.get("fingerprint"))
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_string();
+        assert!(!old_fingerprint.is_empty());
+
+        assert_eq!(
+            run(
+                &root,
+                &[
+                    "rotate-key".to_string(),
+                    "--provider=openai".to_string(),
+                    "--key-env=TEST_KEY_NEW".to_string(),
+                    "--apply=1".to_string(),
+                ],
+            ),
+            0
+        );
+
+        let after_rotate = read_json(&ledger_path(&root)).expect("ledger");
+        let new_fingerprint = after_rotate
+            .get("providers")
+            .and_then(Value::as_object)
+            .and_then(|m| m.get("openai"))
+            .and_then(|v| v.get("fingerprint"))
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_string();
+        assert_ne!(new_fingerprint, old_fingerprint);
+        assert_eq!(
+            after_rotate
+                .get("providers")
+                .and_then(Value::as_object)
+                .and_then(|m| m.get("openai"))
+                .and_then(|v| v.get("rotated_from"))
+                .and_then(Value::as_str),
+            Some(old_fingerprint.as_str())
+        );
+
+        assert_eq!(
+            run(
+                &root,
+                &[
+                    "revoke-key".to_string(),
+                    "--provider=openai".to_string(),
+                    "--reason=rotation_complete".to_string(),
+                    "--apply=1".to_string(),
+                ],
+            ),
+            0
+        );
+
+        let after_revoke = read_json(&ledger_path(&root)).expect("ledger");
+        assert!(
+            after_revoke
+                .get("providers")
+                .and_then(Value::as_object)
+                .and_then(|m| m.get("openai"))
+                .is_none()
+        );
+        let ledger_raw = fs::read_to_string(ledger_path(&root)).expect("ledger raw");
+        assert!(!ledger_raw.contains("sk-old-abcdef0123456789"));
+        assert!(!ledger_raw.contains("sk-new-abcdef0123456790"));
+        let key_events = after_revoke
+            .get("key_events")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        assert!(key_events.len() >= 3);
+
+        std::env::remove_var("TEST_KEY_OLD");
+        std::env::remove_var("TEST_KEY_NEW");
         std::env::remove_var(VAULT_KEY_ENV);
         std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
         let _ = fs::remove_dir_all(root);

@@ -6,9 +6,11 @@ use crate::v8_kernel::{
     parse_bool, parse_f64, print_json, read_json, scoped_state_root, sha256_file, sha256_hex_str,
     write_json, write_receipt,
 };
+use memmap2::MmapOptions;
 use crate::{clean, now_iso, parse_args};
 use serde_json::{json, Map, Value};
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 const STATE_ENV: &str = "BINARY_BLOB_RUNTIME_STATE_ROOT";
@@ -53,6 +55,34 @@ fn module_source_path(root: &Path, module: &str, explicit: Option<&String>) -> P
         .join("ops")
         .join("src")
         .join(format!("{module}.rs"))
+}
+
+fn sha256_file_mmap(path: &Path) -> Result<String, String> {
+    let file = fs::File::open(path)
+        .map_err(|err| format!("blob_open_failed:{}:{err}", path.display()))?;
+    let metadata = file
+        .metadata()
+        .map_err(|err| format!("blob_metadata_failed:{}:{err}", path.display()))?;
+    if metadata.len() == 0 {
+        return Ok(sha256_hex_str(""));
+    }
+    if metadata.len() > usize::MAX as u64 {
+        return Err("blob_too_large_for_mmap".to_string());
+    }
+    let map = unsafe { MmapOptions::new().map(&file) }
+        .map_err(|err| format!("blob_mmap_failed:{}:{err}", path.display()))?;
+    Ok(crate::v8_kernel::sha256_hex_bytes(&map))
+}
+
+fn read_first_bytes(path: &Path, limit: usize) -> Result<Vec<u8>, String> {
+    let mut file = fs::File::open(path)
+        .map_err(|err| format!("blob_open_failed:{}:{err}", path.display()))?;
+    let mut buf = vec![0u8; limit];
+    let read = file
+        .read(&mut buf)
+        .map_err(|err| format!("blob_read_failed:{}:{err}", path.display()))?;
+    buf.truncate(read);
+    Ok(buf)
 }
 
 fn load_active_map(root: &Path) -> Map<String, Value> {
@@ -111,6 +141,9 @@ fn settle_one(root: &Path, parsed: &crate::ParsedArgs, module: &str) -> Result<V
 
     let blob_path = blobs_dir(root).join(module).join(format!("{blob_id}.blob"));
     let snapshot_path = snapshots_dir(root).join(module).join(format!("{blob_id}.json"));
+    let source_bytes = fs::read(&source_path)
+        .map_err(|err| format!("module_source_read_failed:{}:{err}", source_path.display()))?;
+    let blob_hash = crate::v8_kernel::sha256_hex_bytes(&source_bytes);
     if apply {
         if let Some(parent) = blob_path.parent() {
             fs::create_dir_all(parent)
@@ -120,9 +153,7 @@ fn settle_one(root: &Path, parsed: &crate::ParsedArgs, module: &str) -> Result<V
             fs::create_dir_all(parent)
                 .map_err(|err| format!("snapshot_dir_create_failed:{}:{err}", parent.display()))?;
         }
-        let bytes = fs::read(&source_path)
-            .map_err(|err| format!("module_source_read_failed:{}:{err}", source_path.display()))?;
-        fs::write(&blob_path, bytes)
+        fs::write(&blob_path, source_bytes)
             .map_err(|err| format!("blob_write_failed:{}:{err}", blob_path.display()))?;
     }
 
@@ -136,6 +167,8 @@ fn settle_one(root: &Path, parsed: &crate::ParsedArgs, module: &str) -> Result<V
         "blob_id": blob_id,
         "source_path": source_path.display().to_string(),
         "source_hash": source_hash,
+        "blob_path": blob_path.display().to_string(),
+        "blob_hash": blob_hash,
         "policy_hash": policy_hash,
         "mode": mode,
         "shadow_swap": shadow_swap,
@@ -155,6 +188,7 @@ fn settle_one(root: &Path, parsed: &crate::ParsedArgs, module: &str) -> Result<V
                 "blob_path": blob_path.display().to_string(),
                 "policy_hash": snapshot.get("policy_hash").cloned().unwrap_or(Value::Null),
                 "source_hash": snapshot.get("source_hash").cloned().unwrap_or(Value::Null),
+                "blob_hash": snapshot.get("blob_hash").cloned().unwrap_or(Value::Null),
                 "previous": snapshot.get("previous").cloned().unwrap_or(Value::Null),
                 "shadow_pointer": shadow_pointer,
                 "rollback_pointer": rollback_pointer,
@@ -206,10 +240,33 @@ fn load_and_verify(root: &Path, module: &str) -> Result<Value, String> {
         .and_then(Value::as_str)
         .unwrap_or("")
         .to_string();
+    let blob_path = snapshot
+        .get("blob_path")
+        .and_then(Value::as_str)
+        .map(PathBuf::from)
+        .or_else(|| {
+            entry
+                .get("blob_path")
+                .and_then(Value::as_str)
+                .map(PathBuf::from)
+        })
+        .ok_or_else(|| "snapshot_blob_path_missing".to_string())?;
+    let expected_blob_hash = snapshot
+        .get("blob_hash")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
     let current_policy_hash = directive_kernel::directive_vault_hash(root);
 
     if source_hash != expected_source_hash {
         return Err("source_hash_mismatch".to_string());
+    }
+    if !blob_path.exists() {
+        return Err(format!("blob_missing:{}", blob_path.display()));
+    }
+    let blob_hash = sha256_file_mmap(&blob_path)?;
+    if blob_hash != expected_blob_hash {
+        return Err("blob_hash_mismatch".to_string());
     }
     if current_policy_hash != expected_policy_hash {
         return Err("policy_hash_mismatch".to_string());
@@ -219,8 +276,11 @@ fn load_and_verify(root: &Path, module: &str) -> Result<Value, String> {
         "module": module,
         "snapshot_path": snapshot_path.display().to_string(),
         "source_path": source_path.display().to_string(),
+        "blob_path": blob_path.display().to_string(),
         "source_hash": source_hash,
+        "blob_hash": blob_hash,
         "policy_hash": current_policy_hash,
+        "blob_first_bytes_hex": hex::encode(read_first_bytes(&blob_path, 16)?),
         "verified": true
     }))
 }
@@ -649,6 +709,63 @@ mod tests {
         assert_eq!(
             run(&root, &["load".to_string(), "--module=demo".to_string()]),
             0
+        );
+        std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn load_fails_when_blob_is_tampered() {
+        std::env::set_var("DIRECTIVE_KERNEL_SIGNING_KEY", "test-sign-key");
+        let root = temp_root("tamper");
+        assert_eq!(
+            crate::directive_kernel::run(
+                &root,
+                &[
+                    "prime-sign".to_string(),
+                    "--directive=allow:blob_mutate".to_string(),
+                    "--signer=tester".to_string(),
+                ]
+            ),
+            0
+        );
+        let module_path = root.join("module.rs");
+        fs::write(&module_path, "fn trusted() -> u64 { 7 }\n").expect("write");
+        assert_eq!(
+            run(
+                &root,
+                &[
+                    "settle".to_string(),
+                    "--module=demo".to_string(),
+                    format!("--module-path={}", module_path.display()),
+                    "--apply=1".to_string()
+                ]
+            ),
+            0
+        );
+        assert_eq!(
+            run(&root, &["load".to_string(), "--module=demo".to_string()]),
+            0
+        );
+
+        let active = load_active_map(&root);
+        let blob_path = active
+            .get("demo")
+            .and_then(|v| v.get("blob_path"))
+            .and_then(Value::as_str)
+            .map(PathBuf::from)
+            .expect("blob path");
+        fs::write(&blob_path, "tampered-by-test").expect("tamper");
+
+        assert_eq!(
+            run(&root, &["load".to_string(), "--module=demo".to_string()]),
+            2
+        );
+        let latest = read_json(&crate::v8_kernel::latest_path(&root, STATE_ENV, STATE_SCOPE))
+            .expect("latest");
+        assert_eq!(
+            latest.get("error").and_then(Value::as_str),
+            Some("blob_hash_mismatch")
         );
         std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
         let _ = fs::remove_dir_all(root);

@@ -1,0 +1,5 @@
+{"label":"shortcut:prime-sign-tokenomics","exit_code":0,"type":"directive_kernel_prime_sign","ok":true,"error":null,"receipt_hash":"3d6cbbee538f3d8fa1cdf2f32ef73c934d6135349fcd5e8e8345cf49c1e67cab"}
+{"label":"shortcut:prime-sign-graph","exit_code":0,"type":"directive_kernel_prime_sign","ok":true,"error":null,"receipt_hash":"d00903a080c557b4a69f79e14971f9ee1e1decc199e34cdffe157f29693e170c"}
+{"label":"shortcut:keys-open","exit_code":0,"type":"intelligence_nexus_open","ok":true,"error":null,"receipt_hash":"7019e9f5dba39d9a3b35f565c9e33acbbec935d847a4e333cf09ad7823759e61"}
+{"label":"shortcut:network-ignite","exit_code":0,"type":"network_protocol_ignite_bitcoin","ok":true,"error":null,"receipt_hash":"d0b3079e587978772cb306be25ae8e003b547395a2f225d3ff87c073fb0a1cb2"}
+{"label":"shortcut:graph-pagerank","exit_code":0,"type":"graph_toolkit_pagerank","ok":true,"error":null,"receipt_hash":"7d2b10af75fb44360176e877b4baecff0586b8eb872f6dac1309c83c3326bdc8"}

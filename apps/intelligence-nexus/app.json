@@ -1,0 +1,7 @@
+{
+  "id": "intelligence-nexus",
+  "srs": "V8-CLIENT-003.1,V8-CLIENT-003.2,V8-CLIENT-003.3,V8-CLIENT-003.4,V8-CLIENT-003.5",
+  "layer": "app",
+  "entrypoint": "protheus keys open",
+  "authority": "core"
+}

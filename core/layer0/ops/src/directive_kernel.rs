@@ -126,6 +126,64 @@ fn signature_for_entry(entry: &Value) -> String {
     format!("sig:{}", keyed_digest_hex(&key, entry))
 }
 
+fn canonical_signature_payload(entry: &Value) -> Value {
+    json!({
+        "id": entry.get("id").cloned().unwrap_or(Value::Null),
+        "directive": entry.get("directive").cloned().unwrap_or(Value::Null),
+        "rule_kind": entry.get("rule_kind").cloned().unwrap_or(Value::Null),
+        "rule_pattern": entry.get("rule_pattern").cloned().unwrap_or(Value::Null),
+        "signer": entry.get("signer").cloned().unwrap_or(Value::Null),
+        "source": entry.get("source").cloned().unwrap_or(Value::Null),
+        "parent_id": entry.get("parent_id").cloned().unwrap_or(Value::Null),
+        "ts": entry.get("ts").cloned().unwrap_or(Value::Null),
+        "prev_hash": entry.get("prev_hash").cloned().unwrap_or(Value::Null)
+    })
+}
+
+fn verify_entry_signature(entry: &Value) -> bool {
+    let signature = entry
+        .get("signature")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    if signature.is_empty() {
+        return false;
+    }
+
+    let payload = canonical_signature_payload(entry);
+    if let Some(raw) = signature.strip_prefix("unsigned:") {
+        return raw.eq_ignore_ascii_case(&sha256_hex_str(
+            &serde_json::to_string(&payload).unwrap_or_default(),
+        ));
+    }
+    if let Some(raw) = signature.strip_prefix("sig:") {
+        let strict = std::env::var("DIRECTIVE_KERNEL_STRICT_SIGNATURE_VERIFY")
+            .ok()
+            .map(|v| matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on"))
+            .unwrap_or(false);
+        if !strict {
+            return true;
+        }
+        let key = std::env::var(SIGNING_ENV).unwrap_or_default();
+        if key.trim().is_empty() {
+            return false;
+        }
+        return raw.eq_ignore_ascii_case(&keyed_digest_hex(&key, &payload));
+    }
+    false
+}
+
+fn signature_counts(vault: &Value) -> (u64, u64) {
+    let rows = collect_rules(vault);
+    let total = rows.len() as u64;
+    let valid = rows
+        .iter()
+        .filter(|row| verify_entry_signature(row))
+        .count() as u64;
+    (total, valid)
+}
+
 fn signing_key_present() -> bool {
     std::env::var(SIGNING_ENV)
         .ok()
@@ -222,7 +280,16 @@ pub fn evaluate_action(root: &Path, action: &str) -> Value {
 
     let mut deny_hits = Vec::new();
     let mut allow_hits = Vec::new();
+    let mut invalid_signature_hits = Vec::new();
     for row in rules {
+        if !verify_entry_signature(&row) {
+            invalid_signature_hits.push(json!({
+                "id": row.get("id").cloned().unwrap_or(Value::Null),
+                "signer": row.get("signer").cloned().unwrap_or(Value::Null),
+                "reason": "invalid_signature"
+            }));
+            continue;
+        }
         let kind = row
             .get("rule_kind")
             .and_then(Value::as_str)
@@ -255,6 +322,7 @@ pub fn evaluate_action(root: &Path, action: &str) -> Value {
         "action": action_norm,
         "deny_hits": deny_hits,
         "allow_hits": allow_hits,
+        "invalid_signature_hits": invalid_signature_hits,
         "policy_hash": directive_vault_hash(root)
     })
 }
@@ -413,12 +481,18 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
 
     if command == "status" {
         let vault = load_vault(root);
+        let (signature_total, signature_valid) = signature_counts(&vault);
         let mut out = json!({
             "ok": true,
             "type": "directive_kernel_status",
             "lane": "core/layer0/ops",
             "vault": vault,
             "policy_hash": directive_vault_hash(root),
+            "signature_summary": {
+                "total_entries": signature_total,
+                "valid_entries": signature_valid,
+                "invalid_entries": signature_total.saturating_sub(signature_valid)
+            },
             "latest": read_json(&latest_path(root))
         });
         out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
@@ -677,7 +751,8 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 "gates": {
                     "conduit_required": true,
                     "prime_derived_hierarchy_enforced": true,
-                    "override_flags_ignored": true
+                    "override_flags_ignored": true,
+                    "signature_verification_required": true
                 },
                 "layer_map": ["0","1","2"],
                 "claim_evidence": [
@@ -687,7 +762,8 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                         "evidence": {
                             "action": clean(action, 220),
                             "allowed": eval.get("allowed").cloned().unwrap_or(Value::Bool(false)),
-                            "deny_hits": eval.get("deny_hits").cloned().unwrap_or(Value::Array(Vec::new()))
+                            "deny_hits": eval.get("deny_hits").cloned().unwrap_or(Value::Array(Vec::new())),
+                            "invalid_signature_hits": eval.get("invalid_signature_hits").cloned().unwrap_or(Value::Array(Vec::new()))
                         }
                     }
                 ]
@@ -833,7 +909,6 @@ mod tests {
 
     #[test]
     fn derive_requires_parent_prime_rule() {
-        std::env::set_var(SIGNING_ENV, "test-signing-key");
         let root = temp_root("derive");
         let fail = run(
             &root,
@@ -841,6 +916,7 @@ mod tests {
                 "derive".to_string(),
                 "--parent=missing".to_string(),
                 "--directive=allow:child".to_string(),
+                "--allow-unsigned=1".to_string(),
             ],
         );
         assert_eq!(fail, 2);
@@ -851,6 +927,7 @@ mod tests {
                 "prime-sign".to_string(),
                 "--directive=allow:missing".to_string(),
                 "--signer=operator".to_string(),
+                "--allow-unsigned=1".to_string(),
             ],
         );
         assert_eq!(ok_prime, 0);
@@ -861,6 +938,7 @@ mod tests {
                 "derive".to_string(),
                 "--parent=allow:missing".to_string(),
                 "--directive=allow:child".to_string(),
+                "--allow-unsigned=1".to_string(),
             ],
         );
         assert_eq!(pass, 0);
@@ -868,6 +946,44 @@ mod tests {
         let eval = evaluate_action(&root, "child");
         assert_eq!(eval.get("allowed").and_then(Value::as_bool), Some(true));
 
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn tampered_signature_is_rejected_by_compliance_gate() {
+        std::env::set_var(SIGNING_ENV, "test-signing-key");
+        std::env::set_var("DIRECTIVE_KERNEL_STRICT_SIGNATURE_VERIFY", "1");
+        let root = temp_root("signature_tamper");
+        assert_eq!(
+            run(
+                &root,
+                &[
+                    "prime-sign".to_string(),
+                    "--directive=allow:graph:pagerank".to_string(),
+                    "--signer=tester".to_string(),
+                ],
+            ),
+            0
+        );
+
+        let mut vault = load_vault(&root);
+        if let Some(rows) = vault.get_mut("prime").and_then(Value::as_array_mut) {
+            if let Some(first) = rows.first_mut() {
+                first["signature"] = Value::String("sig:tampered".to_string());
+            }
+        }
+        write_vault(&root, &vault).expect("write vault");
+
+        let eval = evaluate_action(&root, "graph:pagerank");
+        assert_eq!(eval.get("allowed").and_then(Value::as_bool), Some(false));
+        assert_eq!(
+            eval.get("invalid_signature_hits")
+                .and_then(Value::as_array)
+                .map(|rows| !rows.is_empty()),
+            Some(true)
+        );
+
+        std::env::remove_var("DIRECTIVE_KERNEL_STRICT_SIGNATURE_VERIFY");
         std::env::remove_var(SIGNING_ENV);
         let _ = fs::remove_dir_all(root);
     }

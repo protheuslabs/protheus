@@ -1,0 +1,7 @@
+{
+  "id": "graph-toolkit",
+  "srs": "V6-TOOLS-008.1,V6-TOOLS-008.2,V6-TOOLS-008.3,V6-TOOLS-008.4,V6-TOOLS-008.5",
+  "layer": "app",
+  "entrypoint": "protheus graph pagerank",
+  "authority": "core"
+}

@@ -756,7 +756,22 @@ fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route> {
             let args = if rest.is_empty() {
                 vec!["open".to_string()]
             } else {
-                rest.to_vec()
+                let sub = rest
+                    .first()
+                    .map(|v| v.trim().to_ascii_lowercase())
+                    .unwrap_or_else(|| "open".to_string());
+                match sub.as_str() {
+                    "add" => std::iter::once("add-key".to_string())
+                        .chain(rest.iter().skip(1).cloned())
+                        .collect::<Vec<_>>(),
+                    "rotate" => std::iter::once("rotate-key".to_string())
+                        .chain(rest.iter().skip(1).cloned())
+                        .collect::<Vec<_>>(),
+                    "revoke" | "remove" => std::iter::once("revoke-key".to_string())
+                        .chain(rest.iter().skip(1).cloned())
+                        .collect::<Vec<_>>(),
+                    _ => rest.to_vec(),
+                }
             };
             Some(Route {
                 script_rel: "core://intelligence-nexus".to_string(),
@@ -910,6 +925,10 @@ fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route> {
             })
         }
         "network" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "status".to_string());
             if rest
                 .first()
                 .map(|v| v.trim().eq_ignore_ascii_case("ignite"))
@@ -922,6 +941,30 @@ fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route> {
                 let args = std::iter::once("ignite-bitcoin".to_string())
                     .chain(rest.iter().skip(2).cloned())
                     .collect::<Vec<_>>();
+                return Some(Route {
+                    script_rel: "core://network-protocol".to_string(),
+                    args,
+                    forward_stdin: false,
+                });
+            }
+            if matches!(
+                sub.as_str(),
+                "status"
+                    | "stake"
+                    | "reward"
+                    | "slash"
+                    | "merkle-root"
+                    | "emission"
+                    | "zk-claim"
+                    | "dashboard"
+            ) {
+                let args = if sub == "dashboard" {
+                    vec!["status".to_string()]
+                } else if rest.is_empty() {
+                    vec!["status".to_string()]
+                } else {
+                    rest.to_vec()
+                };
                 return Some(Route {
                     script_rel: "core://network-protocol".to_string(),
                     args,
@@ -2093,10 +2136,68 @@ mod tests {
     }
 
     #[test]
+    fn core_shortcut_routes_network_status_to_network_protocol() {
+        let route = resolve_core_shortcuts("network", &["status".to_string()]).expect("route");
+        assert_eq!(route.script_rel, "core://network-protocol");
+        assert_eq!(route.args, vec!["status"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_network_merkle_root_to_network_protocol() {
+        let route = resolve_core_shortcuts(
+            "network",
+            &[
+                "merkle-root".to_string(),
+                "--account=shadow:alpha".to_string(),
+                "--proof=1".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://network-protocol");
+        assert_eq!(
+            route.args,
+            vec!["merkle-root", "--account=shadow:alpha", "--proof=1"]
+        );
+    }
+
+    #[test]
     fn core_shortcut_routes_keys_open_to_intelligence_nexus() {
         let route = resolve_core_shortcuts("keys", &["open".to_string()]).expect("route");
         assert_eq!(route.script_rel, "core://intelligence-nexus");
         assert_eq!(route.args, vec!["open"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_keys_add_alias_to_add_key() {
+        let route = resolve_core_shortcuts(
+            "keys",
+            &["add".to_string(), "--provider=openai".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://intelligence-nexus");
+        assert_eq!(route.args, vec!["add-key", "--provider=openai"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_keys_rotate_alias_to_rotate_key() {
+        let route = resolve_core_shortcuts(
+            "keys",
+            &["rotate".to_string(), "--provider=openai".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://intelligence-nexus");
+        assert_eq!(route.args, vec!["rotate-key", "--provider=openai"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_keys_revoke_alias_to_revoke_key() {
+        let route = resolve_core_shortcuts(
+            "keys",
+            &["revoke".to_string(), "--provider=openai".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://intelligence-nexus");
+        assert_eq!(route.args, vec!["revoke-key", "--provider=openai"]);
     }
 
     #[test]
