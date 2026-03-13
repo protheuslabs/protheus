@@ -1273,7 +1273,8 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                 "monitor" => vec!["monitor".to_string()],
                 "workflow" => vec!["workflow".to_string()],
                 "incident" => vec!["incident".to_string()],
-                "selfhost" | "deploy" => vec!["selfhost".to_string(), "--op=deploy".to_string()],
+                "selfhost" => vec!["selfhost".to_string()],
+                "deploy" => vec!["selfhost".to_string(), "--op=deploy".to_string()],
                 "status" => vec!["status".to_string()],
                 _ => vec![sub],
             };
@@ -1404,9 +1405,37 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
             })
         }
         "chat-starter" | "chat_starter" => {
-            let mut args = vec!["run".to_string(), "--app=chat-starter".to_string()];
-            if !rest.is_empty() {
-                args.extend(rest.iter().cloned());
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "run".to_string());
+            let action = if matches!(sub.as_str(), "run" | "history" | "replay" | "status") {
+                sub
+            } else {
+                "run".to_string()
+            };
+            let mut args = vec![action.clone(), "--app=chat-starter".to_string()];
+            let start_idx = if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case(action.as_str()))
+                .unwrap_or(false)
+            {
+                1usize
+            } else {
+                0usize
+            };
+            let mut plain = Vec::<String>::new();
+            for token in rest.iter().skip(start_idx) {
+                if token.starts_with("--") {
+                    args.push(token.clone());
+                } else {
+                    plain.push(token.clone());
+                }
+            }
+            if action == "run" && !plain.is_empty() {
+                args.push(format!("--message={}", plain.join(" ")));
+            } else if !plain.is_empty() {
+                args.extend(plain);
             }
             Some(Route {
                 script_rel: "core://app-plane".to_string(),
@@ -1415,9 +1444,40 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
             })
         }
         "chat-ui" | "chat_ui" => {
-            let mut args = vec!["run".to_string(), "--app=chat-ui".to_string()];
-            if !rest.is_empty() {
-                args.extend(rest.iter().cloned());
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "run".to_string());
+            let action = if matches!(
+                sub.as_str(),
+                "run" | "history" | "replay" | "status" | "switch-provider"
+            ) {
+                sub
+            } else {
+                "run".to_string()
+            };
+            let mut args = vec![action.clone(), "--app=chat-ui".to_string()];
+            let start_idx = if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case(action.as_str()))
+                .unwrap_or(false)
+            {
+                1usize
+            } else {
+                0usize
+            };
+            let mut plain = Vec::<String>::new();
+            for token in rest.iter().skip(start_idx) {
+                if token.starts_with("--") {
+                    args.push(token.clone());
+                } else {
+                    plain.push(token.clone());
+                }
+            }
+            if action == "run" && !plain.is_empty() {
+                args.push(format!("--message={}", plain.join(" ")));
+            } else if !plain.is_empty() {
+                args.extend(plain);
             }
             Some(Route {
                 script_rel: "core://app-plane".to_string(),

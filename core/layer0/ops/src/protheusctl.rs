@@ -2671,6 +2671,17 @@ mod tests {
     }
 
     #[test]
+    fn core_shortcut_routes_observability_selfhost_status_without_forced_deploy() {
+        let route = resolve_core_shortcuts(
+            "observability",
+            &["selfhost".to_string(), "status".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://observability-plane");
+        assert_eq!(route.args, vec!["selfhost", "status"]);
+    }
+
+    #[test]
     fn core_shortcut_routes_schedule_to_persist_plane() {
         let route = resolve_core_shortcuts(
             "schedule",
@@ -2777,6 +2788,58 @@ mod tests {
         assert_eq!(
             route.args,
             vec!["run", "--app=chat-ui", "--session-id=s1", "--message=hello"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_top_level_chat_starter_history_action() {
+        let route = resolve_core_shortcuts(
+            "chat-starter",
+            &["history".to_string(), "--session-id=s1".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://app-plane");
+        assert_eq!(route.args, vec!["history", "--app=chat-starter", "--session-id=s1"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_top_level_chat_starter_plain_message_to_run() {
+        let route = resolve_core_shortcuts(
+            "chat-starter",
+            &["hello".to_string(), "from".to_string(), "shortcut".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://app-plane");
+        assert_eq!(
+            route.args,
+            vec![
+                "run",
+                "--app=chat-starter",
+                "--message=hello from shortcut"
+            ]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_top_level_chat_ui_switch_provider_action() {
+        let route = resolve_core_shortcuts(
+            "chat-ui",
+            &[
+                "switch-provider".to_string(),
+                "--provider=anthropic".to_string(),
+                "--model=claude-sonnet".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://app-plane");
+        assert_eq!(
+            route.args,
+            vec![
+                "switch-provider",
+                "--app=chat-ui",
+                "--provider=anthropic",
+                "--model=claude-sonnet"
+            ]
         );
     }
 
