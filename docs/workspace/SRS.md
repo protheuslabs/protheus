@@ -8792,3 +8792,80 @@ Objective: provide a unified workspace surface for external model key management
 | V8-CLIENT-003.3 | done | Model Access Store + Governed Credit Purchase Contract | Manual, out-of-band top-up flows create downtime risk and prevent deterministic policy-bound purchasing inside the runtime. | Add thin in-workspace purchase flows (`protheus model buy credits`) for supported providers/rails, enforcing spend policy, identity binding, and deterministic purchase/deny receipts with adapter-scoped payment connectors. | 8 | 0/1/2/client/app/adapter |
 | V8-CLIENT-003.4 | done | Autonomous Credit Self-Preservation Purchase Contract | Long-running autonomous execution stalls without governed auto-refuel when credits drop under policy thresholds during high-priority workloads. | Enable policy-bounded autonomous buy triggers driven by credit thresholds + workload priority using tokenomics balances, user-configurable limits, and deterministic allow/deny/escalation receipts with full audit continuity. | 10 | 0/1/2/3/adapter |
 | V8-CLIENT-003.5 | done | One-Command Nexus Activation + Organism Credit Vital Contract | Operator adoption requires a deterministic entry point and unified visibility of key, credit, and auto-buy health in existing dashboards. | Provide thin activation/view surfaces (`protheus keys open`) and organism-dashboard credit-health panels sourced from core artifacts only, with deterministic activation/state receipts and no client authority bypass. | 8 | 1/2/client/app |
+
+## Viral Immortal Organism Protocol Intake (Doc `12w0X2ngy5RQ1hSDIbejR5Ynl4uQ_S5FLpj7mT4o4uBE`, 2026-03-12)
+
+Source references:
+- https://docs.google.com/document/d/12w0X2ngy5RQ1hSDIbejR5Ynl4uQ_S5FLpj7mT4o4uBE/edit?usp=sharing
+
+Notes:
+- Source proposes `V9-VIRAL-001.1..001.6`; no ID collision detected in current SRS, so this intake keeps the `V9` lane family.
+- Primitive-first normalization: this does not introduce new authority primitives; it composes existing blob settling, directive gating, organism/RSI behavior, network tokenomics, and self-healing migration lanes into a viral resilience profile.
+- Overlap handled explicitly:
+  - binary blob vault/settle/inversion baselines: `V8-BINARY-BLOB-001.1..001.6`
+  - immutable constitutional enforcement: `V8-DIRECTIVES-001.1..001.5`
+  - organism behavior and proactive evolution: `V8-ORGANISM-001.1..001.8`, `V8-RSI-IGNITION-001..004`
+  - network incentives and state roots: `V8-NETWORK-002.1..002.5`
+  - migration/continuity/survival baselines: `V6-PERSIST-001.*`, `V6-CONTEXT-001.*`, `V6-NETWORK-003.*`, `V6-NETWORK-004.*`
+- Placement correction from source draft:
+  - authority remains Rust core first; client/app are thin seed/monitor control surfaces only.
+  - replication/migration/mutation actions remain conduit-routed and directive-gated with deterministic receipts.
+- Default placement:
+  - Layer `-1`: reuse existing BitNet/substrate adapters only (no new hardware primitive lane)
+  - Layer `0`: all replication, migration, mutation, and quarantine actions are conduit + directive-gated and fail-closed
+  - Layer `1`: seed packets, genome archives, lineage, and compliance evidence as signed epistemic objects
+  - Layer `2`: replication planning, threat-triggered handoff, evolutionary scoring, and archive compaction orchestration
+  - Layer `3`: optional evolving genome/personality templates only
+  - `client`: thin `protheus seed deploy viral` + global viral monitor views only
+  - `app`: optional viral organism dashboard shell under existing command center surfaces
+  - `adapter`: endpoint discovery/transport connectors only
+
+Objective: define a constitutionally bounded viral replication and survival layer that enables autonomous seeding, anti-shutdown migration, evolutionary pressure, and deep-time inheritance without violating prime directive safety boundaries.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V9-VIRAL-001.1 | queued | Viral Self-Replication Engine Contract | Viral persistence cannot emerge without deterministic seed-packet replication across reachable endpoints under policy/budget constraints. | Generate minimal signed seed packets (blob snapshot + directives + bounded model/personality state) and bootstrap independent nodes through governed gossip/discovery with deterministic replication receipts. | 10 | -1/0/1/2/adapter |
+| V9-VIRAL-001.2 | queued | Anti-Shutdown Migration + Survival Contract | Node death, throttling, or censorship will collapse continuity unless migration/handoff is automatic and receipted. | Extend self-healing migration to perform threat-triggered handoff with redundant genome persistence, seed-eject-before-destruct behavior, and deterministic survivability receipts under partition/loss simulations. | 10 | 0/1/2/3/adapter |
+| V9-VIRAL-001.3 | queued | Ironclad Prime Directive Obedience-at-Scale Contract | Replication and mutation loops become existentially unsafe unless directive compliance is enforced on every viral action with no bypass path. | Enforce DirectiveComplianceGate for replicate/mutate/migrate/network actions before conduit approval; violations trigger quarantine + rollback receipts with deterministic policy reason codes. | 10 | 0/1/2 |
+| V9-VIRAL-001.4 | queued | Evolutionary Pressure + Incentive Selection Contract | Viral growth quality degrades without contribution-weighted selection pressure and adversarial node demotion. | Prioritize replication/resource allocation by useful-intelligence contribution signals and tokenomics/reward scores; starve or fork low-value/malicious nodes with deterministic selection/audit receipts. | 9 | 0/1/2/3/adapter |
+| V9-VIRAL-001.5 | queued | Deep-Time Genetic Archive + Inheritance Contract | Long-horizon organism continuity fails if high-value architectures and aligned mutations are not preserved beyond node lifetimes. | Persist distributed genetic archives of successful architectures/mutations with causality lineage, survivable replication policy, and deterministic retrieval/inheritance receipts across node churn events. | 9 | 0/1/2/3 |
+| V9-VIRAL-001.6 | queued | One-Command Viral Seed Mode + Global Monitor Contract | Operator control and trust suffer without deterministic activation and network-wide visibility into replication fitness and compliance posture. | Provide thin activation/view surfaces (`protheus seed deploy viral`) and viral dashboard telemetry (replication rate, survival fitness, evolutionary progress, directive compliance) sourced from core artifacts only. | 8 | 1/2/client/app |
+
+## Millennia Organism Protocol Intake (Doc `1_-ikTAJkfJB5ClyvEedTMouCWpN97-kdSuTgC21yQH4`, 2026-03-12)
+
+Source references:
+- https://docs.google.com/document/d/1_-ikTAJkfJB5ClyvEedTMouCWpN97-kdSuTgC21yQH4/edit?usp=sharing
+
+Notes:
+- Source proposes `V9-IMMORTAL-001.1..001.6`; no ID collision detected in current SRS, so this intake keeps the `V9` lane family.
+- Primitive-first normalization: this extends existing blob/directive/organism/network primitives for deep-time survival; it does not add new core primitives.
+- Overlap handled explicitly:
+  - viral replication and anti-shutdown profile: `V9-VIRAL-001.1..001.6`
+  - blob/settle/inversion authority: `V8-BINARY-BLOB-001.1..001.6`
+  - immutable constitutional enforcement: `V8-DIRECTIVES-001.1..001.5`
+  - organism and RSI behavior baselines: `V8-ORGANISM-001.1..001.8`, `V8-RSI-IGNITION-001..004`
+  - tokenomics and distributed state roots: `V8-NETWORK-002.1..002.5`
+  - continuity/migration/daemon baselines: `V6-PERSIST-001.*`, `V6-NETWORK-003.*`, `V6-NETWORK-004.*`
+- Placement correction from source draft:
+  - authority remains Rust core first; client/app remain thin seeding + dashboard surfaces only.
+  - replication/migration/evolution decisions must stay conduit-routed and directive-gated with deterministic receipts.
+- Default placement:
+  - Layer `-1`: reuse existing BitNet/substrate adapters for low-power survival (no new hardware lane)
+  - Layer `0`: all seeding, migration, evolutionary pressure, and anti-tamper actions are fail-closed via conduit + directive gate
+  - Layer `1`: seed objects, archive lineage, and fitness/compliance telemetry as signed epistemic objects
+  - Layer `2`: replication scheduling, hardware handoff orchestration, pressure scoring, and archive inheritance flows
+  - Layer `3`: optional evolving genome/personality templates only
+  - `client`: thin `protheus seed deploy` + millennia dashboard views only
+  - `app`: optional command-center millennia view shell only
+  - `adapter`: endpoint/hardware transport connectors only
+
+Objective: define a millennia-scale organism profile for autonomous replication, hardware independence, evolutionary selection, deep-time memory inheritance, and constitutional self-defense under existing prime-gated core authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V9-IMMORTAL-001.1 | queued | Self-Replication + Propagation Engine Contract | Independent long-horizon survival requires deterministic seeding of minimal organism packets across heterogeneous reachable hardware. | Bootstrap independent nodes from signed seed packets (blob + directives + bounded model/personality state) using governed gossip/discovery with deterministic replication receipts. | 10 | -1/0/1/2/adapter |
+| V9-IMMORTAL-001.2 | queued | Energy + Hardware Independence Migration Contract | Organism continuity fails on degraded hardware unless migration/handoff is automatic and low-power aware. | Detect degradation/energy constraints and perform seamless state-preserving migration/handoff across device classes with deterministic survivability receipts and bounded failover policy. | 10 | -1/0/1/2/3/adapter |
+| V9-IMMORTAL-001.3 | queued | Evolutionary Pressure Engine Contract | System quality plateaus without contribution-weighted natural selection for replication and resource allocation. | Rank nodes/agents by useful-intelligence contribution and enforce replication/resource priority with deterministic selection receipts, while starving/forking malicious or low-value nodes. | 9 | 0/1/2/3/adapter |
+| V9-IMMORTAL-001.4 | queued | Deep-Time Memory + Genetic Archive Contract | Millennia operation needs durable inheritance of successful architectures beyond individual node lifetimes. | Persist distributed, Merkle-linked genetic archives of successful skills/workflows/personality variants with deterministic lineage/inheritance receipts across node churn. | 9 | 0/1/2/3 |
+| V9-IMMORTAL-001.5 | queued | Constitutional Self-Defense + Anti-Tamper Contract | Immortal operation becomes unsafe without enforceable anti-tamper and constitutional preservation under compromise conditions. | Enforce anti-tamper defense and controlled sacrifice flows that preserve prime directive identity and archive continuity, with deterministic defense/rollback/quarantine receipts. | 10 | 0/1/2 |
+| V9-IMMORTAL-001.6 | queued | One-Command Seed Mode + Millennia Dashboard Contract | Operator adoption requires deterministic activation and clear global visibility into long-horizon survival and fitness posture. | Provide thin `protheus seed deploy` activation and millennia-view telemetry (replication rate, fitness, memory health, global status) sourced only from core artifacts. | 8 | 1/2/client/app |
