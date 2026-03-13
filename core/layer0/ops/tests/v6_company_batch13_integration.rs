@@ -106,6 +106,7 @@ fn v6_company_batch13_org_hierarchy_and_budget_enforcement_are_receipted() {
         true
     );
     assert_claim(&orchestrate_latest, "V6-COMPANY-001.1");
+    assert_claim(&orchestrate_latest, "V6-COMPANY-001.5");
 
     let budget_allow_exit = company_plane::run(
         root,
@@ -131,6 +132,7 @@ fn v6_company_batch13_org_hierarchy_and_budget_enforcement_are_receipted() {
         Some(true)
     );
     assert_claim(&budget_allow_latest, "V6-COMPANY-001.2");
+    assert_claim(&budget_allow_latest, "V6-COMPANY-001.5");
 
     let budget_deny_exit = company_plane::run(
         root,
@@ -163,6 +165,7 @@ fn v6_company_batch13_org_hierarchy_and_budget_enforcement_are_receipted() {
         Some(true)
     );
     assert_claim(&budget_deny_latest, "V6-COMPANY-001.2");
+    assert_claim(&budget_deny_latest, "V6-COMPANY-001.5");
 
     let health_exit = health_status::run(root, &["dashboard".to_string()]);
     assert_eq!(health_exit, 0);
@@ -190,6 +193,22 @@ fn v6_company_batch13_rejects_bypass_when_strict() {
     let latest = read_json(&latest_path(root));
     assert_eq!(
         latest.get("type").and_then(Value::as_str),
+        Some("company_plane_conduit_gate")
+    );
+
+    let budget_bypass_exit = company_plane::run(
+        root,
+        &[
+            "budget-enforce".to_string(),
+            "--strict=1".to_string(),
+            "--agent=ops".to_string(),
+            "--bypass=1".to_string(),
+        ],
+    );
+    assert_eq!(budget_bypass_exit, 1);
+    let budget_latest = read_json(&latest_path(root));
+    assert_eq!(
+        budget_latest.get("type").and_then(Value::as_str),
         Some("company_plane_conduit_gate")
     );
 }
