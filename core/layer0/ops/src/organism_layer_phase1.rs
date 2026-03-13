@@ -248,7 +248,54 @@ pub(super) fn command_ignite(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
                 "symbiosis": apply && allowed,
                 "sensory": apply && allowed,
                 "narrative": apply && allowed
-            }
+            },
+            "claim_evidence": [
+                {
+                    "id": "v8_organism_001_1",
+                    "claim": "dream_state_processing_runs_autonomously_and_surfaces_actionable_insights",
+                    "evidence": {
+                        "idle_hours": idle_hours,
+                        "experiments": experiments,
+                        "dream_insight": dream.get("insight").cloned().unwrap_or(Value::Null)
+                    }
+                },
+                {
+                    "id": "v8_organism_001_2",
+                    "claim": "homeostasis_tracks_vitals_and_self_regulates_organism_behavior",
+                    "evidence": {
+                        "coherence": coherence,
+                        "metabolism": metabolism,
+                        "heartbeat": heartbeat,
+                        "regulation_action": regulation_action
+                    }
+                },
+                {
+                    "id": "v8_organism_001_3",
+                    "claim": "personality_crystallization_persists_signed_epistemic_objects",
+                    "evidence": {
+                        "persona": persona,
+                        "version": next_persona_version,
+                        "signature": crystal_sig
+                    }
+                },
+                {
+                    "id": "v8_organism_001_4",
+                    "claim": "network_symbiosis_forms_collective_state_with_memory_sharing",
+                    "evidence": {
+                        "nodes": nodes,
+                        "memory_share_rate": memory_share_rate,
+                        "coherence_score": symbiosis_coherence
+                    }
+                },
+                {
+                    "id": "v8_organism_001_5",
+                    "claim": "creative_mutation_paths_are_available_for_proactive_opt_in_evolution",
+                    "evidence": {
+                        "active": apply && allowed,
+                        "preview_command": "protheus organism mutate --apply=1"
+                    }
+                }
+            ]
         }),
     )
 }
@@ -309,7 +356,18 @@ pub(super) fn command_dream(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
             "lane": "core/layer0/ops",
             "apply": apply,
             "dream": dream_entry,
-            "rsi_preview_exit": evolve_exit
+            "rsi_preview_exit": evolve_exit,
+            "morning_insight_proposal": insight,
+            "claim_evidence": [
+                {
+                    "id": "v8_organism_001_1",
+                    "claim": "dream_state_processing_runs_autonomously_and_surfaces_actionable_insights",
+                    "evidence": {
+                        "insight": insight,
+                        "rsi_preview_exit": evolve_exit
+                    }
+                }
+            ]
         }),
     )
 }
@@ -403,7 +461,20 @@ pub(super) fn command_homeostasis(root: &Path, parsed: &crate::ParsedArgs) -> i3
                 "heartbeat": heartbeat
             },
             "regulation_action": action,
-            "rsi_reflect_exit": reflect_exit
+            "rsi_reflect_exit": reflect_exit,
+            "claim_evidence": [
+                {
+                    "id": "v8_organism_001_2",
+                    "claim": "homeostasis_tracks_vitals_and_self_regulates_organism_behavior",
+                    "evidence": {
+                        "coherence": coherence,
+                        "metabolism": metabolism,
+                        "heartbeat": heartbeat,
+                        "regulation_action": action,
+                        "rsi_reflect_exit": reflect_exit
+                    }
+                }
+            ]
         }),
     )
 }

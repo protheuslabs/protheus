@@ -1988,6 +1988,14 @@ mod tests {
     }
 
     #[test]
+    fn core_shortcut_routes_directives_dashboard_to_directive_kernel() {
+        let route =
+            resolve_core_shortcuts("directives", &["dashboard".to_string()]).expect("route");
+        assert_eq!(route.script_rel, "core://directive-kernel");
+        assert_eq!(route.args, vec!["dashboard"]);
+    }
+
+    #[test]
     fn core_shortcut_routes_prime_sign_to_directive_kernel() {
         let route = resolve_core_shortcuts(
             "prime",

@@ -5,8 +5,8 @@ use crate::binary_blob_runtime;
 use crate::directive_kernel;
 use crate::network_protocol;
 use crate::v8_kernel::{
-    parse_bool, parse_f64, print_json, read_json, scoped_state_root, sha256_hex_str, write_json,
-    write_receipt,
+    append_jsonl, parse_bool, parse_f64, print_json, read_json, scoped_state_root, sha256_hex_str,
+    write_json, write_receipt,
 };
 use crate::{clean, now_iso, parse_args};
 use serde_json::{json, Map, Value};
@@ -26,6 +26,22 @@ fn latest_path(root: &Path) -> PathBuf {
 
 fn loop_state_path(root: &Path) -> PathBuf {
     state_root(root).join("loop_state.json")
+}
+
+fn recursive_loop_path(root: &Path) -> PathBuf {
+    state_root(root).join("recursive_loop.jsonl")
+}
+
+fn metacognition_journal_path(root: &Path) -> PathBuf {
+    state_root(root).join("metacognition_journal.jsonl")
+}
+
+fn network_symbiosis_path(root: &Path) -> PathBuf {
+    state_root(root).join("network_symbiosis.jsonl")
+}
+
+fn proactive_evolution_path(root: &Path) -> PathBuf {
+    state_root(root).join("proactive_evolution.jsonl")
 }
 
 fn default_loop_state() -> Value {
@@ -160,6 +176,12 @@ fn command_status(root: &Path) -> i32 {
             "type": "rsi_ignition_status",
             "lane": "core/layer0/ops",
             "loop_state": state,
+            "artifact_counts": {
+                "recursive_loop_entries": fs::read_to_string(recursive_loop_path(root)).ok().map(|v| v.lines().filter(|l| !l.trim().is_empty()).count()).unwrap_or(0),
+                "metacognition_entries": fs::read_to_string(metacognition_journal_path(root)).ok().map(|v| v.lines().filter(|l| !l.trim().is_empty()).count()).unwrap_or(0),
+                "network_symbiosis_entries": fs::read_to_string(network_symbiosis_path(root)).ok().map(|v| v.lines().filter(|l| !l.trim().is_empty()).count()).unwrap_or(0),
+                "proactive_evolution_entries": fs::read_to_string(proactive_evolution_path(root)).ok().map(|v| v.lines().filter(|l| !l.trim().is_empty()).count()).unwrap_or(0)
+            },
             "latest": read_json(&latest_path(root))
         }),
     )
@@ -193,7 +215,11 @@ fn command_ignite(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
         .max(0.0);
     let threshold = parse_f64(parsed.flags.get("max-regression"), 0.05).max(0.0);
     let gate_action = format!("rsi:ignite:{module}");
-    let gate_ok = directive_kernel::action_allowed(root, &gate_action);
+    let gate_eval = directive_kernel::evaluate_action(root, &gate_action);
+    let gate_ok = gate_eval
+        .get("allowed")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
     let mut allowed = gate_ok && canary_pass && sim_regression <= threshold;
     let mut mutation_exit = 0i32;
     let mut reward = Value::Null;
@@ -217,6 +243,24 @@ fn command_ignite(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
         if mutation_exit != 0 {
             allowed = false;
         }
+    }
+
+    if apply {
+        let _ = append_jsonl(
+            &recursive_loop_path(root),
+            &json!({
+                "ts": now_iso(),
+                "proposal": proposal,
+                "module": module,
+                "gate_action": gate_action,
+                "gate_eval": gate_eval,
+                "canary_pass": canary_pass,
+                "sim_regression": sim_regression,
+                "threshold": threshold,
+                "mutation_exit": mutation_exit,
+                "result": if allowed { "merge" } else { "rollback" }
+            }),
+        );
     }
 
     if apply && allowed {
@@ -284,7 +328,21 @@ fn command_ignite(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
             "max_regression": threshold,
             "mutation_exit": mutation_exit,
             "token_reward": reward,
-            "pipeline": ["propose", "simulate", "canary", "merge_or_rollback"]
+            "pipeline": ["propose", "simulate", "canary", "merge_or_rollback"],
+            "claim_evidence": [
+                {
+                    "id": "v8_rsi_ignition_001",
+                    "claim": "recursive_self_modification_is_inversion_gated_with_merge_and_rollback_paths",
+                    "evidence": {
+                        "gate_action": gate_action,
+                        "gate_allowed": gate_ok,
+                        "canary_pass": canary_pass,
+                        "sim_regression": sim_regression,
+                        "mutation_exit": mutation_exit,
+                        "result": if allowed { "merge" } else { "rollback" }
+                    }
+                }
+            ]
         }),
     )
 }
@@ -342,6 +400,17 @@ fn command_reflect(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
         );
     }
 
+    let _ = append_jsonl(
+        &metacognition_journal_path(root),
+        &json!({
+            "ts": now_iso(),
+            "drift_score": drift,
+            "exploration_drive": exploration,
+            "observed_failure_rate": observed_failure_rate,
+            "strategy_adjustment": if drift > 0.5 { "stabilize" } else { "explore" }
+        }),
+    );
+
     emit(
         root,
         json!({
@@ -351,7 +420,18 @@ fn command_reflect(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
             "drift_score": drift,
             "exploration_drive": exploration,
             "observed_failure_rate": observed_failure_rate,
-            "action": if drift > 0.5 { "self_correct" } else { "continue_explore" }
+            "action": if drift > 0.5 { "self_correct" } else { "continue_explore" },
+            "claim_evidence": [
+                {
+                    "id": "v8_rsi_ignition_002",
+                    "claim": "metacognitive_reflection_tracks_goal_drift_and_adjusts_exploration_drive",
+                    "evidence": {
+                        "drift_score": drift,
+                        "exploration_drive": exploration,
+                        "observed_failure_rate": observed_failure_rate
+                    }
+                }
+            ]
         }),
     )
 }
@@ -383,6 +463,19 @@ fn command_swarm(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
             (nodes as f64) * share_rate * 0.1,
             "tokenomics",
         );
+        let _ = append_jsonl(
+            &network_symbiosis_path(root),
+            &json!({
+                "ts": now_iso(),
+                "nodes": nodes,
+                "share_rate": share_rate,
+                "convergence_score": convergence,
+                "resource_allocation": {
+                    "token_reward_attempted": reward.get("attempted").and_then(Value::as_bool).unwrap_or(false),
+                    "token_reward_ok": reward.get("ok").and_then(Value::as_bool).unwrap_or(false)
+                }
+            }),
+        );
     }
     if let Err(err) = store_loop_state(root, &state) {
         return emit(
@@ -407,7 +500,18 @@ fn command_swarm(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
             "convergence_score": convergence,
             "apply": apply,
             "gate_ok": gate_ok,
-            "swarm_reward": reward
+            "swarm_reward": reward,
+            "claim_evidence": [
+                {
+                    "id": "v8_rsi_ignition_003",
+                    "claim": "network_level_sub_swarms_share_improvements_with_policy_bounded_resource_allocation",
+                    "evidence": {
+                        "nodes": nodes,
+                        "share_rate": share_rate,
+                        "convergence_score": convergence
+                    }
+                }
+            ]
         }),
     )
 }
@@ -431,7 +535,12 @@ fn command_evolve(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
     .to_ascii_lowercase();
     let apply = parse_bool(parsed.flags.get("apply"), false);
     let ignite_apply = parse_bool(parsed.flags.get("ignite-apply"), false);
+    let night_cycle = parse_bool(parsed.flags.get("night-cycle"), true);
     let gate_ok = directive_kernel::action_allowed(root, &format!("rsi:evolve:{module}"));
+    let proactive_message = format!(
+        "night-cycle insight: {} | suggested module={} | apply={}",
+        insight, module, ignite_apply
+    );
 
     let mut ignite_exit = 0i32;
     if apply && gate_ok {
@@ -444,6 +553,19 @@ fn command_evolve(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
                 format!("--apply={}", if ignite_apply { 1 } else { 0 }),
             ]),
         );
+        if night_cycle {
+            let _ = append_jsonl(
+                &proactive_evolution_path(root),
+                &json!({
+                    "ts": now_iso(),
+                    "insight": insight,
+                    "module": module,
+                    "directive_safe": gate_ok,
+                    "proactive_message": proactive_message,
+                    "morning_surface": true
+                }),
+            );
+        }
     }
 
     {
@@ -489,7 +611,20 @@ fn command_evolve(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
             "apply": apply,
             "ignite_apply": ignite_apply,
             "ignite_exit": ignite_exit,
-            "directive_safe": gate_ok
+            "night_cycle": night_cycle,
+            "proactive_message": proactive_message,
+            "directive_safe": gate_ok,
+            "claim_evidence": [
+                {
+                    "id": "v8_rsi_ignition_004",
+                    "claim": "proactive_evolution_surfaces_night_cycle_insights_with_directive_safe_receipts",
+                    "evidence": {
+                        "directive_safe": gate_ok,
+                        "night_cycle": night_cycle,
+                        "ignite_exit": ignite_exit
+                    }
+                }
+            ]
         }),
     )
 }
@@ -510,7 +645,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         println!(
             "  protheus-ops rsi-ignition swarm [--nodes=<n>] [--share-rate=<0..1>] [--apply=1|0]"
         );
-        println!("  protheus-ops rsi-ignition evolve [--insight=<text>] [--module=<id>] [--apply=1|0] [--ignite-apply=1|0]");
+        println!("  protheus-ops rsi-ignition evolve [--insight=<text>] [--module=<id>] [--apply=1|0] [--ignite-apply=1|0] [--night-cycle=1|0]");
         return 0;
     }
 

@@ -72,7 +72,18 @@ pub(super) fn command_crystallize(root: &Path, parsed: &crate::ParsedArgs) -> i3
             "persona": persona,
             "delta": delta,
             "signature": signature,
-            "version": next_version
+            "version": next_version,
+            "claim_evidence": [
+                {
+                    "id": "v8_organism_001_3",
+                    "claim": "personality_crystallization_persists_signed_epistemic_objects",
+                    "evidence": {
+                        "persona": persona,
+                        "version": next_version,
+                        "signature": signature
+                    }
+                }
+            ]
         }),
     )
 }
@@ -120,7 +131,19 @@ pub(super) fn command_symbiosis(root: &Path, parsed: &crate::ParsedArgs) -> i32 
             "nodes": nodes,
             "memory_share_rate": memory_share,
             "coherence_score": convergence,
-            "rsi_swarm_exit": swarm_exit
+            "rsi_swarm_exit": swarm_exit,
+            "claim_evidence": [
+                {
+                    "id": "v8_organism_001_4",
+                    "claim": "network_symbiosis_forms_collective_state_with_memory_sharing",
+                    "evidence": {
+                        "nodes": nodes,
+                        "memory_share_rate": memory_share,
+                        "coherence_score": convergence,
+                        "rsi_swarm_exit": swarm_exit
+                    }
+                }
+            ]
         }),
     )
 }
@@ -144,7 +167,11 @@ pub(super) fn command_mutate(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
     )
     .to_ascii_lowercase();
     let apply = parse_bool(parsed.flags.get("apply"), true);
-    let allowed = gate(root, "organism:mutate");
+    let gate_eval = directive_kernel::evaluate_action(root, "organism:mutate");
+    let allowed = gate_eval
+        .get("allowed")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
     let mut ignite_exit = 0i32;
     if apply && allowed {
         ignite_exit = rsi_ignition::run(
@@ -186,7 +213,21 @@ pub(super) fn command_mutate(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
             "module": module,
             "apply": apply,
             "allowed": allowed,
-            "ignite_exit": ignite_exit
+            "ignite_exit": ignite_exit,
+            "directive_gate_evaluation": gate_eval,
+            "rsi_ignite_latest": read_json(&rsi_state_path(root).parent().unwrap_or(root).join("latest.json")),
+            "claim_evidence": [
+                {
+                    "id": "v8_organism_001_5",
+                    "claim": "creative_mutation_proposals_are_inversion_simulated_and_directive_compliant",
+                    "evidence": {
+                        "allowed": allowed,
+                        "ignite_exit": ignite_exit,
+                        "proposal": proposal,
+                        "module": module
+                    }
+                }
+            ]
         }),
     )
 }

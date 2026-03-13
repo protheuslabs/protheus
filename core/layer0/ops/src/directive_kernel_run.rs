@@ -36,6 +36,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
     if matches!(command.as_str(), "help" | "--help" | "-h") {
         println!("Usage:");
         println!("  protheus-ops directive-kernel status");
+        println!("  protheus-ops directive-kernel dashboard");
         println!("  protheus-ops directive-kernel prime-sign [--directive=<text>] [--signer=<id>] [--allow-unsigned=1|0]");
         println!("  protheus-ops directive-kernel derive [--parent=<id|text>] [--directive=<text>] [--signer=<id>] [--allow-unsigned=1|0]");
         println!("  protheus-ops directive-kernel supersede [--target=<id|text>] [--directive=<text>] [--signer=<id>] [--allow-unsigned=1|0]");
@@ -45,7 +46,10 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         return 0;
     }
 
-    if command == "status" {
+    let status_dashboard =
+        command == "dashboard" || parse_bool(parsed.flags.get("dashboard"), false);
+
+    if command == "status" && !status_dashboard {
         let vault = load_vault(root);
         let (signature_total, signature_valid) = signature_counts(&vault);
         let integrity = directive_vault_integrity(root);
@@ -70,6 +74,95 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         } else {
             2
         };
+    }
+
+    if status_dashboard {
+        let vault = load_vault(root);
+        let integrity = directive_vault_integrity(root);
+        let prime_rows = vault
+            .get("prime")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        let derived_rows = vault
+            .get("derived")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        let prime_count = prime_rows.len();
+        let derived_count = derived_rows.len();
+        let supersession_count = derived_rows
+            .iter()
+            .filter(|row| {
+                row.get("supersedes")
+                    .and_then(Value::as_str)
+                    .map(|v| !v.trim().is_empty())
+                    .unwrap_or(false)
+            })
+            .count();
+        let parent_linked_derived = derived_rows
+            .iter()
+            .filter(|row| {
+                row.get("parent_id")
+                    .and_then(Value::as_str)
+                    .map(|v| !v.trim().is_empty())
+                    .unwrap_or(false)
+            })
+            .count();
+        let parent_missing_derived = derived_count.saturating_sub(parent_linked_derived);
+        let compliance_actions = vec![
+            "blob:mutate".to_string(),
+            "rsi:unsafe".to_string(),
+            "organism:dream".to_string(),
+            "network:gossip".to_string(),
+        ];
+        let compliance_preview = compliance_actions
+            .iter()
+            .map(|action| evaluate_action(root, action))
+            .collect::<Vec<_>>();
+        let denied_count = compliance_preview
+            .iter()
+            .filter(|row| !row.get("allowed").and_then(Value::as_bool).unwrap_or(false))
+            .count();
+
+        return emit_receipt(
+            root,
+            json!({
+                "ok": integrity.get("ok").and_then(Value::as_bool).unwrap_or(false),
+                "type": "directive_kernel_dashboard",
+                "lane": "core/layer0/ops",
+                "dashboard": {
+                    "hierarchy": {
+                        "prime_count": prime_count,
+                        "derived_count": derived_count,
+                        "supersession_count": supersession_count,
+                        "parent_linked_derived": parent_linked_derived,
+                        "parent_missing_derived": parent_missing_derived
+                    },
+                    "compliance": {
+                        "actions_sampled": compliance_actions,
+                        "preview": compliance_preview,
+                        "denied_count": denied_count,
+                        "integrity_ok": integrity.get("ok").and_then(Value::as_bool).unwrap_or(false)
+                    }
+                },
+                "policy_hash": directive_vault_hash(root),
+                "commands": ["protheus directives migrate", "protheus directives status", "protheus directives dashboard"],
+                "layer_map": ["0","1","2","client","app"],
+                "claim_evidence": [
+                    {
+                        "id": "v8_directives_001_6",
+                        "claim": "directive_migration_and_visibility_dashboard_are_available_as_one_command_core_paths",
+                        "evidence": {
+                            "prime_count": prime_count,
+                            "derived_count": derived_count,
+                            "supersession_count": supersession_count,
+                            "denied_preview_count": denied_count
+                        }
+                    }
+                ]
+            }),
+        );
     }
 
     if command == "prime-sign"
