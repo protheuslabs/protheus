@@ -1,0 +1,225 @@
+{
+  "artifact": {
+    "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/hermes_plane/cockpit/latest.json",
+    "sha256": "6474b1ed18658b6e7b71450941b5f5b75d191fe5955db4d3c8035c4f797adf7b"
+  },
+  "claim_evidence": [
+    {
+      "claim": "premium_realtime_cockpit_stream_exposes_timings_tool_classes_and_status_colors",
+      "evidence": {
+        "blocks": 15,
+        "max_blocks": 16
+      },
+      "id": "V6-HERMES-001.2"
+    },
+    {
+      "claim": "hermes_surface_is_conduit_routed_with_fail_closed_receipts",
+      "evidence": {
+        "action": "cockpit",
+        "bypass_requested": false
+      },
+      "id": "V6-HERMES-001.2"
+    }
+  ],
+  "cockpit": {
+    "generated_at": "2026-03-13T12:33:21.873Z",
+    "mode": "premium",
+    "render": {
+      "ascii_header": "PROTHEUS TOP",
+      "stream_blocks": [
+        {
+          "duration_ms": 8,
+          "event_type": "asm_industrial_pack",
+          "index": 1,
+          "lane": "asm_plane",
+          "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/asm_plane/latest.json",
+          "status": "ok",
+          "status_color": "green",
+          "tool_call_class": "runtime",
+          "ts": "2026-03-13T10:04:06.012Z"
+        },
+        {
+          "duration_ms": 21,
+          "event_type": "binary_blob_runtime_status",
+          "index": 2,
+          "lane": "binary_blob_runtime",
+          "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/binary_blob_runtime/latest.json",
+          "status": "fail",
+          "status_color": "red",
+          "tool_call_class": "security",
+          "ts": "2026-03-13T06:25:51.816Z"
+        },
+        {
+          "duration_ms": 34,
+          "event_type": "binary_vuln_plane_mcp_analyze",
+          "index": 3,
+          "lane": "binary_vuln_plane",
+          "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/binary_vuln_plane/latest.json",
+          "status": "ok",
+          "status_color": "green",
+          "tool_call_class": "mcp",
+          "ts": "2026-03-13T12:33:21.847Z"
+        },
+        {
+          "duration_ms": 47,
+          "event_type": "directive_kernel_prime_sign",
+          "index": 4,
+          "lane": "directive_kernel",
+          "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/directive_kernel/latest.json",
+          "status": "ok",
+          "status_color": "green",
+          "tool_call_class": "runtime",
+          "ts": "2026-03-12T22:59:04.280Z"
+        },
+        {
+          "duration_ms": 60,
+          "event_type": "hermes_plane_discover",
+          "index": 5,
+          "lane": "hermes_plane",
+          "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/hermes_plane/latest.json",
+          "status": "ok",
+          "status_color": "green",
+          "tool_call_class": "runtime",
+          "ts": "2026-03-13T12:33:21.856Z"
+        },
+        {
+          "duration_ms": 73,
+          "event_type": "intelligence_nexus_workspace_view",
+          "index": 6,
+          "lane": "intelligence_nexus",
+          "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/intelligence_nexus/latest.json",
+          "status": "ok",
+          "status_color": "green",
+          "tool_call_class": "runtime",
+          "ts": "2026-03-13T06:26:07.238Z"
+        },
+        {
+          "duration_ms": 86,
+          "event_type": "metakernel_run",
+          "index": 7,
+          "lane": "metakernel",
+          "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/metakernel/latest.json",
+          "status": "ok",
+          "status_color": "green",
+          "tool_call_class": "runtime",
+          "ts": "2026-03-13T09:29:09.361Z"
+        },
+        {
+          "duration_ms": 99,
+          "event_type": "network_protocol_ignite_bitcoin",
+          "index": 8,
+          "lane": "network_protocol",
+          "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/network_protocol/latest.json",
+          "status": "ok",
+          "status_color": "green",
+          "tool_call_class": "runtime",
+          "ts": "2026-03-12T22:59:04.680Z"
+        },
+        {
+          "duration_ms": 112,
+          "event_type": "organism_layer_dream",
+          "index": 9,
+          "lane": "organism_layer",
+          "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/organism_layer/latest.json",
+          "status": "ok",
+          "status_color": "green",
+          "tool_call_class": "runtime",
+          "ts": "2026-03-12T22:59:04.483Z"
+        },
+        {
+          "duration_ms": 125,
+          "event_type": "parse_plane_visualize",
+          "index": 10,
+          "lane": "parse_plane",
+          "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/parse_plane/latest.json",
+          "status": "ok",
+          "status_color": "green",
+          "tool_call_class": "parse",
+          "ts": "2026-03-13T11:14:40.066Z"
+        },
+        {
+          "duration_ms": 138,
+          "event_type": "research_plane_decode_news_urls",
+          "index": 11,
+          "lane": "research_plane",
+          "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/research_plane/latest.json",
+          "status": "fail",
+          "status_color": "red",
+          "tool_call_class": "research",
+          "ts": "2026-03-13T11:14:40.072Z"
+        },
+        {
+          "duration_ms": 151,
+          "event_type": "rsi_ignition_activate",
+          "index": 12,
+          "lane": "rsi_ignition",
+          "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/rsi_ignition/latest.json",
+          "status": "ok",
+          "status_color": "green",
+          "tool_call_class": "runtime",
+          "ts": "2026-03-12T22:59:04.581Z"
+        },
+        {
+          "duration_ms": 164,
+          "event_type": "seed_protocol_status",
+          "index": 13,
+          "lane": "seed_protocol",
+          "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/seed_protocol/latest.json",
+          "status": "ok",
+          "status_color": "green",
+          "tool_call_class": "runtime",
+          "ts": "2026-03-13T07:08:24.186Z"
+        },
+        {
+          "duration_ms": 177,
+          "event_type": "skills_plane_tot_deliberate",
+          "index": 14,
+          "lane": "skills_plane",
+          "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/skills_plane/latest.json",
+          "status": "ok",
+          "status_color": "green",
+          "tool_call_class": "skills",
+          "ts": "2026-03-13T12:33:21.828Z"
+        },
+        {
+          "duration_ms": 190,
+          "event_type": "top1_assurance",
+          "index": 15,
+          "lane": "top1_assurance",
+          "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/top1_assurance/latest.json",
+          "status": "ok",
+          "status_color": "green",
+          "tool_call_class": "runtime",
+          "ts": "2026-03-13T10:04:49.551Z"
+        }
+      ],
+      "total_blocks": 15
+    },
+    "version": "v1"
+  },
+  "conduit_enforcement": {
+    "action": "cockpit",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "hermes_surface_is_conduit_routed_with_fail_closed_receipts",
+        "evidence": {
+          "action": "cockpit",
+          "bypass_requested": false
+        },
+        "id": "V6-HERMES-001.2"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "95f34b8eab474563c96bc4f7468d2f93d4b2ba2174dc2b5d09432fda036f2681",
+    "required_path": "core/layer0/ops/hermes_plane",
+    "type": "hermes_conduit_enforcement"
+  },
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "receipt_hash": "7f0535e9461403844ca5ec3ad3bae64f0f286e1e84f728ffc5a7f5c38d45c6a5",
+  "strict": true,
+  "ts": "2026-03-13T12:33:21.875Z",
+  "type": "hermes_plane_cockpit"
+}

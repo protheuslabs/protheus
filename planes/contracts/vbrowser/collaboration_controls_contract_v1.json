@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "kind": "vbrowser_collaboration_controls_contract",
+  "roles": ["watch-only", "shared-control"],
+  "allow_handoff": true
+}

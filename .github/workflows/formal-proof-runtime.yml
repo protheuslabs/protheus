@@ -33,7 +33,7 @@ jobs:
         with:
           name: formal-proof-runtime-artifacts
           path: |
-            client/runtime/local/state/ops/formal_proof_runtime_gate/latest.json
-            client/runtime/local/state/ops/formal_proof_runtime_gate/receipts.jsonl
-            docs/client/reports/runtime_snapshots/ops/proof_pack/formal_proof_runtime_latest.json
+            core/local/state/ops/top1_assurance/latest.json
+            core/local/state/ops/top1_assurance/history.jsonl
+            proofs/layer0/core_formal_coverage_map.json
           if-no-files-found: warn

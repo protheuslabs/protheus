@@ -1,0 +1,155 @@
+warning: variable does not need to be mutable
+    --> core/layer1/security/src/security_wave1.rs:2680:9
+     |
+2680 |     let mut candidate = format!("T{}_{}_{}_auto", tier, stem, kind);
+     |         ----^^^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> core/layer1/security/src/lib.rs:1739:17
+     |
+1739 |             let mut expires_at = state.get("expires_at").cloned().unwrap_or(Value::Null);
+     |                 ----^^^^^^^^^^
+     |                 |
+     |                 help: remove this `mut`
+
+warning: variable does not need to be mutable
+  --> core/layer2/ops/src/collector_cache.rs:98:9
+   |
+98 |     let mut ok = true;
+   |         ----^^
+   |         |
+   |         help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `active_rows` is never read
+   --> core/layer0/ops/src/attention_queue.rs:955:27
+    |
+955 |     let mut active_rows = Vec::new();
+    |                           ^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `expired_pruned` is never read
+   --> core/layer0/ops/src/attention_queue.rs:956:30
+    |
+956 |     let mut expired_pruned = 0usize;
+    |                              ^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: function `parse_csv_flag` is never used
+   --> core/layer0/ops/src/flow_plane.rs:102:4
+    |
+102 | fn parse_csv_flag(parsed: &crate::ParsedArgs, key: &str, max_len: usize) -> Vec<String> {
+    |    ^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `parse_f64` is never used
+   --> core/layer0/ops/src/spawn_broker.rs:182:4
+    |
+182 | fn parse_f64(raw: Option<&str>, fallback: f64) -> f64 {
+    |    ^^^^^^^^^
+
+{
+  "artifact": {
+    "path": "/private/var/folders/f9/mhsd3dwj78l8418t9vnclbn80000gn/T/tmp.g6vostFl3Z/core/local/state/ops/flow_plane/export/json/latest.json",
+    "sha256": "e11b7521bc7757b4cbc1a0298dc67b5f8ae43e1cee98826f5212641ae79d0253"
+  },
+  "claim_evidence": [
+    {
+      "claim": "one_click_flow_packaging_exports_versioned_json_api_and_mcp_artifacts_with_deterministic_hashes",
+      "evidence": {
+        "format": "json",
+        "package_version": "v1"
+      },
+      "id": "V6-FLOW-001.4"
+    },
+    {
+      "claim": "visual_builder_compile_run_debug_export_actions_route_through_conduit_with_bypass_rejection",
+      "evidence": {
+        "action": "export",
+        "bypass_requested": false
+      },
+      "id": "V6-FLOW-001.6"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "export",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "visual_builder_compile_run_debug_export_actions_route_through_conduit_with_bypass_rejection",
+        "evidence": {
+          "action": "export",
+          "bypass_requested": false
+        },
+        "id": "V6-FLOW-001.6"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "3296d21b4cad07f336b5d815ca13a9b69a3e5c2720bb46e4a453d104c68e40d1",
+    "required_path": "core/layer0/ops/flow_plane",
+    "type": "flow_conduit_enforcement"
+  },
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "package": {
+    "compiled_graph_path": "/private/var/folders/f9/mhsd3dwj78l8418t9vnclbn80000gn/T/tmp.g6vostFl3Z/core/local/state/ops/flow_plane/compile/latest.json",
+    "compiled_graph_sha256": "b4a809298d517c1a03c6e040dc32c5d534d9ed20d22ae95e8e3ce5911526bdec",
+    "export_payload": {
+      "edges": [
+        {
+          "from": "src",
+          "to": "sink"
+        }
+      ],
+      "execution_order": [
+        "src",
+        "sink"
+      ],
+      "kind": "flow_execution_graph",
+      "nodes": [
+        {
+          "execution_index": 0,
+          "id": "src",
+          "type": "source"
+        },
+        {
+          "execution_index": 1,
+          "id": "sink",
+          "type": "sink"
+        }
+      ],
+      "source_hint": "/private/var/folders/f9/mhsd3dwj78l8418t9vnclbn80000gn/T/tmp.g6vostFl3Z/artifacts/flow/canvas.json",
+      "stage_receipts": [
+        {
+          "edge_count": 1,
+          "node_count": 2,
+          "source_hint": "/private/var/folders/f9/mhsd3dwj78l8418t9vnclbn80000gn/T/tmp.g6vostFl3Z/artifacts/flow/canvas.json",
+          "stage": "schema_validate"
+        },
+        {
+          "execution_nodes": 2,
+          "order_sha256": "15196ea7f24a264b5a6b942e00859241cf2c6357fc9ea3c61f7e4a055e185c01",
+          "stage": "compile_graph"
+        }
+      ],
+      "version": "v1"
+    },
+    "format": "json",
+    "kind": "flow_export_package",
+    "version": "v1"
+  },
+  "receipt_hash": "5465531e27372fc23e2db8470ed48326fb1016a45dba916568591a53584b58b5",
+  "strict": true,
+  "ts": "2026-03-13T12:03:15.349Z",
+  "type": "flow_plane_export"
+}

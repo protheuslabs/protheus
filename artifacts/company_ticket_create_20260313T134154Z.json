@@ -1,0 +1,55 @@
+{
+  "claim_evidence": [
+    {
+      "claim": "company_control_paths_are_conduit_routed_with_fail_closed_receipts",
+      "evidence": {
+        "action": "ticket",
+        "bypass_requested": false
+      },
+      "id": "V6-COMPANY-001.3"
+    },
+    {
+      "claim": "company_control_paths_are_conduit_routed_with_fail_closed_receipts",
+      "evidence": {
+        "action": "ticket",
+        "bypass_requested": false
+      },
+      "id": "V6-COMPANY-001.5"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "ticket",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "company_control_paths_are_conduit_routed_with_fail_closed_receipts",
+        "evidence": {
+          "action": "ticket",
+          "bypass_requested": false
+        },
+        "id": "V6-COMPANY-001.3"
+      },
+      {
+        "claim": "company_control_paths_are_conduit_routed_with_fail_closed_receipts",
+        "evidence": {
+          "action": "ticket",
+          "bypass_requested": false
+        },
+        "id": "V6-COMPANY-001.5"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "9e9365cc58168be2c1b24848d37d84027d8177710434eccc87d759bda6763fba",
+    "required_path": "core/layer0/ops/company_plane",
+    "type": "company_conduit_enforcement"
+  },
+  "errors": [
+    "company_ticket_already_exists"
+  ],
+  "ok": false,
+  "receipt_hash": "e51cf63fbec5f882a32a6d4aa37aa072cd7504c28fddd94b70ce27652cf08281",
+  "strict": true,
+  "ts": "2026-03-13T13:41:54.477Z",
+  "type": "company_plane_ticket"
+}

@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "kind": "substrate_biological_adapter_template_contract",
+  "template_fields": [
+    "spike_rate_channels",
+    "stimulation_channels",
+    "health_telemetry_fields"
+  ],
+  "layer0_substrate_agnostic": true
+}

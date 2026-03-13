@@ -1,0 +1,11 @@
+{
+  "version": "v1",
+  "kind": "collab_role_launcher_contract",
+  "roles": {
+    "coordinator": {"default_tools": ["plan", "route"], "policy_mode": "safe"},
+    "researcher": {"default_tools": ["search", "extract"], "policy_mode": "safe"},
+    "builder": {"default_tools": ["compile", "verify"], "policy_mode": "safe"},
+    "reviewer": {"default_tools": ["audit", "report"], "policy_mode": "safe"},
+    "analyst": {"default_tools": ["summarize", "score"], "policy_mode": "safe"}
+  }
+}

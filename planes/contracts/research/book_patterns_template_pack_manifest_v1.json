@@ -1,0 +1,23 @@
+{
+  "version": "v1",
+  "kind": "book_patterns_template_pack_manifest",
+  "pack": "book-patterns-core",
+  "updated_at": "2026-03-13T00:00:00Z",
+  "templates": [
+    {
+      "path": "login_form_pattern.json",
+      "human_reviewed": true,
+      "reviewed_by": "operator",
+      "review_cadence_days": 90,
+      "sha256": "01a254e3c5411340134cabe492a673ba5dc250622e824dc3e6584039aa625f9b"
+    },
+    {
+      "path": "paginated_listing_pattern.json",
+      "human_reviewed": true,
+      "reviewed_by": "operator",
+      "review_cadence_days": 90,
+      "sha256": "2f0b4fe23f3c650fd2caecc7558d1a9abf2e7e6627b18b282277ef88bb0310a6"
+    }
+  ],
+  "signature": "sig:pending"
+}

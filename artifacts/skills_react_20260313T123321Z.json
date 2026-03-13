@@ -1,0 +1,84 @@
+{
+  "artifact": {
+    "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/skills_plane/react_minimal/latest.json",
+    "sha256": "214b8ee9d6e795cb90cfc9519441bb375e1d23f031474c7047e2712c7121d70d"
+  },
+  "claim_evidence": [
+    {
+      "claim": "react_minimal_profile_runs_bounded_tao_loop_with_stepwise_state_as_governed_objects",
+      "evidence": {
+        "max_steps": 4
+      },
+      "id": "V6-SKILLS-001.7"
+    },
+    {
+      "claim": "skill_install_run_share_actions_route_through_layer0_conduit_with_deterministic_audit_receipts",
+      "evidence": {
+        "action": "react-minimal",
+        "bypass_requested": false
+      },
+      "id": "V6-SKILLS-001.4"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "react-minimal",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "skill_install_run_share_actions_route_through_layer0_conduit_with_deterministic_audit_receipts",
+        "evidence": {
+          "action": "react-minimal",
+          "bypass_requested": false
+        },
+        "id": "V6-SKILLS-001.4"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "8c2b59c93c60afbdc5ee273e69941122aac0568913a92e5dd1d411e227605078",
+    "required_path": "core/layer0/ops/skills_plane",
+    "type": "skills_conduit_enforcement"
+  },
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "receipt_hash": "57d750505ff7e718923755e7986e535887e6c3a3efb6481f22e06e638777db45",
+  "strict": true,
+  "tao_state": {
+    "bounded": true,
+    "profile": "react-minimal",
+    "steps": [
+      {
+        "action": "search:segment_1",
+        "observation": "observation_hash:ead8afe1b82ba386",
+        "state_hash": "d4ecd4aa4378ae3c950ca8834111d16f3b96056c88561a2128aa63473d404b7c",
+        "step": 1,
+        "thought": "Assess task segment 1 for 'triage receipt anomalies'"
+      },
+      {
+        "action": "read:segment_2",
+        "observation": "observation_hash:417a49570b9bb178",
+        "state_hash": "154fd40f1a2e696fa7c47fe57cefeab461dfe9ff6a63b1324ba2c14e004f2cec",
+        "step": 2,
+        "thought": "Assess task segment 2 for 'triage receipt anomalies'"
+      },
+      {
+        "action": "summarize:segment_3",
+        "observation": "observation_hash:04f02ac42b5f6bd6",
+        "state_hash": "c73b5a67079834c18ca72adde828f88133dcd6bd4000d29380946e50600440f3",
+        "step": 3,
+        "thought": "Assess task segment 3 for 'triage receipt anomalies'"
+      },
+      {
+        "action": "search:segment_4",
+        "observation": "observation_hash:852218592ab29e42",
+        "state_hash": "b031a4818a58cd45202eae8a724c9eb9b1c748e08541ccd2f9297a3d6a97ba48",
+        "step": 4,
+        "thought": "Assess task segment 4 for 'triage receipt anomalies'"
+      }
+    ],
+    "task": "triage receipt anomalies",
+    "version": "v1"
+  },
+  "ts": "2026-03-13T12:33:21.819Z",
+  "type": "skills_plane_react_minimal"
+}

@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "kind": "company_org_hierarchy_contract",
+  "required_fields": ["org_chart", "reporting_edges", "titles", "team_goals"],
+  "default_org_chart": ["head", "lead", "member"]
+}

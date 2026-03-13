@@ -1,0 +1,17 @@
+{
+  "version": "v1",
+  "kind": "observability_realtime_monitoring_contract",
+  "allowed_alert_classes": [
+    "slo",
+    "security",
+    "runtime",
+    "cost"
+  ],
+  "allowed_severities": [
+    "low",
+    "medium",
+    "high",
+    "critical"
+  ],
+  "attach_intelligent_context": true
+}

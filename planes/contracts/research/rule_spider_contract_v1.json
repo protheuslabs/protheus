@@ -1,0 +1,8 @@
+{
+  "version": "v1",
+  "kind": "rule_spider_contract",
+  "default_max_depth": 3,
+  "default_max_links": 512,
+  "require_per_link_receipts": true,
+  "notes": "V6-RESEARCH-002.1 governed allow/deny traversal with deterministic per-link receipts."
+}

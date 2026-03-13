@@ -1,0 +1,56 @@
+name: Proof VM Artifact
+
+on:
+  pull_request:
+    branches: [main, rust50]
+  push:
+    branches: [main, rust50]
+  workflow_dispatch:
+
+jobs:
+  proof-vm-artifact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build reproducible proof VM image
+        run: |
+          docker build -f proofs/layer0/ProofVM.Dockerfile -t protheus-proof-vm:${GITHUB_SHA} .
+          mkdir -p artifacts/proof_vm
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' protheus-proof-vm:${GITHUB_SHA} || true)
+          cat > artifacts/proof_vm/proof_vm_image_manifest.json <<JSON
+          {
+            "ok": true,
+            "type": "proof_vm_image_manifest",
+            "sha": "${GITHUB_SHA}",
+            "image": "protheus-proof-vm:${GITHUB_SHA}",
+            "digest": "${DIGEST}",
+            "dockerfile": "proofs/layer0/ProofVM.Dockerfile"
+          }
+          JSON
+
+      - name: Validate proof VM manifest lane
+        run: npm run -s ops:top1:proof-vm
+
+      - name: Upload proof VM artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-vm-artifacts
+          path: |
+            artifacts/proof_vm/proof_vm_image_manifest.json
+            core/local/state/ops/top1_assurance/proof_vm_manifest.json
+            core/local/state/ops/top1_assurance/latest.json
+            core/local/state/ops/top1_assurance/history.jsonl
+          if-no-files-found: warn

@@ -1,0 +1,20 @@
+{
+  "version": "v1",
+  "kind": "layer_minus_one_variant_profile",
+  "profile_id": "medical",
+  "baseline_policy_ref": "client/runtime/config/security_policy.json",
+  "capability_delta": {
+    "grant": ["observe", "attestation"],
+    "revoke": ["train", "admin"]
+  },
+  "budget_delta": {
+    "cpu_ms": 150,
+    "ram_mb": 192,
+    "storage_mb": 256,
+    "network_kb": -64,
+    "privacy_points": 40
+  },
+  "no_privilege_widening": true,
+  "mpu_profile_ref": "planes/contracts/mpu_compartment_profile_v1.json",
+  "description": "Medical safety-first profile with reduced mutable privileges and stronger local attestation."
+}

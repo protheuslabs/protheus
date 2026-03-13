@@ -1,0 +1,81 @@
+{
+  "artifact": {
+    "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/company_plane/org/alpha.json",
+    "sha256": "316cc6a36a6cf04313200ff7fe2f5934966935c28b5c188bdf72788c3db45251"
+  },
+  "claim_evidence": [
+    {
+      "claim": "company_layer_instantiates_org_chart_reporting_edges_titles_and_team_goals",
+      "evidence": {
+        "reporting_edges": 2,
+        "team": "alpha"
+      },
+      "id": "V6-COMPANY-001.1"
+    },
+    {
+      "claim": "company_control_paths_are_conduit_routed_with_fail_closed_receipts",
+      "evidence": {
+        "action": "orchestrate-agency",
+        "bypass_requested": false
+      },
+      "id": "V6-COMPANY-001.1"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "orchestrate-agency",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "company_control_paths_are_conduit_routed_with_fail_closed_receipts",
+        "evidence": {
+          "action": "orchestrate-agency",
+          "bypass_requested": false
+        },
+        "id": "V6-COMPANY-001.1"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "d1dc6fc0b045f06accb3b5acc35976eb8a23fafdf1bbb096cb1b006d63c48b33",
+    "required_path": "core/layer0/ops/company_plane",
+    "type": "company_conduit_enforcement"
+  },
+  "hierarchy": {
+    "command_alias": "protheus orchestrate agency alpha",
+    "hierarchy": {
+      "org_chart": [
+        "head",
+        "lead",
+        "member"
+      ],
+      "reporting_edges": [
+        {
+          "from": "head",
+          "to": "lead"
+        },
+        {
+          "from": "lead",
+          "to": "member"
+        }
+      ],
+      "team_goals": [
+        "ship weekly quality improvements",
+        "keep safety gates green"
+      ],
+      "titles": {
+        "head": "Team Head",
+        "lead": "Team Lead",
+        "member": "Specialist"
+      }
+    },
+    "instantiated_at": "2026-03-13T13:17:30.421Z",
+    "team": "alpha",
+    "version": "v1"
+  },
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "receipt_hash": "4b58ee0ad0fba6a089525843f1e5d61a910b6037fb26b6699b6c17e593bbebe3",
+  "strict": true,
+  "ts": "2026-03-13T13:17:30.422Z",
+  "type": "company_plane_orchestrate_agency"
+}

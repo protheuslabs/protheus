@@ -1,0 +1,7 @@
+{
+  "version": "v1",
+  "kind": "parallel_session_worker_contract",
+  "default_max_concurrency": 8,
+  "default_max_retries": 1,
+  "notes": "V6-RESEARCH-005.4 bounded parallel scrape workers with deterministic queue and session receipts."
+}

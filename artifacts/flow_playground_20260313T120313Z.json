@@ -1,0 +1,120 @@
+warning: variable does not need to be mutable
+    --> core/layer1/security/src/security_wave1.rs:2680:9
+     |
+2680 |     let mut candidate = format!("T{}_{}_{}_auto", tier, stem, kind);
+     |         ----^^^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> core/layer1/security/src/lib.rs:1739:17
+     |
+1739 |             let mut expires_at = state.get("expires_at").cloned().unwrap_or(Value::Null);
+     |                 ----^^^^^^^^^^
+     |                 |
+     |                 help: remove this `mut`
+
+warning: variable does not need to be mutable
+  --> core/layer2/ops/src/collector_cache.rs:98:9
+   |
+98 |     let mut ok = true;
+   |         ----^^
+   |         |
+   |         help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `active_rows` is never read
+   --> core/layer0/ops/src/attention_queue.rs:955:27
+    |
+955 |     let mut active_rows = Vec::new();
+    |                           ^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `expired_pruned` is never read
+   --> core/layer0/ops/src/attention_queue.rs:956:30
+    |
+956 |     let mut expired_pruned = 0usize;
+    |                              ^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: function `parse_csv_flag` is never used
+   --> core/layer0/ops/src/flow_plane.rs:102:4
+    |
+102 | fn parse_csv_flag(parsed: &crate::ParsedArgs, key: &str, max_len: usize) -> Vec<String> {
+    |    ^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `parse_f64` is never used
+   --> core/layer0/ops/src/spawn_broker.rs:182:4
+    |
+182 | fn parse_f64(raw: Option<&str>, fallback: f64) -> f64 {
+    |    ^^^^^^^^^
+
+{
+  "claim_evidence": [
+    {
+      "claim": "interactive_playground_supports_play_pause_step_resume_inspect_with_per_step_receipts",
+      "evidence": {
+        "op": "step"
+      },
+      "id": "V6-FLOW-001.2"
+    },
+    {
+      "claim": "visual_builder_compile_run_debug_export_actions_route_through_conduit_with_bypass_rejection",
+      "evidence": {
+        "action": "playground",
+        "bypass_requested": false
+      },
+      "id": "V6-FLOW-001.6"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "playground",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "visual_builder_compile_run_debug_export_actions_route_through_conduit_with_bypass_rejection",
+        "evidence": {
+          "action": "playground",
+          "bypass_requested": false
+        },
+        "id": "V6-FLOW-001.6"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "37bf01e7b16b2ae30d3c3a464b9b0133e1f6c1e304ceeeff0da3f00c64f6278a",
+    "required_path": "core/layer0/ops/flow_plane",
+    "type": "flow_conduit_enforcement"
+  },
+  "event": {
+    "run_id": "batch10-cli",
+    "step": 1,
+    "step_hash": "2a032faa5e0445ef3da5745a874e7e0df1e2d14945cfc12550fc851585726818",
+    "type": "step"
+  },
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "op": "step",
+  "receipt_hash": "2cb979f8690fca1ddb04b5cbbf5a817b544cf65b124b4b5fb11479e0064a60e6",
+  "run_id": "batch10-cli",
+  "run_state": {
+    "current_step": 1,
+    "events": 1,
+    "run_id": "batch10-cli",
+    "status": "running",
+    "total_steps": 8,
+    "updated_at": "2026-03-13T12:03:15.103Z"
+  },
+  "state_path": "/private/var/folders/f9/mhsd3dwj78l8418t9vnclbn80000gn/T/tmp.g6vostFl3Z/core/local/state/ops/flow_plane/playground/state.json",
+  "strict": true,
+  "ts": "2026-03-13T12:03:15.104Z",
+  "type": "flow_plane_playground"
+}

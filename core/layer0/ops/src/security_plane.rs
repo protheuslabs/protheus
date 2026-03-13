@@ -86,6 +86,9 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         "truth-seeking-gate" | "truth_seeking_gate" | "truth-gate" | "truth_gate" => {
             infring_layer1_security::run_truth_seeking_gate(root, rest)
         }
+        "abac-policy-plane" | "abac_policy_plane" => {
+            infring_layer1_security::run_abac_policy_plane(root, rest)
+        }
         "copy-hardening-pack" | "copy_hardening_pack" => {
             compatibility_security_command("copy-hardening-pack", rest)
         }
@@ -269,6 +272,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                     "black-box-ledger",
                     "goal-preservation-kernel",
                     "dream-warden-guard",
+                    "abac-policy-plane",
                     "delegated-authority-branching",
                     "organ-state-encryption-plane",
                     "remote-tamper-heartbeat",
@@ -329,6 +333,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                     "protheus-ops security-plane goal-preservation-kernel <evaluate|status> [flags]",
                     "protheus-ops security-plane dream-warden-guard <run|status> [flags]",
                     "protheus-ops security-plane truth-seeking-gate <status|ingest-rule|evaluate> [flags]",
+                    "protheus-ops security-plane abac-policy-plane <status|evaluate> [flags]",
                     "protheus-ops security-plane copy-hardening-pack <command> [flags]",
                     "protheus-ops security-plane governance-hardening-pack <command> [flags]",
                     "protheus-ops security-plane repository-access-auditor <command> [flags]",

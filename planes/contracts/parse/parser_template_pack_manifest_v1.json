@@ -1,0 +1,20 @@
+{
+  "version": "v1",
+  "kind": "parser_template_pack_manifest",
+  "pack": "default-parse-templates",
+  "updated_at": "2026-03-13T00:00:00Z",
+  "templates": [
+    {
+      "name": "default_parser_template",
+      "path": "default_parser_template.json",
+      "sha256": "b647e2b9ca29e68096a301106671a9e888ccdc375d9ab85106e6382f011a9a60",
+      "human_reviewed": true,
+      "reviewed_by": "operator",
+      "review_cadence_days": 90,
+      "compatibility": {
+        "mapping_contract_version": "v1"
+      }
+    }
+  ],
+  "signature": "sig:unsigned"
+}

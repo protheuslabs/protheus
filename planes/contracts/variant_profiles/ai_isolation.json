@@ -1,0 +1,20 @@
+{
+  "version": "v1",
+  "kind": "layer_minus_one_variant_profile",
+  "profile_id": "ai_isolation",
+  "baseline_policy_ref": "client/runtime/config/security_policy.json",
+  "capability_delta": {
+    "grant": ["journal"],
+    "revoke": ["stream", "external_actuation", "admin"]
+  },
+  "budget_delta": {
+    "cpu_ms": 120,
+    "ram_mb": 160,
+    "storage_mb": 384,
+    "network_kb": -256,
+    "privacy_points": 60
+  },
+  "no_privilege_widening": true,
+  "mpu_profile_ref": "planes/contracts/mpu_compartment_profile_v1.json",
+  "description": "High-isolation profile with constrained egress and immutable journaling preference."
+}

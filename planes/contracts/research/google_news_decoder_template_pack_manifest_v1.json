@@ -1,0 +1,23 @@
+{
+  "version": "v1",
+  "kind": "google_news_decoder_template_pack_manifest",
+  "pack": "google-news-decoder-core",
+  "updated_at": "2026-03-13T00:00:00Z",
+  "templates": [
+    {
+      "path": "articles_decode_template.json",
+      "human_reviewed": true,
+      "reviewed_by": "operator",
+      "review_cadence_days": 90,
+      "sha256": "673f9c0755bc9eff5cd4b2cb981c85884e978b11c38a66f43d900f2d0db5ce61"
+    },
+    {
+      "path": "rss_fallback_template.json",
+      "human_reviewed": true,
+      "reviewed_by": "operator",
+      "review_cadence_days": 90,
+      "sha256": "08f5fa90469b3c619f398e39a0daabe09294734bb2996c5e1d15838a3242bf70"
+    }
+  ],
+  "signature": "sig:pending"
+}

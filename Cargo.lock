@@ -907,6 +907,7 @@ dependencies = [
  "burn_oracle_budget_gate",
  "chrono",
  "execution_core",
+ "exotic_wrapper",
  "foundation_hook_enforcer",
  "hex",
  "infring-layer1-security",

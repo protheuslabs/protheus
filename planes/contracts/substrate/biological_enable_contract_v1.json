@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "kind": "substrate_biological_enable_contract",
+  "allowed_modes": [
+    "biological",
+    "silicon-only"
+  ],
+  "persona_visibility": true,
+  "required_policy_gate": "biological_ethics_policy_contract_v1"
+}

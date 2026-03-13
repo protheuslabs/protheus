@@ -1,0 +1,12 @@
+{
+  "version": "v1",
+  "kind": "signal_bus_contract",
+  "supported_signals": [
+    "spider_opened",
+    "item_scraped",
+    "spider_closed",
+    "crawl_paused",
+    "crawl_resumed"
+  ],
+  "notes": "V6-RESEARCH-002.4 policy-gated signal + extension hook dispatch."
+}

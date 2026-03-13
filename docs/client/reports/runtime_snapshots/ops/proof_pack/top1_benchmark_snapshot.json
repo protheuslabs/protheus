@@ -1,0 +1,27 @@
+{
+  "metrics": {
+    "cold_start_ms": 74.5,
+    "idle_rss_mb": 22.1,
+    "install_size_mb": 126.4,
+    "tasks_per_sec": 7420.0
+  },
+  "ok": true,
+  "refresh": true,
+  "runtime_efficiency_source": {
+    "enforce_hold_streak_strict": false,
+    "history_count": 0,
+    "history_path": "state/ops/runtime_efficiency_floor_history.jsonl",
+    "hold_streak_days": 0,
+    "latest": null,
+    "ok": true,
+    "policy_path": "client/runtime/config/runtime_efficiency_floor.json",
+    "policy_version": "1.0",
+    "state_path": "state/ops/runtime_efficiency_floor.json",
+    "target_hold_days": 7,
+    "type": "runtime_efficiency_floor_status"
+  },
+  "sample_ms": 800,
+  "source_path": "docs/client/reports/runtime_snapshots/ops/proof_pack/top1_benchmark_snapshot.json",
+  "ts": "2026-03-13T09:12:07.691Z",
+  "type": "top1_benchmark_metrics"
+}

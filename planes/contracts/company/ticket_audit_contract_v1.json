@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "kind": "company_ticket_audit_contract",
+  "allowed_ops": ["create", "assign", "transition", "handoff", "close", "status"],
+  "require_tool_call_trace_link": true,
+  "immutable_chain": {
+    "hash_field": "event_hash",
+    "prev_hash_field": "prev_event_hash"
+  }
+}

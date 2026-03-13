@@ -1,0 +1,92 @@
+{
+  "version": "v1",
+  "kind": "research_plane_policy",
+  "default_mode": "auto",
+  "timeouts": {
+    "fetch_ms": 12000,
+    "crawl_fetch_ms": 8000
+  },
+  "headers": {
+    "http": {
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+    },
+    "stealth": {
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+      "DNT": "1",
+      "Upgrade-Insecure-Requests": "1"
+    },
+    "browser": {
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+      "DNT": "1",
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "none"
+    }
+  },
+  "crawler": {
+    "max_concurrency": 100,
+    "per_domain_qps": 2,
+    "max_retries": 3,
+    "checkpoint_every": 10
+  },
+  "safety_plane": {
+    "enabled": true,
+    "required_modes": [
+      "stealth",
+      "browser"
+    ],
+    "allow_actions": [
+      "research_fetch:*",
+      "research_crawl:*",
+      "research:*"
+    ],
+    "max_requests_per_mode": {
+      "stealth": 20000,
+      "browser": 5000,
+      "http": 50000,
+      "auto": 50000
+    }
+  },
+  "conduit_enforcement": {
+    "reject_bypass_flags": [
+      "bypass",
+      "direct",
+      "unsafe-client-route",
+      "client-bypass"
+    ],
+    "strict_fail_closed": true
+  },
+  "goal_crawl": {
+    "default_max_pages": 5,
+    "default_max_discovery": 10
+  },
+  "site_map": {
+    "default_depth": 2,
+    "default_max_nodes": 256
+  },
+  "monitor": {
+    "notify_on_change": true
+  },
+  "js_scrape": {
+    "max_wait_ms": 15000,
+    "default_mode": "js-render"
+  },
+  "parallel_workers": {
+    "default_max_concurrency": 8,
+    "default_max_retries": 1
+  },
+  "decode": {
+    "allowed_proxy_modes": [
+      "none",
+      "http",
+      "https",
+      "socks"
+    ],
+    "default_proxy_mode": "none",
+    "default_interval_ms": 250,
+    "default_backoff_ms": 500,
+    "default_max_attempts": 2
+  }
+}

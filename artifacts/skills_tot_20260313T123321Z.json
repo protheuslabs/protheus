@@ -1,0 +1,150 @@
+{
+  "artifact": {
+    "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/skills_plane/tot_deliberate/latest.json",
+    "sha256": "80cf835a705f3f7fa2c4134b1f97b0f98f995eef7fc1ea0b3d1fb3bf8c5ef62b"
+  },
+  "claim_evidence": [
+    {
+      "claim": "tot_deliberate_profile_runs_bounded_branch_search_with_deterministic_branch_and_eval_receipts",
+      "evidence": {
+        "branching": 3,
+        "max_depth": 3,
+        "strategy": "bfs"
+      },
+      "id": "V6-SKILLS-001.8"
+    },
+    {
+      "claim": "skill_install_run_share_actions_route_through_layer0_conduit_with_deterministic_audit_receipts",
+      "evidence": {
+        "action": "tot-deliberate",
+        "bypass_requested": false
+      },
+      "id": "V6-SKILLS-001.4"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "tot-deliberate",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "skill_install_run_share_actions_route_through_layer0_conduit_with_deterministic_audit_receipts",
+        "evidence": {
+          "action": "tot-deliberate",
+          "bypass_requested": false
+        },
+        "id": "V6-SKILLS-001.4"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "56e47e2d92e304626e2115385cdeac4914c7b20f0bb799f11ec1a3ed4b48ac17",
+    "required_path": "core/layer0/ops/skills_plane",
+    "type": "skills_conduit_enforcement"
+  },
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "receipt_hash": "13794c38ceff1b805f3da70f622ec591c0d0a916e661abef1ba904d8e6c8d5ec",
+  "result": {
+    "branches": [
+      {
+        "branch_index": 3,
+        "depth": 3,
+        "eval_hash": "05794435a0219de796d26f72eeabc408e89c58008fefc0ff295c717e78a302c0",
+        "node_id": "d3_b3",
+        "proposal": "plan fallback graph :: option 3",
+        "score": 0.8777,
+        "strategy": "bfs"
+      },
+      {
+        "branch_index": 1,
+        "depth": 1,
+        "eval_hash": "24fd0a88c65782ec6136aa195fd0c0f714473714ee6a0bf5ecd02099b8bc860e",
+        "node_id": "d1_b1",
+        "proposal": "plan fallback graph :: option 1",
+        "score": 0.7965,
+        "strategy": "bfs"
+      },
+      {
+        "branch_index": 2,
+        "depth": 3,
+        "eval_hash": "4db20dcf5baca391c431398cd01baecbc8e9d064ef6bc401ea5319e0be74fd63",
+        "node_id": "d3_b2",
+        "proposal": "plan fallback graph :: option 2",
+        "score": 0.7865,
+        "strategy": "bfs"
+      },
+      {
+        "branch_index": 2,
+        "depth": 1,
+        "eval_hash": "0ab9efb1f99fce048d3627fdd22bd35c3563e50d572e1a6c28ee7a1d5348bc2c",
+        "node_id": "d1_b2",
+        "proposal": "plan fallback graph :: option 2",
+        "score": 0.6722,
+        "strategy": "bfs"
+      },
+      {
+        "branch_index": 2,
+        "depth": 2,
+        "eval_hash": "78f0590e00aced611af89f302b2c8140aa156926cd4f02270e2bb6f1a7489ccd",
+        "node_id": "d2_b2",
+        "proposal": "plan fallback graph :: option 2",
+        "score": 0.6176,
+        "strategy": "bfs"
+      },
+      {
+        "branch_index": 3,
+        "depth": 1,
+        "eval_hash": "82a746e72f9c6867111b9d6e29b7577af93bfec29e9ac9862b7dc37ebdec0dd4",
+        "node_id": "d1_b3",
+        "proposal": "plan fallback graph :: option 3",
+        "score": 0.4934,
+        "strategy": "bfs"
+      },
+      {
+        "branch_index": 1,
+        "depth": 3,
+        "eval_hash": "12105956cf927005ca4dfcc6cb3f33578f1972fa21e1188b2f9820ec3b6de399",
+        "node_id": "d3_b1",
+        "proposal": "plan fallback graph :: option 1",
+        "score": 0.2689,
+        "strategy": "bfs"
+      },
+      {
+        "branch_index": 3,
+        "depth": 2,
+        "eval_hash": "8c43a9c2192fdce77a4aab8ba1cf32d6b38ab28856feca726bf9a78f76275873",
+        "node_id": "d2_b3",
+        "proposal": "plan fallback graph :: option 3",
+        "score": 0.11,
+        "strategy": "bfs"
+      },
+      {
+        "branch_index": 1,
+        "depth": 2,
+        "eval_hash": "329dca2cf674f9f1a68074dc3d88fb482b73eb61e476b8871b80a5c0ff2b04a8",
+        "node_id": "d2_b1",
+        "proposal": "plan fallback graph :: option 1",
+        "score": 0.0709,
+        "strategy": "bfs"
+      }
+    ],
+    "branching": 3,
+    "max_depth": 3,
+    "profile": "tot-deliberate",
+    "selected": {
+      "branch_index": 3,
+      "depth": 3,
+      "eval_hash": "05794435a0219de796d26f72eeabc408e89c58008fefc0ff295c717e78a302c0",
+      "node_id": "d3_b3",
+      "proposal": "plan fallback graph :: option 3",
+      "score": 0.8777,
+      "strategy": "bfs"
+    },
+    "strategy": "bfs",
+    "task": "plan fallback graph",
+    "version": "v1"
+  },
+  "strict": true,
+  "ts": "2026-03-13T12:33:21.828Z",
+  "type": "skills_plane_tot_deliberate"
+}

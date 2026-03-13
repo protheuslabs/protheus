@@ -1,0 +1,21 @@
+{
+  "version": "v1",
+  "kind": "firecrawl_template_pack_manifest",
+  "pack": "firecrawl-curated-core",
+  "updated_at": "2026-03-13T00:00:00Z",
+  "templates": [
+    {
+      "path": "news_discovery_firecrawl.json",
+      "human_reviewed": true,
+      "reviewed_by": "operator",
+      "sha256": "0480456f4bd40b283f920cf4c43495a5f5a705882342928207b2cc6163213840"
+    },
+    {
+      "path": "docs_sync_firecrawl.json",
+      "human_reviewed": true,
+      "reviewed_by": "operator",
+      "sha256": "593e1ae0ce7c6c2dd528b85239424174bc1a1cab61a0393b0888c3f1a468c58e"
+    }
+  ],
+  "signature": "sig:4d65c058e8357d4773742a844762fbef369df6d5ab90dbb0301909ddc1a3d908"
+}

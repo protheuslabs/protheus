@@ -25,7 +25,9 @@ jobs:
         run: npm ci
 
       - name: Run proof-pack threshold gate (dockerized)
-        run: npm run -s ops:proof-pack:gate:docker
+        run: |
+          npm run -s ops:proof-pack:gate:docker
+          npm run -s ops:top1:comparison
 
       - name: Upload proof-pack threshold artifacts
         uses: actions/upload-artifact@v4
@@ -33,7 +35,8 @@ jobs:
         with:
           name: proof-pack-threshold-artifacts
           path: |
-            client/runtime/local/state/ops/proof_pack_threshold_gate/latest.json
-            client/runtime/local/state/ops/proof_pack_threshold_gate/receipts.jsonl
-            docs/client/reports/runtime_snapshots/ops/proof_pack/threshold_gate_latest.json
+            core/local/state/ops/top1_assurance/latest.json
+            core/local/state/ops/top1_assurance/history.jsonl
+            core/local/state/ops/top1_assurance/benchmark_latest.json
+            docs/comparison/protheus_vs_x.md
           if-no-files-found: warn

@@ -1,0 +1,86 @@
+{
+  "artifact": {
+    "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/collab_plane/schedules/alpha.json",
+    "sha256": "4c61213aee203a1d90e104b5ca2e458f374920714e7b068f7e7125f296dfc635"
+  },
+  "claim_evidence": [
+    {
+      "claim": "team_scheduler_supports_deterministic_kickoff_and_handoff_receipts",
+      "evidence": {
+        "kickoff_count": 0,
+        "op": "upsert",
+        "team": "alpha"
+      },
+      "id": "V6-COLLAB-001.3"
+    },
+    {
+      "claim": "collaboration_controls_route_through_layer0_conduit_with_fail_closed_denials",
+      "evidence": {
+        "action": "schedule",
+        "bypass_requested": false
+      },
+      "id": "V6-COLLAB-001.3"
+    },
+    {
+      "claim": "collaboration_controls_route_through_layer0_conduit_with_fail_closed_denials",
+      "evidence": {
+        "action": "schedule",
+        "bypass_requested": false
+      },
+      "id": "V6-COLLAB-001.4"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "schedule",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "collaboration_controls_route_through_layer0_conduit_with_fail_closed_denials",
+        "evidence": {
+          "action": "schedule",
+          "bypass_requested": false
+        },
+        "id": "V6-COLLAB-001.3"
+      },
+      {
+        "claim": "collaboration_controls_route_through_layer0_conduit_with_fail_closed_denials",
+        "evidence": {
+          "action": "schedule",
+          "bypass_requested": false
+        },
+        "id": "V6-COLLAB-001.4"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "21277f8d822f87af006b3f80270bcb608330c963d945993de60c490b1f441f37",
+    "required_path": "core/layer0/ops/collab_plane",
+    "type": "collab_conduit_enforcement"
+  },
+  "job_id": "nightly",
+  "kickoff_receipts": [],
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "op": "upsert",
+  "receipt_hash": "7a4ef10f8b13df83fb6bb01c250f52e9aaf4eb84c1ef66f81e759a7c5b35c97a",
+  "schedule": {
+    "jobs": [
+      {
+        "cron": "0 */6 * * *",
+        "job_id": "nightly",
+        "shadows": [
+          "shadow-sec",
+          "shadow-ui"
+        ],
+        "updated_at": "2026-03-13T13:17:30.386Z"
+      }
+    ],
+    "team": "alpha",
+    "updated_at": "2026-03-13T13:17:30.386Z",
+    "version": "v1"
+  },
+  "strict": true,
+  "team": "alpha",
+  "ts": "2026-03-13T13:17:30.392Z",
+  "type": "collab_plane_schedule"
+}

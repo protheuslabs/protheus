@@ -1,0 +1,11 @@
+{
+  "version": "v1",
+  "kind": "subagent_delegation_contract",
+  "default_roles": ["researcher", "executor"],
+  "tool_packs": {
+    "research_pack": ["search", "crawl", "extract"],
+    "security_pack": ["scan", "triage", "report"],
+    "ops_pack": ["status", "diagnose", "repair"]
+  },
+  "max_children": 8
+}

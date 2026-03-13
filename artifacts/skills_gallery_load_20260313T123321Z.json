@@ -1,0 +1,67 @@
+{
+  "claim_evidence": [
+    {
+      "claim": "curated_skill_gallery_ingest_and_one_click_loader_are_governed_with_deterministic_receipts",
+      "evidence": {
+        "op": "load",
+        "skill_id": "graph-analyst"
+      },
+      "id": "V6-SKILLS-001.6"
+    },
+    {
+      "claim": "skill_install_run_share_actions_route_through_layer0_conduit_with_deterministic_audit_receipts",
+      "evidence": {
+        "action": "gallery",
+        "bypass_requested": false
+      },
+      "id": "V6-SKILLS-001.4"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "gallery",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "skill_install_run_share_actions_route_through_layer0_conduit_with_deterministic_audit_receipts",
+        "evidence": {
+          "action": "gallery",
+          "bypass_requested": false
+        },
+        "id": "V6-SKILLS-001.4"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "c089bb190f83a2ca1430831424589c7984b70a153ea1f83b5d7725375beb2acf",
+    "required_path": "core/layer0/ops/skills_plane",
+    "type": "skills_conduit_enforcement"
+  },
+  "install_payload": {
+    "claim_evidence": [
+      {
+        "claim": "skill_install_run_share_actions_route_through_layer0_conduit_with_deterministic_audit_receipts",
+        "evidence": {
+          "action": "install"
+        },
+        "id": "V6-SKILLS-001.4"
+      }
+    ],
+    "lane": "core/layer0/ops",
+    "ok": true,
+    "receipt_hash": "20a43c7c6ad51ab2f060b600e8e1476de20d036d382798df3f85dc37bed21ef3",
+    "registry_path": "/Users/jay/.openclaw/workspace/core/local/state/ops/skills_plane/registry.json",
+    "skill_id": "graph-analyst",
+    "strict": true,
+    "type": "skills_plane_install"
+  },
+  "lane": "core/layer0/ops",
+  "manifest_path": "/Users/jay/.openclaw/workspace/core/local/state/ops/skills_plane/gallery/manifest.json",
+  "ok": true,
+  "op": "load",
+  "package_path": "/Users/jay/.openclaw/workspace/tmp/batch11/gallery/graph-analyst",
+  "receipt_hash": "a07ae563ddadf8f83f178ad6a3b73cfd7eeacf010b3abe49a56617c1fa441fcd",
+  "skill_id": "graph-analyst",
+  "strict": true,
+  "ts": "2026-03-13T12:33:21.798Z",
+  "type": "skills_plane_gallery"
+}

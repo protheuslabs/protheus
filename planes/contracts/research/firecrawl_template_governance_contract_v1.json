@@ -1,0 +1,9 @@
+{
+  "version": "v1",
+  "kind": "template_governance_contract",
+  "required_human_review": true,
+  "required_reviewer": "operator",
+  "signature_required": true,
+  "signature_env": "FIRECRAWL_TEMPLATE_SIGNING_KEY",
+  "notes": "V6-RESEARCH-004.5 signed firecrawl-compatible curated templates with provenance checks."
+}

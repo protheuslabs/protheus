@@ -1,0 +1,73 @@
+{
+  "artifact": {
+    "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/substrate_plane/eye/bindings.json",
+    "sha256": "03ee173b78f6f0b1e39112223154385357254434a4675c753fa051bd6f46243b"
+  },
+  "binding": {
+    "command_alias": "protheus eye enable wifi",
+    "enabled": true,
+    "enabled_at": "2026-03-13T13:41:54.982Z",
+    "persona": "watcher",
+    "shadow": "watcher-2",
+    "source": "wifi"
+  },
+  "claim_evidence": [
+    {
+      "claim": "wifi_csi_is_bound_as_native_eye_source_for_persona_and_shadow_triggers",
+      "evidence": {
+        "source": "wifi"
+      },
+      "id": "V6-SUBSTRATE-001.5"
+    },
+    {
+      "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+      "evidence": {
+        "action": "eye-bind",
+        "bypass_requested": false
+      },
+      "id": "V6-SUBSTRATE-001.5"
+    },
+    {
+      "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+      "evidence": {
+        "action": "eye-bind",
+        "bypass_requested": false
+      },
+      "id": "V6-SUBSTRATE-001.4"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "eye-bind",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+        "evidence": {
+          "action": "eye-bind",
+          "bypass_requested": false
+        },
+        "id": "V6-SUBSTRATE-001.5"
+      },
+      {
+        "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+        "evidence": {
+          "action": "eye-bind",
+          "bypass_requested": false
+        },
+        "id": "V6-SUBSTRATE-001.4"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "a6a9b0a665ce136b5ecfa462fca71e174f22b0ec07604add24cfd92d40a6f421",
+    "required_path": "core/layer0/ops/substrate_plane",
+    "type": "substrate_conduit_enforcement"
+  },
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "op": "enable",
+  "receipt_hash": "70653cb000d4ecf1b0e0a1ee22a3d3e32e47565dbe673d95e35776afd61527eb",
+  "strict": true,
+  "ts": "2026-03-13T13:41:54.983Z",
+  "type": "substrate_plane_eye_bind"
+}

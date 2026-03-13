@@ -1,0 +1,20 @@
+{
+  "name": "docs_assimilation_spider",
+  "seed_urls": [
+    "https://docs.example.com/"
+  ],
+  "allow_rules": [
+    "*docs*",
+    "*guide*",
+    "*api*"
+  ],
+  "deny_rules": [
+    "*logout*",
+    "*auth*"
+  ],
+  "allowed_domains": [
+    "docs.example.com"
+  ],
+  "max_depth": 4,
+  "max_links": 500
+}

@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "kind": "crawl_console_contract",
+  "default_token_env": "RESEARCH_CONSOLE_TOKEN",
+  "allow_ops": [
+    "status",
+    "stats",
+    "queue",
+    "pause",
+    "resume",
+    "enqueue"
+  ],
+  "auth_required": true,
+  "notes": "V6-RESEARCH-002.5 authenticated crawl control and inspection lane."
+}

@@ -4,7 +4,7 @@ use serde_json::{json, Value};
 use std::collections::BTreeMap;
 use std::fs;
 use std::io::{Read, Seek, SeekFrom};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 const LANE_ID: &str = "health_status";
 const REPLACEMENT: &str = "protheus-ops health-status";
@@ -43,6 +43,25 @@ fn usage() {
     println!("  protheus-ops health-status status [--dashboard]");
     println!("  protheus-ops health-status run [--dashboard]");
     println!("  protheus-ops health-status dashboard");
+}
+
+fn latest_snapshot_path(root: &Path) -> PathBuf {
+    root.join("client")
+        .join("local")
+        .join("state")
+        .join("ops")
+        .join(LANE_ID)
+        .join("latest.json")
+}
+
+fn persist_latest(root: &Path, payload: &Value) {
+    let path = latest_snapshot_path(root);
+    if let Some(parent) = path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    if let Ok(raw) = serde_json::to_string_pretty(payload) {
+        let _ = fs::write(path, format!("{raw}\n"));
+    }
 }
 
 fn read_json(path: &Path) -> Result<Value, String> {
@@ -1016,6 +1035,484 @@ fn collect_pqts_slippage_dashboard_metric(root: &Path) -> Value {
     })
 }
 
+fn collect_skills_plane_dashboard_metric(root: &Path) -> Value {
+    let latest_path = root
+        .join("core")
+        .join("local")
+        .join("state")
+        .join("ops")
+        .join("skills_plane")
+        .join("latest.json");
+    let runs_path = root
+        .join("core")
+        .join("local")
+        .join("state")
+        .join("ops")
+        .join("skills_plane")
+        .join("runs")
+        .join("history.jsonl");
+
+    let latest = read_json(&latest_path).ok();
+    let run_count = read_text_tail(&runs_path, JSONL_TAIL_MAX_BYTES)
+        .map(|raw| raw.lines().filter(|line| !line.trim().is_empty()).count() as u64)
+        .unwrap_or(0);
+    let skills_total = latest
+        .as_ref()
+        .and_then(|v| v.get("discovered_count"))
+        .and_then(Value::as_u64)
+        .or_else(|| {
+            latest
+                .as_ref()
+                .and_then(|v| v.get("metrics"))
+                .and_then(|v| v.get("skills_total"))
+                .and_then(Value::as_u64)
+        })
+        .unwrap_or(0);
+    let status = if latest.is_some() { "pass" } else { "warn" };
+
+    json!({
+        "skills_plane_health": {
+            "value": if latest.is_some() { 1.0 } else { 0.0 },
+            "target_min": 1.0,
+            "status": status,
+            "skills_total": skills_total,
+            "run_history_count": run_count,
+            "source": latest_path.to_string_lossy()
+        }
+    })
+}
+
+fn collect_binary_vuln_dashboard_metric(root: &Path) -> Value {
+    let latest_path = root
+        .join("core")
+        .join("local")
+        .join("state")
+        .join("ops")
+        .join("binary_vuln_plane")
+        .join("latest.json");
+    let latest = read_json(&latest_path).ok();
+    let findings = latest
+        .as_ref()
+        .and_then(|v| v.get("output"))
+        .and_then(|v| v.get("finding_count"))
+        .and_then(Value::as_u64)
+        .or_else(|| {
+            latest
+                .as_ref()
+                .and_then(|v| v.get("findings"))
+                .and_then(Value::as_array)
+                .map(|rows| rows.len() as u64)
+        })
+        .unwrap_or(0);
+    let status = match latest
+        .as_ref()
+        .and_then(|v| v.get("ok"))
+        .and_then(Value::as_bool)
+    {
+        Some(true) => "pass",
+        Some(false) => "warn",
+        None => "warn",
+    };
+
+    json!({
+        "binary_vuln_surface": {
+            "value": findings,
+            "target_min": 0,
+            "status": status,
+            "latest_finding_count": findings,
+            "source": latest_path.to_string_lossy()
+        }
+    })
+}
+
+fn collect_hermes_dashboard_metric(root: &Path) -> Value {
+    let latest_path = root
+        .join("core")
+        .join("local")
+        .join("state")
+        .join("ops")
+        .join("hermes_plane")
+        .join("latest.json");
+    let latest = read_json(&latest_path).ok();
+    let block_count = latest
+        .as_ref()
+        .and_then(|v| v.get("cockpit"))
+        .and_then(|v| v.get("render"))
+        .and_then(|v| v.get("total_blocks"))
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+    let status = if block_count > 0 || latest.is_some() {
+        "pass"
+    } else {
+        "warn"
+    };
+
+    json!({
+        "hermes_cockpit_stream": {
+            "value": block_count,
+            "target_min": 1,
+            "status": status,
+            "stream_blocks": block_count,
+            "source": latest_path.to_string_lossy()
+        }
+    })
+}
+
+fn collect_vbrowser_dashboard_metric(root: &Path) -> Value {
+    let latest_path = root
+        .join("core")
+        .join("local")
+        .join("state")
+        .join("ops")
+        .join("vbrowser_plane")
+        .join("latest.json");
+    let latest = read_json(&latest_path).ok();
+    let session_id = latest
+        .as_ref()
+        .and_then(|v| v.get("session"))
+        .and_then(|v| v.get("session_id"))
+        .and_then(Value::as_str)
+        .map(ToString::to_string)
+        .or_else(|| {
+            latest
+                .as_ref()
+                .and_then(|v| v.get("policy"))
+                .and_then(|v| v.get("session_id"))
+                .and_then(Value::as_str)
+                .map(ToString::to_string)
+        });
+    let stream_latency_ms = latest
+        .as_ref()
+        .and_then(|v| v.get("session"))
+        .and_then(|v| v.get("stream"))
+        .and_then(|v| v.get("latency_ms"))
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+    let status = match latest
+        .as_ref()
+        .and_then(|v| v.get("ok"))
+        .and_then(Value::as_bool)
+    {
+        Some(true) => "pass",
+        Some(false) => "warn",
+        None => "warn",
+    };
+    json!({
+        "vbrowser_session_surface": {
+            "value": if latest.is_some() { 1.0 } else { 0.0 },
+            "target_min": 1.0,
+            "status": status,
+            "session_id": session_id,
+            "stream_latency_ms": stream_latency_ms,
+            "source": latest_path.to_string_lossy()
+        }
+    })
+}
+
+fn collect_agency_dashboard_metric(root: &Path) -> Value {
+    let latest_path = root
+        .join("core")
+        .join("local")
+        .join("state")
+        .join("ops")
+        .join("agency_plane")
+        .join("latest.json");
+    let latest = read_json(&latest_path).ok();
+    let active_template = latest
+        .as_ref()
+        .and_then(|v| v.get("shadow"))
+        .and_then(|v| v.get("template"))
+        .and_then(Value::as_str)
+        .map(ToString::to_string);
+    let handoff_count = latest
+        .as_ref()
+        .and_then(|v| v.get("handoff_receipts"))
+        .and_then(Value::as_array)
+        .map(|rows| rows.len() as u64)
+        .unwrap_or(0);
+    let status = match latest
+        .as_ref()
+        .and_then(|v| v.get("ok"))
+        .and_then(Value::as_bool)
+    {
+        Some(true) => "pass",
+        Some(false) => "warn",
+        None => "warn",
+    };
+    json!({
+        "agency_topology_surface": {
+            "value": if latest.is_some() { 1.0 } else { 0.0 },
+            "target_min": 1.0,
+            "status": status,
+            "active_template": active_template,
+            "handoff_count": handoff_count,
+            "source": latest_path.to_string_lossy()
+        }
+    })
+}
+
+fn collect_collab_dashboard_metric(root: &Path) -> Value {
+    let latest_path = root
+        .join("core")
+        .join("local")
+        .join("state")
+        .join("ops")
+        .join("collab_plane")
+        .join("latest.json");
+    let latest = read_json(&latest_path).ok();
+    let refresh_ms = latest
+        .as_ref()
+        .and_then(|v| v.get("dashboard"))
+        .and_then(|v| v.get("refresh_ms"))
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+    let handoff_count = latest
+        .as_ref()
+        .and_then(|v| v.get("dashboard"))
+        .and_then(|v| v.get("handoff_history"))
+        .and_then(Value::as_array)
+        .map(|rows| rows.len() as u64)
+        .unwrap_or(0);
+    let status = match latest
+        .as_ref()
+        .and_then(|v| v.get("ok"))
+        .and_then(Value::as_bool)
+    {
+        Some(true) => "pass",
+        Some(false) => "warn",
+        None => "warn",
+    };
+    json!({
+        "collab_team_surface": {
+            "value": if latest.is_some() { 1.0 } else { 0.0 },
+            "target_min": 1.0,
+            "status": status,
+            "refresh_ms": refresh_ms,
+            "handoff_count": handoff_count,
+            "source": latest_path.to_string_lossy()
+        }
+    })
+}
+
+fn collect_company_dashboard_metric(root: &Path) -> Value {
+    let latest_path = root
+        .join("core")
+        .join("local")
+        .join("state")
+        .join("ops")
+        .join("company_plane")
+        .join("latest.json");
+    let latest = read_json(&latest_path).ok();
+    let budget_hard_stop = latest
+        .as_ref()
+        .and_then(|v| v.get("decision"))
+        .and_then(|v| v.get("hard_stop"))
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    let org_edges = latest
+        .as_ref()
+        .and_then(|v| v.get("hierarchy"))
+        .and_then(|v| v.get("hierarchy"))
+        .and_then(|v| v.get("reporting_edges"))
+        .and_then(Value::as_array)
+        .map(|rows| rows.len() as u64)
+        .unwrap_or(0);
+    let status = if budget_hard_stop {
+        "warn"
+    } else if latest.is_some() {
+        "pass"
+    } else {
+        "warn"
+    };
+    json!({
+        "company_governance_surface": {
+            "value": if latest.is_some() { 1.0 } else { 0.0 },
+            "target_min": 1.0,
+            "status": status,
+            "budget_hard_stop": budget_hard_stop,
+            "org_reporting_edges": org_edges,
+            "source": latest_path.to_string_lossy()
+        }
+    })
+}
+
+fn collect_company_heartbeat_dashboard_metric(root: &Path) -> Value {
+    let feed_path = root
+        .join("core")
+        .join("local")
+        .join("state")
+        .join("ops")
+        .join("company_plane")
+        .join("heartbeat")
+        .join("remote_feed.json");
+    let feed = read_json(&feed_path).ok();
+    let teams = feed
+        .as_ref()
+        .and_then(|v| v.get("teams"))
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let active_teams = teams.len() as u64;
+    let degraded_teams = teams
+        .values()
+        .filter(|row| {
+            row.get("degraded")
+                .and_then(Value::as_bool)
+                .unwrap_or(false)
+        })
+        .count() as u64;
+    let status = if active_teams == 0 || degraded_teams > 0 {
+        "warn"
+    } else {
+        "pass"
+    };
+    json!({
+        "company_heartbeat_surface": {
+            "value": if active_teams > 0 { 1.0 } else { 0.0 },
+            "target_min": 1.0,
+            "status": status,
+            "active_teams": active_teams,
+            "degraded_teams": degraded_teams,
+            "source": feed_path.to_string_lossy()
+        }
+    })
+}
+
+fn collect_substrate_dashboard_metric(root: &Path) -> Value {
+    let latest_path = root
+        .join("core")
+        .join("local")
+        .join("state")
+        .join("ops")
+        .join("substrate_plane")
+        .join("latest.json");
+    let latest = read_json(&latest_path).ok();
+    let status = match latest
+        .as_ref()
+        .and_then(|v| v.get("ok"))
+        .and_then(Value::as_bool)
+    {
+        Some(true) => "pass",
+        Some(false) => "warn",
+        None => "warn",
+    };
+    let feedback_mode = latest
+        .as_ref()
+        .and_then(|v| v.get("feedback"))
+        .and_then(|v| v.get("mode"))
+        .and_then(Value::as_str)
+        .unwrap_or("unknown")
+        .to_string();
+    let bio_enable = read_json(
+        &root
+            .join("core")
+            .join("local")
+            .join("state")
+            .join("ops")
+            .join("substrate_plane")
+            .join("bio")
+            .join("enable")
+            .join("latest.json"),
+    )
+    .ok();
+    let biological_mode = bio_enable
+        .as_ref()
+        .and_then(|v| v.get("mode"))
+        .and_then(Value::as_str)
+        .unwrap_or("unknown")
+        .to_string();
+    json!({
+        "substrate_signal_surface": {
+            "value": if latest.is_some() { 1.0 } else { 0.0 },
+            "target_min": 1.0,
+            "status": status,
+            "feedback_mode": feedback_mode,
+            "biological_mode": biological_mode,
+            "source": latest_path.to_string_lossy()
+        }
+    })
+}
+
+fn collect_observability_dashboard_metric(root: &Path) -> Value {
+    let latest_path = root
+        .join("core")
+        .join("local")
+        .join("state")
+        .join("ops")
+        .join("observability_plane")
+        .join("latest.json");
+    let latest = read_json(&latest_path).ok();
+    let status = match latest
+        .as_ref()
+        .and_then(|v| v.get("ok"))
+        .and_then(Value::as_bool)
+    {
+        Some(true) => "pass",
+        Some(false) => "warn",
+        None => "warn",
+    };
+    let lane = latest
+        .as_ref()
+        .and_then(|v| v.get("type"))
+        .and_then(Value::as_str)
+        .unwrap_or("unknown")
+        .to_string();
+    json!({
+        "observability_control_surface": {
+            "value": if latest.is_some() { 1.0 } else { 0.0 },
+            "target_min": 1.0,
+            "status": status,
+            "lane_type": lane,
+            "source": latest_path.to_string_lossy()
+        }
+    })
+}
+
+fn collect_persist_dashboard_metric(root: &Path) -> Value {
+    let latest_path = root
+        .join("core")
+        .join("local")
+        .join("state")
+        .join("ops")
+        .join("persist_plane")
+        .join("latest.json");
+    let latest = read_json(&latest_path).ok();
+    let status = match latest
+        .as_ref()
+        .and_then(|v| v.get("ok"))
+        .and_then(Value::as_bool)
+    {
+        Some(true) => "pass",
+        Some(false) => "warn",
+        None => "warn",
+    };
+    let mobile = read_json(
+        &root
+            .join("core")
+            .join("local")
+            .join("state")
+            .join("ops")
+            .join("persist_plane")
+            .join("mobile")
+            .join("latest.json"),
+    )
+    .ok();
+    let mobile_connected = mobile
+        .as_ref()
+        .and_then(|v| v.get("connected"))
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    json!({
+        "persist_background_surface": {
+            "value": if latest.is_some() { 1.0 } else { 0.0 },
+            "target_min": 1.0,
+            "status": status,
+            "mobile_connected": mobile_connected,
+            "source": latest_path.to_string_lossy()
+        }
+    })
+}
+
 fn collect_dashboard_metrics_light(cron_audit: &Value) -> Value {
     let enabled_jobs = cron_audit
         .get("enabled_jobs")
@@ -1099,6 +1596,61 @@ fn collect_dashboard_metrics(root: &Path, cron_audit: &Value) -> Value {
         }
     }
     if let Some(obj) = collect_pqts_slippage_dashboard_metric(root).as_object() {
+        for (k, v) in obj {
+            metrics.insert(k.clone(), v.clone());
+        }
+    }
+    if let Some(obj) = collect_skills_plane_dashboard_metric(root).as_object() {
+        for (k, v) in obj {
+            metrics.insert(k.clone(), v.clone());
+        }
+    }
+    if let Some(obj) = collect_binary_vuln_dashboard_metric(root).as_object() {
+        for (k, v) in obj {
+            metrics.insert(k.clone(), v.clone());
+        }
+    }
+    if let Some(obj) = collect_hermes_dashboard_metric(root).as_object() {
+        for (k, v) in obj {
+            metrics.insert(k.clone(), v.clone());
+        }
+    }
+    if let Some(obj) = collect_vbrowser_dashboard_metric(root).as_object() {
+        for (k, v) in obj {
+            metrics.insert(k.clone(), v.clone());
+        }
+    }
+    if let Some(obj) = collect_agency_dashboard_metric(root).as_object() {
+        for (k, v) in obj {
+            metrics.insert(k.clone(), v.clone());
+        }
+    }
+    if let Some(obj) = collect_collab_dashboard_metric(root).as_object() {
+        for (k, v) in obj {
+            metrics.insert(k.clone(), v.clone());
+        }
+    }
+    if let Some(obj) = collect_company_dashboard_metric(root).as_object() {
+        for (k, v) in obj {
+            metrics.insert(k.clone(), v.clone());
+        }
+    }
+    if let Some(obj) = collect_company_heartbeat_dashboard_metric(root).as_object() {
+        for (k, v) in obj {
+            metrics.insert(k.clone(), v.clone());
+        }
+    }
+    if let Some(obj) = collect_substrate_dashboard_metric(root).as_object() {
+        for (k, v) in obj {
+            metrics.insert(k.clone(), v.clone());
+        }
+    }
+    if let Some(obj) = collect_observability_dashboard_metric(root).as_object() {
+        for (k, v) in obj {
+            metrics.insert(k.clone(), v.clone());
+        }
+    }
+    if let Some(obj) = collect_persist_dashboard_metric(root).as_object() {
         for (k, v) in obj {
             metrics.insert(k.clone(), v.clone());
         }
@@ -1295,11 +1847,15 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
 
     match cmd {
         "status" | "run" => {
-            print_json_line(&status_receipt(root, cmd, argv, false));
+            let receipt = status_receipt(root, cmd, argv, false);
+            persist_latest(root, &receipt);
+            print_json_line(&receipt);
             0
         }
         "dashboard" => {
-            print_json_line(&status_receipt(root, cmd, argv, true));
+            let receipt = status_receipt(root, cmd, argv, true);
+            persist_latest(root, &receipt);
+            print_json_line(&receipt);
             0
         }
         _ => {

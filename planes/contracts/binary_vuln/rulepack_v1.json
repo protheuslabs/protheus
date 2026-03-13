@@ -1,0 +1,30 @@
+{
+  "version": "v1",
+  "kind": "binary_vuln_rulepack",
+  "rules": [
+    {
+      "id": "hardcoded_credential",
+      "title": "Potential hardcoded credential",
+      "pattern": "password=",
+      "severity": "high",
+      "confidence": 0.82,
+      "policy_labels": ["secrets", "credential_exposure"]
+    },
+    {
+      "id": "unsafe_shell_exec",
+      "title": "Potential unsafe shell execution string",
+      "pattern": "/bin/sh",
+      "severity": "medium",
+      "confidence": 0.68,
+      "policy_labels": ["execution", "shell"]
+    },
+    {
+      "id": "insecure_http",
+      "title": "Potential insecure transport usage",
+      "pattern": "http://",
+      "severity": "low",
+      "confidence": 0.61,
+      "policy_labels": ["network", "transport"]
+    }
+  ]
+}

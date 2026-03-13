@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "kind": "site_map_graph_contract",
+  "default_depth": 2,
+  "default_max_nodes": 256,
+  "sample_graph": {
+    "https://example.com": [
+      "https://example.com/about",
+      "https://example.com/blog"
+    ],
+    "https://example.com/about": [],
+    "https://example.com/blog": []
+  },
+  "notes": "V6-RESEARCH-004.2 depth-controlled mapping + graph artifact receipts."
+}

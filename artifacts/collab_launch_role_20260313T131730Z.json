@@ -1,0 +1,55 @@
+{
+  "claim_evidence": [
+    {
+      "claim": "collaboration_controls_route_through_layer0_conduit_with_fail_closed_denials",
+      "evidence": {
+        "action": "launch-role",
+        "bypass_requested": false
+      },
+      "id": "V6-COLLAB-001.2"
+    },
+    {
+      "claim": "collaboration_controls_route_through_layer0_conduit_with_fail_closed_denials",
+      "evidence": {
+        "action": "launch-role",
+        "bypass_requested": false
+      },
+      "id": "V6-COLLAB-001.4"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "launch-role",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "collaboration_controls_route_through_layer0_conduit_with_fail_closed_denials",
+        "evidence": {
+          "action": "launch-role",
+          "bypass_requested": false
+        },
+        "id": "V6-COLLAB-001.2"
+      },
+      {
+        "claim": "collaboration_controls_route_through_layer0_conduit_with_fail_closed_denials",
+        "evidence": {
+          "action": "launch-role",
+          "bypass_requested": false
+        },
+        "id": "V6-COLLAB-001.4"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "d3f5eb0f1524519ca688633bbb7d0fcd0c50a6a7fbccdb4b807b85c8d01e1666",
+    "required_path": "core/layer0/ops/collab_plane",
+    "type": "collab_conduit_enforcement"
+  },
+  "errors": [
+    "collab_role_unknown"
+  ],
+  "ok": false,
+  "receipt_hash": "152164e221396379aedab627a001b800d9f6fc0cc67207c18704d4bf00b57d9f",
+  "strict": true,
+  "ts": "2026-03-13T13:17:30.378Z",
+  "type": "collab_plane_launch_role"
+}

@@ -1,0 +1,20 @@
+{
+  "version": "v1",
+  "kind": "proxy_rotation_trap_matrix_contract",
+  "default_proxies": [
+    "proxy-a",
+    "proxy-b",
+    "proxy-c"
+  ],
+  "trap_signals": [
+    "captcha",
+    "cloudflare",
+    "rate_limit"
+  ],
+  "trap_response_matrix": {
+    "captcha": "rotate",
+    "cloudflare": "rotate",
+    "rate_limit": "backoff"
+  },
+  "notes": "V6-RESEARCH-005.3 proxy rotation + anti-bot trap response matrix."
+}

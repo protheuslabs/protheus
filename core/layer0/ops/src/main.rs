@@ -213,6 +213,81 @@ fn main() {
             let exit = protheus_ops_core::graph_toolkit::run(&cwd, &rest);
             std::process::exit(exit);
         }
+        "asm-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::asm_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "research-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::research_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "parse-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::parse_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "flow-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::flow_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "mcp-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::mcp_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "skills-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::skills_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "vbrowser-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::vbrowser_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "agency-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::agency_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "collab-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::collab_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "company-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::company_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "substrate-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::substrate_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "observability-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::observability_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "persist-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::persist_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "binary-vuln-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::binary_vuln_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "hermes-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::hermes_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
         "ab-lane-eval" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::ab_lane_eval::run(&cwd, &rest);
@@ -328,6 +403,11 @@ fn main() {
         "metakernel" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::metakernel::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "top1-assurance" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::top1_assurance::run(&cwd, &rest);
             std::process::exit(exit);
         }
         "backlog-queue-executor" => {
@@ -554,42 +634,60 @@ fn main() {
             exit_domain!(&cwd, &args, protheus_ops_core_v1::opendev_dual_agent::run);
         }
         "company-layer-orchestration" => {
-            exit_domain!(
-                &cwd,
-                &args,
-                protheus_ops_core_v1::company_layer_orchestration::run
-            );
+            let mut rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            if rest.is_empty() {
+                rest.push("orchestrate-agency".to_string());
+            }
+            let exit = protheus_ops_core::company_plane::run(&cwd, &rest);
+            std::process::exit(exit);
         }
         "wifi-csi-engine" => {
-            exit_domain!(&cwd, &args, protheus_ops_core_v1::wifi_csi_engine::run);
+            let mut rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            if rest.is_empty() {
+                rest.push("csi-capture".to_string());
+            }
+            let exit = protheus_ops_core::substrate_plane::run(&cwd, &rest);
+            std::process::exit(exit);
         }
         "biological-computing-adapter" => {
-            exit_domain!(
-                &cwd,
-                &args,
-                protheus_ops_core_v1::biological_computing_adapter::run
-            );
+            let mut rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            if rest.is_empty() {
+                rest.extend(["bio-interface".to_string(), "--op=status".to_string()]);
+            }
+            let exit = protheus_ops_core::substrate_plane::run(&cwd, &rest);
+            std::process::exit(exit);
         }
         "observability-automation-engine" => {
-            exit_domain!(
-                &cwd,
-                &args,
-                protheus_ops_core_v1::observability_automation_engine::run
-            );
+            let mut rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            if rest.is_empty() {
+                rest.extend([
+                    "workflow".to_string(),
+                    "--op=upsert".to_string(),
+                    "--workflow-id=default-observability".to_string(),
+                ]);
+            }
+            let exit = protheus_ops_core::observability_plane::run(&cwd, &rest);
+            std::process::exit(exit);
         }
         "observability-slo-runbook-closure" => {
-            exit_domain!(
-                &cwd,
-                &args,
-                protheus_ops_core_v1::observability_slo_runbook_closure::run
-            );
+            let mut rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            if rest.is_empty() {
+                rest.extend([
+                    "incident".to_string(),
+                    "--op=resolve".to_string(),
+                    "--incident-id=default-incident".to_string(),
+                ]);
+            }
+            let exit = protheus_ops_core::observability_plane::run(&cwd, &rest);
+            std::process::exit(exit);
         }
         "persistent-background-runtime" => {
-            exit_domain!(
-                &cwd,
-                &args,
-                protheus_ops_core_v1::persistent_background_runtime::run
-            );
+            let mut rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            if rest.is_empty() {
+                rest.extend(["schedule".to_string(), "--op=list".to_string()]);
+            }
+            let exit = protheus_ops_core::persist_plane::run(&cwd, &rest);
+            std::process::exit(exit);
         }
         "workspace-gateway-runtime" => {
             exit_domain!(

@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "kind": "crdt_automerge_profile",
+  "merge_strategy": "lww",
+  "clock_field": "clock",
+  "node_field": "node",
+  "value_field": "value",
+  "replay_required": true,
+  "fail_closed": true
+}

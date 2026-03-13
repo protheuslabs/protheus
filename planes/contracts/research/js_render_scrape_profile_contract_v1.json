@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "kind": "js_render_scrape_profile_contract",
+  "allowed_modes": [
+    "js-render",
+    "stealth-js"
+  ],
+  "max_wait_ms": 15000,
+  "allow_form_actions": [
+    "fill",
+    "click",
+    "submit"
+  ],
+  "notes": "V6-RESEARCH-005.1 governed JS-render scraping profile."
+}

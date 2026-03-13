@@ -197,22 +197,21 @@ fn seed_protocol_end_to_end_profiles_and_dashboard_state() {
             .unwrap_or(0)
             >= 1
     );
-    assert!(
-        state
-            .get("archive_merkle_root")
-            .and_then(Value::as_str)
-            .map(|v| !v.is_empty())
-            .unwrap_or(false)
-    );
-    assert!(
-        state
-            .get("quarantine")
-            .and_then(Value::as_object)
-            .map(|q| q.contains_key("rogue-1"))
-            .unwrap_or(false)
-    );
+    assert!(state
+        .get("archive_merkle_root")
+        .and_then(Value::as_str)
+        .map(|v| !v.is_empty())
+        .unwrap_or(false));
+    assert!(state
+        .get("quarantine")
+        .and_then(Value::as_object)
+        .map(|q| q.contains_key("rogue-1"))
+        .unwrap_or(false));
 
-    let packets_dir = core_state_root(&root).join("ops").join("seed_protocol").join("packets");
+    let packets_dir = core_state_root(&root)
+        .join("ops")
+        .join("seed_protocol")
+        .join("packets");
     let packet_count = fs::read_dir(&packets_dir)
         .expect("packets dir")
         .flatten()
@@ -223,4 +222,3 @@ fn seed_protocol_end_to_end_profiles_and_dashboard_state() {
     std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
     let _ = fs::remove_dir_all(root);
 }
-

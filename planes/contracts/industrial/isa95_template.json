@@ -1,0 +1,19 @@
+{
+  "version": "v1",
+  "kind": "isa95_mapping_template",
+  "levels": [
+    {"id": "L0", "name": "Physical Process"},
+    {"id": "L1", "name": "Sensing and Manipulation"},
+    {"id": "L2", "name": "Supervisory Control"},
+    {"id": "L3", "name": "Manufacturing Operations"},
+    {"id": "L4", "name": "Business Planning"}
+  ],
+  "work_centers": [
+    {"id": "conduit", "maps_to": "L2"},
+    {"id": "policy_receipts", "maps_to": "L3"}
+  ],
+  "assets": [
+    {"id": "runtime_core", "maps_to": "L2"},
+    {"id": "command_center", "maps_to": "L3"}
+  ]
+}

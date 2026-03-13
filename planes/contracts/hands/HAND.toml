@@ -1,0 +1,6 @@
+name = "persistent_hands_pack"
+version = "1.0.0"
+schedule = "*/30 * * * *"
+rotate_window_hours = 24
+endpoint = "conduit://hands/runtime"
+capabilities = ["fetch", "crawl", "summarize", "route"]

@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "kind": "vbrowser_sandbox_session_contract",
+  "max_stream_latency_ms": 150,
+  "default_stream_latency_ms": 60,
+  "isolation": {
+    "host_state_access": false,
+    "network_mode": "isolated"
+  }
+}

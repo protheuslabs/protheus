@@ -1,0 +1,8 @@
+{
+  "version": "v1",
+  "kind": "company_team_heartbeat_contract",
+  "default_interval_seconds": 300,
+  "max_queue_depth_warn": 50,
+  "status_levels": ["healthy", "degraded", "critical"],
+  "remote_feed_schema": "company_team_heartbeat_remote_feed_v1"
+}

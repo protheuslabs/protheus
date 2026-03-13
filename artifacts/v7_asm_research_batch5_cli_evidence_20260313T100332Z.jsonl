@@ -1,0 +1,32 @@
+{"command":"asm-plane wasm-dual-meter --strict=1 --ticks=4 --fuel-budget=1000 --epoch-budget=8 --fuel-per-tick=100 --epoch-step=1"}
+{
+  "claim_evidence": [
+    {
+      "claim": "top_level_cli_errors_emit_deterministic_receipts",
+      "evidence": {
+        "command_present": false,
+        "domain_present": true,
+        "error": "unknown_domain"
+      },
+      "id": "fail_closed_cli"
+    }
+  ],
+  "command": null,
+  "date": "2026-03-13",
+  "domain": "asm-plane wasm-dual-meter --strict=1 --ticks=4 --fuel-budget=1000 --epoch-budget=8 --fuel-per-tick=100 --epoch-step=1",
+  "error": "unknown_domain",
+  "exit_code": 1,
+  "ok": false,
+  "persona_lenses": {
+    "auditor": {
+      "deterministic_receipt": true
+    },
+    "operator": {
+      "domain": "asm-plane wasm-dual-meter --strict=1 --ticks=4 --fuel-budget=1000 --epoch-budget=8 --fuel-per-tick=100 --epoch-step=1",
+      "entrypoint": "main"
+    }
+  },
+  "receipt_hash": "c9e109aa4edf6ae67a77c234140016784df68a25fa66bc4652bbd3e307202ed3",
+  "ts": "2026-03-13T10:03:32.425Z",
+  "type": "protheus_ops_cli_error"
+}

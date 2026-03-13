@@ -1,0 +1,13 @@
+{
+  "name": "news_discovery_firecrawl",
+  "goal": "discover fresh relevant articles",
+  "extract": {
+    "title": true,
+    "summary": true,
+    "links": true
+  },
+  "limits": {
+    "depth": 3,
+    "max_pages": 200
+  }
+}

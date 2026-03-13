@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "kind": "binary_analysis_engine_contract",
+  "allowed_kinds": ["binary", "firmware", "uefi", "ba2", "binary_ninja_db"],
+  "max_input_bytes": 104857600
+}

@@ -1,0 +1,5 @@
+{
+  "version": "v1",
+  "kind": "collab_team_continuity_contract",
+  "required_keys": ["team", "agents", "tasks", "handoffs"]
+}

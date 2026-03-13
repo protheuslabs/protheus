@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "kind": "collab_team_dashboard_contract",
+  "max_refresh_ms": 2000,
+  "default_refresh_ms": 1000
+}

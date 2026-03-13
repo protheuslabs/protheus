@@ -1,0 +1,20 @@
+{
+  "version": "v1",
+  "kind": "google_news_decode_contract",
+  "decoder_version": "v1",
+  "resolver_order": [
+    "/articles",
+    "/rss/articles"
+  ],
+  "allowed_proxy_modes": [
+    "none",
+    "http",
+    "https",
+    "socks"
+  ],
+  "default_proxy_mode": "none",
+  "default_interval_ms": 250,
+  "default_backoff_ms": 500,
+  "default_max_attempts": 2,
+  "notes": "V6-RESEARCH-006.1..006.4 native decode + policy-governed proxy/rate-limit + dual-path fallback + batch isolation."
+}

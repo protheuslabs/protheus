@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "kind": "industrial_validation_checklist",
+  "required_checks": [
+    "isa95_levels_complete",
+    "rami_axes_complete",
+    "component_mappings_nonempty",
+    "policy_and_receipt_path_mapped"
+  ]
+}

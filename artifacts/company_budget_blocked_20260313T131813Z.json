@@ -1,0 +1,79 @@
+{
+  "artifact": {
+    "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/company_plane/budgets/ledger.json",
+    "sha256": "5feb14dc235e0d3c74a17e4db8d7c395ba0d2db11cff7dfc3681a13a432afd8c"
+  },
+  "claim_evidence": [
+    {
+      "claim": "per_agent_period_budget_enforcement_is_policy_backed_and_fail_closed_on_breaches",
+      "evidence": {
+        "agent": "shadow-sec",
+        "hard_stop": true,
+        "period": "daily"
+      },
+      "id": "V6-COMPANY-001.2"
+    },
+    {
+      "claim": "company_control_paths_are_conduit_routed_with_fail_closed_receipts",
+      "evidence": {
+        "action": "budget-enforce",
+        "bypass_requested": false
+      },
+      "id": "V6-COMPANY-001.2"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "budget-enforce",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "company_control_paths_are_conduit_routed_with_fail_closed_receipts",
+        "evidence": {
+          "action": "budget-enforce",
+          "bypass_requested": false
+        },
+        "id": "V6-COMPANY-001.2"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "4899d39bbf98721d733f52b8284d82c3ae8d43f7e940bcc388d72f15aba523d1",
+    "required_path": "core/layer0/ops/company_plane",
+    "type": "company_conduit_enforcement"
+  },
+  "decision": {
+    "agent": "shadow-sec",
+    "bucket": "2026-03-13",
+    "hard_stop": true,
+    "limits": {
+      "compute_ms": 120000,
+      "cost_usd": 25.0,
+      "privacy_units": 1000,
+      "tokens": 200000
+    },
+    "period": "daily",
+    "projected_usage": {
+      "compute_ms": 60000,
+      "cost_usd": 50.0,
+      "privacy_units": 150,
+      "tokens": 150000
+    },
+    "reason_codes": [
+      "cost_budget_exceeded"
+    ],
+    "requested_delta": {
+      "compute_ms": 20000,
+      "cost_usd": 30.0,
+      "privacy_units": 50,
+      "tokens": 50000
+    },
+    "ts": "2026-03-13T13:18:13.773Z",
+    "version": "v1"
+  },
+  "lane": "core/layer0/ops",
+  "ok": false,
+  "receipt_hash": "ec721a4b07f5c716f4b6958db688a8abee2028942dfb2560bfa9d7f8683cc02d",
+  "strict": true,
+  "ts": "2026-03-13T13:18:13.773Z",
+  "type": "company_plane_budget_enforce"
+}

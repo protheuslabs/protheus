@@ -1,0 +1,7 @@
+{
+  "version": "v1",
+  "kind": "tot_deliberate_profile_contract",
+  "max_depth": 4,
+  "max_branching": 5,
+  "allowed_strategies": ["bfs", "dfs"]
+}

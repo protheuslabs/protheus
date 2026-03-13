@@ -1,0 +1,19 @@
+{
+  "version": "v1",
+  "kind": "abac_policy_plane",
+  "default_effect": "deny",
+  "rules": [
+    {
+      "id": "allow_research_public_read",
+      "effect": "allow",
+      "subject": {"role": ["researcher", "operator"]},
+      "object": {"classification": ["public"]},
+      "action": ["read"],
+      "context": {"env": ["dev", "prod"]}
+    }
+  ],
+  "flight_recorder": {
+    "immutable": true,
+    "hash_chain": true
+  }
+}

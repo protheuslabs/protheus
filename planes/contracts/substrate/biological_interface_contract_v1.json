@@ -1,0 +1,9 @@
+{
+  "version": "v1",
+  "kind": "substrate_biological_interface_contract",
+  "channels": {
+    "min": 4,
+    "max": 128
+  },
+  "model_control_fields": ["attention_gain", "exploration_bias", "safety_temperature"]
+}

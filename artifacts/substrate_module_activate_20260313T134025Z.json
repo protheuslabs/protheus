@@ -1,0 +1,71 @@
+{
+  "activation": {
+    "activation_id": "act_7e207c1120",
+    "module": "fall-detection",
+    "ts": "2026-03-13T13:40:25.872Z"
+  },
+  "artifact": {
+    "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/substrate_plane/csi/modules/registry.json",
+    "sha256": "82bc0c7c9094542f34c686f1c85eed249db302513f5def0bac309a89b2e3a564"
+  },
+  "claim_evidence": [
+    {
+      "claim": "csi_derived_module_registry_tracks_input_contract_budget_privacy_and_activation_receipts",
+      "evidence": {
+        "module": "fall-detection",
+        "op": "activate"
+      },
+      "id": "V6-SUBSTRATE-001.2"
+    },
+    {
+      "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+      "evidence": {
+        "action": "csi-module",
+        "bypass_requested": false
+      },
+      "id": "V6-SUBSTRATE-001.2"
+    },
+    {
+      "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+      "evidence": {
+        "action": "csi-module",
+        "bypass_requested": false
+      },
+      "id": "V6-SUBSTRATE-001.4"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "csi-module",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+        "evidence": {
+          "action": "csi-module",
+          "bypass_requested": false
+        },
+        "id": "V6-SUBSTRATE-001.2"
+      },
+      {
+        "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+        "evidence": {
+          "action": "csi-module",
+          "bypass_requested": false
+        },
+        "id": "V6-SUBSTRATE-001.4"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "f7cb2e5ff1d7e278f5bb14553712be02590823b835b16710be32e63d0ffd153b",
+    "required_path": "core/layer0/ops/substrate_plane",
+    "type": "substrate_conduit_enforcement"
+  },
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "op": "activate",
+  "receipt_hash": "1ed06b18c87591e553a447daa117dd151835758821aadee4998b5769409fc859",
+  "strict": true,
+  "ts": "2026-03-13T13:40:25.873Z",
+  "type": "substrate_plane_csi_module"
+}

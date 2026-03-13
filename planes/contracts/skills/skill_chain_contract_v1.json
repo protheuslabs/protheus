@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "kind": "skill_chain_contract",
+  "required_chain_version": "v1",
+  "require_smoke_tests": true
+}

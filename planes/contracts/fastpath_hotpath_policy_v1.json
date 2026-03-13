@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "kind": "fastpath_hotpath_policy",
+  "hotpaths": [
+    "routing.rank",
+    "execution.scheduling"
+  ],
+  "rollback_on_parity_fail": true,
+  "fail_closed": true
+}

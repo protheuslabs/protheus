@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "kind": "trust_chain_integration",
+  "bundle_path": "state/release/provenance_bundle/latest.json",
+  "required_signature_paths": [
+    "state/release/provenance/signatures/protheus-ops.sig",
+    "state/release/provenance/signatures/protheusd.sig",
+    "state/release/provenance/signatures/conduit_daemon.sig"
+  ],
+  "rekor_bundle_path": "state/release/provenance/rekor_entries.json",
+  "require_rekor": true,
+  "fail_closed": true
+}

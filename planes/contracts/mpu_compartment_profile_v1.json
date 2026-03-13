@@ -1,0 +1,50 @@
+{
+  "version": "v1",
+  "kind": "mpu_compartment_profile",
+  "compartments": [
+    {
+      "id": "rtos_kernel",
+      "region_start": 4096,
+      "region_size": 16384,
+      "access": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "unprivileged": true
+    },
+    {
+      "id": "conduit_io",
+      "region_start": 24576,
+      "region_size": 8192,
+      "access": {
+        "read": true,
+        "write": true,
+        "execute": false
+      },
+      "unprivileged": true
+    },
+    {
+      "id": "receipt_log",
+      "region_start": 32768,
+      "region_size": 12288,
+      "access": {
+        "read": true,
+        "write": true,
+        "execute": false
+      },
+      "unprivileged": true
+    }
+  ],
+  "targets": [
+    {
+      "id": "mcu",
+      "compartments": ["rtos_kernel", "conduit_io", "receipt_log"]
+    },
+    {
+      "id": "edge",
+      "compartments": ["rtos_kernel", "conduit_io", "receipt_log"]
+    }
+  ],
+  "description": "MPU profile for deterministic compartment isolation with write/execute separation."
+}

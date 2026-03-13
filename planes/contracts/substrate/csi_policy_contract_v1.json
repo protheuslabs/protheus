@@ -1,0 +1,8 @@
+{
+  "version": "v1",
+  "kind": "substrate_csi_policy_contract",
+  "locality_default": "local-only",
+  "consent_required": true,
+  "max_retention_minutes": 1440,
+  "risk_classes": ["low", "medium", "high"]
+}

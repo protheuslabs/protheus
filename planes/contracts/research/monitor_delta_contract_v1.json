@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "kind": "monitor_delta_contract",
+  "notify_on_change": true,
+  "notes": "V6-RESEARCH-004.4 monitor lane for change deltas + notification receipts."
+}

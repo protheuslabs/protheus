@@ -1,0 +1,8 @@
+{
+  "version": "v1",
+  "kind": "flatten_unnest_transform_contract",
+  "default_max_depth": 6,
+  "default_format": "dot",
+  "preserve_metadata": true,
+  "notes": "V6-PARSE-001.4 governed flatten and unnest transform contract."
+}

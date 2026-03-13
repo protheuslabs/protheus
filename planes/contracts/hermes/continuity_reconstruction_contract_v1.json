@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "kind": "hermes_continuity_contract",
+  "required_context_keys": ["context", "user_model", "active_tasks"],
+  "require_deterministic_receipts": true
+}

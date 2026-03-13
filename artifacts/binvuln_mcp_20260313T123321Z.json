@@ -1,0 +1,199 @@
+{
+  "claim_evidence": [
+    {
+      "claim": "binary_vuln_analysis_surface_is_exposed_as_mcp_contract_for_ai_assisted_hunting",
+      "evidence": {
+        "transport": "stdio"
+      },
+      "id": "V6-BINVULN-001.2"
+    },
+    {
+      "claim": "structured_json_and_jsonl_output_contains_confidence_policy_metadata_and_provenance_hashes",
+      "evidence": {
+        "finding_count": 3
+      },
+      "id": "V6-BINVULN-001.3"
+    },
+    {
+      "claim": "binary_analysis_mcp_surface_is_conduit_routed_with_receipts",
+      "evidence": {
+        "action": "mcp-analyze",
+        "bypass_requested": false
+      },
+      "id": "V6-BINVULN-001.2"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "mcp-analyze",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "binary_analysis_mcp_surface_is_conduit_routed_with_receipts",
+        "evidence": {
+          "action": "mcp-analyze",
+          "bypass_requested": false
+        },
+        "id": "V6-BINVULN-001.2"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "710d8755f8c5ac5666606542e45c9f637657c947619971c66e2407ec972e8038",
+    "required_path": "core/layer0/ops/binary_vuln_plane",
+    "type": "binary_vuln_conduit_enforcement"
+  },
+  "lane": "core/layer0/ops",
+  "mcp": {
+    "result": {
+      "finding_count": 3,
+      "findings": [
+        {
+          "confidence": 0.82,
+          "finding_id": "hardcoded_credential-0001",
+          "id": "hardcoded_credential",
+          "kind": "binary",
+          "offset": 15,
+          "pattern": "password=",
+          "policy_labels": [
+            "secrets",
+            "credential_exposure"
+          ],
+          "provenance_hash": "5111f138633d05ca52ce1c04ff0f13fab35a3ca44b0c5801bf6d62fba0aead44",
+          "severity": "high",
+          "title": "Potential hardcoded credential"
+        },
+        {
+          "confidence": 0.68,
+          "finding_id": "unsafe_shell_exec-0002",
+          "id": "unsafe_shell_exec",
+          "kind": "binary",
+          "offset": 35,
+          "pattern": "/bin/sh",
+          "policy_labels": [
+            "execution",
+            "shell"
+          ],
+          "provenance_hash": "d852abc6228f89b2fdfd3b8641d8336403e75d74cd7b72eb0e4fd68d0d89422a",
+          "severity": "medium",
+          "title": "Potential unsafe shell execution string"
+        },
+        {
+          "confidence": 0.61,
+          "finding_id": "insecure_http-0003",
+          "id": "insecure_http",
+          "kind": "binary",
+          "offset": 43,
+          "pattern": "http://",
+          "policy_labels": [
+            "network",
+            "transport"
+          ],
+          "provenance_hash": "4d67f18626654af839a2c9589b09b9fa2910e9d60203668e9a82ed5d3377ce85",
+          "severity": "low",
+          "title": "Potential insecure transport usage"
+        }
+      ],
+      "input": {
+        "bytes": 64,
+        "kind": "binary",
+        "path": "/Users/jay/.openclaw/workspace/tmp/batch11/sample_firmware.bin",
+        "sha256": "60ecf13531203f9b6a4f5404795fb696b2bc96190fa3feaf9d21cda3d3311daa"
+      }
+    },
+    "server": "binary-vuln-mcp",
+    "tool": "binary_vuln.analyze",
+    "transport": "stdio"
+  },
+  "ok": true,
+  "receipt_hash": "48222f4009490867c67e8b65b91a825dfab9306a3e8331b577b463ec1537a8ff",
+  "scan_payload": {
+    "claim_evidence": [
+      {
+        "claim": "binary_and_firmware_analysis_lane_executes_rulepack_detection_with_provenance_receipts",
+        "evidence": {
+          "finding_count": 3,
+          "kind": "binary"
+        },
+        "id": "V6-BINVULN-001.1"
+      },
+      {
+        "claim": "structured_json_and_jsonl_output_contains_confidence_policy_metadata_and_provenance_hashes",
+        "evidence": {
+          "finding_count": 3,
+          "format": "json"
+        },
+        "id": "V6-BINVULN-001.3"
+      }
+    ],
+    "findings": [
+      {
+        "confidence": 0.82,
+        "finding_id": "hardcoded_credential-0001",
+        "id": "hardcoded_credential",
+        "kind": "binary",
+        "offset": 15,
+        "pattern": "password=",
+        "policy_labels": [
+          "secrets",
+          "credential_exposure"
+        ],
+        "provenance_hash": "5111f138633d05ca52ce1c04ff0f13fab35a3ca44b0c5801bf6d62fba0aead44",
+        "severity": "high",
+        "title": "Potential hardcoded credential"
+      },
+      {
+        "confidence": 0.68,
+        "finding_id": "unsafe_shell_exec-0002",
+        "id": "unsafe_shell_exec",
+        "kind": "binary",
+        "offset": 35,
+        "pattern": "/bin/sh",
+        "policy_labels": [
+          "execution",
+          "shell"
+        ],
+        "provenance_hash": "d852abc6228f89b2fdfd3b8641d8336403e75d74cd7b72eb0e4fd68d0d89422a",
+        "severity": "medium",
+        "title": "Potential unsafe shell execution string"
+      },
+      {
+        "confidence": 0.61,
+        "finding_id": "insecure_http-0003",
+        "id": "insecure_http",
+        "kind": "binary",
+        "offset": 43,
+        "pattern": "http://",
+        "policy_labels": [
+          "network",
+          "transport"
+        ],
+        "provenance_hash": "4d67f18626654af839a2c9589b09b9fa2910e9d60203668e9a82ed5d3377ce85",
+        "severity": "low",
+        "title": "Potential insecure transport usage"
+      }
+    ],
+    "input": {
+      "bytes": 64,
+      "kind": "binary",
+      "path": "/Users/jay/.openclaw/workspace/tmp/batch11/sample_firmware.bin",
+      "sha256": "60ecf13531203f9b6a4f5404795fb696b2bc96190fa3feaf9d21cda3d3311daa"
+    },
+    "lane": "core/layer0/ops",
+    "ok": true,
+    "output": {
+      "artifact_path": "/Users/jay/.openclaw/workspace/core/local/state/ops/binary_vuln_plane/scan/60ecf13531203f9b.json",
+      "finding_count": 3,
+      "format": "json"
+    },
+    "receipt_hash": "5491f705ad036db1a835da1281039b5f6fc23c608c93b44083432dfbdcde4fa9",
+    "rulepack": {
+      "rules": 3,
+      "sha256": "7dd3f26d4cc8a84827b66fa01b5e60355a1da240722dfbdc5c383a8f16f095ec"
+    },
+    "strict": true,
+    "type": "binary_vuln_plane_scan"
+  },
+  "strict": true,
+  "ts": "2026-03-13T12:33:21.847Z",
+  "type": "binary_vuln_plane_mcp_analyze"
+}

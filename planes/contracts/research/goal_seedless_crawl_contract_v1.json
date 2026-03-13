@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "kind": "goal_seedless_crawl_contract",
+  "default_max_pages": 5,
+  "default_max_discovery": 10,
+  "discovery_catalog": {
+    "research": ["https://example.com/research"],
+    "memory": ["https://example.com/memory"],
+    "agent": ["https://example.com/agent"],
+    "default": ["https://example.com"]
+  },
+  "notes": "V6-RESEARCH-004.1 seedless goal planning + deterministic discovery/page receipts."
+}

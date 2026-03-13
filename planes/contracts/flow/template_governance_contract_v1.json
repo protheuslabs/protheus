@@ -1,0 +1,8 @@
+{
+  "version": "v1",
+  "kind": "flow_template_governance_contract",
+  "manifest_path": "planes/contracts/flow/template_pack_manifest_v1.json",
+  "templates_root": "planes/contracts/flow/templates",
+  "required_canvas_version": "v1",
+  "max_review_cadence_days": 120
+}

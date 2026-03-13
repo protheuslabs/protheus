@@ -1,0 +1,5 @@
+{
+  "version": "v1",
+  "kind": "binary_vuln_structured_output_contract",
+  "supported_formats": ["json", "jsonl"]
+}

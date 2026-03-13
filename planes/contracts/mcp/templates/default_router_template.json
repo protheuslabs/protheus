@@ -1,0 +1,5 @@
+{
+  "name": "default_router_template",
+  "pattern": "router",
+  "description": "Baseline MCP router pattern template."
+}

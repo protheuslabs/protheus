@@ -428,3 +428,92 @@ fn v7_meta_016_to_018_external_packets_declare_required_hman_ids() {
         }
     }
 }
+
+#[test]
+fn v7_asm_001_to_002_strict_lanes_execute_with_receipts() {
+    let fixture = stage_metakernel_fixture_root();
+    let root = fixture.path();
+
+    let lanes: Vec<(&str, Vec<String>)> = vec![
+        (
+            "variant-profiles",
+            vec!["variant-profiles".to_string(), "--strict=1".to_string()],
+        ),
+        (
+            "mpu-compartments",
+            vec!["mpu-compartments".to_string(), "--strict=1".to_string()],
+        ),
+    ];
+
+    for (lane, argv) in lanes {
+        let exit = metakernel::run(root, &argv);
+        assert_eq!(exit, 0, "lane should pass in strict mode: {lane}");
+        let latest = read_json(&latest_path(root));
+        assert_eq!(
+            latest.get("command").and_then(Value::as_str),
+            Some(lane),
+            "latest receipt command should match lane {lane}"
+        );
+        assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(true));
+    }
+}
+
+#[test]
+fn v7_asm_001_to_002_fail_closed_on_contract_breaks() {
+    let cases: Vec<(&str, &str, Value)> = vec![
+        (
+            "variant-profiles",
+            "planes/contracts/variant_profiles/medical.json",
+            json!({
+                "version": "v1",
+                "kind": "layer_minus_one_variant_profile",
+                "profile_id": "medical",
+                "baseline_policy_ref": "client/runtime/config/security_policy.json",
+                "capability_delta": {"grant": ["observe"], "revoke": ["observe"]},
+                "budget_delta": {"cpu_ms": 100},
+                "no_privilege_widening": false
+            }),
+        ),
+        (
+            "mpu-compartments",
+            "planes/contracts/mpu_compartment_profile_v1.json",
+            json!({
+                "version": "v1",
+                "kind": "mpu_compartment_profile",
+                "compartments": [
+                    {
+                        "id": "rtos_kernel",
+                        "region_start": 4096,
+                        "region_size": 8192,
+                        "access": {"read": true, "write": true, "execute": true},
+                        "unprivileged": true
+                    }
+                ],
+                "targets": [{"id": "mcu", "compartments": ["rtos_kernel"]}]
+            }),
+        ),
+    ];
+
+    for (lane, contract_rel, mutated_contract) in cases {
+        let fixture = stage_metakernel_fixture_root();
+        let root = fixture.path();
+        write_json(&root.join(contract_rel), &mutated_contract);
+
+        let exit = metakernel::run(root, &[lane.to_string(), "--strict=1".to_string()]);
+        assert_eq!(exit, 1, "lane should fail-closed in strict mode: {lane}");
+
+        let latest = read_json(&latest_path(root));
+        assert_eq!(latest.get("command").and_then(Value::as_str), Some(lane));
+        assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(false));
+        let errors = latest
+            .get("payload")
+            .and_then(|p| p.get("errors"))
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        assert!(
+            !errors.is_empty(),
+            "lane {lane} must report explicit errors when strict lane fails"
+        );
+    }
+}

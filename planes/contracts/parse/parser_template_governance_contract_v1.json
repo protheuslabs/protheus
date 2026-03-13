@@ -1,0 +1,9 @@
+{
+  "version": "v1",
+  "kind": "parser_template_governance_contract",
+  "manifest_path": "planes/contracts/parse/parser_template_pack_manifest_v1.json",
+  "templates_root": "planes/contracts/parse/templates",
+  "required_contract_version": "v1",
+  "max_review_cadence_days": 120,
+  "notes": "V6-PARSE-001.5 signed parser template governance contract."
+}

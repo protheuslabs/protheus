@@ -1,0 +1,12 @@
+{
+  "version": "v1",
+  "kind": "table_postprocessing_pipeline_contract",
+  "stages": [
+    "detect_fake_table",
+    "merge_simplify",
+    "footnote_handle"
+  ],
+  "default_max_rows": 5000,
+  "default_max_cols": 64,
+  "notes": "V6-PARSE-001.3 advanced table postprocessing pipeline contract."
+}

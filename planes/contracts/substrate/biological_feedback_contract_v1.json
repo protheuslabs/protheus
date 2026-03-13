@@ -1,0 +1,7 @@
+{
+  "version": "v1",
+  "kind": "substrate_biological_feedback_contract",
+  "allowed_ops": ["stimulate", "degrade", "status"],
+  "fallback_mode": "silicon-only",
+  "require_consent_for_stimulation": true
+}

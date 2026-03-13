@@ -1,0 +1,14 @@
+{
+  "name": "rss_fallback_template",
+  "resolver_path": "/rss/articles",
+  "query_keys": [
+    "url",
+    "u",
+    "q",
+    "continue"
+  ],
+  "decode_methods": [
+    "query_param_or_continue",
+    "base64_segment"
+  ]
+}

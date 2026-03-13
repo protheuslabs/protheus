@@ -1,0 +1,5 @@
+{
+  "version": "v1",
+  "kind": "shadow_discovery_contract",
+  "required_fields": ["shadow_id", "runtime", "capabilities", "model", "signature"]
+}

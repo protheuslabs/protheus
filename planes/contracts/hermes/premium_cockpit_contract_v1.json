@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "kind": "premium_cockpit_contract",
+  "max_blocks": 64,
+  "allowed_status_colors": ["green", "amber", "red", "blue"]
+}

@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "kind": "middleware_stack_contract",
+  "ordered_hooks": [
+    "before_request",
+    "after_response"
+  ],
+  "required_receipts": true,
+  "notes": "V6-RESEARCH-002.2 downloader/spider middleware lifecycle contract."
+}

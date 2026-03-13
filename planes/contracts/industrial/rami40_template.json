@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "kind": "rami40_mapping_template",
+  "axes": [
+    {"id": "hierarchy_levels", "values": ["Field Device", "Control Device", "Station", "Enterprise"]},
+    {"id": "life_cycle", "values": ["Type", "Instance"]},
+    {"id": "layers", "values": ["Asset", "Integration", "Communication", "Information", "Functional", "Business"]}
+  ],
+  "component_map": [
+    {"component": "conduit", "hierarchy_level": "Control Device", "layer": "Communication"},
+    {"component": "receipt_ledger", "hierarchy_level": "Enterprise", "layer": "Information"}
+  ]
+}

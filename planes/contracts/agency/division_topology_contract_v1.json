@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "kind": "agency_division_topology_contract",
+  "required_fields": ["divisions", "handoffs"],
+  "default_divisions": ["frontend", "security", "research"]
+}

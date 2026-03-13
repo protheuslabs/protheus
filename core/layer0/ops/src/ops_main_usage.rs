@@ -22,9 +22,28 @@ pub(super) fn print_usage() {
     println!("  protheus-ops child-organ-runtime <plan|spawn|status> [flags]");
     println!("  protheus-ops organism-layer <status|ignite|dream|homeostasis|crystallize|symbiosis|mutate|sensory|narrative> [flags]");
     println!("  protheus-ops graph-toolkit <status|pagerank|louvain|jaccard|label-propagation|betweenness|predict-links|centrality|communities> [flags]");
+    println!("  protheus-ops asm-plane <status|wasm-dual-meter|hands-runtime|crdt-adapter|trust-chain|fastpath|industrial-pack> [flags]");
+    println!("  protheus-ops research-plane <status|diagnostics|fetch|recover-selectors|crawl|mcp-extract|spider|middleware|pipeline|signals|console|template-governance|goal-crawl|map-site|extract-structured|monitor|firecrawl-template-governance|js-scrape|auth-session|proxy-rotate|parallel-scrape-workers|book-patterns-template-governance|decode-news-url|decode-news-urls|decoder-template-governance> [flags]");
+    println!("  protheus-ops parse-plane <status|parse-doc|visualize|postprocess-table|flatten|template-governance> [flags]");
+    println!("  protheus-ops flow-plane <status|compile|playground|component-marketplace|export|template-governance> [flags]");
+    println!("  protheus-ops mcp-plane <status|capability-matrix|workflow|expose|pattern-pack|template-governance> [flags]");
+    println!("  protheus-ops skills-plane <status|list|dashboard|create|activate|chain-validate|install|run|share|gallery|react-minimal|tot-deliberate> [flags]");
+    println!("  protheus-ops vbrowser-plane <status|session-start|session-control|automate|privacy-guard> [flags]");
+    println!("  protheus-ops agency-plane <status|create-shadow|topology|orchestrate|workflow-bind> [flags]");
+    println!(
+        "  protheus-ops collab-plane <status|dashboard|launch-role|schedule|continuity> [flags]"
+    );
+    println!("  protheus-ops company-plane <status|orchestrate-agency|budget-enforce|ticket|heartbeat> [flags]");
+    println!("  protheus-ops substrate-plane <status|csi-capture|csi-module|csi-embedded-profile|csi-policy|eye-bind|bio-interface|bio-feedback|bio-adapter-template|bioethics-policy|bio-enable> [flags]");
+    println!(
+        "  protheus-ops observability-plane <status|monitor|workflow|incident|selfhost> [flags]"
+    );
+    println!("  protheus-ops persist-plane <status|schedule|mobile-cockpit> [flags]");
+    println!("  protheus-ops binary-vuln-plane <status|scan|mcp-analyze> [flags]");
+    println!("  protheus-ops hermes-plane <status|discover|continuity|delegate|cockpit> [flags]");
     println!("  protheus-ops ab-lane-eval <status|run> [flags]");
     println!("  protheus-ops contract-check <args>");
-    println!("  protheus-ops security-plane <guard|anti-sabotage-shield|constitution-guardian|remote-emergency-halt|soul-token-guard|integrity-reseal|integrity-reseal-assistant|capability-lease|startup-attestation|status> [flags]");
+    println!("  protheus-ops security-plane <guard|anti-sabotage-shield|constitution-guardian|remote-emergency-halt|soul-token-guard|integrity-reseal|integrity-reseal-assistant|capability-lease|startup-attestation|truth-seeking-gate|abac-policy-plane|status> [flags]");
     println!("  protheus-ops enterprise-hardening <run|status> [--strict=1|0] [--policy=<path>]");
     println!("  protheus-ops rollout-rings <status|evaluate> [flags]");
     println!("  protheus-ops strategy-mode-governor <args>");
@@ -39,7 +58,8 @@ pub(super) fn print_usage() {
     println!("  protheus-ops offsite-backup <sync|restore-drill|status|diagnose|list> [flags]");
     println!("  protheus-ops settlement-program <list|run|run-all|settle|revert|edit-core|edit-module|status> [flags]");
     println!("  protheus-ops llm-economy-organ <run|enable|dashboard|status> [flags]");
-    println!("  protheus-ops metakernel <status|registry|manifest|invariants> [flags]");
+    println!("  protheus-ops metakernel <status|registry|manifest|worlds|capability-taxonomy|budget-admission|epistemic-object|effect-journal|substrate-registry|radix-guard|quantum-broker|neural-consent|attestation-graph|degradation-contracts|execution-profiles|variant-profiles|mpu-compartments|invariants> [flags]");
+    println!("  protheus-ops top1-assurance <status|proof-coverage|proof-vm|size-gate|benchmark-thresholds|comparison-matrix|run-all> [flags]");
     println!("  protheus-ops backlog-queue-executor <run|status> [flags]");
     println!("  protheus-ops backlog-runtime-anchor <build|verify> --lane-id=<V3-RACE-XXX>");
     println!("  protheus-ops legacy-retired-lane <build|verify> --lane-id=<SYSTEMS-OPS-...>");
@@ -96,9 +116,9 @@ pub(super) fn print_usage() {
     println!("  protheus-ops company-layer-orchestration <run|status> [flags]");
     println!("  protheus-ops wifi-csi-engine <run|status> [flags]");
     println!("  protheus-ops biological-computing-adapter <run|status> [flags]");
-    println!("  protheus-ops observability-automation-engine <run|status> [flags]");
-    println!("  protheus-ops observability-slo-runbook-closure <run|status> [flags]");
-    println!("  protheus-ops persistent-background-runtime <run|status> [flags]");
+    println!("  protheus-ops observability-automation-engine <workflow|status> [flags]");
+    println!("  protheus-ops observability-slo-runbook-closure <incident|status> [flags]");
+    println!("  protheus-ops persistent-background-runtime <schedule|status> [flags]");
     println!("  protheus-ops workspace-gateway-runtime <run|status> [flags]");
     println!("  protheus-ops p2p-gossip-seed <run|status> [flags]");
     println!("  protheus-ops startup-agency-builder <run|status> [flags]");

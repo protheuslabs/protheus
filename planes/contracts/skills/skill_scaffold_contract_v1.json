@@ -1,0 +1,12 @@
+{
+  "version": "v1",
+  "kind": "skill_scaffold_contract",
+  "required_files": [
+    "SKILL.md",
+    "skill.yaml",
+    "scripts/run.sh",
+    "assets/.keep",
+    "tests/smoke.sh"
+  ],
+  "default_version": "v1"
+}

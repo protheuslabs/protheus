@@ -1,0 +1,11 @@
+{
+  "version": "v1",
+  "kind": "structured_extraction_contract",
+  "required_output": [
+    "markdown",
+    "json",
+    "validation_receipts",
+    "provenance"
+  ],
+  "notes": "V6-RESEARCH-004.3 prompt-or-schema extraction with deterministic validation/provenance receipts."
+}

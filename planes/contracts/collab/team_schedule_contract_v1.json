@@ -1,0 +1,5 @@
+{
+  "version": "v1",
+  "kind": "collab_team_scheduler_contract",
+  "allowed_ops": ["upsert", "kickoff", "list"]
+}

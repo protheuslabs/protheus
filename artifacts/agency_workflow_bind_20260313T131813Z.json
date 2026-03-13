@@ -1,0 +1,135 @@
+{
+  "artifact": {
+    "binding_path": "/Users/jay/.openclaw/workspace/core/local/state/ops/agency_plane/workflows/batch13-run.json",
+    "deliverable_path": "/Users/jay/.openclaw/workspace/core/local/state/ops/agency_plane/deliverables/batch13-run.json",
+    "sha256": "eceae8194fec5390b4537fe5b87e4aa1cd8acc26122e8d17ac120fef122a7a2a"
+  },
+  "binding": {
+    "bound_at": "2026-03-13T13:18:13.695Z",
+    "run_id": "batch13-run",
+    "stages": [
+      "design",
+      "implement",
+      "verify"
+    ],
+    "success_metrics": [
+      "ui_regression_pass_rate",
+      "latency_budget",
+      "a11y_score"
+    ],
+    "template": "frontend-wizard",
+    "version": "v1"
+  },
+  "claim_evidence": [
+    {
+      "claim": "agent_templates_bind_to_workflow_stages_and_success_metrics_with_receipted_epistemic_deliverables",
+      "evidence": {
+        "deliverable_count": 3,
+        "run_id": "batch13-run",
+        "template": "frontend-wizard"
+      },
+      "id": "V6-AGENCY-001.4"
+    },
+    {
+      "claim": "agency_tool_invocations_and_handoffs_use_conduit_only_fail_closed_guardrails",
+      "evidence": {
+        "action": "workflow-bind",
+        "run_id": "batch13-run"
+      },
+      "id": "V6-AGENCY-001.5"
+    },
+    {
+      "claim": "agency_surface_routes_through_layer0_conduit_with_fail_closed_policy",
+      "evidence": {
+        "action": "workflow-bind",
+        "bypass_requested": false
+      },
+      "id": "V6-AGENCY-001.4"
+    },
+    {
+      "claim": "agency_surface_routes_through_layer0_conduit_with_fail_closed_policy",
+      "evidence": {
+        "action": "workflow-bind",
+        "bypass_requested": false
+      },
+      "id": "V6-AGENCY-001.5"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "workflow-bind",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "agency_surface_routes_through_layer0_conduit_with_fail_closed_policy",
+        "evidence": {
+          "action": "workflow-bind",
+          "bypass_requested": false
+        },
+        "id": "V6-AGENCY-001.4"
+      },
+      {
+        "claim": "agency_surface_routes_through_layer0_conduit_with_fail_closed_policy",
+        "evidence": {
+          "action": "workflow-bind",
+          "bypass_requested": false
+        },
+        "id": "V6-AGENCY-001.5"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "d9d2d8bdea7b9d10e46e8f9fc343c474ed5701f21efd4da290ed783d042ef904",
+    "required_path": "core/layer0/ops/agency_plane",
+    "type": "agency_conduit_enforcement"
+  },
+  "deliverable_pack": {
+    "deliverables": [
+      {
+        "content_hash": "752edb4438fcfaff4988adcb73b5efe34d42a7ef8e282cd5555eb97e34509674",
+        "object_id": "eo_986dbb1b1a0a9d",
+        "provenance": {
+          "run_id": "batch13-run",
+          "stage_index": 1,
+          "template": "frontend-wizard"
+        },
+        "schema_id": "epistemic_object_v1",
+        "stage": "design",
+        "type": "epistemic_object"
+      },
+      {
+        "content_hash": "b890eadf55e6f23d0fdf922308081d1e2f9877d69633cdd3f88edeee1ea45bb3",
+        "object_id": "eo_bfa250619240c1",
+        "provenance": {
+          "run_id": "batch13-run",
+          "stage_index": 2,
+          "template": "frontend-wizard"
+        },
+        "schema_id": "epistemic_object_v1",
+        "stage": "implement",
+        "type": "epistemic_object"
+      },
+      {
+        "content_hash": "fe970f819c36fb615a9cc682b26c49dbacf9d6b41f5f9f08b3b6fbb4d68d2c12",
+        "object_id": "eo_2e1ca24ac13c4b",
+        "provenance": {
+          "run_id": "batch13-run",
+          "stage_index": 3,
+          "template": "frontend-wizard"
+        },
+        "schema_id": "epistemic_object_v1",
+        "stage": "verify",
+        "type": "epistemic_object"
+      }
+    ],
+    "generated_at": "2026-03-13T13:18:13.695Z",
+    "run_id": "batch13-run",
+    "template": "frontend-wizard",
+    "version": "v1"
+  },
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "receipt_hash": "4374ca899d374011787c33c1f068088a954aec53179cd09e4f18f9800a417874",
+  "strict": true,
+  "ts": "2026-03-13T13:18:13.696Z",
+  "type": "agency_plane_workflow_bind"
+}

@@ -22,6 +22,8 @@ const NEURAL_CONSENT_KERNEL_PATH: &str = "planes/contracts/neural_consent_kernel
 const ATTESTATION_GRAPH_PATH: &str = "planes/contracts/attestation_graph_v1.json";
 const DEGRADATION_CONTRACT_PATH: &str = "planes/contracts/degradation_contracts_v1.json";
 const EXECUTION_PROFILE_MATRIX_PATH: &str = "planes/contracts/execution_profile_matrix_v1.json";
+const VARIANT_PROFILE_DIR: &str = "planes/contracts/variant_profiles";
+const MPU_COMPARTMENT_PROFILE_PATH: &str = "planes/contracts/mpu_compartment_profile_v1.json";
 const CONDUIT_SCHEMA_PATH: &str = "planes/contracts/conduit_envelope.schema.json";
 const TLA_BOUNDARY_PATH: &str = "planes/spec/tla/three_plane_boundary.tla";
 const DEP_BOUNDARY_MANIFEST: &str = "client/runtime/config/dependency_boundary_manifest.json";
@@ -1742,6 +1744,288 @@ fn run_execution_profiles(root: &Path, strict: bool) -> Value {
     })
 }
 
+fn run_variant_profiles(root: &Path, strict: bool) -> Value {
+    let mut errors = Vec::new();
+    let mut profile_rows = Vec::new();
+    let required_profiles = ["medical", "robotics", "ai_isolation", "riscv_sovereign"];
+
+    for profile_id in required_profiles {
+        let rel = format!("{VARIANT_PROFILE_DIR}/{profile_id}.json");
+        let path = root.join(&rel);
+        let payload = read_json(&path).unwrap_or(Value::Null);
+        let mut profile_errors = Vec::new();
+
+        if payload.is_null() {
+            profile_errors.push("variant_profile_missing_or_invalid".to_string());
+        }
+        if payload
+            .get("version")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            != "v1"
+        {
+            profile_errors.push("variant_profile_version_must_be_v1".to_string());
+        }
+        if payload
+            .get("kind")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            != "layer_minus_one_variant_profile"
+        {
+            profile_errors.push("variant_profile_kind_invalid".to_string());
+        }
+        if payload
+            .get("profile_id")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            != profile_id
+        {
+            profile_errors.push("variant_profile_id_mismatch".to_string());
+        }
+        let baseline_ref = payload
+            .get("baseline_policy_ref")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        if baseline_ref.is_empty() {
+            profile_errors.push("variant_profile_baseline_policy_ref_required".to_string());
+        }
+        let no_privilege_widening = payload
+            .get("no_privilege_widening")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        if !no_privilege_widening {
+            profile_errors.push("variant_profile_no_privilege_widening_required".to_string());
+        }
+
+        let capability_delta = payload
+            .get("capability_delta")
+            .and_then(Value::as_object)
+            .cloned()
+            .unwrap_or_default();
+        let grants: BTreeSet<String> = capability_delta
+            .get("grant")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default()
+            .iter()
+            .filter_map(Value::as_str)
+            .map(|s| s.trim().to_ascii_lowercase())
+            .filter(|s| !s.is_empty())
+            .collect();
+        let revokes: BTreeSet<String> = capability_delta
+            .get("revoke")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default()
+            .iter()
+            .filter_map(Value::as_str)
+            .map(|s| s.trim().to_ascii_lowercase())
+            .filter(|s| !s.is_empty())
+            .collect();
+        if grants.iter().any(|id| !is_token_id(id)) || revokes.iter().any(|id| !is_token_id(id)) {
+            profile_errors.push("variant_profile_capability_delta_invalid_token".to_string());
+        }
+        let overlap: Vec<String> = grants.intersection(&revokes).cloned().collect();
+        if !overlap.is_empty() {
+            profile_errors.push("variant_profile_capability_delta_overlap".to_string());
+        }
+
+        let budget_delta = payload
+            .get("budget_delta")
+            .and_then(Value::as_object)
+            .cloned()
+            .unwrap_or_default();
+        for (k, v) in &budget_delta {
+            if v.as_i64().is_none() {
+                profile_errors.push(format!("variant_profile_budget_delta_invalid::{k}"));
+            }
+        }
+
+        if !profile_errors.is_empty() {
+            errors.extend(
+                profile_errors
+                    .iter()
+                    .map(|err| format!("{profile_id}:{err}"))
+                    .collect::<Vec<_>>(),
+            );
+        }
+
+        profile_rows.push(json!({
+            "profile_id": profile_id,
+            "path": rel,
+            "ok": profile_errors.is_empty(),
+            "grants": grants.into_iter().collect::<Vec<_>>(),
+            "revokes": revokes.into_iter().collect::<Vec<_>>(),
+            "errors": profile_errors
+        }));
+    }
+
+    let ok = errors.is_empty();
+    json!({
+        "ok": if strict { ok } else { true },
+        "strict": strict,
+        "variant_profile_dir": VARIANT_PROFILE_DIR,
+        "required_profile_count": required_profiles.len(),
+        "profiles": profile_rows,
+        "errors": errors
+    })
+}
+
+fn run_mpu_compartments(root: &Path, strict: bool) -> Value {
+    let payload = read_json(&root.join(MPU_COMPARTMENT_PROFILE_PATH)).unwrap_or(Value::Null);
+    let mut errors = Vec::new();
+
+    if payload
+        .get("version")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        != "v1"
+    {
+        errors.push("mpu_compartment_profile_version_must_be_v1".to_string());
+    }
+    if payload
+        .get("kind")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        != "mpu_compartment_profile"
+    {
+        errors.push("mpu_compartment_profile_kind_invalid".to_string());
+    }
+
+    let compartments = payload
+        .get("compartments")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    if compartments.is_empty() {
+        errors.push("mpu_compartments_required".to_string());
+    }
+
+    let mut ids = BTreeSet::new();
+    let mut compartment_rows = Vec::new();
+    for row in compartments {
+        let id = row
+            .get("id")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_ascii_lowercase();
+        let mut row_errors = Vec::new();
+        if id.is_empty() {
+            row_errors.push("mpu_compartment_id_required".to_string());
+        } else {
+            if !is_token_id(&id) {
+                row_errors.push("mpu_compartment_id_invalid".to_string());
+            }
+            if !ids.insert(id.clone()) {
+                row_errors.push("mpu_compartment_duplicate_id".to_string());
+            }
+        }
+        let start_ok = row.get("region_start").and_then(Value::as_u64).unwrap_or(0) > 0;
+        let size_ok = row.get("region_size").and_then(Value::as_u64).unwrap_or(0) > 0;
+        if !start_ok || !size_ok {
+            row_errors.push("mpu_compartment_region_invalid".to_string());
+        }
+        let access = row
+            .get("access")
+            .and_then(Value::as_object)
+            .cloned()
+            .unwrap_or_default();
+        let read = access.get("read").and_then(Value::as_bool).unwrap_or(false);
+        let write = access
+            .get("write")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        let execute = access
+            .get("execute")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        if !(read || write || execute) {
+            row_errors.push("mpu_compartment_access_empty".to_string());
+        }
+        if write && execute {
+            row_errors.push("mpu_compartment_write_execute_forbidden".to_string());
+        }
+        let unprivileged = row
+            .get("unprivileged")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        if !unprivileged {
+            row_errors.push("mpu_compartment_unprivileged_required".to_string());
+        }
+        if !row_errors.is_empty() {
+            errors.extend(
+                row_errors
+                    .iter()
+                    .map(|err| format!("{id}:{err}"))
+                    .collect::<Vec<_>>(),
+            );
+        }
+        compartment_rows.push(json!({
+            "id": id,
+            "ok": row_errors.is_empty(),
+            "read": read,
+            "write": write,
+            "execute": execute,
+            "errors": row_errors
+        }));
+    }
+
+    let targets = payload
+        .get("targets")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    if targets.is_empty() {
+        errors.push("mpu_compartment_targets_required".to_string());
+    }
+    for target in targets {
+        let target_id = target
+            .get("id")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_ascii_lowercase();
+        if target_id.is_empty() || !is_token_id(&target_id) {
+            errors.push("mpu_compartment_target_id_invalid".to_string());
+        }
+        let target_compartments = target
+            .get("compartments")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        if target_compartments.is_empty() {
+            errors.push(format!("mpu_compartment_target_empty::{target_id}"));
+            continue;
+        }
+        for comp in target_compartments {
+            let id = comp
+                .as_str()
+                .unwrap_or_default()
+                .trim()
+                .to_ascii_lowercase();
+            if id.is_empty() || !ids.contains(&id) {
+                errors.push(format!(
+                    "mpu_compartment_target_unknown_compartment::{target_id}"
+                ));
+                break;
+            }
+        }
+    }
+
+    let ok = errors.is_empty();
+    json!({
+        "ok": if strict { ok } else { true },
+        "strict": strict,
+        "contract_path": MPU_COMPARTMENT_PROFILE_PATH,
+        "compartment_count": ids.len(),
+        "compartments": compartment_rows,
+        "errors": errors
+    })
+}
+
 fn run_manifest(root: &Path, strict: bool, manifest_rel: &str) -> Value {
     let registry = read_json(&root.join(REGISTRY_PATH)).unwrap_or(Value::Null);
     let primitives = gather_primitives_from_registry(&registry).unwrap_or_default();
@@ -1856,6 +2140,8 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         println!("  protheus-ops metakernel attestation-graph [--strict=1|0]");
         println!("  protheus-ops metakernel degradation-contracts [--strict=1|0]");
         println!("  protheus-ops metakernel execution-profiles [--strict=1|0]");
+        println!("  protheus-ops metakernel variant-profiles [--strict=1|0]");
+        println!("  protheus-ops metakernel mpu-compartments [--strict=1|0]");
         println!("  protheus-ops metakernel invariants [--strict=1|0]");
         return 0;
     }
@@ -1890,6 +2176,8 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         "attestation-graph" => run_attestation_graph(root, strict),
         "degradation-contracts" => run_degradation_contracts(root, strict),
         "execution-profiles" => run_execution_profiles(root, strict),
+        "variant-profiles" => run_variant_profiles(root, strict),
+        "mpu-compartments" => run_mpu_compartments(root, strict),
         "invariants" => run_invariants(root, strict),
         _ => {
             let mut out = json!({
@@ -2041,5 +2329,91 @@ mod tests {
             .map(|s| s.to_ascii_lowercase())
             .collect();
         assert!(set.contains("crypto"));
+    }
+
+    #[test]
+    fn variant_profiles_detects_missing_privilege_floor() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let profiles_dir = root
+            .path()
+            .join("planes")
+            .join("contracts")
+            .join("variant_profiles");
+        std::fs::create_dir_all(&profiles_dir).expect("mkdir");
+        for profile in ["medical", "robotics", "ai_isolation", "riscv_sovereign"] {
+            let payload = if profile == "medical" {
+                json!({
+                    "version": "v1",
+                    "kind": "layer_minus_one_variant_profile",
+                    "profile_id": "medical",
+                    "baseline_policy_ref": "client/runtime/config/security_policy.json",
+                    "capability_delta": { "grant": ["observe"], "revoke": ["train"] },
+                    "budget_delta": {"cpu_ms": -10},
+                    "no_privilege_widening": false
+                })
+            } else {
+                json!({
+                    "version": "v1",
+                    "kind": "layer_minus_one_variant_profile",
+                    "profile_id": profile,
+                    "baseline_policy_ref": "client/runtime/config/security_policy.json",
+                    "capability_delta": { "grant": ["observe"], "revoke": ["train"] },
+                    "budget_delta": {"cpu_ms": 10},
+                    "no_privilege_widening": true
+                })
+            };
+            write_json(&profiles_dir.join(format!("{profile}.json")), &payload);
+        }
+        let out = run_variant_profiles(root.path(), true);
+        assert_eq!(out.get("ok").and_then(Value::as_bool), Some(false));
+        assert!(out
+            .get("errors")
+            .and_then(Value::as_array)
+            .map(|rows| rows.iter().any(|v| {
+                v.as_str()
+                    .map(|s| s.contains("variant_profile_no_privilege_widening_required"))
+                    .unwrap_or(false)
+            }))
+            .unwrap_or(false));
+    }
+
+    #[test]
+    fn mpu_compartments_rejects_write_execute() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let path = root
+            .path()
+            .join("planes")
+            .join("contracts")
+            .join("mpu_compartment_profile_v1.json");
+        write_json(
+            &path,
+            &json!({
+                "version": "v1",
+                "kind": "mpu_compartment_profile",
+                "compartments": [
+                    {
+                        "id": "rtos_kernel",
+                        "region_start": 4096,
+                        "region_size": 8192,
+                        "access": {"read": true, "write": true, "execute": true},
+                        "unprivileged": true
+                    }
+                ],
+                "targets": [
+                    { "id": "mcu", "compartments": ["rtos_kernel"] }
+                ]
+            }),
+        );
+        let out = run_mpu_compartments(root.path(), true);
+        assert_eq!(out.get("ok").and_then(Value::as_bool), Some(false));
+        assert!(out
+            .get("errors")
+            .and_then(Value::as_array)
+            .map(|rows| rows.iter().any(|v| {
+                v.as_str()
+                    .map(|s| s.contains("mpu_compartment_write_execute_forbidden"))
+                    .unwrap_or(false)
+            }))
+            .unwrap_or(false));
     }
 }

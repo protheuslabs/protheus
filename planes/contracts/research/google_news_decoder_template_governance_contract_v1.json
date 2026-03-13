@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "kind": "google_news_decoder_template_governance_contract",
+  "signature_env": "NEWS_DECODER_TEMPLATE_SIGNING_KEY",
+  "notes": "V6-RESEARCH-006.5 curated Google News decoder templates with signed governance."
+}

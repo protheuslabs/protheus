@@ -1,0 +1,19 @@
+{
+  "name": "news_monitor_spider",
+  "seed_urls": [
+    "https://example.com/news"
+  ],
+  "allow_rules": [
+    "*news*",
+    "*analysis*"
+  ],
+  "deny_rules": [
+    "*login*",
+    "*subscribe*"
+  ],
+  "allowed_domains": [
+    "example.com"
+  ],
+  "max_depth": 3,
+  "max_links": 300
+}

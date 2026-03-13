@@ -1,0 +1,7 @@
+{
+  "version": "v1",
+  "kind": "substrate_eye_binding_contract",
+  "allowed_ops": ["enable", "status"],
+  "allowed_sources": ["wifi"],
+  "thin_client_surface": ["enable", "status"]
+}

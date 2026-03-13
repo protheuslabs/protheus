@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "kind": "item_pipeline_contract",
+  "stages": [
+    "validate",
+    "dedupe",
+    "enrich"
+  ],
+  "allowed_export_formats": [
+    "json",
+    "csv"
+  ],
+  "schema_validation_required": true,
+  "notes": "V6-RESEARCH-002.3 chainable item pipeline with governed feed export."
+}

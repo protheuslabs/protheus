@@ -1,0 +1,77 @@
+{
+  "artifact": {
+    "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/substrate_plane/csi/embedded/esp32.json",
+    "sha256": "beae62b625c77b978b531c83724b67aa976d66de8090ab51e55883dbe92c8a27"
+  },
+  "claim_evidence": [
+    {
+      "claim": "embedded_csi_profile_tracks_power_latency_offline_and_degraded_mode_receipts",
+      "evidence": {
+        "degraded_mode": true,
+        "target": "esp32"
+      },
+      "id": "V6-SUBSTRATE-001.3"
+    },
+    {
+      "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+      "evidence": {
+        "action": "csi-embedded-profile",
+        "bypass_requested": false
+      },
+      "id": "V6-SUBSTRATE-001.3"
+    },
+    {
+      "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+      "evidence": {
+        "action": "csi-embedded-profile",
+        "bypass_requested": false
+      },
+      "id": "V6-SUBSTRATE-001.4"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "csi-embedded-profile",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+        "evidence": {
+          "action": "csi-embedded-profile",
+          "bypass_requested": false
+        },
+        "id": "V6-SUBSTRATE-001.3"
+      },
+      {
+        "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+        "evidence": {
+          "action": "csi-embedded-profile",
+          "bypass_requested": false
+        },
+        "id": "V6-SUBSTRATE-001.4"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "6a562e557d9c6ecdff449574b68520bd5df6d4b69ae78c0dd5a11900b9460c7f",
+    "required_path": "core/layer0/ops/substrate_plane",
+    "type": "substrate_conduit_enforcement"
+  },
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "profile": {
+    "degraded_mode": true,
+    "latency_ms": 180.0,
+    "offline": true,
+    "power_mw": 520.0,
+    "reason_codes": [
+      "power_budget_exceeded"
+    ],
+    "target": "esp32",
+    "ts": "2026-03-13T13:42:28.553Z",
+    "version": "v1"
+  },
+  "receipt_hash": "052d62a716600ec092a6068fcff1bcf1f768c40839b1153a48bd56582452cc9c",
+  "strict": true,
+  "ts": "2026-03-13T13:42:28.554Z",
+  "type": "substrate_plane_csi_embedded_profile"
+}

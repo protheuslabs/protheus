@@ -2,7 +2,7 @@
 // Layer ownership: core/layer1/security (authoritative)
 
 use chrono::{SecondsFormat, Utc};
-use serde_json::{json, Value};
+use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -253,7 +253,7 @@ fn number_f64(v: Option<&Value>, fallback: f64, lo: f64, hi: f64) -> f64 {
 // Capability Switchboard
 // -------------------------------------------------------------------------------------------------
 
-fn capability_switchboard_paths(repo_root: &Path) -> (PathBuf, PathBuf, PathBuf, PathBuf) {
+fn capability_switchboard_paths(repo_root: &Path) -> (PathBuf, PathBuf, PathBuf, PathBuf, PathBuf) {
     let policy_path = std::env::var("CAPABILITY_SWITCHBOARD_POLICY_PATH")
         .ok()
         .map(PathBuf::from)
@@ -283,7 +283,21 @@ fn capability_switchboard_paths(repo_root: &Path) -> (PathBuf, PathBuf, PathBuf,
                 .join("security")
                 .join("policy_rootd.js")
         });
-    (policy_path, state_path, audit_path, policy_root_script)
+    let chain_path = std::env::var("CAPABILITY_SWITCHBOARD_CHAIN_PATH")
+        .ok()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            runtime_state_root(repo_root)
+                .join("security")
+                .join("capability_switchboard_chain.jsonl")
+        });
+    (
+        policy_path,
+        state_path,
+        audit_path,
+        policy_root_script,
+        chain_path,
+    )
 }
 
 fn capability_switchboard_default_policy() -> Value {
@@ -425,6 +439,76 @@ fn capability_switchboard_effective_switches(policy: &Value, state: &Value) -> V
     out
 }
 
+fn capability_switchboard_chain_rows(chain_path: &Path) -> Vec<Value> {
+    read_jsonl(chain_path)
+        .into_iter()
+        .filter(|row| {
+            row.get("type")
+                .and_then(Value::as_str)
+                .map(|v| v == "capability_switchboard_chain_event")
+                .unwrap_or(false)
+        })
+        .collect::<Vec<_>>()
+}
+
+fn capability_switchboard_chain_tip(chain_path: &Path) -> String {
+    capability_switchboard_chain_rows(chain_path)
+        .last()
+        .and_then(|row| row.get("hash"))
+        .and_then(Value::as_str)
+        .map(|v| clean_text(v, 140))
+        .filter(|v| !v.is_empty())
+        .unwrap_or_else(|| "GENESIS".to_string())
+}
+
+fn capability_switchboard_verify_chain(chain_path: &Path) -> Value {
+    let rows = capability_switchboard_chain_rows(chain_path);
+    let mut prev_hash = "GENESIS".to_string();
+    for (index, row) in rows.iter().enumerate() {
+        let expected_prev = row
+            .get("prev_hash")
+            .and_then(Value::as_str)
+            .map(|v| clean_text(v, 140))
+            .unwrap_or_else(|| "GENESIS".to_string());
+        if expected_prev != prev_hash {
+            return json!({
+                "ok": false,
+                "entries": rows.len(),
+                "error": "chain_prev_hash_mismatch",
+                "index": index,
+                "expected_prev_hash": prev_hash,
+                "actual_prev_hash": expected_prev
+            });
+        }
+        let mut payload = row.clone();
+        if let Some(obj) = payload.as_object_mut() {
+            obj.remove("hash");
+        }
+        let calc = sha256_hex(&stable_json_string(&payload));
+        let stored = row
+            .get("hash")
+            .and_then(Value::as_str)
+            .map(|v| clean_text(v, 140))
+            .unwrap_or_default();
+        if calc != stored {
+            return json!({
+                "ok": false,
+                "entries": rows.len(),
+                "error": "chain_hash_mismatch",
+                "index": index,
+                "expected_hash": calc,
+                "actual_hash": stored
+            });
+        }
+        prev_hash = stored;
+    }
+    json!({
+        "ok": true,
+        "entries": rows.len(),
+        "tip_hash": prev_hash
+    })
+}
+
 fn capability_switchboard_run_policy_root(
     script_path: &Path,
     scope: &str,
@@ -508,22 +592,39 @@ pub fn run_capability_switchboard(repo_root: &Path, argv: &[String]) -> (Value, 
         .first()
         .map(|v| normalize_token(v, 80))
         .unwrap_or_else(|| "status".to_string());
-    let (policy_path, state_path, audit_path, policy_root_script) =
+    let (policy_path, state_path, audit_path, policy_root_script, chain_path) =
         capability_switchboard_paths(repo_root);
     let policy = capability_switchboard_load_policy(&policy_path);
     let state = capability_switchboard_load_state(&state_path);
     let effective = capability_switchboard_effective_switches(&policy, &state);
 
     if cmd == "status" {
+        let chain = capability_switchboard_verify_chain(&chain_path);
         return (
             json!({
                 "ok": true,
                 "type": "capability_switchboard_status",
                 "ts": now_iso(),
                 "policy_version": policy.get("version").cloned().unwrap_or(Value::String("1.0".to_string())),
-                "switches": effective
+                "switches": effective,
+                "hash_chain": chain
             }),
             0,
+        );
+    }
+
+    if cmd == "verify-chain" {
+        let chain = capability_switchboard_verify_chain(&chain_path);
+        let ok = chain.get("ok").and_then(Value::as_bool).unwrap_or(false);
+        return (
+            json!({
+                "ok": ok,
+                "type": "capability_switchboard_chain_verify",
+                "ts": now_iso(),
+                "chain_path": normalize_rel_path(chain_path.display().to_string()),
+                "chain": chain
+            }),
+            if ok { 0 } else { 1 },
         );
     }
 
@@ -776,14 +877,45 @@ pub fn run_capability_switchboard(repo_root: &Path, argv: &[String]) -> (Value, 
         let audit_row = json!({
             "ts": now_iso(),
             "type": "capability_switchboard_set",
-            "switch": switch_id,
+            "switch": switch_id.clone(),
             "enabled": target_enabled,
-            "approver_id": approver_id,
-            "second_approver_id": second_approver_id,
-            "reason": approval_note,
+            "approver_id": approver_id.clone(),
+            "second_approver_id": second_approver_id.clone(),
+            "reason": approval_note.clone(),
             "policy_root": policy_root
         });
         let _ = append_jsonl(&audit_path, &audit_row);
+
+        let prev_hash = capability_switchboard_chain_tip(&chain_path);
+        let mut chain_row = json!({
+            "ts": now_iso(),
+            "type": "capability_switchboard_chain_event",
+            "action": if target_enabled { "grant" } else { "revoke" },
+            "switch": switch_id.clone(),
+            "enabled": target_enabled,
+            "approver_id": approver_id.clone(),
+            "second_approver_id": second_approver_id.clone(),
+            "reason": approval_note.clone(),
+            "policy_scope": policy
+                .get("policy_root")
+                .and_then(|row| row.get("scope"))
+                .and_then(Value::as_str)
+                .unwrap_or("capability_switchboard_toggle"),
+            "prev_hash": prev_hash
+        });
+        let hash = sha256_hex(&stable_json_string(&chain_row));
+        chain_row["hash"] = Value::String(hash.clone());
+        if let Err(err) = append_jsonl(&chain_path, &chain_row) {
+            return (
+                json!({
+                    "ok": false,
+                    "type": "capability_switchboard_set",
+                    "switch": switch_id,
+                    "reason": format!("hash_chain_append_failed:{err}")
+                }),
+                1,
+            );
+        }
 
         (
             json!({
@@ -791,7 +923,11 @@ pub fn run_capability_switchboard(repo_root: &Path, argv: &[String]) -> (Value, 
                 "type": "capability_switchboard_set",
                 "switch": switch_id,
                 "enabled": target_enabled,
-                "policy_root": policy_root
+                "policy_root": policy_root,
+                "hash_chain": {
+                    "path": normalize_rel_path(chain_path.display().to_string()),
+                    "last_hash": hash
+                }
             }),
             0,
         )
@@ -803,6 +939,7 @@ pub fn run_capability_switchboard(repo_root: &Path, argv: &[String]) -> (Value, 
                 "reason": format!("unknown_command:{cmd}"),
                 "usage": [
                     "protheus-ops security-plane capability-switchboard status",
+                    "protheus-ops security-plane capability-switchboard verify-chain",
                     "protheus-ops security-plane capability-switchboard evaluate --switch=<id>",
                     "protheus-ops security-plane capability-switchboard set --switch=<id> --state=on|off --approver-id=<id> --approval-note=... --second-approver-id=<id> --second-approval-note=..."
                 ]
@@ -2924,6 +3061,339 @@ impl Default for TruthGatePolicy {
     }
 }
 
+fn abac_paths(repo_root: &Path) -> (PathBuf, PathBuf, PathBuf, PathBuf) {
+    let policy_path = std::env::var("ABAC_POLICY_PATH")
+        .ok()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| runtime_config_path(repo_root, "abac_policy_plane.json"));
+    let latest_path = std::env::var("ABAC_LATEST_PATH")
+        .ok()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            runtime_state_root(repo_root)
+                .join("security")
+                .join("abac_policy_plane_latest.json")
+        });
+    let history_path = std::env::var("ABAC_HISTORY_PATH")
+        .ok()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            runtime_state_root(repo_root)
+                .join("security")
+                .join("abac_policy_plane_history.jsonl")
+        });
+    let flight_recorder_path = std::env::var("ABAC_FLIGHT_RECORDER_PATH")
+        .ok()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            runtime_state_root(repo_root)
+                .join("security")
+                .join("abac_flight_recorder.jsonl")
+        });
+    (policy_path, latest_path, history_path, flight_recorder_path)
+}
+
+fn parse_object_map(raw: Option<&String>) -> Result<Map<String, Value>, String> {
+    let text = match raw {
+        Some(v) => v.trim(),
+        None => return Ok(Map::new()),
+    };
+    if text.is_empty() {
+        return Ok(Map::new());
+    }
+    let parsed = serde_json::from_str::<Value>(text)
+        .map_err(|err| format!("invalid_json_object_payload:{err}"))?;
+    parsed
+        .as_object()
+        .cloned()
+        .ok_or_else(|| "json_object_payload_must_be_object".to_string())
+}
+
+fn normalized_value(raw: Option<&str>) -> Option<String> {
+    raw.map(|v| clean_text(v, 160).to_ascii_lowercase())
+        .filter(|v| !v.is_empty())
+}
+
+fn rule_dimension_allows(scope: Option<&Value>, fields: &Map<String, Value>) -> bool {
+    let Some(scope_obj) = scope.and_then(Value::as_object) else {
+        return true;
+    };
+    for (key, expected) in scope_obj {
+        let actual = fields
+            .get(key)
+            .and_then(Value::as_str)
+            .map(|v| v.to_ascii_lowercase())
+            .unwrap_or_default();
+        let expected_values = expected
+            .as_array()
+            .cloned()
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|v| v.as_str().map(|x| x.to_ascii_lowercase()))
+            .collect::<Vec<_>>();
+        if expected_values.is_empty() {
+            continue;
+        }
+        if !expected_values
+            .iter()
+            .any(|v| v == "*" || (!actual.is_empty() && v == &actual))
+        {
+            return false;
+        }
+    }
+    true
+}
+
+fn abac_trace_hash(payload: &Value) -> String {
+    let mut basis = payload.clone();
+    if let Some(obj) = basis.as_object_mut() {
+        obj.remove("hash");
+        obj.remove("receipt_hash");
+    }
+    sha256_hex(&stable_json_string(&basis))
+}
+
+pub fn run_abac_policy_plane(repo_root: &Path, argv: &[String]) -> (Value, i32) {
+    let args = parse_cli_args(argv);
+    let cmd = args
+        .positional
+        .first()
+        .map(|v| v.to_ascii_lowercase())
+        .unwrap_or_else(|| "status".to_string());
+    let (policy_path, latest_path, history_path, flight_path) = abac_paths(repo_root);
+    let policy_json = read_json_or(
+        &policy_path,
+        json!({
+            "version": "v1",
+            "kind": "abac_policy_plane",
+            "default_effect": "deny",
+            "rules": [],
+            "flight_recorder": {
+                "immutable": true,
+                "hash_chain": true,
+                "redact_subject_fields": []
+            }
+        }),
+    );
+    let rules = policy_json
+        .get("rules")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let default_effect = policy_json
+        .get("default_effect")
+        .and_then(Value::as_str)
+        .unwrap_or("deny")
+        .to_ascii_lowercase();
+    let redact_fields = policy_json
+        .get("flight_recorder")
+        .and_then(|v| v.get("redact_subject_fields"))
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+        .iter()
+        .filter_map(|v| v.as_str().map(|x| x.to_ascii_lowercase()))
+        .collect::<HashSet<_>>();
+
+    if cmd == "status" {
+        let latest = read_json_or(&latest_path, Value::Null);
+        let mut out = json!({
+            "ok": true,
+            "type": "abac_policy_plane_status",
+            "ts": now_iso(),
+            "policy_path": normalize_rel_path(policy_path.display().to_string()),
+            "latest_path": normalize_rel_path(latest_path.display().to_string()),
+            "history_path": normalize_rel_path(history_path.display().to_string()),
+            "flight_recorder_path": normalize_rel_path(flight_path.display().to_string()),
+            "rules_count": rules.len(),
+            "latest": latest
+        });
+        out["receipt_hash"] = Value::String(abac_trace_hash(&out));
+        return (out, 0);
+    }
+
+    if cmd != "evaluate" {
+        return (
+            json!({
+                "ok": false,
+                "type": "abac_policy_plane_error",
+                "reason": format!("unknown_command:{cmd}")
+            }),
+            2,
+        );
+    }
+
+    let mut subject = match parse_object_map(args.flags.get("subject-json")) {
+        Ok(v) => v,
+        Err(err) => {
+            return (
+                json!({
+                    "ok": false,
+                    "type": "abac_policy_plane_evaluate",
+                    "reason": err
+                }),
+                2,
+            )
+        }
+    };
+    if let Some(role) = normalized_value(args.flags.get("subject-role").map(String::as_str)) {
+        subject.insert("role".to_string(), Value::String(role));
+    }
+    if let Some(id) = normalized_value(args.flags.get("subject-id").map(String::as_str)) {
+        subject.insert("id".to_string(), Value::String(id));
+    }
+
+    let mut object = match parse_object_map(args.flags.get("object-json")) {
+        Ok(v) => v,
+        Err(err) => {
+            return (
+                json!({
+                    "ok": false,
+                    "type": "abac_policy_plane_evaluate",
+                    "reason": err
+                }),
+                2,
+            )
+        }
+    };
+    if let Some(classification) =
+        normalized_value(args.flags.get("object-classification").map(String::as_str))
+    {
+        object.insert("classification".to_string(), Value::String(classification));
+    }
+    if let Some(id) = normalized_value(args.flags.get("object-id").map(String::as_str)) {
+        object.insert("id".to_string(), Value::String(id));
+    }
+
+    let mut context = match parse_object_map(args.flags.get("context-json")) {
+        Ok(v) => v,
+        Err(err) => {
+            return (
+                json!({
+                    "ok": false,
+                    "type": "abac_policy_plane_evaluate",
+                    "reason": err
+                }),
+                2,
+            )
+        }
+    };
+    if let Some(env) = normalized_value(args.flags.get("context-env").map(String::as_str)) {
+        context.insert("env".to_string(), Value::String(env));
+    }
+    if let Some(trust) = normalized_value(args.flags.get("context-trust").map(String::as_str)) {
+        context.insert("trust".to_string(), Value::String(trust));
+    }
+    let action = normalized_value(args.flags.get("action").map(String::as_str)).unwrap_or_default();
+    if action.is_empty() {
+        return (
+            json!({
+                "ok": false,
+                "type": "abac_policy_plane_evaluate",
+                "reason": "missing_action"
+            }),
+            2,
+        );
+    }
+
+    let subject_value = Value::Object(subject.clone());
+    let object_value = Value::Object(object.clone());
+    let context_value = Value::Object(context.clone());
+
+    let mut decision_effect = default_effect.clone();
+    let mut matched_rule_id = Value::Null;
+    for rule in &rules {
+        let action_ok = rule
+            .get("action")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|v| v.as_str().map(|x| x.to_ascii_lowercase()))
+            .any(|v| v == "*" || v == action);
+        if !action_ok {
+            continue;
+        }
+        if !rule_dimension_allows(rule.get("subject"), &subject) {
+            continue;
+        }
+        if !rule_dimension_allows(rule.get("object"), &object) {
+            continue;
+        }
+        if !rule_dimension_allows(rule.get("context"), &context) {
+            continue;
+        }
+        decision_effect = rule
+            .get("effect")
+            .and_then(Value::as_str)
+            .unwrap_or("deny")
+            .to_ascii_lowercase();
+        matched_rule_id = rule
+            .get("id")
+            .and_then(Value::as_str)
+            .map(|v| Value::String(v.to_string()))
+            .unwrap_or(Value::Null);
+        break;
+    }
+
+    let allowed = decision_effect == "allow";
+    let mut redacted_subject = subject.clone();
+    for key in &redact_fields {
+        if redacted_subject.contains_key(key) {
+            redacted_subject.insert(key.clone(), Value::String("***".to_string()));
+        }
+    }
+
+    let previous_hash = read_jsonl(&flight_path)
+        .last()
+        .and_then(|v| v.get("hash").and_then(Value::as_str))
+        .map(ToString::to_string)
+        .unwrap_or_else(|| "GENESIS".to_string());
+    let mut flight_row = json!({
+        "type": "abac_flight_recorder_event",
+        "ts": now_iso(),
+        "subject": redacted_subject,
+        "object": object,
+        "context": context,
+        "action": action,
+        "decision": if allowed { "allow" } else { "deny" },
+        "matched_rule_id": matched_rule_id,
+        "prev_hash": previous_hash
+    });
+    let hash = abac_trace_hash(&flight_row);
+    flight_row["hash"] = Value::String(hash.clone());
+    let _ = append_jsonl(&flight_path, &flight_row);
+
+    let mut out = json!({
+        "ok": allowed,
+        "type": "abac_policy_plane_evaluate",
+        "ts": now_iso(),
+        "subject": subject_value,
+        "object": object_value,
+        "context": context_value,
+        "action": action,
+        "decision": if allowed { "allow" } else { "deny" },
+        "matched_rule_id": matched_rule_id,
+        "policy_path": normalize_rel_path(policy_path.display().to_string()),
+        "flight_recorder_path": normalize_rel_path(flight_path.display().to_string()),
+        "flight_recorder_hash": hash,
+        "claim_evidence": [
+            {
+                "id": "V7-ASM-006",
+                "claim": "abac_evaluation_emits_immutable_flight_recorder_trace",
+                "evidence": {
+                    "matched_rule_id": matched_rule_id,
+                    "decision": if allowed { "allow" } else { "deny" }
+                }
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(abac_trace_hash(&out));
+    let _ = append_jsonl(&history_path, &out);
+    let _ = write_json_atomic(&latest_path, &out);
+    (out, if allowed { 0 } else { 1 })
+}
+
 fn truth_gate_paths(repo_root: &Path) -> (PathBuf, PathBuf, PathBuf) {
     let policy_path = std::env::var("TRUTH_GATE_POLICY_PATH")
         .ok()
@@ -3177,6 +3647,117 @@ pub fn run_truth_seeking_gate(repo_root: &Path, argv: &[String]) -> (Value, i32)
 }
 
 #[cfg(test)]
+mod capability_switchboard_tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    fn write_json(path: &Path, value: &Value) {
+        write_json_atomic(path, value).expect("write json");
+    }
+
+    #[test]
+    fn capability_switchboard_emits_grant_revoke_hash_chain() {
+        let tmp = tempdir().expect("tempdir");
+        let policy_path = tmp.path().join("policy.json");
+        let state_path = tmp.path().join("state.json");
+        let audit_path = tmp.path().join("audit.jsonl");
+        let chain_path = tmp.path().join("chain.jsonl");
+
+        write_json(
+            &policy_path,
+            &json!({
+                "version": "1.0",
+                "require_dual_control": false,
+                "policy_root": {"required": false, "scope": "capability_switchboard_toggle"},
+                "switches": {
+                    "autonomy": {
+                        "default_enabled": true,
+                        "security_locked": false,
+                        "require_policy_root": false,
+                        "description": "Autonomy lane"
+                    }
+                }
+            }),
+        );
+
+        std::env::set_var("CAPABILITY_SWITCHBOARD_POLICY_PATH", &policy_path);
+        std::env::set_var("CAPABILITY_SWITCHBOARD_STATE_PATH", &state_path);
+        std::env::set_var("CAPABILITY_SWITCHBOARD_AUDIT_PATH", &audit_path);
+        std::env::set_var("CAPABILITY_SWITCHBOARD_CHAIN_PATH", &chain_path);
+
+        let (_, code_revoke) = run_capability_switchboard(
+            tmp.path(),
+            &[
+                "set".to_string(),
+                "--switch=autonomy".to_string(),
+                "--state=off".to_string(),
+                "--approver-id=op1".to_string(),
+                "--approval-note=disable autonomy for maintenance".to_string(),
+            ],
+        );
+        assert_eq!(code_revoke, 0);
+
+        let (_, code_grant) = run_capability_switchboard(
+            tmp.path(),
+            &[
+                "set".to_string(),
+                "--switch=autonomy".to_string(),
+                "--state=on".to_string(),
+                "--approver-id=op1".to_string(),
+                "--approval-note=re-enable autonomy after checks".to_string(),
+            ],
+        );
+        assert_eq!(code_grant, 0);
+
+        let (verify, verify_code) =
+            run_capability_switchboard(tmp.path(), &["verify-chain".to_string()]);
+        assert_eq!(verify_code, 0);
+        assert_eq!(verify.get("ok").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            verify
+                .get("chain")
+                .and_then(|v| v.get("entries"))
+                .and_then(Value::as_u64),
+            Some(2)
+        );
+
+        std::env::remove_var("CAPABILITY_SWITCHBOARD_POLICY_PATH");
+        std::env::remove_var("CAPABILITY_SWITCHBOARD_STATE_PATH");
+        std::env::remove_var("CAPABILITY_SWITCHBOARD_AUDIT_PATH");
+        std::env::remove_var("CAPABILITY_SWITCHBOARD_CHAIN_PATH");
+    }
+
+    #[test]
+    fn capability_switchboard_verify_chain_detects_tamper() {
+        let tmp = tempdir().expect("tempdir");
+        let chain_path = tmp.path().join("chain.jsonl");
+        append_jsonl(
+            &chain_path,
+            &json!({
+                "type": "capability_switchboard_chain_event",
+                "ts": "2026-03-13T00:00:00Z",
+                "action": "grant",
+                "switch": "autonomy",
+                "enabled": true,
+                "approver_id": "op1",
+                "second_approver_id": "",
+                "reason": "ok",
+                "policy_scope": "capability_switchboard_toggle",
+                "prev_hash": "GENESIS",
+                "hash": "tampered"
+            }),
+        )
+        .expect("append");
+        let verify = capability_switchboard_verify_chain(&chain_path);
+        assert_eq!(verify.get("ok").and_then(Value::as_bool), Some(false));
+        assert_eq!(
+            verify.get("error").and_then(Value::as_str),
+            Some("chain_hash_mismatch")
+        );
+    }
+}
+
+#[cfg(test)]
 mod truth_gate_tests {
     use super::*;
     use tempfile::tempdir;
@@ -3243,5 +3824,160 @@ mod truth_gate_tests {
         assert_eq!(code, 0);
         assert_eq!(out.get("decision").and_then(Value::as_str), Some("allow"));
         assert_eq!(out.get("ok").and_then(Value::as_bool), Some(true));
+    }
+}
+
+#[cfg(test)]
+mod abac_policy_plane_tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn abac_denies_when_no_rule_matches() {
+        let root = tempdir().expect("tempdir");
+        let policy_path = root
+            .path()
+            .join("client")
+            .join("runtime")
+            .join("config")
+            .join("abac_policy_plane.json");
+        ensure_parent(&policy_path).expect("policy parent");
+        write_json_atomic(
+            &policy_path,
+            &json!({
+                "version": "v1",
+                "kind": "abac_policy_plane",
+                "default_effect": "deny",
+                "rules": [],
+                "flight_recorder": {
+                    "immutable": true,
+                    "hash_chain": true,
+                    "redact_subject_fields": ["id"]
+                }
+            }),
+        )
+        .expect("write policy");
+
+        let (out, code) = run_abac_policy_plane(
+            root.path(),
+            &[
+                "evaluate".to_string(),
+                "--action=write".to_string(),
+                "--subject-role=observer".to_string(),
+                "--subject-id=user-123".to_string(),
+                "--object-classification=internal".to_string(),
+                "--context-env=dev".to_string(),
+            ],
+        );
+        assert_eq!(code, 1);
+        assert_eq!(out.get("decision").and_then(Value::as_str), Some("deny"));
+        assert_eq!(
+            out.get("type").and_then(Value::as_str),
+            Some("abac_policy_plane_evaluate")
+        );
+
+        let flight_path = root
+            .path()
+            .join("client")
+            .join("runtime")
+            .join("state")
+            .join("security")
+            .join("abac_flight_recorder.jsonl");
+        let rows = read_jsonl(&flight_path);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(
+            rows[0]
+                .get("subject")
+                .and_then(|v| v.get("id"))
+                .and_then(Value::as_str),
+            Some("***")
+        );
+    }
+
+    #[test]
+    fn abac_allows_and_writes_hash_chain() {
+        let root = tempdir().expect("tempdir");
+        let policy_path = root
+            .path()
+            .join("client")
+            .join("runtime")
+            .join("config")
+            .join("abac_policy_plane.json");
+        ensure_parent(&policy_path).expect("policy parent");
+        write_json_atomic(
+            &policy_path,
+            &json!({
+                "version": "v1",
+                "kind": "abac_policy_plane",
+                "default_effect": "deny",
+                "rules": [
+                    {
+                        "id": "allow_read_public",
+                        "effect": "allow",
+                        "action": ["read"],
+                        "subject": {"role": ["operator"]},
+                        "object": {"classification": ["public"]},
+                        "context": {"env": ["prod"]}
+                    }
+                ],
+                "flight_recorder": {
+                    "immutable": true,
+                    "hash_chain": true,
+                    "redact_subject_fields": []
+                }
+            }),
+        )
+        .expect("write policy");
+
+        let first = run_abac_policy_plane(
+            root.path(),
+            &[
+                "evaluate".to_string(),
+                "--action=read".to_string(),
+                "--subject-role=operator".to_string(),
+                "--subject-id=op-1".to_string(),
+                "--object-classification=public".to_string(),
+                "--context-env=prod".to_string(),
+            ],
+        );
+        assert_eq!(first.1, 0);
+        assert_eq!(
+            first.0.get("decision").and_then(Value::as_str),
+            Some("allow")
+        );
+
+        let second = run_abac_policy_plane(
+            root.path(),
+            &[
+                "evaluate".to_string(),
+                "--action=read".to_string(),
+                "--subject-role=operator".to_string(),
+                "--subject-id=op-2".to_string(),
+                "--object-classification=public".to_string(),
+                "--context-env=prod".to_string(),
+            ],
+        );
+        assert_eq!(second.1, 0);
+
+        let flight_path = root
+            .path()
+            .join("client")
+            .join("runtime")
+            .join("state")
+            .join("security")
+            .join("abac_flight_recorder.jsonl");
+        let rows = read_jsonl(&flight_path);
+        assert_eq!(rows.len(), 2);
+        let first_hash = rows[0]
+            .get("hash")
+            .and_then(Value::as_str)
+            .expect("first hash");
+        assert_eq!(
+            rows[1]
+                .get("prev_hash")
+                .and_then(Value::as_str)
+                .unwrap_or(""),
+            first_hash
+        );
     }
 }

@@ -1,0 +1,13 @@
+{
+  "name": "articles_decode_template",
+  "resolver_path": "/articles",
+  "query_keys": [
+    "url",
+    "u",
+    "q"
+  ],
+  "decode_methods": [
+    "query_param",
+    "base64_segment"
+  ]
+}

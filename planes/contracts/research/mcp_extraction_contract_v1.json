@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "kind": "mcp_extraction_contract",
+  "required_artifacts": [
+    "title",
+    "summary",
+    "links",
+    "entities",
+    "provenance"
+  ],
+  "max_summary_chars": 600,
+  "max_entity_count": 8,
+  "notes": "V6-RESEARCH-001.4 structured extraction contract executed in Layer-0 before model invocation."
+}

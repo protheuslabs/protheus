@@ -1,0 +1,12 @@
+{
+  "version": "v1",
+  "kind": "auth_session_lifecycle_contract",
+  "allowed_ops": [
+    "open",
+    "login",
+    "status",
+    "close"
+  ],
+  "isolation_required": true,
+  "notes": "V6-RESEARCH-005.2 authenticated session lifecycle with isolated cookie jars."
+}

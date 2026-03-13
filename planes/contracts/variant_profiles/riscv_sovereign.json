@@ -1,0 +1,20 @@
+{
+  "version": "v1",
+  "kind": "layer_minus_one_variant_profile",
+  "profile_id": "riscv_sovereign",
+  "baseline_policy_ref": "client/runtime/config/security_policy.json",
+  "capability_delta": {
+    "grant": ["policy", "journal"],
+    "revoke": ["admin"]
+  },
+  "budget_delta": {
+    "cpu_ms": 180,
+    "ram_mb": 128,
+    "storage_mb": 160,
+    "network_kb": 0,
+    "power_mw": 180
+  },
+  "no_privilege_widening": true,
+  "mpu_profile_ref": "planes/contracts/mpu_compartment_profile_v1.json",
+  "description": "Sovereign RISC-V profile with deterministic policy/journal emphasis and no admin widening."
+}

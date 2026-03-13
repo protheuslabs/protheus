@@ -5,22 +5,38 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-const sourceScript = path.resolve(__dirname, '..', '..', 'runtime', 'systems', 'ops', 'protheusd.js');
-const distScript = path.resolve(__dirname, '..', '..', 'runtime', 'dist', 'systems', 'ops', 'protheusd.js');
-const runtimeMode = String(process.env.PROTHEUS_RUNTIME_MODE || '').trim().toLowerCase();
-const preferDist = runtimeMode !== 'source';
-const script = preferDist && fs.existsSync(distScript) ? distScript : sourceScript;
+const repoRoot = path.resolve(__dirname, '..', '..', '..');
+const nativeRelease = path.join(repoRoot, 'target', 'release', 'protheusd');
+const nativeDebug = path.join(repoRoot, 'target', 'debug', 'protheusd');
+let cmd;
+let args;
 
-if (!fs.existsSync(script)) {
-  process.stderr.write(`missing entrypoint: ${script}\n`);
-  process.exit(1);
+if (fs.existsSync(nativeRelease)) {
+  cmd = nativeRelease;
+  args = process.argv.slice(2);
+} else if (fs.existsSync(nativeDebug)) {
+  cmd = nativeDebug;
+  args = process.argv.slice(2);
+} else {
+  cmd = 'cargo';
+  args = [
+    'run',
+    '--quiet',
+    '--manifest-path',
+    path.join(repoRoot, 'core', 'layer0', 'ops', 'Cargo.toml'),
+    '--bin',
+    'protheusd',
+    '--',
+    ...process.argv.slice(2)
+  ];
 }
 
-const run = spawnSync(process.execPath, [script, ...process.argv.slice(2)], {
+const run = spawnSync(cmd, args, {
   stdio: 'inherit',
   env: {
     ...process.env,
     PROTHEUS_OPS_DOMAIN_BRIDGE_TIMEOUT_MS: process.env.PROTHEUS_OPS_DOMAIN_BRIDGE_TIMEOUT_MS || '12000'
-  }
+  },
+  cwd: repoRoot
 });
 process.exit(Number.isFinite(run.status) ? run.status : 1);

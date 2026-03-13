@@ -1,0 +1,7 @@
+{
+  "version": "v1",
+  "kind": "mcp_exposure_contract",
+  "default_max_rps": 10,
+  "max_tools": 16,
+  "notes": "V6-MCP-001.3 bounded workflow/agent MCP exposure contract."
+}

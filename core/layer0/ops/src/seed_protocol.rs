@@ -83,7 +83,9 @@ fn arr_mut<'a>(obj: &'a mut Map<String, Value>, key: &str) -> &'a mut Vec<Value>
     if !obj.get(key).map(Value::is_array).unwrap_or(false) {
         obj.insert(key.to_string(), Value::Array(Vec::new()));
     }
-    obj.get_mut(key).and_then(Value::as_array_mut).expect("array")
+    obj.get_mut(key)
+        .and_then(Value::as_array_mut)
+        .expect("array")
 }
 
 fn push_bounded(rows: &mut Vec<Value>, value: Value, max_rows: usize) {
@@ -109,8 +111,12 @@ fn core_state_root(root: &Path) -> PathBuf {
 }
 
 fn read_blob_index(root: &Path) -> Value {
-    read_json(&core_state_root(root).join("binary_blob_runtime").join("active_blobs.json"))
-        .unwrap_or_else(|| Value::Object(Map::new()))
+    read_json(
+        &core_state_root(root)
+            .join("binary_blob_runtime")
+            .join("active_blobs.json"),
+    )
+    .unwrap_or_else(|| Value::Object(Map::new()))
 }
 
 fn read_organism_state(root: &Path) -> Value {
@@ -123,8 +129,12 @@ fn read_organism_state(root: &Path) -> Value {
 }
 
 fn read_network_ledger(root: &Path) -> Value {
-    read_json(&core_state_root(root).join("network_protocol").join("ledger.json"))
-        .unwrap_or_else(|| Value::Object(Map::new()))
+    read_json(
+        &core_state_root(root)
+            .join("network_protocol")
+            .join("ledger.json"),
+    )
+    .unwrap_or_else(|| Value::Object(Map::new()))
 }
 
 fn gate_allowed(root: &Path, action: &str) -> bool {
@@ -173,10 +183,7 @@ fn packet_signature(packet: &Value) -> String {
             sha256_hex_str(&serde_json::to_string(packet).unwrap_or_default())
         );
     }
-    format!(
-        "sig:{}",
-        crate::v8_kernel::keyed_digest_hex(&key, packet)
-    )
+    format!("sig:{}", crate::v8_kernel::keyed_digest_hex(&key, packet))
 }
 
 fn persist_packet(root: &Path, packet_id: &str, packet: &Value) -> Result<PathBuf, String> {
@@ -255,7 +262,10 @@ fn command_status(root: &Path) -> i32 {
         .get("replication_count")
         .and_then(Value::as_u64)
         .unwrap_or(0);
-    let migration_count = obj.get("migration_count").and_then(Value::as_u64).unwrap_or(0);
+    let migration_count = obj
+        .get("migration_count")
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
     let compliance_checks = obj
         .get("compliance_checks")
         .and_then(Value::as_u64)
@@ -264,7 +274,10 @@ fn command_status(root: &Path) -> i32 {
         .get("compliance_denies")
         .and_then(Value::as_u64)
         .unwrap_or(0);
-    let archive_count = obj.get("archive_count").and_then(Value::as_u64).unwrap_or(0);
+    let archive_count = obj
+        .get("archive_count")
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
     let defense_event_count = obj
         .get("defense_event_count")
         .and_then(Value::as_u64)
@@ -315,8 +328,11 @@ fn command_status(root: &Path) -> i32 {
 fn command_deploy(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
     let profile = selected_profile(parsed);
     let apply = parse_bool(parsed.flags.get("apply"), true);
-    let cap = parse_u64(parsed.flags.get("replication-cap"), if profile == "viral" { 12 } else { 6 })
-        .clamp(1, 64) as usize;
+    let cap = parse_u64(
+        parsed.flags.get("replication-cap"),
+        if profile == "viral" { 12 } else { 6 },
+    )
+    .clamp(1, 64) as usize;
     let action = format!("seed:deploy:{profile}");
     let gate_ok = gate_allowed(root, &action);
     if apply && !gate_ok {
@@ -1090,17 +1106,12 @@ mod tests {
         );
         assert_eq!(exit, 0);
         let latest = read_json(&latest_path(&root)).expect("latest");
-        assert_eq!(
-            latest.get("profile").and_then(Value::as_str),
-            Some("viral")
-        );
-        assert!(
-            latest
-                .get("packet_path")
-                .and_then(Value::as_str)
-                .map(|v| !v.is_empty())
-                .unwrap_or(false)
-        );
+        assert_eq!(latest.get("profile").and_then(Value::as_str), Some("viral"));
+        assert!(latest
+            .get("packet_path")
+            .and_then(Value::as_str)
+            .map(|v| !v.is_empty())
+            .unwrap_or(false));
         std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
         let _ = fs::remove_dir_all(root);
     }
@@ -1230,13 +1241,11 @@ mod tests {
             0
         );
         let state = load_state(&root);
-        assert!(
-            state
-                .get("archive_merkle_root")
-                .and_then(Value::as_str)
-                .map(|v| !v.is_empty())
-                .unwrap_or(false)
-        );
+        assert!(state
+            .get("archive_merkle_root")
+            .and_then(Value::as_str)
+            .map(|v| !v.is_empty())
+            .unwrap_or(false));
         std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
         let _ = fs::remove_dir_all(root);
     }

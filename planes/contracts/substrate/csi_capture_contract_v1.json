@@ -1,0 +1,7 @@
+{
+  "version": "v1",
+  "kind": "substrate_csi_capture_contract",
+  "normalized_events": ["presence", "respiration", "motion"],
+  "require_layer_minus_one_descriptor": true,
+  "layer_two_decode_schema": "csi_normalized_events_v1"
+}

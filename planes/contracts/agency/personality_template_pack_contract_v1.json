@@ -1,0 +1,9 @@
+{
+  "version": "v1",
+  "kind": "agency_personality_template_pack_contract",
+  "templates": {
+    "frontend-wizard": {"specialty": "ui/ux", "default_model": "creative"},
+    "security-engineer": {"specialty": "threat-analysis", "default_model": "strict"},
+    "research-strategist": {"specialty": "research", "default_model": "balanced"}
+  }
+}

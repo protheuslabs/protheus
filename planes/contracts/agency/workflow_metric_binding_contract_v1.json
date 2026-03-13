@@ -1,0 +1,18 @@
+{
+  "version": "v1",
+  "kind": "agency_workflow_metric_binding_contract",
+  "workflow_templates": {
+    "frontend-wizard": {
+      "stages": ["design", "implement", "verify"],
+      "success_metrics": ["ui_regression_pass_rate", "latency_budget", "a11y_score"]
+    },
+    "security-engineer": {
+      "stages": ["threat_model", "scan", "remediate", "verify"],
+      "success_metrics": ["critical_findings_closed", "policy_compliance", "false_positive_rate"]
+    },
+    "research-strategist": {
+      "stages": ["scope", "collect", "synthesize", "publish"],
+      "success_metrics": ["source_coverage", "evidence_quality", "turnaround_time"]
+    }
+  }
+}

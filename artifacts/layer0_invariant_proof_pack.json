@@ -3,7 +3,7 @@
   "type": "layer0_invariant_proof_pack",
   "proof_file": "/Users/jay/.openclaw/workspace/proofs/layer0/Layer0Invariants.lean",
   "proof_sha256": "2bdc527b41fadd8858158f361e02d45a6d2ae0e8bb8f57089edc8b3871ef38ba",
-  "verified_at": "2026-03-13T08:23:23Z",
+  "verified_at": "2026-03-13T10:04:45Z",
   "invariants": [
     "conduit_only_path",
     "constitution_hardening_merkle_operator_approval",

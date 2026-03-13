@@ -1,0 +1,21 @@
+{
+  "version": "v1",
+  "kind": "research_template_pack_manifest",
+  "pack": "scrapy-compatible-core",
+  "updated_at": "2026-03-13T00:00:00Z",
+  "templates": [
+    {
+      "path": "news_monitor_spider.json",
+      "human_reviewed": true,
+      "reviewed_by": "operator",
+      "sha256": "f76cd1fef899831b6b4489e2900d9b472ce6e08f845756d648a78ffc5f1b85a2"
+    },
+    {
+      "path": "docs_assimilation_spider.json",
+      "human_reviewed": true,
+      "reviewed_by": "operator",
+      "sha256": "2626a775c1c397ae0248746399a483893ba081db3948044c8676c983d22f5a34"
+    }
+  ],
+  "signature": "sig:a7b5977583d3be5c0472735ed8b5817565b246ee63ca4cdb22227c8c526fdd88"
+}

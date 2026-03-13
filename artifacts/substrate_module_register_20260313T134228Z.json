@@ -1,0 +1,74 @@
+{
+  "artifact": {
+    "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/substrate_plane/csi/modules/registry.json",
+    "sha256": "8a4ae6b3ef0f9eb1111aa13b8daf8c1cfebadd0705a338a32fbd3943f167164a"
+  },
+  "claim_evidence": [
+    {
+      "claim": "csi_derived_module_registry_tracks_input_contract_budget_privacy_and_activation_receipts",
+      "evidence": {
+        "module": "fall-detection",
+        "op": "register"
+      },
+      "id": "V6-SUBSTRATE-001.2"
+    },
+    {
+      "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+      "evidence": {
+        "action": "csi-module",
+        "bypass_requested": false
+      },
+      "id": "V6-SUBSTRATE-001.2"
+    },
+    {
+      "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+      "evidence": {
+        "action": "csi-module",
+        "bypass_requested": false
+      },
+      "id": "V6-SUBSTRATE-001.4"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "csi-module",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+        "evidence": {
+          "action": "csi-module",
+          "bypass_requested": false
+        },
+        "id": "V6-SUBSTRATE-001.2"
+      },
+      {
+        "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+        "evidence": {
+          "action": "csi-module",
+          "bypass_requested": false
+        },
+        "id": "V6-SUBSTRATE-001.4"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "f7cb2e5ff1d7e278f5bb14553712be02590823b835b16710be32e63d0ffd153b",
+    "required_path": "core/layer0/ops/substrate_plane",
+    "type": "substrate_conduit_enforcement"
+  },
+  "lane": "core/layer0/ops",
+  "module": {
+    "active": false,
+    "budget_units": 250,
+    "input_contract": "csi.normalized_events.v1",
+    "module": "fall-detection",
+    "privacy_class": "sensitive",
+    "registered_at": "2026-03-13T13:42:28.527Z"
+  },
+  "ok": true,
+  "op": "register",
+  "receipt_hash": "5e9b1d353e88eb48cc3424ed1983babf217eb510d0f4a9165057078da7adb44c",
+  "strict": true,
+  "ts": "2026-03-13T13:42:28.528Z",
+  "type": "substrate_plane_csi_module"
+}

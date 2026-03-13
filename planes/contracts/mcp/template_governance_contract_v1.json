@@ -1,0 +1,9 @@
+{
+  "version": "v1",
+  "kind": "mcp_template_governance_contract",
+  "manifest_path": "planes/contracts/mcp/template_pack_manifest_v1.json",
+  "templates_root": "planes/contracts/mcp/templates",
+  "required_mcp_version": "v1",
+  "max_review_cadence_days": 120,
+  "notes": "V6-MCP-001.5 signed MCP template governance contract."
+}

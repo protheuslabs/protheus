@@ -1,0 +1,8 @@
+{
+  "version": "v1",
+  "kind": "agency_multi_agent_orchestrator_contract",
+  "min_concurrency": 5,
+  "max_concurrency": 10,
+  "default_concurrency": 5,
+  "allowed_roles": ["planner", "researcher", "builder", "reviewer", "auditor"]
+}

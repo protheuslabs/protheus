@@ -1,0 +1,18 @@
+{
+  "version": "v1",
+  "kind": "company_per_agent_budget_contract",
+  "period_limits": {
+    "daily": {
+      "tokens": 200000,
+      "cost_usd": 25.0,
+      "compute_ms": 120000,
+      "privacy_units": 1000
+    },
+    "weekly": {
+      "tokens": 900000,
+      "cost_usd": 100.0,
+      "compute_ms": 500000,
+      "privacy_units": 5000
+    }
+  }
+}

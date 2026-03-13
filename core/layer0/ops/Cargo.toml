@@ -17,6 +17,10 @@ path = "src/main.rs"
 name = "personas_core"
 path = "src/personas_core.rs"
 
+[[bin]]
+name = "protheusd"
+path = "src/protheusd.rs"
+
 [dependencies]
 foundation_hook_enforcer = { path = "../foundation_hook_enforcer" }
 serde = { version = "1.0", features = ["derive"] }
@@ -38,6 +42,7 @@ infring-layer1-security = { path = "../../layer1/security" }
 protheus-autonomy-core-v1 = { path = "../../layer2/autonomy" }
 protheus-ops-core-v1 = { path = "../../layer2/ops" }
 protheus-spine-core-v1 = { path = "../../layer2/spine" }
+exotic_wrapper = { path = "../../layer_minus_one/exotic_wrapper" }
 
 [dev-dependencies]
 tempfile = "3.13"

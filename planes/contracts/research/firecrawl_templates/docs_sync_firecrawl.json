@@ -1,0 +1,13 @@
+{
+  "name": "docs_sync_firecrawl",
+  "goal": "crawl and map documentation deltas",
+  "extract": {
+    "title": true,
+    "headings": true,
+    "links": true
+  },
+  "limits": {
+    "depth": 4,
+    "max_pages": 500
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "login_form_pattern",
+  "description": "Governed login and submit sequence for authenticated scraping.",
+  "actions": [
+    {
+      "op": "wait_for_selector",
+      "selector": "form input[type='email']",
+      "timeout_ms": 5000
+    },
+    {
+      "op": "fill",
+      "selector": "form input[type='email']",
+      "value_ref": "credential.username"
+    },
+    {
+      "op": "fill",
+      "selector": "form input[type='password']",
+      "value_ref": "credential.password"
+    },
+    {
+      "op": "click",
+      "selector": "form button[type='submit']"
+    }
+  ]
+}

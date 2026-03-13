@@ -1,0 +1,5 @@
+{
+  "name": "default_parser_template",
+  "mapping_id": "default",
+  "description": "Baseline parser template for structured extraction."
+}

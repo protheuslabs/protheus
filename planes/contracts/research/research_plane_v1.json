@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "kind": "research_plane_contract",
+  "fetch_modes": ["http", "stealth", "browser", "auto"],
+  "protection_signals": ["captcha", "cloudflare", "bot detected", "access denied"],
+  "selector_recovery_order": ["css", "xpath", "text", "similarity"],
+  "crawler": {
+    "max_concurrency": 100,
+    "per_domain_qps": 2,
+    "max_retries": 3,
+    "checkpoint_every": 10
+  },
+  "fail_closed": true
+}

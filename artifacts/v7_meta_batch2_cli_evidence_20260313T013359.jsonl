@@ -1,0 +1,98 @@
+# quantum-broker --strict=1
+{
+  "command": "quantum-broker",
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "payload": {
+    "contract_path": "planes/contracts/quantum_broker_domain_v1.json",
+    "errors": [],
+    "fallback_ok": true,
+    "missing_operations": [],
+    "ok": true,
+    "strict": true,
+    "unknown_operations": []
+  },
+  "receipt_hash": "ab42d292dd561da694bbf34e1118725a98b2fa16a8c8699a1b3d5a989c23d7eb",
+  "ts": "2026-03-13T07:34:00.418Z",
+  "type": "metakernel_run"
+}
+
+# neural-consent --strict=1
+{
+  "command": "neural-consent",
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "payload": {
+    "contract_path": "planes/contracts/neural_consent_kernel_v1.json",
+    "errors": [],
+    "missing_authorities": [],
+    "ok": true,
+    "rate_limit_ok": true,
+    "stimulate_policy_ok": true,
+    "strict": true,
+    "unknown_authorities": []
+  },
+  "receipt_hash": "08973f6b8a5f7e01711a05390b5946ae386348149bc9701f8b899956c6a91602",
+  "ts": "2026-03-13T07:34:00.581Z",
+  "type": "metakernel_run"
+}
+
+# attestation-graph --strict=1
+{
+  "command": "attestation-graph",
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "payload": {
+    "duplicate_edges": [],
+    "errors": [],
+    "graph_path": "planes/contracts/attestation_graph_v1.json",
+    "ok": true,
+    "strict": true
+  },
+  "receipt_hash": "63dfc9d9d36e6a266f53435cf6b6a08d56d4de978a695beeba8ba3ce1ac3f6e4",
+  "ts": "2026-03-13T07:34:00.742Z",
+  "type": "metakernel_run"
+}
+
+# degradation-contracts --strict=1
+{
+  "command": "degradation-contracts",
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "payload": {
+    "contract_path": "planes/contracts/degradation_contracts_v1.json",
+    "critical_lane_ids": [
+      "conduit_dispatch",
+      "model_router",
+      "scheduler"
+    ],
+    "errors": [],
+    "ok": true,
+    "strict": true
+  },
+  "receipt_hash": "48d78093b241672b732d43d07abd29bbc3bacf3e6643f5d5d7d82a1a476aedf9",
+  "ts": "2026-03-13T07:34:00.890Z",
+  "type": "metakernel_run"
+}
+
+# execution-profiles --strict=1
+{
+  "command": "execution-profiles",
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "payload": {
+    "errors": [],
+    "matrix_path": "planes/contracts/execution_profile_matrix_v1.json",
+    "ok": true,
+    "profile_harnesses": {
+      "cloud": "harness/cloud_conformance",
+      "edge": "harness/edge_conformance",
+      "mcu": "harness/mcu_conformance"
+    },
+    "strict": true
+  },
+  "receipt_hash": "9f7f3795eb2e9a64db4eac07edafe5d0fa3fc896b95f05f9196fb88699679e94",
+  "ts": "2026-03-13T07:34:01.040Z",
+  "type": "metakernel_run"
+}
+

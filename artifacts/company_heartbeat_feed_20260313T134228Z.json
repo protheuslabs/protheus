@@ -1,0 +1,79 @@
+{
+  "artifact": {
+    "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/company_plane/heartbeat/remote_feed.json"
+  },
+  "claim_evidence": [
+    {
+      "claim": "remote_mobile_safe_team_heartbeat_feed_is_available",
+      "evidence": {
+        "team_count": 1
+      },
+      "id": "V6-COMPANY-001.4"
+    },
+    {
+      "claim": "company_control_paths_are_conduit_routed_with_fail_closed_receipts",
+      "evidence": {
+        "action": "heartbeat",
+        "bypass_requested": false
+      },
+      "id": "V6-COMPANY-001.4"
+    },
+    {
+      "claim": "company_control_paths_are_conduit_routed_with_fail_closed_receipts",
+      "evidence": {
+        "action": "heartbeat",
+        "bypass_requested": false
+      },
+      "id": "V6-COMPANY-001.5"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "heartbeat",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "company_control_paths_are_conduit_routed_with_fail_closed_receipts",
+        "evidence": {
+          "action": "heartbeat",
+          "bypass_requested": false
+        },
+        "id": "V6-COMPANY-001.4"
+      },
+      {
+        "claim": "company_control_paths_are_conduit_routed_with_fail_closed_receipts",
+        "evidence": {
+          "action": "heartbeat",
+          "bypass_requested": false
+        },
+        "id": "V6-COMPANY-001.5"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "a8fc5c3d427ece84c763a0a63c81e4cac54606e132703ac2dc962dd869edc100",
+    "required_path": "core/layer0/ops/company_plane",
+    "type": "company_conduit_enforcement"
+  },
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "op": "remote-feed",
+  "receipt_hash": "3ff29cb21d76ed3f631aa7b188a0e33dbe83982a6a5671809eb237eb4af8273c",
+  "remote_feed": {
+    "teams": {
+      "ops": {
+        "agents_online": 5,
+        "degraded": false,
+        "last_beat_ts": "2026-03-13T13:42:28.488Z",
+        "queue_depth": 3,
+        "sequence": 3,
+        "status": "healthy"
+      }
+    },
+    "updated_at": "2026-03-13T13:42:28.488Z",
+    "version": "v1"
+  },
+  "strict": true,
+  "team": "default-team",
+  "ts": "2026-03-13T13:42:28.496Z",
+  "type": "company_plane_heartbeat"
+}

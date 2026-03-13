@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "kind": "observability_self_hosted_deploy_contract",
+  "allowed_profiles": [
+    "docker-local",
+    "k8s-local"
+  ],
+  "telemetry_mandatory": false,
+  "single_command_deploy": true
+}

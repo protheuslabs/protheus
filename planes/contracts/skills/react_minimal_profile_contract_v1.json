@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "kind": "react_minimal_profile_contract",
+  "max_steps": 8,
+  "allowed_tools": ["search", "read", "summarize"]
+}

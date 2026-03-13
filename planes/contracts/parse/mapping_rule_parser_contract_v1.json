@@ -1,0 +1,12 @@
+{
+  "version": "v1",
+  "kind": "mapping_rule_parser_contract",
+  "supported_strategies": [
+    "title",
+    "between",
+    "prefix_line",
+    "constant",
+    "contains"
+  ],
+  "notes": "V6-PARSE-001.1 versioned mapping-rule parser contract."
+}

@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "kind": "parse_instruction_pipeline_contract",
+  "pipeline_order": [
+    "source",
+    "instructions",
+    "structured_dict"
+  ],
+  "notes": "V6-PARSE-001.2 inspectable parse pipeline and visualization contract."
+}

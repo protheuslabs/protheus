@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "kind": "wasm_dual_meter_policy",
+  "defaults": {
+    "fuel_budget": 25000,
+    "epoch_budget": 128,
+    "fuel_per_tick": 90,
+    "max_ticks_per_epoch": 16,
+    "epoch_step": 1
+  },
+  "telemetry_required": true,
+  "fail_closed": true
+}

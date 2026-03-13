@@ -1,0 +1,16 @@
+{
+  "name": "paginated_listing_pattern",
+  "description": "Governed listing traversal pattern with deterministic next-page handling.",
+  "actions": [
+    {
+      "op": "extract_links",
+      "selector": "main a.article-link",
+      "max_links": 100
+    },
+    {
+      "op": "next_page",
+      "selector": "a[rel='next']",
+      "max_pages": 10
+    }
+  ]
+}

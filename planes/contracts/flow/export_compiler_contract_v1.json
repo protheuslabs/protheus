@@ -1,0 +1,7 @@
+{
+  "version": "v1",
+  "kind": "flow_export_compiler_contract",
+  "allowed_formats": ["json", "api", "mcp"],
+  "default_format": "json",
+  "default_package_version": "v1"
+}

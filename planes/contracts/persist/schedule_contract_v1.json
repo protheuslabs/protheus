@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "kind": "persist_schedule_contract",
+  "allowed_ops": [
+    "upsert",
+    "list",
+    "kickoff"
+  ],
+  "deterministic_receipts_required": true
+}

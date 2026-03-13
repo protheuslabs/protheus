@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "kind": "skill_activation_contract",
+  "progressive_stages": ["metadata", "scripts", "assets"],
+  "max_trigger_chars": 240
+}

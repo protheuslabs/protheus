@@ -57,6 +57,7 @@ jobs:
         if: steps.semver.outputs.release_ready == '1'
         run: |
           cargo build --release --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops
+          cargo build --release --manifest-path core/layer0/ops/Cargo.toml --bin protheusd
           cargo build --release -p conduit --bin conduit_daemon
           npm pack --silent
 
@@ -72,6 +73,7 @@ jobs:
           mkdir -p client/runtime/local/state/release/sbom
           PKG=$(ls -1 *.tgz | head -n 1)
           syft file:target/release/protheus-ops -o spdx-json=client/runtime/local/state/release/sbom/protheus-ops.spdx.json
+          syft file:target/release/protheusd -o spdx-json=client/runtime/local/state/release/sbom/protheusd.spdx.json
           syft file:target/release/conduit_daemon -o spdx-json=client/runtime/local/state/release/sbom/conduit_daemon.spdx.json
           syft file:${PKG} -o spdx-json=client/runtime/local/state/release/sbom/protheus-npm.spdx.json
 
@@ -88,7 +90,7 @@ jobs:
             openssl genrsa -out /tmp/release_private.pem 4096
           fi
           openssl rsa -in /tmp/release_private.pem -pubout -out client/runtime/local/state/release/signatures/release_public.pem
-          for f in target/release/protheus-ops target/release/conduit_daemon client/runtime/local/state/release/sbom/protheus-ops.spdx.json client/runtime/local/state/release/sbom/conduit_daemon.spdx.json client/runtime/local/state/release/sbom/protheus-npm.spdx.json; do
+          for f in target/release/protheus-ops target/release/protheusd target/release/conduit_daemon client/runtime/local/state/release/sbom/protheus-ops.spdx.json client/runtime/local/state/release/sbom/protheusd.spdx.json client/runtime/local/state/release/sbom/conduit_daemon.spdx.json client/runtime/local/state/release/sbom/protheus-npm.spdx.json; do
             base=$(basename "$f")
             openssl dgst -sha256 -sign /tmp/release_private.pem -out "client/runtime/local/state/release/signatures/${base}.sig" "$f"
           done
@@ -117,14 +119,18 @@ jobs:
           body_path: client/runtime/local/state/release/CHANGELOG.auto.md
           files: |
             target/release/protheus-ops
+            target/release/protheusd
             target/release/conduit_daemon
             *.tgz
             client/runtime/local/state/release/sbom/protheus-ops.spdx.json
+            client/runtime/local/state/release/sbom/protheusd.spdx.json
             client/runtime/local/state/release/sbom/conduit_daemon.spdx.json
             client/runtime/local/state/release/sbom/protheus-npm.spdx.json
             client/runtime/local/state/release/signatures/protheus-ops.sig
+            client/runtime/local/state/release/signatures/protheusd.sig
             client/runtime/local/state/release/signatures/conduit_daemon.sig
             client/runtime/local/state/release/signatures/protheus-ops.spdx.json.sig
+            client/runtime/local/state/release/signatures/protheusd.spdx.json.sig
             client/runtime/local/state/release/signatures/conduit_daemon.spdx.json.sig
             client/runtime/local/state/release/signatures/protheus-npm.spdx.json.sig
             client/runtime/local/state/release/signatures/release_public.pem

@@ -1,0 +1,7 @@
+{
+  "version": "v1",
+  "kind": "durable_mcp_workflow_contract",
+  "max_retries": 5,
+  "checkpoint_relpath": "workflow_runtime/state.json",
+  "notes": "V6-MCP-001.2 durable workflow pause/resume/retry contract."
+}

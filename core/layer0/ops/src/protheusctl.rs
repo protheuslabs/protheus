@@ -807,7 +807,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 }
             } else {
                 Route {
-                    script_rel: "client/runtime/systems/ops/protheusd.js".to_string(),
+                    script_rel: "core://daemon-control".to_string(),
                     args: std::iter::once("status".to_string()).chain(rest).collect(),
                     forward_stdin: false,
                 }
@@ -1158,9 +1158,9 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             forward_stdin: false,
         },
         "research" => Route {
-            script_rel: "client/runtime/systems/tools/research.js".to_string(),
+            script_rel: "core://research-plane".to_string(),
             args: if rest.is_empty() {
-                vec!["--help".to_string()]
+                vec!["status".to_string()]
             } else {
                 rest
             },
@@ -1774,6 +1774,175 @@ mod tests {
     }
 
     #[test]
+    fn core_shortcut_routes_research_stealth_flags_to_core_plane_fetch() {
+        let route = resolve_core_shortcuts(
+            "research",
+            &[
+                "--stealth".to_string(),
+                "--url=https://example.com".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://research-plane");
+        assert_eq!(
+            route.args,
+            vec!["fetch", "--url=https://example.com", "--mode=stealth"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_research_default_fetch_mode_to_auto() {
+        let route = resolve_core_shortcuts(
+            "research",
+            &["fetch".to_string(), "--url=https://example.com".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://research-plane");
+        assert_eq!(
+            route.args,
+            vec!["fetch", "--url=https://example.com", "--mode=auto"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_top_level_crawl_goal_to_research_plane() {
+        let route = resolve_core_shortcuts(
+            "crawl",
+            &[
+                "memory".to_string(),
+                "coherence".to_string(),
+                "--max-pages=4".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://research-plane");
+        assert_eq!(
+            route.args,
+            vec!["goal-crawl", "--goal=memory coherence", "--max-pages=4"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_top_level_map_to_research_plane() {
+        let route =
+            resolve_core_shortcuts("map", &["example.com".to_string(), "--depth=3".to_string()])
+                .expect("route");
+        assert_eq!(route.script_rel, "core://research-plane");
+        assert_eq!(
+            route.args,
+            vec!["map-site", "--domain=example.com", "--depth=3"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_top_level_monitor_to_research_plane() {
+        let route = resolve_core_shortcuts(
+            "monitor",
+            &[
+                "https://example.com/feed".to_string(),
+                "--strict=1".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://research-plane");
+        assert_eq!(
+            route.args,
+            vec!["monitor", "--url=https://example.com/feed", "--strict=1"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_parse_doc_to_parse_plane() {
+        let route = resolve_core_shortcuts(
+            "parse",
+            &[
+                "doc".to_string(),
+                "fixtures/report.html".to_string(),
+                "--mapping=default".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://parse-plane");
+        assert_eq!(
+            route.args,
+            vec![
+                "parse-doc",
+                "--file=fixtures/report.html",
+                "--mapping=default"
+            ]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_parse_visualize_to_parse_plane() {
+        let route = resolve_core_shortcuts(
+            "parse",
+            &[
+                "visualize".to_string(),
+                "core/local/state/ops/parse_plane/parse_doc/latest.json".to_string(),
+                "--strict=1".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://parse-plane");
+        assert_eq!(
+            route.args,
+            vec![
+                "visualize",
+                "--from-path=core/local/state/ops/parse_plane/parse_doc/latest.json",
+                "--strict=1"
+            ]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_mcp_status_to_mcp_plane() {
+        let route = resolve_core_shortcuts("mcp", &[]).expect("route");
+        assert_eq!(route.script_rel, "core://mcp-plane");
+        assert_eq!(route.args, vec!["status"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_mcp_expose_to_mcp_plane() {
+        let route = resolve_core_shortcuts(
+            "mcp",
+            &[
+                "expose".to_string(),
+                "research-agent".to_string(),
+                "--tools=fetch,extract".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://mcp-plane");
+        assert_eq!(
+            route.args,
+            vec!["expose", "--agent=research-agent", "--tools=fetch,extract"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_flow_compile_to_flow_plane() {
+        let route = resolve_core_shortcuts(
+            "flow",
+            &[
+                "compile".to_string(),
+                "artifacts/flow/canvas.json".to_string(),
+                "--strict=1".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://flow-plane");
+        assert_eq!(
+            route.args,
+            vec![
+                "compile",
+                "--canvas-path=artifacts/flow/canvas.json",
+                "--strict=1"
+            ]
+        );
+    }
+
+    #[test]
     fn core_shortcut_routes_blobs_to_binary_blob_runtime() {
         let route =
             resolve_core_shortcuts("blobs", &["migrate".to_string(), "--apply=1".to_string()])
@@ -1884,10 +2053,10 @@ mod tests {
     }
 
     #[test]
-    fn core_shortcut_routes_skills_dashboard_to_assimilation_controller() {
+    fn core_shortcut_routes_skills_dashboard_to_skills_plane() {
         let route = resolve_core_shortcuts("skills", &["dashboard".to_string()]).expect("route");
-        assert_eq!(route.script_rel, "core://assimilation-controller");
-        assert_eq!(route.args, vec!["skills-dashboard"]);
+        assert_eq!(route.script_rel, "core://skills-plane");
+        assert_eq!(route.args, vec!["dashboard"]);
     }
 
     #[test]
@@ -1935,7 +2104,14 @@ mod tests {
     }
 
     #[test]
-    fn core_shortcut_routes_skill_create_to_assimilation_controller() {
+    fn core_shortcut_routes_skills_status_to_skills_plane() {
+        let route = resolve_core_shortcuts("skills", &[]).expect("route");
+        assert_eq!(route.script_rel, "core://skills-plane");
+        assert_eq!(route.args, vec!["status"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_skill_create_to_skills_plane() {
         let route = resolve_core_shortcuts(
             "skill",
             &[
@@ -1946,11 +2122,411 @@ mod tests {
             ],
         )
         .expect("route");
-        assert_eq!(route.script_rel, "core://assimilation-controller");
+        assert_eq!(route.script_rel, "core://skills-plane");
+        assert_eq!(route.args, vec!["create", "--name=weekly growth report"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_skill_run_to_skills_plane() {
+        let route = resolve_core_shortcuts(
+            "skill",
+            &[
+                "run".to_string(),
+                "--skill=researcher".to_string(),
+                "--input=check".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://skills-plane");
         assert_eq!(
             route.args,
-            vec!["skill-create", "--task=weekly growth report"]
+            vec!["run", "--skill=researcher", "--input=check"]
         );
+    }
+
+    #[test]
+    fn core_shortcut_routes_skill_list_to_skills_plane() {
+        let route = resolve_core_shortcuts("skill", &["list".to_string()]).expect("route");
+        assert_eq!(route.script_rel, "core://skills-plane");
+        assert_eq!(route.args, vec!["list"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_binary_vuln_to_core_lane() {
+        let route = resolve_core_shortcuts(
+            "binary-vuln",
+            &["scan".to_string(), "--input=a.bin".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://binary-vuln-plane");
+        assert_eq!(route.args, vec!["scan", "--input=a.bin"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_scan_binary_to_binary_vuln_lane() {
+        let route =
+            resolve_core_shortcuts("scan", &["binary".to_string(), "firmware.bin".to_string()])
+                .expect("route");
+        assert_eq!(route.script_rel, "core://binary-vuln-plane");
+        assert_eq!(route.args, vec!["scan", "--input=firmware.bin"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_shadow_discover_to_hermes_lane() {
+        let route = resolve_core_shortcuts(
+            "shadow",
+            &["discover".to_string(), "--shadow=alpha".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://hermes-plane");
+        assert_eq!(route.args, vec!["discover", "--shadow=alpha"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_top_to_hermes_cockpit() {
+        let route = resolve_core_shortcuts("top", &[]).expect("route");
+        assert_eq!(route.script_rel, "core://hermes-plane");
+        assert_eq!(route.args, vec!["cockpit"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_status_dashboard_to_hermes_cockpit() {
+        let route = resolve_core_shortcuts("status", &["--dashboard".to_string()]).expect("route");
+        assert_eq!(route.script_rel, "core://hermes-plane");
+        assert_eq!(route.args, vec!["cockpit"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_browser_to_vbrowser_plane() {
+        let route = resolve_core_shortcuts(
+            "browser",
+            &["start".to_string(), "--url=https://example.com".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://vbrowser-plane");
+        assert_eq!(
+            route.args,
+            vec!["session-start", "--url=https://example.com"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_agency_create_to_agency_plane() {
+        let route = resolve_core_shortcuts(
+            "agency",
+            &[
+                "create".to_string(),
+                "--template=frontend-wizard".to_string(),
+                "--name=ux-shadow".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://agency-plane");
+        assert_eq!(
+            route.args,
+            vec![
+                "create-shadow",
+                "--template=frontend-wizard",
+                "--name=ux-shadow"
+            ]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_shadow_browser_flag_to_vbrowser_plane() {
+        let route = resolve_core_shortcuts(
+            "shadow",
+            &[
+                "--browser".to_string(),
+                "--session-id=live".to_string(),
+                "--url=https://example.com".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://vbrowser-plane");
+        assert_eq!(
+            route.args,
+            vec![
+                "session-start",
+                "--shadow=default-shadow",
+                "--session-id=live",
+                "--url=https://example.com"
+            ]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_shadow_delegate_to_hermes_plane() {
+        let route = resolve_core_shortcuts(
+            "shadow",
+            &[
+                "delegate".to_string(),
+                "--task=triage".to_string(),
+                "--parent=alpha".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://hermes-plane");
+        assert_eq!(
+            route.args,
+            vec!["delegate", "--task=triage", "--parent=alpha"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_shadow_continuity_to_hermes_plane() {
+        let route = resolve_core_shortcuts(
+            "shadow",
+            &[
+                "continuity".to_string(),
+                "--op=status".to_string(),
+                "--session-id=s1".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://hermes-plane");
+        assert_eq!(
+            route.args,
+            vec!["continuity", "--op=status", "--session-id=s1"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_shadow_create_template_to_agency_plane() {
+        let route = resolve_core_shortcuts(
+            "shadow",
+            &[
+                "create".to_string(),
+                "--template=security-engineer".to_string(),
+                "--name=sec-shadow".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://agency-plane");
+        assert_eq!(
+            route.args,
+            vec![
+                "create-shadow",
+                "--template=security-engineer",
+                "--name=sec-shadow"
+            ]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_team_dashboard_to_collab_plane() {
+        let route =
+            resolve_core_shortcuts("team", &["dashboard".to_string(), "--team=ops".to_string()])
+                .expect("route");
+        assert_eq!(route.script_rel, "core://collab-plane");
+        assert_eq!(route.args, vec!["dashboard", "--team=ops"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_team_schedule_to_collab_plane() {
+        let route = resolve_core_shortcuts(
+            "team",
+            &[
+                "schedule".to_string(),
+                "--op=kickoff".to_string(),
+                "--team=ops".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://collab-plane");
+        assert_eq!(route.args, vec!["schedule", "--op=kickoff", "--team=ops"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_company_budget_to_company_plane() {
+        let route = resolve_core_shortcuts(
+            "company",
+            &[
+                "budget".to_string(),
+                "--agent=alpha".to_string(),
+                "--tokens=100".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://company-plane");
+        assert_eq!(
+            route.args,
+            vec!["budget-enforce", "--agent=alpha", "--tokens=100"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_company_ticket_to_company_plane() {
+        let route = resolve_core_shortcuts(
+            "company",
+            &[
+                "ticket".to_string(),
+                "--op=create".to_string(),
+                "--title=Fix ingestion".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://company-plane");
+        assert_eq!(
+            route.args,
+            vec!["ticket", "--op=create", "--title=Fix ingestion"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_company_heartbeat_to_company_plane() {
+        let route = resolve_core_shortcuts(
+            "company",
+            &[
+                "heartbeat".to_string(),
+                "--op=tick".to_string(),
+                "--team=ops".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://company-plane");
+        assert_eq!(route.args, vec!["heartbeat", "--op=tick", "--team=ops"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_top_level_ticket_to_company_plane() {
+        let route = resolve_core_shortcuts(
+            "ticket",
+            &[
+                "--op=create".to_string(),
+                "--title=Stability hotfix".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://company-plane");
+        assert_eq!(
+            route.args,
+            vec!["ticket", "--op=create", "--title=Stability hotfix"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_top_level_heartbeat_to_company_plane() {
+        let route = resolve_core_shortcuts(
+            "heartbeat",
+            &["--op=tick".to_string(), "--team=platform".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://company-plane");
+        assert_eq!(
+            route.args,
+            vec!["heartbeat", "--op=tick", "--team=platform"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_substrate_capture_to_substrate_plane() {
+        let route = resolve_core_shortcuts(
+            "substrate",
+            &[
+                "capture".to_string(),
+                "--adapter=wifi-csi-esp32".to_string(),
+                "--strict=1".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://substrate-plane");
+        assert_eq!(
+            route.args,
+            vec!["csi-capture", "--adapter=wifi-csi-esp32", "--strict=1"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_eye_enable_wifi_to_substrate_plane() {
+        let route = resolve_core_shortcuts("eye", &["enable".to_string(), "wifi".to_string()])
+            .expect("route");
+        assert_eq!(route.script_rel, "core://substrate-plane");
+        assert_eq!(route.args, vec!["eye-bind", "--op=enable", "--source=wifi"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_substrate_enable_biological_to_substrate_plane() {
+        let route = resolve_core_shortcuts(
+            "substrate",
+            &[
+                "enable".to_string(),
+                "biological".to_string(),
+                "--persona=neural-watch".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://substrate-plane");
+        assert_eq!(
+            route.args,
+            vec!["bio-enable", "--mode=biological", "--persona=neural-watch"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_observability_monitor_to_observability_plane() {
+        let route = resolve_core_shortcuts(
+            "observability",
+            &[
+                "monitor".to_string(),
+                "--severity=high".to_string(),
+                "--message=latency_spike".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://observability-plane");
+        assert_eq!(
+            route.args,
+            vec!["monitor", "--severity=high", "--message=latency_spike"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_schedule_to_persist_plane() {
+        let route = resolve_core_shortcuts(
+            "schedule",
+            &[
+                "--op=upsert".to_string(),
+                "--job=nightly".to_string(),
+                "--cron=0 2 * * *".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://persist-plane");
+        assert_eq!(
+            route.args,
+            vec![
+                "schedule",
+                "--op=upsert",
+                "--job=nightly",
+                "--cron=0 2 * * *"
+            ]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_mobile_to_persist_plane() {
+        let route = resolve_core_shortcuts(
+            "mobile",
+            &["--op=publish".to_string(), "--session-id=phone".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://persist-plane");
+        assert_eq!(
+            route.args,
+            vec!["mobile-cockpit", "--op=publish", "--session-id=phone"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_orchestrate_agency_to_company_plane() {
+        let route = resolve_core_shortcuts(
+            "orchestrate",
+            &["agency".to_string(), "research".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://company-plane");
+        assert_eq!(route.args, vec!["orchestrate-agency", "--team=research"]);
     }
 
     #[test]

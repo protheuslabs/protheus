@@ -1,0 +1,51 @@
+{
+  "claim_evidence": [
+    {
+      "claim": "developer_and_user_skill_dx_exposes_create_list_run_status_wrappers_with_observability_surface",
+      "evidence": {
+        "discovered_count": 0,
+        "installed_count": 1
+      },
+      "id": "V6-SKILLS-001.5"
+    },
+    {
+      "claim": "skill_install_run_share_actions_route_through_layer0_conduit_with_deterministic_audit_receipts",
+      "evidence": {
+        "action": "list",
+        "bypass_requested": false
+      },
+      "id": "V6-SKILLS-001.4"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "list",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "skill_install_run_share_actions_route_through_layer0_conduit_with_deterministic_audit_receipts",
+        "evidence": {
+          "action": "list",
+          "bypass_requested": false
+        },
+        "id": "V6-SKILLS-001.4"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "2cc1886d342ec54d131a10c7a3a7f0a3e85658bafcfc5647340321ded881e085",
+    "required_path": "core/layer0/ops/skills_plane",
+    "type": "skills_conduit_enforcement"
+  },
+  "discovered_count": 0,
+  "installed_count": 1,
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "receipt_hash": "419f7d46b0bdc9e39037b03967cc3b84001a98b5a909ff8be91c51bbd5548674",
+  "skills": [],
+  "skills_root": "/Users/jay/.openclaw/workspace/client/runtime/systems/skills/packages",
+  "skills_root_rel": "client/runtime/systems/skills/packages",
+  "strict": true,
+  "truncated": false,
+  "ts": "2026-03-13T12:33:21.804Z",
+  "type": "skills_plane_list"
+}

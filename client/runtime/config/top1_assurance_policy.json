@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "strict_default": true,
+  "proof_coverage": {
+    "map_path": "proofs/layer0/core_formal_coverage_map.json",
+    "min_proven_ratio": 0.2,
+    "check_toolchains_default": false
+  },
+  "proof_vm": {
+    "dockerfile_path": "proofs/layer0/ProofVM.Dockerfile",
+    "replay_script_path": "proofs/layer0/replay.sh",
+    "manifest_path": "core/local/state/ops/top1_assurance/proof_vm_manifest.json"
+  },
+  "size_gate": {
+    "binary_path": "target/x86_64-unknown-linux-musl/release/protheusd",
+    "min_mb": 25,
+    "max_mb": 35,
+    "require_static": true
+  },
+  "benchmark": {
+    "benchmark_path": "docs/client/reports/runtime_snapshots/ops/proof_pack/top1_benchmark_snapshot.json",
+    "cold_start_max_ms": 80,
+    "idle_rss_max_mb": 25,
+    "tasks_per_sec_min": 5000,
+    "sample_ms": 800
+  },
+  "comparison": {
+    "snapshot_path": "client/runtime/config/competitive_benchmark_snapshot_2026_02.json",
+    "output_path": "docs/comparison/protheus_vs_x.md"
+  },
+  "outputs": {
+    "latest_path": "core/local/state/ops/top1_assurance/latest.json",
+    "history_path": "core/local/state/ops/top1_assurance/history.jsonl"
+  }
+}

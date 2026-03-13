@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "kind": "observability_workflow_editor_contract",
+  "allowed_ops": [
+    "upsert",
+    "list",
+    "run"
+  ],
+  "allowed_triggers": [
+    "cron",
+    "event"
+  ],
+  "receipted_execution_required": true
+}

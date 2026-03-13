@@ -1,0 +1,20 @@
+{
+  "version": "v1",
+  "kind": "mcp_template_pack_manifest",
+  "pack": "default-mcp-templates",
+  "updated_at": "2026-03-13T00:00:00Z",
+  "templates": [
+    {
+      "name": "default_router_template",
+      "path": "default_router_template.json",
+      "sha256": "e706470152a8bede67f857616f5c2330d1571e4f2fa27a6125fc41b24bf6ab43",
+      "human_reviewed": true,
+      "reviewed_by": "operator",
+      "review_cadence_days": 90,
+      "compatibility": {
+        "mcp_version": "v1"
+      }
+    }
+  ],
+  "signature": "sig:unsigned"
+}

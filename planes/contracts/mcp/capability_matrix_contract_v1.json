@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "kind": "mcp_capability_matrix_contract",
+  "required_capabilities": [
+    "tools.call",
+    "resources.read"
+  ],
+  "optional_capabilities": [
+    "workflow.pause_resume_retry",
+    "server.expose",
+    "pattern.pack"
+  ],
+  "notes": "V6-MCP-001.1 capability matrix conformance contract."
+}

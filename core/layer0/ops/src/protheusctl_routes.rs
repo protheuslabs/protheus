@@ -236,6 +236,241 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                 forward_stdin: false,
             })
         }
+        "research" => {
+            let mut args = if rest.is_empty() {
+                vec!["status".to_string()]
+            } else if rest
+                .first()
+                .map(|v| {
+                    let x = v.trim().to_ascii_lowercase();
+                    x.starts_with("--")
+                        || x.starts_with("https://")
+                        || x.starts_with("http://")
+                        || x.starts_with("file://")
+                })
+                .unwrap_or(false)
+            {
+                std::iter::once("fetch".to_string())
+                    .chain(rest.iter().cloned())
+                    .collect::<Vec<_>>()
+            } else {
+                rest.to_vec()
+            };
+            let has_mode = args.iter().any(|arg| arg.starts_with("--mode="));
+            let stealth_index = args.iter().position(|arg| {
+                let value = arg.trim().to_ascii_lowercase();
+                value == "--stealth"
+                    || value == "--stealth=1"
+                    || value == "--stealth=true"
+                    || value == "--stealth=yes"
+                    || value == "--stealth=on"
+            });
+            if let Some(idx) = stealth_index {
+                args.remove(idx);
+                if !has_mode {
+                    args.push("--mode=stealth".to_string());
+                }
+            } else if args.first().map(|v| v.as_str()) == Some("fetch") && !has_mode {
+                args.push("--mode=auto".to_string());
+            }
+            Some(Route {
+                script_rel: "core://research-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "crawl" => {
+            let mut args = vec!["goal-crawl".to_string()];
+            let mut goal_tokens = Vec::<String>::new();
+            let mut passthrough = Vec::<String>::new();
+            for row in rest {
+                if row.starts_with("--") {
+                    passthrough.push(row.clone());
+                } else {
+                    goal_tokens.push(row.clone());
+                }
+            }
+            if !goal_tokens.is_empty() {
+                args.push(format!("--goal={}", goal_tokens.join(" ")));
+            }
+            args.extend(passthrough);
+            Some(Route {
+                script_rel: "core://research-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "map" => {
+            let mut args = vec!["map-site".to_string()];
+            if let Some(domain) = rest.first() {
+                if !domain.starts_with("--") {
+                    args.push(format!("--domain={}", domain.trim()));
+                    args.extend(rest.iter().skip(1).cloned());
+                } else {
+                    args.extend(rest.iter().cloned());
+                }
+            }
+            Some(Route {
+                script_rel: "core://research-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "monitor" => {
+            let mut args = vec!["monitor".to_string()];
+            if let Some(url) = rest.first() {
+                if !url.starts_with("--") {
+                    args.push(format!("--url={}", url.trim()));
+                    args.extend(rest.iter().skip(1).cloned());
+                } else {
+                    args.extend(rest.iter().cloned());
+                }
+            }
+            Some(Route {
+                script_rel: "core://research-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "parse" => {
+            let args = if rest.is_empty() {
+                vec!["status".to_string()]
+            } else {
+                let sub = rest
+                    .first()
+                    .map(|v| v.trim().to_ascii_lowercase())
+                    .unwrap_or_else(|| "status".to_string());
+                match sub.as_str() {
+                    "doc" => {
+                        let mut args = vec!["parse-doc".to_string()];
+                        if let Some(path) = rest.get(1) {
+                            if !path.starts_with("--") {
+                                args.push(format!("--file={}", path.trim()));
+                                args.extend(rest.iter().skip(2).cloned());
+                            } else {
+                                args.extend(rest.iter().skip(1).cloned());
+                            }
+                        } else {
+                            args.extend(rest.iter().skip(1).cloned());
+                        }
+                        args
+                    }
+                    "visualize" | "viz" => {
+                        let mut args = vec!["visualize".to_string()];
+                        if let Some(path) = rest.get(1) {
+                            if !path.starts_with("--") {
+                                args.push(format!("--from-path={}", path.trim()));
+                                args.extend(rest.iter().skip(2).cloned());
+                            } else {
+                                args.extend(rest.iter().skip(1).cloned());
+                            }
+                        } else {
+                            args.extend(rest.iter().skip(1).cloned());
+                        }
+                        args
+                    }
+                    _ => rest.to_vec(),
+                }
+            };
+            Some(Route {
+                script_rel: "core://parse-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "flow" => {
+            let args = if rest.is_empty() {
+                vec!["status".to_string()]
+            } else {
+                let sub = rest
+                    .first()
+                    .map(|v| v.trim().to_ascii_lowercase())
+                    .unwrap_or_else(|| "status".to_string());
+                match sub.as_str() {
+                    "compile" | "build" => {
+                        let mut args = vec!["compile".to_string()];
+                        if let Some(path) = rest.get(1) {
+                            if !path.starts_with("--") {
+                                args.push(format!("--canvas-path={}", path.trim()));
+                                args.extend(rest.iter().skip(2).cloned());
+                            } else {
+                                args.extend(rest.iter().skip(1).cloned());
+                            }
+                        } else {
+                            args.extend(rest.iter().skip(1).cloned());
+                        }
+                        args
+                    }
+                    "debug" => {
+                        let mut args = vec!["playground".to_string()];
+                        if let Some(op) = rest.get(1) {
+                            if !op.starts_with("--") {
+                                args.push(format!("--op={}", op.trim()));
+                                args.extend(rest.iter().skip(2).cloned());
+                            } else {
+                                args.extend(rest.iter().skip(1).cloned());
+                            }
+                        } else {
+                            args.extend(rest.iter().skip(1).cloned());
+                        }
+                        args
+                    }
+                    "run" => {
+                        let mut args = vec!["playground".to_string(), "--op=play".to_string()];
+                        args.extend(rest.iter().skip(1).cloned());
+                        args
+                    }
+                    "templates" => {
+                        let mut args = vec!["template-governance".to_string()];
+                        args.extend(rest.iter().skip(1).cloned());
+                        args
+                    }
+                    "components" => {
+                        let mut args = vec!["component-marketplace".to_string()];
+                        args.extend(rest.iter().skip(1).cloned());
+                        args
+                    }
+                    _ => rest.to_vec(),
+                }
+            };
+            Some(Route {
+                script_rel: "core://flow-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "mcp" => {
+            let args = if rest.is_empty() {
+                vec!["status".to_string()]
+            } else {
+                let sub = rest
+                    .first()
+                    .map(|v| v.trim().to_ascii_lowercase())
+                    .unwrap_or_else(|| "status".to_string());
+                match sub.as_str() {
+                    "expose" => {
+                        let mut args = vec!["expose".to_string()];
+                        if let Some(agent) = rest.get(1) {
+                            if !agent.starts_with("--") {
+                                args.push(format!("--agent={}", agent.trim()));
+                                args.extend(rest.iter().skip(2).cloned());
+                            } else {
+                                args.extend(rest.iter().skip(1).cloned());
+                            }
+                        } else {
+                            args.extend(rest.iter().skip(1).cloned());
+                        }
+                        args
+                    }
+                    _ => rest.to_vec(),
+                }
+            };
+            Some(Route {
+                script_rel: "core://mcp-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
         "blobs" | "blob" => {
             let args = if rest.is_empty() {
                 vec!["status".to_string()]
@@ -533,9 +768,11 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                 .map(|v| v.trim().eq_ignore_ascii_case("dashboard"))
                 .unwrap_or(false) =>
         {
+            let mut args = vec!["dashboard".to_string()];
+            args.extend(rest.iter().skip(1).cloned());
             Some(Route {
-                script_rel: "core://assimilation-controller".to_string(),
-                args: vec!["skills-dashboard".to_string()],
+                script_rel: "core://skills-plane".to_string(),
+                args,
                 forward_stdin: false,
             })
         }
@@ -573,34 +810,489 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                 forward_stdin: false,
             })
         }
-        "skill"
-            if rest
+        "skills" => {
+            let args = if rest.is_empty() {
+                vec!["status".to_string()]
+            } else {
+                rest.to_vec()
+            };
+            Some(Route {
+                script_rel: "core://skills-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "skill" => {
+            let sub = rest
                 .first()
-                .map(|v| v.trim().eq_ignore_ascii_case("create"))
-                .unwrap_or(false) =>
-        {
-            let mut args = vec!["skill-create".to_string()];
-            let mut forwarded = false;
-            for row in rest.iter().skip(1) {
-                if row.starts_with("--task=") {
-                    args.push(row.clone());
-                    forwarded = true;
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "status".to_string());
+            let mut args = match sub.as_str() {
+                "create" => vec!["create".to_string()],
+                "list" => vec!["list".to_string()],
+                "dashboard" => vec!["dashboard".to_string()],
+                "activate" => vec!["activate".to_string()],
+                "install" => vec!["install".to_string()],
+                "run" => vec!["run".to_string()],
+                "share" => vec!["share".to_string()],
+                "gallery" => vec!["gallery".to_string()],
+                "load" => vec!["load".to_string()],
+                "react" | "react-minimal" | "react_minimal" => vec!["react-minimal".to_string()],
+                "tot" | "tot-deliberate" | "tot_deliberate" => vec!["tot-deliberate".to_string()],
+                "chain" | "chain-validate" | "chain_validate" => vec!["chain-validate".to_string()],
+                "status" => vec!["status".to_string()],
+                _ => {
+                    let mut out = vec![sub.clone()];
+                    out.extend(rest.iter().skip(1).cloned());
+                    out
                 }
-            }
-            if !forwarded {
-                let task = rest
+            };
+            if sub == "create" {
+                let mut forwarded_name = false;
+                for row in rest.iter().skip(1) {
+                    if row.starts_with("--name=") {
+                        args.push(row.clone());
+                        forwarded_name = true;
+                    } else if row.starts_with("--task=") {
+                        args.push(row.replacen("--task=", "--name=", 1));
+                        forwarded_name = true;
+                    } else if row.starts_with("--") {
+                        args.push(row.clone());
+                    }
+                }
+                if !forwarded_name {
+                    let name = rest
+                        .iter()
+                        .skip(1)
+                        .filter(|row| !row.starts_with("--"))
+                        .cloned()
+                        .collect::<Vec<_>>()
+                        .join(" ");
+                    if !name.trim().is_empty() {
+                        args.push(format!("--name={name}"));
+                    }
+                }
+            } else if sub == "load" {
+                if let Some(skill) = rest
                     .iter()
                     .skip(1)
-                    .filter(|row| !row.starts_with("--"))
+                    .find(|row| !row.starts_with("--"))
                     .cloned()
-                    .collect::<Vec<_>>()
-                    .join(" ");
-                if !task.trim().is_empty() {
-                    args.push(format!("--task={task}"));
+                {
+                    args.push(format!("--skill={skill}"));
+                }
+                args.extend(
+                    rest.iter()
+                        .skip(1)
+                        .filter(|row| row.starts_with("--"))
+                        .cloned(),
+                );
+            } else if !rest.is_empty() {
+                args.extend(rest.iter().skip(1).cloned());
+            }
+            Some(Route {
+                script_rel: "core://skills-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "binary-vuln" | "binvuln" => {
+            let args = if rest.is_empty() {
+                vec!["status".to_string()]
+            } else {
+                rest.to_vec()
+            };
+            Some(Route {
+                script_rel: "core://binary-vuln-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "scan"
+            if rest
+                .first()
+                .map(|v| {
+                    let s = v.trim().to_ascii_lowercase();
+                    s == "binary" || s == "firmware" || s == "uefi" || s == "ba2"
+                })
+                .unwrap_or(false) =>
+        {
+            let mut args = vec!["scan".to_string()];
+            if let Some(input) = rest.get(1) {
+                if !input.starts_with("--") {
+                    args.push(format!("--input={input}"));
+                }
+            }
+            args.extend(
+                rest.iter()
+                    .skip(2)
+                    .filter(|row| row.starts_with("--"))
+                    .cloned(),
+            );
+            Some(Route {
+                script_rel: "core://binary-vuln-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "browser" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "session-start".to_string());
+            let mut args = match sub.as_str() {
+                "start" | "open" | "session-start" => vec!["session-start".to_string()],
+                "join" => vec!["session-control".to_string(), "--op=join".to_string()],
+                "handoff" => vec!["session-control".to_string(), "--op=handoff".to_string()],
+                "leave" => vec!["session-control".to_string(), "--op=leave".to_string()],
+                "control" | "session-control" => vec!["session-control".to_string()],
+                "automate" => vec!["automate".to_string()],
+                "privacy" | "privacy-guard" => vec!["privacy-guard".to_string()],
+                "status" => vec!["status".to_string()],
+                _ => vec!["session-start".to_string()],
+            };
+            if !rest.is_empty() {
+                args.extend(rest.iter().skip(1).cloned());
+            }
+            Some(Route {
+                script_rel: "core://vbrowser-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "agency" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "status".to_string());
+            let mut args = match sub.as_str() {
+                "create" | "create-shadow" => vec!["create-shadow".to_string()],
+                "topology" | "division-topology" => vec!["topology".to_string()],
+                "orchestrate" => vec!["orchestrate".to_string()],
+                "workflow" | "workflow-bind" => vec!["workflow-bind".to_string()],
+                "status" => vec!["status".to_string()],
+                _ => vec![sub],
+            };
+            if !rest.is_empty() {
+                args.extend(rest.iter().skip(1).cloned());
+            }
+            Some(Route {
+                script_rel: "core://agency-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "team" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "dashboard".to_string());
+            let mut args = match sub.as_str() {
+                "dashboard" => vec!["dashboard".to_string()],
+                "launch" | "launch-role" => vec!["launch-role".to_string()],
+                "schedule" => vec!["schedule".to_string()],
+                "continuity" => vec!["continuity".to_string()],
+                "status" => vec!["status".to_string()],
+                _ => vec![sub],
+            };
+            if !rest.is_empty() {
+                args.extend(rest.iter().skip(1).cloned());
+            }
+            Some(Route {
+                script_rel: "core://collab-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "company" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "status".to_string());
+            let mut args = match sub.as_str() {
+                "orchestrate" | "orchestrate-agency" => vec!["orchestrate-agency".to_string()],
+                "budget" | "budget-enforce" => vec!["budget-enforce".to_string()],
+                "ticket" => vec!["ticket".to_string()],
+                "heartbeat" => vec!["heartbeat".to_string()],
+                "status" => vec!["status".to_string()],
+                _ => vec![sub],
+            };
+            if !rest.is_empty() {
+                args.extend(rest.iter().skip(1).cloned());
+            }
+            Some(Route {
+                script_rel: "core://company-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "ticket" => {
+            let mut args = vec!["ticket".to_string()];
+            args.extend(rest.iter().cloned());
+            Some(Route {
+                script_rel: "core://company-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "heartbeat" => {
+            let mut args = vec!["heartbeat".to_string()];
+            args.extend(rest.iter().cloned());
+            Some(Route {
+                script_rel: "core://company-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "substrate" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "status".to_string());
+            let enable_biological = sub == "enable"
+                && rest
+                    .get(1)
+                    .map(|v| v.trim().eq_ignore_ascii_case("biological"))
+                    .unwrap_or(false);
+            let mut args = match sub.as_str() {
+                "capture" | "csi-capture" => vec!["csi-capture".to_string()],
+                "module" | "csi-module" => vec!["csi-module".to_string()],
+                "embedded" | "csi-embedded-profile" => vec!["csi-embedded-profile".to_string()],
+                "policy" | "csi-policy" => vec!["csi-policy".to_string()],
+                "eye" | "eye-bind" => vec!["eye-bind".to_string()],
+                "bio-interface" => vec!["bio-interface".to_string()],
+                "bio-feedback" => vec!["bio-feedback".to_string()],
+                "bio-adapter-template" => vec!["bio-adapter-template".to_string()],
+                "bioethics" | "bioethics-policy" => vec!["bioethics-policy".to_string()],
+                "enable" if enable_biological => {
+                    vec!["bio-enable".to_string(), "--mode=biological".to_string()]
+                }
+                "bio-enable" => vec!["bio-enable".to_string()],
+                "status" => vec!["status".to_string()],
+                _ => vec![sub.clone()],
+            };
+            if !rest.is_empty() {
+                if enable_biological {
+                    args.extend(rest.iter().skip(2).cloned());
+                } else {
+                    args.extend(rest.iter().skip(1).cloned());
                 }
             }
             Some(Route {
-                script_rel: "core://assimilation-controller".to_string(),
+                script_rel: "core://substrate-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "observability" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "status".to_string());
+            let mut args = match sub.as_str() {
+                "monitor" => vec!["monitor".to_string()],
+                "workflow" => vec!["workflow".to_string()],
+                "incident" => vec!["incident".to_string()],
+                "selfhost" | "deploy" => vec!["selfhost".to_string(), "--op=deploy".to_string()],
+                "status" => vec!["status".to_string()],
+                _ => vec![sub],
+            };
+            if !rest.is_empty() {
+                args.extend(rest.iter().skip(1).cloned());
+            }
+            Some(Route {
+                script_rel: "core://observability-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "persist" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "status".to_string());
+            let mut args = match sub.as_str() {
+                "schedule" => vec!["schedule".to_string()],
+                "mobile" | "mobile-cockpit" => vec!["mobile-cockpit".to_string()],
+                "status" => vec!["status".to_string()],
+                _ => vec![sub],
+            };
+            if !rest.is_empty() {
+                args.extend(rest.iter().skip(1).cloned());
+            }
+            Some(Route {
+                script_rel: "core://persist-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "schedule" => {
+            let mut args = vec!["schedule".to_string()];
+            args.extend(rest.iter().cloned());
+            Some(Route {
+                script_rel: "core://persist-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "mobile" => {
+            let mut args = vec!["mobile-cockpit".to_string()];
+            args.extend(rest.iter().cloned());
+            Some(Route {
+                script_rel: "core://persist-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "eye" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "status".to_string());
+            let mut args = match sub.as_str() {
+                "enable" => vec!["eye-bind".to_string(), "--op=enable".to_string()],
+                "status" => vec!["eye-bind".to_string(), "--op=status".to_string()],
+                _ => vec!["eye-bind".to_string(), format!("--op={sub}")],
+            };
+            if let Some(source) = rest.get(1) {
+                if !source.starts_with("--") {
+                    args.push(format!("--source={}", source.trim()));
+                    args.extend(rest.iter().skip(2).cloned());
+                } else {
+                    args.extend(rest.iter().skip(1).cloned());
+                }
+            } else {
+                args.push("--source=wifi".to_string());
+            }
+            Some(Route {
+                script_rel: "core://substrate-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "orchestrate"
+            if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("agency"))
+                .unwrap_or(false) =>
+        {
+            let mut args = vec!["orchestrate-agency".to_string()];
+            if let Some(team) = rest.get(1) {
+                if !team.starts_with("--") {
+                    args.push(format!("--team={}", team.trim()));
+                    args.extend(rest.iter().skip(2).cloned());
+                } else {
+                    args.extend(rest.iter().skip(1).cloned());
+                }
+            } else {
+                args.extend(rest.iter().skip(1).cloned());
+            }
+            Some(Route {
+                script_rel: "core://company-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "shadow"
+            if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("browser"))
+                .unwrap_or(false)
+                || rest
+                    .first()
+                    .map(|v| v.trim().eq_ignore_ascii_case("--browser"))
+                    .unwrap_or(false) =>
+        {
+            let mut args = vec![
+                "session-start".to_string(),
+                "--shadow=default-shadow".to_string(),
+            ];
+            args.extend(rest.iter().skip(1).cloned());
+            Some(Route {
+                script_rel: "core://vbrowser-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "shadow"
+            if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("delegate"))
+                .unwrap_or(false) =>
+        {
+            let mut args = vec!["delegate".to_string()];
+            args.extend(rest.iter().skip(1).cloned());
+            Some(Route {
+                script_rel: "core://hermes-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "shadow"
+            if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("continuity"))
+                .unwrap_or(false) =>
+        {
+            let mut args = vec!["continuity".to_string()];
+            args.extend(rest.iter().skip(1).cloned());
+            Some(Route {
+                script_rel: "core://hermes-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "shadow"
+            if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("create"))
+                .unwrap_or(false)
+                && rest.iter().any(|v| v.trim().starts_with("--template=")) =>
+        {
+            let mut args = vec!["create-shadow".to_string()];
+            args.extend(rest.iter().skip(1).cloned());
+            Some(Route {
+                script_rel: "core://agency-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "shadow"
+            if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("discover"))
+                .unwrap_or(false) =>
+        {
+            let mut args = vec!["discover".to_string()];
+            args.extend(rest.iter().skip(1).cloned());
+            Some(Route {
+                script_rel: "core://hermes-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "top" | "protheus-top" => {
+            let mut args = vec!["cockpit".to_string()];
+            args.extend(rest.iter().cloned());
+            Some(Route {
+                script_rel: "core://hermes-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "status"
+            if rest
+                .iter()
+                .any(|arg| arg.trim() == "dashboard" || arg.trim() == "--dashboard") =>
+        {
+            let mut args = vec!["cockpit".to_string()];
+            args.extend(
+                rest.iter()
+                    .filter(|arg| arg.trim() != "dashboard" && arg.trim() != "--dashboard")
+                    .cloned(),
+            );
+            Some(Route {
+                script_rel: "core://hermes-plane".to_string(),
                 args,
                 forward_stdin: false,
             })

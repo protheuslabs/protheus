@@ -1,0 +1,9 @@
+{
+  "version": "v1",
+  "kind": "template_governance_contract",
+  "required_human_review": true,
+  "required_reviewer": "operator",
+  "signature_required": true,
+  "signature_env": "RESEARCH_TEMPLATE_SIGNING_KEY",
+  "notes": "V6-RESEARCH-002.6 curated template governance with signed provenance checks."
+}

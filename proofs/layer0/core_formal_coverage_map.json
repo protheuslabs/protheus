@@ -1,0 +1,62 @@
+{
+  "schema_id": "core_formal_coverage_map",
+  "schema_version": "1.0",
+  "generated_at": "2026-03-13T00:00:00Z",
+  "surfaces": [
+    {
+      "id": "core/layer0/ops::directive_kernel",
+      "status": "proven",
+      "engines": ["lean", "kani"],
+      "artifact": "proofs/layer0/Layer0Invariants.lean",
+      "proof_commands": [
+        {
+          "id": "v8_runtime_proof",
+          "required": true,
+          "argv": ["cargo", "test", "--manifest-path", "core/layer0/ops/Cargo.toml", "--test", "v8_runtime_proof"]
+        },
+        {
+          "id": "lean_verify",
+          "required": false,
+          "argv": ["bash", "proofs/layer0/verify.sh"]
+        }
+      ]
+    },
+    {
+      "id": "core/layer0/ops::metakernel",
+      "status": "partial",
+      "engines": ["kani"],
+      "artifact": "core/layer0/ops/tests/v7_meta_lanes_integration.rs",
+      "proof_commands": [
+        {
+          "id": "metakernel_lanes",
+          "required": true,
+          "argv": ["cargo", "test", "--manifest-path", "core/layer0/ops/Cargo.toml", "--test", "v7_meta_lanes_integration"]
+        }
+      ]
+    },
+    {
+      "id": "core/layer1/security::truth_gate",
+      "status": "partial",
+      "engines": ["prusti"],
+      "artifact": "core/layer1/security/src/security_wave1.rs",
+      "proof_commands": [
+        {
+          "id": "security_hash_chain",
+          "required": true,
+          "argv": ["cargo", "test", "-p", "infring-layer1-security", "capability_switchboard"]
+        },
+        {
+          "id": "prusti_placeholder",
+          "required": false,
+          "argv": ["prusti-rustc", "--version"]
+        }
+      ]
+    },
+    {
+      "id": "core/layer2/execution::scheduler",
+      "status": "unproven",
+      "engines": [],
+      "artifact": "core/layer2/execution/src/lib.rs"
+    }
+  ]
+}

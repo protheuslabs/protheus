@@ -1,0 +1,37 @@
+{
+  "version": "v1",
+  "kind": "mapping_rule_set",
+  "id": "default",
+  "rules": [
+    {
+      "field": "title",
+      "strategy": "title",
+      "required": true
+    },
+    {
+      "field": "company",
+      "strategy": "prefix_line",
+      "prefix": "Company:",
+      "required": false
+    },
+    {
+      "field": "summary",
+      "strategy": "between",
+      "start": "Summary:",
+      "end": "EndSummary",
+      "required": false
+    },
+    {
+      "field": "has_risk_factors",
+      "strategy": "contains",
+      "token": "risk factor",
+      "required": false
+    },
+    {
+      "field": "mapping_id",
+      "strategy": "constant",
+      "value": "default",
+      "required": true
+    }
+  ]
+}

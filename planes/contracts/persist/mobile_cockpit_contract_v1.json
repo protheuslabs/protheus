@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "kind": "persist_mobile_cockpit_contract",
+  "allowed_ops": [
+    "publish",
+    "status",
+    "intervene"
+  ],
+  "allowed_actions": [
+    "pause",
+    "resume",
+    "abort"
+  ],
+  "remote_control_receipts_required": true
+}

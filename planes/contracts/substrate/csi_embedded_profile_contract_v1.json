@@ -1,0 +1,11 @@
+{
+  "version": "v1",
+  "kind": "substrate_csi_embedded_profile_contract",
+  "profiles": {
+    "esp32": {
+      "max_power_mw": 450.0,
+      "max_latency_ms": 250.0,
+      "offline_required": true
+    }
+  }
+}

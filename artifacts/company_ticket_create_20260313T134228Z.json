@@ -1,0 +1,98 @@
+{
+  "artifact": {
+    "chain_valid": true,
+    "event_sha256": "a7893344dfd69732556a75b3a8f43d83de7fd028b31418400d829e6378cf0885",
+    "history_path": "/Users/jay/.openclaw/workspace/core/local/state/ops/company_plane/tickets/history/ops.jsonl",
+    "ledger_path": "/Users/jay/.openclaw/workspace/core/local/state/ops/company_plane/tickets/ops.json",
+    "ledger_sha256": "2bfedad6195064b567a654ce4035c7dd1271df18c8e10b71c39f0ee00928bfdb"
+  },
+  "audit_event": {
+    "details": {
+      "initial_assignee": "alpha",
+      "title": "repair ingest lane"
+    },
+    "event_hash": "a7893344dfd69732556a75b3a8f43d83de7fd028b31418400d829e6378cf0885",
+    "op": "create",
+    "prev_event_hash": "genesis",
+    "team": "ops",
+    "ticket_id": "TKT-134228Z",
+    "tool_call_id": "tool-501-create",
+    "ts": "2026-03-13T13:42:28.467Z",
+    "version": "v1"
+  },
+  "claim_evidence": [
+    {
+      "claim": "ticket_lifecycle_ops_emit_immutable_audit_chain_with_tool_trace_linkage",
+      "evidence": {
+        "chain_length": 1,
+        "chain_valid": true,
+        "team": "ops",
+        "ticket_id": "TKT-134228Z"
+      },
+      "id": "V6-COMPANY-001.3"
+    },
+    {
+      "claim": "company_control_paths_are_conduit_routed_with_fail_closed_receipts",
+      "evidence": {
+        "action": "ticket",
+        "bypass_requested": false
+      },
+      "id": "V6-COMPANY-001.3"
+    },
+    {
+      "claim": "company_control_paths_are_conduit_routed_with_fail_closed_receipts",
+      "evidence": {
+        "action": "ticket",
+        "bypass_requested": false
+      },
+      "id": "V6-COMPANY-001.5"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "ticket",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "company_control_paths_are_conduit_routed_with_fail_closed_receipts",
+        "evidence": {
+          "action": "ticket",
+          "bypass_requested": false
+        },
+        "id": "V6-COMPANY-001.3"
+      },
+      {
+        "claim": "company_control_paths_are_conduit_routed_with_fail_closed_receipts",
+        "evidence": {
+          "action": "ticket",
+          "bypass_requested": false
+        },
+        "id": "V6-COMPANY-001.5"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "9e9365cc58168be2c1b24848d37d84027d8177710434eccc87d759bda6763fba",
+    "required_path": "core/layer0/ops/company_plane",
+    "type": "company_conduit_enforcement"
+  },
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "op": "create",
+  "receipt_hash": "9f2d2983719e571cf2e124968bf85b1c8c282b84b91875ad64fa509e15a00dc6",
+  "strict": true,
+  "team": "ops",
+  "ticket": {
+    "assignee": "alpha",
+    "created_at": "2026-03-13T13:42:28.467Z",
+    "last_event_hash": "a7893344dfd69732556a75b3a8f43d83de7fd028b31418400d829e6378cf0885",
+    "state": "open",
+    "team": "ops",
+    "ticket_id": "TKT-134228Z",
+    "title": "repair ingest lane",
+    "trace_chain_length": 1,
+    "updated_at": "2026-03-13T13:42:28.469Z"
+  },
+  "ticket_id": "TKT-134228Z",
+  "ts": "2026-03-13T13:42:28.471Z",
+  "type": "company_plane_ticket"
+}

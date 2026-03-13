@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "kind": "book_patterns_template_governance_contract",
+  "signature_env": "BOOK_PATTERNS_TEMPLATE_SIGNING_KEY",
+  "notes": "V6-RESEARCH-005.5 curated book-pattern scraping templates with signed governance."
+}

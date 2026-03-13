@@ -1,0 +1,7 @@
+{
+  "version": "v1",
+  "kind": "skill_gallery_governance_contract",
+  "require_signature": true,
+  "max_templates": 1024,
+  "allow_load_only_if_reviewed": true
+}

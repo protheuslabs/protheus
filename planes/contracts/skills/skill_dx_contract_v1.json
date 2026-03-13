@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "kind": "skill_dx_contract",
+  "max_packages": 2048,
+  "dashboard_run_window": 1000
+}

@@ -25,8 +25,9 @@ pub use security_planes::{
     run_soul_token_guard,
 };
 pub use security_wave1::{
-    run_black_box_ledger, run_capability_switchboard, run_directive_hierarchy_controller,
-    run_dream_warden_guard, run_goal_preservation_kernel, run_truth_seeking_gate,
+    run_abac_policy_plane, run_black_box_ledger, run_capability_switchboard,
+    run_directive_hierarchy_controller, run_dream_warden_guard, run_goal_preservation_kernel,
+    run_truth_seeking_gate,
 };
 
 #[derive(Debug, Clone, Default)]

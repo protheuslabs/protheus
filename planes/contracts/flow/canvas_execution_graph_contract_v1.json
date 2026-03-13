@@ -1,0 +1,7 @@
+{
+  "version": "v1",
+  "kind": "flow_canvas_execution_graph_contract",
+  "allowed_node_types": ["source", "transform", "sink", "component"],
+  "max_nodes": 512,
+  "max_edges": 4096
+}

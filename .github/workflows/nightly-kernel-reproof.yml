@@ -1,0 +1,45 @@
+name: Nightly Kernel Reproof
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  nightly-reproof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run nightly kernel proof gate
+        run: |
+          cargo test --manifest-path core/layer0/ops/Cargo.toml --test v8_runtime_proof
+          bash proofs/layer0/verify.sh
+          cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- \
+            top1-assurance proof-coverage --strict=1 --check-toolchains=0 --execute-proofs=1
+
+      - name: Upload nightly proof artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-kernel-reproof-artifacts
+          path: |
+            artifacts/layer0_invariant_proof_pack.json
+            proofs/layer0/core_formal_coverage_map.json
+            core/local/state/ops/top1_assurance/latest.json
+            core/local/state/ops/top1_assurance/history.jsonl
+          if-no-files-found: warn

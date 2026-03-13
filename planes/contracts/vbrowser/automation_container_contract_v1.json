@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "kind": "vbrowser_automation_container_contract",
+  "allowed_actions": ["navigate", "click", "type", "extract"],
+  "emit_live_telemetry": true
+}

@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "kind": "binary_vuln_mcp_server_contract",
+  "server_name": "binary-vuln-mcp",
+  "allowed_transports": ["stdio", "http-sse"]
+}

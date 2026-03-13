@@ -1,0 +1,141 @@
+{
+  "artifact": {
+    "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/agency_plane/orchestrator/runs/batch13-run.json",
+    "sha256": "69a7367648d35aa54486468a0c9cfa3e9362c67fab394fdb670276fb364dc373"
+  },
+  "claim_evidence": [
+    {
+      "claim": "multi_agent_orchestrator_coordinates_five_to_ten_concurrent_agents_with_deterministic_parent_child_receipt_chains",
+      "evidence": {
+        "concurrency": 6,
+        "run_id": "batch13-run",
+        "team": "alpha"
+      },
+      "id": "V6-AGENCY-001.3"
+    },
+    {
+      "claim": "agency_orchestrator_activation_and_handoffs_are_conduit_gated_with_fail_closed_receipts",
+      "evidence": {
+        "action": "orchestrate",
+        "run_id": "batch13-run"
+      },
+      "id": "V6-AGENCY-001.5"
+    },
+    {
+      "claim": "agency_surface_routes_through_layer0_conduit_with_fail_closed_policy",
+      "evidence": {
+        "action": "orchestrate",
+        "bypass_requested": false
+      },
+      "id": "V6-AGENCY-001.3"
+    },
+    {
+      "claim": "agency_surface_routes_through_layer0_conduit_with_fail_closed_policy",
+      "evidence": {
+        "action": "orchestrate",
+        "bypass_requested": false
+      },
+      "id": "V6-AGENCY-001.5"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "orchestrate",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "agency_surface_routes_through_layer0_conduit_with_fail_closed_policy",
+        "evidence": {
+          "action": "orchestrate",
+          "bypass_requested": false
+        },
+        "id": "V6-AGENCY-001.3"
+      },
+      {
+        "claim": "agency_surface_routes_through_layer0_conduit_with_fail_closed_policy",
+        "evidence": {
+          "action": "orchestrate",
+          "bypass_requested": false
+        },
+        "id": "V6-AGENCY-001.5"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "28446f23eacf0285fa796777b4b6385b9f6405557d87c61d7c34dd8c796152b7",
+    "required_path": "core/layer0/ops/agency_plane",
+    "type": "agency_conduit_enforcement"
+  },
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "receipt_hash": "ce4a822a4322526aba6bb627659f7adfcec59d8dee2428c39c84bee130adfbbf",
+  "run": {
+    "agents": [
+      {
+        "agent_id": "planner_0729b541",
+        "coordinator_decision": "parallelize",
+        "decision_hash": "12338ad13737a2b8cb17e2500aeaa860ec7251752d92bf79c28f245ac55e5795",
+        "index": 1,
+        "previous_hash": "12338ad13737a2b8cb17e2500aeaa860ec7251752d92bf79c28f245ac55e5795",
+        "role": "planner",
+        "task": "alpha:batch13-run:1"
+      },
+      {
+        "agent_id": "researcher_9d6d2f3e",
+        "coordinator_decision": "handoff",
+        "decision_hash": "1cf1928c3a3fcd119c952f2524e4985137ae1f9699b4ce6424435d55871bfe80",
+        "index": 2,
+        "previous_hash": "1cf1928c3a3fcd119c952f2524e4985137ae1f9699b4ce6424435d55871bfe80",
+        "role": "researcher",
+        "task": "alpha:batch13-run:2"
+      },
+      {
+        "agent_id": "builder_c91d11b7",
+        "coordinator_decision": "verify",
+        "decision_hash": "cad90f9db1635f2b8c92424e4850b9a9d889ba76fc667bb65a2a2b0daf14cbeb",
+        "index": 3,
+        "previous_hash": "cad90f9db1635f2b8c92424e4850b9a9d889ba76fc667bb65a2a2b0daf14cbeb",
+        "role": "builder",
+        "task": "alpha:batch13-run:3"
+      },
+      {
+        "agent_id": "reviewer_de631e1b",
+        "coordinator_decision": "parallelize",
+        "decision_hash": "6d47c372b562783083d423bb039ce3fbe8cf758a4577881b987bc8da8c99b04f",
+        "index": 4,
+        "previous_hash": "6d47c372b562783083d423bb039ce3fbe8cf758a4577881b987bc8da8c99b04f",
+        "role": "reviewer",
+        "task": "alpha:batch13-run:4"
+      },
+      {
+        "agent_id": "auditor_29497e37",
+        "coordinator_decision": "handoff",
+        "decision_hash": "f159e95687f02d62d473528ca5fc4b066965ac102b0c13fbcc6c472c1d5f4c1b",
+        "index": 5,
+        "previous_hash": "f159e95687f02d62d473528ca5fc4b066965ac102b0c13fbcc6c472c1d5f4c1b",
+        "role": "auditor",
+        "task": "alpha:batch13-run:5"
+      },
+      {
+        "agent_id": "planner_786dae6a",
+        "coordinator_decision": "verify",
+        "decision_hash": "2a64a781ec0c8e5d2dd852e1245eb65eda248974f0151493412c8df72152c8d1",
+        "index": 6,
+        "previous_hash": "2a64a781ec0c8e5d2dd852e1245eb65eda248974f0151493412c8df72152c8d1",
+        "role": "planner",
+        "task": "alpha:batch13-run:6"
+      }
+    ],
+    "concurrency": 6,
+    "coordinator": {
+      "decisions_visible_in_top": true,
+      "name": "layer2_multi_agent_orchestrator"
+    },
+    "run_id": "batch13-run",
+    "started_at": "2026-03-13T13:17:30.350Z",
+    "team": "alpha",
+    "version": "v1"
+  },
+  "strict": true,
+  "ts": "2026-03-13T13:17:30.353Z",
+  "type": "agency_plane_orchestrate"
+}

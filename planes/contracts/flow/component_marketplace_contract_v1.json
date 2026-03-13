@@ -1,0 +1,8 @@
+{
+  "version": "v1",
+  "kind": "flow_component_marketplace_contract",
+  "manifest_path": "planes/contracts/flow/component_marketplace_manifest_v1.json",
+  "components_root": "planes/contracts/flow/components",
+  "max_component_bytes": 200000,
+  "required_language": "python"
+}

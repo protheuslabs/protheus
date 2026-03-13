@@ -1,0 +1,95 @@
+{
+  "artifact": {
+    "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/collab_plane/dashboard/alpha.json",
+    "sha256": "0b3d4cd91901db9e8364d7bf425c38c73a634b1054af60deef06afb865b7e09f"
+  },
+  "claim_evidence": [
+    {
+      "claim": "team_dashboard_exposes_agent_status_tasks_handoffs_with_receipt_drilldown_and_sub_two_second_refresh",
+      "evidence": {
+        "agent_count": 1,
+        "handoff_count": 0,
+        "refresh_ms": 1000,
+        "task_count": 0,
+        "team": "alpha"
+      },
+      "id": "V6-COLLAB-001.1"
+    },
+    {
+      "claim": "collaboration_controls_route_through_layer0_conduit_with_fail_closed_denials",
+      "evidence": {
+        "action": "dashboard",
+        "bypass_requested": false
+      },
+      "id": "V6-COLLAB-001.1"
+    },
+    {
+      "claim": "collaboration_controls_route_through_layer0_conduit_with_fail_closed_denials",
+      "evidence": {
+        "action": "dashboard",
+        "bypass_requested": false
+      },
+      "id": "V6-COLLAB-001.4"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "dashboard",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "collaboration_controls_route_through_layer0_conduit_with_fail_closed_denials",
+        "evidence": {
+          "action": "dashboard",
+          "bypass_requested": false
+        },
+        "id": "V6-COLLAB-001.1"
+      },
+      {
+        "claim": "collaboration_controls_route_through_layer0_conduit_with_fail_closed_denials",
+        "evidence": {
+          "action": "dashboard",
+          "bypass_requested": false
+        },
+        "id": "V6-COLLAB-001.4"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "2b08e9c3de6608193a147815b29efc8dd9238daabb8096ff9d15d1d5fac0302f",
+    "required_path": "core/layer0/ops/collab_plane",
+    "type": "collab_conduit_enforcement"
+  },
+  "dashboard": {
+    "agents": [
+      {
+        "activated_at": "2026-03-13T13:18:13.722Z",
+        "role": "coordinator",
+        "shadow": "shadow-sec",
+        "status": "active"
+      }
+    ],
+    "handoff_history": [],
+    "receipt_drilldown": [
+      {
+        "lane": "collab_plane",
+        "latest_path": "/Users/jay/.openclaw/workspace/core/local/state/ops/collab_plane/latest.json"
+      },
+      {
+        "lane": "agency_plane",
+        "latest_path": "/Users/jay/.openclaw/workspace/core/local/state/ops/agency_plane/latest.json"
+      }
+    ],
+    "refresh_ms": 1000,
+    "rendered_at": "2026-03-13T13:19:04.775Z",
+    "target_refresh_ms": 2000,
+    "tasks": [],
+    "team": "alpha",
+    "version": "v1"
+  },
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "receipt_hash": "08e65b10617411941be1e35bfd73c91be177a51c935a5087a7270efde229af10",
+  "strict": true,
+  "ts": "2026-03-13T13:19:04.776Z",
+  "type": "collab_plane_dashboard"
+}

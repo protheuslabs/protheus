@@ -28,6 +28,7 @@ jobs:
       - name: Build Rust release binaries
         run: |
           cargo build --release --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops
+          cargo build --release --manifest-path core/layer0/ops/Cargo.toml --bin protheusd
           cargo build --release -p conduit --bin conduit_daemon
 
       - name: Install Syft + cargo-audit
@@ -40,9 +41,11 @@ jobs:
         run: |
           mkdir -p state/release/provenance/sbom state/release/provenance/signatures state/release/provenance/signing state/release/provenance_bundle
           syft file:target/release/protheus-ops -o cyclonedx-json=state/release/provenance/sbom/protheus-ops.cdx.json
+          syft file:target/release/protheusd -o cyclonedx-json=state/release/provenance/sbom/protheusd.cdx.json
           syft file:target/release/conduit_daemon -o cyclonedx-json=state/release/provenance/sbom/conduit_daemon.cdx.json
 
           sha256sum state/release/provenance/sbom/protheus-ops.cdx.json > state/release/provenance/sbom/protheus-ops.cdx.sha256
+          sha256sum state/release/provenance/sbom/protheusd.cdx.json > state/release/provenance/sbom/protheusd.cdx.sha256
           sha256sum state/release/provenance/sbom/conduit_daemon.cdx.json > state/release/provenance/sbom/conduit_daemon.cdx.sha256
 
       - name: Sign release artifacts and verify signatures
@@ -64,6 +67,11 @@ jobs:
             -out state/release/provenance/signatures/protheus-ops.sig target/release/protheus-ops
           openssl dgst -sha256 -verify state/release/provenance/signing/release_public.pem \
             -signature state/release/provenance/signatures/protheus-ops.sig target/release/protheus-ops
+
+          openssl dgst -sha256 -sign state/release/provenance/signing/release_private.pem \
+            -out state/release/provenance/signatures/protheusd.sig target/release/protheusd
+          openssl dgst -sha256 -verify state/release/provenance/signing/release_public.pem \
+            -signature state/release/provenance/signatures/protheusd.sig target/release/protheusd
 
           openssl dgst -sha256 -sign state/release/provenance/signing/release_private.pem \
             -out state/release/provenance/signatures/conduit_daemon.sig target/release/conduit_daemon
@@ -147,6 +155,12 @@ jobs:
               signature_path: 'state/release/provenance/signatures/protheus-ops.sig',
             },
             {
+              id: 'protheusd',
+              artifact_path: 'target/release/protheusd',
+              sbom_path: 'state/release/provenance/sbom/protheusd.cdx.json',
+              signature_path: 'state/release/provenance/signatures/protheusd.sig',
+            },
+            {
               id: 'conduit-daemon',
               artifact_path: 'target/release/conduit_daemon',
               sbom_path: 'state/release/provenance/sbom/conduit_daemon.cdx.json',
@@ -182,6 +196,7 @@ jobs:
         with:
           subject-path: |
             target/release/protheus-ops
+            target/release/protheusd
             target/release/conduit_daemon
 
       - name: Enforce supply-chain provenance v2 gate
@@ -214,9 +229,12 @@ jobs:
           files: |
             state/release/provenance/sbom/protheus-ops.cdx.json
             state/release/provenance/sbom/protheus-ops.cdx.sha256
+            state/release/provenance/sbom/protheusd.cdx.json
+            state/release/provenance/sbom/protheusd.cdx.sha256
             state/release/provenance/sbom/conduit_daemon.cdx.json
             state/release/provenance/sbom/conduit_daemon.cdx.sha256
             state/release/provenance/signatures/protheus-ops.sig
+            state/release/provenance/signatures/protheusd.sig
             state/release/provenance/signatures/conduit_daemon.sig
             state/release/provenance/signing/release_public.pem
             state/release/provenance_bundle/dependency_vulnerability_summary.json

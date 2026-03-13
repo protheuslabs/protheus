@@ -1,0 +1,11 @@
+{
+  "version": "v1",
+  "kind": "mcp_pattern_pack_contract",
+  "allowed_patterns": [
+    "router",
+    "map-reduce",
+    "fanout",
+    "sequential"
+  ],
+  "notes": "V6-MCP-001.4 declarative MCP workflow pattern pack contract."
+}

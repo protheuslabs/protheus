@@ -1,0 +1,6 @@
+{
+  "version": "v1",
+  "kind": "flow_step_playground_contract",
+  "allowed_ops": ["play", "pause", "step", "resume", "inspect"],
+  "default_total_steps": 8
+}

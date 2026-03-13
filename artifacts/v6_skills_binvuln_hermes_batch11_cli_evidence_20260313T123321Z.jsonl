@@ -1,0 +1,10 @@
+{"command":"skills_gallery_ingest","output":"artifacts/skills_gallery_ingest_20260313T123321Z.json"}
+{"command":"skills_gallery_load","output":"artifacts/skills_gallery_load_20260313T123321Z.json"}
+{"command":"skills_list","output":"artifacts/skills_list_20260313T123321Z.json"}
+{"command":"skills_dashboard","output":"artifacts/skills_dashboard_20260313T123321Z.json"}
+{"command":"skills_react","output":"artifacts/skills_react_20260313T123321Z.json"}
+{"command":"skills_tot","output":"artifacts/skills_tot_20260313T123321Z.json"}
+{"command":"binvuln_scan","output":"artifacts/binvuln_scan_20260313T123321Z.json"}
+{"command":"binvuln_mcp","output":"artifacts/binvuln_mcp_20260313T123321Z.json"}
+{"command":"hermes_discover","output":"artifacts/hermes_discover_20260313T123321Z.json"}
+{"command":"hermes_cockpit","output":"artifacts/hermes_cockpit_20260313T123321Z.json"}

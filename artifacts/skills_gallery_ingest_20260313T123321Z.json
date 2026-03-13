@@ -1,0 +1,48 @@
+{
+  "claim_evidence": [
+    {
+      "claim": "curated_skill_gallery_ingest_and_one_click_loader_are_governed_with_deterministic_receipts",
+      "evidence": {
+        "op": "ingest",
+        "template_count": 1
+      },
+      "id": "V6-SKILLS-001.6"
+    },
+    {
+      "claim": "skill_install_run_share_actions_route_through_layer0_conduit_with_deterministic_audit_receipts",
+      "evidence": {
+        "action": "gallery",
+        "bypass_requested": false
+      },
+      "id": "V6-SKILLS-001.4"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "gallery",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "skill_install_run_share_actions_route_through_layer0_conduit_with_deterministic_audit_receipts",
+        "evidence": {
+          "action": "gallery",
+          "bypass_requested": false
+        },
+        "id": "V6-SKILLS-001.4"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "c089bb190f83a2ca1430831424589c7984b70a153ea1f83b5d7725375beb2acf",
+    "required_path": "core/layer0/ops/skills_plane",
+    "type": "skills_conduit_enforcement"
+  },
+  "lane": "core/layer0/ops",
+  "manifest_path": "/Users/jay/.openclaw/workspace/core/local/state/ops/skills_plane/gallery/manifest.json",
+  "ok": true,
+  "op": "ingest",
+  "receipt_hash": "8832d0257076b2a004ccc9eb950d34262abf50f65e8948e8f81c610ae527e999",
+  "strict": true,
+  "template_count": 1,
+  "ts": "2026-03-13T12:33:21.790Z",
+  "type": "skills_plane_gallery"
+}

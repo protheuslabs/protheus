@@ -1,0 +1,65 @@
+{
+  "artifact": {
+    "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/substrate_plane/bio/feedback/latest.json",
+    "sha256": "1e94974dbea95b7e0459ccbb3c48864c90320b1f32da6cbf61dff70ab7590573"
+  },
+  "claim_evidence": [
+    {
+      "claim": "closed_loop_biological_feedback_supports_deterministic_degrade_to_silicon_only_mode",
+      "evidence": {
+        "mode": "closed-loop"
+      },
+      "id": "V6-SUBSTRATE-002.2"
+    },
+    {
+      "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+      "evidence": {
+        "action": "bio-feedback",
+        "bypass_requested": false
+      },
+      "id": "V6-SUBSTRATE-002.2"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "bio-feedback",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+        "evidence": {
+          "action": "bio-feedback",
+          "bypass_requested": false
+        },
+        "id": "V6-SUBSTRATE-002.2"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "e27a40361d1c44b27b050b9503fdbcd011dad10dfa0c93072ced340e1d5582a4",
+    "required_path": "core/layer0/ops/substrate_plane",
+    "type": "substrate_conduit_enforcement"
+  },
+  "feedback": {
+    "command_payload": {
+      "mode": "closed-loop",
+      "reason": "closed_loop_adjustment",
+      "stimulation_level": 0.99
+    },
+    "degrade_contract": {
+      "fallback": "standard_ui_io",
+      "primary": "neural_io",
+      "reason": "consent_kernel_unavailable"
+    },
+    "mode": "closed-loop",
+    "op": "stimulate",
+    "ts": "2026-03-13T13:40:25.904Z",
+    "version": "v1"
+  },
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "op": "stimulate",
+  "receipt_hash": "e15b1caa8002ef1e1d790456cc6290aa2eacff2b7e045c43eb862b4b89094312",
+  "strict": true,
+  "ts": "2026-03-13T13:40:25.905Z",
+  "type": "substrate_plane_bio_feedback"
+}

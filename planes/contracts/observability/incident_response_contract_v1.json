@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "kind": "observability_incident_response_contract",
+  "allowed_ops": [
+    "trigger",
+    "status",
+    "resolve"
+  ],
+  "default_response_actions": [
+    "quarantine",
+    "rollback",
+    "page-oncall"
+  ],
+  "policy_bounded": true
+}

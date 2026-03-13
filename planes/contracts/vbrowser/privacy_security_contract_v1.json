@@ -1,0 +1,7 @@
+{
+  "version": "v1",
+  "kind": "vbrowser_privacy_security_contract",
+  "allowed_network_modes": ["isolated", "restricted"],
+  "max_budget_tokens": 200000,
+  "recording_requires_allow_flag": true
+}

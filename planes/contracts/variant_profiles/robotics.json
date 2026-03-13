@@ -1,0 +1,20 @@
+{
+  "version": "v1",
+  "kind": "layer_minus_one_variant_profile",
+  "profile_id": "robotics",
+  "baseline_policy_ref": "client/runtime/config/security_policy.json",
+  "capability_delta": {
+    "grant": ["stream", "model"],
+    "revoke": ["admin"]
+  },
+  "budget_delta": {
+    "cpu_ms": 300,
+    "ram_mb": 256,
+    "storage_mb": 128,
+    "network_kb": 96,
+    "power_mw": 220
+  },
+  "no_privilege_widening": true,
+  "mpu_profile_ref": "planes/contracts/mpu_compartment_profile_v1.json",
+  "description": "Robotics low-latency profile with bounded networking and no privileged admin mutation lane."
+}

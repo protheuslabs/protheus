@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "kind": "substrate_biological_ethics_policy_contract",
+  "required_approvals": [
+    "HMAN-BIO-001"
+  ],
+  "blocked_external_prepared": true,
+  "consent_required": true,
+  "high_risk_requires_explicit_approval": true,
+  "revocable_consent": true,
+  "disable_paths": [
+    "silicon-only",
+    "shutdown"
+  ]
+}
