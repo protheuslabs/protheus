@@ -6,7 +6,17 @@ use protheus_ops_core::{
 use serde_json::Value;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+fn env_lock() -> &'static Mutex<()> {
+    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    LOCK.get_or_init(|| Mutex::new(()))
+}
+
+fn env_guard() -> std::sync::MutexGuard<'static, ()> {
+    env_lock().lock().unwrap_or_else(|poison| poison.into_inner())
+}
 
 fn temp_root(name: &str) -> PathBuf {
     let nonce = SystemTime::now()
@@ -89,6 +99,7 @@ fn allow(root: &Path, directive: &str) {
 
 #[test]
 fn directive_and_blob_policy_hash_binding_is_runtime_enforced() {
+    let _guard = env_guard();
     let root = temp_root("directive_blob");
     allow(&root, "allow:blob:*");
     allow(&root, "allow:blob_mutate");
@@ -128,6 +139,7 @@ fn directive_and_blob_policy_hash_binding_is_runtime_enforced() {
 
 #[test]
 fn network_protocol_emits_state_roots_and_enforces_strict_zk_verification() {
+    let _guard = env_guard();
     let root = temp_root("network");
     allow(&root, "allow:tokenomics");
     assert_eq!(
@@ -183,6 +195,7 @@ fn network_protocol_emits_state_roots_and_enforces_strict_zk_verification() {
 
 #[test]
 fn intelligence_nexus_buy_credits_debits_nexus_balance() {
+    let _guard = env_guard();
     let root = temp_root("nexus_buy");
     allow(&root, "allow:keys:add");
     allow(&root, "allow:credits:*");
@@ -271,6 +284,7 @@ fn intelligence_nexus_buy_credits_debits_nexus_balance() {
 
 #[test]
 fn rsi_and_organism_mutation_paths_execute_with_runtime_state_changes() {
+    let _guard = env_guard();
     let root = temp_root("organism_rsi");
     allow(&root, "allow:rsi:ignite");
     allow(&root, "allow:rsi:evolve");

@@ -38,6 +38,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         println!("  protheus-ops directive-kernel status");
         println!("  protheus-ops directive-kernel prime-sign [--directive=<text>] [--signer=<id>] [--allow-unsigned=1|0]");
         println!("  protheus-ops directive-kernel derive [--parent=<id|text>] [--directive=<text>] [--signer=<id>] [--allow-unsigned=1|0]");
+        println!("  protheus-ops directive-kernel supersede [--target=<id|text>] [--directive=<text>] [--signer=<id>] [--allow-unsigned=1|0]");
         println!("  protheus-ops directive-kernel compliance-check [--action=<text>]");
         println!("  protheus-ops directive-kernel bridge-rsi [--proposal=<text>] [--apply=1|0]");
         println!("  protheus-ops directive-kernel migrate [--apply=1|0] [--allow-unsigned=1|0]");
@@ -47,8 +48,9 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
     if command == "status" {
         let vault = load_vault(root);
         let (signature_total, signature_valid) = signature_counts(&vault);
+        let integrity = directive_vault_integrity(root);
         let mut out = json!({
-            "ok": true,
+            "ok": integrity.get("ok").and_then(Value::as_bool).unwrap_or(false),
             "type": "directive_kernel_status",
             "lane": "core/layer0/ops",
             "vault": vault,
@@ -58,11 +60,16 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 "valid_entries": signature_valid,
                 "invalid_entries": signature_total.saturating_sub(signature_valid)
             },
+            "integrity": integrity,
             "latest": read_json(&latest_path(root))
         });
         out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
         print_json(&out);
-        return 0;
+        return if out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
+            0
+        } else {
+            2
+        };
     }
 
     if command == "prime-sign"
@@ -109,6 +116,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             "prime",
             &directive,
             &signer,
+            None,
             None,
             "operator_sign",
         ) {
@@ -246,6 +254,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             &directive,
             &signer,
             Some(&parent_id),
+            None,
             "derived_engine",
         ) {
             Ok(v) => v,
@@ -293,6 +302,114 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                         "id": "v8_directives_001_2",
                         "claim": "derived_directives_require_parent_linkage_and_fail_on_inheritance_conflict",
                         "evidence": {"accepted": true, "parent_id": parent_id}
+                    }
+                ]
+            }),
+        );
+    }
+
+    if command == "supersede" {
+        let target_hint = parsed.flags.get("target").cloned().unwrap_or_default();
+        let directive = parsed
+            .flags
+            .get("directive")
+            .cloned()
+            .unwrap_or_else(|| "deny:unsafe_action".to_string());
+        let signer = parsed
+            .flags
+            .get("signer")
+            .cloned()
+            .unwrap_or_else(|| "operator".to_string());
+        let allow_unsigned = parse_bool(parsed.flags.get("allow-unsigned"), false);
+        if !allow_unsigned && !signing_key_present() {
+            return emit_receipt(
+                root,
+                json!({
+                    "ok": false,
+                    "type": "directive_kernel_supersede",
+                    "lane": "core/layer0/ops",
+                    "error": "missing_signing_key",
+                    "signing_env": SIGNING_ENV,
+                    "claim_evidence": [
+                        {
+                            "id": "v8_directives_001_1",
+                            "claim": "prime_directives_are_append_only_signed_objects_with_supersession_not_inline_edits",
+                            "evidence": {"accepted": false, "reason": "missing_signing_key"}
+                        }
+                    ]
+                }),
+            );
+        }
+        let vault = load_vault(root);
+        let Some(target) = resolve_parent(&vault, &target_hint) else {
+            return emit_receipt(
+                root,
+                json!({
+                    "ok": false,
+                    "type": "directive_kernel_supersede",
+                    "lane": "core/layer0/ops",
+                    "error": "target_not_found",
+                    "target": clean(target_hint, 320)
+                }),
+            );
+        };
+        let target_id = target
+            .get("id")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_string();
+        if target_id.is_empty() {
+            return emit_receipt(
+                root,
+                json!({
+                    "ok": false,
+                    "type": "directive_kernel_supersede",
+                    "lane": "core/layer0/ops",
+                    "error": "target_id_missing"
+                }),
+            );
+        }
+        let entry = match append_directive_entry(
+            root,
+            "derived",
+            &directive,
+            &signer,
+            Some(&target_id),
+            Some(&target_id),
+            "supersession",
+        ) {
+            Ok(v) => v,
+            Err(err) => {
+                return emit_receipt(
+                    root,
+                    json!({
+                        "ok": false,
+                        "type": "directive_kernel_supersede",
+                        "lane": "core/layer0/ops",
+                        "error": clean(&err, 240)
+                    }),
+                );
+            }
+        };
+
+        return emit_receipt(
+            root,
+            json!({
+                "ok": true,
+                "type": "directive_kernel_supersede",
+                "lane": "core/layer0/ops",
+                "target": target,
+                "entry": entry,
+                "policy_hash": directive_vault_hash(root),
+                "layer_map": ["0","1","2"],
+                "claim_evidence": [
+                    {
+                        "id": "v8_directives_001_1",
+                        "claim": "prime_directives_are_append_only_signed_objects_with_supersession_not_inline_edits",
+                        "evidence": {
+                            "target_id": target_id,
+                            "superseding_entry_id": entry.get("id").cloned().unwrap_or(Value::Null)
+                        }
                     }
                 ]
             }),
@@ -430,7 +547,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 "lane": "core/layer0/ops",
                 "apply": apply,
                 "migration": migrated,
-                "commands": ["protheus directives migrate", "protheus directives status", "protheus prime sign"],
+                "commands": ["protheus directives migrate", "protheus directives status", "protheus prime sign", "protheus directives supersede"],
                 "policy_hash": directive_vault_hash(root),
                 "layer_map": ["0","1","2","client","app"],
                 "claim_evidence": [

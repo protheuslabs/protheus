@@ -9,6 +9,7 @@ use crate::v8_kernel::{
 use crate::{clean, now_iso, parse_args};
 use memmap2::MmapOptions;
 use serde_json::{json, Map, Value};
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -125,6 +126,114 @@ fn verify_blob_entry_signature(entry: &Value) -> bool {
         return raw.eq_ignore_ascii_case(&keyed_digest_hex(&key, &payload));
     }
     false
+}
+
+fn canonical_blob_entry_for_hash(entry: &Value) -> Value {
+    let mut canonical = entry.clone();
+    if let Some(obj) = canonical.as_object_mut() {
+        obj.remove("entry_hash");
+    }
+    canonical
+}
+
+fn recompute_blob_entry_hash(entry: &Value) -> String {
+    sha256_hex_str(
+        &serde_json::to_string(&canonical_blob_entry_for_hash(entry)).unwrap_or_default(),
+    )
+}
+
+fn validate_prime_blob_vault(vault: &Value) -> Value {
+    let entries = vault
+        .get("entries")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let entry_count = entries.len() as u64;
+    let chain_head = vault
+        .get("chain_head")
+        .and_then(Value::as_str)
+        .unwrap_or("genesis")
+        .to_string();
+    let mut signature_valid = 0u64;
+    let mut hash_valid = 0u64;
+    let mut errors: Vec<String> = Vec::new();
+    let mut by_hash: HashMap<String, Value> = HashMap::new();
+
+    for (idx, entry) in entries.iter().enumerate() {
+        if verify_blob_entry_signature(entry) {
+            signature_valid += 1;
+        } else {
+            errors.push(format!("signature_invalid_at:{idx}"));
+        }
+        let actual = entry
+            .get("entry_hash")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .trim()
+            .to_string();
+        let expected = recompute_blob_entry_hash(entry);
+        if !actual.is_empty() && actual.eq_ignore_ascii_case(&expected) {
+            hash_valid += 1;
+            if by_hash.insert(actual.clone(), entry.clone()).is_some() {
+                errors.push(format!("duplicate_entry_hash:{actual}"));
+            }
+        } else {
+            errors.push(format!("entry_hash_mismatch_at:{idx}"));
+        }
+    }
+
+    let mut chain_valid = true;
+    let mut traversed_count = 0u64;
+    if entry_count == 0 {
+        if chain_head != "genesis" {
+            chain_valid = false;
+            errors.push("non_genesis_chain_head_for_empty_vault".to_string());
+        }
+    } else if chain_head == "genesis" {
+        chain_valid = false;
+        errors.push("missing_chain_head".to_string());
+    } else {
+        let mut cursor = chain_head.clone();
+        let mut visited = HashSet::new();
+        loop {
+            if cursor == "genesis" {
+                break;
+            }
+            if !visited.insert(cursor.clone()) {
+                chain_valid = false;
+                errors.push("chain_cycle_detected".to_string());
+                break;
+            }
+            let Some(entry) = by_hash.get(&cursor) else {
+                chain_valid = false;
+                errors.push(format!("chain_head_missing_entry:{cursor}"));
+                break;
+            };
+            traversed_count += 1;
+            cursor = entry
+                .get("prev_hash")
+                .and_then(Value::as_str)
+                .unwrap_or("genesis")
+                .to_string();
+        }
+        if traversed_count != entry_count {
+            chain_valid = false;
+            errors.push(format!(
+                "chain_length_mismatch:traversed={traversed_count}:entries={entry_count}"
+            ));
+        }
+    }
+
+    let ok = entry_count == signature_valid && entry_count == hash_valid && chain_valid;
+    json!({
+        "ok": ok,
+        "entry_count": entry_count,
+        "signature_valid_count": signature_valid,
+        "hash_valid_count": hash_valid,
+        "chain_valid": chain_valid,
+        "chain_head": chain_head,
+        "errors": errors
+    })
 }
 
 fn append_prime_blob_vault_entry(root: &Path, snapshot: &Value) -> Result<Value, String> {
@@ -372,6 +481,15 @@ fn settle_one(root: &Path, parsed: &crate::ParsedArgs, module: &str) -> Result<V
 }
 
 fn load_and_verify(root: &Path, module: &str) -> Result<Value, String> {
+    let vault_integrity = validate_prime_blob_vault(&load_prime_blob_vault(root));
+    if !vault_integrity
+        .get("ok")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+    {
+        return Err("prime_blob_vault_chain_invalid".to_string());
+    }
+
     let active = load_active_map(root);
     let Some(entry) = active.get(module).cloned() else {
         return Err("module_not_settled".to_string());
@@ -474,6 +592,7 @@ fn load_and_verify(root: &Path, module: &str) -> Result<Value, String> {
         "policy_hash": current_policy_hash,
         "prime_blob_vault_entry_id": vault_entry.get("entry_id").cloned().unwrap_or(Value::Null),
         "prime_blob_vault_signature_verified": true,
+        "prime_blob_vault_integrity": vault_integrity,
         "blob_first_bytes_hex": hex::encode(read_first_bytes(&blob_path, 16)?),
         "verified": true
     }))

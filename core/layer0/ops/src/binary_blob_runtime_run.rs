@@ -24,6 +24,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
     if command == "status" {
         let gate_action = "blob:status";
         if !directive_kernel::action_allowed(root, gate_action) {
+            let gate_evaluation = directive_kernel::evaluate_action(root, gate_action);
             return emit(
                 root,
                 json!({
@@ -31,7 +32,8 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "type": "binary_blob_runtime_status",
                     "lane": "core/layer0/ops",
                     "error": "directive_gate_denied",
-                    "gate_action": gate_action
+                    "gate_action": gate_action,
+                    "gate_evaluation": gate_evaluation
                 }),
             );
         }
@@ -39,28 +41,37 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
         let modules = active.keys().cloned().collect::<Vec<_>>();
         let policy_hash = directive_kernel::directive_vault_hash(root);
         let blob_vault = load_prime_blob_vault(root);
+        let vault_integrity = validate_prime_blob_vault(&blob_vault);
         let mut checks = Vec::new();
         for module in &modules {
             let check = load_and_verify(root, module);
             checks.push(json!({"module": module, "ok": check.is_ok(), "detail": check.unwrap_or_else(|err| json!({"error": err}))}));
         }
+        let verified_ok = checks
+            .iter()
+            .all(|row| row.get("ok").and_then(Value::as_bool).unwrap_or(false));
+        let vault_ok = vault_integrity
+            .get("ok")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
 
         let mut out = json!({
-            "ok": checks.iter().all(|row| row.get("ok").and_then(Value::as_bool).unwrap_or(false)),
+            "ok": verified_ok && vault_ok,
             "type": "binary_blob_runtime_status",
             "lane": "core/layer0/ops",
             "active": active,
             "policy_hash": policy_hash,
             "prime_blob_vault": {
                 "entries": blob_vault.get("entries").and_then(Value::as_array).map(|v| v.len()).unwrap_or(0),
-                "chain_head": blob_vault.get("chain_head").cloned().unwrap_or(Value::String("genesis".to_string()))
+                "chain_head": blob_vault.get("chain_head").cloned().unwrap_or(Value::String("genesis".to_string())),
+                "integrity": vault_integrity
             },
             "verification": checks,
             "claim_evidence": [
                 {
                     "id": "v8_binary_blob_001_1",
                     "claim": "settled_blob_artifacts_are_bound_to_signed_source_snapshots_and_policy_hashes",
-                    "evidence": {"active_modules": modules.len()}
+                    "evidence": {"active_modules": modules.len(), "vault_integrity_ok": vault_ok}
                 }
             ]
         });
@@ -76,6 +87,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
     if command == "vault-status" {
         let gate_action = "blob:vault-status";
         if !directive_kernel::action_allowed(root, gate_action) {
+            let gate_evaluation = directive_kernel::evaluate_action(root, gate_action);
             return emit(
                 root,
                 json!({
@@ -83,29 +95,24 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "type": "binary_blob_runtime_vault_status",
                     "lane": "core/layer0/ops",
                     "error": "directive_gate_denied",
-                    "gate_action": gate_action
+                    "gate_action": gate_action,
+                    "gate_evaluation": gate_evaluation
                 }),
             );
         }
         let vault = load_prime_blob_vault(root);
-        let entries = vault
-            .get("entries")
-            .and_then(Value::as_array)
-            .cloned()
-            .unwrap_or_default();
-        let signature_valid = entries
-            .iter()
-            .filter(|row| verify_blob_entry_signature(row))
-            .count();
+        let integrity = validate_prime_blob_vault(&vault);
         return emit(
             root,
             json!({
-                "ok": signature_valid == entries.len(),
+                "ok": integrity.get("ok").and_then(Value::as_bool).unwrap_or(false),
                 "type": "binary_blob_runtime_vault_status",
                 "lane": "core/layer0/ops",
-                "entry_count": entries.len(),
-                "signature_valid_count": signature_valid,
-                "chain_head": vault.get("chain_head").cloned().unwrap_or(Value::String("genesis".to_string()))
+                "entry_count": integrity.get("entry_count").cloned().unwrap_or(Value::from(0)),
+                "signature_valid_count": integrity.get("signature_valid_count").cloned().unwrap_or(Value::from(0)),
+                "hash_valid_count": integrity.get("hash_valid_count").cloned().unwrap_or(Value::from(0)),
+                "chain_head": vault.get("chain_head").cloned().unwrap_or(Value::String("genesis".to_string())),
+                "integrity": integrity
             }),
         );
     }
@@ -113,6 +120,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
     if command == "migrate" {
         let gate_action = "blob:migrate";
         if !directive_kernel::action_allowed(root, gate_action) {
+            let gate_evaluation = directive_kernel::evaluate_action(root, gate_action);
             return emit(
                 root,
                 json!({
@@ -120,7 +128,8 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "type": "binary_blob_runtime_migrate",
                     "lane": "core/layer0/ops",
                     "error": "directive_gate_denied",
-                    "gate_action": gate_action
+                    "gate_action": gate_action,
+                    "gate_evaluation": gate_evaluation
                 }),
             );
         }
@@ -160,6 +169,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
         let module = normalize_module(parsed.flags.get("module"));
         let gate_action = format!("blob:settle:{module}");
         if !directive_kernel::action_allowed(root, &gate_action) {
+            let gate_evaluation = directive_kernel::evaluate_action(root, &gate_action);
             return emit(
                 root,
                 json!({
@@ -168,7 +178,8 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "lane": "core/layer0/ops",
                     "module": module,
                     "error": "directive_gate_denied",
-                    "gate_action": gate_action
+                    "gate_action": gate_action,
+                    "gate_evaluation": gate_evaluation
                 }),
             );
         }
@@ -214,6 +225,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
         let module = normalize_module(parsed.flags.get("module"));
         let gate_action = format!("blob:load:{module}");
         if !directive_kernel::action_allowed(root, &gate_action) {
+            let gate_evaluation = directive_kernel::evaluate_action(root, &gate_action);
             return emit(
                 root,
                 json!({
@@ -222,7 +234,8 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "lane": "core/layer0/ops",
                     "module": module,
                     "error": "directive_gate_denied",
-                    "gate_action": gate_action
+                    "gate_action": gate_action,
+                    "gate_evaluation": gate_evaluation
                 }),
             );
         }
@@ -272,8 +285,17 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
             320,
         );
         let apply = parse_bool(parsed.flags.get("apply"), true);
-        let directive_allowed = directive_kernel::action_allowed(root, "blob:mutate")
-            && directive_kernel::action_allowed(root, &format!("blob_mutate:{module}:{proposal}"));
+        let gate_eval_base = directive_kernel::evaluate_action(root, "blob:mutate");
+        let gate_eval_mutation =
+            directive_kernel::evaluate_action(root, &format!("blob_mutate:{module}:{proposal}"));
+        let directive_allowed = gate_eval_base
+            .get("allowed")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+            && gate_eval_mutation
+                .get("allowed")
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
         let canary_pass = parse_bool(parsed.flags.get("canary-pass"), true);
         let sim_regression = parse_f64(parsed.flags.get("sim-regression"), 0.0).max(0.0);
         let allow = directive_allowed && canary_pass && sim_regression <= 0.05;
@@ -322,6 +344,10 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                 "module": event.get("module").cloned().unwrap_or(Value::Null),
                 "apply": apply,
                 "directive_allowed": directive_allowed,
+                "gate_evaluation": {
+                    "base": gate_eval_base,
+                    "mutation": gate_eval_mutation
+                },
                 "canary_pass": canary_pass,
                 "sim_regression": sim_regression,
                 "rollback_target": rollback_target,
@@ -343,6 +369,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
     } else if command == "substrate-probe" {
         let gate_action = "blob:substrate-probe";
         if !directive_kernel::action_allowed(root, gate_action) {
+            let gate_evaluation = directive_kernel::evaluate_action(root, gate_action);
             return emit(
                 root,
                 json!({
@@ -350,7 +377,8 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "type": "binary_blob_runtime_substrate_probe",
                     "lane": "core/layer0/ops",
                     "error": "directive_gate_denied",
-                    "gate_action": gate_action
+                    "gate_action": gate_action,
+                    "gate_evaluation": gate_evaluation
                 }),
             );
         }
@@ -409,6 +437,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
         let module = normalize_module(parsed.flags.get("module"));
         let gate_action = format!("blob:debug-access:{module}");
         if !directive_kernel::action_allowed(root, &gate_action) {
+            let gate_evaluation = directive_kernel::evaluate_action(root, &gate_action);
             return emit(
                 root,
                 json!({
@@ -417,7 +446,8 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "lane": "core/layer0/ops",
                     "module": module,
                     "error": "directive_gate_denied",
-                    "gate_action": gate_action
+                    "gate_action": gate_action,
+                    "gate_evaluation": gate_evaluation
                 }),
             );
         }

@@ -14,7 +14,7 @@ pub(super) fn print_usage() {
     println!("  protheus-ops network-protocol <status|ignite-bitcoin|stake|merkle-root|emission|zk-claim> [flags]");
     println!("  protheus-ops seed-protocol <status|deploy|migrate|enforce|select|archive|defend|monitor> [flags]");
     println!("  protheus-ops binary-blob-runtime <status|migrate|settle|mutate|substrate-probe|debug-access> [flags]");
-    println!("  protheus-ops directive-kernel <status|prime-sign|derive|compliance-check|bridge-rsi|migrate> [flags]");
+    println!("  protheus-ops directive-kernel <status|prime-sign|derive|supersede|compliance-check|bridge-rsi|migrate> [flags]");
     println!("  protheus-ops rsi-ignition <status|ignite|reflect|swarm|evolve> [flags]");
     println!("  protheus-ops continuity-runtime <resurrection-protocol|session-continuity-vault> [flags]");
     println!("  protheus-ops memory-plane <causal-temporal-graph|memory-federation-plane> [flags]");
