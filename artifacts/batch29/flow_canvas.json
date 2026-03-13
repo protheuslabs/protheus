@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "kind": "flow_canvas_graph",
+  "nodes": [
+    {"id": "src", "type": "source"},
+    {"id": "tx", "type": "transform"},
+    {"id": "sink", "type": "sink"}
+  ],
+  "edges": [
+    {"from": "src", "to": "tx"},
+    {"from": "tx", "to": "sink"}
+  ]
+}

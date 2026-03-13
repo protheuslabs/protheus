@@ -30,9 +30,15 @@ fn usage() {
     println!("Usage:");
     println!("  protheus-ops flow-plane status");
     println!("  protheus-ops flow-plane compile [--canvas-json=<json>|--canvas-path=<path>] [--strict=1|0]");
+    println!(
+        "  protheus-ops flow-plane run [--run-id=<id>] [--strict=1|0]   # alias of playground --op=play"
+    );
     println!("  protheus-ops flow-plane playground --op=<play|pause|step|resume|inspect> [--run-id=<id>] [--strict=1|0]");
     println!("  protheus-ops flow-plane component-marketplace [--manifest=<path>] [--components-root=<path>] [--component-id=<id>] [--custom-source-path=<path>] [--strict=1|0]");
     println!("  protheus-ops flow-plane export [--format=json|api|mcp] [--from-path=<path>] [--package-version=<v>] [--strict=1|0]");
+    println!(
+        "  protheus-ops flow-plane install [--manifest=<path>] [--templates-root=<path>] [--strict=1|0]   # alias of template-governance"
+    );
     println!("  protheus-ops flow-plane template-governance [--manifest=<path>] [--templates-root=<path>] [--strict=1|0]");
 }
 
@@ -120,7 +126,7 @@ fn conduit_enforcement(
         "claim_evidence": [
             {
                 "id": "V6-FLOW-001.6",
-                "claim": "visual_builder_compile_run_debug_export_actions_route_through_conduit_with_bypass_rejection",
+                "claim": "visual_builder_compile_run_debug_export_install_actions_route_through_conduit_with_bypass_rejection",
                 "evidence": {
                     "action": clean(action, 120),
                     "bypass_requested": bypass_requested
@@ -1395,11 +1401,21 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
     let payload = match command.as_str() {
         "status" => status(root),
         "compile" | "build" => run_compile(root, &parsed, strict),
+        "run" => {
+            let mut alias = parsed.clone();
+            alias.positional = vec!["playground".to_string()];
+            alias
+                .flags
+                .entry("op".to_string())
+                .or_insert_with(|| "play".to_string());
+            run_playground(root, &alias, strict)
+        }
         "playground" | "debug" => run_playground(root, &parsed, strict),
         "component-marketplace" | "component_marketplace" | "components" => {
             run_component_marketplace(root, &parsed, strict)
         }
         "export" | "package" => run_export(root, &parsed, strict),
+        "install" => run_template_governance(root, &parsed, strict),
         "template-governance" | "template_governance" | "templates" => {
             run_template_governance(root, &parsed, strict)
         }

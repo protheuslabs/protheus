@@ -103,8 +103,17 @@ fn v6_binvuln_batch11_core_lanes_execute_with_receipts() {
             .unwrap_or(0)
             > 0
     );
+    assert!(
+        scan_latest
+            .get("input")
+            .and_then(|v| v.get("path_redacted"))
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
+        "strict scan should redact input paths by default"
+    );
     assert_claim(&scan_latest, "V6-BINVULN-001.1");
     assert_claim(&scan_latest, "V6-BINVULN-001.3");
+    assert_claim(&scan_latest, "V6-BINVULN-001.4");
 
     let jsonl_exit = binary_vuln_plane::run(
         root,
@@ -143,6 +152,7 @@ fn v6_binvuln_batch11_core_lanes_execute_with_receipts() {
     );
     assert_eq!(mcp_latest.get("ok").and_then(Value::as_bool), Some(true));
     assert_claim(&mcp_latest, "V6-BINVULN-001.2");
+    assert_claim(&mcp_latest, "V6-BINVULN-001.4");
 }
 
 #[test]
@@ -163,5 +173,16 @@ fn v6_binvuln_batch11_rejects_bypass_when_strict() {
     assert_eq!(
         latest.get("type").and_then(Value::as_str),
         Some("binary_vuln_plane_conduit_gate")
+    );
+    assert!(
+        latest
+            .get("conduit_enforcement")
+            .and_then(|v| v.get("claim_evidence"))
+            .and_then(Value::as_array)
+            .map(|rows| rows
+                .iter()
+                .any(|row| row.get("id").and_then(Value::as_str) == Some("V6-BINVULN-001.4")))
+            .unwrap_or(false),
+        "conduit bypass rejection should emit sandbox safety claim evidence"
     );
 }

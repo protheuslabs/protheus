@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use protheus_ops_core::{skills_plane, v8_kernel::sha256_hex_str};
+use protheus_ops_core::{health_status, skills_plane, v8_kernel::sha256_hex_str};
 use serde_json::{json, Map, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -245,6 +245,28 @@ fn v6_skills_batch11_core_lanes_execute_with_receipts() {
         Some(true)
     );
     assert_claim(&dashboard_latest, "V6-SKILLS-001.5");
+
+    let health_exit = health_status::run(root, &["dashboard".to_string()]);
+    assert_eq!(health_exit, 0);
+    let health_latest = root
+        .join("client")
+        .join("local")
+        .join("state")
+        .join("ops")
+        .join("health_status")
+        .join("latest.json");
+    let health_payload = read_json(&health_latest);
+    assert_eq!(
+        health_payload.get("type").and_then(Value::as_str),
+        Some("health_status_dashboard")
+    );
+    assert!(
+        health_payload
+            .get("dashboard_metrics")
+            .and_then(|v| v.get("skills_plane_health"))
+            .is_some(),
+        "skills observability should surface in protheus-top dashboard metrics"
+    );
 
     let react_exit = skills_plane::run(
         root,

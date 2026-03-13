@@ -2057,6 +2057,46 @@ mod tests {
     }
 
     #[test]
+    fn core_shortcut_routes_flow_run_to_flow_plane() {
+        let route = resolve_core_shortcuts(
+            "flow",
+            &[
+                "run".to_string(),
+                "--run-id=batch29-flow".to_string(),
+                "--strict=1".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://flow-plane");
+        assert_eq!(
+            route.args,
+            vec!["playground", "--op=play", "--run-id=batch29-flow", "--strict=1"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_flow_install_to_flow_plane() {
+        let route = resolve_core_shortcuts(
+            "flow",
+            &[
+                "install".to_string(),
+                "--manifest=planes/contracts/flow/template_pack_manifest_v1.json".to_string(),
+                "--strict=1".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://flow-plane");
+        assert_eq!(
+            route.args,
+            vec![
+                "install",
+                "--manifest=planes/contracts/flow/template_pack_manifest_v1.json",
+                "--strict=1"
+            ]
+        );
+    }
+
+    #[test]
     fn core_shortcut_routes_blobs_to_binary_blob_runtime() {
         let route =
             resolve_core_shortcuts("blobs", &["migrate".to_string(), "--apply=1".to_string()])

@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "kind": "skill_gallery_manifest",
+  "templates": [
+    {
+      "id": "graph-analyst",
+      "version": "v1",
+      "package_rel": "/Users/jay/.openclaw/workspace/artifacts/batch29/gallery/graph-analyst",
+      "human_reviewed": true,
+      "reviewed_by": "operator"
+    }
+  ],
+  "signature": "sig:1513332861a28f197c7662e57405d3778fc4cceaf9aeab66cd30246dc3c17e66"
+}

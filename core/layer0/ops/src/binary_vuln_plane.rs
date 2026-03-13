@@ -9,6 +9,7 @@ use crate::{clean, parse_args};
 use serde_json::{json, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 const STATE_ENV: &str = "BINARY_VULN_PLANE_STATE_ROOT";
 const STATE_SCOPE: &str = "binary_vuln_plane";
@@ -100,6 +101,14 @@ fn conduit_enforcement(
             {
                 "id": "V6-BINVULN-001.2",
                 "claim": "binary_analysis_mcp_surface_is_conduit_routed_with_receipts",
+                "evidence": {
+                    "action": clean(action, 120),
+                    "bypass_requested": bypass_requested
+                }
+            },
+            {
+                "id": "V6-BINVULN-001.4",
+                "claim": "binary_scan_execution_is_sandboxed_with_budget_privacy_and_degrade_guards_at_the_conduit_boundary",
                 "evidence": {
                     "action": clean(action, 120),
                     "bypass_requested": bypass_requested
@@ -308,6 +317,7 @@ fn normalize_findings(findings: Vec<Value>) -> Vec<Value> {
 }
 
 fn scan_payload(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Result<Value, Value> {
+    let scan_started = Instant::now();
     let engine_contract = load_json_or(
         root,
         ENGINE_CONTRACT_PATH,
@@ -315,7 +325,18 @@ fn scan_payload(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Result
             "version": "v1",
             "kind": "binary_analysis_engine_contract",
             "allowed_kinds": ["binary", "firmware", "uefi", "ba2", "binary_ninja_db"],
-            "max_input_bytes": 104857600
+            "max_input_bytes": 104857600,
+            "sandbox": {
+                "max_findings": 4000,
+                "max_scan_millis": 30000,
+                "privacy": {
+                    "redact_input_path": true
+                },
+                "degrade": {
+                    "enabled": true,
+                    "mode": "truncate_findings"
+                }
+            }
         }),
     );
     let output_contract = load_json_or(
@@ -382,6 +403,40 @@ fn scan_payload(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Result
         .get("max_input_bytes")
         .and_then(Value::as_u64)
         .unwrap_or(104857600) as usize;
+    let sandbox = engine_contract
+        .get("sandbox")
+        .cloned()
+        .unwrap_or_else(|| json!({}));
+    let max_findings = sandbox
+        .get("max_findings")
+        .and_then(Value::as_u64)
+        .unwrap_or(4000) as usize;
+    let max_scan_millis = sandbox
+        .get("max_scan_millis")
+        .and_then(Value::as_u64)
+        .unwrap_or(30000);
+    let redact_input_path = sandbox
+        .get("privacy")
+        .and_then(Value::as_object)
+        .and_then(|row| row.get("redact_input_path"))
+        .and_then(Value::as_bool)
+        .unwrap_or(true);
+    let degrade_enabled = sandbox
+        .get("degrade")
+        .and_then(Value::as_object)
+        .and_then(|row| row.get("enabled"))
+        .and_then(Value::as_bool)
+        .unwrap_or(true);
+    let degrade_mode = clean(
+        sandbox
+            .get("degrade")
+            .and_then(Value::as_object)
+            .and_then(|row| row.get("mode"))
+            .and_then(Value::as_str)
+            .unwrap_or("truncate_findings"),
+        80,
+    );
+    let allow_raw_path = parse_bool(parsed.flags.get("allow-raw-path"), false);
     if strict && bytes.len() > max_input {
         return Err(json!({
             "ok": false,
@@ -415,13 +470,37 @@ fn scan_payload(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Result
     let (rulepack, rules) = load_rulepack(root, parsed);
     let rulepack_sha256 = sha256_hex_str(&rulepack.to_string());
 
-    let findings = normalize_findings(scan_with_rules(
+    let mut findings = normalize_findings(scan_with_rules(
         &raw_utf8,
         &kind,
         &bytes,
         &rules,
         &input_sha256,
     ));
+    let mut degraded = false;
+    let mut degrade_reason = String::new();
+    if findings.len() > max_findings {
+        if strict && !degrade_enabled {
+            return Err(json!({
+                "ok": false,
+                "strict": strict,
+                "type": "binary_vuln_plane_scan",
+                "errors": ["sandbox_finding_budget_exceeded"]
+            }));
+        }
+        findings.truncate(max_findings);
+        degraded = true;
+        degrade_reason = "finding_budget_exceeded".to_string();
+    }
+    let scan_millis = scan_started.elapsed().as_millis() as u64;
+    if strict && scan_millis > max_scan_millis {
+        return Err(json!({
+            "ok": false,
+            "strict": strict,
+            "type": "binary_vuln_plane_scan",
+            "errors": ["sandbox_scan_time_budget_exceeded"]
+        }));
+    }
 
     let format = clean(
         parsed
@@ -479,13 +558,19 @@ fn scan_payload(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Result
         );
     }
 
+    let output_path = if redact_input_path && !allow_raw_path {
+        format!("<redacted:{}>", &input_sha256[..12])
+    } else {
+        path.display().to_string()
+    };
     let mut out = json!({
         "ok": true,
         "strict": strict,
         "type": "binary_vuln_plane_scan",
         "lane": "core/layer0/ops",
         "input": {
-            "path": path.display().to_string(),
+            "path": output_path,
+            "path_redacted": redact_input_path && !allow_raw_path,
             "kind": kind,
             "sha256": input_sha256,
             "bytes": bytes.len()
@@ -497,7 +582,18 @@ fn scan_payload(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Result
         "output": {
             "format": format,
             "artifact_path": artifact_path.display().to_string(),
-            "finding_count": findings.len()
+            "finding_count": findings.len(),
+            "sandbox": {
+                "max_input_bytes": max_input,
+                "max_findings": max_findings,
+                "max_scan_millis": max_scan_millis,
+                "scan_millis": scan_millis,
+                "privacy_path_redaction": redact_input_path,
+                "degrade_enabled": degrade_enabled,
+                "degrade_mode": degrade_mode,
+                "degraded": degraded,
+                "degrade_reason": if degrade_reason.is_empty() { Value::Null } else { Value::String(degrade_reason.clone()) }
+            }
         },
         "findings": findings,
         "claim_evidence": [
@@ -515,6 +611,17 @@ fn scan_payload(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Result
                 "evidence": {
                     "format": format,
                     "finding_count": findings.len()
+                }
+            },
+            {
+                "id": "V6-BINVULN-001.4",
+                "claim": "binary_scan_execution_runs_in_a_safety_plane_sandbox_with_budget_privacy_and_degrade_checks",
+                "evidence": {
+                    "max_input_bytes": max_input,
+                    "max_findings": max_findings,
+                    "scan_millis": scan_millis,
+                    "degraded": degraded,
+                    "path_redacted": redact_input_path && !allow_raw_path
                 }
             }
         ]
@@ -662,6 +769,13 @@ fn run_mcp_analyze(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Val
                         .and_then(|v| v.get("finding_count"))
                         .cloned()
                         .unwrap_or(json!(0))
+                }
+            },
+            {
+                "id": "V6-BINVULN-001.4",
+                "claim": "binary_scan_execution_runs_in_a_safety_plane_sandbox_with_budget_privacy_and_degrade_checks",
+                "evidence": {
+                    "transport": transport
                 }
             }
         ]

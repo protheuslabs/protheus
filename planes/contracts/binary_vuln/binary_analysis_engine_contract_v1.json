@@ -2,5 +2,16 @@
   "version": "v1",
   "kind": "binary_analysis_engine_contract",
   "allowed_kinds": ["binary", "firmware", "uefi", "ba2", "binary_ninja_db"],
-  "max_input_bytes": 104857600
+  "max_input_bytes": 104857600,
+  "sandbox": {
+    "max_findings": 4000,
+    "max_scan_millis": 30000,
+    "privacy": {
+      "redact_input_path": true
+    },
+    "degrade": {
+      "enabled": true,
+      "mode": "truncate_findings"
+    }
+  }
 }

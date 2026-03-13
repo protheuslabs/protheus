@@ -488,6 +488,11 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                         args.extend(rest.iter().skip(1).cloned());
                         args
                     }
+                    "install" => {
+                        let mut args = vec!["install".to_string()];
+                        args.extend(rest.iter().skip(1).cloned());
+                        args
+                    }
                     "components" => {
                         let mut args = vec!["component-marketplace".to_string()];
                         args.extend(rest.iter().skip(1).cloned());
