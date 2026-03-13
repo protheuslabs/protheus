@@ -22,6 +22,16 @@ fn read_json(path: &Path) -> Value {
     serde_json::from_str(&raw).expect("decode json")
 }
 
+fn has_claim(receipt: &Value, claim_id: &str) -> bool {
+    receipt
+        .get("claim_evidence")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+        .iter()
+        .any(|row| row.get("id").and_then(Value::as_str) == Some(claim_id))
+}
+
 fn read_jsonl(path: &Path) -> Vec<Value> {
     let Ok(raw) = fs::read_to_string(path) else {
         return Vec::new();
@@ -90,10 +100,15 @@ fn v8_batch23_supersession_enforces_conduit_gate_with_trace() {
         ),
         0
     );
+    let settled = latest("binary_blob_runtime", root);
+    assert!(has_claim(&settled, "V8-BINARY-BLOB-001.1"));
+    assert!(has_claim(&settled, "V8-BINARY-BLOB-001.2"));
     assert_eq!(
         binary_blob_runtime::run(root, &["load".to_string(), "--module=demo".to_string()]),
         0
     );
+    let load_ok = latest("binary_blob_runtime", root);
+    assert!(has_claim(&load_ok, "V8-BINARY-BLOB-001.1"));
 
     assert_eq!(
         directive_kernel::run(
@@ -125,6 +140,7 @@ fn v8_batch23_supersession_enforces_conduit_gate_with_trace() {
             .map(|rows| !rows.is_empty()),
         Some(true)
     );
+    assert!(has_claim(&denied, "V8-BINARY-BLOB-001.1"));
 
     let vault_after = read_json(
         &root
@@ -201,6 +217,7 @@ fn v8_batch23_blob_vault_chain_tamper_fails_closed() {
         latest_load.get("error").and_then(Value::as_str),
         Some("prime_blob_vault_chain_invalid")
     );
+    assert!(has_claim(&latest_load, "V8-BINARY-BLOB-001.1"));
 
     std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
     std::env::remove_var("BINARY_BLOB_VAULT_SIGNING_KEY");
@@ -291,6 +308,8 @@ fn v8_batch23_mutation_probe_and_debug_paths_are_runtime_enforced() {
         ),
         2
     );
+    let mutate_denied = latest("binary_blob_runtime", root);
+    assert!(has_claim(&mutate_denied, "V8-BINARY-BLOB-001.3"));
     let mutation_history = read_jsonl(
         &root
             .join("core")
@@ -300,15 +319,18 @@ fn v8_batch23_mutation_probe_and_debug_paths_are_runtime_enforced() {
             .join("binary_blob_runtime")
             .join("mutation_history.jsonl"),
     );
-    assert!(mutation_history.iter().any(|row| {
-        row.get("type").and_then(Value::as_str) == Some("rollback_triggered")
-    }));
+    assert!(mutation_history
+        .iter()
+        .any(|row| { row.get("type").and_then(Value::as_str) == Some("rollback_triggered") }));
 
     std::env::set_var("BITNET_TERNARY_AVAILABLE", "1");
     assert_eq!(
         binary_blob_runtime::run(
             root,
-            &["substrate-probe".to_string(), "--prefer=ternary".to_string()],
+            &[
+                "substrate-probe".to_string(),
+                "--prefer=ternary".to_string()
+            ],
         ),
         0
     );
@@ -317,6 +339,7 @@ fn v8_batch23_mutation_probe_and_debug_paths_are_runtime_enforced() {
         substrate_latest.get("selected").and_then(Value::as_str),
         Some("ternary")
     );
+    assert!(has_claim(&substrate_latest, "V8-BINARY-BLOB-001.4"));
     std::env::remove_var("BITNET_TERNARY_AVAILABLE");
 
     let _ = fs::remove_file(
@@ -338,6 +361,8 @@ fn v8_batch23_mutation_probe_and_debug_paths_are_runtime_enforced() {
         ),
         2
     );
+    let debug_denied = latest("binary_blob_runtime", root);
+    assert!(has_claim(&debug_denied, "V8-BINARY-BLOB-001.5"));
 
     assert_eq!(
         security_plane::run(
@@ -363,6 +388,8 @@ fn v8_batch23_mutation_probe_and_debug_paths_are_runtime_enforced() {
         ),
         0
     );
+    let debug_allowed = latest("binary_blob_runtime", root);
+    assert!(has_claim(&debug_allowed, "V8-BINARY-BLOB-001.5"));
     assert_eq!(
         binary_blob_runtime::run(
             root,
@@ -375,6 +402,8 @@ fn v8_batch23_mutation_probe_and_debug_paths_are_runtime_enforced() {
         ),
         2
     );
+    let debug_tamper = latest("binary_blob_runtime", root);
+    assert!(has_claim(&debug_tamper, "V8-BINARY-BLOB-001.5"));
     let mutation_history_after = read_jsonl(
         &root
             .join("core")
@@ -384,9 +413,9 @@ fn v8_batch23_mutation_probe_and_debug_paths_are_runtime_enforced() {
             .join("binary_blob_runtime")
             .join("mutation_history.jsonl"),
     );
-    assert!(mutation_history_after.iter().any(|row| {
-        row.get("type").and_then(Value::as_str) == Some("anti_tamper_dissolution")
-    }));
+    assert!(mutation_history_after
+        .iter()
+        .any(|row| { row.get("type").and_then(Value::as_str) == Some("anti_tamper_dissolution") }));
 
     std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
     std::env::remove_var("BINARY_BLOB_VAULT_SIGNING_KEY");
@@ -469,8 +498,7 @@ fn v8_batch23_compliance_and_rsi_bridge_emit_denial_trace_and_rollback() {
             .join("history.jsonl"),
     );
     assert!(history.iter().any(|row| {
-        row.get("type").and_then(Value::as_str)
-            == Some("directive_kernel_rsi_bridge_rollback")
+        row.get("type").and_then(Value::as_str) == Some("directive_kernel_rsi_bridge_rollback")
     }));
 
     std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");

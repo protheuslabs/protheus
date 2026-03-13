@@ -963,6 +963,15 @@ pub fn memory_metacognitive_enable_payload(args: &HashMap<String, String>) -> Va
     let root = root_from_args(args);
     let enabled = parse_bool(args.get("enabled"), true);
     let note = clean_text(args.get("note").map_or("", String::as_str), 300);
+    let config_digest = sha256_hex(
+        serde_json::to_string(&json!({
+            "schema_version": "1.0",
+            "enabled": enabled,
+            "note": note
+        }))
+        .unwrap_or_default()
+        .as_bytes(),
+    );
     let cfg_path = metacognitive_config_path(&root, args);
     let payload = json!({
         "schema_version": "1.0",
@@ -985,7 +994,8 @@ pub fn memory_metacognitive_enable_payload(args: &HashMap<String, String>) -> Va
         "type": "memory_metacognitive_enable",
         "backend": "protheus_memory_core",
         "enabled": enabled,
-        "config_path": normalize_rel_path(&root, &cfg_path)
+        "config_path": normalize_rel_path(&root, &cfg_path),
+        "config_digest": config_digest
     }));
     append_history(&history_path(&root, args), &out);
     append_metacognitive_note(
@@ -1053,6 +1063,11 @@ pub fn memory_taxonomy_payload(args: &HashMap<String, String>) -> Value {
         row_count: rows.len(),
         rows,
     };
+    let taxonomy_digest = sha256_hex(
+        serde_json::to_string(&snapshot.rows)
+            .unwrap_or_default()
+            .as_bytes(),
+    );
     let out_path = taxonomy_path(&root, args);
     if let Some(parent) = out_path.parent() {
         let _ = fs::create_dir_all(parent);
@@ -1070,6 +1085,7 @@ pub fn memory_taxonomy_payload(args: &HashMap<String, String>) -> Value {
         "backend": "protheus_memory_core",
         "index_path": normalize_rel_path(&root, &idx_path),
         "taxonomy_path": normalize_rel_path(&root, &out_path),
+        "taxonomy_digest": taxonomy_digest,
         "row_count": snapshot.row_count,
         "which": which,
         "when_missing": when_missing,
@@ -1110,12 +1126,17 @@ pub fn memory_causality_enable_payload(args: &HashMap<String, String>) -> Value 
     for (idx, row) in rows.iter().enumerate() {
         let seed = format!(
             "{}|{}|{}",
-            row.get("receipt_hash").and_then(Value::as_str).unwrap_or(""),
+            row.get("receipt_hash")
+                .and_then(Value::as_str)
+                .unwrap_or(""),
             row.get("type").and_then(Value::as_str).unwrap_or(""),
             idx
         );
         let id = format!("evt.{}", &sha256_hex(seed.as_bytes())[..16]);
-        let event_type = clean_text(row.get("type").and_then(Value::as_str).unwrap_or("event"), 120);
+        let event_type = clean_text(
+            row.get("type").and_then(Value::as_str).unwrap_or("event"),
+            120,
+        );
         let ts = clean_text(
             row.get("ts")
                 .or_else(|| row.get("generated_at"))
@@ -1273,8 +1294,8 @@ pub fn memory_benchmark_ama_payload(args: &HashMap<String, String>) -> Value {
     } else {
         two_hop as f64 / graph.node_count as f64
     };
-    let ama_score = (edge_validity * 0.5 + node_coverage * 0.3 + multi_hop_ratio * 0.2)
-        .clamp(0.0, 1.0);
+    let ama_score =
+        (edge_validity * 0.5 + node_coverage * 0.3 + multi_hop_ratio * 0.2).clamp(0.0, 1.0);
     let pass = ama_score >= threshold;
     let benchmark = json!({
         "schema_version": "1.0",
@@ -1327,6 +1348,16 @@ pub fn memory_share_payload(args: &HashMap<String, String>) -> Value {
         "consent": consent,
         "reason": reason
     });
+    let consent_scope_digest = sha256_hex(
+        serde_json::to_string(&json!({
+            "persona": record.get("persona").cloned().unwrap_or(Value::Null),
+            "scope": record.get("scope").cloned().unwrap_or(Value::Null),
+            "consent": record.get("consent").cloned().unwrap_or(Value::Null),
+            "reason": record.get("reason").cloned().unwrap_or(Value::Null)
+        }))
+        .unwrap_or_default()
+        .as_bytes(),
+    );
     let path = sharing_ledger_path(&root, args);
     append_history(&path, &record);
     let out = receipt(json!({
@@ -1336,6 +1367,7 @@ pub fn memory_share_payload(args: &HashMap<String, String>) -> Value {
         "persona": persona,
         "scope": scope,
         "consent": consent,
+        "consent_scope_digest": consent_scope_digest,
         "sharing_ledger_path": normalize_rel_path(&root, &path),
         "error": if consent { Value::Null } else { Value::String("consent_required".to_string()) }
     }));
@@ -1365,6 +1397,17 @@ pub fn memory_evolve_payload(args: &HashMap<String, String>) -> Value {
         "sharing_events": share_rows.len(),
         "stability_score": ((stability_score * 1000.0).round() / 1000.0)
     });
+    let evolution_digest = sha256_hex(
+        serde_json::to_string(&json!({
+            "generation": generation,
+            "history_events": h_rows.len(),
+            "metacognitive_events": meta_rows.len(),
+            "sharing_events": share_rows.len(),
+            "stability_score": snapshot.get("stability_score").cloned().unwrap_or(Value::Null)
+        }))
+        .unwrap_or_default()
+        .as_bytes(),
+    );
     let out_path = evolution_state_path(&root, args);
     if let Some(parent) = out_path.parent() {
         let _ = fs::create_dir_all(parent);
@@ -1382,6 +1425,7 @@ pub fn memory_evolve_payload(args: &HashMap<String, String>) -> Value {
         "backend": "protheus_memory_core",
         "generation": generation,
         "stability_score": snapshot.get("stability_score").cloned().unwrap_or(Value::Null),
+        "evolution_digest": evolution_digest,
         "evolution_state_path": normalize_rel_path(&root, &out_path)
     }));
     append_history(&history_path(&root, args), &out);
@@ -1414,8 +1458,12 @@ pub fn memory_causal_retrieve_payload(args: &HashMap<String, String>) -> Value {
             .nodes
             .iter()
             .find(|n| {
-                n.summary.to_ascii_lowercase().contains(&q.to_ascii_lowercase())
-                    || n.event_type.to_ascii_lowercase().contains(&q.to_ascii_lowercase())
+                n.summary
+                    .to_ascii_lowercase()
+                    .contains(&q.to_ascii_lowercase())
+                    || n.event_type
+                        .to_ascii_lowercase()
+                        .contains(&q.to_ascii_lowercase())
             })
             .map(|n| n.id.clone())
             .or_else(|| graph.nodes.first().map(|n| n.id.clone()))
@@ -1842,9 +1890,17 @@ mod tests {
         let meta = memory_metacognitive_enable_payload(&base_args(&dir.path().to_string_lossy()));
         assert!(meta.get("ok").and_then(|v| v.as_bool()).unwrap_or(false));
         assert_eq!(meta.get("enabled").and_then(|v| v.as_bool()), Some(true));
+        assert!(meta
+            .get("config_digest")
+            .and_then(|v| v.as_str())
+            .map(|v| !v.is_empty())
+            .unwrap_or(false));
 
         let taxonomy = memory_taxonomy_payload(&base_args(&dir.path().to_string_lossy()));
-        assert!(taxonomy.get("ok").and_then(|v| v.as_bool()).unwrap_or(false));
+        assert!(taxonomy
+            .get("ok")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false));
         assert!(
             taxonomy
                 .get("row_count")
@@ -1852,6 +1908,19 @@ mod tests {
                 .unwrap_or(0)
                 >= 1
         );
+        let digest_a = taxonomy
+            .get("taxonomy_digest")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        assert!(!digest_a.is_empty());
+        let taxonomy_repeat = memory_taxonomy_payload(&base_args(&dir.path().to_string_lossy()));
+        let digest_b = taxonomy_repeat
+            .get("taxonomy_digest")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        assert_eq!(digest_a, digest_b);
 
         let causal = memory_causality_enable_payload(&base_args(&dir.path().to_string_lossy()));
         assert!(causal.get("ok").and_then(|v| v.as_bool()).unwrap_or(false));
@@ -1878,7 +1947,10 @@ mod tests {
 
         let chat = nano_chat_payload(&args);
         assert!(chat.get("ok").and_then(|v| v.as_bool()).unwrap_or(false));
-        assert_eq!(chat.get("type").and_then(|v| v.as_str()), Some("nano_chat_mode"));
+        assert_eq!(
+            chat.get("type").and_then(|v| v.as_str()),
+            Some("nano_chat_mode")
+        );
 
         let train = nano_train_payload(&args);
         assert!(train.get("ok").and_then(|v| v.as_bool()).unwrap_or(false));
@@ -1889,7 +1961,10 @@ mod tests {
 
         let fork = nano_fork_payload(&args);
         assert!(fork.get("ok").and_then(|v| v.as_bool()).unwrap_or(false));
-        assert_eq!(fork.get("type").and_then(|v| v.as_str()), Some("nano_fork_mode"));
+        assert_eq!(
+            fork.get("type").and_then(|v| v.as_str()),
+            Some("nano_fork_mode")
+        );
     }
 
     #[test]
@@ -1914,16 +1989,29 @@ mod tests {
         share_args.insert("consent".to_string(), "true".to_string());
         let share = memory_share_payload(&share_args);
         assert!(share.get("ok").and_then(|v| v.as_bool()).unwrap_or(false));
+        assert!(share
+            .get("consent_scope_digest")
+            .and_then(|v| v.as_str())
+            .map(|v| !v.is_empty())
+            .unwrap_or(false));
 
         let evolve = memory_evolve_payload(&base_args(&dir.path().to_string_lossy()));
         assert!(evolve.get("ok").and_then(|v| v.as_bool()).unwrap_or(false));
         assert!(evolve.get("stability_score").is_some());
+        assert!(evolve
+            .get("evolution_digest")
+            .and_then(|v| v.as_str())
+            .map(|v| !v.is_empty())
+            .unwrap_or(false));
 
         let mut retrieve_args = base_args(&dir.path().to_string_lossy());
         retrieve_args.insert("q".to_string(), "strategy".to_string());
         retrieve_args.insert("depth".to_string(), "2".to_string());
         let retrieve = memory_causal_retrieve_payload(&retrieve_args);
-        assert!(retrieve.get("ok").and_then(|v| v.as_bool()).unwrap_or(false));
+        assert!(retrieve
+            .get("ok")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false));
         assert!(
             retrieve
                 .get("trace_count")

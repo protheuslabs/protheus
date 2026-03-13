@@ -67,9 +67,9 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                 "integrity": vault_integrity
             },
             "verification": checks,
-            "claim_evidence": [
+                "claim_evidence": [
                 {
-                    "id": "v8_binary_blob_001_1",
+                    "id": "V8-BINARY-BLOB-001.1",
                     "claim": "settled_blob_artifacts_are_bound_to_signed_source_snapshots_and_policy_hashes",
                     "evidence": {"active_modules": modules.len(), "vault_integrity_ok": vault_ok}
                 }
@@ -156,7 +156,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                 "layer_map": ["0","1","2","client","app"],
                 "claim_evidence": [
                     {
-                        "id": "v8_binary_blob_001_6",
+                        "id": "V8-BINARY-BLOB-001.6",
                         "claim": "one_command_blob_migration_and_status_flow_is_core_authoritative",
                         "evidence": {"module_count": modules.len()}
                     }
@@ -179,7 +179,18 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "module": module,
                     "error": "directive_gate_denied",
                     "gate_action": gate_action,
-                    "gate_evaluation": gate_evaluation
+                    "gate_evaluation": gate_evaluation,
+                    "claim_evidence": [
+                        {
+                            "id": "V8-BINARY-BLOB-001.1",
+                            "claim": "settle_operations_are_fail_closed_when_directive_gate_denies_action",
+                            "evidence": {
+                                "module": module,
+                                "gate_action": gate_action,
+                                "reason": "directive_gate_denied"
+                            }
+                        }
+                    ]
                 }),
             );
         }
@@ -195,12 +206,12 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "layer_map": ["0","1","2","3","client"],
                     "claim_evidence": [
                         {
-                            "id": "v8_binary_blob_001_1",
+                            "id": "V8-BINARY-BLOB-001.1",
                             "claim": "settled_blob_artifacts_are_bound_to_signed_source_snapshots_and_policy_hashes",
                             "evidence": {"module": module}
                         },
                         {
-                            "id": "v8_binary_blob_001_2",
+                            "id": "V8-BINARY-BLOB-001.2",
                             "claim": "re_settle_engine_supports_modular_or_monolithic_modes_with_shadow_swap",
                             "evidence": {
                                 "mode": clean(parsed.flags.get("mode").cloned().unwrap_or_else(|| "modular".to_string()), 24),
@@ -235,7 +246,18 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "module": module,
                     "error": "directive_gate_denied",
                     "gate_action": gate_action,
-                    "gate_evaluation": gate_evaluation
+                    "gate_evaluation": gate_evaluation,
+                    "claim_evidence": [
+                        {
+                            "id": "V8-BINARY-BLOB-001.1",
+                            "claim": "load_is_fail_closed_when_directive_or_policy_hash_check_mismatch",
+                            "evidence": {
+                                "module": module,
+                                "verified": false,
+                                "reason": "directive_gate_denied"
+                            }
+                        }
+                    ]
                 }),
             );
         }
@@ -249,7 +271,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "detail": detail,
                     "claim_evidence": [
                         {
-                            "id": "v8_binary_blob_001_1",
+                            "id": "V8-BINARY-BLOB-001.1",
                             "claim": "load_is_fail_closed_when_directive_or_policy_hash_check_mismatch",
                             "evidence": {"module": module, "verified": true}
                         }
@@ -266,7 +288,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "error": clean(&err, 220),
                     "claim_evidence": [
                         {
-                            "id": "v8_binary_blob_001_1",
+                            "id": "V8-BINARY-BLOB-001.1",
                             "claim": "load_is_fail_closed_when_directive_or_policy_hash_check_mismatch",
                             "evidence": {"module": module, "verified": false, "reason": clean(&err, 220)}
                         }
@@ -354,7 +376,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                 "layer_map": ["0","1","2","3"],
                 "claim_evidence": [
                     {
-                        "id": "v8_binary_blob_001_3",
+                        "id": "V8-BINARY-BLOB-001.3",
                         "claim": "self_modification_mutation_is_inversion_simulated_and_directive_gated",
                         "evidence": {
                             "allow": allow,
@@ -426,7 +448,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                 "layer_map": ["-1","0","1","2","3","adapter"],
                 "claim_evidence": [
                     {
-                        "id": "v8_binary_blob_001_4",
+                        "id": "V8-BINARY-BLOB-001.4",
                         "claim": "settle_cycle_prefers_ternary_substrate_with_deterministic_binary_fallback",
                         "evidence": {"selected": selected, "ternary_available": ternary_available}
                     }
@@ -485,7 +507,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                 "layer_map": ["0","1","2","adapter","client"],
                 "claim_evidence": [
                     {
-                        "id": "v8_binary_blob_001_5",
+                        "id": "V8-BINARY-BLOB-001.5",
                         "claim": "debug_visibility_requires_identity_bound_soul_token_and_anti_tamper_gate",
                         "evidence": {"allowed": allowed, "tamper_signal": tamper, "token_ok": token_ok}
                     }
