@@ -89,6 +89,28 @@ fn v6_batch21_cognition_and_cockpit_lanes_are_receipted() {
         Some("assimilation_controller_skill_create")
     );
     assert!(has_claim(&create, "V6-COGNITION-012.2"));
+    let deterministic_skill_id = create
+        .get("skill_id")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    assert!(!deterministic_skill_id.is_empty());
+
+    assert_eq!(
+        assimilation_controller::run(
+            root_path,
+            &[
+                "skill-create".to_string(),
+                "--task=create summarizer skill".to_string(),
+            ],
+        ),
+        0
+    );
+    let create_repeat = read_json(&cognition_latest);
+    assert_eq!(
+        create_repeat.get("skill_id").and_then(Value::as_str),
+        Some(deterministic_skill_id.as_str())
+    );
 
     assert_eq!(
         assimilation_controller::run(
@@ -143,6 +165,11 @@ fn v6_batch21_cognition_and_cockpit_lanes_are_receipted() {
         Some("assimilation_controller_skills_dashboard")
     );
     assert!(has_claim(&dashboard, "V6-COGNITION-012.5"));
+    assert!(dashboard
+        .get("history_events")
+        .and_then(Value::as_u64)
+        .map(|v| v >= 5)
+        .unwrap_or(false));
 
     let mock_bin = write_mock_memory_bin(root_path);
     std::env::set_var("PROTHEUS_MEMORY_CORE_BIN", &mock_bin);
@@ -167,6 +194,12 @@ fn v6_batch21_cognition_and_cockpit_lanes_are_receipted() {
     assert!(has_claim(&chat, "V6-COCKPIT-026.1"));
     assert!(has_claim(&chat, "V6-COCKPIT-026.4"));
     assert!(has_claim(&chat, "V6-COCKPIT-026.5"));
+    assert_eq!(
+        chat.get("token_telemetry")
+            .and_then(|v| v.get("retrieval_mode"))
+            .and_then(Value::as_str),
+        Some("index_only")
+    );
 
     assert_eq!(
         rag_cli::run(
@@ -186,6 +219,15 @@ fn v6_batch21_cognition_and_cockpit_lanes_are_receipted() {
     );
     assert!(has_claim(&train, "V6-COCKPIT-026.2"));
     assert!(has_claim(&train, "V6-COCKPIT-026.4"));
+    assert_eq!(
+        train
+            .get("token_telemetry")
+            .and_then(|v| v.get("tokens"))
+            .and_then(|v| v.get("total"))
+            .and_then(Value::as_i64)
+            .map(|v| v > 0),
+        Some(true)
+    );
 
     assert_eq!(
         rag_cli::run(
@@ -210,7 +252,14 @@ fn v6_batch21_cognition_and_cockpit_lanes_are_receipted() {
     assert_eq!(memory_ambient::run(root_path, &["status".to_string()]), 0);
     let status = read_json(&ambient_latest);
     assert_eq!(
-        status.get("memory_command").and_then(Value::as_str),
+        status.get("type").and_then(Value::as_str),
+        Some("memory_ambient")
+    );
+    assert!(has_claim(&status, "V6-COCKPIT-026.5"));
+    assert_eq!(
+        status
+            .get("memory_command")
+            .and_then(Value::as_str),
         Some("stable-nano-fork")
     );
 

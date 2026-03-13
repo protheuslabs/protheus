@@ -260,6 +260,10 @@ fn run_create(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
     }
 
     let id = slugify(&name);
+    let deterministic_skill_id = format!(
+        "skill_{}",
+        &sha256_hex_str(&name.trim().to_ascii_lowercase())[..12]
+    );
     let version = clean(
         contract
             .get("default_version")
@@ -314,6 +318,7 @@ fn run_create(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
         "lane": "core/layer0/ops",
         "skill": {
             "id": id,
+            "deterministic_id": deterministic_skill_id,
             "name": name,
             "version": version,
             "root": root_path.display().to_string()
@@ -325,6 +330,13 @@ fn run_create(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
                 "claim": "skill_create_generates_markdown_yaml_scripts_assets_scaffold_package",
                 "evidence": {
                     "file_count": generated.len()
+                }
+            },
+            {
+                "id": "V6-COGNITION-012.2",
+                "claim": "natural_language_skill_creation_mints_deterministic_skill_ids_and_receipted_contracts",
+                "evidence": {
+                    "skill_id": deterministic_skill_id
                 }
             }
         ]
@@ -891,6 +903,13 @@ fn run_dashboard(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value
         .get("dashboard_run_window")
         .and_then(Value::as_u64)
         .unwrap_or(1000) as usize;
+    let cognition_latest_path = root.join("state/ops/assimilation_controller/latest.json");
+    let cognition_history_path = root.join("state/ops/assimilation_controller/history.jsonl");
+    let cognition_latest = read_json(&cognition_latest_path).unwrap_or(Value::Null);
+    let cognition_history_events = fs::read_to_string(&cognition_history_path)
+        .ok()
+        .map(|raw| raw.lines().filter(|row| !row.trim().is_empty()).count())
+        .unwrap_or(0usize);
     let run_history_path = state_root(root).join("runs").join("history.jsonl");
     let mut run_rows = load_jsonl(&run_history_path);
     if run_rows.len() > run_window {
@@ -922,7 +941,13 @@ fn run_dashboard(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value
         },
         "upstream": {
             "skills_list_latest": list_payload.get("latest_path").cloned().unwrap_or(Value::Null),
-            "runs_history_path": run_history_path.display().to_string()
+            "runs_history_path": run_history_path.display().to_string(),
+            "cognition_latest_path": cognition_latest_path.display().to_string(),
+            "cognition_history_path": cognition_history_path.display().to_string()
+        },
+        "cognition": {
+            "history_events": cognition_history_events,
+            "latest": cognition_latest
         },
         "claim_evidence": [
             {
@@ -930,6 +955,17 @@ fn run_dashboard(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value
                 "claim": "developer_and_user_skill_dx_exposes_create_list_run_status_wrappers_with_observability_surface",
                 "evidence": {
                     "run_window": run_rows.len()
+                }
+            },
+            {
+                "id": "V6-COGNITION-012.5",
+                "claim": "skills_dashboard_surfaces_history_and_latest_state_from_core_receipt_ledger",
+                "evidence": {
+                    "history_events": cognition_history_events,
+                    "latest_type": cognition_latest
+                        .get("type")
+                        .and_then(Value::as_str)
+                        .unwrap_or("")
                 }
             }
         ]
@@ -1877,6 +1913,17 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+
+    fn has_claim(receipt: &Value, claim_id: &str) -> bool {
+        receipt
+            .get("claim_evidence")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default()
+            .iter()
+            .any(|row| row.get("id").and_then(Value::as_str) == Some(claim_id))
+    }
 
     #[test]
     fn create_requires_name() {
@@ -1884,6 +1931,66 @@ mod tests {
         let parsed = crate::parse_args(&["create".to_string()]);
         let out = run_create(root.path(), &parsed, true);
         assert_eq!(out.get("ok").and_then(Value::as_bool), Some(false));
+    }
+
+    #[test]
+    fn create_mints_deterministic_skill_id_and_cognition_claim() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let parsed = crate::parse_args(&[
+            "create".to_string(),
+            "--name=Weekly Growth Report".to_string(),
+        ]);
+        let out_a = run_create(root.path(), &parsed, true);
+        let out_b = run_create(root.path(), &parsed, true);
+        let id_a = out_a
+            .get("skill")
+            .and_then(|v| v.get("deterministic_id"))
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        let id_b = out_b
+            .get("skill")
+            .and_then(|v| v.get("deterministic_id"))
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        assert!(!id_a.is_empty());
+        assert!(id_a.starts_with("skill_"));
+        assert_eq!(id_a, id_b);
+        assert!(has_claim(&out_a, "V6-COGNITION-012.2"));
+    }
+
+    #[test]
+    fn dashboard_includes_cognition_ledger_view_and_claim() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let cognition_dir = root.path().join("state/ops/assimilation_controller");
+        fs::create_dir_all(&cognition_dir).expect("mkdir cognition dir");
+        fs::write(
+            cognition_dir.join("latest.json"),
+            r#"{"ok":true,"type":"assimilation_controller_skill_create","skill_id":"skill_abc123"}"#,
+        )
+        .expect("write cognition latest");
+        fs::write(
+            cognition_dir.join("history.jsonl"),
+            r#"{"ok":true,"type":"assimilation_controller_skill_create"}"#,
+        )
+        .expect("write cognition history");
+
+        let parsed = crate::parse_args(&["dashboard".to_string()]);
+        let out = run_dashboard(root.path(), &parsed, true);
+        assert_eq!(out.get("ok").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            out.get("cognition")
+                .and_then(|v| v.get("history_events"))
+                .and_then(Value::as_u64),
+            Some(1)
+        );
+        assert_eq!(
+            out.get("cognition")
+                .and_then(|v| v.get("latest"))
+                .and_then(|v| v.get("type"))
+                .and_then(Value::as_str),
+            Some("assimilation_controller_skill_create")
+        );
+        assert!(has_claim(&out, "V6-COGNITION-012.5"));
     }
 
     #[test]
