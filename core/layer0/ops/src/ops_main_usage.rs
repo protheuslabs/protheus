@@ -26,6 +26,7 @@ pub(super) fn print_usage() {
     println!("  protheus-ops research-plane <status|diagnostics|fetch|recover-selectors|crawl|mcp-extract|spider|middleware|pipeline|signals|console|template-governance|goal-crawl|map-site|extract-structured|monitor|firecrawl-template-governance|js-scrape|auth-session|proxy-rotate|parallel-scrape-workers|book-patterns-template-governance|decode-news-url|decode-news-urls|decoder-template-governance> [flags]");
     println!("  protheus-ops parse-plane <status|parse-doc|visualize|postprocess-table|flatten|template-governance> [flags]");
     println!("  protheus-ops flow-plane <status|compile|playground|component-marketplace|export|template-governance> [flags]");
+    println!("  protheus-ops app-plane <status|run|history|replay|switch-provider> [flags]");
     println!("  protheus-ops mcp-plane <status|capability-matrix|workflow|expose|pattern-pack|template-governance> [flags]");
     println!("  protheus-ops skills-plane <status|list|dashboard|create|activate|chain-validate|install|run|share|gallery|react-minimal|tot-deliberate> [flags]");
     println!("  protheus-ops vbrowser-plane <status|session-start|session-control|automate|privacy-guard> [flags]");
@@ -38,7 +39,7 @@ pub(super) fn print_usage() {
     println!(
         "  protheus-ops observability-plane <status|monitor|workflow|incident|selfhost> [flags]"
     );
-    println!("  protheus-ops persist-plane <status|schedule|mobile-cockpit> [flags]");
+    println!("  protheus-ops persist-plane <status|schedule|mobile-cockpit|continuity|connector|cowork> [flags]");
     println!("  protheus-ops binary-vuln-plane <status|scan|mcp-analyze> [flags]");
     println!("  protheus-ops hermes-plane <status|discover|continuity|delegate|cockpit> [flags]");
     println!("  protheus-ops ab-lane-eval <status|run> [flags]");

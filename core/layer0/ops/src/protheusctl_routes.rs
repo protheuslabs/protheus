@@ -1114,6 +1114,9 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
             let mut args = match sub.as_str() {
                 "schedule" => vec!["schedule".to_string()],
                 "mobile" | "mobile-cockpit" => vec!["mobile-cockpit".to_string()],
+                "continuity" => vec!["continuity".to_string()],
+                "connector" => vec!["connector".to_string()],
+                "cowork" | "co-work" => vec!["cowork".to_string()],
                 "status" => vec!["status".to_string()],
                 _ => vec![sub],
             };
@@ -1122,6 +1125,124 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
             }
             Some(Route {
                 script_rel: "core://persist-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "connector" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "list".to_string());
+            let mut args = vec!["connector".to_string(), format!("--op={sub}")];
+            if let Some(provider) = rest.get(1) {
+                if !provider.starts_with("--") {
+                    args.push(format!(
+                        "--provider={}",
+                        provider.trim().to_ascii_lowercase()
+                    ));
+                    args.extend(rest.iter().skip(2).cloned());
+                } else {
+                    args.extend(rest.iter().skip(1).cloned());
+                }
+            } else {
+                args.extend(rest.iter().skip(1).cloned());
+            }
+            Some(Route {
+                script_rel: "core://persist-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "cowork" | "co-work" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "list".to_string());
+            let mut args = vec!["cowork".to_string(), format!("--op={sub}")];
+            args.extend(rest.iter().skip(1).cloned());
+            Some(Route {
+                script_rel: "core://persist-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "app" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "status".to_string());
+            let normalized_sub = match sub.as_str() {
+                "run" | "status" | "history" | "replay" | "switch-provider" => sub.as_str(),
+                _ => "run",
+            };
+            let app_name = if sub == normalized_sub {
+                rest.get(1)
+                    .map(|v| v.trim())
+                    .filter(|v| !v.is_empty() && !v.starts_with("--"))
+                    .unwrap_or("chat-starter")
+                    .to_string()
+            } else {
+                sub.clone()
+            };
+            let app = app_name.replace('_', "-").to_ascii_lowercase();
+            let mut args = vec![normalized_sub.to_string(), format!("--app={}", app.trim())];
+            let mut plain = Vec::<String>::new();
+            let start_idx = if sub == normalized_sub {
+                2usize
+            } else {
+                1usize
+            };
+            for token in rest.iter().skip(start_idx) {
+                if token.starts_with("--") {
+                    args.push(token.clone());
+                } else {
+                    plain.push(token.clone());
+                }
+            }
+            if !plain.is_empty() {
+                let joined = plain.join(" ");
+                if app == "code-engineer" {
+                    args.push(format!("--prompt={joined}"));
+                } else {
+                    args.push(format!("--message={joined}"));
+                }
+            }
+            Some(Route {
+                script_rel: "core://app-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "chat-starter" | "chat_starter" => {
+            let mut args = vec!["run".to_string(), "--app=chat-starter".to_string()];
+            if !rest.is_empty() {
+                args.extend(rest.iter().cloned());
+            }
+            Some(Route {
+                script_rel: "core://app-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "chat-ui" | "chat_ui" => {
+            let mut args = vec!["run".to_string(), "--app=chat-ui".to_string()];
+            if !rest.is_empty() {
+                args.extend(rest.iter().cloned());
+            }
+            Some(Route {
+                script_rel: "core://app-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "code-engineer" | "code_engineer" => {
+            let mut args = vec!["run".to_string(), "--app=code-engineer".to_string()];
+            if !rest.is_empty() {
+                args.push(format!("--prompt={}", rest.join(" ")));
+            }
+            Some(Route {
+                script_rel: "core://app-plane".to_string(),
                 args,
                 forward_stdin: false,
             })

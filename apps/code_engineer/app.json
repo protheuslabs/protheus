@@ -1,0 +1,7 @@
+{
+  "id": "code_engineer",
+  "srs": "V6-APP-006.1,V6-APP-006.2,V6-APP-006.3",
+  "layer": "app",
+  "entrypoint": "protheus app run code-engineer \"<prompt>\"",
+  "authority": "core"
+}

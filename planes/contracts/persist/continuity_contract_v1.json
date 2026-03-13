@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "kind": "persist_continuity_contract",
+  "allowed_ops": [
+    "checkpoint",
+    "reconstruct",
+    "status"
+  ],
+  "required_context_keys": [
+    "context",
+    "user_model",
+    "active_tasks"
+  ],
+  "deterministic_reconstruction_receipts_required": true
+}

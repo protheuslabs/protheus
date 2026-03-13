@@ -1,0 +1,11 @@
+{
+  "version": "v1",
+  "kind": "code_engineer_contract",
+  "allowed_actions": [
+    "run",
+    "status"
+  ],
+  "max_iterations": 4,
+  "require_apps_placement": true,
+  "conduit_only_required": true
+}

@@ -2519,6 +2519,79 @@ mod tests {
     }
 
     #[test]
+    fn core_shortcut_routes_connector_add_to_persist_plane() {
+        let route = resolve_core_shortcuts("connector", &["add".to_string(), "slack".to_string()])
+            .expect("route");
+        assert_eq!(route.script_rel, "core://persist-plane");
+        assert_eq!(
+            route.args,
+            vec!["connector", "--op=add", "--provider=slack"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_cowork_delegate_to_persist_plane() {
+        let route = resolve_core_shortcuts(
+            "cowork",
+            &[
+                "delegate".to_string(),
+                "--task=ship-batch16".to_string(),
+                "--parent=ops-lead".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://persist-plane");
+        assert_eq!(
+            route.args,
+            vec![
+                "cowork",
+                "--op=delegate",
+                "--task=ship-batch16",
+                "--parent=ops-lead"
+            ]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_app_run_code_engineer_to_app_plane() {
+        let route = resolve_core_shortcuts(
+            "app",
+            &[
+                "run".to_string(),
+                "code-engineer".to_string(),
+                "build".to_string(),
+                "an".to_string(),
+                "agent".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://app-plane");
+        assert_eq!(
+            route.args,
+            vec!["run", "--app=code-engineer", "--prompt=build an agent"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_app_run_chat_ui_to_app_plane() {
+        let route = resolve_core_shortcuts(
+            "app",
+            &[
+                "run".to_string(),
+                "chat-ui".to_string(),
+                "--session-id=s1".to_string(),
+                "hello".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://app-plane");
+        assert_eq!(
+            route.args,
+            vec!["run", "--app=chat-ui", "--session-id=s1", "--message=hello"]
+        );
+    }
+
+    #[test]
     fn core_shortcut_routes_orchestrate_agency_to_company_plane() {
         let route = resolve_core_shortcuts(
             "orchestrate",

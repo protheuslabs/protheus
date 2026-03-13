@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "kind": "persist_cowork_background_contract",
+  "allowed_ops": [
+    "delegate",
+    "tick",
+    "status",
+    "list"
+  ],
+  "allowed_modes": [
+    "co-work",
+    "sub-agent"
+  ],
+  "max_budget_ms": 3600000,
+  "parent_child_receipt_chain_required": true
+}

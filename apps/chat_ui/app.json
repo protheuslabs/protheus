@@ -1,0 +1,7 @@
+{
+  "id": "chat_ui",
+  "srs": "V6-APP-007.1",
+  "layer": "app",
+  "entrypoint": "protheus app run chat-ui",
+  "authority": "core"
+}

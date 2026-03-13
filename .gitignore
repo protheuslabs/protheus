@@ -205,6 +205,12 @@ apps/*
 !apps/intelligence-nexus/**
 !apps/local-rag/
 !apps/local-rag/**
+!apps/chat_starter/
+!apps/chat_starter/**
+!apps/chat_ui/
+!apps/chat_ui/**
+!apps/code_engineer/
+!apps/code_engineer/**
 
 # Unified local runtime partitions (instance-specific)
 /client/local/

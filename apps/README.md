@@ -12,6 +12,9 @@ Rules:
 
 Default apps:
 - `ad_factory/` — AI-powered video ad generation app scaffold.
+- `chat_starter/` — thin first-party real-time chat starter over core app-plane contracts.
+- `chat_ui/` — thin multi-provider chat UI reference profile over core app-plane contracts.
+- `code_engineer/` — thin prompt-to-spec and scaffold generation surface over core app-plane contracts.
 - `creator_outreach/` — autonomous creator discovery + outreach app scaffold.
 - `graph-toolkit/` — thin graph analytics workflow surface over core graph-toolkit runtime.
 - `intelligence-nexus/` — thin API-key vault + credit monitor + governed credit-buy workflow surface over core nexus runtime.

@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "kind": "chat_starter_contract",
+  "allowed_actions": [
+    "run",
+    "history",
+    "replay",
+    "status"
+  ],
+  "streaming_required": true,
+  "tool_roundtrip_required": true,
+  "deterministic_receipts_required": true
+}

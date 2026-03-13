@@ -16,6 +16,7 @@ use walkdir::WalkDir;
 pub mod ab_lane_eval;
 pub mod adaptive_runtime;
 pub mod agency_plane;
+pub mod app_plane;
 pub mod asm_plane;
 pub mod assimilation_controller;
 pub mod attention_queue;

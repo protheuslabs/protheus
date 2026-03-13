@@ -1,0 +1,33 @@
+{
+  "version": "v1",
+  "kind": "persist_connector_onboarding_contract",
+  "allowed_ops": [
+    "add",
+    "list",
+    "status",
+    "remove"
+  ],
+  "providers": {
+    "slack": {
+      "policy_template": "slack-default",
+      "required_env": [
+        "SLACK_BOT_TOKEN"
+      ]
+    },
+    "gmail": {
+      "policy_template": "gmail-default",
+      "required_env": [
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET"
+      ]
+    },
+    "drive": {
+      "policy_template": "drive-default",
+      "required_env": [
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET"
+      ]
+    }
+  },
+  "deterministic_connector_audit_receipts_required": true
+}

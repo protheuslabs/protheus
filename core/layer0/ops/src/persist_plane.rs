@@ -2,7 +2,7 @@
 // Layer ownership: core/layer0/ops::persist_plane (authoritative)
 
 use crate::v8_kernel::{
-    append_jsonl, parse_bool, read_json, scoped_state_root, sha256_hex_str, write_json,
+    append_jsonl, parse_bool, parse_u64, read_json, scoped_state_root, sha256_hex_str, write_json,
     write_receipt,
 };
 use crate::{clean, parse_args};
@@ -14,6 +14,21 @@ const STATE_SCOPE: &str = "persist_plane";
 
 const SCHEDULE_CONTRACT_PATH: &str = "planes/contracts/persist/schedule_contract_v1.json";
 const MOBILE_CONTRACT_PATH: &str = "planes/contracts/persist/mobile_cockpit_contract_v1.json";
+const CONTINUITY_CONTRACT_PATH: &str = "planes/contracts/persist/continuity_contract_v1.json";
+const CONNECTOR_CONTRACT_PATH: &str =
+    "planes/contracts/persist/connector_onboarding_contract_v1.json";
+const COWORK_CONTRACT_PATH: &str = "planes/contracts/persist/cowork_background_contract_v1.json";
+
+#[path = "persist_plane_connector.rs"]
+mod persist_plane_connector;
+#[path = "persist_plane_continuity.rs"]
+mod persist_plane_continuity;
+#[path = "persist_plane_cowork.rs"]
+mod persist_plane_cowork;
+
+use persist_plane_connector::run_connector;
+use persist_plane_continuity::run_continuity;
+use persist_plane_cowork::run_cowork;
 
 fn usage() {
     println!("Usage:");
@@ -23,6 +38,15 @@ fn usage() {
     );
     println!(
         "  protheus-ops persist-plane mobile-cockpit --op=<publish|status|intervene> [--session-id=<id>] [--device=<id>] [--action=<pause|resume|abort>] [--strict=1|0]"
+    );
+    println!(
+        "  protheus-ops persist-plane continuity --op=<checkpoint|reconstruct|status> [--session-id=<id>] [--context-json=<json>] [--strict=1|0]"
+    );
+    println!(
+        "  protheus-ops persist-plane connector --op=<add|list|status|remove> [--provider=<slack|gmail|drive>] [--policy-template=<id>] [--strict=1|0]"
+    );
+    println!(
+        "  protheus-ops persist-plane cowork --op=<delegate|tick|status|list> [--task=<text>] [--parent=<id>] [--child=<id>] [--mode=<co-work|sub-agent>] [--budget-ms=<n>] [--strict=1|0]"
     );
 }
 
@@ -79,9 +103,12 @@ fn status(root: &Path) -> Value {
 
 fn claim_ids_for_action(action: &str) -> Vec<&'static str> {
     match action {
-        "schedule" => vec!["V6-PERSIST-001.1"],
-        "mobile-cockpit" => vec!["V6-PERSIST-001.2", "V6-PERSIST-001.1"],
-        _ => vec!["V6-PERSIST-001.1"],
+        "schedule" => vec!["V6-PERSIST-001.1", "V6-PERSIST-001.6"],
+        "mobile-cockpit" => vec!["V6-PERSIST-001.2", "V6-PERSIST-001.6"],
+        "continuity" => vec!["V6-PERSIST-001.3", "V6-PERSIST-001.6"],
+        "connector" => vec!["V6-PERSIST-001.4", "V6-PERSIST-001.6"],
+        "cowork" | "co-work" => vec!["V6-PERSIST-001.5", "V6-PERSIST-001.6"],
+        _ => vec!["V6-PERSIST-001.6"],
     }
 }
 
@@ -151,6 +178,34 @@ fn schedules_path(root: &Path) -> PathBuf {
 
 fn mobile_path(root: &Path) -> PathBuf {
     state_root(root).join("mobile").join("latest.json")
+}
+
+fn continuity_dir(root: &Path) -> PathBuf {
+    state_root(root).join("continuity")
+}
+
+fn continuity_snapshot_path(root: &Path, session_id: &str) -> PathBuf {
+    continuity_dir(root)
+        .join("snapshots")
+        .join(format!("{session_id}.json"))
+}
+
+fn continuity_reconstruct_path(root: &Path, session_id: &str) -> PathBuf {
+    continuity_dir(root)
+        .join("reconstructed")
+        .join(format!("{session_id}.json"))
+}
+
+fn connectors_path(root: &Path) -> PathBuf {
+    state_root(root).join("connectors").join("registry.json")
+}
+
+fn cowork_path(root: &Path) -> PathBuf {
+    state_root(root).join("cowork").join("runs.json")
+}
+
+fn parse_json_flag(raw: Option<&String>) -> Option<Value> {
+    raw.and_then(|text| serde_json::from_str::<Value>(text).ok())
 }
 
 fn clean_id(raw: Option<&str>, fallback: &str) -> String {
@@ -591,6 +646,9 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         "status" => status(root),
         "schedule" => run_schedule(root, &parsed, strict),
         "mobile-cockpit" => run_mobile_cockpit(root, &parsed, strict),
+        "continuity" => run_continuity(root, &parsed, strict),
+        "connector" => run_connector(root, &parsed, strict),
+        "cowork" | "co-work" => run_cowork(root, &parsed, strict),
         _ => json!({
             "ok": false,
             "type": "persist_plane_error",
@@ -631,5 +689,67 @@ mod tests {
         );
         assert_eq!(out.get("ok").and_then(Value::as_bool), Some(true));
         assert!(schedules_path(root.path()).exists());
+    }
+
+    #[test]
+    fn continuity_checkpoint_and_reconstruct_roundtrip() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let checkpoint = run_continuity(
+            root.path(),
+            &crate::parse_args(&[
+                "continuity".to_string(),
+                "--op=checkpoint".to_string(),
+                "--session-id=s1".to_string(),
+                "--context-json={\"context\":[\"a\"],\"user_model\":{\"style\":\"direct\"},\"active_tasks\":[\"t\"]}".to_string(),
+            ]),
+            true,
+        );
+        assert_eq!(checkpoint.get("ok").and_then(Value::as_bool), Some(true));
+        let reconstruct = run_continuity(
+            root.path(),
+            &crate::parse_args(&[
+                "continuity".to_string(),
+                "--op=reconstruct".to_string(),
+                "--session-id=s1".to_string(),
+            ]),
+            true,
+        );
+        assert_eq!(reconstruct.get("ok").and_then(Value::as_bool), Some(true));
+    }
+
+    #[test]
+    fn connector_add_creates_registry_row() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let out = run_connector(
+            root.path(),
+            &crate::parse_args(&[
+                "connector".to_string(),
+                "--op=add".to_string(),
+                "--provider=slack".to_string(),
+            ]),
+            true,
+        );
+        assert_eq!(out.get("ok").and_then(Value::as_bool), Some(true));
+        assert!(connectors_path(root.path()).exists());
+    }
+
+    #[test]
+    fn cowork_delegate_creates_parent_child_chain() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let out = run_cowork(
+            root.path(),
+            &crate::parse_args(&[
+                "cowork".to_string(),
+                "--op=delegate".to_string(),
+                "--task=ship batch".to_string(),
+                "--parent=lead".to_string(),
+                "--child=worker".to_string(),
+                "--mode=sub-agent".to_string(),
+                "--budget-ms=1000".to_string(),
+            ]),
+            true,
+        );
+        assert_eq!(out.get("ok").and_then(Value::as_bool), Some(true));
+        assert!(cowork_path(root.path()).exists());
     }
 }

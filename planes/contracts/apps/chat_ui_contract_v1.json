@@ -1,0 +1,21 @@
+{
+  "version": "v1",
+  "kind": "chat_ui_contract",
+  "allowed_actions": [
+    "run",
+    "history",
+    "replay",
+    "status",
+    "switch-provider"
+  ],
+  "providers": [
+    "openai",
+    "anthropic",
+    "grok",
+    "bedrock",
+    "minimax"
+  ],
+  "default_provider": "openai",
+  "default_model": "gpt-5",
+  "deterministic_model_call_receipts_required": true
+}
