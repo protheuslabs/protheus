@@ -108,6 +108,50 @@ fn pattern_match(action: &str, pattern: &str) -> bool {
     a == p || a.contains(&p)
 }
 
+fn guess_bool(raw: Option<&str>, fallback: bool) -> bool {
+    raw.map(|v| {
+        matches!(
+            v.trim().to_ascii_lowercase().as_str(),
+            "1" | "true" | "yes" | "on"
+        )
+    })
+    .unwrap_or(fallback)
+}
+
+fn conduit_enforcement(root: &Path, parsed: &ParsedArgs, strict: bool, action: &str) -> Value {
+    let bypass_requested = guess_bool(parsed.flags.get("bypass").map(String::as_str), false)
+        || guess_bool(parsed.flags.get("direct").map(String::as_str), false)
+        || guess_bool(
+            parsed.flags.get("unsafe-client-route").map(String::as_str),
+            false,
+        )
+        || guess_bool(parsed.flags.get("client-bypass").map(String::as_str), false);
+    let ok = !bypass_requested;
+    let mut out = json!({
+        "ok": if strict { ok } else { true },
+        "type": "research_conduit_enforcement",
+        "ts": now_iso(),
+        "action": clean(action, 160),
+        "required_path": "core/layer0/ops/research_plane",
+        "bypass_requested": bypass_requested,
+        "errors": if ok { Value::Array(Vec::new()) } else { json!(["conduit_bypass_rejected"]) },
+        "claim_evidence": [
+            {
+                "id": "V6-RESEARCH-002.6",
+                "claim": "research_template_and_crawler_controls_are_conduit_routed_with_fail_closed_bypass_rejection",
+                "evidence": {
+                    "required_path": "core/layer0/ops/research_plane",
+                    "bypass_requested": bypass_requested
+                }
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+    let history_path = state_root(root).join("conduit").join("history.jsonl");
+    let _ = append_jsonl(&history_path, &out);
+    out
+}
+
 pub fn safety_gate_receipt(
     root: &Path,
     policy: &Value,
@@ -1193,6 +1237,17 @@ pub fn run_console(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
 }
 
 pub fn run_template_governance(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
+    let conduit = conduit_enforcement(root, parsed, strict, "template_governance");
+    if strict && !conduit.get("ok").and_then(Value::as_bool).unwrap_or(false) {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "research_plane_template_governance",
+            "errors": ["conduit_bypass_rejected"],
+            "conduit_enforcement": conduit
+        });
+    }
+
     let contract = read_json_or(
         root,
         TEMPLATE_GOVERNANCE_CONTRACT_PATH,
@@ -1352,13 +1407,15 @@ pub fn run_template_governance(root: &Path, parsed: &ParsedArgs, strict: bool) -
         "manifest_path": manifest_rel,
         "templates_root": templates_root.display().to_string(),
         "checks": checks,
+        "conduit_enforcement": conduit,
         "errors": errors,
         "claim_evidence": [
             {
                 "id": "V6-RESEARCH-002.6",
-                "claim": "template_pack_updates_are_governed_by_review_and_provenance_checks",
+                "claim": "template_pack_updates_are_governed_by_review_provenance_and_conduit_only_boundary_checks",
                 "evidence": {
-                    "manifest_path": manifest_rel
+                    "manifest_path": manifest_rel,
+                    "conduit": true
                 }
             }
         ]

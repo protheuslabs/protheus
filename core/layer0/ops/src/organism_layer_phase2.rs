@@ -75,7 +75,7 @@ pub(super) fn command_crystallize(root: &Path, parsed: &crate::ParsedArgs) -> i3
             "version": next_version,
             "claim_evidence": [
                 {
-                    "id": "v8_organism_001_3",
+                    "id": "V8-ORGANISM-001.3",
                     "claim": "personality_crystallization_persists_signed_epistemic_objects",
                     "evidence": {
                         "persona": persona,
@@ -134,7 +134,7 @@ pub(super) fn command_symbiosis(root: &Path, parsed: &crate::ParsedArgs) -> i32 
             "rsi_swarm_exit": swarm_exit,
             "claim_evidence": [
                 {
-                    "id": "v8_organism_001_4",
+                    "id": "V8-ORGANISM-001.4",
                     "claim": "network_symbiosis_forms_collective_state_with_memory_sharing",
                     "evidence": {
                         "nodes": nodes,
@@ -218,7 +218,7 @@ pub(super) fn command_mutate(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
             "rsi_ignite_latest": read_json(&rsi_state_path(root).parent().unwrap_or(root).join("latest.json")),
             "claim_evidence": [
                 {
-                    "id": "v8_organism_001_5",
+                    "id": "V8-ORGANISM-001.5",
                     "claim": "creative_mutation_proposals_are_inversion_simulated_and_directive_compliant",
                     "evidence": {
                         "allowed": allowed,
@@ -304,7 +304,7 @@ pub(super) fn command_sensory(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
             "adjustment": adjustment,
             "claim_evidence": [
                 {
-                    "id": "v8_organism_001_6",
+                    "id": "V8-ORGANISM-001.6",
                     "claim": "internal_sensory_feedback_is_integrated_into_runtime_regulation_loops",
                     "evidence": {
                         "pain": pain,
@@ -373,7 +373,7 @@ pub(super) fn command_narrative(root: &Path, parsed: &crate::ParsedArgs) -> i32 
             "entry": entry,
             "claim_evidence": [
                 {
-                    "id": "v8_organism_001_7",
+                    "id": "V8-ORGANISM-001.7",
                     "claim": "generative_internal_narrative_is_persisted_with_coherence_state",
                     "evidence": {
                         "summary": summary,

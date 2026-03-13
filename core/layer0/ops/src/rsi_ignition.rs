@@ -331,7 +331,7 @@ fn command_ignite(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
             "pipeline": ["propose", "simulate", "canary", "merge_or_rollback"],
             "claim_evidence": [
                 {
-                    "id": "v8_rsi_ignition_001",
+                    "id": "V8-RSI-IGNITION-001",
                     "claim": "recursive_self_modification_is_inversion_gated_with_merge_and_rollback_paths",
                     "evidence": {
                         "gate_action": gate_action,
@@ -423,7 +423,7 @@ fn command_reflect(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
             "action": if drift > 0.5 { "self_correct" } else { "continue_explore" },
             "claim_evidence": [
                 {
-                    "id": "v8_rsi_ignition_002",
+                    "id": "V8-RSI-IGNITION-002",
                     "claim": "metacognitive_reflection_tracks_goal_drift_and_adjusts_exploration_drive",
                     "evidence": {
                         "drift_score": drift,
@@ -503,7 +503,7 @@ fn command_swarm(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
             "swarm_reward": reward,
             "claim_evidence": [
                 {
-                    "id": "v8_rsi_ignition_003",
+                    "id": "V8-RSI-IGNITION-003",
                     "claim": "network_level_sub_swarms_share_improvements_with_policy_bounded_resource_allocation",
                     "evidence": {
                         "nodes": nodes,
@@ -616,7 +616,7 @@ fn command_evolve(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
             "directive_safe": gate_ok,
             "claim_evidence": [
                 {
-                    "id": "v8_rsi_ignition_004",
+                    "id": "V8-RSI-IGNITION-004",
                     "claim": "proactive_evolution_surfaces_night_cycle_insights_with_directive_safe_receipts",
                     "evidence": {
                         "directive_safe": gate_ok,

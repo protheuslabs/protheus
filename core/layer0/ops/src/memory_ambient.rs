@@ -230,6 +230,83 @@ fn is_batch22_memory_command(memory_command: &str) -> bool {
     !memory_batch22_command_claim_ids(memory_command).is_empty()
 }
 
+fn ensure_digest_field(memory_payload: &mut Value, field: &str, digest_input: Value) {
+    let missing = memory_payload
+        .get(field)
+        .and_then(Value::as_str)
+        .map(|value| value.trim().is_empty())
+        .unwrap_or(true);
+    if !missing {
+        return;
+    }
+    if let Some(map) = memory_payload.as_object_mut() {
+        map.insert(
+            field.to_string(),
+            Value::String(deterministic_receipt_hash(&digest_input)),
+        );
+    }
+}
+
+fn ensure_memory_contract_digests(
+    memory_command: &str,
+    memory_args: &[String],
+    memory_payload: &mut Value,
+) {
+    match memory_command {
+        "memory-enable-metacognitive" | "stable-memory-enable-metacognitive" => {
+            ensure_digest_field(
+                memory_payload,
+                "config_digest",
+                json!({
+                    "type": memory_payload.get("type").and_then(Value::as_str).unwrap_or("memory_metacognitive_enable"),
+                    "config_path": memory_payload.get("config_path").and_then(Value::as_str).unwrap_or(""),
+                    "enabled": memory_payload.get("enabled").and_then(Value::as_bool).unwrap_or(true),
+                    "note": parse_arg_value(memory_args, "note").unwrap_or_default()
+                }),
+            );
+        }
+        "memory-taxonomy" | "stable-memory-taxonomy" => {
+            ensure_digest_field(
+                memory_payload,
+                "taxonomy_digest",
+                json!({
+                    "type": memory_payload.get("type").and_then(Value::as_str).unwrap_or("memory_taxonomy_4w"),
+                    "row_count": memory_payload.get("row_count").and_then(Value::as_u64).unwrap_or(0),
+                    "what_counts": memory_payload.get("what_counts").cloned().unwrap_or_else(|| json!({})),
+                    "who_counts": memory_payload.get("who_counts").cloned().unwrap_or_else(|| json!({})),
+                    "when_missing": memory_payload.get("when_missing").and_then(Value::as_u64).unwrap_or(0),
+                    "where_missing": memory_payload.get("where_missing").and_then(Value::as_u64).unwrap_or(0)
+                }),
+            );
+        }
+        "memory-share" | "stable-memory-share" => {
+            ensure_digest_field(
+                memory_payload,
+                "consent_scope_digest",
+                json!({
+                    "type": memory_payload.get("type").and_then(Value::as_str).unwrap_or("memory_share"),
+                    "persona": memory_payload.get("persona").and_then(Value::as_str).unwrap_or(""),
+                    "scope": memory_payload.get("scope").and_then(Value::as_str).unwrap_or(""),
+                    "consent": memory_payload.get("consent").and_then(Value::as_bool).unwrap_or(false)
+                }),
+            );
+        }
+        "memory-evolve" | "stable-memory-evolve" => {
+            ensure_digest_field(
+                memory_payload,
+                "evolution_digest",
+                json!({
+                    "type": memory_payload.get("type").and_then(Value::as_str).unwrap_or("memory_evolve"),
+                    "generation": memory_payload.get("generation").and_then(Value::as_u64).unwrap_or(0),
+                    "stability_score": memory_payload.get("stability_score").cloned().unwrap_or(Value::Null),
+                    "state_path": memory_payload.get("evolution_state_path").and_then(Value::as_str).unwrap_or("")
+                }),
+            );
+        }
+        _ => {}
+    }
+}
+
 fn memory_batch22_claim_evidence(
     memory_command: &str,
     memory_args: &[String],
@@ -243,7 +320,8 @@ fn memory_batch22_claim_evidence(
                 "evidence": {
                     "memory_command": memory_command,
                     "row_count": memory_payload.get("row_count").and_then(Value::as_u64).unwrap_or(0),
-                    "taxonomy_path": memory_payload.get("taxonomy_path").and_then(Value::as_str).unwrap_or("")
+                    "taxonomy_path": memory_payload.get("taxonomy_path").and_then(Value::as_str).unwrap_or(""),
+                    "taxonomy_digest": memory_payload.get("taxonomy_digest").and_then(Value::as_str).unwrap_or("")
                 }
             }),
             json!({
@@ -252,7 +330,8 @@ fn memory_batch22_claim_evidence(
                 "evidence": {
                     "memory_command": memory_command,
                     "when_missing": memory_payload.get("when_missing").and_then(Value::as_u64).unwrap_or(0),
-                    "what_bucket_count": memory_payload.get("what_counts").and_then(Value::as_object).map(|m| m.len()).unwrap_or(0)
+                    "what_bucket_count": memory_payload.get("what_counts").and_then(Value::as_object).map(|m| m.len()).unwrap_or(0),
+                    "taxonomy_digest": memory_payload.get("taxonomy_digest").and_then(Value::as_str).unwrap_or("")
                 }
             }),
         ],
@@ -262,7 +341,8 @@ fn memory_batch22_claim_evidence(
             "evidence": {
                 "memory_command": memory_command,
                 "enabled": memory_payload.get("enabled").and_then(Value::as_bool).unwrap_or(false),
-                "config_path": memory_payload.get("config_path").and_then(Value::as_str).unwrap_or("")
+                "config_path": memory_payload.get("config_path").and_then(Value::as_str).unwrap_or(""),
+                "config_digest": memory_payload.get("config_digest").and_then(Value::as_str).unwrap_or("")
             }
         })],
         "memory-share" | "stable-memory-share" => vec![json!({
@@ -272,7 +352,8 @@ fn memory_batch22_claim_evidence(
                 "memory_command": memory_command,
                 "persona": memory_payload.get("persona").and_then(Value::as_str).unwrap_or(""),
                 "scope": memory_payload.get("scope").and_then(Value::as_str).unwrap_or(""),
-                "consent": memory_payload.get("consent").and_then(Value::as_bool).unwrap_or(false)
+                "consent": memory_payload.get("consent").and_then(Value::as_bool).unwrap_or(false),
+                "consent_scope_digest": memory_payload.get("consent_scope_digest").and_then(Value::as_str).unwrap_or("")
             }
         })],
         "memory-evolve" | "stable-memory-evolve" => vec![json!({
@@ -282,7 +363,8 @@ fn memory_batch22_claim_evidence(
                 "memory_command": memory_command,
                 "generation": memory_payload.get("generation").and_then(Value::as_u64).unwrap_or(0),
                 "stability_score": memory_payload.get("stability_score").cloned().unwrap_or(Value::Null),
-                "evolution_state_path": memory_payload.get("evolution_state_path").and_then(Value::as_str).unwrap_or("")
+                "evolution_state_path": memory_payload.get("evolution_state_path").and_then(Value::as_str).unwrap_or(""),
+                "evolution_digest": memory_payload.get("evolution_digest").and_then(Value::as_str).unwrap_or("")
             }
         })],
         "memory-enable-causality" | "stable-memory-enable-causality" => vec![
@@ -1352,7 +1434,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         return 1;
     }
 
-    let (memory_payload, stdout, stderr, exit_code, command_info) =
+    let (mut memory_payload, stdout, stderr, exit_code, command_info) =
         match run_memory_command(root, &memory_command, &memory_args) {
             Ok(value) => value,
             Err(reason) => {
@@ -1365,6 +1447,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 return 1;
             }
         };
+    ensure_memory_contract_digests(&memory_command, &memory_args, &mut memory_payload);
 
     let memory_ok = memory_payload
         .get("ok")

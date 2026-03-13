@@ -554,7 +554,7 @@ fn run_export_compliance(
         "controls_failed": controls_failed,
         "claim_evidence": [
             {
-                "id": "v7_enterprise_001_1",
+                "id": "V7-ENTERPRISE-001.1",
                 "claim": "one_command_compliance_export_produces_traceable_audit_bundle_artifacts",
                 "evidence": {
                     "bundle_path": bundle_rel,
@@ -696,7 +696,7 @@ fn run_identity_surface(
         },
         "claim_evidence": [
             {
-                "id": "v7_enterprise_001_2",
+                "id": "V7-ENTERPRISE-001.2",
                 "claim": "identity_and_integration_surface_enforces_sso_scim_rbac_abac_with_receipted_authz_checks",
                 "evidence": {
                     "provider": requested_provider,
@@ -725,16 +725,46 @@ fn run_scale_certification(
     strict: bool,
     flags: &std::collections::HashMap<String, String>,
 ) -> Result<Value, String> {
-    let target_nodes = flags
+    let requested_target_nodes = flags
         .get("target-nodes")
         .and_then(|v| v.parse::<u64>().ok())
-        .unwrap_or(10_000)
-        .max(1);
-    let samples = flags
+        .unwrap_or(10_000);
+    let target_nodes = requested_target_nodes.max(1);
+    let requested_samples = flags
         .get("samples")
         .and_then(|v| v.parse::<usize>().ok())
-        .unwrap_or(80)
-        .clamp(20, 400);
+        .unwrap_or(80);
+    let samples = requested_samples.clamp(20, 400);
+
+    let mut strict_errors = Vec::<String>::new();
+    if strict && target_nodes < 10_000 {
+        strict_errors.push("strict_target_nodes_below_10000".to_string());
+    }
+    if strict && requested_samples < 80 {
+        strict_errors.push("strict_samples_below_80".to_string());
+    }
+    if !strict_errors.is_empty() {
+        return Ok(with_receipt_hash(json!({
+            "ok": false,
+            "type": "enterprise_hardening_scale_certification",
+            "lane": "enterprise_hardening",
+            "mode": "certify-scale",
+            "strict": strict,
+            "target_nodes": target_nodes,
+            "samples": samples,
+            "errors": strict_errors,
+            "claim_evidence": [
+                {
+                    "id": "V7-ENTERPRISE-001.3",
+                    "claim": "scale_and_performance_certification_requires_strict_10k_node_minimum_and_reproducible_artifacts",
+                    "evidence": {
+                        "requested_target_nodes": requested_target_nodes,
+                        "requested_samples": requested_samples
+                    }
+                }
+            ]
+        })));
+    }
     let scale_policy_path = flags
         .get("scale-policy")
         .map(|v| v.as_str())
@@ -821,6 +851,26 @@ fn run_scale_certification(
         }),
     )?;
 
+    let whitepaper_path = enterprise_state_root(root)
+        .join("scale_certifications")
+        .join(format!("{cert_id}_whitepaper.md"));
+    let whitepaper_rel = whitepaper_path
+        .strip_prefix(root)
+        .unwrap_or(&whitepaper_path)
+        .to_string_lossy()
+        .replace('\\', "/");
+    let whitepaper_body = format!(
+        "# Scale Certification {cert_id}\n\n- Target Nodes: {target_nodes}\n- Samples: {samples}\n- p95 Latency (ms): {p95:.6}\n- p99 Latency (ms): {p99:.6}\n- Throughput Units/sec: {throughput:.6}\n- Simulated Cost/User (USD): {simulated_cost_per_user:.6}\n- Budget Max p95 (ms): {max_p95:.6}\n- Budget Max p99 (ms): {max_p99:.6}\n- Budget Max Cost/User (USD): {max_cost:.6}\n- Result: {}\n\nGenerated at: {}\n",
+        if ok { "PASS" } else { "FAIL" },
+        now_iso()
+    );
+    if let Some(parent) = whitepaper_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|err| format!("create_dir_failed:{}:{err}", parent.display()))?;
+    }
+    fs::write(&whitepaper_path, whitepaper_body)
+        .map_err(|err| format!("write_whitepaper_failed:{}:{err}", whitepaper_path.display()))?;
+
     Ok(with_receipt_hash(json!({
         "ok": !strict || ok,
         "type": "enterprise_hardening_scale_certification",
@@ -841,13 +891,15 @@ fn run_scale_certification(
             "max_cost_per_user_usd": max_cost
         },
         "certificate_path": cert_rel,
+        "whitepaper_path": whitepaper_rel,
         "claim_evidence": [
             {
-                "id": "v7_enterprise_001_3",
+                "id": "V7-ENTERPRISE-001.3",
                 "claim": "scale_and_performance_certification_emits_reproducible_10k_node_evidence",
                 "evidence": {
                     "target_nodes": target_nodes,
                     "certificate_path": cert_rel,
+                    "whitepaper_path": whitepaper_rel,
                     "p95_latency_ms": p95,
                     "p99_latency_ms": p99
                 }

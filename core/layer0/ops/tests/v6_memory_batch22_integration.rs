@@ -127,6 +127,12 @@ fn v6_memory_batch22_taxonomy_and_causality_lanes_are_receipted() {
             .and_then(Value::as_str),
         Some("memory_metacognitive_enable")
     );
+    assert!(metacognitive
+        .get("memory_payload")
+        .and_then(|v| v.get("config_digest"))
+        .and_then(Value::as_str)
+        .map(|v| !v.is_empty())
+        .unwrap_or(false));
     assert!(has_claim(&metacognitive, "V6-MEMORY-011.2"));
 
     assert_eq!(
@@ -148,8 +154,35 @@ fn v6_memory_batch22_taxonomy_and_causality_lanes_are_receipted() {
             .and_then(Value::as_str),
         Some("memory_taxonomy_4w")
     );
+    let taxonomy_digest = taxonomy
+        .get("memory_payload")
+        .and_then(|v| v.get("taxonomy_digest"))
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    assert!(!taxonomy_digest.is_empty());
     assert!(has_claim(&taxonomy, "V6-MEMORY-011.1"));
     assert!(has_claim(&taxonomy, "V6-MEMORY-011.5"));
+
+    assert_eq!(
+        run_rag(
+            root,
+            &[
+                "memory".to_string(),
+                "taxonomy".to_string(),
+                root_arg.clone(),
+            ],
+        ),
+        0
+    );
+    let taxonomy_repeat = read_json(&latest);
+    assert_eq!(
+        taxonomy_repeat
+            .get("memory_payload")
+            .and_then(|v| v.get("taxonomy_digest"))
+            .and_then(Value::as_str),
+        Some(taxonomy_digest.as_str())
+    );
 
     assert_eq!(
         run_rag(
@@ -218,6 +251,12 @@ fn v6_memory_batch22_taxonomy_and_causality_lanes_are_receipted() {
             .and_then(Value::as_str),
         Some("memory_share")
     );
+    assert!(share
+        .get("memory_payload")
+        .and_then(|v| v.get("consent_scope_digest"))
+        .and_then(Value::as_str)
+        .map(|v| !v.is_empty())
+        .unwrap_or(false));
     assert!(has_claim(&share, "V6-MEMORY-011.3"));
 
     assert_eq!(
@@ -240,6 +279,12 @@ fn v6_memory_batch22_taxonomy_and_causality_lanes_are_receipted() {
             .and_then(Value::as_str),
         Some("memory_evolve")
     );
+    assert!(evolve
+        .get("memory_payload")
+        .and_then(|v| v.get("evolution_digest"))
+        .and_then(Value::as_str)
+        .map(|v| !v.is_empty())
+        .unwrap_or(false));
     assert!(has_claim(&evolve, "V6-MEMORY-011.4"));
 
     assert_eq!(

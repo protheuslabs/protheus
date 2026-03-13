@@ -87,8 +87,8 @@ fn status(root: &Path) -> Value {
 
 fn claim_ids_for_action(action: &str) -> Vec<&'static str> {
     match action {
-        "orchestrate-agency" => vec!["V6-COMPANY-001.1"],
-        "budget-enforce" => vec!["V6-COMPANY-001.2"],
+        "orchestrate-agency" => vec!["V6-COMPANY-001.1", "V6-COMPANY-001.5"],
+        "budget-enforce" => vec!["V6-COMPANY-001.2", "V6-COMPANY-001.5"],
         "ticket" => vec!["V6-COMPANY-001.3", "V6-COMPANY-001.5"],
         "heartbeat" => vec!["V6-COMPANY-001.4", "V6-COMPANY-001.5"],
         _ => vec!["V6-COMPANY-001.2"],

@@ -22,16 +22,13 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
 
     if command == "status" {
         let ledger = load_ledger(root);
-        let mut out = json!({
+        return emit(root, json!({
             "ok": true,
             "type": "network_protocol_status",
             "lane": "core/layer0/ops",
             "ledger": ledger,
             "latest": read_json(&latest_path(root))
-        });
-        out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
-        print_json(&out);
-        return 0;
+        }));
     }
 
     if command == "dashboard" {
@@ -103,7 +100,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                 },
                 "claim_evidence": [
                     {
-                        "id": "v8_network_002_5_activation_contract",
+                        "id": "V8-NETWORK-002.5",
                         "claim": "network_organism_dashboard_surfaces_token_ledger_emission_and_claim_health",
                         "evidence": {
                             "global_merkle_root": global_merkle_root,
@@ -149,7 +146,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "layer_map": ["0","1","2","client","app"],
                     "claim_evidence": [
                         {
-                            "id": "v8_network_002_5_activation_contract",
+                            "id": "V8-NETWORK-002.5",
                             "claim": "bitcoin_profile_ignition_is_core_authoritative_and_receipted",
                             "evidence": {"allowed": false, "reason": "directive_gate_denied"}
                         }
@@ -190,7 +187,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                 "layer_map": ["0","1","2","client","app"],
                 "claim_evidence": [
                     {
-                        "id": "v8_network_002_5_activation_contract",
+                        "id": "V8-NETWORK-002.5",
                         "claim": "bitcoin_profile_ignition_is_core_authoritative_and_receipted",
                         "evidence": {"profile": "bitcoin", "state_root_present": true}
                     }
@@ -248,7 +245,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "layer_map": ["0","1","2","adapter"],
                     "claim_evidence": [
                         {
-                            "id": "v8_network_002_1_tokenomics_contract",
+                            "id": "V8-NETWORK-002.1",
                             "claim": "staking_rewards_and_slashing_emit_identity_bound_receipts",
                             "evidence": {"allowed": false, "reason": "directive_gate_denied"}
                         }
@@ -305,7 +302,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "layer_map": ["0","1","2","adapter"],
                     "claim_evidence": [
                         {
-                            "id": "v8_network_002_1_tokenomics_contract",
+                            "id": "V8-NETWORK-002.1",
                             "claim": "staking_rewards_and_slashing_emit_identity_bound_receipts",
                             "evidence": {"action": action, "agent": agent}
                         }
@@ -380,7 +377,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                 "layer_map": ["0","1","2"],
                 "claim_evidence": [
                     {
-                        "id": "v8_network_002_2_merkle_contract",
+                        "id": "V8-NETWORK-002.2",
                         "claim": "global_state_root_is_deterministically_derived_from_receipt_and_policy_roots",
                         "evidence": {"leaf_count": leaves.len(), "proof_requested": proof_requested}
                     }
@@ -401,7 +398,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "layer_map": ["0","1","2"],
                     "claim_evidence": [
                         {
-                            "id": "v8_network_002_3_emission_contract",
+                            "id": "V8-NETWORK-002.3",
                             "claim": "halving_style_emission_schedule_is_deterministic_and_receipted",
                             "evidence": {"allowed": false, "reason": "directive_gate_denied"}
                         }
@@ -451,7 +448,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "layer_map": ["0","1","2"],
                     "claim_evidence": [
                         {
-                            "id": "v8_network_002_3_emission_contract",
+                            "id": "V8-NETWORK-002.3",
                             "claim": "halving_style_emission_schedule_is_deterministic_and_receipted",
                             "evidence": {"epoch": epoch, "issuance_per_epoch": issuance}
                         }
@@ -482,7 +479,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "layer_map": ["0","1","2","adapter"],
                     "claim_evidence": [
                         {
-                            "id": "v8_network_002_4_zk_claim_contract",
+                            "id": "V8-NETWORK-002.4",
                             "claim": "private_claim_verification_is_policy_gated_and_receipted",
                             "evidence": {"allowed": false, "reason": "directive_gate_denied"}
                         }
@@ -560,7 +557,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "layer_map": ["0","1","2","adapter"],
                     "claim_evidence": [
                         {
-                            "id": "v8_network_002_4_zk_claim_contract",
+                            "id": "V8-NETWORK-002.4",
                             "claim": "private_claim_verification_is_policy_gated_and_receipted",
                             "evidence": {"claim_id": claim_id, "verified": verified, "strict": strict}
                         }

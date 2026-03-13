@@ -36,6 +36,25 @@ fn read_json(path: &Path) -> Value {
     serde_json::from_str(&raw).expect("parse")
 }
 
+fn read_json_lines(path: &Path) -> Vec<Value> {
+    let raw = fs::read_to_string(path).expect("read jsonl");
+    raw.lines()
+        .filter_map(|line| serde_json::from_str::<Value>(line).ok())
+        .collect()
+}
+
+fn write_json_lines(path: &Path, rows: &[Value]) {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).expect("mkdir");
+    }
+    let body = rows
+        .iter()
+        .map(|row| serde_json::to_string(row).expect("encode row"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    fs::write(path, format!("{body}\n")).expect("write jsonl");
+}
+
 fn stage_fixture_root() -> TempDir {
     let workspace = workspace_root();
     let tmp = tempfile::tempdir().expect("tempdir");
@@ -137,6 +156,48 @@ fn v7_assimilate_001_1_to_001_5_lanes_are_runtime_proven() {
         Some(true)
     );
     assert_claim(&cap_latest, "V7-ASSIMILATE-001.3");
+
+    let events_path = PathBuf::from(
+        cap_latest
+            .get("events_path")
+            .and_then(Value::as_str)
+            .expect("events path"),
+    );
+    let mut rows = read_json_lines(&events_path);
+    assert!(
+        rows.len() >= 2,
+        "capability ledger should emit at least two events for tamper check"
+    );
+    rows[1]["previous_hash"] = Value::String("tampered".to_string());
+    write_json_lines(&events_path, &rows);
+
+    let verify_exit = assimilation_controller::run(
+        root,
+        &[
+            "capability-ledger".to_string(),
+            "--op=verify".to_string(),
+            "--strict=1".to_string(),
+        ],
+    );
+    assert_eq!(verify_exit, 1);
+    let verify_latest = read_json(&assimilation_latest_path(root));
+    assert_eq!(verify_latest.get("ok").and_then(Value::as_bool), Some(false));
+    assert_eq!(
+        verify_latest.get("chain_valid").and_then(Value::as_bool),
+        Some(false)
+    );
+    assert_claim(&verify_latest, "V7-ASSIMILATE-001.3");
+    assert!(
+        verify_latest
+            .get("verify_errors")
+            .and_then(Value::as_array)
+            .map(|rows| rows
+                .iter()
+                .filter_map(Value::as_str)
+                .any(|row| row.starts_with("previous_hash_mismatch_at:")))
+            .unwrap_or(false),
+        "tampered capability ledger should fail previous_hash verification"
+    );
 
     let exit_wasm = assimilation_controller::run(
         root,

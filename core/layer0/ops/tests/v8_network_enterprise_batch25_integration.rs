@@ -109,7 +109,7 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
         ),
         0
     );
-    assert_claim(&latest("organism_layer", root), "v8_organism_001_8");
+    assert_claim(&latest("organism_layer", root), "V8-ORGANISM-001.8");
 
     assert_eq!(
         organism_layer::run(
@@ -123,7 +123,7 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
         ),
         0
     );
-    assert_claim(&latest("organism_layer", root), "v8_organism_001_6");
+    assert_claim(&latest("organism_layer", root), "V8-ORGANISM-001.6");
 
     assert_eq!(
         organism_layer::run(
@@ -137,7 +137,7 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
         ),
         0
     );
-    assert_claim(&latest("organism_layer", root), "v8_organism_001_7");
+    assert_claim(&latest("organism_layer", root), "V8-ORGANISM-001.7");
 
     assert_eq!(
         network_protocol::run(
@@ -152,7 +152,7 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
     );
     assert_claim(
         &latest("network_protocol", root),
-        "v8_network_002_5_activation_contract",
+        "V8-NETWORK-002.5",
     );
 
     assert_eq!(
@@ -170,7 +170,7 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
     );
     assert_claim(
         &latest("network_protocol", root),
-        "v8_network_002_1_tokenomics_contract",
+        "V8-NETWORK-002.1",
     );
 
     assert_eq!(
@@ -186,7 +186,7 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
     );
     assert_claim(
         &latest("network_protocol", root),
-        "v8_network_002_2_merkle_contract",
+        "V8-NETWORK-002.2",
     );
 
     assert_eq!(
@@ -203,7 +203,7 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
     );
     assert_claim(
         &latest("network_protocol", root),
-        "v8_network_002_3_emission_contract",
+        "V8-NETWORK-002.3",
     );
 
     let commitment = "abcd1234";
@@ -225,13 +225,13 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
     );
     assert_claim(
         &latest("network_protocol", root),
-        "v8_network_002_4_zk_claim_contract",
+        "V8-NETWORK-002.4",
     );
 
     assert_eq!(network_protocol::run(root, &["dashboard".to_string()]), 0);
     assert_claim(
         &latest("network_protocol", root),
-        "v8_network_002_5_activation_contract",
+        "V8-NETWORK-002.5",
     );
 
     write_json(
@@ -306,7 +306,7 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
         0
     );
     let enterprise_latest = latest("enterprise_hardening", root);
-    assert_claim(&enterprise_latest, "v7_enterprise_001_1");
+    assert_claim(&enterprise_latest, "V7-ENTERPRISE-001.1");
     let bundle_path = enterprise_latest
         .get("bundle_path")
         .and_then(Value::as_str)
@@ -327,7 +327,42 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
         ),
         0
     );
-    assert_claim(&latest("enterprise_hardening", root), "v7_enterprise_001_2");
+    assert_claim(&latest("enterprise_hardening", root), "V7-ENTERPRISE-001.2");
+
+    assert_eq!(
+        enterprise_hardening::run(
+            root,
+            &[
+                "certify-scale".to_string(),
+                "--target-nodes=2048".to_string(),
+                "--samples=40".to_string(),
+                "--strict=1".to_string(),
+                "--scale-policy=client/runtime/config/scale_readiness_program_policy.json"
+                    .to_string(),
+            ],
+        ),
+        1
+    );
+    let strict_fail_latest = latest("enterprise_hardening", root);
+    assert_eq!(
+        strict_fail_latest.get("ok").and_then(Value::as_bool),
+        Some(false)
+    );
+    let strict_errors = strict_fail_latest
+        .get("errors")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+        .iter()
+        .filter_map(Value::as_str)
+        .map(ToString::to_string)
+        .collect::<Vec<_>>();
+    assert!(
+        strict_errors
+            .iter()
+            .any(|row| row == "strict_target_nodes_below_10000"),
+        "strict certify-scale should enforce 10k target minimum"
+    );
 
     assert_eq!(
         enterprise_hardening::run(
@@ -335,7 +370,7 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
             &[
                 "certify-scale".to_string(),
                 "--target-nodes=10000".to_string(),
-                "--samples=60".to_string(),
+                "--samples=80".to_string(),
                 "--strict=1".to_string(),
                 "--scale-policy=client/runtime/config/scale_readiness_program_policy.json"
                     .to_string(),
@@ -344,12 +379,17 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
         0
     );
     let latest = latest("enterprise_hardening", root);
-    assert_claim(&latest, "v7_enterprise_001_3");
+    assert_claim(&latest, "V7-ENTERPRISE-001.3");
     let cert_path = latest
         .get("certificate_path")
         .and_then(Value::as_str)
         .expect("cert path");
     assert!(root.join(cert_path).exists());
+    let whitepaper_path = latest
+        .get("whitepaper_path")
+        .and_then(Value::as_str)
+        .expect("whitepaper path");
+    assert!(root.join(whitepaper_path).exists());
 
     std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
     std::env::remove_var("ORGANISM_CRYSTAL_SIGNING_KEY");

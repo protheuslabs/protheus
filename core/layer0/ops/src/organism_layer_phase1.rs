@@ -251,7 +251,7 @@ pub(super) fn command_ignite(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
             },
             "claim_evidence": [
                 {
-                    "id": "v8_organism_001_1",
+                    "id": "V8-ORGANISM-001.1",
                     "claim": "dream_state_processing_runs_autonomously_and_surfaces_actionable_insights",
                     "evidence": {
                         "idle_hours": idle_hours,
@@ -260,7 +260,7 @@ pub(super) fn command_ignite(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
                     }
                 },
                 {
-                    "id": "v8_organism_001_2",
+                    "id": "V8-ORGANISM-001.2",
                     "claim": "homeostasis_tracks_vitals_and_self_regulates_organism_behavior",
                     "evidence": {
                         "coherence": coherence,
@@ -270,7 +270,7 @@ pub(super) fn command_ignite(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
                     }
                 },
                 {
-                    "id": "v8_organism_001_3",
+                    "id": "V8-ORGANISM-001.3",
                     "claim": "personality_crystallization_persists_signed_epistemic_objects",
                     "evidence": {
                         "persona": persona,
@@ -279,7 +279,7 @@ pub(super) fn command_ignite(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
                     }
                 },
                 {
-                    "id": "v8_organism_001_4",
+                    "id": "V8-ORGANISM-001.4",
                     "claim": "network_symbiosis_forms_collective_state_with_memory_sharing",
                     "evidence": {
                         "nodes": nodes,
@@ -288,7 +288,7 @@ pub(super) fn command_ignite(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
                     }
                 },
                 {
-                    "id": "v8_organism_001_5",
+                    "id": "V8-ORGANISM-001.5",
                     "claim": "creative_mutation_paths_are_available_for_proactive_opt_in_evolution",
                     "evidence": {
                         "active": apply && allowed,
@@ -296,7 +296,7 @@ pub(super) fn command_ignite(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
                     }
                 },
                 {
-                    "id": "v8_organism_001_6",
+                    "id": "V8-ORGANISM-001.6",
                     "claim": "internal_sensory_feedback_is_integrated_into_runtime_regulation_loops",
                     "evidence": {
                         "pain": pain,
@@ -305,7 +305,7 @@ pub(super) fn command_ignite(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
                     }
                 },
                 {
-                    "id": "v8_organism_001_7",
+                    "id": "V8-ORGANISM-001.7",
                     "claim": "generative_internal_narrative_is_persisted_with_coherence_state",
                     "evidence": {
                         "summary": narrative.get("summary").cloned().unwrap_or(Value::Null),
@@ -314,7 +314,7 @@ pub(super) fn command_ignite(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
                     }
                 },
                 {
-                    "id": "v8_organism_001_8",
+                    "id": "V8-ORGANISM-001.8",
                     "claim": "one_command_ignite_surfaces_a_full_organism_view_without_client_authority_bypass",
                     "evidence": {
                         "activation_command": "protheus organism ignite",
@@ -394,7 +394,7 @@ pub(super) fn command_dream(root: &Path, parsed: &crate::ParsedArgs) -> i32 {
             "morning_insight_proposal": insight,
             "claim_evidence": [
                 {
-                    "id": "v8_organism_001_1",
+                    "id": "V8-ORGANISM-001.1",
                     "claim": "dream_state_processing_runs_autonomously_and_surfaces_actionable_insights",
                     "evidence": {
                         "insight": insight,
@@ -498,7 +498,7 @@ pub(super) fn command_homeostasis(root: &Path, parsed: &crate::ParsedArgs) -> i3
             "rsi_reflect_exit": reflect_exit,
             "claim_evidence": [
                 {
-                    "id": "v8_organism_001_2",
+                    "id": "V8-ORGANISM-001.2",
                     "claim": "homeostasis_tracks_vitals_and_self_regulates_organism_behavior",
                     "evidence": {
                         "coherence": coherence,

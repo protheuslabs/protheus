@@ -139,7 +139,10 @@ fn v6_parse_batch9_table_flatten_and_template_governance_lanes_work() {
     assert_claim(&flat_latest, "V6-PARSE-001.4");
     assert_claim(&flat_latest, "V6-PARSE-001.6");
 
-    let export_out = root.join("artifacts").join("parse").join("batch9_export.json");
+    let export_out = root
+        .join("artifacts")
+        .join("parse")
+        .join("batch9_export.json");
     let export_exit = parse_plane::run(
         root,
         &[
@@ -156,10 +159,7 @@ fn v6_parse_batch9_table_flatten_and_template_governance_lanes_work() {
         export_latest.get("type").and_then(Value::as_str),
         Some("parse_plane_export")
     );
-    assert_eq!(
-        export_latest.get("ok").and_then(Value::as_bool),
-        Some(true)
-    );
+    assert_eq!(export_latest.get("ok").and_then(Value::as_bool), Some(true));
     assert!(
         export_out.exists(),
         "parse export must write the requested output artifact"
@@ -253,27 +253,37 @@ fn v6_parse_batch9_table_flatten_and_template_governance_lanes_work() {
 fn v6_parse_batch9_rejects_bypass_when_strict() {
     let fixture = stage_fixture_root();
     let root = fixture.path();
-    let exit = parse_plane::run(
-        root,
-        &[
-            "flatten".to_string(),
-            "--strict=1".to_string(),
-            "--bypass=1".to_string(),
-            "--json={\"safe\":true}".to_string(),
-        ],
-    );
-    assert_eq!(exit, 1);
-    let latest = read_json(&latest_path(root));
-    assert_eq!(
-        latest.get("type").and_then(Value::as_str),
-        Some("parse_plane_conduit_gate")
-    );
-    assert!(latest
-        .get("conduit_enforcement")
-        .and_then(|v| v.get("claim_evidence"))
-        .and_then(Value::as_array)
-        .map(|rows| rows
-            .iter()
-            .any(|row| row.get("id").and_then(Value::as_str) == Some("V6-PARSE-001.6")))
-        .unwrap_or(false));
+    for action in [
+        "parse-doc",
+        "visualize",
+        "postprocess-table",
+        "flatten",
+        "export",
+        "template-governance",
+    ] {
+        let exit = parse_plane::run(
+            root,
+            &[
+                action.to_string(),
+                "--strict=1".to_string(),
+                "--bypass=1".to_string(),
+            ],
+        );
+        assert_eq!(exit, 1, "action={action} should fail closed on bypass");
+        let latest = read_json(&latest_path(root));
+        assert_eq!(
+            latest.get("type").and_then(Value::as_str),
+            Some("parse_plane_conduit_gate"),
+            "action={action} should emit conduit gate payload"
+        );
+        assert!(latest
+            .get("conduit_enforcement")
+            .and_then(|v| v.get("claim_evidence"))
+            .and_then(Value::as_array)
+            .map(|rows| rows
+                .iter()
+                .any(|row| row.get("id").and_then(Value::as_str) == Some("V6-PARSE-001.6")))
+            .unwrap_or(false),
+            "action={action} should tag V6-PARSE-001.6");
+    }
 }

@@ -1,0 +1,63 @@
+{
+  "artifact": {
+    "path": "/Users/jay/.openclaw/workspace/core/local/state/ops/parse_plane/parse_templates/latest.json",
+    "sha256": "a54a6f76dbe1b5ac34e4c6eba3c9463986c499d4f7d6b8c212d0c465f5309a42"
+  },
+  "claim_evidence": [
+    {
+      "claim": "signed_parser_template_mapping_library_governance_validates_compatibility_and_review_metadata",
+      "evidence": {
+        "manifest_path": "/var/folders/f9/mhsd3dwj78l8418t9vnclbn80000gn/T/tmp.YK8P9iDmaF/parse_manifest.json",
+        "validated_templates": 1
+      },
+      "id": "V6-PARSE-001.5"
+    },
+    {
+      "claim": "all_parse_apply_and_visualize_actions_route_through_conduit_with_bypass_rejection",
+      "evidence": {
+        "action": "template-governance",
+        "bypass_requested": false
+      },
+      "id": "V6-PARSE-001.6"
+    }
+  ],
+  "conduit_enforcement": {
+    "action": "template-governance",
+    "bypass_requested": false,
+    "claim_evidence": [
+      {
+        "claim": "all_parse_apply_and_visualize_actions_route_through_conduit_with_bypass_rejection",
+        "evidence": {
+          "action": "template-governance",
+          "bypass_requested": false
+        },
+        "id": "V6-PARSE-001.6"
+      }
+    ],
+    "errors": [],
+    "ok": true,
+    "receipt_hash": "9a17df4e5651cec14909145f1a76af1cfcec935739240b4576d15e4bb515f408",
+    "required_path": "core/layer0/ops/parse_plane",
+    "type": "parse_conduit_enforcement"
+  },
+  "lane": "core/layer0/ops",
+  "ok": true,
+  "receipt_hash": "200d807f8286709a116fa4eb8d541455a426daae0df6a6ad3f6ddb4bf30b149f",
+  "result": {
+    "manifest_path": "/var/folders/f9/mhsd3dwj78l8418t9vnclbn80000gn/T/tmp.YK8P9iDmaF/parse_manifest.json",
+    "required_contract_version": "v1",
+    "templates_root": "/var/folders/f9/mhsd3dwj78l8418t9vnclbn80000gn/T/tmp.YK8P9iDmaF/parse_templates",
+    "validated_templates": [
+      {
+        "human_reviewed": true,
+        "mapping_contract_version": "v1",
+        "path": "/var/folders/f9/mhsd3dwj78l8418t9vnclbn80000gn/T/tmp.YK8P9iDmaF/parse_templates/batch44_template.json",
+        "review_cadence_days": 90,
+        "sha256": "5cf88e912ed30eb619d0a8f3b8d639260e1a19455d4591035f68c2d974e7b07d"
+      }
+    ]
+  },
+  "strict": true,
+  "ts": "2026-03-13T20:55:11.204Z",
+  "type": "parse_plane_template_governance"
+}

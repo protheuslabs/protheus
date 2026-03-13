@@ -99,6 +99,7 @@ fn v6_vbrowser_batch12_core_lanes_execute_with_receipts() {
     assert_eq!(start_latest.get("ok").and_then(Value::as_bool), Some(true));
     assert_claim(&start_latest, "V6-VBROWSER-001.1");
     assert_claim(&start_latest, "V6-VBROWSER-001.5");
+    assert_claim(&start_latest, "V6-VBROWSER-001.6");
 
     let join_exit = vbrowser_plane::run(
         root,
