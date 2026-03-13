@@ -15,10 +15,11 @@
 
 ## External Dependency Boundary
 - This requirement needs human-owned or third-party authority/evidence outside autonomous local execution.
-- Unblock rationale from actionable map: requires external/human dependency resolution
+- Required approval: `HMAN-084`
+- Required artifacts: signed provider validation report + QPU run receipts bundle
 
 ## Pending Human/External Actions
-- Obtain required approval/attestation/publication from authorized owner or third party.
+- Obtain required approval/attestation/publication from authorized owner or third party (`HMAN-084`).
 - Attach signed/redacted external proof artifact(s) in this folder (report, cert, publication link export, signed decision).
 - Record decision date and approver identity in `README.md` and, if policy permits, add immutable receipt link.
 

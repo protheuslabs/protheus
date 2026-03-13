@@ -15,10 +15,11 @@
 
 ## External Dependency Boundary
 - This requirement needs human-owned or third-party authority/evidence outside autonomous local execution.
-- Unblock rationale from actionable map: requires external/human dependency resolution
+- Required approvals: `HMAN-082`, `HMAN-083`
+- Required artifacts: signed neural I/O safety report + staged device validation receipts
 
 ## Pending Human/External Actions
-- Obtain required approval/attestation/publication from authorized owner or third party.
+- Obtain required approval/attestation/publication from authorized owners (`HMAN-082`, `HMAN-083`).
 - Attach signed/redacted external proof artifact(s) in this folder (report, cert, publication link export, signed decision).
 - Record decision date and approver identity in `README.md` and, if policy permits, add immutable receipt link.
 

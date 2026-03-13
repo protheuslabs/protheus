@@ -91,7 +91,10 @@ fn v7_meta_001_to_010_strict_lanes_execute_with_receipts() {
     let root = fixture.path();
 
     let lanes: Vec<(&str, Vec<String>)> = vec![
-        ("registry", vec!["registry".to_string(), "--strict=1".to_string()]),
+        (
+            "registry",
+            vec!["registry".to_string(), "--strict=1".to_string()],
+        ),
         (
             "invariants",
             vec!["invariants".to_string(), "--strict=1".to_string()],
@@ -181,7 +184,10 @@ fn v7_meta_registry_fails_closed_when_unknown_primitive_is_used() {
     let root = tmp.path();
 
     write_json(
-        &root.join("planes").join("contracts").join("metakernel_primitives_v1.json"),
+        &root
+            .join("planes")
+            .join("contracts")
+            .join("metakernel_primitives_v1.json"),
         &json!({
             "version": "v1",
             "kind": "metakernel_primitives_registry",
@@ -202,7 +208,11 @@ fn v7_meta_registry_fails_closed_when_unknown_primitive_is_used() {
         }),
     );
     write_json(
-        &root.join("client").join("runtime").join("config").join("unknown_usage.json"),
+        &root
+            .join("client")
+            .join("runtime")
+            .join("config")
+            .join("unknown_usage.json"),
         &json!({
             "policy": {
                 "primitive": "alien_primitive"
@@ -215,7 +225,10 @@ fn v7_meta_registry_fails_closed_when_unknown_primitive_is_used() {
 
     let latest = read_json(&latest_path(root));
     assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(false));
-    assert_eq!(latest.get("command").and_then(Value::as_str), Some("registry"));
+    assert_eq!(
+        latest.get("command").and_then(Value::as_str),
+        Some("registry")
+    );
     let payload = latest.get("payload").cloned().unwrap_or(Value::Null);
     assert_eq!(
         payload
@@ -224,4 +237,194 @@ fn v7_meta_registry_fails_closed_when_unknown_primitive_is_used() {
             .unwrap_or(0),
         1
     );
+}
+
+#[test]
+fn v7_meta_011_to_015_strict_lanes_execute_with_receipts() {
+    let fixture = stage_metakernel_fixture_root();
+    let root = fixture.path();
+
+    let lanes: Vec<(&str, Vec<String>)> = vec![
+        (
+            "quantum-broker",
+            vec!["quantum-broker".to_string(), "--strict=1".to_string()],
+        ),
+        (
+            "neural-consent",
+            vec!["neural-consent".to_string(), "--strict=1".to_string()],
+        ),
+        (
+            "attestation-graph",
+            vec!["attestation-graph".to_string(), "--strict=1".to_string()],
+        ),
+        (
+            "degradation-contracts",
+            vec![
+                "degradation-contracts".to_string(),
+                "--strict=1".to_string(),
+            ],
+        ),
+        (
+            "execution-profiles",
+            vec!["execution-profiles".to_string(), "--strict=1".to_string()],
+        ),
+    ];
+
+    for (lane, argv) in lanes {
+        let exit = metakernel::run(root, &argv);
+        assert_eq!(exit, 0, "lane should pass in strict mode: {lane}");
+        let latest = read_json(&latest_path(root));
+        assert_eq!(
+            latest.get("command").and_then(Value::as_str),
+            Some(lane),
+            "latest receipt command should match lane {lane}"
+        );
+        assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(true));
+        assert!(
+            latest
+                .get("receipt_hash")
+                .and_then(Value::as_str)
+                .map(|v| v.len() > 12)
+                .unwrap_or(false),
+            "lane {lane} must emit deterministic receipt hash"
+        );
+    }
+}
+
+#[test]
+fn v7_meta_011_to_015_fail_closed_on_contract_breaks() {
+    let cases: Vec<(&str, &str, Value)> = vec![
+        (
+            "quantum-broker",
+            "planes/contracts/quantum_broker_domain_v1.json",
+            json!({
+                "version": "v1",
+                "kind": "quantum_broker_domain",
+                "operations": ["compile", "estimate", "submit", "session", "batch", "teleport"],
+                "classical_fallback": { "enabled": true, "receipt_required": true }
+            }),
+        ),
+        (
+            "neural-consent",
+            "planes/contracts/neural_consent_kernel_v1.json",
+            json!({
+                "version": "v1",
+                "kind": "neural_consent_kernel",
+                "authorities": ["observe", "infer", "feedback", "stimulate"],
+                "stimulate_policy": {
+                    "consent_token_required": true,
+                    "dual_control_required": false,
+                    "immutable_audit": true,
+                    "rate_limit_per_minute": 5
+                }
+            }),
+        ),
+        (
+            "attestation-graph",
+            "planes/contracts/attestation_graph_v1.json",
+            json!({
+                "version": "v1",
+                "kind": "attestation_graph",
+                "edges": [
+                    { "from": "code:core/layer0/ops", "to": "policy:manifest" },
+                    { "from": "policy:manifest", "to": "effect:dispatch" }
+                ]
+            }),
+        ),
+        (
+            "degradation-contracts",
+            "planes/contracts/degradation_contracts_v1.json",
+            json!({
+                "version": "v1",
+                "kind": "degradation_contracts",
+                "critical_lanes": [
+                    { "id": "conduit_dispatch", "fallback": "local_receipt_queue", "fallback_widens_privilege": false },
+                    { "id": "model_router", "fallback": "safe_local_model", "fallback_widens_privilege": false }
+                ],
+                "scenarios": {
+                    "no-network": ["conduit_dispatch", "model_router"],
+                    "no-ternary": [],
+                    "no-qpu": ["model_router"],
+                    "neural-link-loss": ["conduit_dispatch"]
+                }
+            }),
+        ),
+        (
+            "execution-profiles",
+            "planes/contracts/execution_profile_matrix_v1.json",
+            json!({
+                "version": "v1",
+                "kind": "execution_profile_matrix",
+                "profiles": [
+                    { "id": "mcu", "harness": "harness/mcu_conformance", "determinism": "high" },
+                    { "id": "edge", "harness": "harness/edge_conformance", "determinism": "high" },
+                    { "id": "cloud", "harness": "bad", "determinism": "medium" }
+                ]
+            }),
+        ),
+    ];
+
+    for (lane, contract_rel, mutated_contract) in cases {
+        let fixture = stage_metakernel_fixture_root();
+        let root = fixture.path();
+        write_json(&root.join(contract_rel), &mutated_contract);
+
+        let exit = metakernel::run(root, &[lane.to_string(), "--strict=1".to_string()]);
+        assert_eq!(exit, 1, "lane should fail-closed in strict mode: {lane}");
+
+        let latest = read_json(&latest_path(root));
+        assert_eq!(latest.get("command").and_then(Value::as_str), Some(lane));
+        assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(false));
+        let errors = latest
+            .get("payload")
+            .and_then(|p| p.get("errors"))
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        assert!(
+            !errors.is_empty(),
+            "lane {lane} must report explicit errors when strict lane fails"
+        );
+    }
+}
+
+#[test]
+fn v7_meta_016_to_018_external_packets_declare_required_hman_ids() {
+    let workspace = workspace_root();
+    let expected: Vec<(&str, Vec<&str>)> = vec![
+        ("V7-META-016", vec!["HMAN-084"]),
+        ("V7-META-017", vec!["HMAN-081"]),
+        ("V7-META-018", vec!["HMAN-082", "HMAN-083"]),
+    ];
+
+    for (id, approvals) in expected {
+        let manifest_path = workspace
+            .join("evidence")
+            .join("external")
+            .join(id)
+            .join("packet_manifest.json");
+        let manifest = read_json(&manifest_path);
+        assert_eq!(
+            manifest
+                .get("external_dependency")
+                .and_then(Value::as_bool)
+                .unwrap_or(false),
+            true,
+            "external packets must stay marked as external dependencies: {id}"
+        );
+        let actual = manifest
+            .get("required_hman_approvals")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|v| v.as_str().map(|s| s.to_string()))
+            .collect::<Vec<_>>();
+        for approval in approvals {
+            assert!(
+                actual.iter().any(|v| v == approval),
+                "packet manifest must include required approval {approval} for {id}"
+            );
+        }
+    }
 }

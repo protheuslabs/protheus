@@ -17,5 +17,11 @@
       "fallback": "local_cron_runtime",
       "fallback_widens_privilege": false
     }
-  ]
+  ],
+  "scenarios": {
+    "no-network": ["conduit_dispatch", "model_router", "scheduler"],
+    "no-ternary": ["model_router", "scheduler"],
+    "no-qpu": ["model_router"],
+    "neural-link-loss": ["conduit_dispatch", "scheduler"]
+  }
 }

@@ -7,7 +7,12 @@
   "layer_map": "0/1/2",
   "upgrade": "Neural I/O safety validation campaign",
   "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
-  "unblock": "requires external/human dependency resolution",
+  "unblock": "requires HMAN-082 and HMAN-083 approvals plus staged safety artifacts",
+  "required_hman_approvals": ["HMAN-082", "HMAN-083"],
+  "required_external_artifacts": [
+    "signed_neural_io_safety_report",
+    "staged_device_validation_receipts"
+  ],
   "packet_markdown": "evidence/external/V7-META-018/external_execution_packet_2026-03-12.md",
   "evidence_dir": "evidence/external/V7-META-018",
   "external_dependency": true,
