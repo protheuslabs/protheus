@@ -206,6 +206,148 @@ fn is_nano_memory_command(memory_command: &str) -> bool {
     )
 }
 
+fn memory_batch22_command_claim_ids(memory_command: &str) -> &'static [&'static str] {
+    match memory_command {
+        "memory-taxonomy" | "stable-memory-taxonomy" => &["V6-MEMORY-011.1", "V6-MEMORY-011.5"],
+        "memory-enable-metacognitive" | "stable-memory-enable-metacognitive" => {
+            &["V6-MEMORY-011.2"]
+        }
+        "memory-share" | "stable-memory-share" => &["V6-MEMORY-011.3"],
+        "memory-evolve" | "stable-memory-evolve" => &["V6-MEMORY-011.4"],
+        "memory-enable-causality" | "stable-memory-enable-causality" => {
+            &["V6-MEMORY-012.1", "V6-MEMORY-012.5"]
+        }
+        "memory-causal-retrieve" | "stable-memory-causal-retrieve" => &["V6-MEMORY-012.2"],
+        "memory-benchmark-ama" | "stable-memory-benchmark-ama" => {
+            &["V6-MEMORY-012.3", "V6-MEMORY-012.5"]
+        }
+        "memory-fuse" | "stable-memory-fuse" => &["V6-MEMORY-012.4"],
+        _ => &[],
+    }
+}
+
+fn is_batch22_memory_command(memory_command: &str) -> bool {
+    !memory_batch22_command_claim_ids(memory_command).is_empty()
+}
+
+fn memory_batch22_claim_evidence(
+    memory_command: &str,
+    memory_args: &[String],
+    memory_payload: &Value,
+) -> Vec<Value> {
+    match memory_command {
+        "memory-taxonomy" | "stable-memory-taxonomy" => vec![
+            json!({
+                "id": "V6-MEMORY-011.1",
+                "claim": "memory_taxonomy_classifies_entries_into_4w_tags_with_deterministic_receipts",
+                "evidence": {
+                    "memory_command": memory_command,
+                    "row_count": memory_payload.get("row_count").and_then(Value::as_u64).unwrap_or(0),
+                    "taxonomy_path": memory_payload.get("taxonomy_path").and_then(Value::as_str).unwrap_or("")
+                }
+            }),
+            json!({
+                "id": "V6-MEMORY-011.5",
+                "claim": "taxonomy_commands_emit_dashboard_ready_health_metrics_with_deterministic_receipts",
+                "evidence": {
+                    "memory_command": memory_command,
+                    "when_missing": memory_payload.get("when_missing").and_then(Value::as_u64).unwrap_or(0),
+                    "what_bucket_count": memory_payload.get("what_counts").and_then(Value::as_object).map(|m| m.len()).unwrap_or(0)
+                }
+            }),
+        ],
+        "memory-enable-metacognitive" | "stable-memory-enable-metacognitive" => vec![json!({
+            "id": "V6-MEMORY-011.2",
+            "claim": "metacognitive_enable_persists_config_and_journal_with_deterministic_receipts",
+            "evidence": {
+                "memory_command": memory_command,
+                "enabled": memory_payload.get("enabled").and_then(Value::as_bool).unwrap_or(false),
+                "config_path": memory_payload.get("config_path").and_then(Value::as_str).unwrap_or("")
+            }
+        })],
+        "memory-share" | "stable-memory-share" => vec![json!({
+            "id": "V6-MEMORY-011.3",
+            "claim": "memory_share_enforces_consent_scoped_multi_agent_sharing_with_deterministic_receipts",
+            "evidence": {
+                "memory_command": memory_command,
+                "persona": memory_payload.get("persona").and_then(Value::as_str).unwrap_or(""),
+                "scope": memory_payload.get("scope").and_then(Value::as_str).unwrap_or(""),
+                "consent": memory_payload.get("consent").and_then(Value::as_bool).unwrap_or(false)
+            }
+        })],
+        "memory-evolve" | "stable-memory-evolve" => vec![json!({
+            "id": "V6-MEMORY-011.4",
+            "claim": "memory_evolve_writes_longitudinal_snapshots_with_generation_and_stability_receipts",
+            "evidence": {
+                "memory_command": memory_command,
+                "generation": memory_payload.get("generation").and_then(Value::as_u64).unwrap_or(0),
+                "stability_score": memory_payload.get("stability_score").cloned().unwrap_or(Value::Null),
+                "evolution_state_path": memory_payload.get("evolution_state_path").and_then(Value::as_str).unwrap_or("")
+            }
+        })],
+        "memory-enable-causality" | "stable-memory-enable-causality" => vec![
+            json!({
+                "id": "V6-MEMORY-012.1",
+                "claim": "memory_enable_causality_materializes_causality_graph_artifacts_with_edge_receipts",
+                "evidence": {
+                    "memory_command": memory_command,
+                    "node_count": memory_payload.get("node_count").and_then(Value::as_u64).unwrap_or(0),
+                    "edge_count": memory_payload.get("edge_count").and_then(Value::as_u64).unwrap_or(0),
+                    "graph_path": memory_payload.get("graph_path").and_then(Value::as_str).unwrap_or("")
+                }
+            }),
+            json!({
+                "id": "V6-MEMORY-012.5",
+                "claim": "causality_activation_commands_route_through_rust_core_with_deterministic_receipts",
+                "evidence": {
+                    "memory_command": memory_command,
+                    "graph_path": memory_payload.get("graph_path").and_then(Value::as_str).unwrap_or("")
+                }
+            }),
+        ],
+        "memory-causal-retrieve" | "stable-memory-causal-retrieve" => vec![json!({
+            "id": "V6-MEMORY-012.2",
+            "claim": "memory_causal_retrieve_executes_deterministic_multi_hop_traversal_with_trace_receipts",
+            "evidence": {
+                "memory_command": memory_command,
+                "depth": parse_arg_value(memory_args, "depth").and_then(|v| v.parse::<u64>().ok()).unwrap_or(2),
+                "trace_count": memory_payload.get("trace_count").and_then(Value::as_u64).unwrap_or(0),
+                "query": memory_payload.get("query").and_then(Value::as_str).unwrap_or("")
+            }
+        })],
+        "memory-benchmark-ama" | "stable-memory-benchmark-ama" => vec![
+            json!({
+                "id": "V6-MEMORY-012.3",
+                "claim": "memory_benchmark_ama_emits_reproducible_scored_benchmark_receipts",
+                "evidence": {
+                    "memory_command": memory_command,
+                    "ama_score": memory_payload.get("ama_score").cloned().unwrap_or(Value::Null),
+                    "pass": memory_payload.get("pass").and_then(Value::as_bool).unwrap_or(false),
+                    "benchmark_path": memory_payload.get("benchmark_path").and_then(Value::as_str).unwrap_or("")
+                }
+            }),
+            json!({
+                "id": "V6-MEMORY-012.5",
+                "claim": "ama_benchmark_commands_route_through_rust_core_with_deterministic_receipts",
+                "evidence": {
+                    "memory_command": memory_command,
+                    "benchmark_path": memory_payload.get("benchmark_path").and_then(Value::as_str).unwrap_or("")
+                }
+            }),
+        ],
+        "memory-fuse" | "stable-memory-fuse" => vec![json!({
+            "id": "V6-MEMORY-012.4",
+            "claim": "memory_fuse_computes_4w_causality_metacognition_fusion_snapshots_with_score_receipts",
+            "evidence": {
+                "memory_command": memory_command,
+                "fusion_score": memory_payload.get("fusion_score").cloned().unwrap_or(Value::Null),
+                "fusion_state_path": memory_payload.get("fusion_state_path").and_then(Value::as_str).unwrap_or("")
+            }
+        })],
+        _ => Vec::new(),
+    }
+}
+
 fn cockpit_claim_evidence(
     memory_command: &str,
     memory_args: &[String],
@@ -516,6 +658,28 @@ fn resolve_memory_command(root: &PathBuf) -> (String, Vec<String>) {
         return (debug_primary.to_string_lossy().to_string(), Vec::new());
     }
 
+    // If runtime roots point at tenant/temp paths, still resolve the compiled
+    // authoritative binary from the workspace target directory.
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(3)
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| PathBuf::from("."));
+    let ws_release_primary = workspace_root
+        .join("target")
+        .join("release")
+        .join("protheus-memory-core");
+    if ws_release_primary.exists() {
+        return (ws_release_primary.to_string_lossy().to_string(), Vec::new());
+    }
+    let ws_debug_primary = workspace_root
+        .join("target")
+        .join("debug")
+        .join("protheus-memory-core");
+    if ws_debug_primary.exists() {
+        return (ws_debug_primary.to_string_lossy().to_string(), Vec::new());
+    }
+
     let release_compat = root.join("target").join("release").join("memory-cli");
     if release_compat.exists() {
         return (release_compat.to_string_lossy().to_string(), Vec::new());
@@ -525,12 +689,13 @@ fn resolve_memory_command(root: &PathBuf) -> (String, Vec<String>) {
         return (debug_compat.to_string_lossy().to_string(), Vec::new());
     }
 
+    let manifest_path = workspace_root.join("core/layer0/memory_runtime/Cargo.toml");
     (
         "cargo".to_string(),
         vec![
             "run".to_string(),
             "--manifest-path".to_string(),
-            "core/layer0/memory_runtime/Cargo.toml".to_string(),
+            manifest_path.to_string_lossy().to_string(),
             "--bin".to_string(),
             "protheus-memory-core".to_string(),
             "--".to_string(),
@@ -1012,6 +1177,29 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 }
             }));
         }
+        if latest
+            .get("memory_command")
+            .and_then(Value::as_str)
+            .map(|cmd| matches!(cmd, "memory-taxonomy" | "stable-memory-taxonomy"))
+            .unwrap_or(false)
+        {
+            claim_evidence.push(json!({
+                "id": "V6-MEMORY-011.5",
+                "claim": "taxonomy_health_metrics_are_surfaceable_through_status_dashboard_receipts",
+                "evidence": {
+                    "status_source": status_source,
+                    "last_memory_command": latest
+                        .get("memory_command")
+                        .and_then(Value::as_str)
+                        .unwrap_or("unknown"),
+                    "row_count": latest
+                        .get("memory_payload")
+                        .and_then(|v| v.get("row_count"))
+                        .and_then(Value::as_u64)
+                        .unwrap_or(0)
+                }
+            }));
+        }
         let mut receipt = json!({
             "ok": true,
             "type": "memory_ambient_status",
@@ -1066,7 +1254,28 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             parse_arg_value(&memory_args, "client-bypass").as_deref(),
             false,
         );
-    if strict && bypass_requested && is_nano_memory_command(&memory_command) {
+    if strict
+        && bypass_requested
+        && (is_nano_memory_command(&memory_command) || is_batch22_memory_command(&memory_command))
+    {
+        let gate_claim_ids = if is_nano_memory_command(&memory_command) {
+            vec!["V6-COCKPIT-026.4"]
+        } else {
+            memory_batch22_command_claim_ids(&memory_command).to_vec()
+        };
+        let gate_claim_evidence = gate_claim_ids
+            .iter()
+            .map(|claim_id| {
+                json!({
+                    "id": claim_id,
+                    "claim": "memory_commands_fail_closed_when_conduit_bypass_is_requested",
+                    "evidence": {
+                        "memory_command": memory_command.clone(),
+                        "bypass_requested": bypass_requested
+                    }
+                })
+            })
+            .collect::<Vec<Value>>();
         let mut receipt = json!({
             "ok": false,
             "type": "memory_ambient_conduit_gate",
@@ -1075,16 +1284,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             "memory_command": memory_command.clone(),
             "strict": strict,
             "errors": ["conduit_bypass_rejected"],
-            "claim_evidence": [
-                {
-                    "id": "V6-COCKPIT-026.4",
-                    "claim": "nano_mode_commands_fail_closed_when_conduit_bypass_is_requested",
-                    "evidence": {
-                        "memory_command": memory_command.clone(),
-                        "bypass_requested": bypass_requested
-                    }
-                }
-            ],
+            "claim_evidence": gate_claim_evidence,
             "policy": policy_snapshot(&policy)
         });
         receipt["receipt_hash"] = Value::String(deterministic_receipt_hash(&receipt));
@@ -1183,7 +1383,13 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         format!("memory op failed ({memory_command})")
     };
     let token_telemetry = build_token_telemetry(&memory_command, &memory_args, &memory_payload);
-    let claim_evidence = cockpit_claim_evidence(&memory_command, &memory_args, &token_telemetry);
+    let mut claim_evidence =
+        cockpit_claim_evidence(&memory_command, &memory_args, &token_telemetry);
+    claim_evidence.extend(memory_batch22_claim_evidence(
+        &memory_command,
+        &memory_args,
+        &memory_payload,
+    ));
 
     let attention_queue = if surfaced {
         match enqueue_attention(

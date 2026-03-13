@@ -489,6 +489,27 @@ mod tests {
     }
 
     #[test]
+    fn memory_enable_metacognitive_routes_to_stable_enable_command() {
+        let inv = build_invocation(&[
+            "memory".to_string(),
+            "enable".to_string(),
+            "metacognitive".to_string(),
+            "--note=reflect".to_string(),
+        ])
+        .expect("invocation");
+        match inv {
+            Invocation::MemoryRun {
+                memory_command,
+                memory_args,
+            } => {
+                assert_eq!(memory_command, "stable-memory-enable-metacognitive");
+                assert!(memory_args.iter().any(|v| v == "--note=reflect"));
+            }
+            _ => panic!("expected memory run"),
+        }
+    }
+
+    #[test]
     fn memory_share_routes_to_stable_share_command() {
         let inv = build_invocation(&[
             "memory".to_string(),
@@ -501,6 +522,48 @@ mod tests {
         match inv {
             Invocation::MemoryRun { memory_command, .. } => {
                 assert_eq!(memory_command, "stable-memory-share");
+            }
+            _ => panic!("expected memory run"),
+        }
+    }
+
+    #[test]
+    fn memory_evolve_routes_to_stable_evolve_command() {
+        let inv = build_invocation(&[
+            "memory".to_string(),
+            "evolve".to_string(),
+            "--generation=5".to_string(),
+        ])
+        .expect("invocation");
+        match inv {
+            Invocation::MemoryRun {
+                memory_command,
+                memory_args,
+            } => {
+                assert_eq!(memory_command, "stable-memory-evolve");
+                assert!(memory_args.iter().any(|v| v == "--generation=5"));
+            }
+            _ => panic!("expected memory run"),
+        }
+    }
+
+    #[test]
+    fn memory_causal_retrieve_routes_to_stable_command() {
+        let inv = build_invocation(&[
+            "memory".to_string(),
+            "causal-retrieve".to_string(),
+            "--q=policy".to_string(),
+            "--depth=3".to_string(),
+        ])
+        .expect("invocation");
+        match inv {
+            Invocation::MemoryRun {
+                memory_command,
+                memory_args,
+            } => {
+                assert_eq!(memory_command, "stable-memory-causal-retrieve");
+                assert!(memory_args.iter().any(|v| v == "--q=policy"));
+                assert!(memory_args.iter().any(|v| v == "--depth=3"));
             }
             _ => panic!("expected memory run"),
         }
