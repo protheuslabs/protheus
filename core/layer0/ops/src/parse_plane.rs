@@ -2,8 +2,9 @@
 // Layer ownership: core/layer0/ops::parse_plane (authoritative)
 
 use crate::v8_kernel::{
-    append_jsonl, parse_bool, parse_u64, read_json, scoped_state_root, sha256_hex_str, write_json,
-    write_receipt,
+    attach_conduit, build_conduit_enforcement, canonical_json_string, canonicalize_json,
+    conduit_bypass_requested, load_json_or, parse_bool, parse_u64, read_json, scoped_state_root,
+    sha256_hex_str, write_json, write_receipt,
 };
 use crate::{clean, parse_args};
 use serde_json::{json, Map, Value};
@@ -73,10 +74,6 @@ fn emit(root: &Path, payload: Value) -> i32 {
     }
 }
 
-fn load_json_or(root: &Path, rel: &str, fallback: Value) -> Value {
-    read_json(&root.join(rel)).unwrap_or(fallback)
-}
-
 fn status(root: &Path) -> Value {
     json!({
         "ok": true,
@@ -87,82 +84,31 @@ fn status(root: &Path) -> Value {
     })
 }
 
-fn canonicalize_json(value: &Value) -> Value {
-    match value {
-        Value::Object(map) => {
-            let mut keys = map.keys().cloned().collect::<Vec<_>>();
-            keys.sort();
-            let mut out = Map::new();
-            for key in keys {
-                if let Some(v) = map.get(&key) {
-                    out.insert(key, canonicalize_json(v));
-                }
-            }
-            Value::Object(out)
-        }
-        Value::Array(rows) => Value::Array(rows.iter().map(canonicalize_json).collect()),
-        _ => value.clone(),
-    }
-}
-
-fn canonical_json_string(value: &Value) -> String {
-    serde_json::to_string(&canonicalize_json(value)).unwrap_or_else(|_| "null".to_string())
-}
-
 fn conduit_enforcement(
     root: &Path,
     parsed: &crate::ParsedArgs,
     strict: bool,
     action: &str,
 ) -> Value {
-    let bypass_requested = parse_bool(parsed.flags.get("bypass"), false)
-        || parse_bool(parsed.flags.get("direct"), false)
-        || parse_bool(parsed.flags.get("unsafe-client-route"), false)
-        || parse_bool(parsed.flags.get("client-bypass"), false);
-    let ok = !bypass_requested;
-    let mut out = json!({
-        "ok": if strict { ok } else { true },
-        "type": "parse_conduit_enforcement",
-        "action": clean(action, 120),
-        "required_path": "core/layer0/ops/parse_plane",
-        "bypass_requested": bypass_requested,
-        "errors": if ok { Value::Array(Vec::new()) } else { json!(["conduit_bypass_rejected"]) },
-        "claim_evidence": [
-            {
-                "id": "V6-PARSE-001.6",
-                "claim": "all_parse_apply_and_visualize_actions_route_through_conduit_with_bypass_rejection",
-                "evidence": {
-                    "action": clean(action, 120),
-                    "bypass_requested": bypass_requested
-                }
+    let bypass_requested = conduit_bypass_requested(&parsed.flags);
+    build_conduit_enforcement(
+        root,
+        STATE_ENV,
+        STATE_SCOPE,
+        strict,
+        action,
+        "parse_conduit_enforcement",
+        "core/layer0/ops/parse_plane",
+        bypass_requested,
+        vec![json!({
+            "id": "V6-PARSE-001.6",
+            "claim": "all_parse_apply_and_visualize_actions_route_through_conduit_with_bypass_rejection",
+            "evidence": {
+                "action": clean(action, 120),
+                "bypass_requested": bypass_requested
             }
-        ]
-    });
-    out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
-    let _ = append_jsonl(
-        &state_root(root).join("conduit").join("history.jsonl"),
-        &out,
-    );
-    out
-}
-
-fn attach_conduit(mut payload: Value, conduit: Option<&Value>) -> Value {
-    if let Some(gate) = conduit {
-        payload["conduit_enforcement"] = gate.clone();
-        let mut claims = payload
-            .get("claim_evidence")
-            .and_then(Value::as_array)
-            .cloned()
-            .unwrap_or_default();
-        if let Some(rows) = gate.get("claim_evidence").and_then(Value::as_array) {
-            claims.extend(rows.iter().cloned());
-        }
-        if !claims.is_empty() {
-            payload["claim_evidence"] = Value::Array(claims);
-        }
-    }
-    payload["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&payload));
-    payload
+        })],
+    )
 }
 
 fn strip_tags(raw: &str) -> String {

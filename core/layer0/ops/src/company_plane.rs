@@ -2,7 +2,8 @@
 // Layer ownership: core/layer0/ops::company_plane (authoritative)
 
 use crate::v8_kernel::{
-    append_jsonl, parse_bool, parse_u64, read_json, scoped_state_root, sha256_hex_str, write_json,
+    append_jsonl, attach_conduit, build_conduit_enforcement, conduit_bypass_requested,
+    load_json_or, parse_bool, parse_u64, read_json, scoped_state_root, sha256_hex_str, write_json,
     write_receipt,
 };
 use crate::{clean, parse_args};
@@ -71,10 +72,6 @@ fn emit(root: &Path, payload: Value) -> i32 {
     }
 }
 
-fn load_json_or(root: &Path, rel: &str, fallback: Value) -> Value {
-    read_json(&root.join(rel)).unwrap_or(fallback)
-}
-
 fn status(root: &Path) -> Value {
     json!({
         "ok": true,
@@ -101,11 +98,7 @@ fn conduit_enforcement(
     strict: bool,
     action: &str,
 ) -> Value {
-    let bypass_requested = parse_bool(parsed.flags.get("bypass"), false)
-        || parse_bool(parsed.flags.get("direct"), false)
-        || parse_bool(parsed.flags.get("unsafe-client-route"), false)
-        || parse_bool(parsed.flags.get("client-bypass"), false);
-    let ok = !bypass_requested;
+    let bypass_requested = conduit_bypass_requested(&parsed.flags);
     let claim_rows = claim_ids_for_action(action)
         .iter()
         .map(|id| {
@@ -119,40 +112,17 @@ fn conduit_enforcement(
             })
         })
         .collect::<Vec<_>>();
-    let mut out = json!({
-        "ok": if strict { ok } else { true },
-        "type": "company_conduit_enforcement",
-        "action": clean(action, 120),
-        "required_path": "core/layer0/ops/company_plane",
-        "bypass_requested": bypass_requested,
-        "errors": if ok { Value::Array(Vec::new()) } else { json!(["conduit_bypass_rejected"]) },
-        "claim_evidence": claim_rows
-    });
-    out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
-    let _ = append_jsonl(
-        &state_root(root).join("conduit").join("history.jsonl"),
-        &out,
-    );
-    out
-}
-
-fn attach_conduit(mut payload: Value, conduit: Option<&Value>) -> Value {
-    if let Some(gate) = conduit {
-        payload["conduit_enforcement"] = gate.clone();
-        let mut claims = payload
-            .get("claim_evidence")
-            .and_then(Value::as_array)
-            .cloned()
-            .unwrap_or_default();
-        if let Some(rows) = gate.get("claim_evidence").and_then(Value::as_array) {
-            claims.extend(rows.iter().cloned());
-        }
-        if !claims.is_empty() {
-            payload["claim_evidence"] = Value::Array(claims);
-        }
-    }
-    payload["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&payload));
-    payload
+    build_conduit_enforcement(
+        root,
+        STATE_ENV,
+        STATE_SCOPE,
+        strict,
+        action,
+        "company_conduit_enforcement",
+        "core/layer0/ops/company_plane",
+        bypass_requested,
+        claim_rows,
+    )
 }
 
 fn team_slug(raw: &str) -> String {

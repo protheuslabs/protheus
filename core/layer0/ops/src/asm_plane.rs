@@ -2,12 +2,12 @@
 // Layer ownership: core/layer0/ops::asm_plane (authoritative)
 
 use crate::v8_kernel::{
-    parse_bool, parse_u64, read_json, scoped_state_root, sha256_hex_str, write_json, write_receipt,
+    append_jsonl, load_json_or, parse_bool, parse_u64, read_json, scoped_state_root,
+    sha256_hex_str, write_json, write_receipt,
 };
 use crate::{clean, now_iso, parse_args, ParsedArgs};
 use serde_json::{json, Map, Value};
 use std::fs;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
@@ -54,26 +54,6 @@ fn latest_path(root: &Path) -> PathBuf {
 
 fn history_path(root: &Path) -> PathBuf {
     state_root(root).join("history.jsonl")
-}
-
-fn load_json_or(root: &Path, rel: &str, fallback: Value) -> Value {
-    read_json(&root.join(rel)).unwrap_or(fallback)
-}
-
-fn write_jsonl(path: &Path, row: &Value) -> Result<(), String> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|err| format!("create_dir_failed:{}:{err}", parent.display()))?;
-    }
-    let line =
-        serde_json::to_string(row).map_err(|err| format!("encode_jsonl_failed:{err}"))? + "\n";
-    let mut file = fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(path)
-        .map_err(|err| format!("open_jsonl_failed:{}:{err}", path.display()))?;
-    file.write_all(line.as_bytes())
-        .map_err(|err| format!("append_jsonl_failed:{}:{err}", path.display()))
 }
 
 fn print_payload(payload: &Value) {
@@ -433,7 +413,7 @@ fn run_hands_runtime(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
             "manifest_path": manifest_rel,
             "state": state
         });
-        let _ = write_jsonl(&events_path, &event);
+        let _ = append_jsonl(&events_path, &event);
     }
 
     json!({
@@ -652,7 +632,7 @@ fn run_crdt_adapter(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
         "merged": merged_json,
         "provenance": provenance
     });
-    if let Err(err) = write_jsonl(&events_path, &event) {
+    if let Err(err) = append_jsonl(&events_path, &event) {
         errors.push(err);
     }
     let ok = errors.is_empty();

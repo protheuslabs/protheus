@@ -2,7 +2,8 @@
 // Layer ownership: core/layer0/ops::binary_vuln_plane (authoritative)
 
 use crate::v8_kernel::{
-    append_jsonl, parse_bool, read_json, scoped_state_root, sha256_hex_str, write_json,
+    attach_conduit, build_conduit_enforcement, canonical_json_string, conduit_bypass_requested,
+    load_json_or, parse_bool, read_json, scoped_state_root, sha256_hex_str, write_json,
     write_receipt,
 };
 use crate::{clean, parse_args};
@@ -44,28 +45,6 @@ fn print_payload(payload: &Value) {
         serde_json::to_string_pretty(payload)
             .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"encode_failed\"}".to_string())
     );
-}
-
-fn canonicalize_json(value: &Value) -> Value {
-    match value {
-        Value::Object(map) => {
-            let mut keys = map.keys().cloned().collect::<Vec<_>>();
-            keys.sort();
-            let mut out = Map::new();
-            for key in keys {
-                if let Some(v) = map.get(&key) {
-                    out.insert(key, canonicalize_json(v));
-                }
-            }
-            Value::Object(out)
-        }
-        Value::Array(rows) => Value::Array(rows.iter().map(canonicalize_json).collect()),
-        _ => value.clone(),
-    }
-}
-
-fn canonical_json_string(value: &Value) -> String {
-    serde_json::to_string(&canonicalize_json(value)).unwrap_or_else(|_| "null".to_string())
 }
 
 fn normalize_rulepack_name(raw: &str) -> String {
@@ -131,10 +110,6 @@ fn emit(root: &Path, payload: Value) -> i32 {
     }
 }
 
-fn load_json_or(root: &Path, rel: &str, fallback: Value) -> Value {
-    read_json(&root.join(rel)).unwrap_or(fallback)
-}
-
 fn status(root: &Path) -> Value {
     let installed_count = fs::read_dir(installed_rulepack_dir(root))
         .ok()
@@ -175,11 +150,7 @@ fn conduit_enforcement(
     strict: bool,
     action: &str,
 ) -> Value {
-    let bypass_requested = parse_bool(parsed.flags.get("bypass"), false)
-        || parse_bool(parsed.flags.get("direct"), false)
-        || parse_bool(parsed.flags.get("unsafe-client-route"), false)
-        || parse_bool(parsed.flags.get("client-bypass"), false);
-    let ok = !bypass_requested;
+    let bypass_requested = conduit_bypass_requested(&parsed.flags);
     let mut claim_rows = vec![
         json!({
             "id": "V6-BINVULN-001.2",
@@ -218,40 +189,17 @@ fn conduit_enforcement(
             }
         }));
     }
-    let mut out = json!({
-        "ok": if strict { ok } else { true },
-        "type": "binary_vuln_conduit_enforcement",
-        "action": clean(action, 120),
-        "required_path": "core/layer0/ops/binary_vuln_plane",
-        "bypass_requested": bypass_requested,
-        "errors": if ok { Value::Array(Vec::new()) } else { json!(["conduit_bypass_rejected"]) },
-        "claim_evidence": claim_rows
-    });
-    out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
-    let _ = append_jsonl(
-        &state_root(root).join("conduit").join("history.jsonl"),
-        &out,
-    );
-    out
-}
-
-fn attach_conduit(mut payload: Value, conduit: Option<&Value>) -> Value {
-    if let Some(gate) = conduit {
-        payload["conduit_enforcement"] = gate.clone();
-        let mut claims = payload
-            .get("claim_evidence")
-            .and_then(Value::as_array)
-            .cloned()
-            .unwrap_or_default();
-        if let Some(rows) = gate.get("claim_evidence").and_then(Value::as_array) {
-            claims.extend(rows.iter().cloned());
-        }
-        if !claims.is_empty() {
-            payload["claim_evidence"] = Value::Array(claims);
-        }
-    }
-    payload["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&payload));
-    payload
+    build_conduit_enforcement(
+        root,
+        STATE_ENV,
+        STATE_SCOPE,
+        strict,
+        action,
+        "binary_vuln_conduit_enforcement",
+        "core/layer0/ops/binary_vuln_plane",
+        bypass_requested,
+        claim_rows,
+    )
 }
 
 fn resolve_rel_or_abs(root: &Path, rel_or_abs: &str) -> PathBuf {

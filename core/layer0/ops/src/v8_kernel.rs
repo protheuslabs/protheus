@@ -4,6 +4,7 @@
 use crate::{clean, deterministic_receipt_hash, now_iso};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
+use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -85,7 +86,20 @@ pub fn parse_bool(raw: Option<&String>, fallback: bool) -> bool {
     }
 }
 
+pub fn parse_bool_str(raw: Option<&str>, fallback: bool) -> bool {
+    match raw.map(|v| v.trim().to_ascii_lowercase()) {
+        Some(v) if matches!(v.as_str(), "1" | "true" | "yes" | "on") => true,
+        Some(v) if matches!(v.as_str(), "0" | "false" | "no" | "off") => false,
+        _ => fallback,
+    }
+}
+
 pub fn parse_f64(raw: Option<&String>, fallback: f64) -> f64 {
+    raw.and_then(|v| v.trim().parse::<f64>().ok())
+        .unwrap_or(fallback)
+}
+
+pub fn parse_f64_str(raw: Option<&str>, fallback: f64) -> f64 {
     raw.and_then(|v| v.trim().parse::<f64>().ok())
         .unwrap_or(fallback)
 }
@@ -95,9 +109,112 @@ pub fn parse_u64(raw: Option<&String>, fallback: u64) -> u64 {
         .unwrap_or(fallback)
 }
 
+pub fn parse_u64_str(raw: Option<&str>, fallback: u64) -> u64 {
+    raw.and_then(|v| v.trim().parse::<u64>().ok())
+        .unwrap_or(fallback)
+}
+
 pub fn parse_i64(raw: Option<&String>, fallback: i64) -> i64 {
     raw.and_then(|v| v.trim().parse::<i64>().ok())
         .unwrap_or(fallback)
+}
+
+pub fn parse_i64_str(raw: Option<&str>, fallback: i64) -> i64 {
+    raw.and_then(|v| v.trim().parse::<i64>().ok())
+        .unwrap_or(fallback)
+}
+
+pub fn parse_flag(argv: &[String], key: &str) -> Option<String> {
+    let needle = format!("--{key}");
+    for idx in 0..argv.len() {
+        let token = &argv[idx];
+        if token == &needle {
+            return argv.get(idx + 1).cloned();
+        }
+        let prefix = format!("{needle}=");
+        if let Some(value) = token.strip_prefix(&prefix) {
+            return Some(value.to_string());
+        }
+    }
+    None
+}
+
+pub fn load_json_or(root: &Path, rel: &str, fallback: Value) -> Value {
+    read_json(&root.join(rel)).unwrap_or(fallback)
+}
+
+pub fn canonicalize_json(value: &Value) -> Value {
+    match value {
+        Value::Object(map) => {
+            let mut keys = map.keys().cloned().collect::<Vec<_>>();
+            keys.sort();
+            let mut out = serde_json::Map::new();
+            for key in keys {
+                if let Some(v) = map.get(&key) {
+                    out.insert(key, canonicalize_json(v));
+                }
+            }
+            Value::Object(out)
+        }
+        Value::Array(rows) => Value::Array(rows.iter().map(canonicalize_json).collect()),
+        _ => value.clone(),
+    }
+}
+
+pub fn canonical_json_string(value: &Value) -> String {
+    serde_json::to_string(&canonicalize_json(value)).unwrap_or_else(|_| "null".to_string())
+}
+
+pub fn conduit_bypass_requested(flags: &HashMap<String, String>) -> bool {
+    parse_bool(flags.get("bypass"), false)
+        || parse_bool(flags.get("direct"), false)
+        || parse_bool(flags.get("unsafe-client-route"), false)
+        || parse_bool(flags.get("client-bypass"), false)
+}
+
+pub fn build_conduit_enforcement(
+    root: &Path,
+    env_key: &str,
+    scope: &str,
+    strict: bool,
+    action: &str,
+    receipt_type: &str,
+    required_path: &str,
+    bypass_requested: bool,
+    claim_evidence: Vec<Value>,
+) -> Value {
+    let ok = !bypass_requested;
+    let mut out = json!({
+        "ok": if strict { ok } else { true },
+        "type": clean(receipt_type, 120),
+        "action": clean(action, 120),
+        "required_path": clean(required_path, 240),
+        "bypass_requested": bypass_requested,
+        "errors": if ok { Value::Array(Vec::new()) } else { json!(["conduit_bypass_rejected"]) },
+        "claim_evidence": claim_evidence
+    });
+    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+    let _ = append_jsonl(&scoped_state_root(root, env_key, scope).join("conduit").join("history.jsonl"), &out);
+    out
+}
+
+pub fn attach_conduit(mut payload: Value, conduit: Option<&Value>) -> Value {
+    if let Some(gate) = conduit {
+        payload["conduit_enforcement"] = gate.clone();
+        let mut claims = payload
+            .get("claim_evidence")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        if let Some(rows) = gate.get("claim_evidence").and_then(Value::as_array) {
+            claims.extend(rows.iter().cloned());
+        }
+        if !claims.is_empty() {
+            payload["claim_evidence"] = Value::Array(claims);
+        }
+    }
+    payload["receipt_hash"] = Value::String(deterministic_receipt_hash(&payload));
+    payload
 }
 
 pub fn sha256_hex_bytes(bytes: &[u8]) -> String {
