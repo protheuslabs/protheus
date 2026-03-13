@@ -76,6 +76,7 @@ fn v8_batch23_supersession_enforces_conduit_gate_with_trace() {
     std::env::set_var("BINARY_BLOB_VAULT_SIGNING_KEY", "batch23-blob-key");
 
     allow(root, "allow:blob:*");
+    assert!(has_claim(&latest("directive_kernel", root), "V8-DIRECTIVES-001.1"));
     let vault_before = latest("directive_kernel", root)
         .get("entry")
         .cloned()
@@ -122,6 +123,7 @@ fn v8_batch23_supersession_enforces_conduit_gate_with_trace() {
         ),
         0
     );
+    assert!(has_claim(&latest("directive_kernel", root), "V8-DIRECTIVES-001.1"));
 
     assert_eq!(
         binary_blob_runtime::run(root, &["load".to_string(), "--module=demo".to_string()]),
@@ -264,6 +266,75 @@ fn v8_batch23_directive_migrate_status_surface_integrity() {
     );
 
     std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
+}
+
+#[test]
+fn v8_batch40_blob_migrate_and_status_emit_dashboard_metrics() {
+    let _guard = env_guard();
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let root = tmp.path();
+    std::env::remove_var("BINARY_BLOB_RUNTIME_STATE_ROOT");
+    std::env::remove_var("DIRECTIVE_KERNEL_STATE_ROOT");
+    std::env::set_var("DIRECTIVE_KERNEL_SIGNING_KEY", "batch40-signing-key");
+    std::env::set_var("BINARY_BLOB_VAULT_SIGNING_KEY", "batch40-blob-key");
+
+    allow(root, "allow:blob:*");
+    let module_path = root.join("demo_module.rs");
+    fs::write(&module_path, "pub fn demo() -> u64 { 99 }\n").expect("write module");
+
+    assert_eq!(
+        binary_blob_runtime::run(
+            root,
+            &[
+                "migrate".to_string(),
+                "--modules=demo".to_string(),
+                format!("--module-path={}", module_path.display()),
+                "--apply=1".to_string(),
+            ],
+        ),
+        0
+    );
+    let migrate_latest = latest("binary_blob_runtime", root);
+    assert_eq!(
+        migrate_latest.get("type").and_then(Value::as_str),
+        Some("binary_blob_runtime_migrate")
+    );
+    assert!(has_claim(&migrate_latest, "V8-BINARY-BLOB-001.6"));
+    assert!(migrate_latest
+        .get("dashboard")
+        .and_then(|v| v.get("blob_health"))
+        .and_then(|v| v.get("healthy_modules"))
+        .and_then(Value::as_u64)
+        .map(|v| v >= 1)
+        .unwrap_or(false));
+
+    assert_eq!(binary_blob_runtime::run(root, &["dashboard".to_string()]), 0);
+    let status_latest = latest("binary_blob_runtime", root);
+    assert_eq!(
+        status_latest.get("type").and_then(Value::as_str),
+        Some("binary_blob_runtime_status")
+    );
+    assert!(has_claim(&status_latest, "V8-BINARY-BLOB-001.6"));
+    assert!(status_latest
+        .get("dashboard")
+        .and_then(|v| v.get("memory_savings"))
+        .and_then(|v| v.get("source_bytes_total"))
+        .and_then(Value::as_u64)
+        .map(|v| v > 0)
+        .unwrap_or(false));
+    assert_eq!(
+        status_latest
+            .get("dashboard")
+            .and_then(|v| v.get("directive_compliance"))
+            .and_then(|v| v.get("directive_integrity_ok"))
+            .and_then(Value::as_bool),
+        Some(true)
+    );
+
+    std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
+    std::env::remove_var("BINARY_BLOB_VAULT_SIGNING_KEY");
+    std::env::remove_var("BINARY_BLOB_RUNTIME_STATE_ROOT");
+    std::env::remove_var("DIRECTIVE_KERNEL_STATE_ROOT");
 }
 
 #[test]
@@ -442,6 +513,7 @@ fn v8_batch23_compliance_and_rsi_bridge_emit_denial_trace_and_rollback() {
         ),
         0
     );
+    assert!(has_claim(&latest("directive_kernel", root), "V8-DIRECTIVES-001.2"));
 
     assert_eq!(
         directive_kernel::run(
@@ -466,6 +538,7 @@ fn v8_batch23_compliance_and_rsi_bridge_emit_denial_trace_and_rollback() {
             .map(|rows| !rows.is_empty()),
         Some(true)
     );
+    assert!(has_claim(&compliance_latest, "V8-DIRECTIVES-001.3"));
 
     assert_eq!(
         directive_kernel::run(
@@ -487,6 +560,7 @@ fn v8_batch23_compliance_and_rsi_bridge_emit_denial_trace_and_rollback() {
         bridge_latest.get("allowed").and_then(Value::as_bool),
         Some(false)
     );
+    assert!(has_claim(&bridge_latest, "V8-DIRECTIVES-001.4"));
 
     let history = read_jsonl(
         &root

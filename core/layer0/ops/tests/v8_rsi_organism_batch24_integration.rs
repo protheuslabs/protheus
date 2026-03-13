@@ -102,7 +102,7 @@ fn v8_batch24_directive_dashboard_migration_surface_is_core_authoritative() {
             .map(|v| v >= 1),
         Some(true)
     );
-    assert_claim(&latest, "v8_directives_001_6");
+    assert_claim(&latest, "V8-DIRECTIVES-001.5");
 
     std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
 }
@@ -135,10 +135,10 @@ fn v8_batch24_rsi_ignition_writes_recursive_metacognitive_and_proactive_artifact
         ),
         0
     );
-    assert_claim(&latest("rsi_ignition", root), "v8_rsi_ignition_001");
+    assert_claim(&latest("rsi_ignition", root), "V8-RSI-IGNITION-001");
 
     assert_eq!(rsi_ignition::run(root, &["reflect".to_string()]), 0);
-    assert_claim(&latest("rsi_ignition", root), "v8_rsi_ignition_002");
+    assert_claim(&latest("rsi_ignition", root), "V8-RSI-IGNITION-002");
 
     assert_eq!(
         rsi_ignition::run(
@@ -152,7 +152,7 @@ fn v8_batch24_rsi_ignition_writes_recursive_metacognitive_and_proactive_artifact
         ),
         0
     );
-    assert_claim(&latest("rsi_ignition", root), "v8_rsi_ignition_003");
+    assert_claim(&latest("rsi_ignition", root), "V8-RSI-IGNITION-003");
 
     assert_eq!(
         rsi_ignition::run(
@@ -168,7 +168,7 @@ fn v8_batch24_rsi_ignition_writes_recursive_metacognitive_and_proactive_artifact
         ),
         0
     );
-    assert_claim(&latest("rsi_ignition", root), "v8_rsi_ignition_004");
+    assert_claim(&latest("rsi_ignition", root), "V8-RSI-IGNITION-004");
 
     assert!(jsonl_count(&root.join("core/local/state/ops/rsi_ignition/recursive_loop.jsonl")) >= 1);
     assert!(

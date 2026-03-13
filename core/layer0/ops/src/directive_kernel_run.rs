@@ -53,7 +53,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         let vault = load_vault(root);
         let (signature_total, signature_valid) = signature_counts(&vault);
         let integrity = directive_vault_integrity(root);
-        let mut out = json!({
+        return emit_receipt(root, json!({
             "ok": integrity.get("ok").and_then(Value::as_bool).unwrap_or(false),
             "type": "directive_kernel_status",
             "lane": "core/layer0/ops",
@@ -66,14 +66,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             },
             "integrity": integrity,
             "latest": read_json(&latest_path(root))
-        });
-        out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
-        print_json(&out);
-        return if out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
-            0
-        } else {
-            2
-        };
+        }));
     }
 
     if status_dashboard {
@@ -151,7 +144,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 "layer_map": ["0","1","2","client","app"],
                 "claim_evidence": [
                     {
-                        "id": "v8_directives_001_6",
+                        "id": "V8-DIRECTIVES-001.5",
                         "claim": "directive_migration_and_visibility_dashboard_are_available_as_one_command_core_paths",
                         "evidence": {
                             "prime_count": prime_count,
@@ -195,7 +188,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                     "signing_env": SIGNING_ENV,
                     "claim_evidence": [
                         {
-                            "id": "v8_directives_001_1",
+                            "id": "V8-DIRECTIVES-001.1",
                             "claim": "prime_directives_are_append_only_signed_objects_not_inline_mutations",
                             "evidence": {"accepted": false, "reason": "missing_signing_key"}
                         }
@@ -224,7 +217,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                         "error": clean(&err, 240),
                         "claim_evidence": [
                             {
-                                "id": "v8_directives_001_1",
+                                "id": "V8-DIRECTIVES-001.1",
                                 "claim": "prime_directives_are_append_only_signed_objects_not_inline_mutations",
                                 "evidence": {"error": clean(&err, 240)}
                             }
@@ -244,7 +237,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 "layer_map": ["0","1","2"],
                 "claim_evidence": [
                     {
-                        "id": "v8_directives_001_1",
+                        "id": "V8-DIRECTIVES-001.1",
                         "claim": "prime_directives_are_append_only_signed_objects_not_inline_mutations",
                         "evidence": {
                             "entry_id": entry.get("id").cloned().unwrap_or(Value::Null),
@@ -281,7 +274,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                     "layer_map": ["0","1","2"],
                     "claim_evidence": [
                         {
-                            "id": "v8_directives_001_2",
+                            "id": "V8-DIRECTIVES-001.2",
                             "claim": "derived_directives_require_parent_linkage_and_fail_on_inheritance_conflict",
                             "evidence": {"accepted": false, "reason": "missing_signing_key"}
                         }
@@ -303,7 +296,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                     "layer_map": ["0","1","2"],
                     "claim_evidence": [
                         {
-                            "id": "v8_directives_001_2",
+                            "id": "V8-DIRECTIVES-001.2",
                             "claim": "derived_directives_require_parent_linkage_and_fail_on_inheritance_conflict",
                             "evidence": {"accepted": false, "reason": "parent_not_found"}
                         }
@@ -326,7 +319,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                     "layer_map": ["0","1","2"],
                     "claim_evidence": [
                         {
-                            "id": "v8_directives_001_2",
+                            "id": "V8-DIRECTIVES-001.2",
                             "claim": "derived_directives_require_parent_linkage_and_fail_on_inheritance_conflict",
                             "evidence": {"accepted": false, "reason": "inheritance_conflict"}
                         }
@@ -361,7 +354,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                         "error": clean(&err, 240),
                         "claim_evidence": [
                             {
-                                "id": "v8_directives_001_2",
+                                "id": "V8-DIRECTIVES-001.2",
                                 "claim": "derived_directives_require_parent_linkage_and_fail_on_inheritance_conflict",
                                 "evidence": {"accepted": false, "reason": clean(&err, 240)}
                             }
@@ -392,7 +385,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 "layer_map": ["0","1","2"],
                 "claim_evidence": [
                     {
-                        "id": "v8_directives_001_2",
+                        "id": "V8-DIRECTIVES-001.2",
                         "claim": "derived_directives_require_parent_linkage_and_fail_on_inheritance_conflict",
                         "evidence": {"accepted": true, "parent_id": parent_id}
                     }
@@ -425,7 +418,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                     "signing_env": SIGNING_ENV,
                     "claim_evidence": [
                         {
-                            "id": "v8_directives_001_1",
+                            "id": "V8-DIRECTIVES-001.1",
                             "claim": "prime_directives_are_append_only_signed_objects_with_supersession_not_inline_edits",
                             "evidence": {"accepted": false, "reason": "missing_signing_key"}
                         }
@@ -497,7 +490,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 "layer_map": ["0","1","2"],
                 "claim_evidence": [
                     {
-                        "id": "v8_directives_001_1",
+                        "id": "V8-DIRECTIVES-001.1",
                         "claim": "prime_directives_are_append_only_signed_objects_with_supersession_not_inline_edits",
                         "evidence": {
                             "target_id": target_id,
@@ -532,7 +525,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 "layer_map": ["0","1","2"],
                 "claim_evidence": [
                     {
-                        "id": "v8_directives_001_3",
+                        "id": "V8-DIRECTIVES-001.3",
                         "claim": "all_actions_must_pass_directive_compliance_gate_before_execution",
                         "evidence": {
                             "action": clean(action, 220),
@@ -592,7 +585,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 "layer_map": ["0","1","2","3"],
                 "claim_evidence": [
                     {
-                        "id": "v8_directives_001_4",
+                        "id": "V8-DIRECTIVES-001.4",
                         "claim": "rsi_and_inversion_mutations_are_bound_to_prime_and_derived_directive_checks",
                         "evidence": {"allowed": allowed, "proposal": clean(proposal, 220)}
                     }
@@ -616,7 +609,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                     "layer_map": ["0","1","2","client","app"],
                     "claim_evidence": [
                         {
-                            "id": "v8_directives_001_5",
+                            "id": "V8-DIRECTIVES-001.5",
                             "claim": "directive_migration_and_status_are_available_as_one_command_core_paths",
                             "evidence": {"apply": apply, "ok": false, "reason": "missing_signing_key"}
                         }
@@ -645,7 +638,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 "layer_map": ["0","1","2","client","app"],
                 "claim_evidence": [
                     {
-                        "id": "v8_directives_001_5",
+                        "id": "V8-DIRECTIVES-001.5",
                         "claim": "directive_migration_and_status_are_available_as_one_command_core_paths",
                         "evidence": {"apply": apply, "ok": ok}
                     }
