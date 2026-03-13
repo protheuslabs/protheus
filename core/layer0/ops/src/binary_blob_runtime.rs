@@ -3,8 +3,8 @@
 
 use crate::directive_kernel;
 use crate::v8_kernel::{
-    parse_bool, parse_f64, print_json, read_json, scoped_state_root, sha256_file, sha256_hex_str,
-    write_json, write_receipt,
+    keyed_digest_hex, parse_bool, parse_f64, print_json, read_json, scoped_state_root, sha256_file,
+    sha256_hex_str, write_json, write_receipt,
 };
 use crate::{clean, now_iso, parse_args};
 use memmap2::MmapOptions;
@@ -15,6 +15,7 @@ use std::path::{Path, PathBuf};
 
 const STATE_ENV: &str = "BINARY_BLOB_RUNTIME_STATE_ROOT";
 const STATE_SCOPE: &str = "binary_blob_runtime";
+const BLOB_SIGNING_ENV: &str = "BINARY_BLOB_VAULT_SIGNING_KEY";
 #[path = "binary_blob_runtime_run.rs"]
 mod binary_blob_runtime_run;
 
@@ -36,6 +37,158 @@ fn snapshots_dir(root: &Path) -> PathBuf {
 
 fn mutation_history_path(root: &Path) -> PathBuf {
     state_root(root).join("mutation_history.jsonl")
+}
+
+fn prime_blob_vault_path(root: &Path) -> PathBuf {
+    state_root(root).join("prime_blob_vault.json")
+}
+
+fn default_prime_blob_vault() -> Value {
+    json!({
+        "version": "1.0",
+        "entries": [],
+        "chain_head": "genesis",
+        "created_at": now_iso()
+    })
+}
+
+fn load_prime_blob_vault(root: &Path) -> Value {
+    read_json(&prime_blob_vault_path(root)).unwrap_or_else(default_prime_blob_vault)
+}
+
+fn store_prime_blob_vault(root: &Path, vault: &Value) -> Result<(), String> {
+    write_json(&prime_blob_vault_path(root), vault)
+}
+
+fn blob_vault_secret() -> Option<String> {
+    std::env::var(BLOB_SIGNING_ENV)
+        .ok()
+        .map(|v| clean(v, 1024))
+        .filter(|v| !v.is_empty())
+        .or_else(|| {
+            std::env::var("DIRECTIVE_KERNEL_SIGNING_KEY")
+                .ok()
+                .map(|v| clean(v, 1024))
+                .filter(|v| !v.is_empty())
+        })
+}
+
+fn blob_signature_payload(entry: &Value) -> Value {
+    json!({
+        "entry_id": entry.get("entry_id").cloned().unwrap_or(Value::Null),
+        "module": entry.get("module").cloned().unwrap_or(Value::Null),
+        "blob_id": entry.get("blob_id").cloned().unwrap_or(Value::Null),
+        "source_hash": entry.get("source_hash").cloned().unwrap_or(Value::Null),
+        "blob_hash": entry.get("blob_hash").cloned().unwrap_or(Value::Null),
+        "policy_hash": entry.get("policy_hash").cloned().unwrap_or(Value::Null),
+        "mode": entry.get("mode").cloned().unwrap_or(Value::Null),
+        "shadow_pointer": entry.get("shadow_pointer").cloned().unwrap_or(Value::Null),
+        "rollback_pointer": entry.get("rollback_pointer").cloned().unwrap_or(Value::Null),
+        "prev_hash": entry.get("prev_hash").cloned().unwrap_or(Value::Null),
+        "ts": entry.get("ts").cloned().unwrap_or(Value::Null)
+    })
+}
+
+fn sign_blob_entry(entry: &Value) -> String {
+    let payload = blob_signature_payload(entry);
+    let key = blob_vault_secret().unwrap_or_default();
+    if key.is_empty() {
+        format!(
+            "unsigned:{}",
+            sha256_hex_str(&serde_json::to_string(&payload).unwrap_or_default())
+        )
+    } else {
+        format!("sig:{}", keyed_digest_hex(&key, &payload))
+    }
+}
+
+fn verify_blob_entry_signature(entry: &Value) -> bool {
+    let sig = entry
+        .get("signature")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    if sig.is_empty() {
+        return false;
+    }
+    let payload = blob_signature_payload(entry);
+    if let Some(raw) = sig.strip_prefix("unsigned:") {
+        return raw.eq_ignore_ascii_case(&sha256_hex_str(
+            &serde_json::to_string(&payload).unwrap_or_default(),
+        ));
+    }
+    if let Some(raw) = sig.strip_prefix("sig:") {
+        let Some(key) = blob_vault_secret() else {
+            return false;
+        };
+        return raw.eq_ignore_ascii_case(&keyed_digest_hex(&key, &payload));
+    }
+    false
+}
+
+fn append_prime_blob_vault_entry(root: &Path, snapshot: &Value) -> Result<Value, String> {
+    let mut vault = load_prime_blob_vault(root);
+    if !vault.is_object() {
+        vault = default_prime_blob_vault();
+    }
+    let obj = vault
+        .as_object_mut()
+        .ok_or_else(|| "blob_vault_not_object".to_string())?;
+    let prev_hash = obj
+        .get("chain_head")
+        .and_then(Value::as_str)
+        .unwrap_or("genesis")
+        .to_string();
+
+    let mut entry = json!({
+        "entry_id": format!("blobv_{}", &sha256_hex_str(&format!("{}:{}", now_iso(), snapshot.get("blob_id").and_then(Value::as_str).unwrap_or("unknown")))[..16]),
+        "module": snapshot.get("module").cloned().unwrap_or(Value::Null),
+        "blob_id": snapshot.get("blob_id").cloned().unwrap_or(Value::Null),
+        "source_hash": snapshot.get("source_hash").cloned().unwrap_or(Value::Null),
+        "blob_hash": snapshot.get("blob_hash").cloned().unwrap_or(Value::Null),
+        "policy_hash": snapshot.get("policy_hash").cloned().unwrap_or(Value::Null),
+        "mode": snapshot.get("mode").cloned().unwrap_or(Value::Null),
+        "shadow_pointer": snapshot.get("shadow_pointer").cloned().unwrap_or(Value::Null),
+        "rollback_pointer": snapshot.get("rollback_pointer").cloned().unwrap_or(Value::Null),
+        "prev_hash": prev_hash,
+        "ts": now_iso()
+    });
+    let signature = sign_blob_entry(&entry);
+    entry["signature"] = Value::String(signature);
+    let entry_hash = sha256_hex_str(&serde_json::to_string(&entry).unwrap_or_default());
+    entry["entry_hash"] = Value::String(entry_hash.clone());
+
+    if !obj.get("entries").map(Value::is_array).unwrap_or(false) {
+        obj.insert("entries".to_string(), Value::Array(Vec::new()));
+    }
+    obj.get_mut("entries")
+        .and_then(Value::as_array_mut)
+        .expect("entries_array")
+        .push(entry.clone());
+    obj.insert("chain_head".to_string(), Value::String(entry_hash));
+    store_prime_blob_vault(root, &vault)?;
+    Ok(entry)
+}
+
+fn find_prime_blob_entry(root: &Path, module: &str, blob_id: &str) -> Option<Value> {
+    let vault = load_prime_blob_vault(root);
+    let entries = vault.get("entries").and_then(Value::as_array)?;
+    entries
+        .iter()
+        .rev()
+        .find(|row| {
+            row.get("module")
+                .and_then(Value::as_str)
+                .map(|v| v == module)
+                .unwrap_or(false)
+                && row
+                    .get("blob_id")
+                    .and_then(Value::as_str)
+                    .map(|v| v == blob_id)
+                    .unwrap_or(false)
+        })
+        .cloned()
 }
 
 fn normalize_module(raw: Option<&String>) -> String {
@@ -170,7 +323,7 @@ fn settle_one(root: &Path, parsed: &crate::ParsedArgs, module: &str) -> Result<V
         &sha256_hex_str(&now_iso())[..16]
     );
 
-    let snapshot = json!({
+    let mut snapshot = json!({
         "module": module,
         "blob_id": blob_id,
         "source_path": source_path.display().to_string(),
@@ -187,6 +340,8 @@ fn settle_one(root: &Path, parsed: &crate::ParsedArgs, module: &str) -> Result<V
     });
 
     if apply {
+        let vault_entry = append_prime_blob_vault_entry(root, &snapshot)?;
+        snapshot["prime_blob_vault_entry"] = vault_entry.clone();
         write_json(&snapshot_path, &snapshot)?;
         active.insert(
             module.to_string(),
@@ -197,6 +352,7 @@ fn settle_one(root: &Path, parsed: &crate::ParsedArgs, module: &str) -> Result<V
                 "policy_hash": snapshot.get("policy_hash").cloned().unwrap_or(Value::Null),
                 "source_hash": snapshot.get("source_hash").cloned().unwrap_or(Value::Null),
                 "blob_hash": snapshot.get("blob_hash").cloned().unwrap_or(Value::Null),
+                "prime_blob_vault_entry_id": vault_entry.get("entry_id").cloned().unwrap_or(Value::Null),
                 "previous": snapshot.get("previous").cloned().unwrap_or(Value::Null),
                 "shadow_pointer": shadow_pointer,
                 "rollback_pointer": rollback_pointer,
@@ -264,6 +420,11 @@ fn load_and_verify(root: &Path, module: &str) -> Result<Value, String> {
         .and_then(Value::as_str)
         .unwrap_or("")
         .to_string();
+    let expected_blob_id = snapshot
+        .get("blob_id")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
     let current_policy_hash = directive_kernel::directive_vault_hash(root);
 
     if source_hash != expected_source_hash {
@@ -280,6 +441,29 @@ fn load_and_verify(root: &Path, module: &str) -> Result<Value, String> {
         return Err("policy_hash_mismatch".to_string());
     }
 
+    let Some(vault_entry) = find_prime_blob_entry(root, module, &expected_blob_id) else {
+        return Err("prime_blob_vault_entry_missing".to_string());
+    };
+    if !verify_blob_entry_signature(&vault_entry) {
+        return Err("prime_blob_vault_signature_invalid".to_string());
+    }
+    if vault_entry
+        .get("policy_hash")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        != expected_policy_hash
+    {
+        return Err("prime_blob_vault_policy_mismatch".to_string());
+    }
+    if vault_entry
+        .get("blob_hash")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        != expected_blob_hash
+    {
+        return Err("prime_blob_vault_blob_hash_mismatch".to_string());
+    }
+
     Ok(json!({
         "module": module,
         "snapshot_path": snapshot_path.display().to_string(),
@@ -288,6 +472,8 @@ fn load_and_verify(root: &Path, module: &str) -> Result<Value, String> {
         "source_hash": source_hash,
         "blob_hash": blob_hash,
         "policy_hash": current_policy_hash,
+        "prime_blob_vault_entry_id": vault_entry.get("entry_id").cloned().unwrap_or(Value::Null),
+        "prime_blob_vault_signature_verified": true,
         "blob_first_bytes_hex": hex::encode(read_first_bytes(&blob_path, 16)?),
         "verified": true
     }))

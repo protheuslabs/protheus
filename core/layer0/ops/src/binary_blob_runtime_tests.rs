@@ -11,22 +11,26 @@ fn temp_root(name: &str) -> PathBuf {
     root
 }
 
+fn allow(root: &Path, directive: &str) {
+    std::env::set_var("DIRECTIVE_KERNEL_SIGNING_KEY", "test-sign-key");
+    std::env::set_var("BINARY_BLOB_VAULT_SIGNING_KEY", "blob-test-sign-key");
+    let exit = crate::directive_kernel::run(
+        root,
+        &[
+            "prime-sign".to_string(),
+            format!("--directive={directive}"),
+            "--signer=tester".to_string(),
+        ],
+    );
+    assert_eq!(exit, 0);
+}
+
 #[test]
 fn settle_writes_blob_and_load_verifies_hashes() {
     std::env::set_var("DIRECTIVE_KERNEL_SIGNING_KEY", "test-sign-key");
     let root = temp_root("settle");
-
-    assert_eq!(
-        crate::directive_kernel::run(
-            &root,
-            &[
-                "prime-sign".to_string(),
-                "--directive=allow:blob_mutate".to_string(),
-                "--signer=tester".to_string(),
-            ]
-        ),
-        0
-    );
+    allow(&root, "allow:blob:*");
+    allow(&root, "allow:blob_mutate");
 
     let module_path = root.join("module.rs");
     fs::write(&module_path, "fn a() { 1 + 1; }\n").expect("write");
@@ -48,7 +52,9 @@ fn settle_writes_blob_and_load_verifies_hashes() {
         run(&root, &["load".to_string(), "--module=demo".to_string()]),
         0
     );
+    assert_eq!(run(&root, &["vault-status".to_string()]), 0);
     std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
+    std::env::remove_var("BINARY_BLOB_VAULT_SIGNING_KEY");
     let _ = fs::remove_dir_all(root);
 }
 
@@ -56,17 +62,8 @@ fn settle_writes_blob_and_load_verifies_hashes() {
 fn load_fails_when_blob_is_tampered() {
     std::env::set_var("DIRECTIVE_KERNEL_SIGNING_KEY", "test-sign-key");
     let root = temp_root("tamper");
-    assert_eq!(
-        crate::directive_kernel::run(
-            &root,
-            &[
-                "prime-sign".to_string(),
-                "--directive=allow:blob_mutate".to_string(),
-                "--signer=tester".to_string(),
-            ]
-        ),
-        0
-    );
+    allow(&root, "allow:blob:*");
+    allow(&root, "allow:blob_mutate");
     let module_path = root.join("module.rs");
     fs::write(&module_path, "fn trusted() -> u64 { 7 }\n").expect("write");
     assert_eq!(
@@ -110,5 +107,40 @@ fn load_fails_when_blob_is_tampered() {
         Some("blob_hash_mismatch")
     );
     std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
+    std::env::remove_var("BINARY_BLOB_VAULT_SIGNING_KEY");
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn settle_is_fail_closed_when_directive_gate_denies() {
+    std::env::set_var("DIRECTIVE_KERNEL_SIGNING_KEY", "test-sign-key");
+    let root = temp_root("gate_deny");
+    // No allow:blob:settle rule on purpose.
+    let module_path = root.join("module.rs");
+    fs::write(&module_path, "fn gated() -> bool { true }\n").expect("write");
+    assert_eq!(
+        run(
+            &root,
+            &[
+                "settle".to_string(),
+                "--module=demo".to_string(),
+                format!("--module-path={}", module_path.display()),
+                "--apply=1".to_string()
+            ]
+        ),
+        2
+    );
+    let latest = read_json(&crate::v8_kernel::latest_path(
+        &root,
+        STATE_ENV,
+        STATE_SCOPE,
+    ))
+    .expect("latest");
+    assert_eq!(
+        latest.get("error").and_then(Value::as_str),
+        Some("directive_gate_denied")
+    );
+    std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
+    std::env::remove_var("BINARY_BLOB_VAULT_SIGNING_KEY");
     let _ = fs::remove_dir_all(root);
 }

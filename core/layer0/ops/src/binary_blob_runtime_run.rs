@@ -15,15 +15,30 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
         println!("  protheus-ops binary-blob-runtime settle [--module=<id>] [--module-path=<path>] [--mode=modular|monolithic] [--shadow-swap=1|0] [--apply=1|0]");
         println!("  protheus-ops binary-blob-runtime load [--module=<id>]");
         println!("  protheus-ops binary-blob-runtime mutate [--module=<id>] [--proposal=<text>] [--apply=1|0] [--canary-pass=1|0]");
+        println!("  protheus-ops binary-blob-runtime vault-status");
         println!("  protheus-ops binary-blob-runtime substrate-probe [--prefer=ternary|binary]");
         println!("  protheus-ops binary-blob-runtime debug-access [--module=<id>] [--tamper=1|0] [--apply=1|0]");
         return 0;
     }
 
     if command == "status" {
+        let gate_action = "blob:status";
+        if !directive_kernel::action_allowed(root, gate_action) {
+            return emit(
+                root,
+                json!({
+                    "ok": false,
+                    "type": "binary_blob_runtime_status",
+                    "lane": "core/layer0/ops",
+                    "error": "directive_gate_denied",
+                    "gate_action": gate_action
+                }),
+            );
+        }
         let active = load_active_map(root);
         let modules = active.keys().cloned().collect::<Vec<_>>();
         let policy_hash = directive_kernel::directive_vault_hash(root);
+        let blob_vault = load_prime_blob_vault(root);
         let mut checks = Vec::new();
         for module in &modules {
             let check = load_and_verify(root, module);
@@ -36,6 +51,10 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
             "lane": "core/layer0/ops",
             "active": active,
             "policy_hash": policy_hash,
+            "prime_blob_vault": {
+                "entries": blob_vault.get("entries").and_then(Value::as_array).map(|v| v.len()).unwrap_or(0),
+                "chain_head": blob_vault.get("chain_head").cloned().unwrap_or(Value::String("genesis".to_string()))
+            },
             "verification": checks,
             "claim_evidence": [
                 {
@@ -54,7 +73,57 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
         };
     }
 
+    if command == "vault-status" {
+        let gate_action = "blob:vault-status";
+        if !directive_kernel::action_allowed(root, gate_action) {
+            return emit(
+                root,
+                json!({
+                    "ok": false,
+                    "type": "binary_blob_runtime_vault_status",
+                    "lane": "core/layer0/ops",
+                    "error": "directive_gate_denied",
+                    "gate_action": gate_action
+                }),
+            );
+        }
+        let vault = load_prime_blob_vault(root);
+        let entries = vault
+            .get("entries")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        let signature_valid = entries
+            .iter()
+            .filter(|row| verify_blob_entry_signature(row))
+            .count();
+        return emit(
+            root,
+            json!({
+                "ok": signature_valid == entries.len(),
+                "type": "binary_blob_runtime_vault_status",
+                "lane": "core/layer0/ops",
+                "entry_count": entries.len(),
+                "signature_valid_count": signature_valid,
+                "chain_head": vault.get("chain_head").cloned().unwrap_or(Value::String("genesis".to_string()))
+            }),
+        );
+    }
+
     if command == "migrate" {
+        let gate_action = "blob:migrate";
+        if !directive_kernel::action_allowed(root, gate_action) {
+            return emit(
+                root,
+                json!({
+                    "ok": false,
+                    "type": "binary_blob_runtime_migrate",
+                    "lane": "core/layer0/ops",
+                    "error": "directive_gate_denied",
+                    "gate_action": gate_action
+                }),
+            );
+        }
         let modules = parse_module_list(&parsed.flags);
         let mut settled = Vec::new();
         let mut failures = Vec::new();
@@ -89,6 +158,20 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
 
     if command == "settle" {
         let module = normalize_module(parsed.flags.get("module"));
+        let gate_action = format!("blob:settle:{module}");
+        if !directive_kernel::action_allowed(root, &gate_action) {
+            return emit(
+                root,
+                json!({
+                    "ok": false,
+                    "type": "binary_blob_runtime_settle",
+                    "lane": "core/layer0/ops",
+                    "module": module,
+                    "error": "directive_gate_denied",
+                    "gate_action": gate_action
+                }),
+            );
+        }
         let result = settle_one(root, &parsed, &module);
         match result {
             Ok(detail) => emit(
@@ -129,6 +212,20 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
         }
     } else if command == "load" {
         let module = normalize_module(parsed.flags.get("module"));
+        let gate_action = format!("blob:load:{module}");
+        if !directive_kernel::action_allowed(root, &gate_action) {
+            return emit(
+                root,
+                json!({
+                    "ok": false,
+                    "type": "binary_blob_runtime_load",
+                    "lane": "core/layer0/ops",
+                    "module": module,
+                    "error": "directive_gate_denied",
+                    "gate_action": gate_action
+                }),
+            );
+        }
         match load_and_verify(root, &module) {
             Ok(detail) => emit(
                 root,
@@ -175,8 +272,8 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
             320,
         );
         let apply = parse_bool(parsed.flags.get("apply"), true);
-        let directive_allowed =
-            directive_kernel::action_allowed(root, &format!("blob_mutate:{module}:{proposal}"));
+        let directive_allowed = directive_kernel::action_allowed(root, "blob:mutate")
+            && directive_kernel::action_allowed(root, &format!("blob_mutate:{module}:{proposal}"));
         let canary_pass = parse_bool(parsed.flags.get("canary-pass"), true);
         let sim_regression = parse_f64(parsed.flags.get("sim-regression"), 0.0).max(0.0);
         let allow = directive_allowed && canary_pass && sim_regression <= 0.05;
@@ -244,6 +341,19 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
             }),
         )
     } else if command == "substrate-probe" {
+        let gate_action = "blob:substrate-probe";
+        if !directive_kernel::action_allowed(root, gate_action) {
+            return emit(
+                root,
+                json!({
+                    "ok": false,
+                    "type": "binary_blob_runtime_substrate_probe",
+                    "lane": "core/layer0/ops",
+                    "error": "directive_gate_denied",
+                    "gate_action": gate_action
+                }),
+            );
+        }
         let prefer = clean(
             parsed
                 .flags
@@ -297,6 +407,20 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
         )
     } else if command == "debug-access" {
         let module = normalize_module(parsed.flags.get("module"));
+        let gate_action = format!("blob:debug-access:{module}");
+        if !directive_kernel::action_allowed(root, &gate_action) {
+            return emit(
+                root,
+                json!({
+                    "ok": false,
+                    "type": "binary_blob_runtime_debug_access",
+                    "lane": "core/layer0/ops",
+                    "module": module,
+                    "error": "directive_gate_denied",
+                    "gate_action": gate_action
+                }),
+            );
+        }
         let tamper = parse_bool(parsed.flags.get("tamper"), false);
         let apply = parse_bool(parsed.flags.get("apply"), true);
         let token_verify = verify_debug_token(root);

@@ -45,6 +45,7 @@ fn ignite_requires_directive_gate() {
 fn ignite_mutates_when_allowed() {
     let root = temp_root("allowed");
     allow(&root, "allow:rsi:ignite");
+    allow(&root, "allow:blob:mutate");
     allow(&root, "allow:blob_mutate");
     let exit = run(
         &root,

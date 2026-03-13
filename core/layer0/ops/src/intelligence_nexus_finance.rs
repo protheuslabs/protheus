@@ -1,5 +1,26 @@
 use super::*;
 
+fn health_from_runway(runway_days: f64) -> &'static str {
+    if runway_days <= 0.5 {
+        "critical"
+    } else if runway_days <= 2.0 {
+        "low"
+    } else {
+        "healthy"
+    }
+}
+
+fn render_bar(percent: f64) -> String {
+    let clamped = percent.clamp(0.0, 1.0);
+    let total = 20usize;
+    let fill = ((clamped * total as f64).round() as usize).min(total);
+    format!(
+        "{}{}",
+        "#".repeat(fill),
+        "-".repeat(total.saturating_sub(fill))
+    )
+}
+
 pub(super) fn command_credits_status(root: &Path, parsed: &ParsedArgs) -> i32 {
     let provider = provider_name(parsed.flags.get("provider"));
     let gate_action = format!("credits:status:{provider}");
@@ -84,6 +105,101 @@ pub(super) fn command_credits_status(root: &Path, parsed: &ParsedArgs) -> i32 {
             "runway_days_estimate": runway_days,
             "refresh_minutes": parse_f64(parsed.flags.get("refresh-minutes"), 5.0).clamp(1.0, 60.0),
             "probe_source": probe.get("source").cloned().unwrap_or(Value::Null)
+        }),
+    )
+}
+
+pub(super) fn command_workspace_view(root: &Path) -> i32 {
+    let gate_action = "credits:workspace-view";
+    if !directive_kernel::action_allowed(root, gate_action) {
+        return emit(
+            root,
+            json!({
+                "ok": false,
+                "type": "intelligence_nexus_workspace_view",
+                "lane": "core/layer0/ops",
+                "error": "directive_gate_denied",
+                "gate_action": gate_action
+            }),
+        );
+    }
+
+    let ledger = load_ledger(root);
+    let balances = ledger
+        .get("credit_balances")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let usage = ledger
+        .get("credit_usage")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let limits = ledger
+        .get("spend_limits")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+
+    let mut provider_ids = balances.keys().cloned().collect::<Vec<_>>();
+    for key in usage.keys() {
+        if !provider_ids.iter().any(|v| v == key) {
+            provider_ids.push(key.clone());
+        }
+    }
+    provider_ids.sort();
+
+    let cards = provider_ids
+        .iter()
+        .map(|provider| {
+            let credits_remaining = balances
+                .get(provider)
+                .and_then(Value::as_f64)
+                .unwrap_or(0.0)
+                .max(0.0);
+            let burn_rate = usage
+                .get(provider)
+                .and_then(|v| v.get("burn_rate_per_day"))
+                .and_then(Value::as_f64)
+                .unwrap_or(0.0)
+                .max(0.0);
+            let runway_days = days_left(credits_remaining, burn_rate);
+            let target = limits
+                .get(provider)
+                .and_then(Value::as_f64)
+                .unwrap_or_else(|| credits_remaining.max(100.0))
+                .max(1.0);
+            let remaining_percent = (credits_remaining / target).clamp(0.0, 1.0);
+            let health = health_from_runway(runway_days);
+            json!({
+                "provider": provider,
+                "credits_remaining": credits_remaining,
+                "burn_rate_per_day": burn_rate,
+                "runway_days_estimate": runway_days,
+                "remaining_percent": remaining_percent,
+                "remaining_bar": render_bar(remaining_percent),
+                "health": health
+            })
+        })
+        .collect::<Vec<_>>();
+
+    let critical_count = cards
+        .iter()
+        .filter(|row| row.get("health").and_then(Value::as_str) == Some("critical"))
+        .count();
+
+    emit(
+        root,
+        json!({
+            "ok": true,
+            "type": "intelligence_nexus_workspace_view",
+            "lane": "core/layer0/ops",
+            "workspace_route": "/workspace/keys",
+            "cards": cards,
+            "vitals": {
+                "credit_health": if critical_count > 0 { "degraded" } else { "healthy" },
+                "critical_provider_count": critical_count
+            }
         }),
     )
 }

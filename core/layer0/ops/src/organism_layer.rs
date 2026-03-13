@@ -271,6 +271,7 @@ mod tests {
         let root = temp_root("mutate");
         allow(&root, "allow:organism:mutate");
         allow(&root, "allow:rsi:ignite");
+        allow(&root, "allow:blob:mutate");
         allow(&root, "allow:blob_mutate");
         let exit = run(
             &root,

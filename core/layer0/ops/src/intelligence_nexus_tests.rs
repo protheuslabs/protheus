@@ -246,3 +246,57 @@ fn autobuy_apply_executes_purchase_when_below_threshold() {
     std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
     let _ = fs::remove_dir_all(root);
 }
+
+#[test]
+fn workspace_view_emits_credit_health_cards_with_remaining_bars() {
+    let root = temp_root("workspace_view");
+    allow(&root, "allow:credits:*");
+    assert_eq!(
+        run(
+            &root,
+            &[
+                "credits-status".to_string(),
+                "--provider=openai".to_string(),
+                "--credits=120".to_string(),
+                "--burn-rate-per-day=20".to_string(),
+            ],
+        ),
+        0
+    );
+    assert_eq!(
+        run(
+            &root,
+            &[
+                "credits-status".to_string(),
+                "--provider=anthropic".to_string(),
+                "--credits=10".to_string(),
+                "--burn-rate-per-day=30".to_string(),
+            ],
+        ),
+        0
+    );
+    assert_eq!(run(&root, &["workspace-view".to_string()]), 0);
+
+    let latest = read_json(&latest_path(&root)).expect("latest");
+    assert_eq!(
+        latest.get("type").and_then(Value::as_str),
+        Some("intelligence_nexus_workspace_view")
+    );
+    let cards = latest
+        .get("cards")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    assert!(cards.len() >= 2);
+    assert!(cards.iter().all(|row| row
+        .get("remaining_bar")
+        .and_then(Value::as_str)
+        .map(|bar| bar.len() == 20)
+        .unwrap_or(false)));
+    assert!(cards.iter().any(|row| {
+        row.get("provider").and_then(Value::as_str) == Some("anthropic")
+            && row.get("health").and_then(Value::as_str) == Some("critical")
+    }));
+    std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
+    let _ = fs::remove_dir_all(root);
+}

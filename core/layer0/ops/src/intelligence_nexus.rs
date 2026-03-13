@@ -500,6 +500,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         println!("  protheus-ops intelligence-nexus rotate-key [--provider=<id>] [--key=<value>|--key-env=<ENV>] [--allow-same=1|0] [--apply=1|0]");
         println!("  protheus-ops intelligence-nexus revoke-key [--provider=<id>] [--reason=<text>] [--apply=1|0]");
         println!("  protheus-ops intelligence-nexus credits-status [--provider=<id>] [--credits=<n>] [--burn-rate-per-day=<n>] [--probe-cmd=<shell>]");
+        println!("  protheus-ops intelligence-nexus workspace-view");
         println!("  protheus-ops intelligence-nexus buy-credits [--provider=<id>] [--amount=<n>] [--spend-limit=<n>] [--rail=nexus|stripe|crypto] [--actor=<id>] [--apply=1|0]");
         println!("  protheus-ops intelligence-nexus autobuy-evaluate [--provider=<id>] [--threshold=<n>] [--refill=<n>] [--daily-cap=<n>] [--priority=low|normal|high] [--apply=1|0]");
         return 0;
@@ -516,6 +517,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         "credits-status" | "credit-status" => {
             intelligence_nexus_finance::command_credits_status(root, &parsed)
         }
+        "workspace-view" | "dashboard" => intelligence_nexus_finance::command_workspace_view(root),
         "buy-credits" => intelligence_nexus_finance::command_buy_credits(root, &parsed),
         "autobuy-evaluate" | "auto-buy" => {
             intelligence_nexus_finance::command_autobuy(root, &parsed)
