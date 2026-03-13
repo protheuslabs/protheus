@@ -1,0 +1,50 @@
+{
+  "version": "v1",
+  "kind": "product_builder_contract",
+  "entrypoint": "protheus build \"<goal>\"",
+  "allowed_actions": [
+    "build",
+    "ingress",
+    "template-governance",
+    "status"
+  ],
+  "reasoning_gate": {
+    "auto_allow_risks": [
+      "low"
+    ],
+    "explicit_approval_required_for": [
+      "medium",
+      "high"
+    ]
+  },
+  "ingress": {
+    "providers": [
+      "slack",
+      "telegram"
+    ]
+  },
+  "delivery": {
+    "required_stages": [
+      "research",
+      "plan",
+      "code",
+      "test",
+      "package"
+    ],
+    "required_subagent_tasks": [
+      "code",
+      "test",
+      "docs",
+      "deploy"
+    ]
+  },
+  "template_governance": {
+    "scheme": "builders://",
+    "review_cadence_days": 90
+  },
+  "compatibility": {
+    "min_core": "0.1.0",
+    "max_core": "9.9.9"
+  }
+}
+

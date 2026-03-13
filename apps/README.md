@@ -20,3 +20,4 @@ Default apps:
 - `intelligence-nexus/` — thin API-key vault + credit monitor + governed credit-buy workflow surface over core nexus runtime.
 - `lensmap/` — code-linked documentation and external annotation workflow tooling.
 - `local-rag/` — one-command local RAG + stable memory library app scaffold.
+- `snowball_engine/` — thin snowball orchestration surface over core snowball-plane runtime.

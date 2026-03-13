@@ -100,6 +100,7 @@ pub mod sensory_eyes_intake;
 pub mod settlement_program;
 pub mod shadow_budget_governance;
 pub mod skills_plane;
+pub mod snowball_plane;
 pub mod spawn_broker;
 pub mod spine;
 pub mod state_kernel;

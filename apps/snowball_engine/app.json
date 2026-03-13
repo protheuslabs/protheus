@@ -1,0 +1,14 @@
+{
+  "name": "snowball_engine",
+  "surface": "thin-client",
+  "owner": "core/layer0/ops",
+  "entrypoint": "protheus snowball status",
+  "commands": [
+    "protheus snowball start",
+    "protheus snowball melt-refine",
+    "protheus snowball compact",
+    "protheus snowball backlog-pack",
+    "protheus snowball status"
+  ]
+}
+

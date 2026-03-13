@@ -238,6 +238,11 @@ fn main() {
             let exit = protheus_ops_core::app_plane::run(&cwd, &rest);
             std::process::exit(exit);
         }
+        "snowball-plane" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::snowball_plane::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
         "mcp-plane" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::mcp_plane::run(&cwd, &rest);

@@ -211,6 +211,8 @@ apps/*
 !apps/chat_ui/**
 !apps/code_engineer/
 !apps/code_engineer/**
+!apps/snowball_engine/
+!apps/snowball_engine/**
 
 # Unified local runtime partitions (instance-specific)
 /client/local/

@@ -1,0 +1,36 @@
+{
+  "version": "v1",
+  "kind": "snowball_engine_contract",
+  "entrypoint": "protheus snowball start",
+  "allowed_actions": [
+    "start",
+    "melt-refine",
+    "compact",
+    "backlog-pack",
+    "status",
+    "control"
+  ],
+  "orchestration": {
+    "default_parallel_limit": 3,
+    "max_parallel_limit": 8,
+    "risk_gate_high_requires_allow_flag": true
+  },
+  "melt_refine": {
+    "regression_gate_required": true,
+    "rollback_on_failure": true
+  },
+  "compaction": {
+    "snapshot_profile": "sphere-of-ice",
+    "restore_pointer_required": true
+  },
+  "backlog_pack": {
+    "dependency_ordering_required": true
+  },
+  "operator_controls": [
+    "pause",
+    "resume",
+    "abort",
+    "compact"
+  ]
+}
+

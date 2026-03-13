@@ -2592,6 +2592,51 @@ mod tests {
     }
 
     #[test]
+    fn core_shortcut_routes_build_goal_to_app_plane() {
+        let route = resolve_core_shortcuts(
+            "build",
+            &[
+                "ship".to_string(),
+                "a".to_string(),
+                "receipted".to_string(),
+                "api".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://app-plane");
+        assert_eq!(
+            route.args,
+            vec![
+                "build",
+                "--app=code-engineer",
+                "--goal=ship a receipted api"
+            ]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_snowball_start_to_core_plane() {
+        let route = resolve_core_shortcuts(
+            "snowball",
+            &[
+                "start".to_string(),
+                "--cycle-id=s17".to_string(),
+                "--drops=core-hardening,app-refine".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://snowball-plane");
+        assert_eq!(
+            route.args,
+            vec![
+                "start",
+                "--cycle-id=s17",
+                "--drops=core-hardening,app-refine"
+            ]
+        );
+    }
+
+    #[test]
     fn core_shortcut_routes_orchestrate_agency_to_company_plane() {
         let route = resolve_core_shortcuts(
             "orchestrate",

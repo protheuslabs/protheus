@@ -1173,7 +1173,14 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                 .map(|v| v.trim().to_ascii_lowercase())
                 .unwrap_or_else(|| "status".to_string());
             let normalized_sub = match sub.as_str() {
-                "run" | "status" | "history" | "replay" | "switch-provider" => sub.as_str(),
+                "run"
+                | "status"
+                | "history"
+                | "replay"
+                | "switch-provider"
+                | "build"
+                | "ingress"
+                | "template-governance" => sub.as_str(),
                 _ => "run",
             };
             let app_name = if sub == normalized_sub {
@@ -1202,7 +1209,9 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
             }
             if !plain.is_empty() {
                 let joined = plain.join(" ");
-                if app == "code-engineer" {
+                if app == "code-engineer" && normalized_sub == "build" {
+                    args.push(format!("--goal={joined}"));
+                } else if app == "code-engineer" {
                     args.push(format!("--prompt={joined}"));
                 } else {
                     args.push(format!("--message={joined}"));
@@ -1237,12 +1246,94 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
             })
         }
         "code-engineer" | "code_engineer" => {
-            let mut args = vec!["run".to_string(), "--app=code-engineer".to_string()];
-            if !rest.is_empty() {
-                args.push(format!("--prompt={}", rest.join(" ")));
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "run".to_string());
+            let action = if matches!(
+                sub.as_str(),
+                "run" | "build" | "status" | "ingress" | "template-governance"
+            ) {
+                sub
+            } else {
+                "run".to_string()
+            };
+            let mut args = vec![action.clone(), "--app=code-engineer".to_string()];
+            let mut plain = Vec::<String>::new();
+            let start_idx = if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case(action.as_str()))
+                .unwrap_or(false)
+            {
+                1usize
+            } else {
+                0usize
+            };
+            for token in rest.iter().skip(start_idx) {
+                if token.starts_with("--") {
+                    args.push(token.clone());
+                } else {
+                    plain.push(token.clone());
+                }
+            }
+            if !plain.is_empty() {
+                if action == "build" {
+                    args.push(format!("--goal={}", plain.join(" ")));
+                } else {
+                    args.push(format!("--prompt={}", plain.join(" ")));
+                }
             }
             Some(Route {
                 script_rel: "core://app-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "build" => {
+            let mut args = vec!["build".to_string(), "--app=code-engineer".to_string()];
+            if !rest.is_empty() {
+                let mut plain = Vec::<String>::new();
+                for token in rest {
+                    if token.starts_with("--") {
+                        args.push(token.clone());
+                    } else {
+                        plain.push(token.clone());
+                    }
+                }
+                if !plain.is_empty() {
+                    args.push(format!("--goal={}", plain.join(" ")));
+                }
+            }
+            Some(Route {
+                script_rel: "core://app-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "snowball" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "status".to_string());
+            let first_is_flag = rest.first().map(|v| v.starts_with("--")).unwrap_or(false);
+            let mut args = match sub.as_str() {
+                "start" => vec!["start".to_string()],
+                "melt" | "refine" | "melt-refine" => vec!["melt-refine".to_string()],
+                "compact" => vec!["compact".to_string()],
+                "backlog" | "backlog-pack" => vec!["backlog-pack".to_string()],
+                "control" => vec!["control".to_string()],
+                "status" => vec!["status".to_string()],
+                _ => vec!["status".to_string()],
+            };
+            if !rest.is_empty() {
+                if first_is_flag {
+                    args.extend(rest.iter().cloned());
+                } else {
+                    args.extend(rest.iter().skip(1).cloned());
+                }
+            }
+            Some(Route {
+                script_rel: "core://snowball-plane".to_string(),
                 args,
                 forward_stdin: false,
             })
