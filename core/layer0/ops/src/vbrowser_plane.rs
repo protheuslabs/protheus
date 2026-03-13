@@ -81,11 +81,15 @@ fn status(root: &Path) -> Value {
 
 fn claim_ids_for_action(action: &str) -> Vec<&'static str> {
     match action {
-        "session-start" => vec!["V6-VBROWSER-001.1", "V6-VBROWSER-001.5"],
-        "session-control" => vec!["V6-VBROWSER-001.2", "V6-VBROWSER-001.5"],
-        "automate" => vec!["V6-VBROWSER-001.3", "V6-VBROWSER-001.5"],
-        "privacy-guard" => vec!["V6-VBROWSER-001.4", "V6-VBROWSER-001.5"],
-        _ => vec!["V6-VBROWSER-001.5"],
+        "session-start" => vec!["V6-VBROWSER-001.1", "V6-VBROWSER-001.5", "V6-VBROWSER-001.6"],
+        "session-control" => {
+            vec!["V6-VBROWSER-001.2", "V6-VBROWSER-001.5", "V6-VBROWSER-001.6"]
+        }
+        "automate" => vec!["V6-VBROWSER-001.3", "V6-VBROWSER-001.5", "V6-VBROWSER-001.6"],
+        "privacy-guard" => {
+            vec!["V6-VBROWSER-001.4", "V6-VBROWSER-001.5", "V6-VBROWSER-001.6"]
+        }
+        _ => vec!["V6-VBROWSER-001.5", "V6-VBROWSER-001.6"],
     }
 }
 
