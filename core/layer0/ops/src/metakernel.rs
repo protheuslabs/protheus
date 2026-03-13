@@ -102,6 +102,24 @@ fn parse_bool(raw: Option<&String>, fallback: bool) -> bool {
     }
 }
 
+fn is_semver_triplet(raw: &str) -> bool {
+    let parts = raw.trim().split('.').collect::<Vec<_>>();
+    if parts.len() != 3 {
+        return false;
+    }
+    parts
+        .iter()
+        .all(|p| !p.is_empty() && p.chars().all(|c| c.is_ascii_digit()))
+}
+
+fn is_token_id(raw: &str) -> bool {
+    let t = raw.trim();
+    !t.is_empty()
+        && t.chars().all(|c| {
+            c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.' | ':')
+        })
+}
+
 fn print_receipt(value: &Value) {
     println!(
         "{}",
@@ -139,6 +157,14 @@ fn gather_primitives_from_registry(registry: &Value) -> Result<Vec<String>, Stri
 
 fn validate_registry_payload(registry: &Value) -> (bool, Value) {
     let mut errors: Vec<String> = Vec::new();
+    if registry
+        .get("kind")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        != "metakernel_primitives_registry"
+    {
+        errors.push("registry_kind_must_be_metakernel_primitives_registry".to_string());
+    }
     let primitives = match gather_primitives_from_registry(registry) {
         Ok(items) => items,
         Err(err) => {
@@ -146,10 +172,28 @@ fn validate_registry_payload(registry: &Value) -> (bool, Value) {
             Vec::new()
         }
     };
+    let descriptions_ok = registry
+        .get("primitives")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+        .iter()
+        .all(|row| {
+            row.get("description")
+                .and_then(Value::as_str)
+                .map(|v| !v.trim().is_empty())
+                .unwrap_or(false)
+        });
+    if !descriptions_ok {
+        errors.push("registry_primitive_description_required".to_string());
+    }
 
     let mut dedup = BTreeSet::new();
     let mut duplicates = Vec::new();
     for p in &primitives {
+        if !is_token_id(p) {
+            errors.push("registry_primitive_id_invalid".to_string());
+        }
         if !dedup.insert(p.clone()) {
             duplicates.push(p.clone());
         }
@@ -165,6 +209,9 @@ fn validate_registry_payload(registry: &Value) -> (bool, Value) {
     if !missing.is_empty() {
         errors.push("registry_missing_expected_primitives".to_string());
     }
+    if primitives.len() != EXPECTED_PRIMITIVES.len() {
+        errors.push("registry_primitive_cardinality_mismatch".to_string());
+    }
 
     (
         errors.is_empty(),
@@ -178,25 +225,38 @@ fn validate_registry_payload(registry: &Value) -> (bool, Value) {
 }
 
 fn collect_unknown_primitive_usage(root: &Path, valid: &HashSet<String>) -> Vec<Value> {
+    fn is_primitive_ref_key(key: &str) -> bool {
+        matches!(key, "primitive" | "primitive_id" | "primitiveId")
+    }
+
+    fn is_primitive_ref_list_key(key: &str) -> bool {
+        matches!(key, "primitives" | "primitive_ids" | "primitiveIds")
+    }
+
     fn walk_json(path: &Path, value: &Value, valid: &HashSet<String>, out: &mut Vec<Value>) {
         match value {
             Value::Object(map) => {
                 for (k, v) in map {
-                    if matches!(k.as_str(), "primitive" | "primitive_id" | "primitiveId")
-                        && v.is_string()
-                    {
+                    if is_primitive_ref_key(k) && v.is_string() {
                         let raw = v.as_str().unwrap_or_default().trim().to_ascii_lowercase();
-                        if !raw.is_empty()
-                            && raw
-                                .chars()
-                                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.'))
-                            && !valid.contains(&raw)
-                        {
+                        if is_token_id(&raw) && !valid.contains(&raw) {
                             out.push(json!({
                                 "path": path.display().to_string(),
                                 "key": k,
                                 "value": raw
                             }));
+                        }
+                    }
+                    if is_primitive_ref_list_key(k) {
+                        for row in v.as_array().cloned().unwrap_or_default() {
+                            let raw = row.as_str().unwrap_or_default().trim().to_ascii_lowercase();
+                            if is_token_id(&raw) && !valid.contains(&raw) {
+                                out.push(json!({
+                                    "path": path.display().to_string(),
+                                    "key": k,
+                                    "value": raw
+                                }));
+                            }
                         }
                     }
                     walk_json(path, v, valid, out);
@@ -367,6 +427,14 @@ fn validate_world_registry_payload(registry: &Value) -> (bool, Value) {
     {
         errors.push("world_registry_version_must_be_v1".to_string());
     }
+    if registry
+        .get("kind")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        != "wit_world_registry"
+    {
+        errors.push("world_registry_kind_must_be_wit_world_registry".to_string());
+    }
     let worlds = registry
         .get("worlds")
         .and_then(Value::as_array)
@@ -395,6 +463,34 @@ fn validate_world_registry_payload(registry: &Value) -> (bool, Value) {
         }
         if abi.is_empty() {
             errors.push("world_registry_world_abi_required".to_string());
+        } else if !is_semver_triplet(&abi) {
+            errors.push("world_registry_world_abi_invalid_semver".to_string());
+        }
+        let supported = world
+            .get("supported_capabilities")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        if supported.is_empty() {
+            errors.push("world_registry_supported_capabilities_required".to_string());
+        }
+        for cap in supported {
+            let cid = cap
+                .as_str()
+                .unwrap_or_default()
+                .trim()
+                .to_ascii_lowercase();
+            if !EXPECTED_PRIMITIVES.iter().any(|p| *p == cid) {
+                errors.push("world_registry_supported_capabilities_unknown_primitive".to_string());
+            }
+        }
+        let targets = world
+            .get("component_targets")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        if targets.is_empty() {
+            errors.push("world_registry_component_targets_required".to_string());
         }
         world_ids.push(id);
     }
@@ -566,6 +662,36 @@ fn run_worlds(root: &Path, strict: bool, manifest_rel: &str) -> Value {
     let world_entry = world_table.get(&world_id);
     let world_declared = !world_id.is_empty();
     let world_exists = world_entry.is_some();
+    let manifest_abi = manifest
+        .get("abi_version")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .trim()
+        .to_string();
+    let world_abi = world_entry
+        .and_then(|w| w.get("abi_version"))
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .trim()
+        .to_string();
+    let abi_declared = !manifest_abi.is_empty();
+    let abi_semver_ok = !manifest_abi.is_empty() && is_semver_triplet(&manifest_abi);
+    let abi_match = !manifest_abi.is_empty() && !world_abi.is_empty() && manifest_abi == world_abi;
+    let manifest_component_target = manifest
+        .get("component_target")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .trim()
+        .to_string();
+    let target_declared = !manifest_component_target.is_empty();
+    let target_allowed = world_entry
+        .and_then(|w| w.get("component_targets"))
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+        .iter()
+        .filter_map(Value::as_str)
+        .any(|v| v == manifest_component_target);
 
     let manifest_caps: BTreeSet<String> = manifest
         .get("capabilities")
@@ -595,7 +721,15 @@ fn run_worlds(root: &Path, strict: bool, manifest_rel: &str) -> Value {
         unsupported_caps.is_empty()
     };
 
-    let ok = registry_ok && world_declared && world_exists && compatibility_ok;
+    let ok = registry_ok
+        && world_declared
+        && world_exists
+        && compatibility_ok
+        && abi_declared
+        && abi_semver_ok
+        && abi_match
+        && target_declared
+        && target_allowed;
     json!({
         "ok": if strict { ok } else { true },
         "strict": strict,
@@ -606,6 +740,13 @@ fn run_worlds(root: &Path, strict: bool, manifest_rel: &str) -> Value {
         "world_declared": world_declared,
         "world_id": world_id,
         "world_exists": world_exists,
+        "manifest_abi_version": manifest_abi,
+        "world_abi_version": world_abi,
+        "abi_declared": abi_declared,
+        "abi_semver_ok": abi_semver_ok,
+        "abi_match": abi_match,
+        "component_target_declared": target_declared,
+        "component_target_allowed": target_allowed,
         "compatibility_ok": compatibility_ok,
         "unsupported_capabilities": unsupported_caps
     })
@@ -694,7 +835,11 @@ fn run_capability_taxonomy(root: &Path, strict: bool, manifest_rel: &str) -> Val
         .and_then(|m| m.get("capability_gate"))
         .and_then(Value::as_bool)
         .unwrap_or(false);
-    let policy_gate_ok = high_risk_effects.is_empty() || capability_gate;
+    let gate_required = taxonomy
+        .get("high_risk_requires_policy_gate")
+        .and_then(Value::as_bool)
+        .unwrap_or(true);
+    let policy_gate_ok = !gate_required || high_risk_effects.is_empty() || capability_gate;
     let ok = taxonomy_ok && policy_gate_ok;
     json!({
         "ok": if strict { ok } else { true },
@@ -706,6 +851,7 @@ fn run_capability_taxonomy(root: &Path, strict: bool, manifest_rel: &str) -> Val
         "derived_effects": derived_effects.into_iter().collect::<Vec<_>>(),
         "highest_risk": highest_risk,
         "high_risk_effects": high_risk_effects,
+        "gate_required": gate_required,
         "policy_gate_present": capability_gate,
         "policy_gate_ok": policy_gate_ok
     })
@@ -735,7 +881,11 @@ fn run_budget_admission(root: &Path, strict: bool, manifest_rel: &str) -> Value 
             policy_missing.push(field.to_string());
         }
     }
-    let policy_ok = policy_missing.is_empty();
+    let fail_closed = policy
+        .get("fail_closed")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    let policy_ok = policy_missing.is_empty() && fail_closed;
 
     let manifest_path = root.join(manifest_rel);
     let manifest = read_json(&manifest_path).unwrap_or(Value::Null);
@@ -763,6 +913,7 @@ fn run_budget_admission(root: &Path, strict: bool, manifest_rel: &str) -> Value 
         "strict": strict,
         "policy_path": BUDGET_ADMISSION_POLICY_PATH,
         "policy_ok": policy_ok,
+        "fail_closed": fail_closed,
         "policy_missing_fields": policy_missing,
         "manifest_path": manifest_rel,
         "admitted": admitted,
@@ -850,6 +1001,7 @@ fn run_effect_journal(root: &Path, strict: bool, journal_rel: &str) -> Value {
         .cloned()
         .unwrap_or_default();
     let mut entry_ids = BTreeSet::new();
+    let mut entry_ts: std::collections::HashMap<String, String> = std::collections::HashMap::new();
     let mut entry_errors = Vec::new();
     for entry in entries {
         let id = entry
@@ -874,7 +1026,11 @@ fn run_effect_journal(root: &Path, strict: bool, journal_rel: &str) -> Value {
             entry_errors.push("journal_entry_missing_required_fields".to_string());
             continue;
         }
-        entry_ids.insert(id);
+        if !entry_ids.insert(id.clone()) {
+            entry_errors.push("journal_entry_duplicate_id".to_string());
+            continue;
+        }
+        entry_ts.insert(id, ts);
     }
     let mut effect_errors = Vec::new();
     for effect in effects {
@@ -894,6 +1050,12 @@ fn run_effect_journal(root: &Path, strict: bool, journal_rel: &str) -> Value {
             .get("commit_before_actuate")
             .and_then(Value::as_bool)
             .unwrap_or(false);
+        let effect_ts = effect
+            .get("ts")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .trim()
+            .to_string();
         if effect_type == "actuate" {
             if journal_ref.is_empty() {
                 effect_errors.push("actuate_missing_journal_ref".to_string());
@@ -902,6 +1064,13 @@ fn run_effect_journal(root: &Path, strict: bool, journal_rel: &str) -> Value {
             }
             if policy_ok && !commit_before_actuate {
                 effect_errors.push("actuate_without_commit_before_actuate".to_string());
+            }
+            if effect_ts.is_empty() {
+                effect_errors.push("actuate_missing_ts".to_string());
+            } else if let Some(commit_ts) = entry_ts.get(&journal_ref) {
+                if commit_ts > &effect_ts {
+                    effect_errors.push("actuate_precedes_commit".to_string());
+                }
             }
         }
     }
@@ -929,6 +1098,14 @@ fn run_substrate_registry(root: &Path, strict: bool) -> Value {
     {
         errors.push("substrate_registry_version_must_be_v1".to_string());
     }
+    if registry
+        .get("kind")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        != "substrate_descriptor_registry"
+    {
+        errors.push("substrate_registry_kind_must_be_substrate_descriptor_registry".to_string());
+    }
     let descriptors = registry
         .get("descriptors")
         .and_then(Value::as_array)
@@ -938,6 +1115,7 @@ fn run_substrate_registry(root: &Path, strict: bool) -> Value {
         errors.push("substrate_registry_missing_descriptors".to_string());
     }
     let mut descriptor_ids = Vec::new();
+    let mut descriptor_set = BTreeSet::new();
     for descriptor in descriptors {
         let id = descriptor
             .get("id")
@@ -949,17 +1127,42 @@ fn run_substrate_registry(root: &Path, strict: bool) -> Value {
             errors.push("substrate_descriptor_id_required".to_string());
             continue;
         }
+        if !descriptor_set.insert(id.clone()) {
+            errors.push("substrate_descriptor_duplicate_id".to_string());
+        }
         descriptor_ids.push(id.clone());
-        for field in [
-            "determinism",
-            "latency_ms",
-            "energy_mw",
-            "isolation",
-            "observability",
-            "privacy_locality",
-        ] {
-            if descriptor.get(field).is_none() {
-                errors.push(format!("substrate_descriptor_missing_field::{field}"));
+        let determinism = descriptor
+            .get("determinism")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
+        if !matches!(determinism, "high" | "medium" | "low") {
+            errors.push("substrate_descriptor_invalid_determinism".to_string());
+        }
+        let latency_ok = descriptor
+            .get("latency_ms")
+            .and_then(Value::as_i64)
+            .map(|v| v >= 0)
+            .unwrap_or(false);
+        if !latency_ok {
+            errors.push("substrate_descriptor_invalid_latency_ms".to_string());
+        }
+        let energy_ok = descriptor
+            .get("energy_mw")
+            .and_then(Value::as_i64)
+            .map(|v| v >= 0)
+            .unwrap_or(false);
+        if !energy_ok {
+            errors.push("substrate_descriptor_invalid_energy_mw".to_string());
+        }
+        for field in ["isolation", "observability", "privacy_locality"] {
+            if descriptor
+                .get(field)
+                .and_then(Value::as_str)
+                .map(|v| !v.trim().is_empty())
+                .unwrap_or(false)
+                == false
+            {
+                errors.push(format!("substrate_descriptor_missing_or_invalid_field::{field}"));
             }
         }
     }
@@ -970,7 +1173,12 @@ fn run_substrate_registry(root: &Path, strict: bool) -> Value {
         .cloned()
         .unwrap_or_default();
     for scenario in ["no-network", "no-ternary", "no-qpu", "neural-link-loss"] {
-        if degrade.get(scenario).is_none() {
+        let ok = degrade
+            .get(scenario)
+            .and_then(Value::as_str)
+            .map(|v| !v.trim().is_empty())
+            .unwrap_or(false);
+        if !ok {
             errors.push(format!("substrate_missing_degrade_scenario::{scenario}"));
         }
     }
@@ -986,6 +1194,23 @@ fn run_substrate_registry(root: &Path, strict: bool) -> Value {
 
 fn run_radix_guard(root: &Path, strict: bool) -> Value {
     let policy = read_json(&root.join(RADIX_POLICY_GUARD_PATH)).unwrap_or(Value::Null);
+    let mut errors = Vec::new();
+    if policy
+        .get("version")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        != "v1"
+    {
+        errors.push("radix_guard_version_must_be_v1".to_string());
+    }
+    if policy
+        .get("kind")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        != "radix_policy_guard"
+    {
+        errors.push("radix_guard_kind_must_be_radix_policy_guard".to_string());
+    }
     let binary_required = policy
         .get("binary_required_paths")
         .and_then(Value::as_array)
@@ -996,23 +1221,38 @@ fn run_radix_guard(root: &Path, strict: bool) -> Value {
         .and_then(Value::as_array)
         .cloned()
         .unwrap_or_default();
-    let mut errors = Vec::new();
+    if binary_required.is_empty() {
+        errors.push("radix_guard_binary_required_paths_empty".to_string());
+    }
     let required = ["crypto", "policy", "capability", "attestation", "journal"];
     let set: BTreeSet<String> = binary_required
         .iter()
         .filter_map(Value::as_str)
         .map(|s| s.to_ascii_lowercase())
         .collect();
+    if set.len() != binary_required.len() {
+        errors.push("radix_guard_binary_required_paths_duplicate".to_string());
+    }
     for path in required {
         if !set.contains(path) {
             errors.push(format!("binary_required_missing::{path}"));
         }
     }
+    let ternary_set: BTreeSet<String> = ternary_classes
+        .iter()
+        .filter_map(Value::as_str)
+        .map(|s| s.to_ascii_lowercase())
+        .collect();
+    if ternary_set.len() != ternary_classes.len() {
+        errors.push("radix_guard_ternary_allow_classes_duplicate".to_string());
+    }
+    if ternary_set.iter().any(|v| !is_token_id(v)) {
+        errors.push("radix_guard_ternary_allow_class_invalid".to_string());
+    }
     let mut overlap = Vec::new();
-    for cls in &ternary_classes {
-        let id = cls.as_str().unwrap_or_default().trim().to_ascii_lowercase();
-        if set.contains(&id) {
-            overlap.push(id);
+    for id in &ternary_set {
+        if set.contains(id.as_str()) {
+            overlap.push(id.to_string());
         }
     }
     if !overlap.is_empty() {
@@ -1024,7 +1264,7 @@ fn run_radix_guard(root: &Path, strict: bool) -> Value {
         "strict": strict,
         "policy_path": RADIX_POLICY_GUARD_PATH,
         "binary_required_count": set.len(),
-        "ternary_allow_count": ternary_classes.len(),
+        "ternary_allow_count": ternary_set.len(),
         "overlap": overlap,
         "errors": errors
     })
@@ -1445,7 +1685,8 @@ mod tests {
     fn registry_validation_accepts_expected_shape() {
         let registry = json!({
             "version": "v1",
-            "primitives": EXPECTED_PRIMITIVES.iter().map(|id| json!({"id": id})).collect::<Vec<_>>()
+            "kind": "metakernel_primitives_registry",
+            "primitives": EXPECTED_PRIMITIVES.iter().map(|id| json!({"id": id, "description": format!("{id} primitive")})).collect::<Vec<_>>()
         });
         let (ok, report) = validate_registry_payload(&registry);
         assert!(ok);
@@ -1496,11 +1737,13 @@ mod tests {
     fn world_registry_validation_accepts_expected_shape() {
         let registry = json!({
             "version": "v1",
+            "kind": "wit_world_registry",
             "worlds": [
                 {
                     "id": "infring.metakernel.v1",
                     "abi_version": "1.0.0",
-                    "supported_capabilities": EXPECTED_PRIMITIVES
+                    "supported_capabilities": EXPECTED_PRIMITIVES,
+                    "component_targets": ["wasm32-wasi"]
                 }
             ]
         });

@@ -2,6 +2,8 @@
   "bundle_id": "cell.core.metakernel.minimal",
   "version": "1.0.0",
   "world": "infring.metakernel.v1",
+  "abi_version": "1.0.0",
+  "component_target": "wasm32-wasi",
   "capabilities": [
     "node",
     "cell",
@@ -26,4 +28,3 @@
     "digest": "sha256:example"
   }
 }
-

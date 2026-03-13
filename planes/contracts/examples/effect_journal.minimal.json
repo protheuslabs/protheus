@@ -11,7 +11,8 @@
       "type": "actuate",
       "target": "ops.restart",
       "journal_ref": "jrnl-001",
-      "commit_before_actuate": true
+      "commit_before_actuate": true,
+      "ts": "2026-03-11T18:00:01Z"
     }
   ]
 }
