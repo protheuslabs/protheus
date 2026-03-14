@@ -9,7 +9,7 @@
   },
   "defaults": {
     "legacy_repo_url": "https://github.com/openclaw/openclaw",
-    "target_repo_url": "https://github.com/protheuslabs/protheus",
+    "target_repo_url": "https://github.com/protheuslabs/InfRing",
     "migration_guide_url": "docs/client/CORE_MIGRATION_BRIDGE.md"
   },
   "files": {

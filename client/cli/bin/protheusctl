@@ -1,49 +1,41 @@
-#!/usr/bin/env node
-'use strict';
+#!/usr/bin/env bash
+set -euo pipefail
 
-const fs = require('fs');
-const path = require('path');
-const { spawnSync } = require('child_process');
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 
-const ROOT = path.resolve(__dirname, '..', '..', '..');
+resolve_ops_binary() {
+  if [[ -n "${PROTHEUS_NPM_BINARY:-}" && -f "${PROTHEUS_NPM_BINARY}" ]]; then
+    printf '%s\n' "${PROTHEUS_NPM_BINARY}"
+    return 0
+  fi
 
-function isFile(filePath) {
-  try {
-    return fs.statSync(filePath).isFile();
-  } catch {
-    return false;
-  }
+  local vendor="$ROOT/client/cli/npm/vendor/protheus-ops"
+  local debug_bin="$ROOT/target/debug/protheus-ops"
+  local release_bin="$ROOT/target/release/protheus-ops"
+
+  if [[ -f "$vendor" ]]; then
+    printf '%s\n' "$vendor"
+    return 0
+  fi
+  if [[ -f "$debug_bin" ]]; then
+    printf '%s\n' "$debug_bin"
+    return 0
+  fi
+  if [[ -f "$release_bin" ]]; then
+    printf '%s\n' "$release_bin"
+    return 0
+  fi
+  return 1
 }
 
-function resolveOpsBinary() {
-  const explicit = String(process.env.PROTHEUS_NPM_BINARY || '').trim();
-  if (explicit && isFile(explicit)) return explicit;
+if BIN="$(resolve_ops_binary)"; then
+  exec "$BIN" protheusctl "$@"
+fi
 
-  const vendor = path.join(
-    ROOT,
-    'client',
-    'cli',
-    'npm',
-    'vendor',
-    process.platform === 'win32' ? 'protheus-ops.exe' : 'protheus-ops'
-  );
-  if (isFile(vendor)) return vendor;
+if command -v cargo >/dev/null 2>&1; then
+  exec cargo run --quiet --manifest-path "$ROOT/core/layer0/ops/Cargo.toml" --bin protheus-ops -- protheusctl "$@"
+fi
 
-  const target = path.join(
-    ROOT,
-    'target',
-    'debug',
-    process.platform === 'win32' ? 'protheus-ops.exe' : 'protheus-ops'
-  );
-  if (isFile(target)) return target;
-
-  throw new Error('protheus-ops binary not found; set PROTHEUS_NPM_BINARY or build target/debug/protheus-ops');
-}
-
-const bin = resolveOpsBinary();
-const run = spawnSync(bin, ['protheusctl', ...process.argv.slice(2)], {
-  cwd: ROOT,
-  stdio: 'inherit',
-  env: { ...process.env, PROTHEUS_ROOT: ROOT },
-});
-process.exit(Number.isFinite(run.status) ? run.status : 1);
+echo "protheusctl launcher failed: missing protheus-ops binary and cargo." >&2
+echo "Install Rust/Cargo or set PROTHEUS_NPM_BINARY." >&2
+exit 1

@@ -1,42 +1,20 @@
-#!/usr/bin/env node
-'use strict';
+#!/usr/bin/env bash
+set -euo pipefail
 
-const fs = require('fs');
-const path = require('path');
-const { spawnSync } = require('child_process');
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 
-const repoRoot = path.resolve(__dirname, '..', '..', '..');
-const nativeRelease = path.join(repoRoot, 'target', 'release', 'protheusd');
-const nativeDebug = path.join(repoRoot, 'target', 'debug', 'protheusd');
-let cmd;
-let args;
+if [[ -x "$ROOT/target/release/protheusd" ]]; then
+  exec "$ROOT/target/release/protheusd" "$@"
+fi
 
-if (fs.existsSync(nativeRelease)) {
-  cmd = nativeRelease;
-  args = process.argv.slice(2);
-} else if (fs.existsSync(nativeDebug)) {
-  cmd = nativeDebug;
-  args = process.argv.slice(2);
-} else {
-  cmd = 'cargo';
-  args = [
-    'run',
-    '--quiet',
-    '--manifest-path',
-    path.join(repoRoot, 'core', 'layer0', 'ops', 'Cargo.toml'),
-    '--bin',
-    'protheusd',
-    '--',
-    ...process.argv.slice(2)
-  ];
-}
+if [[ -x "$ROOT/target/debug/protheusd" ]]; then
+  exec "$ROOT/target/debug/protheusd" "$@"
+fi
 
-const run = spawnSync(cmd, args, {
-  stdio: 'inherit',
-  env: {
-    ...process.env,
-    PROTHEUS_OPS_DOMAIN_BRIDGE_TIMEOUT_MS: process.env.PROTHEUS_OPS_DOMAIN_BRIDGE_TIMEOUT_MS || '12000'
-  },
-  cwd: repoRoot
-});
-process.exit(Number.isFinite(run.status) ? run.status : 1);
+if command -v cargo >/dev/null 2>&1; then
+  exec cargo run --quiet --manifest-path "$ROOT/core/layer0/ops/Cargo.toml" --bin protheusd -- "$@"
+fi
+
+echo "protheusd launcher failed: missing protheusd binary and cargo." >&2
+echo "Build with cargo or install Rust/Cargo." >&2
+exit 1

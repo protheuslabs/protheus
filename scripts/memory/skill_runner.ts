@@ -11,6 +11,8 @@ const { verifySkillOrThrow } = require('./skill_gate');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..');
+const TRUST_ADD_CMD = `node ${path.join(WORKSPACE_ROOT, 'scripts', 'memory', 'trust_add.ts')}`;
 
 // Import compactor for global chokepoint integration
 const { processToolOutput } = require('../../client/runtime/lib/tool_compactor_integration.ts');
@@ -161,7 +163,7 @@ async function main() {
     console.error(`Reason: ${err.message}`);
     console.error('');
     console.error('To approve this skill:');
-    console.error(`  node /Users/jay/.openclaw/workspace/scripts/memory/trust_add.ts ${skillPath} "approval note"`);
+    console.error(`  ${TRUST_ADD_CMD} ${skillPath} "approval note"`);
     console.error('');
     process.exit(1);
   }

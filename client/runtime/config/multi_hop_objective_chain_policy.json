@@ -5,11 +5,11 @@
   "max_paths_per_objective": 24,
   "max_paths_total": 300,
   "objective_weights": {
-    "T1_make_jay_billionaire_v1": 1,
+    "T1_build_sovereign_capital_v1": 1,
     "T1_generational_wealth_v1": 0.9
   },
   "objective_hints": {
-    "T1_make_jay_billionaire_v1": [
+    "T1_build_sovereign_capital_v1": [
       "revenue",
       "pricing",
       "sales",

@@ -141,12 +141,12 @@ console.log('[3/4] Checking critical files...');
 console.log('───────────────────────────────────────────────');
 
 const criticalFiles = [
-  '~/.openclaw/workspace/client/runtime/config/model_adapters.json',
-  '~/.openclaw/workspace/memory/MEMORY_INDEX.md',
-  '~/.openclaw/workspace/memory/TAGS_INDEX.md',
-  '~/.openclaw/workspace/memory/SNIPPET_INDEX.md',
-  '~/.openclaw/workspace/scripts/memory/lint_memory.ts',
-  '~/.openclaw/workspace/scripts/memory/rebuild_exclusive.ts'
+  '$WORKSPACE_ROOT/client/runtime/config/model_adapters.json',
+  '$WORKSPACE_ROOT/memory/MEMORY_INDEX.md',
+  '$WORKSPACE_ROOT/memory/TAGS_INDEX.md',
+  '$WORKSPACE_ROOT/memory/SNIPPET_INDEX.md',
+  '$WORKSPACE_ROOT/scripts/memory/lint_memory.ts',
+  '$WORKSPACE_ROOT/scripts/memory/rebuild_exclusive.ts'
 ];
 
 let filesOK = 0;
@@ -189,20 +189,20 @@ console.log();
 console.log('BACKUP THIS AGENT:');
 console.log();
 console.log('Required snapshots:');
-console.log('  ☐ ~/.openclaw/workspace/memory/ (nodes + indices)');
-console.log('  ☐ ~/.openclaw/workspace/local/state/memory/ (snapshots + rebuild cache)');
-console.log('  ☐ ~/.openclaw/workspace/client/cognition/skills/ (if custom)');
-console.log('  ☐ ~/.openclaw/workspace/client/runtime/config/ (model_adapters.json + credentials)');
+console.log('  ☐ $WORKSPACE_ROOT/memory/ (nodes + indices)');
+console.log('  ☐ $WORKSPACE_ROOT/local/state/memory/ (snapshots + rebuild cache)');
+console.log('  ☐ $WORKSPACE_ROOT/client/cognition/skills/ (if custom)');
+console.log('  ☐ $WORKSPACE_ROOT/client/runtime/config/ (model_adapters.json + credentials)');
 console.log('  ☐ Cron list: openclaw cron list → save to file');
 console.log();
 console.log('Quick backup command:');
 console.log('  tar -czf protheus-backup-$(date +%Y%m%d).tar.gz \\\
 ');
-console.log('    ~/.openclaw/workspace/memory/ \\\
+console.log('    $WORKSPACE_ROOT/memory/ \\\
 ');
-console.log('    ~/.openclaw/workspace/local/state/memory/ \\\
+console.log('    $WORKSPACE_ROOT/local/state/memory/ \\\
 ');
-console.log('    ~/.openclaw/workspace/client/runtime/config/');
+console.log('    $WORKSPACE_ROOT/client/runtime/config/');
 console.log();
 console.log('Restore test:');
 console.log('  1) Install OpenClaw + deps on new machine');

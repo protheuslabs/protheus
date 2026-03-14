@@ -183,7 +183,7 @@
     }
   },
   "budget_autopause": {
-    "path": "/Users/jay/.openclaw/workspace/client/runtime/local/state/autonomy/budget_autopause.json",
+    "path": "/client/runtime/local/state/autonomy/budget_autopause.json",
     "active": false,
     "currently_active": false,
     "active_relevant": false,
@@ -285,7 +285,7 @@
     "objective_count": 2,
     "counts": {
       "T1_generational_wealth_v1": 6,
-      "T1_make_jay_billionaire_v1": 4
+      "T1_build_sovereign_capital_v1": 4
     }
   },
   "insufficient_data": {
@@ -296,5 +296,5 @@
     "Reduce policy-hold churn: top effective reason is stop_repeat_gate_unchanged_state (14). Tighten admission and queue hygiene for that path first.",
     "Budget holds are elevated; top effective reason is stop_init_gate_budget_autopause (12). Apply pacing/defer strategy before resuming full cadence."
   ],
-  "report_path": "/Users/jay/.openclaw/workspace/client/runtime/local/state/autonomy/simulations/2026-03-07.json"
+  "report_path": "/client/runtime/local/state/autonomy/simulations/2026-03-07.json"
 }

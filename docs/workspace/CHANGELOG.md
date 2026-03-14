@@ -21,9 +21,15 @@ This project follows a strict evidence-backed changelog model:
 ### Changed
 - Replaced root `README.md` with an evidence-first control-plane overview aligned to the Empty Fort artifact standard (operator onboarding, governance surfaces, and quality/security gates mapped to real scripts/docs).
 - OSS readiness uplift:
-  - Apache-2.0 legal posture finalized across root/npm package manifests.
+  - Non-commercial legal posture standardized to `Protheus Non-Commercial License v1.0` across root/npm/python manifests.
   - Governance links surfaced in `README.md` (Code of Conduct + issue/PR templates).
-  - Added release-prep version bump to `0.2.0` for first public semantic release gating.
+  - Added release-prep version bump to `0.2.1-alpha.1` for alpha cut gating.
+- Alpha-readiness hardening:
+  - Local migration now imports legacy root continuity + `memory/**` with conflict-safe archive semantics (`client/runtime/systems/ops/local_runtime_partitioner.ts`).
+  - CLI wrapper resiliency improved with cargo fallback and explicit launcher failure diagnostics (`client/cli/bin/protheus`, `client/cli/bin/protheusctl`, `client/cli/bin/protheusd`, `client/cli/bin/protheus-top`).
+  - Benchmark snapshot moved to explicit competitor reference data (OpenFang/OpenHands baseline) and reproducible refresh command (`npm run ops:benchmark:refresh`).
+  - Removed machine-specific absolute path leakage from active configs/scripts/docs by migrating to `${WORKSPACE_ROOT}` tokenized paths.
+  - Repository legal posture changed to Protheus Non-Commercial License v1.0 (`LICENSE`, `README.md`, `SECURITY.md`, `package.json`).
 
 ## [2026-03-02]
 

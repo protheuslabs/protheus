@@ -2,7 +2,7 @@ nameOverride: ""
 fullnameOverride: ""
 
 image:
-  repository: protheuslabs/protheus
+  repository: protheuslabs/infring
   tag: latest
   pullPolicy: IfNotPresent
   pullSecrets: []

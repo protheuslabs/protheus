@@ -1,23 +1,50 @@
 {
   "version": "2026.02",
+  "reference_month": "2026-02",
+  "reference_sources": [
+    "https://raw.githubusercontent.com/RightNow-AI/openfang/main/README.md"
+  ],
+  "notes": "Reference competitor values sourced from OpenFang public benchmark table (Feb 2026 snapshot). OpenClaw is measured at runtime by benchmark_matrix.",
   "projects": {
-    "OpenClaw": {
-      "cold_start_ms": 91,
-      "idle_memory_mb": 33,
-      "install_size_mb": 158,
-      "tasks_per_sec": 4200
+    "OpenFang": {
+      "cold_start_ms": 180,
+      "idle_memory_mb": 40,
+      "install_size_mb": 32,
+      "security_systems": 16,
+      "channel_adapters": 40,
+      "llm_providers": 27
     },
-    "AgentX": {
-      "cold_start_ms": 118,
-      "idle_memory_mb": 41,
-      "install_size_mb": 174,
-      "tasks_per_sec": 3100
+    "OpenHands": {
+      "cold_start_ms": 1300,
+      "idle_memory_mb": 150,
+      "install_size_mb": 95.5,
+      "security_systems": 7,
+      "channel_adapters": 15,
+      "llm_providers": 5
     },
-    "RuntimeY": {
-      "cold_start_ms": 102,
-      "idle_memory_mb": 36,
-      "install_size_mb": 166,
-      "tasks_per_sec": 3550
+    "LangGraph": {
+      "cold_start_ms": 2500,
+      "idle_memory_mb": 180,
+      "install_size_mb": 150,
+      "security_systems": 2,
+      "channel_adapters": 4,
+      "llm_providers": 15
+    },
+    "CrewAI": {
+      "cold_start_ms": 3000,
+      "idle_memory_mb": 200,
+      "install_size_mb": 100,
+      "security_systems": 1,
+      "channel_adapters": 3,
+      "llm_providers": 10
+    },
+    "AutoGen": {
+      "cold_start_ms": 4000,
+      "idle_memory_mb": 250,
+      "install_size_mb": 200,
+      "security_systems": 2,
+      "channel_adapters": 4,
+      "llm_providers": 8
     }
   }
 }

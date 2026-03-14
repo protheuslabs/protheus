@@ -3,7 +3,7 @@
   "enabled": true,
   "default_max_negative_delta": 0.03,
   "objective_interference_budget": {
-    "T1_make_jay_billionaire_v1": 0.02,
+    "T1_build_sovereign_capital_v1": 0.02,
     "T1_generational_wealth_v1": 0.03
   },
   "paths": {

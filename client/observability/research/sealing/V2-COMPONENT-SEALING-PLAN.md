@@ -44,7 +44,7 @@ Seal V2 hardening components to enable advisory/active mode flip.
 
 Run this to generate fresh hashes:
 ```bash
-cd ~/.openclaw/workspace && node -e "
+cd $WORKSPACE_ROOT && node -e "
 const fs = require('fs');
 const crypto = require('crypto');
 const files = [

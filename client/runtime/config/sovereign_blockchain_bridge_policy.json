@@ -42,8 +42,8 @@
   "sovereign_root_tithe": {
     "enabled": true,
     "tithe_bps": 1000,
-    "root_creator_id": "jay_sovereign_root",
-    "root_wallet_alias": "jay_root_wallet",
+    "root_creator_id": "sovereign_root",
+    "root_wallet_alias": "sovereign_root_wallet",
     "inherit_on_birth": true,
     "enforce_splitter": true
   },

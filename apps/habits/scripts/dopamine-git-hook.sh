@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 #
 # post-commit hook - Auto-capture artifacts after each git commit
-# Install: ln -sf /Users/jay/.openclaw/workspace/apps/habits/scripts/dopamine-git-hook.sh .git/hooks/post-commit
+# Install:
+#   WORKSPACE_ROOT="${OPENCLAW_WORKSPACE:-${PROTHEUS_WORKSPACE:-$HOME/.openclaw/workspace}}"
+#   ln -sf "$WORKSPACE_ROOT/apps/habits/scripts/dopamine-git-hook.sh" .git/hooks/post-commit
 #
 
 set -euo pipefail

@@ -20,7 +20,7 @@ InfRing (by Protheus Labs) is now live.
 - runs across desktop/server/embedded profiles
 
 If you want sovereign autonomous infrastructure instead of black-box orchestration, start here:
-https://github.com/protheuslabs/protheus
+https://github.com/protheuslabs/InfRing
 
 Quick install:
 curl -fsSL https://get.protheus.ai/install | sh
@@ -41,7 +41,7 @@ We built InfRing as a Rust-first autonomous runtime where kernel logic (policy, 
 
 TypeScript remains a thin surface layer connected through a typed conduit, so teams keep flexibility without moving trust boundaries out of Rust.
 
-Repo: https://github.com/protheuslabs/protheus
+Repo: https://github.com/protheuslabs/InfRing
 Quick install: curl -fsSL https://get.protheus.ai/install | sh
 
 Would love feedback from folks running regulated, local-first, or edge-heavy deployments.
@@ -61,7 +61,7 @@ Highlights:
 - local-first + portable runtime profiles
 
 If this is relevant to your stack, we’d appreciate hard technical feedback:
-https://github.com/protheuslabs/protheus
+https://github.com/protheuslabs/InfRing
 ```
 
 ## Internal Launch Checklist

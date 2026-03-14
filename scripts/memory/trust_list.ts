@@ -5,8 +5,7 @@
  */
 
 const fs = require('fs');
-const path = require('path');
-const { computeHash, expandHome, CONFIG_PATH } = require('./skill_gate');
+const { computeHash, normalizePath, CONFIG_PATH } = require('./skill_gate');
 
 function main() {
   const args = process.argv.slice(2);
@@ -27,7 +26,7 @@ function main() {
   console.log();
   console.log('Allowlist roots:');
   config.allowlist_roots.forEach(root => {
-    console.log(`  • ${expandHome(root)}`);
+    console.log(`  • ${normalizePath(root)}`);
   });
   console.log();
   
@@ -47,12 +46,13 @@ function main() {
   let changedCount = 0;
   
   for (const [filepath, info] of entries) {
-    const exists = fs.existsSync(filepath);
+    const resolvedPath = normalizePath(filepath);
+    const exists = fs.existsSync(resolvedPath);
     let status = exists ? '✅' : '❌ MISSING';
     let diff = '';
     
     if (exists && showDiff) {
-      const currentHash = computeHash(filepath);
+      const currentHash = computeHash(resolvedPath);
       if (currentHash !== info.sha256) {
         status = '⚠️  CHANGED';
         diff = `\n   Current hash:  ${currentHash}\n   Trusted hash:  ${info.sha256}`;
@@ -60,7 +60,7 @@ function main() {
       }
     }
     
-    console.log(`${status} ${filepath}`);
+    console.log(`${status} ${resolvedPath}`);
     console.log(`   SHA-256:      ${info.sha256}`);
     console.log(`   Approved by:  ${info.approved_by} on ${info.approved_at}`);
     console.log(`   Note:         ${info.note}`);

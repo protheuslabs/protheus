@@ -6,24 +6,33 @@
 
 const fs = require('fs');
 const path = require('path');
-const { computeHash, expandHome, CONFIG_PATH } = require('./skill_gate');
+const { computeHash, normalizePath, WORKSPACE_ROOT, CONFIG_PATH } = require('./skill_gate');
+
+function toWorkspaceToken(filepath) {
+  const normalizedRoot = path.resolve(WORKSPACE_ROOT);
+  const normalizedPath = path.resolve(filepath);
+  if (normalizedPath === normalizedRoot) return '${WORKSPACE_ROOT}';
+  if (normalizedPath.startsWith(normalizedRoot + path.sep)) {
+    return '${WORKSPACE_ROOT}/' + path.relative(normalizedRoot, normalizedPath).replace(/\\/g, '/');
+  }
+  return normalizedPath;
+}
 
 function main() {
   const args = process.argv.slice(2);
   
   if (args.length < 2) {
     console.error('Usage: node trust_add.js /path/to/skill.js "approval note"');
-    console.error('Example: node trust_add.js /Users/jay/.openclaw/workspace/client/cognition/skills/moltbook/moltbook_api.ts "Core Moltbook API, reviewed and safe"');
+    console.error('Example: node trust_add.js ./scripts/memory/rebuild_exclusive.ts "Core memory index rebuild tool"');
     process.exit(1);
   }
   
   const targetPath = args[0];
   const note = args[1];
-  const approvedBy = 'jay'; // Hardcoded to 'jay' as per policy
+  const approvedBy = process.env.OPENCLAW_APPROVER || process.env.USER || 'operator';
   
   // Resolve path
-  const expandedPath = expandHome(targetPath);
-  const resolvedPath = path.resolve(expandedPath);
+  const resolvedPath = normalizePath(targetPath);
   
   // Check file exists
   if (!fs.existsSync(resolvedPath)) {
@@ -43,8 +52,7 @@ function main() {
   // Check allowlist
   let inAllowlist = false;
   for (const root of config.allowlist_roots) {
-    const expandedRoot = expandHome(root);
-    const realRoot = fs.realpathSync(expandedRoot);
+    const realRoot = fs.realpathSync(normalizePath(root));
     const realPath = fs.realpathSync(resolvedPath);
     
     if (realPath.startsWith(realRoot + path.sep) || realPath === realRoot) {
@@ -62,12 +70,13 @@ function main() {
   
   // Compute hash
   const sha256 = computeHash(resolvedPath);
+  const trustedKey = toWorkspaceToken(resolvedPath);
   
   // Add/update trusted entry
   const now = new Date().toISOString().split('T')[0];
-  const existing = config.trusted_files[resolvedPath];
+  const existing = config.trusted_files[trustedKey];
   
-  config.trusted_files[resolvedPath] = {
+  config.trusted_files[trustedKey] = {
     sha256,
     approved_by: approvedBy,
     approved_at: now,

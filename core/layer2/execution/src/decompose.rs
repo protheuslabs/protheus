@@ -2598,7 +2598,7 @@ mod tests {
             goal_id: "goal_compose".to_string(),
             goal_text: "Build and verify rollout checklist".to_string(),
             objective_id: Some("obj_compose".to_string()),
-            creator_id: Some("jay".to_string()),
+            creator_id: Some("operator".to_string()),
             policy: ComposePolicy::default(),
             tasks: vec![BaseTask {
                 micro_task_id: "mt_a".to_string(),

@@ -46,7 +46,7 @@ function platformTriple() {
 function releaseCandidateUrls() {
   const versionTag = `v${pkg.version}`;
   const triple = platformTriple();
-  const base = `https://github.com/protheuslabs/protheus/releases/download/${versionTag}`;
+  const base = `https://github.com/protheuslabs/InfRing/releases/download/${versionTag}`;
   const name = exeName();
   return [
     `${base}/${name}-${triple}`,

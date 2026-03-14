@@ -462,7 +462,7 @@
     "ops:migration:bridge": "node client/runtime/systems/migration/core_migration_bridge.ts run --to=${TO:-acme/protheus-core} --workspace=${WORKSPACE:-../protheus-core}",
     "ops:migration:bridge:apply": "node client/runtime/systems/migration/core_migration_bridge.ts run --to=${TO:-acme/protheus-core} --workspace=${WORKSPACE:-../protheus-core} --apply=1",
     "ops:migration:bridge:status": "node client/runtime/systems/migration/core_migration_bridge.ts status",
-    "ops:migration:graduation": "node client/runtime/systems/migration/community_repo_graduation_pack.ts run --legacy-repo=${LEGACY_REPO:-https://github.com/openclaw/openclaw} --target-repo=${TARGET_REPO:-https://github.com/protheuslabs/protheus}",
+    "ops:migration:graduation": "node client/runtime/systems/migration/community_repo_graduation_pack.ts run --legacy-repo=${LEGACY_REPO:-https://github.com/openclaw/openclaw} --target-repo=${TARGET_REPO:-https://github.com/protheuslabs/InfRing}",
     "ops:migration:import": "node client/runtime/systems/migration/universal_importers.ts run --from=${FROM:-openfang} --path=${SOURCE_PATH:-./import.json}",
     "ops:migration:daemon:scan": "node client/runtime/systems/migration/self_healing_migration_daemon.ts scan",
     "ops:migration:verify": "node client/runtime/systems/migration/post_migration_verification_report.ts run",
@@ -1354,6 +1354,7 @@
     "test:lane:v6-adapt-006": "node tests/client-memory-tools/realtime_adaptation_apple_profile.test.js",
     "lane:v6-edge-004:run": "node tests/client-memory-tools/v6_edge_004_lifecycle_validation.test.js",
     "test:lane:v6-edge-004": "npm run -s lane:v6-edge-004:run",
+    "ops:benchmark:refresh": "cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- benchmark-matrix run --refresh-runtime=0 > docs/client/reports/benchmark_matrix_run_2026-03-06.json && cp docs/client/reports/benchmark_matrix_run_2026-03-06.json docs/client/reports/benchmark_matrix_run_2026-03-06_full_install.json",
     "local:init": "node client/runtime/systems/ops/local_runtime_partitioner.ts init",
     "local:migrate:openclaw": "node client/runtime/systems/ops/local_runtime_partitioner.ts init",
     "local:status": "node client/runtime/systems/ops/local_runtime_partitioner.ts status",
@@ -1645,13 +1646,13 @@
     "xml2js": "^0.6.2"
   },
   "name": "openclaw",
-  "version": "0.2.0",
+  "version": "0.2.1-alpha.1",
   "private": true,
   "description": "Personal automation and orchestration toolkit for macOS/Linux workflows.",
-  "license": "Apache-2.0",
+  "license": "LicenseRef-Protheus-NC-1.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/protheuslabs/protheus.git"
+    "url": "git+https://github.com/protheuslabs/InfRing.git"
   },
   "engines": {
     "node": ">=22.0.0"

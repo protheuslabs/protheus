@@ -224,10 +224,16 @@ apps/*
 /posts/
 /proposals/
 /evidence/
+/core/layer0/memory/state/
 /apps/lensmap/artifacts/
 /client/workspaces/
 /client/runtime/local/
 /client/runtime/state/
+
+# Persona-local runtime data (never commit personal credentials/notes/projects)
+/client/cognition/personas/*/credentials/
+/client/cognition/personas/*/projects/
+/client/cognition/personas/*/notes/
 
 # Workspace-local bootstrap/session notes (not part of repo source of truth)
 AGENTS.md
@@ -373,7 +379,6 @@ state/security/black_box_ledger/attestations/*.jsonl
 
 # Local personal project mirrors / creds (instance-specific)
 client/config/rohan_github_credentials.md
-rohan-kapoor-projects/
 rohankapoor-projects/
 
 # BL-020 memory snapshot ignore rules (backup-verified)

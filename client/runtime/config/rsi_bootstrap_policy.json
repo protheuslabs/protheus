@@ -2,7 +2,7 @@
   "version": "1.0",
   "enabled": true,
   "shadow_only": true,
-  "owner_default": "jay",
+  "owner_default": "operator",
   "objective_default": "rsi_recursive_self_improvement",
   "risk_default": "medium",
   "idle_interval_minutes": 15,

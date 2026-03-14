@@ -5,7 +5,7 @@ Use this runbook to unblock the remaining `blocked_external` SRS items with dete
 ## 1) Refresh current blocked inventory
 
 ```bash
-cd /Users/jay/.openclaw/workspace
+cd ${WORKSPACE_ROOT:-$(pwd)}
 npm run -s ops:blocked-external:plan
 npm run -s ops:blocked-external:top10
 ```

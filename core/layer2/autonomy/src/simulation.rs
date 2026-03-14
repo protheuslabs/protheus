@@ -632,7 +632,7 @@ pub fn run_autonomy_simulation(
                 .collect::<HashSet<_>>()
         })
         .unwrap_or_else(|| {
-            ["T1_make_jay_billionaire_v1".to_string()]
+            ["T1_build_sovereign_capital_v1".to_string()]
                 .iter()
                 .cloned()
                 .collect()
@@ -964,7 +964,7 @@ mod tests {
                 "type": "autonomy_run",
                 "result": "executed",
                 "outcome": "shipped",
-                "objective_id": "T1_make_jay_billionaire_v1"
+                "objective_id": "T1_build_sovereign_capital_v1"
             }),
         )
         .expect("append row1");

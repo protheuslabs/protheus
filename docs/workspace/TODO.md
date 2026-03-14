@@ -24,9 +24,9 @@ Updated: 2026-03-12 09:10 America/Denver
 
 ## Canonical actionable inventory mapping
 - Full per-item mapping (remaining work only): `local/workspace/reports/SRS_ACTIONABLE_MAP_CURRENT.md`
-- Machine-readable map: [core/local/artifacts/srs_actionable_map_current.json](/Users/jay/.openclaw/workspace/core/local/artifacts/srs_actionable_map_current.json)
+- Machine-readable map: [core/local/artifacts/srs_actionable_map_current.json](../../core/local/artifacts/srs_actionable_map_current.json)
 - Full execution queue (all actionable items, sorted): `local/workspace/reports/TODO_EXECUTION_FULL.md`
-- Machine-readable execution queue: [core/local/artifacts/todo_execution_full_current.json](/Users/jay/.openclaw/workspace/core/local/artifacts/todo_execution_full_current.json)
+- Machine-readable execution queue: [core/local/artifacts/todo_execution_full_current.json](../../core/local/artifacts/todo_execution_full_current.json)
 - Map summary snapshot:
 - `actionable_total=0`
 - `queued=0`
@@ -40,7 +40,7 @@ Updated: 2026-03-12 09:10 America/Denver
 
 ## Canonical full audit queue (all SRS rows)
 - Full audit queue (every SRS row, sorted high impact -> low impact): `local/workspace/reports/TODO_AUDIT_FULL.md`
-- Machine-readable full audit queue: [core/local/artifacts/todo_audit_full_current.json](/Users/jay/.openclaw/workspace/core/local/artifacts/todo_audit_full_current.json)
+- Machine-readable full audit queue: [core/local/artifacts/todo_audit_full_current.json](../../core/local/artifacts/todo_audit_full_current.json)
 - Audit summary snapshot:
 - `total(unique)=1847`
 - `raw_rows=2197`

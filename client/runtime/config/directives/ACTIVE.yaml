@@ -12,7 +12,7 @@ active_directives:
     status: active
     reason: "Always active - hard constraints"
     
-  - id: T1_make_jay_billionaire_v1
+  - id: T1_build_sovereign_capital_v1
     tier: 1
     status: active
     reason: "Primary northstar directive"

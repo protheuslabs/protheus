@@ -14,7 +14,7 @@
   },
   "gated_cycle": {
     "policy_path": "local/state/autonomy/private_cycle_headstart/gated_self_improvement_policy.private.json",
-    "objective_id": "t1_make_jay_billionaire_v1",
+    "objective_id": "t1_build_sovereign_capital_v1",
     "target_path": "client/runtime/systems/autonomy/gated_self_improvement_loop.ts",
     "risk": "medium",
     "approval_a": "private_headstart_a",
@@ -23,7 +23,7 @@
   },
   "attribution": {
     "creator_id": "protheus_seed_instance",
-    "objective_id": "t1_make_jay_billionaire_v1",
+    "objective_id": "t1_build_sovereign_capital_v1",
     "base_value_usd": 100,
     "value_step_usd": 10
   },

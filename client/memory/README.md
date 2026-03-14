@@ -54,7 +54,7 @@ Trim mode keeps bounded hits and trims excerpts/summaries. Reject mode fails clo
 ## Moltbook Credentials Persistence
 
 To ensure context-free continuity for Moltbook:
-- The Moltbook API key and agent_name are stored in `/Users/jay/.client/runtime/config/moltbook/credentials.json`.
+- The Moltbook API key and `agent_name` are stored in `${WORKSPACE_ROOT}/client/runtime/local/private/moltbook/credentials.json`.
 - On *every* session startup that allows file read access, load this file and cache contents locally for any Moltbook API/skill task (even if prior chat history/context is missing).
 - If file is missing, alert human for re-entry of credentials.
 

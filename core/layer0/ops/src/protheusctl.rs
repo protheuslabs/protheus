@@ -130,6 +130,130 @@ fn node_bin() -> String {
     env::var("PROTHEUS_NODE_BINARY").unwrap_or_else(|_| "node".to_string())
 }
 
+fn has_node_runtime() -> bool {
+    Command::new(node_bin())
+        .arg("--version")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .is_ok()
+}
+
+fn workspace_package_version(root: &Path) -> Option<String> {
+    let raw = std::fs::read_to_string(root.join("package.json")).ok()?;
+    let parsed: Value = serde_json::from_str(&raw).ok()?;
+    parsed
+        .get("version")
+        .and_then(Value::as_str)
+        .map(ToString::to_string)
+}
+
+fn command_list_mode(args: &[String]) -> String {
+    args.iter()
+        .find_map(|arg| arg.strip_prefix("--mode=").map(|value| value.to_string()))
+        .unwrap_or_else(|| "list".to_string())
+}
+
+fn print_node_free_command_list(mode: &str) {
+    if mode == "help" {
+        usage();
+        println!();
+        println!("Node.js is not available, so full JS command help is unavailable.");
+    } else {
+        println!("Command list (Node-free fallback):");
+    }
+    for cmd in [
+        "status",
+        "session <status|register|resume|send|list>",
+        "rag <status|search|chat|memory>",
+        "memory <status|search>",
+        "adaptive <status|propose|shadow-train|prioritize|graduate>",
+        "enterprise-hardening <run|status|export-compliance|identity-surface|certify-scale|dashboard>",
+        "benchmark <run|status>",
+        "research <status|diagnostics|fetch>",
+        "help",
+        "list",
+        "version",
+    ] {
+        println!("  - {cmd}");
+    }
+    println!();
+    println!("Install Node.js 22+ to unlock all CLI commands.");
+}
+
+fn emit_node_missing_error(cmd: &str, script_rel: &str) -> i32 {
+    eprintln!(
+        "{}",
+        json!({
+            "ok": false,
+            "type": "protheusctl_dispatch",
+            "error": "node_runtime_missing",
+            "command": clean(cmd, 80),
+            "script_rel": clean(script_rel, 220),
+            "hint": "Install Node.js 22+ or set PROTHEUS_NODE_BINARY to a valid node executable."
+        })
+    );
+    1
+}
+
+fn node_missing_fallback(root: &Path, route: &Route, json_mode: bool) -> Option<i32> {
+    match route.script_rel.as_str() {
+        "client/runtime/systems/ops/protheus_command_list.js" => {
+            let mode = command_list_mode(&route.args);
+            if json_mode {
+                println!(
+                    "{}",
+                    json!({
+                        "ok": true,
+                        "type": "protheusctl_help_fallback",
+                        "mode": mode,
+                        "node_runtime_required_for_full_surface": true,
+                        "node_runtime_detected": false
+                    })
+                );
+            } else {
+                print_node_free_command_list(mode.as_str());
+            }
+            Some(0)
+        }
+        "client/runtime/systems/ops/protheus_version_cli.js"
+            if route.args.first().map(String::as_str) == Some("version") =>
+        {
+            let version =
+                workspace_package_version(root).unwrap_or_else(|| "0.0.0-unknown".to_string());
+            if json_mode {
+                println!(
+                    "{}",
+                    json!({
+                        "ok": true,
+                        "type": "protheusctl_version_fallback",
+                        "version": version,
+                        "node_runtime_detected": false
+                    })
+                );
+            } else {
+                println!("protheus {version}");
+                println!("(Node.js not detected; using package.json fallback)");
+            }
+            Some(0)
+        }
+        "client/runtime/systems/edge/mobile_ops_top.ts"
+        | "client/runtime/systems/ops/protheus_status_dashboard.js" => {
+            if !json_mode {
+                eprintln!("Node.js is unavailable; falling back to core daemon status output.");
+            }
+            Some(run_core_domain(
+                root,
+                "daemon-control",
+                &["status".to_string()],
+                false,
+            ))
+        }
+        _ => None,
+    }
+}
+
 fn parse_json(raw: &str) -> Option<Value> {
     let text = raw.trim();
     if text.is_empty() {
@@ -1357,6 +1481,13 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         return 1;
     }
 
+    if !route.script_rel.starts_with("core://") && !has_node_runtime() {
+        if let Some(status) = node_missing_fallback(root, &route, global_json) {
+            return status;
+        }
+        return emit_node_missing_error(&cmd, &route.script_rel);
+    }
+
     let gate = evaluate_dispatch_security(root, &route.script_rel, &route.args);
     if !gate.ok {
         eprintln!(
@@ -1372,7 +1503,6 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
 
     run_node_script(root, &route.script_rel, &route.args, route.forward_stdin)
 }
-
 
 #[cfg(test)]
 #[path = "protheusctl_tests.rs"]

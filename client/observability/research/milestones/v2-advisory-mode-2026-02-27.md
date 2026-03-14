@@ -25,7 +25,7 @@ status: complete
 ### Step 1: Skill Setup
 ```bash
 # Configure in dry-run / paper trading mode only
-node ~/.openclaw/workspace/client/cognition/skills/polymarket-arbitrage/cli.js --mode=paper --dry-run
+node $WORKSPACE_ROOT/client/cognition/skills/polymarket-arbitrage/cli.js --mode=paper --dry-run
 ```
 
 ### Step 2: Market Discovery

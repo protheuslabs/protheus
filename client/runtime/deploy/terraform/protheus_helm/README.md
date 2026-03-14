@@ -10,7 +10,7 @@ module "protheus" {
 
   release_name     = "protheus"
   namespace        = "protheus"
-  image_repository = "protheuslabs/protheus"
+  image_repository = "protheuslabs/infring"
   image_tag        = "latest"
   existing_secret_name = "protheus-runtime-secrets"
   daemon_enabled   = true

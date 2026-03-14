@@ -4,7 +4,7 @@
   "max_actions": 12,
   "min_expected_information_gain": 0.08,
   "objective_weights": {
-    "T1_make_jay_billionaire_v1": 1,
+    "T1_build_sovereign_capital_v1": 1,
     "T1_generational_wealth_v1": 0.9
   },
   "uncertainty_weights": {

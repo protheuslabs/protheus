@@ -1,6 +1,6 @@
 use super::*;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -38,7 +38,7 @@ fn route_edge_swarm_maps_correctly() {
     let route = route_edge(&[
         "swarm".to_string(),
         "enroll".to_string(),
-        "--owner=jay".to_string(),
+        "--owner=operator".to_string(),
     ]);
     assert_eq!(
         route.script_rel,
@@ -57,9 +57,8 @@ fn core_shortcut_routes_rag_command() {
 
 #[test]
 fn core_shortcut_routes_memory_command() {
-    let route =
-        resolve_core_shortcuts("memory", &["search".to_string(), "--q=ledger".to_string()])
-            .expect("route");
+    let route = resolve_core_shortcuts("memory", &["search".to_string(), "--q=ledger".to_string()])
+        .expect("route");
     assert_eq!(route.script_rel, "core://rag");
     assert_eq!(route.args.first().map(String::as_str), Some("memory"));
     assert_eq!(route.args.get(1).map(String::as_str), Some("search"));
@@ -91,9 +90,8 @@ fn core_shortcut_routes_chat_nano_to_rag_domain() {
 
 #[test]
 fn core_shortcut_routes_train_nano_to_rag_domain() {
-    let route =
-        resolve_core_shortcuts("train", &["nano".to_string(), "--depth=12".to_string()])
-            .expect("route");
+    let route = resolve_core_shortcuts("train", &["nano".to_string(), "--depth=12".to_string()])
+        .expect("route");
     assert_eq!(route.script_rel, "core://rag");
     assert_eq!(route.args, vec!["train", "nano", "--depth=12"]);
 }
@@ -847,9 +845,8 @@ fn core_shortcut_routes_flow_install_to_flow_plane() {
 
 #[test]
 fn core_shortcut_routes_blobs_to_binary_blob_runtime() {
-    let route =
-        resolve_core_shortcuts("blobs", &["migrate".to_string(), "--apply=1".to_string()])
-            .expect("route");
+    let route = resolve_core_shortcuts("blobs", &["migrate".to_string(), "--apply=1".to_string()])
+        .expect("route");
     assert_eq!(route.script_rel, "core://binary-blob-runtime");
     assert_eq!(route.args, vec!["migrate", "--apply=1"]);
 }
@@ -867,8 +864,7 @@ fn core_shortcut_routes_directives_migrate_to_directive_kernel() {
 
 #[test]
 fn core_shortcut_routes_directives_dashboard_to_directive_kernel() {
-    let route =
-        resolve_core_shortcuts("directives", &["dashboard".to_string()]).expect("route");
+    let route = resolve_core_shortcuts("directives", &["dashboard".to_string()]).expect("route");
     assert_eq!(route.script_rel, "core://directive-kernel");
     assert_eq!(route.args, vec!["dashboard"]);
 }
@@ -938,9 +934,8 @@ fn core_shortcut_routes_model_buy_credits_to_intelligence_nexus() {
 
 #[test]
 fn core_shortcut_routes_compute_share_to_network_compute_proof() {
-    let route =
-        resolve_core_shortcuts("compute", &["share".to_string(), "--gpu=1".to_string()])
-            .expect("route");
+    let route = resolve_core_shortcuts("compute", &["share".to_string(), "--gpu=1".to_string()])
+        .expect("route");
     assert_eq!(route.script_rel, "core://p2p-gossip-seed");
     assert_eq!(route.args, vec!["compute-proof", "--share=1", "--gpu=1"]);
 }
@@ -1109,7 +1104,10 @@ fn core_shortcut_routes_canyon_benchmark_gate_to_canyon_plane() {
 fn core_shortcut_routes_init_to_canyon_ecosystem_init() {
     let route = resolve_core_shortcuts(
         "init",
-        &["starter-web".to_string(), "--target-dir=/tmp/demo".to_string()],
+        &[
+            "starter-web".to_string(),
+            "--target-dir=/tmp/demo".to_string(),
+        ],
     )
     .expect("route");
     assert_eq!(route.script_rel, "core://canyon-plane");
@@ -1149,8 +1147,8 @@ fn core_shortcut_routes_marketplace_publish_to_canyon_ecosystem() {
 
 #[test]
 fn core_shortcut_routes_replay_to_enterprise_hardening() {
-    let route = resolve_core_shortcuts("replay", &["--receipt-hash=abc123".to_string()])
-        .expect("route");
+    let route =
+        resolve_core_shortcuts("replay", &["--receipt-hash=abc123".to_string()]).expect("route");
     assert_eq!(route.script_rel, "core://enterprise-hardening");
     assert_eq!(route.args, vec!["replay", "--receipt-hash=abc123"]);
 }
@@ -1165,29 +1163,27 @@ fn core_shortcut_routes_ai_to_enterprise_hardening() {
 
 #[test]
 fn core_shortcut_routes_chaos_to_enterprise_hardening() {
-    let route =
-        resolve_core_shortcuts("chaos", &["run".to_string(), "--agents=16".to_string()])
-            .expect("route");
+    let route = resolve_core_shortcuts("chaos", &["run".to_string(), "--agents=16".to_string()])
+        .expect("route");
     assert_eq!(route.script_rel, "core://enterprise-hardening");
     assert_eq!(route.args, vec!["chaos-run", "--agents=16"]);
 }
 
 #[test]
 fn core_shortcut_routes_chaos_isolate_to_enterprise_hardening() {
-    let route = resolve_core_shortcuts(
-        "chaos",
-        &["isolate".to_string(), "--agents=4".to_string()],
-    )
-    .expect("route");
+    let route = resolve_core_shortcuts("chaos", &["isolate".to_string(), "--agents=4".to_string()])
+        .expect("route");
     assert_eq!(route.script_rel, "core://enterprise-hardening");
-    assert_eq!(route.args, vec!["chaos-run", "--suite=isolate", "--agents=4"]);
+    assert_eq!(
+        route.args,
+        vec!["chaos-run", "--suite=isolate", "--agents=4"]
+    );
 }
 
 #[test]
 fn core_shortcut_routes_assistant_to_enterprise_hardening() {
     let route =
-        resolve_core_shortcuts("assistant", &["--topic=onboarding".to_string()])
-            .expect("route");
+        resolve_core_shortcuts("assistant", &["--topic=onboarding".to_string()]).expect("route");
     assert_eq!(route.script_rel, "core://enterprise-hardening");
     assert_eq!(route.args, vec!["assistant-mode", "--topic=onboarding"]);
 }
@@ -1250,9 +1246,8 @@ fn core_shortcut_routes_nexus_to_nexus_plane() {
 
 #[test]
 fn core_shortcut_routes_scan_binary_to_binary_vuln_lane() {
-    let route =
-        resolve_core_shortcuts("scan", &["binary".to_string(), "firmware.bin".to_string()])
-            .expect("route");
+    let route = resolve_core_shortcuts("scan", &["binary".to_string(), "firmware.bin".to_string()])
+        .expect("route");
     assert_eq!(route.script_rel, "core://binary-vuln-plane");
     assert_eq!(
         route.args,
@@ -1528,8 +1523,8 @@ fn core_shortcut_routes_substrate_capture_to_substrate_plane() {
 
 #[test]
 fn core_shortcut_routes_eye_enable_wifi_to_substrate_plane() {
-    let route = resolve_core_shortcuts("eye", &["enable".to_string(), "wifi".to_string()])
-        .expect("route");
+    let route =
+        resolve_core_shortcuts("eye", &["enable".to_string(), "wifi".to_string()]).expect("route");
     assert_eq!(route.script_rel, "core://substrate-plane");
     assert_eq!(route.args, vec!["eye-bind", "--op=enable", "--source=wifi"]);
 }
@@ -2068,4 +2063,46 @@ fn session_route_supports_extended_lifecycle_commands() {
         forward_stdin: false,
     };
     assert!(enforce_command_center_boundary("session", &route).is_ok());
+}
+
+#[test]
+fn node_missing_fallback_supports_help_surface() {
+    let route = Route {
+        script_rel: "client/runtime/systems/ops/protheus_command_list.js".to_string(),
+        args: vec!["--mode=help".to_string()],
+        forward_stdin: false,
+    };
+    assert_eq!(node_missing_fallback(Path::new("."), &route, true), Some(0));
+}
+
+#[test]
+fn node_missing_fallback_supports_version_surface() {
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("clock")
+        .as_nanos();
+    let base = std::env::temp_dir().join(format!("protheusctl_version_fallback_{nonce}"));
+    fs::create_dir_all(&base).expect("mkdir");
+    fs::write(base.join("package.json"), r#"{"version":"9.9.9-test"}"#).expect("package");
+    assert_eq!(
+        workspace_package_version(&base).as_deref(),
+        Some("9.9.9-test")
+    );
+    let route = Route {
+        script_rel: "client/runtime/systems/ops/protheus_version_cli.js".to_string(),
+        args: vec!["version".to_string()],
+        forward_stdin: false,
+    };
+    assert_eq!(node_missing_fallback(&base, &route, true), Some(0));
+    let _ = fs::remove_dir_all(base);
+}
+
+#[test]
+fn node_missing_fallback_is_none_for_non_fallback_routes() {
+    let route = Route {
+        script_rel: "client/runtime/systems/ops/protheus_diagram.js".to_string(),
+        args: vec!["status".to_string()],
+        forward_stdin: false,
+    };
+    assert_eq!(node_missing_fallback(Path::new("."), &route, false), None);
 }

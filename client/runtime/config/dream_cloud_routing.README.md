@@ -11,7 +11,7 @@ source client/runtime/config/dream_cloud_routing.env
 
 Or add to your shell profile:
 ```bash
-echo 'source ~/.openclaw/workspace/client/runtime/config/dream_cloud_routing.env' >> ~/.zshrc
+echo 'source $WORKSPACE_ROOT/client/runtime/config/dream_cloud_routing.env' >> ~/.zshrc
 ```
 
 ## What Changes

@@ -33,7 +33,7 @@ Each `*.json` here is declarative policy consumed by generic controllers.
       "revenue": { "ranking_weights": { "expected_value": 0.14, "time_to_value": 0.06 } }
     },
     "objective_overrides": {
-      "T1_make_jay_billionaire_v1": {
+      "T1_build_sovereign_capital_v1": {
         "primary_currency": "revenue",
         "ranking_weights": { "expected_value": 0.16, "risk_penalty": 0.03 }
       }

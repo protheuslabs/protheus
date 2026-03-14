@@ -15,12 +15,12 @@
 # Generate + verify only
 node client/runtime/systems/migration/community_repo_graduation_pack.ts run \
   --legacy-repo=https://github.com/openclaw/openclaw \
-  --target-repo=https://github.com/protheuslabs/protheus
+  --target-repo=https://github.com/protheuslabs/InfRing
 
 # Apply artifacts and update README banner
 node client/runtime/systems/migration/community_repo_graduation_pack.ts run \
   --legacy-repo=https://github.com/openclaw/openclaw \
-  --target-repo=https://github.com/protheuslabs/protheus \
+  --target-repo=https://github.com/protheuslabs/InfRing \
   --apply=1 --strict=1
 ```
 

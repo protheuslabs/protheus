@@ -10,9 +10,9 @@ Targets:
 Core commands:
 
 ```bash
-node client/runtime/systems/ops/mobile_wrapper_distribution_pack.ts build --owner=jay --target=android_termux --version=0.1.0
-node client/runtime/systems/ops/mobile_wrapper_distribution_pack.ts verify --owner=jay --target=android_termux --strict=1
-node client/runtime/systems/ops/mobile_wrapper_distribution_pack.ts rollback --owner=jay --target=android_termux --reason=manual_gate
+node client/runtime/systems/ops/mobile_wrapper_distribution_pack.ts build --owner=operator --target=android_termux --version=0.1.0
+node client/runtime/systems/ops/mobile_wrapper_distribution_pack.ts verify --owner=operator --target=android_termux --strict=1
+node client/runtime/systems/ops/mobile_wrapper_distribution_pack.ts rollback --owner=operator --target=android_termux --reason=manual_gate
 ```
 
 Wrappers are distributed from:

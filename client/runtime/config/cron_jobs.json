@@ -47,7 +47,7 @@
       "schedule": { "expr": "10 18 * * 0", "tz": "America/Denver" },
       "sessionTarget": "isolated",
       "wakeMode": "now",
-      "payload": { "kind": "agentTurn", "message": "cd ~/.openclaw/workspace && node scripts/memory/rebuild_exclusive.ts. Enforce: A) Whitelist: only top-level client/memory/YYYY-MM-DD.md, ignore client/memory/_archive/**. B) Exclusive categories: Projects > Rules > Concepts > System > Unassigned. Report completion + counts." },
+      "payload": { "kind": "agentTurn", "message": "cd $WORKSPACE_ROOT && node scripts/memory/rebuild_exclusive.ts. Enforce: A) Whitelist: only top-level client/memory/YYYY-MM-DD.md, ignore client/memory/_archive/**. B) Exclusive categories: Projects > Rules > Concepts > System > Unassigned. Report completion + counts." },
       "delivery": { "mode": "announce", "channel": "main" },
       "enabled": true,
       "id": "ca358383-ce8d-4b50-aecb-82efc3393142"
@@ -77,7 +77,7 @@
       "schedule": { "expr": "0 9 1 * *", "tz": "America/Denver" },
       "sessionTarget": "isolated",
       "wakeMode": "now",
-      "payload": { "kind": "agentTurn", "message": "cd ~/.openclaw/workspace && node scripts/memory/health_check_quarterly.ts" },
+      "payload": { "kind": "agentTurn", "message": "cd $WORKSPACE_ROOT && node scripts/memory/health_check_quarterly.ts" },
       "delivery": { "mode": "announce", "channel": "main" },
       "enabled": true,
       "id": "ec567010-8c1a-4f3f-b07e-ceeb98e37416"
@@ -87,7 +87,7 @@
       "schedule": { "expr": "30 9 * * 1", "tz": "America/Denver" },
       "sessionTarget": "isolated",
       "wakeMode": "now",
-      "payload": { "kind": "agentTurn", "message": "cd ~/.openclaw/workspace && node client/runtime/systems/security/secret_rotation_migration_auditor.ts. If attestation age > 90 days or required flags fail, emit remediation proposal and alert summary." },
+      "payload": { "kind": "agentTurn", "message": "cd $WORKSPACE_ROOT && node client/runtime/systems/security/secret_rotation_migration_auditor.ts. If attestation age > 90 days or required flags fail, emit remediation proposal and alert summary." },
       "delivery": { "mode": "announce", "channel": "main" },
       "enabled": true,
       "id": "8f7e80be-cf19-4d8e-9e7a-12f5d8a2b53f"

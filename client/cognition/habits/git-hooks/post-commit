@@ -1,9 +1,11 @@
-#!/client/bin/bash
+#!/usr/bin/env bash
 #
 # Global post-commit hook - Auto-capture artifacts from any git repo
 # Installed via: git config --global core.hooksPath
-# Location: /Users/jay/.openclaw/workspace/client/habits/git-hooks/post-commit
 #
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE_ROOT="$(cd "${SCRIPT_DIR}/../../../.." && pwd)"
 
 # Get repo info
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
@@ -25,7 +27,7 @@ if [ "$NOISY_FILES" -eq "$CHANGED_COUNT" ] && [ "$CHANGED_COUNT" -gt 3 ]; then
 fi
 
 # Recursion guard: Skip if commit is in local runtime state directory (feedback loop prevention)
-if echo "$REPO_ROOT" | grep -q "/Users/jay/.openclaw/workspace/client/runtime/local/state/"; then
+if [[ "$REPO_ROOT" == "$WORKSPACE_ROOT/client/runtime/local/state"* ]]; then
     exit 0
 fi
 
@@ -51,7 +53,7 @@ EOF
 
 # Call the autocap function via dop CLI
 # We create a special artifact entry via node directly
-cd /Users/jay/.openclaw/workspace || exit 0
+cd "$WORKSPACE_ROOT" || exit 0
 
 node -e "
 const fs = require('fs');

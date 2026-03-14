@@ -13,7 +13,7 @@
   },
   "plateau_min_streak": 3,
   "objective_criticality_map": {
-    "T1_make_jay_billionaire_v1": "financial",
+    "T1_build_sovereign_capital_v1": "financial",
     "T1_generational_wealth_v1": "financial"
   }
 }

@@ -8,7 +8,8 @@ const path = require('path');
 const crypto = require('crypto');
 const os = require('os');
 
-const CONFIG_PATH = '/Users/jay/.openclaw/workspace/client/runtime/config/trusted_skills.json';
+const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..');
+const CONFIG_PATH = path.join(WORKSPACE_ROOT, 'client', 'runtime', 'config', 'trusted_skills.json');
 
 /**
  * Expand ~ to home directory
@@ -18,6 +19,22 @@ function expandHome(filepath) {
     return path.join(os.homedir(), filepath.slice(2));
   }
   return filepath;
+}
+
+function expandWorkspaceToken(filepath) {
+  if (typeof filepath !== 'string') return filepath;
+  if (filepath.startsWith('${WORKSPACE_ROOT}/')) {
+    return path.join(WORKSPACE_ROOT, filepath.slice('${WORKSPACE_ROOT}/'.length));
+  }
+  if (filepath.startsWith('$OPENCLAW_WORKSPACE/')) {
+    return path.join(WORKSPACE_ROOT, filepath.slice('$OPENCLAW_WORKSPACE/'.length));
+  }
+  return filepath;
+}
+
+function normalizePath(filepath) {
+  const expanded = expandHome(expandWorkspaceToken(filepath));
+  return path.resolve(expanded);
 }
 
 /**
@@ -33,7 +50,7 @@ function computeHash(filepath) {
  */
 function isPathAllowlisted(resolvedPath, allowlistRoots) {
   for (const root of allowlistRoots) {
-    const expandedRoot = expandHome(root);
+    const expandedRoot = normalizePath(root);
     const realRoot = fs.realpathSync(expandedRoot);
     const realPath = fs.realpathSync(resolvedPath);
     
@@ -53,7 +70,18 @@ function loadConfig() {
     throw new Error(`SKILL_GATE_CONFIG_MISSING: ${CONFIG_PATH} not found`);
   }
   const content = fs.readFileSync(CONFIG_PATH, 'utf8');
-  return JSON.parse(content);
+  const rawConfig = JSON.parse(content);
+  const trustedFiles = {};
+  Object.entries(rawConfig.trusted_files || {}).forEach(([filePath, entry]) => {
+    trustedFiles[normalizePath(filePath)] = entry;
+  });
+  return {
+    ...rawConfig,
+    allowlist_roots: Array.isArray(rawConfig.allowlist_roots)
+      ? rawConfig.allowlist_roots.map((root) => normalizePath(root))
+      : [],
+    trusted_files: trustedFiles
+  };
 }
 
 /**
@@ -83,8 +111,7 @@ function verifySkillOrThrow(targetPath) {
   }
   
   // Resolve absolute path
-  const expandedPath = expandHome(targetPath);
-  const resolvedPath = path.resolve(expandedPath);
+  const resolvedPath = normalizePath(targetPath);
   
   // Check if file exists
   if (!fs.existsSync(resolvedPath)) {
@@ -95,7 +122,7 @@ function verifySkillOrThrow(targetPath) {
   if (!isPathAllowlisted(resolvedPath, config.allowlist_roots)) {
     throw new Error(
       `NOT_ALLOWLISTED: ${resolvedPath} is not within any allowlist root. ` +
-      `To approve: node /Users/jay/.openclaw/workspace/scripts/memory/trust_add.ts ${resolvedPath} "approval note"`
+      `To approve: node ${path.join(WORKSPACE_ROOT, 'scripts', 'memory', 'trust_add.ts')} ${resolvedPath} "approval note"`
     );
   }
   
@@ -104,7 +131,7 @@ function verifySkillOrThrow(targetPath) {
   if (!trustedEntry) {
     throw new Error(
       `NOT_TRUSTED: ${resolvedPath} has no pinned hash. ` +
-      `To approve: node /Users/jay/.openclaw/workspace/scripts/memory/trust_add.ts ${resolvedPath} "approval note"`
+      `To approve: node ${path.join(WORKSPACE_ROOT, 'scripts', 'memory', 'trust_add.ts')} ${resolvedPath} "approval note"`
     );
   }
   
@@ -114,7 +141,7 @@ function verifySkillOrThrow(targetPath) {
     throw new Error(
       `HASH_MISMATCH: ${resolvedPath} has been modified since approval. ` +
       `Expected: ${trustedEntry.sha256}, Got: ${currentHash}. ` +
-      `To re-approve: node /Users/jay/.openclaw/workspace/scripts/memory/trust_add.ts ${resolvedPath} "re-approval note"`
+      `To re-approve: node ${path.join(WORKSPACE_ROOT, 'scripts', 'memory', 'trust_add.ts')} ${resolvedPath} "re-approval note"`
     );
   }
   
@@ -141,5 +168,8 @@ module.exports = {
   checkSkill,
   computeHash,
   expandHome,
+  expandWorkspaceToken,
+  normalizePath,
+  WORKSPACE_ROOT,
   CONFIG_PATH
 };

@@ -17,31 +17,31 @@
   "ownership_matrix": [
     {
       "path_prefix": "client/runtime/systems/spine/",
-      "primary_owner": "jay",
+      "primary_owner": "operator",
       "secondary_owner": "unassigned",
       "service_level": "critical"
     },
     {
       "path_prefix": "client/runtime/systems/security/",
-      "primary_owner": "jay",
+      "primary_owner": "operator",
       "secondary_owner": "unassigned",
       "service_level": "critical"
     },
     {
       "path_prefix": "client/runtime/systems/autonomy/",
-      "primary_owner": "jay",
+      "primary_owner": "operator",
       "secondary_owner": "unassigned",
       "service_level": "high"
     },
     {
       "path_prefix": "client/runtime/systems/sensory/",
-      "primary_owner": "jay",
+      "primary_owner": "operator",
       "secondary_owner": "unassigned",
       "service_level": "high"
     },
     {
       "path_prefix": "client/runtime/systems/ops/",
-      "primary_owner": "jay",
+      "primary_owner": "operator",
       "secondary_owner": "unassigned",
       "service_level": "medium"
     }

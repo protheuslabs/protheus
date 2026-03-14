@@ -1,27 +1,24 @@
-#!/usr/bin/env node
-'use strict';
+#!/usr/bin/env bash
+set -euo pipefail
 
-const fs = require('fs');
-const path = require('path');
-const { spawnSync } = require('child_process');
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
-const sourceScript = path.resolve(__dirname, '..', '..', 'runtime', 'systems', 'ops', 'protheus_top.js');
-const distScript = path.resolve(__dirname, '..', '..', 'runtime', 'dist', 'systems', 'ops', 'protheus_top.js');
-const runtimeMode = String(process.env.PROTHEUS_RUNTIME_MODE || '').trim().toLowerCase();
-const preferDist = runtimeMode !== 'source';
-const script = preferDist && fs.existsSync(distScript) ? distScript : sourceScript;
+if [[ -x "$SCRIPT_DIR/protheusctl" ]]; then
+  exec "$SCRIPT_DIR/protheusctl" top "$@"
+fi
 
-if (!fs.existsSync(script)) {
-  process.stderr.write(`missing entrypoint: ${script}\n`);
-  process.exit(1);
-}
+if [[ -x "$ROOT/target/release/protheus-ops" ]]; then
+  exec "$ROOT/target/release/protheus-ops" protheusctl top "$@"
+fi
 
-const run = spawnSync(process.execPath, [script, ...process.argv.slice(2)], {
-  stdio: 'inherit',
-  env: {
-    ...process.env,
-    PROTHEUS_CONDUIT_STARTUP_PROBE_TIMEOUT_MS: process.env.PROTHEUS_CONDUIT_STARTUP_PROBE_TIMEOUT_MS || '30000',
-    PROTHEUS_CONDUIT_STDIO_TIMEOUT_MS: process.env.PROTHEUS_CONDUIT_STDIO_TIMEOUT_MS || '90000'
-  }
-});
-process.exit(Number.isFinite(run.status) ? run.status : 1);
+if [[ -x "$ROOT/target/debug/protheus-ops" ]]; then
+  exec "$ROOT/target/debug/protheus-ops" protheusctl top "$@"
+fi
+
+if command -v cargo >/dev/null 2>&1; then
+  exec cargo run --quiet --manifest-path "$ROOT/core/layer0/ops/Cargo.toml" --bin protheus-ops -- protheusctl top "$@"
+fi
+
+echo "protheus-top launcher failed: missing protheusctl/protheus-ops and cargo." >&2
+exit 1

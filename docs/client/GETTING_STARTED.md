@@ -13,13 +13,13 @@ curl -fsSL https://get.protheus.ai/install | sh
 Fallback (direct repo script):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/protheuslabs/protheus/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/protheuslabs/infring/main/install.sh | sh
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-irm https://raw.githubusercontent.com/protheuslabs/protheus/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/protheuslabs/infring/main/install.ps1 | iex
 ```
 
 ### Optional: Python Wrapper (`pip install`)

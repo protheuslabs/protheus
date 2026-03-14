@@ -1,15 +1,15 @@
 {
   "name": "protheus",
-  "version": "0.2.0",
+  "version": "0.2.1-alpha.1",
   "description": "Thin npm distribution wrapper for the Protheus Rust CLI binary.",
-  "license": "Apache-2.0",
+  "license": "LicenseRef-Protheus-NC-1.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/protheuslabs/protheus.git"
+    "url": "git+https://github.com/protheuslabs/InfRing.git"
   },
-  "homepage": "https://github.com/protheuslabs/protheus",
+  "homepage": "https://github.com/protheuslabs/InfRing",
   "bugs": {
-    "url": "https://github.com/protheuslabs/protheus/issues"
+    "url": "https://github.com/protheuslabs/InfRing/issues"
   },
   "bin": {
     "protheus": "./bin/protheus.ts"
@@ -25,7 +25,7 @@
     "test:smoke": "node ./scripts/smoke.ts"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "keywords": [
     "protheus",

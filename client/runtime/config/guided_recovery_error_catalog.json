@@ -31,7 +31,7 @@
         "Provide approval artifact and rerun command.",
         "Lower risk tier only if policy allows and rationale is documented."
       ],
-      "troubleshoot_command": "node client/cognition/adaptive/rsi/rsi_bootstrap.ts contract-lane-status --owner=jay"
+      "troubleshoot_command": "node client/cognition/adaptive/rsi/rsi_bootstrap.ts contract-lane-status --owner=operator"
     },
     "root_surface_contract_failed": {
       "message": "Root surface contract check failed due unapproved root entries.",

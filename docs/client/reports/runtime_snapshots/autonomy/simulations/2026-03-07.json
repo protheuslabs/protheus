@@ -143,7 +143,7 @@
     }
   },
   "budget_autopause": {
-    "path": "/Users/jay/.openclaw/workspace/client/runtime/state/autonomy/budget_autopause.json",
+    "path": "/client/runtime/state/autonomy/budget_autopause.json",
     "active": false,
     "currently_active": false,
     "active_relevant": false,

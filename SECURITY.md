@@ -2,7 +2,7 @@
 
 ## License Context
 
-This repository is distributed under Apache-2.0 (`LICENSE`). Archived legacy legal artifacts are kept in `docs/client/legal/archive/` for historical audit context.
+This repository is distributed under the Protheus Non-Commercial License v1.0 (`LICENSE`). Archived legacy legal artifacts are kept in `docs/client/legal/archive/` for historical audit context.
 
 ## Supported Versions
 

@@ -13,8 +13,8 @@
   "sovereign_root_tithe": {
     "enabled": true,
     "tithe_bps": 1000,
-    "beneficiary_creator_id": "jay_sovereign_root",
-    "beneficiary_wallet_alias": "jay_root_wallet",
+    "beneficiary_creator_id": "sovereign_root",
+    "beneficiary_wallet_alias": "sovereign_root_wallet",
     "enforce_root_first": true
   },
   "passport": {

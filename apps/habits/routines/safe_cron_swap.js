@@ -9,8 +9,13 @@ const path = require('path');
 async function run(inputs, ctx) {
   const startTime = Date.now();
   const { old_job_id, new_job_cli, verify_name } = inputs;
-  
-  const workspaceRoot = ctx.workspace_root || '/Users/jay/.openclaw/workspace';
+
+  const defaultWorkspaceRoot = path.resolve(__dirname, '..', '..', '..');
+  const workspaceRoot =
+    ctx.workspace_root ||
+    process.env.OPENCLAW_WORKSPACE ||
+    process.env.PROTHEUS_WORKSPACE ||
+    defaultWorkspaceRoot;
   const configDir = path.join(workspaceRoot, 'config');
   const memoryDir = path.join(workspaceRoot, 'memory');
   

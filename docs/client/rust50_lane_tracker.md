@@ -536,7 +536,7 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - Gates:
   - `CARGO_TARGET_DIR=/tmp/pc-next50-ops cargo test --manifest-path core/layer0/ops/Cargo.toml` ✅ (`145 passed`, `0 failed`; `personas_core 6 passed`)
   - `CARGO_TARGET_DIR=/tmp/pc-next50-ops cargo clippy --manifest-path core/layer0/ops/Cargo.toml --all-targets -- -D warnings` ✅
-  - `NODE_PATH=/Users/jay/.openclaw/workspace/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
+  - `NODE_PATH=${WORKSPACE_ROOT}/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
 
 ### New Anchor Lanes Migrated (50)
 - `client/runtime/systems/ops/backlog_runtime_anchors/bl_003_anchor.ts`
@@ -597,7 +597,7 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - Gates:
   - `CARGO_TARGET_DIR=/tmp/pc-next50b-ops cargo test --manifest-path core/layer0/ops/Cargo.toml` ✅
   - `CARGO_TARGET_DIR=/tmp/pc-next50b-ops cargo clippy --manifest-path core/layer0/ops/Cargo.toml --all-targets -- -D warnings` ✅
-  - `NODE_PATH=/Users/jay/.openclaw/workspace/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
+  - `NODE_PATH=${WORKSPACE_ROOT}/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
 
 ### New Anchor Lanes Migrated (50)
 - `client/runtime/systems/ops/backlog_runtime_anchors/v2_040_anchor.ts`
@@ -658,7 +658,7 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - Gates:
   - `CARGO_TARGET_DIR=/tmp/pc-next50c-ops cargo test --manifest-path core/layer0/ops/Cargo.toml` ✅
   - `CARGO_TARGET_DIR=/tmp/pc-next50c-ops cargo clippy --manifest-path core/layer0/ops/Cargo.toml --all-targets -- -D warnings` ✅
-  - `NODE_PATH=/Users/jay/.openclaw/workspace/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
+  - `NODE_PATH=${WORKSPACE_ROOT}/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
 
 ### New Anchor Lanes Migrated (50)
 - `client/runtime/systems/ops/backlog_runtime_anchors/v3_race_109_anchor.ts`
@@ -719,7 +719,7 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - Gates:
   - `CARGO_TARGET_DIR=/tmp/pc-next50d-ops cargo test --manifest-path core/layer0/ops/Cargo.toml` ✅
   - `CARGO_TARGET_DIR=/tmp/pc-next50d-ops cargo clippy --manifest-path core/layer0/ops/Cargo.toml --all-targets -- -D warnings` ✅
-  - `NODE_PATH=/Users/jay/.openclaw/workspace/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
+  - `NODE_PATH=${WORKSPACE_ROOT}/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
 
 ### New Anchor Lanes Migrated (50)
 - `client/runtime/systems/ops/backlog_runtime_anchors/v3_race_192_anchor.ts`
@@ -780,7 +780,7 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - Gates:
   - `CARGO_TARGET_DIR=/tmp/pc-next50e-ops cargo test --manifest-path core/layer0/ops/Cargo.toml` ✅
   - `CARGO_TARGET_DIR=/tmp/pc-next50e-ops cargo clippy --manifest-path core/layer0/ops/Cargo.toml --all-targets -- -D warnings` ✅
-  - `NODE_PATH=/Users/jay/.openclaw/workspace/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
+  - `NODE_PATH=${WORKSPACE_ROOT}/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
 
 ### New Anchor Lanes Migrated (50)
 - `client/runtime/systems/ops/backlog_runtime_anchors/v3_race_279_anchor.ts`
@@ -841,7 +841,7 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - Gates:
   - `CARGO_TARGET_DIR=/tmp/pc-next50f-ops cargo test --manifest-path core/layer0/ops/Cargo.toml` ✅
   - `CARGO_TARGET_DIR=/tmp/pc-next50f-ops cargo clippy --manifest-path core/layer0/ops/Cargo.toml --all-targets -- -D warnings` ✅
-  - `NODE_PATH=/Users/jay/.openclaw/workspace/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
+  - `NODE_PATH=${WORKSPACE_ROOT}/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
 
 ### New Anchor Lanes Migrated (50)
 - `client/runtime/systems/ops/backlog_runtime_anchors/v3_race_331_anchor.ts`
@@ -902,7 +902,7 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - Gates:
   - `CARGO_TARGET_DIR=/tmp/pc-next50g-ops cargo test --manifest-path core/layer0/ops/Cargo.toml` ✅
   - `CARGO_TARGET_DIR=/tmp/pc-next50g-ops cargo clippy --manifest-path core/layer0/ops/Cargo.toml --all-targets -- -D warnings` ✅
-  - `NODE_PATH=/Users/jay/.openclaw/workspace/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
+  - `NODE_PATH=${WORKSPACE_ROOT}/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
 
 ### New Anchor Lanes Migrated (50)
 - `client/runtime/systems/ops/backlog_runtime_anchors/v4_002_anchor.ts`
@@ -963,7 +963,7 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - Gates:
   - `CARGO_TARGET_DIR=/tmp/pc-next2-ops cargo test --manifest-path core/layer0/ops/Cargo.toml` ✅
   - `CARGO_TARGET_DIR=/tmp/pc-next2-ops cargo clippy --manifest-path core/layer0/ops/Cargo.toml --all-targets -- -D warnings` ✅
-  - `NODE_PATH=/Users/jay/.openclaw/workspace/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
+  - `NODE_PATH=${WORKSPACE_ROOT}/node_modules npm run -s formal:invariants:run` ✅ (`ok: true`, `failed_invariants: 0`)
 
 ### Final Anchor Lanes Migrated (2)
 - `client/runtime/systems/ops/backlog_runtime_anchors/v6_rust50_006_anchor.ts`
@@ -977,7 +977,7 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - Gates:
   - CARGO_TARGET_DIR=/tmp/pc-nextbatch-nonanchor cargo test --manifest-path core/layer0/ops/Cargo.toml ✅ (147 passed, 0 failed)
   - CARGO_TARGET_DIR=/tmp/pc-nextbatch-nonanchor cargo clippy --manifest-path core/layer0/ops/Cargo.toml --all-targets -- -D warnings ✅
-  - NODE_PATH=/Users/jay/.openclaw/workspace/node_modules npm run -s formal:invariants:run ✅ (ok: true, failed_invariants: 0)
+  - NODE_PATH=${WORKSPACE_ROOT}/node_modules npm run -s formal:invariants:run ✅ (ok: true, failed_invariants: 0)
 
 ### Lanes Migrated (50)
 - client/runtime/systems/actuation/adapter_defragmentation.ts
@@ -1038,7 +1038,7 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - Gates:
   - CARGO_TARGET_DIR=/tmp/pc-nextbatch-j cargo test --manifest-path core/layer0/ops/Cargo.toml ✅ (147 passed, 0 failed)
   - CARGO_TARGET_DIR=/tmp/pc-nextbatch-j cargo clippy --manifest-path core/layer0/ops/Cargo.toml --all-targets -- -D warnings ✅
-  - NODE_PATH=/Users/jay/.openclaw/workspace/node_modules npm run -s formal:invariants:run ✅ (ok: true, failed_invariants: 0)
+  - NODE_PATH=${WORKSPACE_ROOT}/node_modules npm run -s formal:invariants:run ✅ (ok: true, failed_invariants: 0)
 
 ### Lanes Migrated (50)
 - client/runtime/systems/execution/index.ts
@@ -1099,7 +1099,7 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - Gates:
   - CARGO_TARGET_DIR=/tmp/pc-nextbatch-k cargo test --manifest-path core/layer0/ops/Cargo.toml ✅ (147 passed, 0 failed)
   - CARGO_TARGET_DIR=/tmp/pc-nextbatch-k cargo clippy --manifest-path core/layer0/ops/Cargo.toml --all-targets -- -D warnings ✅
-  - NODE_PATH=/Users/jay/.openclaw/workspace/node_modules npm run -s formal:invariants:run ✅ (ok: true, failed_invariants: 0)
+  - NODE_PATH=${WORKSPACE_ROOT}/node_modules npm run -s formal:invariants:run ✅ (ok: true, failed_invariants: 0)
 
 ### Lanes Migrated (50)
 - client/runtime/systems/fractal/engine.ts
@@ -1160,7 +1160,7 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - Gates:
   - CARGO_TARGET_DIR=/tmp/pc-nextbatch-l cargo test --manifest-path core/layer0/ops/Cargo.toml ✅ (147 passed, 0 failed)
   - CARGO_TARGET_DIR=/tmp/pc-nextbatch-l cargo clippy --manifest-path core/layer0/ops/Cargo.toml --all-targets -- -D warnings ✅
-  - NODE_PATH=/Users/jay/.openclaw/workspace/node_modules npm run -s formal:invariants:run ✅ (ok: true, failed_invariants: 0)
+  - NODE_PATH=${WORKSPACE_ROOT}/node_modules npm run -s formal:invariants:run ✅ (ok: true, failed_invariants: 0)
 
 ### Lanes Migrated (50)
 - client/runtime/systems/ops/state_tiering_contract.ts
@@ -1221,7 +1221,7 @@ Persistent lane-by-lane migration log so progress is preserved outside chat cont
 - Gates:
   - CARGO_TARGET_DIR=/tmp/pc-nextbatch-m cargo test --manifest-path core/layer0/ops/Cargo.toml ✅ (147 passed, 0 failed)
   - CARGO_TARGET_DIR=/tmp/pc-nextbatch-m cargo clippy --manifest-path core/layer0/ops/Cargo.toml --all-targets -- -D warnings ✅
-  - NODE_PATH=/Users/jay/.openclaw/workspace/node_modules npm run -s formal:invariants:run ✅ (ok: true, failed_invariants: 0)
+  - NODE_PATH=${WORKSPACE_ROOT}/node_modules npm run -s formal:invariants:run ✅ (ok: true, failed_invariants: 0)
 
 ### Lanes Migrated (50)
 - client/runtime/systems/symbiosis/symbiosis_coherence_gate.ts

@@ -19,7 +19,7 @@ variable "chart_path" {
 variable "image_repository" {
   description = "Container image repository"
   type        = string
-  default     = "protheuslabs/protheus"
+  default     = "protheuslabs/infring"
 }
 
 variable "image_tag" {

@@ -63,7 +63,7 @@
     "client/runtime/config/directives/quant_intel_acquisition.yaml": "6438b94d6cdd0a7c04642bff9c8f0e0606db7181a271d6debbcb3afbe314e83a",
     "client/runtime/config/directives/T0_invariants.yaml": "e9d185792805e205794b3d7ea81cb6562891fef1873cbb6f65cbef73f41276f9",
     "client/runtime/config/directives/T1_generational_wealth_v1.yaml": "def757e86e8136c75766e35098414c8b8ca7b1f75707c4c9c3f474b35da78107",
-    "client/runtime/config/directives/T1_make_jay_billionaire_v1.yaml": "e9a9082270763dc429b1b032c7f7c606c4a47e7cc252a3f501ac1ef975c7deb0",
+    "client/runtime/config/directives/T1_build_sovereign_capital_v1.yaml": "f33a5fa02e23ae02efad574e8b1939d05c8bd575561beb1f7a5ba2fe4bfc0473",
     "client/runtime/config/directives/T1_northstars.yaml": "dbababba9f2dc49b0d24ada4a1a70117cdafe0767ba2ec4a69ec7f80c1721610",
     "client/runtime/config/echo_policy.json": "031025f20678cbe39446a160bb8e22916f8a90c9e1f392998ef666c45387d2e2",
     "client/runtime/config/helix_policy.json": "076f2c8666528aaa426bdfa1004a56ae81d0fcf34ff438924eec4b3ca99ddf0d",
@@ -149,6 +149,6 @@
     "systems/weaver/weaver_core.ts": "438e474ce9979667c0154630e1c00d2f4e447d06bf468aea674dc48675261131"
   },
   "sealed_at": "2026-03-09T02:27:49.427Z",
-  "sealed_by": "jay",
+  "sealed_by": "operator",
   "last_approval_note": "Automated integrity reseal assistant run (files=client/runtime/config/helix_policy.json,systems/helix/codex_root.ts,systems/helix/helix_controller.ts,systems/security/rust_security_gate.js) at 2026-03-09T02:27:49.208Z"
 }

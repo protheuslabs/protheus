@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "roots": [
-    "/Users/jay/.openclaw/workspace/local/state/sensory_test/work_root"
+    "${WORKSPACE_ROOT}/local/state/sensory_test/work_root"
   ],
   "ignore_patterns": [
     "node_modules",

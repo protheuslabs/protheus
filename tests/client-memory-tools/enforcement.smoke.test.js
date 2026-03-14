@@ -17,7 +17,7 @@ function mustInclude(needle, output) {
 }
 
 (function main() {
-  const workspace = "/Users/jay/.openclaw/workspace";
+  const workspace = process.env.OPENCLAW_WORKSPACE || path.resolve(__dirname, "..", "..");
   const memoryDir = path.join(workspace, "memory");
   const script = path.join(workspace, "scripts/memory/rebuild_exclusive.ts");
 
