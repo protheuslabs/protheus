@@ -26,6 +26,9 @@ Enforced by:
 
 ## Remaining intentional exceptions
 
-- Workspace identity/memory markdown files remain tracked for bootstrap/test contracts:
-  - `docs/workspace/MEMORY.md`, `docs/workspace/SOUL.md`, `docs/workspace/HEARTBEAT.md`, `docs/workspace/IDENTITY.md`, `docs/workspace/TAGS_INDEX.md`, `docs/workspace/LEARNINGS_INDEX.md`
-- Follow-up item: `V6-ROOT-INTERNAL-003` in `docs/workspace/TODO.md` to either migrate these to `client/runtime/local/internal/*` or keep them under `docs/workspace/*`.
+- Tracked bootstrap material is limited to blank templates:
+  - `docs/workspace/templates/assistant/*.md`
+- Live instance data now sits outside the tracked docs surface:
+  - `local/workspace/assistant/*.md`
+  - `local/workspace/memory/*.md`
+  - `local/workspace/reports/*.md`

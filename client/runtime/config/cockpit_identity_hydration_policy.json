@@ -8,8 +8,8 @@
     "local/workspace/assistant/USER.md"
   ],
   "lazy_pages": [
-    "docs/workspace/MEMORY_INDEX.md",
-    "docs/workspace/TAGS_INDEX.md",
+    "local/workspace/reports/MEMORY_INDEX.md",
+    "local/workspace/reports/TAGS_INDEX.md",
     "local/workspace/assistant/MEMORY.md",
     "client/runtime/local/state/memory/conversation_eye/nodes.jsonl",
     "client/runtime/local/state/attention/latest.json"

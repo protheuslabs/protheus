@@ -17,55 +17,25 @@ const ENV_KEY: &str = "PROTHEUS_NEXUS_PLANE_STATE_ROOT";
 
 fn usage() {
     println!("Usage:");
-    println!("  protheus-ops nexus-plane package-domain --domain=<id> [--strict=1|0]");
-    println!(
-        "  protheus-ops nexus-plane bridge --from-domain=<id> --to-domain=<id> [--payload-json=<json>] [--legal-contract-id=<id>] [--sanitize=1|0] [--strict=1|0]"
-    );
-    println!(
-        "  protheus-ops nexus-plane insurance --op=<quote|status> [--risk-json=<json>] [--strict=1|0]"
-    );
-    println!(
-        "  protheus-ops nexus-plane human-boundary --op=<authorize|status> [--action=<id>] [--human-a=<sig>] [--human-b=<sig>] [--strict=1|0]"
-    );
-    println!(
-        "  protheus-ops nexus-plane receipt-v2 --op=<validate|status> [--receipt-json=<json>] [--strict=1|0]"
-    );
-    println!("  protheus-ops nexus-plane merkle-forest --op=<build|status> [--strict=1|0]");
-    println!(
-        "  protheus-ops nexus-plane compliance-ledger --op=<append|query|status> [--entry-json=<json>] [--chain-id=<id>] [--strict=1|0]"
-    );
+    for line in [
+        "  protheus-ops nexus-plane package-domain --domain=<id> [--strict=1|0]",
+        "  protheus-ops nexus-plane bridge --from-domain=<id> --to-domain=<id> [--payload-json=<json>] [--legal-contract-id=<id>] [--sanitize=1|0] [--strict=1|0]",
+        "  protheus-ops nexus-plane insurance --op=<quote|status> [--risk-json=<json>] [--strict=1|0]",
+        "  protheus-ops nexus-plane human-boundary --op=<authorize|status> [--action=<id>] [--human-a=<sig>] [--human-b=<sig>] [--strict=1|0]",
+        "  protheus-ops nexus-plane receipt-v2 --op=<validate|status> [--receipt-json=<json>] [--strict=1|0]",
+        "  protheus-ops nexus-plane merkle-forest --op=<build|status> [--strict=1|0]",
+        "  protheus-ops nexus-plane compliance-ledger --op=<append|query|status> [--entry-json=<json>] [--chain-id=<id>] [--strict=1|0]",
+    ] {
+        println!("{line}");
+    }
 }
 
 fn lane_root(root: &Path) -> PathBuf {
     scoped_state_root(root, ENV_KEY, LANE_ID)
 }
 
-fn package_root(root: &Path) -> PathBuf {
-    lane_root(root).join("packages")
-}
-
-fn bridge_path(root: &Path) -> PathBuf {
-    lane_root(root).join("bridge.jsonl")
-}
-
-fn insurance_path(root: &Path) -> PathBuf {
-    lane_root(root).join("insurance_quotes.jsonl")
-}
-
-fn human_path(root: &Path) -> PathBuf {
-    lane_root(root).join("human_authorizations.jsonl")
-}
-
-fn receipt_v2_state(root: &Path) -> PathBuf {
-    lane_root(root).join("receipt_v2_state.json")
-}
-
-fn merkle_state(root: &Path) -> PathBuf {
-    lane_root(root).join("merkle_forest.json")
-}
-
-fn compliance_path(root: &Path) -> PathBuf {
-    lane_root(root).join("compliance_ledger.jsonl")
+fn lane_file(root: &Path, leaf: &str) -> PathBuf {
+    lane_root(root).join(leaf)
 }
 
 fn emit(root: &Path, _command: &str, strict: bool, payload: Value, conduit: Option<&Value>) -> i32 {
@@ -81,7 +51,7 @@ fn package_domain_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Val
             .unwrap_or("domain"),
         80,
     );
-    let base = package_root(root).join(&domain);
+    let base = lane_file(root, "packages").join(&domain);
     for part in [
         "layer0/policy",
         "layer1/execution",
@@ -153,7 +123,7 @@ fn bridge_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Stri
         "payload_hash": sha256_hex_str(&canonical_json_string(&payload)),
         "ok": allowed
     });
-    append_jsonl(&bridge_path(root), &row)?;
+    append_jsonl(&lane_file(root, "bridge.jsonl"), &row)?;
     Ok(json!({
         "ok": allowed,
         "type": "nexus_plane_bridge",
@@ -179,7 +149,7 @@ fn insurance_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, S
     )
     .to_ascii_lowercase();
     if op == "status" {
-        let rows = read_jsonl(&insurance_path(root));
+        let rows = read_jsonl(&lane_file(root, "insurance_quotes.jsonl"));
         return Ok(json!({
             "ok": true,
             "type": "nexus_plane_insurance",
@@ -217,7 +187,7 @@ fn insurance_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, S
         "coverage": if adjusted < 0.8 { "approved" } else { "limited" },
         "exclusions": if adjusted < 0.8 { Vec::<String>::new() } else { vec!["high_loss_domain".to_string()] }
     });
-    append_jsonl(&insurance_path(root), &quote)?;
+    append_jsonl(&lane_file(root, "insurance_quotes.jsonl"), &quote)?;
     Ok(json!({
         "ok": true,
         "type": "nexus_plane_insurance",
@@ -244,7 +214,7 @@ fn human_boundary_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Val
     )
     .to_ascii_lowercase();
     if op == "status" {
-        let rows = read_jsonl(&human_path(root));
+        let rows = read_jsonl(&lane_file(root, "human_authorizations.jsonl"));
         return Ok(json!({
             "ok": true,
             "type": "nexus_plane_human_boundary",
@@ -294,7 +264,7 @@ fn human_boundary_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Val
         "human_b": sig_b,
         "ok": ok
     });
-    append_jsonl(&human_path(root), &row)?;
+    append_jsonl(&lane_file(root, "human_authorizations.jsonl"), &row)?;
     Ok(json!({
         "ok": ok,
         "type": "nexus_plane_human_boundary",
@@ -327,7 +297,7 @@ fn receipt_v2_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, 
             "lane": LANE_ID,
             "ts": now_iso(),
             "op": op,
-            "state": read_json(&receipt_v2_state(root)).unwrap_or_else(|| json!({})),
+            "state": read_json(&lane_file(root, "receipt_v2_state.json")).unwrap_or_else(|| json!({})),
             "claim_evidence": [{
                 "id": "V7-NEXUS-001.5",
                 "claim": "receipt_v2_status_surfaces_latest_schema_validation_result",
@@ -358,7 +328,7 @@ fn receipt_v2_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, 
         "missing_fields": missing,
         "receipt_hash": sha256_hex_str(&canonical_json_string(&receipt))
     });
-    write_json(&receipt_v2_state(root), &state)?;
+    write_json(&lane_file(root, "receipt_v2_state.json"), &state)?;
     Ok(json!({
         "ok": ok,
         "type": "nexus_plane_receipt_v2",
@@ -391,7 +361,7 @@ fn merkle_forest_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Valu
             "lane": LANE_ID,
             "ts": now_iso(),
             "op": op,
-            "state": read_json(&merkle_state(root)).unwrap_or_else(|| json!({})),
+            "state": read_json(&lane_file(root, "merkle_forest.json")).unwrap_or_else(|| json!({})),
             "claim_evidence": [{
                 "id": "V7-NEXUS-001.6",
                 "claim": "merkle_forest_status_surfaces_latest_domain_root_and_notarization_state",
@@ -433,7 +403,7 @@ fn merkle_forest_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Valu
         "notarization_anchor": sha256_hex_str(&format!("notary:{}", forest_root)),
         "example_proof": proof
     });
-    write_json(&merkle_state(root), &state)?;
+    write_json(&lane_file(root, "merkle_forest.json"), &state)?;
     Ok(json!({
         "ok": true,
         "type": "nexus_plane_merkle_forest",
@@ -460,7 +430,7 @@ fn compliance_ledger_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<
     )
     .to_ascii_lowercase();
     if op == "status" {
-        let rows = read_jsonl(&compliance_path(root));
+        let rows = read_jsonl(&lane_file(root, "compliance_ledger.jsonl"));
         return Ok(json!({
             "ok": true,
             "type": "nexus_plane_compliance_ledger",
@@ -492,7 +462,7 @@ fn compliance_ledger_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<
             "entry": entry,
             "lineage_hash": sha256_hex_str(&canonical_json_string(&entry))
         });
-        append_jsonl(&compliance_path(root), &row)?;
+        append_jsonl(&lane_file(root, "compliance_ledger.jsonl"), &row)?;
         return Ok(json!({
             "ok": true,
             "type": "nexus_plane_compliance_ledger",
@@ -516,7 +486,7 @@ fn compliance_ledger_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<
                 .unwrap_or(""),
             120,
         );
-        let rows = read_jsonl(&compliance_path(root))
+        let rows = read_jsonl(&lane_file(root, "compliance_ledger.jsonl"))
             .into_iter()
             .filter(|row| {
                 chain_id.is_empty()

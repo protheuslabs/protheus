@@ -17,8 +17,7 @@ function parseArgs(argv) {
 function classifyPath(path) {
   if (
     path.startsWith('local/') ||
-    path.startsWith('simulated-commits/') ||
-    path === 'config/rohan_github_credentials.md'
+    path.startsWith('simulated-commits/')
   ) {
     return 'local_simulation_churn';
   }

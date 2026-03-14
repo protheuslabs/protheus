@@ -5,7 +5,7 @@
   "origin_integrity": {
     "enabled": true,
     "timeout_ms": 30000,
-    "policy_path": "config/origin_integrity_policy.json",
+    "policy_path": "client/runtime/config/origin_integrity_policy.json",
     "require_pass_on_start": true
   }
 }

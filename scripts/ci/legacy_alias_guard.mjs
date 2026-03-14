@@ -1,11 +1,17 @@
 #!/usr/bin/env node
-import { readFileSync, existsSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const repoRoot = process.cwd();
 const systemsRoot = path.join(repoRoot, 'client', 'runtime', 'systems');
-const allowlistPath = path.join(repoRoot, 'config', 'legacy_alias_guard_allowlist.json');
-const outDefault = path.join(repoRoot, 'artifacts', 'legacy_alias_guard_current.json');
+const allowlistPath = path.join(
+  repoRoot,
+  'client',
+  'runtime',
+  'config',
+  'legacy_alias_guard_allowlist.json',
+);
+const outDefault = path.join(repoRoot, 'core', 'local', 'artifacts', 'legacy_alias_guard_current.json');
 
 function parseArgs(argv) {
   const out = { strict: false, out: outDefault };
@@ -121,6 +127,7 @@ const report = {
   violations
 };
 
+mkdirSync(path.dirname(cfg.out), { recursive: true });
 writeFileSync(cfg.out, `${JSON.stringify(report, null, 2)}\n`);
 console.log(JSON.stringify(report));
 

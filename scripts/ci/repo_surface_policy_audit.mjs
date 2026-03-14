@@ -11,11 +11,19 @@ function parseArgs(argv) {
   const out = {
     policy: 'client/runtime/config/repo_surface_policy.json',
     out: '',
+    rootContract: '',
+    skipRepo: false,
     strict: false,
   };
   for (const arg of argv) {
     if (arg.startsWith('--policy=')) out.policy = arg.slice('--policy='.length);
     else if (arg.startsWith('--out=')) out.out = arg.slice('--out='.length);
+    else if (arg.startsWith('--root-contract=')) out.rootContract = arg.slice('--root-contract='.length);
+    else if (arg === '--skip-repo') out.skipRepo = true;
+    else if (arg.startsWith('--skip-repo=')) {
+      const v = String(arg.slice('--skip-repo='.length)).toLowerCase();
+      out.skipRepo = ['1', 'true', 'yes', 'on'].includes(v);
+    }
     else if (arg.startsWith('--strict=')) {
       const v = String(arg.slice('--strict='.length)).toLowerCase();
       out.strict = ['1', 'true', 'yes', 'on'].includes(v);
@@ -75,15 +83,82 @@ function countByExt(files) {
   return Object.fromEntries(Object.entries(counts).sort((a, b) => b[1] - a[1]));
 }
 
+function buildRootSurfaceReport(rootContractPath, revision) {
+  const contractPath = path.resolve(ROOT, rootContractPath);
+  const contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
+  const allowedFiles = new Set(contract.allowed_root_files || []);
+  const allowedDirs = new Set(contract.allowed_root_dirs || []);
+  const deprecated = new Set(contract.deprecated_root_entries || []);
+  const ignored = new Set(['.git']);
+  const hardViolations = [];
+  const deprecatedPresent = [];
+
+  for (const entry of fs.readdirSync(ROOT).sort()) {
+    if (ignored.has(entry)) continue;
+    const abs = path.join(ROOT, entry);
+    const isDir = fs.lstatSync(abs).isDirectory();
+    if (isDir) {
+      if (allowedDirs.has(entry)) continue;
+      if (deprecated.has(entry)) {
+        deprecatedPresent.push(entry);
+        continue;
+      }
+      hardViolations.push({ entry, kind: 'dir', reason: 'root_dir_not_allowlisted' });
+      continue;
+    }
+    if (allowedFiles.has(entry)) continue;
+    if (deprecated.has(entry)) {
+      deprecatedPresent.push(entry);
+      continue;
+    }
+    hardViolations.push({ entry, kind: 'file', reason: 'root_file_not_allowlisted' });
+  }
+
+  const payload = {
+    type: 'root_surface_contract',
+    generated_at: new Date().toISOString(),
+    revision,
+    policy_path: rel(contractPath),
+    summary: {
+      hard_violation_count: hardViolations.length,
+      deprecated_present_count: deprecatedPresent.length,
+      pass: hardViolations.length === 0,
+    },
+    deprecated_present: deprecatedPresent,
+    hard_violations: hardViolations,
+  };
+
+  if (contract.paths?.latest_path) {
+    const latestPath = path.resolve(ROOT, contract.paths.latest_path);
+    fs.mkdirSync(path.dirname(latestPath), { recursive: true });
+    fs.writeFileSync(latestPath, `${JSON.stringify(payload, null, 2)}\n`);
+  }
+  if (contract.paths?.receipts_path) {
+    const receiptsPath = path.resolve(ROOT, contract.paths.receipts_path);
+    fs.mkdirSync(path.dirname(receiptsPath), { recursive: true });
+    fs.appendFileSync(receiptsPath, `${JSON.stringify(payload)}\n`);
+  }
+
+  return payload;
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
-  const policyPath = path.resolve(ROOT, args.policy);
-  const policy = JSON.parse(fs.readFileSync(policyPath, 'utf8'));
 
   let revision = 'unknown';
   try {
     revision = execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
   } catch {}
+
+  if (args.skipRepo && args.rootContract) {
+    const payload = buildRootSurfaceReport(args.rootContract, revision);
+    console.log(JSON.stringify(payload, null, 2));
+    if (args.strict && !payload.summary.pass) process.exit(1);
+    return;
+  }
+
+  const policyPath = path.resolve(ROOT, args.policy);
+  const policy = JSON.parse(fs.readFileSync(policyPath, 'utf8'));
 
   const codeRoots = Array.isArray(policy.code_roots) ? policy.code_roots : [];
   const runtimeExceptions = Array.isArray(policy.runtime_exceptions) ? policy.runtime_exceptions : [];
@@ -182,6 +257,12 @@ function main() {
     hard_violations: hardViolations,
   };
 
+  if (args.rootContract) {
+    payload.root_surface_contract = buildRootSurfaceReport(args.rootContract, revision);
+    payload.summary.pass =
+      payload.summary.pass && payload.root_surface_contract.summary.pass;
+  }
+
   if (args.out) {
     const outPath = path.resolve(ROOT, args.out);
     fs.mkdirSync(path.dirname(outPath), { recursive: true });
@@ -189,7 +270,7 @@ function main() {
   }
 
   console.log(JSON.stringify(payload, null, 2));
-  if (args.strict && hardViolations.length > 0) process.exit(1);
+  if (args.strict && !payload.summary.pass) process.exit(1);
 }
 
 main();

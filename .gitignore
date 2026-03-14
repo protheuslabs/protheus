@@ -242,7 +242,6 @@ USER.md
 # Local/simulated operator scratch (not source-of-truth)
 local/
 simulated-commits/
-config/rohan_github_credentials.md
 artifacts/churn_guard_current.json
 docs/workspace/CHURN_GUARD_CURRENT.md
 
@@ -258,6 +257,11 @@ client/runtime/client/
 client/runtime/systems/memory/TAG_MEMORY_MATRIX.md
 docs/workspace/archive/
 docs/workspace/rohan_busywork_report_2026-03-08.md
+
+# Tracked assistant templates remain in-repo; live copies stay under local/.
+!docs/workspace/templates/
+!docs/workspace/templates/assistant/
+!docs/workspace/templates/assistant/*.md
 
 # Local skill installs (tracked core skill sources remain in-repo)
 client/cognition/skills/bird/

@@ -10,6 +10,9 @@ This namespace stores persona/internal artifacts that are not required for opera
 - `docs/client/internal/persona/MEMORY.md`
 - `docs/client/internal/persona/CODEX_HELIX.md`
 
+These internal persona aliases point at tracked blank templates under `docs/workspace/templates/assistant/`.
+Live operator-specific copies belong under `local/workspace/assistant/`.
+
 ## Legacy/Internal Artifacts
 - `docs/client/internal/legacy/moltbook_cron_job.json`
 - `docs/client/internal/legacy/slack_status_cron_job.json`
@@ -19,4 +22,4 @@ This namespace stores persona/internal artifacts that are not required for opera
 - `client/runtime/systems/ops/reminder_data_bridge.ts`
 - Purpose: read-only readiness snapshots for reminder jobs (`slack-status`, `moltcheck-status`) so heartbeat reminders can degrade gracefully when required runtime data or credentials are unavailable.
 
-Runtime compatibility mirrors remain at repository root where required by existing contracts.
+Repository-root persona files are deprecated. Contracts now target tracked templates plus local instance copies.

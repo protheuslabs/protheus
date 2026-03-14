@@ -2,7 +2,7 @@
   "version": "1.0",
   "target_roots": [
     "systems/security",
-    "config/directives"
+    "client/runtime/config/directives"
   ],
   "target_extensions": [
     ".js",
@@ -10,12 +10,12 @@
     ".yml"
   ],
   "protected_files": [
-    "config/adaptive_layer_guard_policy.json",
-    "config/echo_policy.json",
-    "config/helix_policy.json",
-    "config/red_team_policy.json",
-    "config/skin_protection_policy.json",
-    "config/weaver_policy.json",
+    "client/runtime/config/adaptive_layer_guard_policy.json",
+    "client/runtime/config/echo_policy.json",
+    "client/runtime/config/helix_policy.json",
+    "client/runtime/config/red_team_policy.json",
+    "client/runtime/config/skin_protection_policy.json",
+    "client/runtime/config/weaver_policy.json",
     "lib/directive_resolver.js",
     "lib/eyes_catalog.js",
     "systems/adaptive/core/layer_store.js",
@@ -58,18 +58,18 @@
   ],
   "exclude_paths": [],
   "hashes": {
-    "config/adaptive_layer_guard_policy.json": "2265178a78d9e37ce9121dc5088b341fa690a920bab57347e4db506349646cc1",
-    "config/directives/ACTIVE.yaml": "8fc63b734d79f72aefe4058a959b345df685a4ecfe1afd8e0503a9c63d601818",
-    "config/directives/quant_intel_acquisition.yaml": "6438b94d6cdd0a7c04642bff9c8f0e0606db7181a271d6debbcb3afbe314e83a",
-    "config/directives/T0_invariants.yaml": "e9d185792805e205794b3d7ea81cb6562891fef1873cbb6f65cbef73f41276f9",
-    "config/directives/T1_generational_wealth_v1.yaml": "def757e86e8136c75766e35098414c8b8ca7b1f75707c4c9c3f474b35da78107",
-    "config/directives/T1_make_jay_billionaire_v1.yaml": "e9a9082270763dc429b1b032c7f7c606c4a47e7cc252a3f501ac1ef975c7deb0",
-    "config/directives/T1_northstars.yaml": "dbababba9f2dc49b0d24ada4a1a70117cdafe0767ba2ec4a69ec7f80c1721610",
-    "config/echo_policy.json": "031025f20678cbe39446a160bb8e22916f8a90c9e1f392998ef666c45387d2e2",
-    "config/helix_policy.json": "076f2c8666528aaa426bdfa1004a56ae81d0fcf34ff438924eec4b3ca99ddf0d",
-    "config/red_team_policy.json": "620a783e0756ee9b2b3c4a86636f5a234967c53af46163ad08d84ef1222f7bce",
-    "config/skin_protection_policy.json": "24e36724d3fac74972a3b77ec9e1da82446485f89cdb76903563b247e0ecb13f",
-    "config/weaver_policy.json": "07a427a5883ca3fcb1be3792cd0779551c1d5cf67b7bfad5cd252efe75508a73",
+    "client/runtime/config/adaptive_layer_guard_policy.json": "2265178a78d9e37ce9121dc5088b341fa690a920bab57347e4db506349646cc1",
+    "client/runtime/config/directives/ACTIVE.yaml": "8fc63b734d79f72aefe4058a959b345df685a4ecfe1afd8e0503a9c63d601818",
+    "client/runtime/config/directives/quant_intel_acquisition.yaml": "6438b94d6cdd0a7c04642bff9c8f0e0606db7181a271d6debbcb3afbe314e83a",
+    "client/runtime/config/directives/T0_invariants.yaml": "e9d185792805e205794b3d7ea81cb6562891fef1873cbb6f65cbef73f41276f9",
+    "client/runtime/config/directives/T1_generational_wealth_v1.yaml": "def757e86e8136c75766e35098414c8b8ca7b1f75707c4c9c3f474b35da78107",
+    "client/runtime/config/directives/T1_make_jay_billionaire_v1.yaml": "e9a9082270763dc429b1b032c7f7c606c4a47e7cc252a3f501ac1ef975c7deb0",
+    "client/runtime/config/directives/T1_northstars.yaml": "dbababba9f2dc49b0d24ada4a1a70117cdafe0767ba2ec4a69ec7f80c1721610",
+    "client/runtime/config/echo_policy.json": "031025f20678cbe39446a160bb8e22916f8a90c9e1f392998ef666c45387d2e2",
+    "client/runtime/config/helix_policy.json": "076f2c8666528aaa426bdfa1004a56ae81d0fcf34ff438924eec4b3ca99ddf0d",
+    "client/runtime/config/red_team_policy.json": "620a783e0756ee9b2b3c4a86636f5a234967c53af46163ad08d84ef1222f7bce",
+    "client/runtime/config/skin_protection_policy.json": "24e36724d3fac74972a3b77ec9e1da82446485f89cdb76903563b247e0ecb13f",
+    "client/runtime/config/weaver_policy.json": "07a427a5883ca3fcb1be3792cd0779551c1d5cf67b7bfad5cd252efe75508a73",
     "systems/echo/heroic_echo_controller.js": "eff565e488df497933a0074f9074d28d230925570b41f3125bb495a9ef501ed0",
     "systems/echo/heroic_echo_controller.ts": "4a264d7fa3d7402f965facd0c06fee253b7aaefd47aeb9636f473100ba31f4e3",
     "systems/echo/input_purification_gate.ts": "2b4a2d158132383d671f941d83b464a2721f1c478b8456841423696a8158b1d6",
@@ -150,5 +150,5 @@
   },
   "sealed_at": "2026-03-09T02:27:49.427Z",
   "sealed_by": "jay",
-  "last_approval_note": "Automated integrity reseal assistant run (files=config/helix_policy.json,systems/helix/codex_root.ts,systems/helix/helix_controller.ts,systems/security/rust_security_gate.js) at 2026-03-09T02:27:49.208Z"
+  "last_approval_note": "Automated integrity reseal assistant run (files=client/runtime/config/helix_policy.json,systems/helix/codex_root.ts,systems/helix/helix_controller.ts,systems/security/rust_security_gate.js) at 2026-03-09T02:27:49.208Z"
 }

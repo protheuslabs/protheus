@@ -11,11 +11,20 @@ function parseArgs(argv) {
   const out = {
     policy: 'client/runtime/config/public_platform_contract_policy.json',
     out: '',
+    docsSurfacePolicy: '',
+    skipPublic: false,
     strict: false,
   };
   for (const arg of argv) {
     if (arg.startsWith('--policy=')) out.policy = arg.slice('--policy='.length);
     else if (arg.startsWith('--out=')) out.out = arg.slice('--out='.length);
+    else if (arg.startsWith('--docs-surface-policy=')) {
+      out.docsSurfacePolicy = arg.slice('--docs-surface-policy='.length);
+    } else if (arg === '--skip-public') out.skipPublic = true;
+    else if (arg.startsWith('--skip-public=')) {
+      const v = String(arg.slice('--skip-public='.length)).toLowerCase();
+      out.skipPublic = ['1', 'true', 'yes', 'on'].includes(v);
+    }
     else if (arg.startsWith('--strict=')) {
       const v = String(arg.slice('--strict='.length)).toLowerCase();
       out.strict = ['1', 'true', 'yes', 'on'].includes(v);
@@ -60,15 +69,88 @@ function startsWithAny(value, prefixes) {
   return prefixes.some((prefix) => value.startsWith(prefix));
 }
 
+function buildDocsSurfaceReport(policyPath, revision) {
+  const resolved = path.resolve(ROOT, policyPath);
+  const policy = JSON.parse(fs.readFileSync(resolved, 'utf8'));
+  const violations = [];
+
+  const required = [
+    ...(policy.required_operator_docs || []),
+    ...(policy.required_public_docs || []),
+    ...(policy.required_internal_namespace || []),
+  ];
+
+  for (const relPath of required) {
+    if (!fs.existsSync(path.resolve(ROOT, relPath))) {
+      violations.push({ reason: 'required_doc_missing', path: relPath });
+    }
+  }
+
+  const readmePath = path.resolve(ROOT, 'README.md');
+  const readme = fs.existsSync(readmePath) ? fs.readFileSync(readmePath, 'utf8') : '';
+  for (const link of policy.readme_required_links || []) {
+    if (!readme.includes(link)) {
+      violations.push({ reason: 'readme_required_link_missing', path: link });
+    }
+  }
+  for (const link of policy.readme_forbidden_root_internal_links || []) {
+    if (readme.includes(link)) {
+      violations.push({ reason: 'readme_forbidden_internal_link_present', path: link });
+    }
+  }
+
+  for (const [source, target] of Object.entries(policy.internal_aliases || {})) {
+    if (!fs.existsSync(path.resolve(ROOT, source))) {
+      violations.push({ reason: 'internal_alias_source_missing', path: source, target });
+    }
+    if (!fs.existsSync(path.resolve(ROOT, target))) {
+      violations.push({ reason: 'internal_alias_target_missing', path: target, source });
+    }
+  }
+
+  const payload = {
+    type: 'docs_surface_contract',
+    generated_at: new Date().toISOString(),
+    revision,
+    policy_path: rel(resolved),
+    summary: {
+      violation_count: violations.length,
+      pass: violations.length === 0,
+    },
+    violations,
+  };
+
+  if (policy.paths?.latest_path) {
+    const latestPath = path.resolve(ROOT, policy.paths.latest_path);
+    fs.mkdirSync(path.dirname(latestPath), { recursive: true });
+    fs.writeFileSync(latestPath, `${JSON.stringify(payload, null, 2)}\n`);
+  }
+  if (policy.paths?.receipts_path) {
+    const receiptsPath = path.resolve(ROOT, policy.paths.receipts_path);
+    fs.mkdirSync(path.dirname(receiptsPath), { recursive: true });
+    fs.appendFileSync(receiptsPath, `${JSON.stringify(payload)}\n`);
+  }
+
+  return payload;
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
-  const policyPath = path.resolve(ROOT, args.policy);
-  const policy = JSON.parse(fs.readFileSync(policyPath, 'utf8'));
 
   let revision = 'unknown';
   try {
     revision = execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
   } catch {}
+
+  if (args.skipPublic && args.docsSurfacePolicy) {
+    const payload = buildDocsSurfaceReport(args.docsSurfacePolicy, revision);
+    console.log(JSON.stringify(payload, null, 2));
+    if (args.strict && !payload.summary.pass) process.exit(1);
+    return;
+  }
+
+  const policyPath = path.resolve(ROOT, args.policy);
+  const policy = JSON.parse(fs.readFileSync(policyPath, 'utf8'));
 
   const scanRoots = Array.isArray(policy.scan_roots) ? policy.scan_roots : [];
   const allowedClientPrefixes = Array.isArray(policy.allowed_client_prefixes)
@@ -114,6 +196,12 @@ function main() {
     violations,
   };
 
+  if (args.docsSurfacePolicy) {
+    payload.docs_surface_contract = buildDocsSurfaceReport(args.docsSurfacePolicy, revision);
+    payload.summary.pass =
+      payload.summary.pass && payload.docs_surface_contract.summary.pass;
+  }
+
   if (args.out) {
     const outPath = path.resolve(ROOT, args.out);
     fs.mkdirSync(path.dirname(outPath), { recursive: true });
@@ -121,7 +209,7 @@ function main() {
   }
 
   console.log(JSON.stringify(payload, null, 2));
-  if (args.strict && violations.length > 0) process.exit(1);
+  if (args.strict && !payload.summary.pass) process.exit(1);
 }
 
 main();

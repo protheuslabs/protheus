@@ -13,6 +13,7 @@ Defines ownership intent for repository-root entries after the core/client split
 
 - `.github/`: CI workflows and branch policy.
 - `.githooks/`: local hook helpers.
+- `tools/`: internal support tooling and vendored helper repos that are not product entrypoints.
 - `dist/`: generated build output.
 - `target/`: Rust build artifacts.
 - `node_modules/`: npm dependency cache.
@@ -24,18 +25,19 @@ Defines ownership intent for repository-root entries after the core/client split
 - Product/repo metadata: `README.md`, `LICENSE`, `docs/workspace/CONTRIBUTING.md`, `SECURITY.md`, `docs/workspace/CHANGELOG.md`.
 - Build and package manifests: `Cargo.toml`, `Cargo.lock`, `package.json`, `package-lock.json`.
 - Runtime/infra bootstrap: `Dockerfile`, `docker-compose.yml`, `install.sh`, `install.ps1`, `tsconfig*.json`, `vitest.config.ts`.
-- Bootstrap identity/memory docs (workspace references under docs): `docs/workspace/MEMORY.md`, `docs/workspace/MEMORY_INDEX.md`, `docs/workspace/TAGS_INDEX.md`, `docs/workspace/SOUL.md`, `docs/workspace/USER.md`, `docs/workspace/HEARTBEAT.md`, `docs/workspace/IDENTITY.md`, `docs/workspace/TOOLS.md`.
+- Bootstrap assistant templates: `docs/workspace/templates/assistant/*.md`.
+- Live assistant continuity + reports: `local/workspace/assistant/*.md`, `local/workspace/memory/*.md`, `local/workspace/reports/*.md`.
 
 ## Root Exception Rationale
 
-- The bootstrap identity/memory docs are tracked under `docs/workspace/` and resolved by runtime/config policy paths.
-- These files are explicitly allowlisted in `client/runtime/config/root_surface_contract.json` and validated by `root_surface_contract` checks.
-- This is a policy exception, not a loophole: new runtime data must still live under `client/runtime/local/*` or `core/local/*`.
+- The repository tracks only blank assistant templates under `docs/workspace/templates/assistant/`.
+- Live identity, user, heartbeat, tools, and memory files are instance-specific and must live under `local/workspace/**`.
+- This is enforced by root/docs-surface contracts so fresh clones stay copyable without carrying operator data.
 
 ## Guarding Rules
 
 1. New source code must land under `core/` or `client/` only.
-2. Legacy root runtime folders (`adaptive`, `memory`, `habits`, `logs`, `patches`, `reports`, `research`, `secrets`, `state`, `.clawhub`, `.private-lenses`) are disallowed.
+2. Legacy root runtime folders (`adaptive`, `config`, `memory`, `habits`, `logs`, `ops-toolkit`, `patches`, `reports`, `research`, `secrets`, `state`, `.clawhub`, `.private-lenses`) are disallowed.
 3. Root sidecar/scratch dirs (`agent-holo-viz`, `pqts`, `projects`, `rohan-*`, `tmp`) are disallowed and must live under `client/runtime/local/workspaces/`.
 4. Runtime mutable data belongs in `client/runtime/local/*` and `core/local/*`.
 5. Root allowances are enforced by `ops:root-surface:check` and `ops:source-runtime:check`.

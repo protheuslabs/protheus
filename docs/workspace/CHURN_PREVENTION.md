@@ -5,7 +5,7 @@
 1. Local simulation outputs committed by accident:
 - `local/**`
 - `simulated-commits/**`
-- ad hoc credential scratch files (for example `config/rohan_github_credentials.md`)
+- ad hoc credential scratch files (for example `local/workspace/private/*.md`)
 
 2. Generated report drift from repeated audit runs:
 - `core/local/artifacts/*_current.json`
