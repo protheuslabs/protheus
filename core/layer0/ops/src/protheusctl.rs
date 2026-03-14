@@ -2090,7 +2090,7 @@ mod tests {
             &[
                 "export".to_string(),
                 "core/local/state/ops/parse_plane/flatten/latest.json".to_string(),
-                "artifacts/parse/export.json".to_string(),
+                "core/local/artifacts/parse/export.json".to_string(),
                 "--format=json".to_string(),
             ],
         )
@@ -2101,7 +2101,7 @@ mod tests {
             vec![
                 "export",
                 "--from-path=core/local/state/ops/parse_plane/flatten/latest.json",
-                "--output-path=artifacts/parse/export.json",
+                "--output-path=core/local/artifacts/parse/export.json",
                 "--format=json"
             ]
         );
@@ -2160,7 +2160,7 @@ mod tests {
             "flow",
             &[
                 "compile".to_string(),
-                "artifacts/flow/canvas.json".to_string(),
+                "core/local/artifacts/flow/canvas.json".to_string(),
                 "--strict=1".to_string(),
             ],
         )
@@ -2170,7 +2170,7 @@ mod tests {
             route.args,
             vec![
                 "compile",
-                "--canvas-path=artifacts/flow/canvas.json",
+                "--canvas-path=core/local/artifacts/flow/canvas.json",
                 "--strict=1"
             ]
         );

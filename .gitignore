@@ -221,6 +221,9 @@ apps/*
 
 # Local artifact outputs (generated evidence and CI/runtime receipts)
 /artifacts/
+/posts/
+/proposals/
+/evidence/
 /apps/lensmap/artifacts/
 /client/workspaces/
 /client/runtime/local/

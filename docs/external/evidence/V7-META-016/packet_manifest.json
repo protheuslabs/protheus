@@ -1,0 +1,20 @@
+{
+  "id": "V7-META-016",
+  "generated_at": "2026-03-12T14:12:40.182Z",
+  "generated_by": "codex",
+  "status_at_generation": "blocked",
+  "impact": "10",
+  "layer_map": "0/1/2",
+  "upgrade": "Live QPU provider validation campaign",
+  "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
+  "unblock": "requires HMAN-084 approval and signed live provider artifacts",
+  "required_hman_approvals": ["HMAN-084"],
+  "required_external_artifacts": [
+    "signed_provider_validation_report",
+    "qpu_run_receipts_bundle"
+  ],
+  "packet_markdown": "docs/external/evidence/V7-META-016/external_execution_packet_2026-03-12.md",
+  "evidence_dir": "docs/external/evidence/V7-META-016",
+  "external_dependency": true,
+  "local_preparation_complete": true
+}

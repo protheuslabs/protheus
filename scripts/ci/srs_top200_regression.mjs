@@ -8,7 +8,7 @@ const SRS_PATH = 'docs/workspace/SRS.md';
 const TODO_PATH = 'docs/workspace/TODO.md';
 const FULL_REGRESSION_JSON = 'core/local/artifacts/srs_full_regression_current.json';
 const OUT_JSON = 'core/local/artifacts/srs_top200_regression_2026-03-10.json';
-const OUT_MD = 'docs/workspace/SRS_TOP_200_REGRESSION_2026-03-10.md';
+const OUT_MD = 'local/workspace/archive/docs-workspace/SRS_TOP_200_REGRESSION_2026-03-10.md';
 
 function shell(cmd) {
   return execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });

@@ -19,7 +19,6 @@
     "package-lock.json",
     "package.json",
     "rust-toolchain.toml",
-    "sleep",
     "tsconfig.base.json",
     "tsconfig.json",
     "tsconfig.build.json",

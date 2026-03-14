@@ -8653,7 +8653,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/offline_statistical_lab_artifact_bridge.{ts,js}` + `client/runtime/config/offline_statistical_lab_artifact_bridge_policy.json` to ingest signed offline lab artifacts with required-field + trusted-key provenance checks and fail-closed behavior, persisting verified artifacts/receipts under `state/sensory/analysis/offline_lab_bridge/`; regression coverage in `tests/client-memory-tools/offline_statistical_lab_artifact_bridge.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/offline_statistical_lab_artifact_bridge.{ts,js}` + `client/runtime/config/offline_statistical_lab_artifact_bridge_policy.json` to ingest signed offline lab artifacts with required-field + trusted-key provenance checks and fail-closed behavior, persisting verified core/local/artifacts/receipts under `state/sensory/analysis/offline_lab_bridge/`; regression coverage in `tests/client-memory-tools/offline_statistical_lab_artifact_bridge.test.js`.",
       "class": "extension",
       "dependencies": [
         "V3-RACE-086",

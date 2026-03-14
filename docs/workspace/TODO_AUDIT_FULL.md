@@ -462,7 +462,7 @@ Generated: 2026-03-12T15:09:39.875Z
 | 440 | V4-SUITE-005 | reviewed | existing-coverage-validated | 10 | 1 | 0/1/2/client | pass | Productized CLI Suite Program (Google Doc Intake 2026-03-03) |
 | 441 | V4-SUITE-009 | reviewed | existing-coverage-validated | 10 | 1 | 0/1/2/client | pass | Productized CLI Suite Program (Google Doc Intake 2026-03-03) |
 | 442 | V4-SUITE-010 | reviewed | existing-coverage-validated | 10 | 1 | 0/1/2/client | pass | Productized CLI Suite Program (Google Doc Intake 2026-03-03) |
-| 443 | V6-ALIVE-001.3 | reviewed | existing-coverage-validated | 10 | 1 | 0/1/2/client | pass | Protheus 2.0 “Instrumented Aliveness” Intake (Source: `proposals/protheus_optimization_v2.md`, AGE-10, 2026-03-10) |
+| 443 | V6-ALIVE-001.3 | reviewed | existing-coverage-validated | 10 | 1 | 0/1/2/client | pass | Protheus 2.0 “Instrumented Aliveness” Intake (Source: `local/workspace/proposals/protheus_optimization_v2.md`, AGE-10, 2026-03-10) |
 | 444 | V6-CONDUIT-001 | reviewed | existing-coverage-validated | 10 | 1 | -1/0/1/2/3/adapter | pass | Protheus Conduit Program (Requirements Intake 2026-03-05) |
 | 445 | V6-CONDUIT-002 | reviewed | existing-coverage-validated | 10 | 1 | 0/1/2/client | pass | Protheus Conduit Program (Requirements Intake 2026-03-05) |
 | 446 | V6-CONDUIT-003 | reviewed | existing-coverage-validated | 10 | 1 | 0/1/2/client | pass | Protheus Conduit Program (Requirements Intake 2026-03-05) |
@@ -1369,7 +1369,7 @@ Generated: 2026-03-12T15:09:39.875Z
 | 1347 | V6-MEMORY-020 | reviewed | existing-coverage-validated | 8 | 1 | 1/2/client | pass | Production-Grade Checklist Addendum (2026-03-06) |
 | 1348 | V6-MEMORY-021 | reviewed | existing-coverage-validated | 8 | 1 | 1/2/client | pass | Production-Grade Checklist Addendum (2026-03-06) |
 | 1349 | V4-SUITE-007 | reviewed | existing-coverage-validated | 8 | 1 | 0/1/2/client | pass | Productized CLI Suite Program (Google Doc Intake 2026-03-03) |
-| 1350 | V6-ALIVE-001.4 | reviewed | existing-coverage-validated | 8 | 1 | 1/2/client | pass | Protheus 2.0 “Instrumented Aliveness” Intake (Source: `proposals/protheus_optimization_v2.md`, AGE-10, 2026-03-10) |
+| 1350 | V6-ALIVE-001.4 | reviewed | existing-coverage-validated | 8 | 1 | 1/2/client | pass | Protheus 2.0 “Instrumented Aliveness” Intake (Source: `local/workspace/proposals/protheus_optimization_v2.md`, AGE-10, 2026-03-10) |
 | 1351 | V6-RESEARCH-003.1 | reviewed | existing-coverage-validated | 8 | 1 | 0/1/2/adapter/client | pass | Public APIs Catalog Integration Intake (Source: `public-apis/public-apis`, 2026-03-09) |
 | 1352 | V6-RESEARCH-003.2 | reviewed | existing-coverage-validated | 8 | 1 | 0/1/2/adapter/client | pass | Public APIs Catalog Integration Intake (Source: `public-apis/public-apis`, 2026-03-09) |
 | 1353 | V6-RESEARCH-003.3 | reviewed | existing-coverage-validated | 8 | 1 | 0/1/2/adapter/client | pass | Public APIs Catalog Integration Intake (Source: `public-apis/public-apis`, 2026-03-09) |
@@ -1797,11 +1797,11 @@ Generated: 2026-03-12T15:09:39.875Z
 | 1775 | V6-SHADOW-006 | reviewed | existing-coverage-validated | 6 | 1 | 0/1/2 | pass | Production Reliability Fortress for Agentic DeFi Systems Source Coverage Intake (Doc `17nmf3l_DnDSoATBUl9SdrgQTLaqpM9G8EWEmlmKnuLY`, 2026-03-11) |
 | 1776 | V6-MECH-014 | reviewed | existing-coverage-validated | 6 | 1 | 1/2/client | pass | Production-Grade Checklist Addendum (2026-03-06) |
 | 1777 | V4-SUITE-012 | reviewed | existing-coverage-validated | 6 | 1 | 0/1/2/client | pass | Productized CLI Suite Program (Google Doc Intake 2026-03-03) |
-| 1778 | V6-ALIVE-001.1 | reviewed | existing-coverage-validated | 6 | 1 | 1/2/client | pass | Protheus 2.0 “Instrumented Aliveness” Intake (Source: `proposals/protheus_optimization_v2.md`, AGE-10, 2026-03-10) |
-| 1779 | V6-ALIVE-001.2 | reviewed | existing-coverage-validated | 6 | 1 | 1/2/client | pass | Protheus 2.0 “Instrumented Aliveness” Intake (Source: `proposals/protheus_optimization_v2.md`, AGE-10, 2026-03-10) |
-| 1780 | V6-ALIVE-001.5 | reviewed | existing-coverage-validated | 6 | 1 | 1/2/client | pass | Protheus 2.0 “Instrumented Aliveness” Intake (Source: `proposals/protheus_optimization_v2.md`, AGE-10, 2026-03-10) |
-| 1781 | V6-ALIVE-001.6 | reviewed | existing-coverage-validated | 6 | 1 | 1/2/client | pass | Protheus 2.0 “Instrumented Aliveness” Intake (Source: `proposals/protheus_optimization_v2.md`, AGE-10, 2026-03-10) |
-| 1782 | V6-ALIVE-001.7 | reviewed | existing-coverage-validated | 6 | 1 | 1/2/client | pass | Protheus 2.0 “Instrumented Aliveness” Intake (Source: `proposals/protheus_optimization_v2.md`, AGE-10, 2026-03-10) |
+| 1778 | V6-ALIVE-001.1 | reviewed | existing-coverage-validated | 6 | 1 | 1/2/client | pass | Protheus 2.0 “Instrumented Aliveness” Intake (Source: `local/workspace/proposals/protheus_optimization_v2.md`, AGE-10, 2026-03-10) |
+| 1779 | V6-ALIVE-001.2 | reviewed | existing-coverage-validated | 6 | 1 | 1/2/client | pass | Protheus 2.0 “Instrumented Aliveness” Intake (Source: `local/workspace/proposals/protheus_optimization_v2.md`, AGE-10, 2026-03-10) |
+| 1780 | V6-ALIVE-001.5 | reviewed | existing-coverage-validated | 6 | 1 | 1/2/client | pass | Protheus 2.0 “Instrumented Aliveness” Intake (Source: `local/workspace/proposals/protheus_optimization_v2.md`, AGE-10, 2026-03-10) |
+| 1781 | V6-ALIVE-001.6 | reviewed | existing-coverage-validated | 6 | 1 | 1/2/client | pass | Protheus 2.0 “Instrumented Aliveness” Intake (Source: `local/workspace/proposals/protheus_optimization_v2.md`, AGE-10, 2026-03-10) |
+| 1782 | V6-ALIVE-001.7 | reviewed | existing-coverage-validated | 6 | 1 | 1/2/client | pass | Protheus 2.0 “Instrumented Aliveness” Intake (Source: `local/workspace/proposals/protheus_optimization_v2.md`, AGE-10, 2026-03-10) |
 | 1783 | V3-RED-HALL-003 | reviewed | existing-coverage-validated | 6 | 1 | 0/1/2/adapter/client | pass | Red Team Constitutional Hall Pass (Defensive Exemption Lane) |
 | 1784 | V3-RED-ESC-001 | reviewed | existing-coverage-validated | 6 | 1 | 0/1/2/adapter/client | pass | Red Team Cost-Escalation Evolution (Increasingly Costly Defenses) |
 | 1785 | V3-RED-ESC-003 | reviewed | existing-coverage-validated | 6 | 1 | 0/1/2/adapter/client | pass | Red Team Cost-Escalation Evolution (Increasingly Costly Defenses) |

@@ -8,7 +8,7 @@
 - ad hoc credential scratch files (for example `config/rohan_github_credentials.md`)
 
 2. Generated report drift from repeated audit runs:
-- `artifacts/*_current.json`
+- `core/local/artifacts/*_current.json`
 - `docs/workspace/*CURRENT*.md`
 
 3. Experimental feature side effects (currently ignored by request):

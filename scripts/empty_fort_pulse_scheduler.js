@@ -8,7 +8,7 @@ function parseArgs(argv) {
   const out = {
     apply: false,
     policy: 'client/runtime/config/empty_fort_pulse_policy.json',
-    audit: 'artifacts/empty-fort/pulse_audit.json',
+    audit: 'client/local/artifacts/empty-fort/pulse_audit.json',
     actor: process.env.GITHUB_ACTOR || 'local',
     now: new Date().toISOString()
   };

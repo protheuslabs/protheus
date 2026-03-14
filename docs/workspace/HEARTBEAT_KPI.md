@@ -10,8 +10,8 @@ npm run -s metrics:heartbeat-kpi
 
 ## Outputs
 
-- Latest snapshot: `artifacts/heartbeat/heartbeat_kpi_latest.json`
-- History stream: `artifacts/heartbeat/heartbeat_kpi_history.jsonl`
+- Latest snapshot: `core/local/artifacts/heartbeat/heartbeat_kpi_latest.json`
+- History stream: `core/local/artifacts/heartbeat/heartbeat_kpi_history.jsonl`
 
 ## KPI Contract
 

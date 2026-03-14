@@ -1,7 +1,7 @@
 {
   "id": "V6-ALIVE-001.2",
   "upgrade": "Confidence-Gated Autophagy Auto-Approval + Rollback Window",
-  "section": "Protheus 2.0 “Instrumented Aliveness” Intake (Source: `proposals/protheus_optimization_v2.md`, AGE-10, 2026-03-10)",
+  "section": "Protheus 2.0 “Instrumented Aliveness” Intake (Source: `local/workspace/proposals/protheus_optimization_v2.md`, AGE-10, 2026-03-10)",
   "impact": 6,
   "layer_map": "1/2/client",
   "conduit_only_boundary": false,

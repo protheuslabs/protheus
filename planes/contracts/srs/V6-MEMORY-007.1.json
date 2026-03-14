@@ -32,7 +32,7 @@
     "fail_closed_on_missing_contract": true
   },
   "generated_from": {
-    "source_queue": "artifacts/todo_execution_full_current.json",
+    "source_queue": "core/local/artifacts/todo_execution_full_current.json",
     "generated_at": "2026-03-12T04:04:37.417Z"
   }
 }

@@ -24,9 +24,9 @@ Updated: 2026-03-12 09:10 America/Denver
 
 ## Canonical actionable inventory mapping
 - Full per-item mapping (remaining work only): [docs/workspace/SRS_ACTIONABLE_MAP_CURRENT.md](/Users/jay/.openclaw/workspace/docs/workspace/SRS_ACTIONABLE_MAP_CURRENT.md)
-- Machine-readable map: [artifacts/srs_actionable_map_current.json](/Users/jay/.openclaw/workspace/artifacts/srs_actionable_map_current.json)
+- Machine-readable map: [core/local/artifacts/srs_actionable_map_current.json](/Users/jay/.openclaw/workspace/core/local/artifacts/srs_actionable_map_current.json)
 - Full execution queue (all actionable items, sorted): [docs/workspace/TODO_EXECUTION_FULL.md](/Users/jay/.openclaw/workspace/docs/workspace/TODO_EXECUTION_FULL.md)
-- Machine-readable execution queue: [artifacts/todo_execution_full_current.json](/Users/jay/.openclaw/workspace/artifacts/todo_execution_full_current.json)
+- Machine-readable execution queue: [core/local/artifacts/todo_execution_full_current.json](/Users/jay/.openclaw/workspace/core/local/artifacts/todo_execution_full_current.json)
 - Map summary snapshot:
 - `actionable_total=0`
 - `queued=0`
@@ -40,7 +40,7 @@ Updated: 2026-03-12 09:10 America/Denver
 
 ## Canonical full audit queue (all SRS rows)
 - Full audit queue (every SRS row, sorted high impact -> low impact): [docs/workspace/TODO_AUDIT_FULL.md](/Users/jay/.openclaw/workspace/docs/workspace/TODO_AUDIT_FULL.md)
-- Machine-readable full audit queue: [artifacts/todo_audit_full_current.json](/Users/jay/.openclaw/workspace/artifacts/todo_audit_full_current.json)
+- Machine-readable full audit queue: [core/local/artifacts/todo_audit_full_current.json](/Users/jay/.openclaw/workspace/core/local/artifacts/todo_audit_full_current.json)
 - Audit summary snapshot:
 - `total(unique)=1847`
 - `raw_rows=2197`
@@ -61,7 +61,7 @@ Updated: 2026-03-12 09:10 America/Denver
 
 1. `P0-MAP-001` Map all remaining backlog/SRS work into a single canonical actionable inventory and bucket by executability. `STATUS: DONE`
 - Exit criteria met:
-- generated `docs/workspace/SRS_ACTIONABLE_MAP_CURRENT.md` and `artifacts/srs_actionable_map_current.json`.
+- generated `docs/workspace/SRS_ACTIONABLE_MAP_CURRENT.md` and `core/local/artifacts/srs_actionable_map_current.json`.
 
 2. `P0-ENFORCER-001` Review codex enforcer + DoD before execution tranche. `STATUS: DONE`
 - Exit criteria met:
@@ -138,13 +138,13 @@ Updated: 2026-03-12 09:10 America/Denver
 - Exit criteria met:
 - Added `scripts/ci/blocked_external_evidence_status.mjs` to validate external-evidence readiness per blocked ID.
 - Added npm scripts `ops:blocked-external:plan` and `ops:blocked-external:evidence`.
-- Added intake policy doc at `evidence/external/README.md`.
+- Added intake policy doc at `docs/external/evidence/README.md`.
 - Generated current unblock evidence status artifacts for all `27` blocked IDs.
 
 15. `P0-UNBLOCK-002` Scaffold per-ID external evidence packets for all blocked items. `STATUS: DONE`
 - Exit criteria met:
 - Added `scripts/ci/blocked_external_scaffold.mjs` and npm script `ops:blocked-external:scaffold`.
-- Materialized scaffold directories/readme templates for all `27` blocked IDs under `evidence/external/<ID>/README.md`.
+- Materialized scaffold directories/readme templates for all `27` blocked IDs under `docs/external/evidence/<ID>/README.md`.
 - Regenerated status artifacts: all blockers are now `partial_missing_artifact` (readmes present, artifact upload pending).
 
 16. `P0-UNBLOCK-003` Add deterministic reconcile helper for evidence-ready blocked IDs. `STATUS: DONE`
@@ -156,12 +156,12 @@ Updated: 2026-03-12 09:10 America/Denver
 17. `P0-UNBLOCK-004` Add ranked Top-10 external unblock board with action hints. `STATUS: DONE`
 - Exit criteria met:
 - Added `scripts/ci/blocked_external_top10.mjs` and npm script `ops:blocked-external:top10`.
-- Generated ranked output: `docs/workspace/BLOCKED_EXTERNAL_TOP10.md` + `artifacts/blocked_external_top10_current.json`.
+- Generated ranked output: `docs/workspace/BLOCKED_EXTERNAL_TOP10.md` + `core/local/artifacts/blocked_external_top10_current.json`.
 
 18. `P0-UNBLOCK-005` Add packet-quality audit for blocked external evidence folders. `STATUS: DONE`
 - Exit criteria met:
 - Added `scripts/ci/blocked_external_packet_audit.mjs` and npm script `ops:blocked-external:packet-audit`.
-- Generated packet audit outputs: `docs/workspace/BLOCKED_EXTERNAL_PACKET_AUDIT.md` + `artifacts/blocked_external_packet_audit_current.json`.
+- Generated packet audit outputs: `docs/workspace/BLOCKED_EXTERNAL_PACKET_AUDIT.md` + `core/local/artifacts/blocked_external_packet_audit_current.json`.
 
 19. `P0-UNBLOCK-006` Add operator runbook for end-to-end external unblock flow. `STATUS: DONE`
 - Exit criteria met:
@@ -201,7 +201,7 @@ Updated: 2026-03-12 09:10 America/Denver
 - Added deterministic status reconciler `scripts/ci/promote_executed_receipt_ids.mjs` and hardened regression scanners (`srs_full_regression` longest-first ID matching; `srs_top200_regression` consumes canonical full-regression counts) to eliminate prefix-collision and nondeterministic evidence drift.
 - Added generated full TODO queue artifacts (`TODO_EXECUTION_FULL.md` + `todo_execution_full_current.json`) and kept ordering deterministic.
 - Added deterministic blocked-external evidence intake/status pipeline (`scripts/ci/blocked_external_evidence_status.mjs`) with generated status artifacts and explicit evidence contract docs.
-- Added deterministic blocked-external scaffold generator (`scripts/ci/blocked_external_scaffold.mjs`) and pre-created `evidence/external/<ID>/README.md` packets for all 27 blockers.
+- Added deterministic blocked-external scaffold generator (`scripts/ci/blocked_external_scaffold.mjs`) and pre-created `docs/external/evidence/<ID>/README.md` packets for all 27 blockers.
 - Added deterministic blocked-external reconcile helper (`scripts/ci/blocked_external_reconcile.mjs`) to promote evidence-ready IDs with controlled `--apply=1` mutation path.
 - Added deterministic blocked-external Top-10 prioritizer (`scripts/ci/blocked_external_top10.mjs`) and packet-quality audit (`scripts/ci/blocked_external_packet_audit.mjs`) plus operator runbook.
 - Added system simplicity drift gate (`scripts/ci/simplicity_drift_audit.mjs`) and collapsed duplicate npm command bodies to canonical alias chains.

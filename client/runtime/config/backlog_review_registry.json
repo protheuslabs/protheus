@@ -3230,7 +3230,7 @@
       "status": "done",
       "title": "Offline Statistical Lab Artifact Bridge (R/Python Optional)",
       "problem": "Advanced calibration/causal diagnostics benefit from offline tooling while runtime should remain deterministic and fast.",
-      "acceptance": "Added `client/runtime/systems/sensory/offline_statistical_lab_artifact_bridge.{ts,js}` + `client/runtime/config/offline_statistical_lab_artifact_bridge_policy.json` to ingest signed offline lab artifacts with required-field + trusted-key provenance checks and fail-closed behavior, persisting verified artifacts/receipts under `state/sensory/analysis/offline_lab_bridge/`; regression coverage in `tests/client-memory-tools/offline_statistical_lab_artifact_bridge.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/offline_statistical_lab_artifact_bridge.{ts,js}` + `client/runtime/config/offline_statistical_lab_artifact_bridge_policy.json` to ingest signed offline lab artifacts with required-field + trusted-key provenance checks and fail-closed behavior, persisting verified core/local/artifacts/receipts under `state/sensory/analysis/offline_lab_bridge/`; regression coverage in `tests/client-memory-tools/offline_statistical_lab_artifact_bridge.test.js`.",
       "dependencies": [
         "V3-RACE-086",
         "V3-RACE-096",
@@ -5098,7 +5098,7 @@
       "status": "done",
       "title": "Enterprise Architecture Narrative + Evidence Pack",
       "problem": "Architecture credibility is high internally but lacks one tightly curated external-facing evidence-backed packet for enterprise evaluators.",
-      "acceptance": "Produce architecture narrative pack with component boundaries, scaling model, failure domains, security model, and benchmark claims each linked to reproducible artifacts/receipts; include anti-overclaim guard in docs CI and explicit rollback narratives for major runtime transitions.",
+      "acceptance": "Produce architecture narrative pack with component boundaries, scaling model, failure domains, security model, and benchmark claims each linked to reproducible core/local/artifacts/receipts; include anti-overclaim guard in docs CI and explicit rollback narratives for major runtime transitions.",
       "dependencies": [
         "V6-F100-009"
       ],
@@ -13393,7 +13393,7 @@
       "status": "done",
       "title": "Compliance Evidence Automation (SOC2/ISO Audit Bundle)",
       "problem": "Compliance controls are present in parts but audit evidence packaging is not yet deterministic and repeatable for external review.",
-      "acceptance": "Build control-evidence collector that maps controls to artifacts/receipts automatically, generates quarterly audit bundle export, enforces evidence freshness windows, and fails compliance check when controls lack current evidence; include control-failure rollback playbooks in bundle output.",
+      "acceptance": "Build control-evidence collector that maps controls to core/local/artifacts/receipts automatically, generates quarterly audit bundle export, enforces evidence freshness windows, and fails compliance check when controls lack current evidence; include control-failure rollback playbooks in bundle output.",
       "dependencies": [
         "V6-F100-002",
         "V6-F100-003"

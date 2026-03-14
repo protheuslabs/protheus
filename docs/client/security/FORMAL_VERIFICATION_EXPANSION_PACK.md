@@ -18,8 +18,8 @@ node scripts/ci/formal_verification_expansion_report.mjs
 
 ## Evidence Artifacts
 
-- `artifacts/formal_verification_expansion_latest.json`
-- `artifacts/formal_verification_expansion_*.json`
+- `core/local/artifacts/formal_verification_expansion_latest.json`
+- `core/local/artifacts/formal_verification_expansion_*.json`
 - `docs/client/reports/runtime_snapshots/ops/proof_pack/formal_proof_runtime_latest.json`
 
 ## Coverage Mapping

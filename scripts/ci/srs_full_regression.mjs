@@ -184,7 +184,7 @@ function commandResolution(commandsById, packageScripts) {
 }
 
 function hasExternalPreparedPacket(id) {
-  const dir = resolve('evidence/external', id);
+  const dir = resolve('docs/external/evidence', id);
   if (!existsSync(dir)) return false;
   const files = readdirSync(dir);
   const hasReadme = files.includes('README.md');

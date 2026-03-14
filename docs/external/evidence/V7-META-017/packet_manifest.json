@@ -1,0 +1,20 @@
+{
+  "id": "V7-META-017",
+  "generated_at": "2026-03-12T14:12:40.182Z",
+  "generated_by": "codex",
+  "status_at_generation": "blocked",
+  "impact": "10",
+  "layer_map": "0/1/2",
+  "upgrade": "Ternary hardware lowering validation campaign",
+  "section": "Metakernel v0.1 Intake (ChatGPT Draft, 2026-03-08)",
+  "unblock": "requires HMAN-081 approval and signed hardware benchmark artifacts",
+  "required_hman_approvals": ["HMAN-081"],
+  "required_external_artifacts": [
+    "signed_ternary_lowering_benchmark_bundle",
+    "hardware_probe_receipts_bundle"
+  ],
+  "packet_markdown": "docs/external/evidence/V7-META-017/external_execution_packet_2026-03-12.md",
+  "evidence_dir": "docs/external/evidence/V7-META-017",
+  "external_dependency": true,
+  "local_preparation_complete": true
+}

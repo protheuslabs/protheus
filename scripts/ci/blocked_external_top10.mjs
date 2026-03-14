@@ -37,7 +37,7 @@ function main() {
         upgrade: row.upgrade ?? '',
         section: row.section ?? '',
         evidenceStatus: e.evidenceStatus ?? 'missing',
-        evidenceDir: e.evidenceDir ?? `evidence/external/${row.id}`,
+        evidenceDir: e.evidenceDir ?? `docs/external/evidence/${row.id}`,
         actionHint: classifyActionHint(row.upgrade ?? ''),
       };
     })

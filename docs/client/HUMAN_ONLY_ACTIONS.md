@@ -12,7 +12,7 @@ Purpose: capture high-impact tasks that cannot be executed autonomously from bac
 
 | ID | Human Action | Why This Is Human-Only | Evidence Artifact (suggested) | Backlog Dependencies |
 |---|---|---|---|---|
-| HMAN-001 | Select and contract independent security assessor(s) | Requires commercial negotiation, legal acceptance, and payment authority | `state/ops/evidence/external_security_contract_<date>.pdf` | `V2-012`, `V3-ENT-003`, `V3-SEC-004` |
+| HMAN-001 | Select and contract independent security assessor(s) | Requires commercial negotiation, legal acceptance, and payment authority | `state/ops/evidence/security_contract_<date>.pdf` | `V2-012`, `V3-ENT-003`, `V3-SEC-004` |
 | HMAN-002 | Approve coordinated disclosure policy and legal response workflow | Requires legal counsel and liability/risk sign-off | `state/ops/evidence/coordinated_disclosure_policy_signed_<date>.pdf` | `V3-SEC-004`, `V3-DOC-006` |
 | HMAN-003 | Approve official reliability SLO policy targets and incident severity definitions | Requires executive risk acceptance and business tradeoff decisions | `state/ops/evidence/reliability_policy_approval_<date>.md` | `V3-REL-001`, `V3-OPS-001` |
 | HMAN-004 | Approve benchmark publication policy (what can be public vs private) | Requires strategic disclosure decision and competitive/legal judgment | `state/ops/evidence/benchmark_publication_policy_<date>.md` | `V3-BENCH-001`, `V3-BENCH-002` |
@@ -78,7 +78,7 @@ Purpose: capture high-impact tasks that cannot be executed autonomously from bac
 | HMAN-041 | Submit and own external standards response package (NIST/AAIF/CNCF positioning) | Requires external-account authority, policy accountability, and legal/public positioning sign-off. | `state/ops/evidence/standards_submission_bundle_<date>.pdf` | `REQ-30-H001` |
 | HMAN-042 | Approve external competitive claims and publication language | Public claims/positioning carry legal and brand risk requiring explicit human authorization. | `state/ops/evidence/competitive_claims_approval_<date>.md` | `REQ-30-H002` |
 | HMAN-043 | Contract independent formal-security assessment vendors | Requires procurement authority, budget control, and signed legal engagement. | `state/ops/evidence/formal_security_assessment_contract_<date>.pdf` | `REQ-30-H003`, `V6-F100-A-004` |
-| HMAN-044 | Approve publication of external proof/audit reports | Report publication scope and disclosure posture require legal/executive approval. | `state/ops/evidence/external_proof_publish_approval_<date>.md` | `REQ-30-H003`, `V6-F100-A-004` |
+| HMAN-044 | Approve publication of external proof/audit reports | Report publication scope and disclosure posture require legal/executive approval. | `state/ops/evidence/proof_publish_approval_<date>.md` | `REQ-30-H003`, `V6-F100-A-004` |
 
 ## Human Intake (Contributor Signal Program Doc `19IXz6Rjbn9ltXJV-Me2P9oRZ3KLs3KV90VG3k_PdC7E`, 2026-03-08)
 

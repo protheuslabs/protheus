@@ -23,4 +23,4 @@ All `client/runtime/systems/primitives/*.ts` surfaces currently match thin compa
 
 ## Artifact
 
-- `artifacts/primitive_ts_logic_audit_2026-03-10_closure.json`
+- `core/local/artifacts/primitive_ts_logic_audit_2026-03-10_closure.json`

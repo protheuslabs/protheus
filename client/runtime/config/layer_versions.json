@@ -33,7 +33,7 @@
       "changelog": {
         "v1.0": "Initial SDS engine with high-leverage tags, streaks, drift penalties",
         "v1.1": "Artifact-first scoring with anti-gaming validation (1.5x requires proof)",
-        "v1.1.1": "Structured artifacts/revenue arrays, capped bonuses (+6 artifact, +6 revenue), 10 achievements, Auto-Capture Proof, Git Hook",
+        "v1.1.1": "Structured core/local/artifacts/revenue arrays, capped bonuses (+6 artifact, +6 revenue), 10 achievements, Auto-Capture Proof, Git Hook",
         "v1.1.2": "Global git hook capture: works across ALL repos, enriched payload (repo_name, branch, remote), anti-noise guards, recursion protection",
         "v1.2.0": "AGENT MODE: Synthetic dopamine system for Protheus. agentLog(), agentTaskStart/Complete, agentCelebrate(), immediate positive feedback. Removed git hooks - now agent-self-tracking only."
       },

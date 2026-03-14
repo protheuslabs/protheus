@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const PLAN_JSON = 'core/local/artifacts/blocked_external_unblock_plan_current.json';
-const EVIDENCE_ROOT = 'evidence/external';
+const EVIDENCE_ROOT = 'docs/external/evidence';
 
 function read(path) {
   return readFileSync(resolve(path), 'utf8');

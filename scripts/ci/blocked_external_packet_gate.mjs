@@ -26,7 +26,7 @@ function parseSrsStatuses(markdown) {
 }
 
 function latestPacketPathFor(id) {
-  const dir = resolve(`evidence/external/${id}`);
+  const dir = resolve(`docs/external/evidence/${id}`);
   if (!existsSync(dir)) return null;
   const packets = readdirSync(dir)
     .filter((name) => /^external_execution_packet_.*\.md$/i.test(name))
@@ -46,7 +46,7 @@ function main() {
   const rows = requiredIds.map((id) => {
     const evidenceRow = evidenceById.get(id);
     const packet = latestPacketPathFor(id);
-    const manifest = resolve(`evidence/external/${id}/packet_manifest.json`);
+    const manifest = resolve(`docs/external/evidence/${id}/packet_manifest.json`);
     const statusSet = statuses.get(id) ?? new Set();
     const statusList = [...statusSet];
     const status = statusList.join(',');

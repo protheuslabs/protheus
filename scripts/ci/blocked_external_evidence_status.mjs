@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { dirname, join, resolve } from 'node:path';
 
 const PLAN_JSON = 'core/local/artifacts/blocked_external_unblock_plan_current.json';
-const EVIDENCE_ROOT = 'evidence/external';
+const EVIDENCE_ROOT = 'docs/external/evidence';
 const OUT_JSON = 'core/local/artifacts/blocked_external_evidence_status_current.json';
 const OUT_MD = 'docs/workspace/BLOCKED_EXTERNAL_EVIDENCE_STATUS.md';
 
@@ -87,7 +87,7 @@ function toMarkdown(payload) {
   lines.push(`- missing: ${payload.summary.missing}`);
   lines.push('');
   lines.push('## Evidence Contract');
-  lines.push('- One directory per blocked ID: `evidence/external/<ID>/`');
+  lines.push('- One directory per blocked ID: `docs/external/evidence/<ID>/`');
   lines.push('- Required file 1: `README.md` describing the external decision/evidence and date');
   lines.push('- Required file 2: `packet_manifest.json`');
   lines.push('- Required file 3: `external_execution_packet_YYYY-MM-DD.md`');

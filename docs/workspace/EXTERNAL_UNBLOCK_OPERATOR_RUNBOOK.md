@@ -21,7 +21,7 @@ npm run -s ops:blocked-external:scaffold
 ```
 
 Each blocked ID must have:
-- `evidence/external/<ID>/README.md`
+- `docs/external/evidence/<ID>/README.md`
 - At least one real artifact file (report/export/cert/screenshot/log)
 
 ## 3) Audit packet quality

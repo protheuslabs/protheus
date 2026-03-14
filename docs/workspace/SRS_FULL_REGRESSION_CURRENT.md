@@ -6,7 +6,7 @@
 - Existing coverage validated rows: **2169**
 - Done rows without non-backlog evidence: **0**
 - Done rows without code/test evidence: **0**
-- Machine report: `artifacts/srs_full_regression_current.json`
+- Machine report: `core/local/artifacts/srs_full_regression_current.json`
 
 | # | ID | Status | Evidence | Non-Backlog | Code/Test | Regression |
 |---:|---|---|---:|---:|---:|---|
