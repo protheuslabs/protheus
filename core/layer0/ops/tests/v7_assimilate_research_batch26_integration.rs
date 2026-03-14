@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use protheus_ops_core::{assimilation_controller, research_plane};
+use protheus_ops_core::{assimilation_controller, enterprise_hardening, research_plane};
 use serde_json::Value;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -375,4 +375,87 @@ fn v6_research_002_1_to_002_5_lanes_remain_runtime_proven() {
         Some(true)
     );
     assert_claim(&console_latest, "V6-RESEARCH-002.5");
+}
+
+#[test]
+fn v7_assimilate_001_5_x_bedrock_and_scheduled_hands_are_runtime_proven() {
+    let fixture = stage_fixture_root();
+    let root = fixture.path();
+
+    let bedrock_exit = enterprise_hardening::run(
+        root,
+        &[
+            "enable-bedrock".to_string(),
+            "--strict=1".to_string(),
+            "--region=us-west-2".to_string(),
+            "--vpc=vpc-batch26".to_string(),
+            "--subnet=subnet-private-az1".to_string(),
+            "--ssm-path=/protheus/bedrock/proxy".to_string(),
+        ],
+    );
+    assert_eq!(bedrock_exit, 0);
+    let bedrock_latest = read_json(
+        &root
+            .join("core")
+            .join("local")
+            .join("state")
+            .join("ops")
+            .join("enterprise_hardening")
+            .join("latest.json"),
+    );
+    assert_eq!(
+        bedrock_latest.get("type").and_then(Value::as_str),
+        Some("enterprise_hardening_enable_bedrock")
+    );
+    assert_claim(&bedrock_latest, "V7-ASSIMILATE-001.5.1");
+    assert_claim(&bedrock_latest, "V7-ASSIMILATE-001.5.4");
+
+    let enable_exit = assimilation_controller::run(
+        root,
+        &[
+            "scheduled-hands".to_string(),
+            "--op=enable".to_string(),
+            "--strict=1".to_string(),
+        ],
+    );
+    assert_eq!(enable_exit, 0);
+    let enable_latest = read_json(&assimilation_latest_path(root));
+    assert_eq!(
+        enable_latest.get("type").and_then(Value::as_str),
+        Some("assimilation_controller_scheduled_hands")
+    );
+    assert_claim(&enable_latest, "V7-ASSIMILATE-001.5.2");
+    assert_claim(&enable_latest, "V7-ASSIMILATE-001.5.4");
+
+    let run_exit = assimilation_controller::run(
+        root,
+        &[
+            "scheduled-hands".to_string(),
+            "--op=run".to_string(),
+            "--iterations=3".to_string(),
+            "--task=osint-refresh".to_string(),
+            "--cross-refs=memory,research".to_string(),
+            "--strict=1".to_string(),
+        ],
+    );
+    assert_eq!(run_exit, 0);
+    let run_latest = read_json(&assimilation_latest_path(root));
+    assert_claim(&run_latest, "V7-ASSIMILATE-001.5.2");
+    assert_claim(&run_latest, "V7-ASSIMILATE-001.5.3");
+    assert!(
+        run_latest
+            .pointer("/run/causality/trace_id")
+            .and_then(Value::as_str)
+            .map(|row| !row.is_empty())
+            .unwrap_or(false),
+        "scheduled hands run should emit causality trace id"
+    );
+    assert!(
+        run_latest
+            .pointer("/run/earnings/usd")
+            .and_then(Value::as_f64)
+            .map(|row| row > 0.0)
+            .unwrap_or(false),
+        "scheduled hands run should emit native earnings metadata"
+    );
 }

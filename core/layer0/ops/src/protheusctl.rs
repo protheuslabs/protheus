@@ -1658,16 +1658,8 @@ mod tests {
             ],
         )
         .expect("route");
-        assert_eq!(route.script_rel, "core://p2p-gossip-seed");
-        assert_eq!(
-            route.args,
-            vec![
-                "discover",
-                "--profile=hyperspace",
-                "--apply=1",
-                "--node=alpha"
-            ]
-        );
+        assert_eq!(route.script_rel, "core://network-protocol");
+        assert_eq!(route.args, vec!["join-hyperspace", "--node=alpha"]);
     }
 
     #[test]
@@ -1741,6 +1733,21 @@ mod tests {
         .expect("route");
         assert_eq!(route.script_rel, "core://enterprise-hardening");
         assert_eq!(route.args, vec!["certify-scale", "--target-nodes=10000"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_enterprise_enable_bedrock_to_core_lane() {
+        let route = resolve_core_shortcuts(
+            "enterprise",
+            &[
+                "enable".to_string(),
+                "bedrock".to_string(),
+                "--region=us-west-2".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://enterprise-hardening");
+        assert_eq!(route.args, vec!["enable-bedrock", "--region=us-west-2"]);
     }
 
     #[test]
@@ -3082,6 +3089,24 @@ mod tests {
         assert_eq!(
             route.args,
             vec!["hand-new", "--hand-id=alpha", "--template=researcher"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_hands_enable_scheduled_to_assimilation_controller() {
+        let route = resolve_core_shortcuts(
+            "hands",
+            &[
+                "enable".to_string(),
+                "scheduled".to_string(),
+                "--strict=1".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://assimilation-controller");
+        assert_eq!(
+            route.args,
+            vec!["scheduled-hands", "--op=enable", "--strict=1"]
         );
     }
 

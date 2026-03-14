@@ -921,12 +921,35 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                     forward_stdin: false,
                 });
             }
+            if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("join"))
+                .unwrap_or(false)
+                && rest
+                    .get(1)
+                    .map(|v| v.trim().eq_ignore_ascii_case("hyperspace"))
+                    .unwrap_or(false)
+            {
+                let args = std::iter::once("join-hyperspace".to_string())
+                    .chain(rest.iter().skip(2).cloned())
+                    .collect::<Vec<_>>();
+                return Some(Route {
+                    script_rel: "core://network-protocol".to_string(),
+                    args,
+                    forward_stdin: false,
+                });
+            }
             if matches!(
                 sub.as_str(),
                 "status"
                     | "stake"
                     | "reward"
                     | "slash"
+                    | "contribution"
+                    | "consensus"
+                    | "rsi-boundary"
+                    | "governance-vote"
+                    | "join-hyperspace"
                     | "merkle-root"
                     | "emission"
                     | "zk-claim"
@@ -946,22 +969,6 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                 });
             }
             let args = if rest
-                .first()
-                .map(|v| v.trim().eq_ignore_ascii_case("join"))
-                .unwrap_or(false)
-                && rest
-                    .get(1)
-                    .map(|v| v.trim().eq_ignore_ascii_case("hyperspace"))
-                    .unwrap_or(false)
-            {
-                let mut args = vec![
-                    "discover".to_string(),
-                    "--profile=hyperspace".to_string(),
-                    "--apply=1".to_string(),
-                ];
-                args.extend(rest.iter().skip(2).cloned());
-                args
-            } else if rest
                 .first()
                 .map(|v| v.trim().eq_ignore_ascii_case("dashboard"))
                 .unwrap_or(false)
@@ -983,6 +990,18 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
         "enterprise" => {
             let args = if rest.is_empty() {
                 vec!["dashboard".to_string()]
+            } else if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("enable"))
+                .unwrap_or(false)
+                && rest
+                    .get(1)
+                    .map(|v| v.trim().eq_ignore_ascii_case("bedrock"))
+                    .unwrap_or(false)
+            {
+                std::iter::once("enable-bedrock".to_string())
+                    .chain(rest.iter().skip(2).cloned())
+                    .collect::<Vec<_>>()
             } else if rest
                 .first()
                 .map(|v| v.trim().eq_ignore_ascii_case("compliance"))
@@ -1317,7 +1336,23 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                 .first()
                 .map(|v| v.trim().to_ascii_lowercase())
                 .unwrap_or_else(|| "status".to_string());
+            let scheduled_mode = matches!(sub.as_str(), "enable" | "scheduled" | "dashboard")
+                && (sub != "enable"
+                    || rest
+                        .get(1)
+                        .map(|v| v.trim().eq_ignore_ascii_case("scheduled"))
+                        .unwrap_or(false));
             let mut args = match sub.as_str() {
+                "enable"
+                    if rest
+                        .get(1)
+                        .map(|v| v.trim().eq_ignore_ascii_case("scheduled"))
+                        .unwrap_or(false) =>
+                {
+                    vec!["scheduled-hands".to_string(), "--op=enable".to_string()]
+                }
+                "scheduled" => vec!["scheduled-hands".to_string(), "--op=run".to_string()],
+                "dashboard" => vec!["scheduled-hands".to_string(), "--op=dashboard".to_string()],
                 "new" => vec!["hand-new".to_string()],
                 "schedule" | "cycle" | "run" => vec!["hand-cycle".to_string()],
                 "status" => vec!["hand-status".to_string()],
@@ -1326,10 +1361,24 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                 _ => vec!["hand-status".to_string()],
             };
             if !rest.is_empty() {
-                args.extend(rest.iter().skip(1).cloned());
+                let skip = if sub == "enable"
+                    && rest
+                        .get(1)
+                        .map(|v| v.trim().eq_ignore_ascii_case("scheduled"))
+                        .unwrap_or(false)
+                {
+                    2
+                } else {
+                    1
+                };
+                args.extend(rest.iter().skip(skip).cloned());
             }
             Some(Route {
-                script_rel: "core://autonomy-controller".to_string(),
+                script_rel: if scheduled_mode {
+                    "core://assimilation-controller".to_string()
+                } else {
+                    "core://autonomy-controller".to_string()
+                },
                 args,
                 forward_stdin: false,
             })

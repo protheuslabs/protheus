@@ -1,5 +1,46 @@
 use super::*;
 
+fn contribution_history_path(root: &Path) -> std::path::PathBuf {
+    state_root(root).join("contribution_history.jsonl")
+}
+
+fn consensus_ledger_path(root: &Path) -> std::path::PathBuf {
+    state_root(root).join("consensus_ledger.jsonl")
+}
+
+fn membership_path(root: &Path) -> std::path::PathBuf {
+    state_root(root).join("membership.json")
+}
+
+fn governance_votes_path(root: &Path) -> std::path::PathBuf {
+    state_root(root).join("governance_votes.jsonl")
+}
+
+fn read_jsonl(path: &Path) -> Vec<Value> {
+    fs::read_to_string(path)
+        .ok()
+        .unwrap_or_default()
+        .lines()
+        .filter_map(|line| serde_json::from_str::<Value>(line).ok())
+        .collect::<Vec<_>>()
+}
+
+fn append_jsonl(path: &Path, value: &Value) -> Result<(), String> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|err| format!("jsonl_parent_create_failed:{}:{err}", parent.display()))?;
+    }
+    let mut encoded = serde_json::to_string(value)
+        .map_err(|err| format!("jsonl_encode_failed:{}", clean(err, 180)))?;
+    encoded.push('\n');
+    fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+        .and_then(|mut file| std::io::Write::write_all(&mut file, encoded.as_bytes()))
+        .map_err(|err| format!("jsonl_append_failed:{}:{err}", path.display()))
+}
+
 pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
     let parsed = parse_args(argv);
     let command = parsed
@@ -16,6 +57,11 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
         println!("  protheus-ops network-protocol stake [--action=stake|reward|slash] [--agent=<id>] [--amount=<n>] [--reason=<text>]");
         println!("  protheus-ops network-protocol oracle-query [--provider=polymarket] [--event=<text>] [--strict=1|0]");
         println!("  protheus-ops network-protocol truth-weight [--market=<id>] [--strict=1|0]");
+        println!("  protheus-ops network-protocol contribution [--agent=<id>] [--contribution-type=<compute|memory|rl|breakthrough>] [--score=<0..1>] [--stake=<n>] [--reward=<n>] [--slash=<n>] [--strict=1|0]");
+        println!("  protheus-ops network-protocol consensus [--op=<append|verify|status>] [--receipt-hash=<hex>] [--causality-hash=<hex>] [--strict=1|0]");
+        println!("  protheus-ops network-protocol rsi-boundary [--stage=<sandbox|growth|expansion|mature>] [--action=<simulate|promote|merge>] [--oversight-approval=1|0] [--strict=1|0]");
+        println!("  protheus-ops network-protocol join-hyperspace [--node=<id>] [--admission-token=<token>] [--stake=<n>] [--strict=1|0]");
+        println!("  protheus-ops network-protocol governance-vote [--proposal=<id>] [--voter=<id>] [--vote=<approve|reject>] [--strict=1|0]");
         println!("  protheus-ops network-protocol merkle-root [--account=<id>] [--proof=1|0]");
         println!("  protheus-ops network-protocol emission [--height=<n>] [--halving-interval=<n>] [--initial-issuance=<n>]");
         println!("  protheus-ops network-protocol zk-claim [--claim-id=<id>] [--commitment=<hex>] [--challenge=<hex>] [--public-input=<text>] [--strict=1|0]");
@@ -24,6 +70,9 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
 
     if command == "status" {
         let ledger = load_ledger(root);
+        let membership = read_json(&membership_path(root)).unwrap_or(Value::Null);
+        let consensus_events = read_jsonl(&consensus_ledger_path(root));
+        let votes = read_jsonl(&governance_votes_path(root));
         let oracle_latest =
             read_json(&state_root(root).join("oracle").join("latest.json")).unwrap_or(Value::Null);
         return emit(
@@ -34,6 +83,9 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                 "lane": "core/layer0/ops",
                 "ledger": ledger,
                 "latest": read_json(&latest_path(root)),
+                "membership": membership,
+                "consensus_events": consensus_events.len(),
+                "governance_votes": votes.len(),
                 "oracle_latest": oracle_latest
             }),
         );
@@ -75,6 +127,9 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
             .values()
             .filter_map(Value::as_f64)
             .fold(0.0f64, |acc, amount| acc + amount);
+        let membership = read_json(&membership_path(root)).unwrap_or_else(|| json!({"nodes": []}));
+        let governance_votes = read_jsonl(&governance_votes_path(root));
+        let consensus_rows = read_jsonl(&consensus_ledger_path(root));
         let emission = ledger.get("emission").cloned().unwrap_or(Value::Null);
         let oracle_latest =
             read_json(&state_root(root).join("oracle").join("latest.json")).unwrap_or(Value::Null);
@@ -107,7 +162,22 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "merkle_state": true,
                     "emission": true,
                     "zk_claims": true,
-                    "oracle": oracle_latest != Value::Null
+                    "oracle": oracle_latest != Value::Null,
+                    "consensus": !consensus_rows.is_empty(),
+                    "membership": membership
+                        .get("nodes")
+                        .and_then(Value::as_array)
+                        .map(|rows| !rows.is_empty())
+                        .unwrap_or(false)
+                },
+                "governance": {
+                    "consensus_event_count": consensus_rows.len(),
+                    "vote_count": governance_votes.len(),
+                    "member_count": membership
+                        .get("nodes")
+                        .and_then(Value::as_array)
+                        .map(|rows| rows.len())
+                        .unwrap_or(0)
                 },
                 "claim_evidence": [
                     {
@@ -124,6 +194,18 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                         "claim": "dashboard_surfaces_oracle_and_truth_weight_state",
                         "evidence": {
                             "oracle_available": oracle_latest != Value::Null
+                        }
+                    },
+                    {
+                        "id": "V7-NETWORK-001.4",
+                        "claim": "network_dashboard_surfaces_membership_and_reputation_weighted_governance_activity",
+                        "evidence": {
+                            "member_count": membership
+                                .get("nodes")
+                                .and_then(Value::as_array)
+                                .map(|rows| rows.len())
+                                .unwrap_or(0),
+                            "vote_count": governance_votes.len()
                         }
                     }
                 ]
@@ -323,6 +405,11 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                             "id": "V8-NETWORK-002.1",
                             "claim": "staking_rewards_and_slashing_emit_identity_bound_receipts",
                             "evidence": {"action": action, "agent": agent}
+                        },
+                        {
+                            "id": "V7-NETWORK-001.1",
+                            "claim": "identity_bound_staking_reward_and_slashing_updates_network_tokenomics_ledger",
+                            "evidence": {"action": action, "agent": agent, "amount": amount}
                         }
                     ]
                 }),
@@ -337,6 +424,449 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                 }),
             ),
         }
+    } else if command == "contribution" {
+        let strict = parse_bool(parsed.flags.get("strict"), true);
+        let agent = clean(
+            parsed
+                .flags
+                .get("agent")
+                .cloned()
+                .unwrap_or_else(|| "shadow:default".to_string()),
+            120,
+        );
+        let contribution_type = clean(
+            parsed
+                .flags
+                .get("contribution-type")
+                .cloned()
+                .unwrap_or_else(|| "compute".to_string()),
+            24,
+        )
+        .to_ascii_lowercase();
+        let score = parse_f64(parsed.flags.get("score"), 0.6).clamp(0.0, 1.0);
+        let mut reward = parse_f64(parsed.flags.get("reward"), -1.0);
+        if reward < 0.0 {
+            let multiplier = match contribution_type.as_str() {
+                "compute" => 1.0,
+                "memory" => 1.1,
+                "rl" => 1.2,
+                "breakthrough" => 1.6,
+                _ => 0.9,
+            };
+            reward = (score * 100.0) * multiplier;
+        }
+        let stake = parse_f64(parsed.flags.get("stake"), reward * 0.5).max(0.0);
+        let slash = parse_f64(parsed.flags.get("slash"), 0.0).max(0.0);
+        let gate_ok = gate_action(
+            root,
+            &format!("tokenomics:contribution:{agent}:{contribution_type}:{score:.4}"),
+        );
+        if strict && !gate_ok {
+            return emit(
+                root,
+                json!({
+                    "ok": false,
+                    "type": "network_protocol_contribution",
+                    "lane": "core/layer0/ops",
+                    "agent": agent,
+                    "contribution_type": contribution_type,
+                    "error": "directive_gate_denied",
+                    "claim_evidence": [
+                        {
+                            "id": "V7-NETWORK-001.1",
+                            "claim": "proof_of_useful_intelligence_updates_are_policy_gated_and_identity_bound",
+                            "evidence": {"allowed": false}
+                        }
+                    ]
+                }),
+            );
+        }
+        let mut ledger = load_ledger(root);
+        let balances = ledger
+            .get("balances")
+            .and_then(Value::as_object)
+            .cloned()
+            .unwrap_or_default();
+        let current_balance = balance_of(&balances, &agent);
+        put_balance(&mut ledger, &agent, (current_balance + reward - slash).max(0.0));
+        let staked = ledger
+            .get("staked")
+            .and_then(Value::as_object)
+            .cloned()
+            .unwrap_or_default();
+        let current_stake = balance_of(&staked, &agent);
+        put_stake(&mut ledger, &agent, (current_stake + stake - slash).max(0.0));
+        let contribution_event = json!({
+            "type": "useful_intelligence_contribution",
+            "ts": now_iso(),
+            "agent": agent,
+            "contribution_type": contribution_type,
+            "score": score,
+            "reward": reward,
+            "stake": stake,
+            "slash": slash
+        });
+        let _ = append_jsonl(&contribution_history_path(root), &contribution_event);
+        match commit_ledger(root, ledger, "useful_contribution", contribution_event.clone()) {
+            Ok(updated) => emit(
+                root,
+                json!({
+                    "ok": true,
+                    "type": "network_protocol_contribution",
+                    "lane": "core/layer0/ops",
+                    "event": contribution_event,
+                    "network_state_root": updated.get("root_head").cloned().unwrap_or(Value::Null),
+                    "claim_evidence": [
+                        {
+                            "id": "V7-NETWORK-001.1",
+                            "claim": "proof_of_useful_intelligence_contributions_drive_identity_bound_reward_stake_slash_updates",
+                            "evidence": {"agent": agent, "contribution_type": contribution_type, "score": score}
+                        }
+                    ]
+                }),
+            ),
+            Err(err) => emit(
+                root,
+                json!({
+                    "ok": false,
+                    "type": "network_protocol_contribution",
+                    "lane": "core/layer0/ops",
+                    "error": clean(err, 220)
+                }),
+            ),
+        }
+    } else if command == "consensus" {
+        let op = clean(
+            parsed
+                .flags
+                .get("op")
+                .cloned()
+                .unwrap_or_else(|| "status".to_string()),
+            24,
+        )
+        .to_ascii_lowercase();
+        let strict = parse_bool(parsed.flags.get("strict"), true);
+        let mut rows = read_jsonl(&consensus_ledger_path(root));
+        let mut errors = Vec::<String>::new();
+        if op == "append" {
+            let receipt_hash = clean(
+                parsed
+                    .flags
+                    .get("receipt-hash")
+                    .cloned()
+                    .unwrap_or_default(),
+                160,
+            );
+            let causality_hash = clean(
+                parsed
+                    .flags
+                    .get("causality-hash")
+                    .cloned()
+                    .unwrap_or_default(),
+                160,
+            );
+            if strict && (receipt_hash.is_empty() || causality_hash.is_empty()) {
+                errors.push("consensus_append_requires_receipt_and_causality_hash".to_string());
+            }
+            if errors.is_empty() {
+                let previous_hash = rows
+                    .last()
+                    .and_then(|row| row.get("event_hash"))
+                    .and_then(Value::as_str)
+                    .unwrap_or("GENESIS")
+                    .to_string();
+                let event_seed = json!({
+                    "seq": rows.len() + 1,
+                    "ts": now_iso(),
+                    "receipt_hash": receipt_hash,
+                    "causality_hash": causality_hash,
+                    "previous_hash": previous_hash
+                });
+                let event_hash = sha256_hex_str(&event_seed.to_string());
+                let event = json!({
+                    "seq": rows.len() + 1,
+                    "ts": now_iso(),
+                    "receipt_hash": receipt_hash,
+                    "causality_hash": causality_hash,
+                    "previous_hash": previous_hash,
+                    "event_hash": event_hash
+                });
+                let _ = append_jsonl(&consensus_ledger_path(root), &event);
+                rows.push(event);
+            }
+        } else if !matches!(op.as_str(), "verify" | "status") {
+            errors.push(format!("consensus_op_unknown:{op}"));
+        }
+        let mut verify_errors = Vec::<String>::new();
+        let mut prev = "GENESIS".to_string();
+        for (idx, row) in rows.iter().enumerate() {
+            let observed_prev = row
+                .get("previous_hash")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            if observed_prev != prev {
+                verify_errors.push(format!("consensus_previous_hash_mismatch_at:{idx}"));
+            }
+            let seed = json!({
+                "seq": row.get("seq").cloned().unwrap_or(Value::Null),
+                "ts": row.get("ts").cloned().unwrap_or(Value::Null),
+                "receipt_hash": row.get("receipt_hash").cloned().unwrap_or(Value::Null),
+                "causality_hash": row.get("causality_hash").cloned().unwrap_or(Value::Null),
+                "previous_hash": row.get("previous_hash").cloned().unwrap_or(Value::Null)
+            });
+            let expected = sha256_hex_str(&seed.to_string());
+            let observed = row.get("event_hash").and_then(Value::as_str).unwrap_or_default();
+            if expected != observed {
+                verify_errors.push(format!("consensus_event_hash_mismatch_at:{idx}"));
+            }
+            prev = observed.to_string();
+        }
+        let chain_valid = verify_errors.is_empty();
+        if op == "verify" {
+            errors.extend(verify_errors.clone());
+        }
+        emit(
+            root,
+            json!({
+                "ok": if strict { errors.is_empty() } else { true },
+                "type": "network_protocol_consensus",
+                "lane": "core/layer0/ops",
+                "op": op,
+                "strict": strict,
+                "event_count": rows.len(),
+                "chain_valid": chain_valid,
+                "verify_errors": verify_errors,
+                "errors": errors,
+                "consensus_head": prev,
+                "claim_evidence": [
+                    {
+                        "id": "V7-NETWORK-001.2",
+                        "claim": "consensus_ledger_is_receipt_and_causality_hash_chained_with_tamper_detection",
+                        "evidence": {"event_count": rows.len(), "chain_valid": chain_valid}
+                    }
+                ]
+            }),
+        )
+    } else if command == "rsi-boundary" {
+        let strict = parse_bool(parsed.flags.get("strict"), true);
+        let stage = clean(
+            parsed
+                .flags
+                .get("stage")
+                .cloned()
+                .unwrap_or_else(|| "sandbox".to_string()),
+            24,
+        )
+        .to_ascii_lowercase();
+        let action = clean(
+            parsed
+                .flags
+                .get("action")
+                .cloned()
+                .unwrap_or_else(|| "simulate".to_string()),
+            24,
+        )
+        .to_ascii_lowercase();
+        let oversight_approval = parse_bool(parsed.flags.get("oversight-approval"), false);
+        let mature_stage = matches!(stage.as_str(), "growth" | "expansion" | "mature");
+        let gate_ok = gate_action(root, &format!("network-rsi:{stage}:{action}"));
+        let mut errors = Vec::<String>::new();
+        if strict && mature_stage && !oversight_approval {
+            errors.push("rsi_oversight_approval_required".to_string());
+        }
+        if strict && !gate_ok {
+            errors.push("directive_gate_denied".to_string());
+        }
+        emit(
+            root,
+            json!({
+                "ok": if strict { errors.is_empty() } else { true },
+                "type": "network_protocol_rsi_boundary",
+                "lane": "core/layer0/ops",
+                "strict": strict,
+                "stage": stage,
+                "action": action,
+                "oversight_approval": oversight_approval,
+                "directive_gate_ok": gate_ok,
+                "errors": errors,
+                "claim_evidence": [
+                    {
+                        "id": "V7-NETWORK-001.3",
+                        "claim": "network_rsi_growth_paths_are_stage_gated_and_require_oversight_before_high_risk_actions",
+                        "evidence": {"stage": stage, "action": action, "oversight_approval": oversight_approval}
+                    }
+                ]
+            }),
+        )
+    } else if command == "join-hyperspace" {
+        let strict = parse_bool(parsed.flags.get("strict"), true);
+        let node = clean(
+            parsed
+                .flags
+                .get("node")
+                .cloned()
+                .unwrap_or_else(|| "node-local".to_string()),
+            120,
+        );
+        let admission_token = clean(
+            parsed
+                .flags
+                .get("admission-token")
+                .cloned()
+                .unwrap_or_else(|| "local-admission-token".to_string()),
+            160,
+        );
+        let stake = parse_f64(parsed.flags.get("stake"), 10.0).max(0.0);
+        let mut errors = Vec::<String>::new();
+        if strict && admission_token.len() < 8 {
+            errors.push("network_admission_token_too_short".to_string());
+        }
+        let mut membership = read_json(&membership_path(root)).unwrap_or_else(|| {
+            json!({
+                "schema_id": "network_membership_v1",
+                "nodes": []
+            })
+        });
+        let mut nodes = membership
+            .get("nodes")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        if errors.is_empty() {
+            let mut found = false;
+            for row in &mut nodes {
+                if row.get("id").and_then(Value::as_str) == Some(node.as_str()) {
+                    row["joined_at"] = Value::String(now_iso());
+                    row["admitted"] = Value::Bool(true);
+                    row["stake"] = Value::from(stake);
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                nodes.push(json!({
+                    "id": node,
+                    "admitted": true,
+                    "stake": stake,
+                    "reputation_weight": (1.0 + (stake / 100.0)).min(10.0),
+                    "joined_at": now_iso()
+                }));
+            }
+            membership["nodes"] = Value::Array(nodes.clone());
+            let _ = write_json(&membership_path(root), &membership);
+        }
+        emit(
+            root,
+            json!({
+                "ok": if strict { errors.is_empty() } else { true },
+                "type": "network_protocol_join_hyperspace",
+                "lane": "core/layer0/ops",
+                "strict": strict,
+                "profile": "hyperspace",
+                "node": node,
+                "stake": stake,
+                "member_count": nodes.len(),
+                "errors": errors,
+                "claim_evidence": [
+                    {
+                        "id": "V7-NETWORK-001.4",
+                        "claim": "secure_network_join_records_membership_and_reputation_weighted_governance_state",
+                        "evidence": {"node": node, "member_count": nodes.len()}
+                    }
+                ]
+            }),
+        )
+    } else if command == "governance-vote" {
+        let strict = parse_bool(parsed.flags.get("strict"), true);
+        let proposal = clean(
+            parsed
+                .flags
+                .get("proposal")
+                .cloned()
+                .unwrap_or_else(|| "proposal-default".to_string()),
+            160,
+        );
+        let voter = clean(
+            parsed
+                .flags
+                .get("voter")
+                .cloned()
+                .unwrap_or_else(|| "node-local".to_string()),
+            120,
+        );
+        let vote = clean(
+            parsed
+                .flags
+                .get("vote")
+                .cloned()
+                .unwrap_or_else(|| "approve".to_string()),
+            20,
+        )
+        .to_ascii_lowercase();
+        let membership = read_json(&membership_path(root)).unwrap_or_else(|| json!({"nodes": []}));
+        let voter_row = membership
+            .get("nodes")
+            .and_then(Value::as_array)
+            .and_then(|rows| {
+                rows.iter()
+                    .find(|row| row.get("id").and_then(Value::as_str) == Some(voter.as_str()))
+            })
+            .cloned()
+            .unwrap_or_else(|| json!({"id": voter, "reputation_weight": 1.0}));
+        let weight = voter_row
+            .get("reputation_weight")
+            .and_then(Value::as_f64)
+            .unwrap_or(1.0)
+            .max(0.1);
+        let mut errors = Vec::<String>::new();
+        if strict && !matches!(vote.as_str(), "approve" | "reject") {
+            errors.push("governance_vote_invalid".to_string());
+        }
+        let vote_event = json!({
+            "proposal": proposal,
+            "voter": voter,
+            "vote": vote,
+            "weight": weight,
+            "ts": now_iso()
+        });
+        if errors.is_empty() {
+            let _ = append_jsonl(&governance_votes_path(root), &vote_event);
+        }
+        let all_votes = read_jsonl(&governance_votes_path(root));
+        let approve_weight = all_votes
+            .iter()
+            .filter(|row| row.get("proposal").and_then(Value::as_str) == Some(proposal.as_str()))
+            .filter(|row| row.get("vote").and_then(Value::as_str) == Some("approve"))
+            .filter_map(|row| row.get("weight").and_then(Value::as_f64))
+            .sum::<f64>();
+        let reject_weight = all_votes
+            .iter()
+            .filter(|row| row.get("proposal").and_then(Value::as_str) == Some(proposal.as_str()))
+            .filter(|row| row.get("vote").and_then(Value::as_str) == Some("reject"))
+            .filter_map(|row| row.get("weight").and_then(Value::as_f64))
+            .sum::<f64>();
+        emit(
+            root,
+            json!({
+                "ok": if strict { errors.is_empty() } else { true },
+                "type": "network_protocol_governance_vote",
+                "lane": "core/layer0/ops",
+                "strict": strict,
+                "event": vote_event,
+                "tally": {
+                    "approve_weight": approve_weight,
+                    "reject_weight": reject_weight
+                },
+                "errors": errors,
+                "claim_evidence": [
+                    {
+                        "id": "V7-NETWORK-001.4",
+                        "claim": "governance_actions_are_reputation_weighted_and_receipted",
+                        "evidence": {"proposal": proposal, "approve_weight": approve_weight, "reject_weight": reject_weight}
+                    }
+                ]
+            }),
+        )
     } else if command == "oracle-query" {
         let provider = clean(
             parsed

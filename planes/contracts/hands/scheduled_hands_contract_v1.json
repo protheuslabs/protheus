@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "kind": "scheduled_hands_contract",
+  "schedule": "*/15 * * * *",
+  "max_iterations_per_run": 5,
+  "usd_per_iteration": 0.25,
+  "token_per_iteration": 0.5,
+  "cross_reference_sources": [
+    "memory",
+    "research",
+    "crm"
+  ],
+  "requires_bedrock_proxy": true
+}

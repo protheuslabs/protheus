@@ -1,0 +1,19 @@
+{
+  "version": "v1",
+  "kind": "enterprise_bedrock_proxy_contract",
+  "provider": "bedrock",
+  "region": "us-west-2",
+  "auth": {
+    "mode": "sigv4_instance_profile",
+    "require_sigv4": true
+  },
+  "network": {
+    "vpc": "vpc-private",
+    "subnet": "subnet-private-a",
+    "require_private_subnet": true
+  },
+  "secrets": {
+    "ssm_path": "/protheus/bedrock/proxy",
+    "require_ssm": true
+  }
+}

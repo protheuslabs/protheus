@@ -12,6 +12,7 @@ const DEFAULT_ACCESS_POLICY_REL: &str = "client/runtime/config/enterprise_access
 const DEFAULT_ABAC_POLICY_REL: &str = "client/runtime/config/abac_policy_plane.json";
 const DEFAULT_SIEM_POLICY_REL: &str = "client/runtime/config/siem_bridge_policy.json";
 const DEFAULT_SCALE_POLICY_REL: &str = "client/runtime/config/scale_readiness_program_policy.json";
+const DEFAULT_BEDROCK_POLICY_REL: &str = "planes/contracts/enterprise/bedrock_proxy_contract_v1.json";
 const ALLOWED_DELIVERY_CHANNELS: &[&str] = &[
     "last",
     "main",
@@ -37,6 +38,9 @@ fn usage() {
     );
     println!(
         "  protheus-ops enterprise-hardening certify-scale [--target-nodes=<n>] [--samples=<n>] [--strict=1|0] [--scale-policy=<path>]"
+    );
+    println!(
+        "  protheus-ops enterprise-hardening enable-bedrock [--strict=1|0] [--region=<aws-region>] [--vpc=<id>] [--subnet=<id>] [--ssm-path=<path>] [--policy=<path>]"
     );
     println!("  protheus-ops enterprise-hardening dashboard");
 }
@@ -908,6 +912,186 @@ fn run_scale_certification(
     })))
 }
 
+fn run_enable_bedrock(
+    root: &Path,
+    strict: bool,
+    flags: &std::collections::HashMap<String, String>,
+) -> Result<Value, String> {
+    let policy_path_rel = flags
+        .get("policy")
+        .map(|v| v.trim())
+        .filter(|v| !v.is_empty())
+        .unwrap_or(DEFAULT_BEDROCK_POLICY_REL);
+    let policy = read_json(&root.join(policy_path_rel))?;
+    let mut errors = Vec::<String>::new();
+    if policy
+        .get("version")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        != "v1"
+    {
+        errors.push("bedrock_policy_version_must_be_v1".to_string());
+    }
+    if policy
+        .get("kind")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        != "enterprise_bedrock_proxy_contract"
+    {
+        errors.push("bedrock_policy_kind_invalid".to_string());
+    }
+    let require_sigv4 = policy
+        .get("auth")
+        .and_then(|v| v.get("require_sigv4"))
+        .and_then(Value::as_bool)
+        .unwrap_or(true);
+    let require_private_subnet = policy
+        .get("network")
+        .and_then(|v| v.get("require_private_subnet"))
+        .and_then(Value::as_bool)
+        .unwrap_or(true);
+    let require_ssm = policy
+        .get("secrets")
+        .and_then(|v| v.get("require_ssm"))
+        .and_then(Value::as_bool)
+        .unwrap_or(true);
+    let provider = policy
+        .get("provider")
+        .and_then(Value::as_str)
+        .unwrap_or("bedrock")
+        .to_ascii_lowercase();
+    if provider != "bedrock" {
+        errors.push("bedrock_policy_provider_must_be_bedrock".to_string());
+    }
+
+    let region = flags
+        .get("region")
+        .cloned()
+        .or_else(|| policy.get("region").and_then(Value::as_str).map(|v| v.to_string()))
+        .unwrap_or_else(|| "us-west-2".to_string());
+    let vpc = flags
+        .get("vpc")
+        .cloned()
+        .or_else(|| {
+            policy
+                .get("network")
+                .and_then(|v| v.get("vpc"))
+                .and_then(Value::as_str)
+                .map(|v| v.to_string())
+        })
+        .unwrap_or_else(|| "vpc-local".to_string());
+    let subnet = flags
+        .get("subnet")
+        .cloned()
+        .or_else(|| {
+            policy
+                .get("network")
+                .and_then(|v| v.get("subnet"))
+                .and_then(Value::as_str)
+                .map(|v| v.to_string())
+        })
+        .unwrap_or_else(|| "subnet-private-a".to_string());
+    let ssm_path = flags
+        .get("ssm-path")
+        .cloned()
+        .or_else(|| {
+            policy
+                .get("secrets")
+                .and_then(|v| v.get("ssm_path"))
+                .and_then(Value::as_str)
+                .map(|v| v.to_string())
+        })
+        .unwrap_or_else(|| "/protheus/bedrock/proxy".to_string());
+
+    if strict && require_sigv4 {
+        let mode_ok = policy
+            .get("auth")
+            .and_then(|v| v.get("mode"))
+            .and_then(Value::as_str)
+            .map(|mode| mode.eq_ignore_ascii_case("sigv4_instance_profile"))
+            .unwrap_or(false);
+        if !mode_ok {
+            errors.push("bedrock_sigv4_instance_profile_required".to_string());
+        }
+    }
+    if strict && require_private_subnet && !subnet.to_ascii_lowercase().contains("private") {
+        errors.push("bedrock_private_subnet_required".to_string());
+    }
+    if strict && require_ssm && !ssm_path.starts_with('/') {
+        errors.push("bedrock_ssm_path_required".to_string());
+    }
+
+    let ok = errors.is_empty();
+    let activation_hash = deterministic_receipt_hash(&json!({
+        "provider": provider,
+        "region": region,
+        "vpc": vpc,
+        "subnet": subnet,
+        "ssm_path": ssm_path
+    }));
+    let profile = json!({
+        "ok": ok,
+        "type": "enterprise_bedrock_proxy_profile",
+        "provider": provider,
+        "region": region,
+        "network": {
+            "vpc": vpc,
+            "subnet": subnet,
+            "private_access_only": require_private_subnet
+        },
+        "auth": {
+            "mode": "sigv4_instance_profile",
+            "require_sigv4": require_sigv4
+        },
+        "secrets": {
+            "ssm_path": ssm_path,
+            "require_ssm": require_ssm
+        },
+        "policy_path": policy_path_rel,
+        "activation_hash": activation_hash,
+        "activation_command": "protheus enterprise enable bedrock",
+        "ts": now_iso()
+    });
+    let profile_path = enterprise_state_root(root)
+        .join("bedrock_proxy")
+        .join("profile.json");
+    write_json(&profile_path, &profile)?;
+    let profile_rel = profile_path
+        .strip_prefix(root)
+        .unwrap_or(&profile_path)
+        .to_string_lossy()
+        .replace('\\', "/");
+
+    Ok(with_receipt_hash(json!({
+        "ok": !strict || ok,
+        "type": "enterprise_hardening_enable_bedrock",
+        "lane": "enterprise_hardening",
+        "mode": "enable-bedrock",
+        "strict": strict,
+        "profile_path": profile_rel,
+        "profile": profile,
+        "errors": errors,
+        "claim_evidence": [
+            {
+                "id": "V7-ASSIMILATE-001.5.1",
+                "claim": "enterprise_bedrock_proxy_uses_sigv4_private_access_and_ssm_backed_configuration",
+                "evidence": {
+                    "profile_path": profile_rel,
+                    "activation_hash": activation_hash
+                }
+            },
+            {
+                "id": "V7-ASSIMILATE-001.5.4",
+                "claim": "one_command_bedrock_activation_is_exposed_through_core_authoritative_surface",
+                "evidence": {
+                    "command": "protheus enterprise enable bedrock",
+                    "profile_path": profile_rel
+                }
+            }
+        ]
+    })))
+}
+
 fn run_dashboard(root: &Path) -> Value {
     let latest = read_json(&enterprise_latest_path(root)).unwrap_or_else(|_| json!({}));
     let compliance_dir = enterprise_state_root(root).join("compliance_exports");
@@ -920,6 +1104,20 @@ fn run_dashboard(root: &Path) -> Value {
         .ok()
         .map(|rows| rows.filter_map(|entry| entry.ok()).count())
         .unwrap_or(0);
+    let bedrock_profile = read_json(
+        &enterprise_state_root(root)
+            .join("bedrock_proxy")
+            .join("profile.json"),
+    )
+    .unwrap_or_else(|_| json!({"ok": false}));
+    let scheduled_hands = read_json(
+        &crate::core_state_root(root)
+            .join("ops")
+            .join("assimilation_controller")
+            .join("scheduled_hands")
+            .join("state.json"),
+    )
+    .unwrap_or_else(|_| json!({"enabled": false}));
     with_receipt_hash(json!({
         "ok": true,
         "type": "enterprise_hardening_dashboard",
@@ -928,8 +1126,22 @@ fn run_dashboard(root: &Path) -> Value {
         "latest": latest,
         "summary": {
             "compliance_bundles": compliance_bundles,
-            "scale_certifications": scale_certifications
-        }
+            "scale_certifications": scale_certifications,
+            "bedrock_proxy_enabled": bedrock_profile.get("ok").and_then(Value::as_bool).unwrap_or(false),
+            "scheduled_hands_enabled": scheduled_hands.get("enabled").and_then(Value::as_bool).unwrap_or(false),
+            "scheduled_hands_run_count": scheduled_hands.get("run_count").cloned().unwrap_or(Value::from(0)),
+            "scheduled_hands_earnings_total_usd": scheduled_hands.get("earnings_total_usd").cloned().unwrap_or(Value::from(0.0))
+        },
+        "claim_evidence": [
+            {
+                "id": "V7-ASSIMILATE-001.5.4",
+                "claim": "operations_dashboard_surfaces_bedrock_and_scheduled_hands_runtime_metrics",
+                "evidence": {
+                    "bedrock_proxy_enabled": bedrock_profile.get("ok").cloned().unwrap_or(Value::Bool(false)),
+                    "scheduled_hands_enabled": scheduled_hands.get("enabled").cloned().unwrap_or(Value::Bool(false))
+                }
+            }
+        ]
     }))
 }
 
@@ -991,6 +1203,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         }
         "identity-surface" => run_identity_surface(root, strict, &parsed.flags),
         "certify-scale" => run_scale_certification(root, strict, &parsed.flags),
+        "enable-bedrock" => run_enable_bedrock(root, strict, &parsed.flags),
         "dashboard" => Ok(run_dashboard(root)),
         _ => {
             usage();
@@ -1108,5 +1321,53 @@ mod tests {
         let out = run_control(tmp.path(), control.as_object().expect("obj"));
         assert_eq!(out.get("ok").and_then(Value::as_bool), Some(false));
         assert!(out.to_string().contains("a.c"));
+    }
+
+    #[test]
+    fn enable_bedrock_produces_sigv4_private_profile() {
+        let tmp = tempfile::tempdir().expect("tmp");
+        write_text(
+            tmp.path(),
+            DEFAULT_BEDROCK_POLICY_REL,
+            r#"{
+  "version": "v1",
+  "kind": "enterprise_bedrock_proxy_contract",
+  "provider": "bedrock",
+  "region": "us-west-2",
+  "auth": {
+    "mode": "sigv4_instance_profile",
+    "require_sigv4": true
+  },
+  "network": {
+    "vpc": "vpc-prod",
+    "subnet": "subnet-private-a",
+    "require_private_subnet": true
+  },
+  "secrets": {
+    "ssm_path": "/protheus/bedrock/proxy",
+    "require_ssm": true
+  }
+}"#,
+        );
+        let out = run_enable_bedrock(tmp.path(), true, &std::collections::HashMap::new())
+            .expect("enable bedrock");
+        assert_eq!(
+            out.get("type").and_then(Value::as_str),
+            Some("enterprise_hardening_enable_bedrock")
+        );
+        assert_eq!(out.get("ok").and_then(Value::as_bool), Some(true));
+        assert!(out
+            .pointer("/profile/auth/mode")
+            .and_then(Value::as_str)
+            .map(|row| row == "sigv4_instance_profile")
+            .unwrap_or(false));
+        let claim_ok = out
+            .get("claim_evidence")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default()
+            .iter()
+            .any(|row| row.get("id").and_then(Value::as_str) == Some("V7-ASSIMILATE-001.5.1"));
+        assert!(claim_ok, "missing bedrock claim evidence");
     }
 }
