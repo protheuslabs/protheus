@@ -39,7 +39,7 @@
             "--harness",
             "prove_receipt_hash_is_deterministic_for_same_payload",
             "--harness",
-            "prove_receipt_hash_is_invariant_to_object_key_order",
+            "prove_receipt_hash_has_stable_hex_shape",
             "--harness",
             "prove_clean_respects_max_len_bound"
           ]

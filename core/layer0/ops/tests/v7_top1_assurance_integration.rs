@@ -262,6 +262,71 @@ fn top1_assurance_proof_coverage_runs_declared_commands() {
 }
 
 #[test]
+fn top1_assurance_proof_coverage_skips_optional_commands_by_default() {
+    let fixture = stage_top1_fixture();
+    let root = fixture.path();
+    write_json(
+        &root.join("proofs/layer0/core_formal_coverage_map.json"),
+        &json!({
+            "schema_id": "core_formal_coverage_map",
+            "schema_version": "1.0",
+            "surfaces": [
+                {
+                    "id": "core/layer0/ops::directive_kernel",
+                    "status": "proven",
+                    "artifact": "proofs/layer0/Layer0Invariants.lean",
+                    "proof_commands": [
+                        {
+                            "id": "cargo_version",
+                            "required": true,
+                            "argv": ["cargo", "--version"]
+                        },
+                        {
+                            "id": "missing_optional",
+                            "required": false,
+                            "argv": ["definitely-not-a-real-binary", "--version"]
+                        }
+                    ]
+                }
+            ]
+        }),
+    );
+
+    let exit = top1_assurance::run(
+        root,
+        &[
+            "proof-coverage".to_string(),
+            "--strict=1".to_string(),
+            "--execute-proofs=1".to_string(),
+        ],
+    );
+    assert_eq!(exit, 0);
+
+    let latest = latest(root);
+    let payload = latest.get("payload").expect("payload");
+    assert_eq!(
+        payload
+            .get("execute_optional_proofs")
+            .and_then(Value::as_bool),
+        Some(false)
+    );
+    assert!(
+        payload
+            .get("proof_commands")
+            .and_then(Value::as_array)
+            .map(|rows| {
+                rows.iter().any(|row| {
+                    row.get("id").and_then(Value::as_str) == Some("missing_optional")
+                        && row.get("executed").and_then(Value::as_bool) == Some(false)
+                        && row.get("skipped_optional").and_then(Value::as_bool) == Some(true)
+                })
+            })
+            .unwrap_or(false),
+        "optional proof commands should be skipped unless explicitly requested"
+    );
+}
+
+#[test]
 fn top1_assurance_size_gate_fails_closed_when_binary_missing() {
     let fixture = stage_top1_fixture();
     let root = fixture.path();
@@ -272,4 +337,33 @@ fn top1_assurance_size_gate_fails_closed_when_binary_missing() {
     assert_eq!(exit, 1);
     let latest = latest(root);
     assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(false));
+}
+
+#[test]
+fn top1_assurance_benchmark_thresholds_refreshes_canonical_state_mirror() {
+    let fixture = stage_top1_fixture();
+    let root = fixture.path();
+
+    let exit = top1_assurance::run(
+        root,
+        &[
+            "benchmark-thresholds".to_string(),
+            "--strict=1".to_string(),
+            "--refresh=1".to_string(),
+        ],
+    );
+    assert_eq!(exit, 0);
+
+    let mirrored = root.join("core/local/state/ops/top1_assurance/benchmark_latest.json");
+    assert!(mirrored.exists(), "expected mirrored benchmark state");
+    let payload: Value =
+        serde_json::from_str(&fs::read_to_string(&mirrored).expect("read mirror")).expect("parse");
+    assert_eq!(
+        payload
+            .get("metrics")
+            .and_then(|m| m.get("tasks_per_sec"))
+            .and_then(Value::as_f64)
+            .map(|v| v >= 5000.0),
+        Some(true)
+    );
 }

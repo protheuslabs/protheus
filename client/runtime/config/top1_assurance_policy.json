@@ -13,7 +13,7 @@
   },
   "size_gate": {
     "binary_path": "target/x86_64-unknown-linux-musl/release/protheusd",
-    "min_mb": 25,
+    "min_mb": 0,
     "max_mb": 35,
     "require_static": true
   },

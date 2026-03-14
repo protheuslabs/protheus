@@ -92,6 +92,30 @@ chmod +x "target/${TARGET}/${PROFILE}/${BIN}"
     dir
 }
 
+fn write_top1_benchmark(root: &Path, cold_start_ms: u64, idle_rss_mb: f64, install_size_mb: f64, tasks_per_sec: u64) {
+    write_text(
+        root,
+        "core/local/state/ops/top1_assurance/benchmark_latest.json",
+        &serde_json::json!({
+            "metrics": {
+                "cold_start_ms": cold_start_ms,
+                "idle_rss_mb": idle_rss_mb,
+                "install_size_mb": install_size_mb,
+                "tasks_per_sec": tasks_per_sec
+            }
+        })
+        .to_string(),
+    );
+}
+
+fn write_large_binary(root: &Path, rel: &str, size_bytes: usize) {
+    let path = root.join(rel);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).expect("mkdir binary dir");
+    }
+    fs::write(path, vec![0u8; size_bytes]).expect("write large binary");
+}
+
 fn assert_claim(payload: &Value, id: &str) {
     let claims = payload
         .get("claim_evidence")
@@ -321,4 +345,139 @@ fn v7_canyon_batch2_contracts_are_behavior_proven() {
         Some("canyon_plane_size_trust_center")
     );
     assert_claim(&latest, "V7-CANYON-002.6");
+}
+
+#[test]
+fn v7_canyon_release_pipeline_allows_missing_optional_llvm_tools_and_size_trust_uses_top1_fallback() {
+    let _guard = test_env_lock();
+    let tmp = temp_root("canyon_batch2_optional_tools");
+    let root = tmp.path();
+    let canyon_state = root.join("state").join("canyon");
+    std::env::set_var(ENV_KEY, &canyon_state);
+
+    write_text(
+        root,
+        "core/layer0/ops/Cargo.toml",
+        "[package]\nname='protheus-ops-core'\n[features]\nminimal = []\n",
+    );
+    let toolbin = install_tool_stubs(root);
+    std::env::set_var("PROTHEUS_CARGO_BIN", toolbin.join("cargo"));
+    std::env::set_var("PROTHEUS_STRIP_BIN", toolbin.join("strip"));
+    std::env::set_var("PROTHEUS_LLVM_PROFDATA_BIN", root.join("missing").join("llvm-profdata"));
+    std::env::set_var("PROTHEUS_LLVM_BOLT_BIN", root.join("missing").join("llvm-bolt"));
+
+    write_top1_benchmark(root, 28, 9.5, 2.7, 18_500);
+
+    assert_eq!(
+        canyon_plane::run(
+            root,
+            &[
+                "release-pipeline".to_string(),
+                "--op=run".to_string(),
+                "--binary=protheusd".to_string(),
+                "--target=x86_64-unknown-linux-musl".to_string(),
+                "--profile=release-minimal".to_string(),
+                "--strict=1".to_string(),
+            ],
+        ),
+        0
+    );
+    let latest = read_json(&latest_path(&canyon_state));
+    assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(true));
+    assert!(
+        latest
+            .get("optimization")
+            .and_then(|v| v.get("missing_optional_tools"))
+            .and_then(Value::as_array)
+            .map(|rows| rows.iter().any(|row| row.as_str() == Some("llvm-profdata")))
+            .unwrap_or(false)
+    );
+
+    assert_eq!(
+        canyon_plane::run(
+            root,
+            &[
+                "package-release".to_string(),
+                "--op=build".to_string(),
+                "--strict=1".to_string(),
+            ],
+        ),
+        0
+    );
+    assert_eq!(
+        canyon_plane::run(root, &["size-trust".to_string(), "--strict=1".to_string()]),
+        0
+    );
+    let latest = read_json(&latest_path(&canyon_state));
+    assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(true));
+    assert_eq!(
+        latest
+            .get("metrics")
+            .and_then(|v| v.get("cold_start_ms"))
+            .and_then(Value::as_u64),
+        Some(28)
+    );
+    assert_eq!(
+        latest
+            .get("metrics")
+            .and_then(|v| v.get("idle_rss_mb"))
+            .and_then(Value::as_f64),
+        Some(9.5)
+    );
+}
+
+#[test]
+fn v7_canyon_release_pipeline_reuses_real_release_artifact_when_minimal_profile_missing() {
+    let _guard = test_env_lock();
+    let tmp = temp_root("canyon_batch2_release_fallback");
+    let root = tmp.path();
+    let canyon_state = root.join("state").join("canyon");
+    std::env::set_var(ENV_KEY, &canyon_state);
+
+    write_text(
+        root,
+        "core/layer0/ops/Cargo.toml",
+        "[package]\nname='protheus-ops-core'\n[features]\nminimal = []\n",
+    );
+    let toolbin = install_tool_stubs(root);
+    std::env::set_var("PROTHEUS_CARGO_BIN", toolbin.join("cargo"));
+    std::env::set_var("PROTHEUS_STRIP_BIN", toolbin.join("strip"));
+    std::env::remove_var("PROTHEUS_LLVM_PROFDATA_BIN");
+    std::env::remove_var("PROTHEUS_LLVM_BOLT_BIN");
+
+    write_large_binary(
+        root,
+        "target/x86_64-unknown-linux-musl/release/protheusd",
+        1_200_000,
+    );
+
+    assert_eq!(
+        canyon_plane::run(
+            root,
+            &[
+                "release-pipeline".to_string(),
+                "--op=run".to_string(),
+                "--binary=protheusd".to_string(),
+                "--target=x86_64-unknown-linux-musl".to_string(),
+                "--profile=release-minimal".to_string(),
+                "--strict=1".to_string(),
+            ],
+        ),
+        0
+    );
+
+    let latest = read_json(&latest_path(&canyon_state));
+    assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(true));
+    assert_eq!(
+        latest.get("artifact_source").and_then(Value::as_str),
+        Some(
+            root.join("target/x86_64-unknown-linux-musl/release/protheusd")
+                .to_string_lossy()
+                .as_ref()
+        )
+    );
+    assert_eq!(
+        latest.get("final_size_bytes").and_then(Value::as_u64),
+        Some(1_200_000)
+    );
 }

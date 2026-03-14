@@ -103,11 +103,23 @@ run_origin_integrity() {
   fi
 }
 
+run_protheus_ops() {
+  local timeout_sec="$1"
+  shift
+  local cmd_args=("$@")
+  if [[ -x "$PROTHEUS_OPS_BIN" ]]; then
+    run_with_timeout_strict "$timeout_sec" "$PROTHEUS_OPS_BIN" "${cmd_args[@]}"
+  else
+    run_with_timeout_strict "$VERIFY_RUST_TIMEOUT_SEC" cargo build --quiet --manifest-path "$MANIFEST_PATH" --bin protheus-ops
+    run_with_timeout_strict "$timeout_sec" "$PROTHEUS_OPS_BIN" "${cmd_args[@]}"
+  fi
+}
+
 (
   cd "$ROOT"
   run_with_timeout_strict "$VERIFY_RUST_TIMEOUT_SEC" cargo test --manifest-path "$MANIFEST_PATH" --test v8_runtime_proof
   run_with_timeout_strict "$VERIFY_RUST_TIMEOUT_SEC" bash "$ROOT/proofs/layer0/verify.sh"
-  run_with_timeout_strict "$VERIFY_RUST_TIMEOUT_SEC" cargo run --quiet --manifest-path "$MANIFEST_PATH" --bin protheus-ops -- top1-assurance proof-coverage --strict=1 --check-toolchains=0 --execute-proofs=1
+  run_protheus_ops "$VERIFY_RUST_TIMEOUT_SEC" top1-assurance proof-coverage --strict=1 --check-toolchains=0 --execute-proofs=1
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:dependency-boundary:check
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:formal-spec:check
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" node scripts/ci/client_layer_boundary_audit.mjs --strict=1 --out="$CLIENT_LAYER_AUDIT_OUT"

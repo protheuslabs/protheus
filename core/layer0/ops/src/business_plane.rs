@@ -3,8 +3,8 @@
 use crate::v8_kernel::{
     append_jsonl, attach_conduit, build_conduit_enforcement, canonical_json_string,
     conduit_bypass_requested, deterministic_merkle_root, history_path, latest_path,
-    next_chain_hash, parse_bool, parse_i64, parse_u64, print_json, read_json, scoped_state_root,
-    sha256_hex_str, write_json,
+    next_chain_hash, parse_bool, parse_i64, parse_json_or_empty, parse_u64, print_json,
+    read_json, read_jsonl, scoped_state_root, sha256_hex_str, write_json,
 };
 use crate::{clean, now_iso, parse_args};
 use serde_json::{json, Map, Value};
@@ -104,25 +104,9 @@ fn now_epoch_secs() -> u64 {
         .unwrap_or(0)
 }
 
-fn parse_json_or_empty(raw: Option<&String>) -> Value {
-    raw.and_then(|s| serde_json::from_str::<Value>(s).ok())
-        .unwrap_or_else(|| json!({}))
-}
-
 fn read_object(path: &Path) -> Map<String, Value> {
     read_json(path)
         .and_then(|v| v.as_object().cloned())
-        .unwrap_or_default()
-}
-
-fn read_jsonl(path: &Path) -> Vec<Value> {
-    fs::read_to_string(path)
-        .ok()
-        .map(|raw| {
-            raw.lines()
-                .filter_map(|line| serde_json::from_str::<Value>(line).ok())
-                .collect::<Vec<_>>()
-        })
         .unwrap_or_default()
 }
 

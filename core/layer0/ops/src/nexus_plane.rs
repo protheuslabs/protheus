@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // Layer ownership: core/layer0/ops::nexus_plane (authoritative)
 use crate::v8_kernel::{
-    append_jsonl, attach_conduit, build_conduit_enforcement, canonical_json_string,
-    conduit_bypass_requested, deterministic_merkle_root, history_path, latest_path, merkle_proof,
-    parse_bool, print_json, read_json, scoped_state_root, sha256_hex_str, write_json,
+    append_jsonl, build_conduit_enforcement, canonical_json_string, conduit_bypass_requested,
+    deterministic_merkle_root, emit_attached_plane_receipt, history_path, latest_path,
+    merkle_proof, parse_bool, parse_json_or_empty, read_json, read_jsonl, scoped_state_root,
+    sha256_hex_str, write_json,
 };
 use crate::{clean, now_iso, parse_args};
 use serde_json::{json, Value};
@@ -67,34 +68,8 @@ fn compliance_path(root: &Path) -> PathBuf {
     lane_root(root).join("compliance_ledger.jsonl")
 }
 
-fn parse_json_or_empty(raw: Option<&String>) -> Value {
-    raw.and_then(|s| serde_json::from_str::<Value>(s).ok())
-        .unwrap_or_else(|| json!({}))
-}
-
-fn read_jsonl(path: &Path) -> Vec<Value> {
-    fs::read_to_string(path)
-        .ok()
-        .map(|raw| {
-            raw.lines()
-                .filter_map(|line| serde_json::from_str::<Value>(line).ok())
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default()
-}
-
 fn emit(root: &Path, _command: &str, strict: bool, payload: Value, conduit: Option<&Value>) -> i32 {
-    let out = attach_conduit(payload, conduit);
-    let _ = write_json(&latest_path(root, ENV_KEY, LANE_ID), &out);
-    let _ = append_jsonl(&history_path(root, ENV_KEY, LANE_ID), &out);
-    print_json(&out);
-    if strict && !out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
-        1
-    } else if out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
-        0
-    } else {
-        1
-    }
+    emit_attached_plane_receipt(root, ENV_KEY, LANE_ID, strict, payload, conduit)
 }
 
 fn package_domain_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {

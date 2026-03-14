@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Layer ownership: core/layer0/ops::vertical_plane (authoritative)
 use crate::v8_kernel::{
-    append_jsonl, attach_conduit, build_conduit_enforcement, conduit_bypass_requested,
-    history_path, latest_path, parse_bool, print_json, read_json, scoped_state_root,
-    sha256_hex_str, write_json,
+    build_conduit_enforcement, conduit_bypass_requested, emit_attached_plane_receipt,
+    parse_bool, parse_json_or_empty, read_json, scoped_state_root, sha256_hex_str, write_json,
 };
 use crate::{clean, now_iso, parse_args};
 use serde_json::{json, Map, Value};
@@ -176,11 +175,6 @@ fn profiles_path(root: &Path) -> PathBuf {
     lane_root(root).join("profiles.json")
 }
 
-fn parse_json_or_empty(raw: Option<&String>) -> Value {
-    raw.and_then(|s| serde_json::from_str::<Value>(s).ok())
-        .unwrap_or_else(|| json!({}))
-}
-
 fn read_profiles(root: &Path) -> Map<String, Value> {
     read_json(&profiles_path(root))
         .and_then(|v| v.as_object().cloned())
@@ -345,17 +339,7 @@ fn status_command(root: &Path) -> Value {
 }
 
 fn emit(root: &Path, _command: &str, strict: bool, payload: Value, conduit: Option<&Value>) -> i32 {
-    let out = attach_conduit(payload, conduit);
-    let _ = write_json(&latest_path(root, ENV_KEY, LANE_ID), &out);
-    let _ = append_jsonl(&history_path(root, ENV_KEY, LANE_ID), &out);
-    print_json(&out);
-    if strict && !out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
-        1
-    } else if out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
-        0
-    } else {
-        1
-    }
+    emit_attached_plane_receipt(root, ENV_KEY, LANE_ID, strict, payload, conduit)
 }
 
 pub fn run(root: &Path, argv: &[String]) -> i32 {

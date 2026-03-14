@@ -9503,3 +9503,67 @@ Objective: define a separate symbiotic escalation subsystem that learns when to 
 | V9-ESCALATE-001.4 | queued | Escalation Evidence History + Replay Contract | A smart escalation layer is not trustworthy unless every decision can be inspected and replayed later with the same evidence context. | Provide `protheus escalation history` and `protheus escalation replay <id>` surfaces backed by deterministic receipts, replayable rationale artifacts, and linked proposal/effect evidence proving why escalation occurred or was suppressed. | 9 | 0/1/2/client/app |
 | V9-ESCALATE-001.5 | queued | Safety Plane Supremacy + Non-Bypass Contract | The escalation engine becomes dangerous if it can weaken or replace HUMAN_ONLY and Layer-0/1 veto boundaries. | Prove and enforce that the escalation engine can only recommend or sequence human involvement, never bypass critical-action approvals, and always yields to Safety Plane and HUMAN_ONLY deny paths with deterministic denial receipts and CI verification. | 10 | 0/1 |
 | V9-ESCALATE-001.6 | queued | Thin Escalation CLI + Override Surface Contract | Operators need one narrow, auditable interface for inspecting state, teaching preferences, and forcing overrides without opening ad hoc control paths. | Implement thin `protheus escalate status`, `protheus escalate train`, and `protheus escalate override` surfaces that talk only to Rust-core authority lanes, emit deterministic receipts, and expose current engine state plus learned preference summaries. | 8 | 0/1/2/client/app |
+
+## Content Production Skill Graph Intake (Doc `1LEOoGwjGfXyG1YTaJ7-H8KJlwmCP7PsmHGxx4WO-oi8`, 2026-03-14)
+
+Source references:
+- [Content Production Skill Graph System](https://docs.google.com/document/d/1LEOoGwjGfXyG1YTaJ7-H8KJlwmCP7PsmHGxx4WO-oi8/edit?usp=sharing)
+- upstream inspiration cited in the source doc: [Ronin post](https://x.com/DeRonin_/status/2032796569808830921)
+
+Notes:
+- Primitive-first normalization: this intake extends the existing Skills system, Epistemic Objects, Memory Vault, and workflow orchestration primitives. It does not introduce a second content engine outside Rust-core authority.
+- Overlap handled explicitly:
+  - core skill runtime and thin CLI baseline: `V6-SKILLS-001.1` through `V6-SKILLS-001.8`
+  - parse/apply/export graph boundary enforcement baseline: `V6-PARSE-001.6`
+  - flow/workflow orchestration baseline: `V6-FLOW-001.1` through `V6-FLOW-001.6`
+  - epistemic object / graph provenance baselines: `V3-RACE-214`, `V6-MEMORY-011.1`, `V7-MOAT-002.1`
+  - repurpose/content-chain behavior baselines: existing workflow and adaptive reasoning lanes, not a new authority path
+- Net-new emphasis from source:
+  - folder-native skill graphs built from Markdown plus `[[wikilinks]]`,
+  - `index.md` as the authoritative graph briefing/entry node,
+  - automatic traversal from one topic into platform-native multi-account content branches,
+  - graph-encoded repurpose rules across formats and audiences,
+  - explicit conduit-only execution for graph load/run/status surfaces.
+
+Objective: extend the skill system so a folder of interconnected Markdown nodes can act as a governed content-production graph that turns one idea into deterministic, platform-native multi-format output with full provenance and fail-closed routing.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V8-SKILL-GRAPH-001.1 | queued | Skill Graph Folder + Wikilink Resolver Contract | Content-team behavior becomes composable and reusable when operators can author it as a graph of Markdown nodes instead of hardcoding one-off prompt chains. | Implement `protheus skill graph load <folder>` to parse a `/content-skill-graph` folder, resolve `[[wikilinks]]`, and materialize a deterministic Epistemic Object graph with receipts, graph hashes, and fail-closed parse errors for broken links or invalid nodes. | 9 | 0/1/2/client |
+| V8-SKILL-GRAPH-001.2 | queued | Platform/Node Mapping + Execution Chain Contract | A graph loader is not enough unless the system can traverse platform, voice, audience, and engine nodes automatically to generate differentiated outputs from one seed topic. | Map graph folders such as `platforms/`, `voice/`, `engine/`, and `audience/` onto governed skill nodes and existing workflow primitives so one topic can produce multiple native outputs with distinct hooks, tones, and formats under deterministic traversal receipts. | 9 | 0/1/2/3/client |
+| V8-SKILL-GRAPH-001.3 | queued | `index.md` Briefing Engine Contract | Operators need one canonical briefing node that explains graph identity, execution order, and node purpose without requiring hidden side knowledge. | Support `index.md` as the authoritative graph entry point containing identity, node map, and run instructions; `protheus skill graph run <topic>` must follow its instructions, record provenance, and fail closed when the briefing is missing or invalid. | 8 | 0/1/2/client |
+| V8-SKILL-GRAPH-001.4 | queued | Repurpose + Multi-Format Chain Contract | High-value content graphs are defined by repurpose rules that fan one idea into radically different platform-specific renderings without manual rewriting. | Extend existing repurpose/orchestration primitives so graph rules can deterministically emit outputs such as contrarian threads, long-form narratives, carousels, short-form scripts, and audience-specific variants with linked receipts for every derived artifact. | 9 | 0/1/2/3/client/app |
+| V8-SKILL-GRAPH-001.5 | queued | Conduit-Only Graph Execution + Thin Client Surface Contract | Skill-graph loading and traversal cannot become a side door around policy, budget, provenance, or HUMAN_ONLY governance. | Route all `protheus skill graph load/run/status` actions through Layer-0 Conduit with policy/budget checks, fail-closed denials, deterministic audit receipts, and thin client wrappers only; add explicit bypass-rejection tests for graph execution paths. | 10 | 0/1/2/client/app |
+
+## Vertex AI Managed Memory Bank Intake (Doc `1Z5AcFdIjo5IKM_Q9dTGB12_TlQWxJ73oEGNjWp5KTlk`, 2026-03-14)
+
+Source references:
+- [Vertex AI Managed Memory Bank Assimilation](https://docs.google.com/document/d/1Z5AcFdIjo5IKM_Q9dTGB12_TlQWxJ73oEGNjWp5KTlk/edit?usp=sharing)
+- upstream implementation referenced by the source doc: [openclaw-vertexai-memorybank](https://github.com/Shubhamsaboo/openclaw-vertexai-memorybank)
+
+Notes:
+- Primitive-first normalization: this intake extends the existing memory runtime, ClawVault, Epistemic Objects, Conduit enforcement, and research/assimilate orchestration. It does not create a second memory authority outside Rust-core.
+- Overlap handled explicitly:
+  - memory runtime and scoped recall baselines: `V6-MEMORY-011.*`, `V6-MEMORY-012.*`, `V6-MEMORY-013` through `V6-MEMORY-019`
+  - Epistemic Object / provenance baselines: `V3-RACE-214`, `V7-MOAT-002.1`
+  - file sync and workspace continuity baselines: `V7-BUSINESS-001.2`, `V7-BUSINESS-001.5`, `V7-BUSINESS-001.6`
+  - research/assimilate consolidation baseline: `V6-RESEARCH-*`, `V7-ASSIMILATE-*`
+  - conduit-only memory boundary baseline: existing Layer-0/1 policy and receipt lanes rather than a new control path
+- Net-new emphasis from source:
+  - managed cloud-backed user/project-scoped memory bank support,
+  - automatic top-K recall injection before each turn,
+  - post-turn fact extraction with noise filtering before persistence,
+  - SHA-256 based workspace file sync into managed memory,
+  - dedicated memory-bank tools for search/forget/correct/stats,
+  - explicit managed consolidation/deduplication pipeline behind existing memory primitives.
+
+Objective: extend the memory system with a governed managed-memory-bank backend that supports user-scoped long-term memory, automatic recall/capture, deterministic file-sync, and tool-driven consolidation without weakening Conduit or thin-client boundaries.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V8-MEMORY-BANK-001.1 | queued | User-Scoped Memory Bank Primitive | Cross-session memory becomes operationally useful when it can persist as scoped facts across users and projects instead of remaining local or log-shaped only. | Implement `protheus memory bank enable vertex` so the memory runtime can bind a user/project-scoped managed backend through existing Epistemic Object and Conduit primitives, with deterministic enable/status receipts and fail-closed scope isolation. | 9 | 0/1/2/client |
+| V8-MEMORY-BANK-001.2 | queued | Auto-Recall + Semantic Search Contract | Persistent memory only helps if relevant memories are pulled into live context deterministically before each agent turn. | Extend existing recall primitives to retrieve top-K relevant managed memories with optional distance filters, inject them into turn context with provenance rows and deterministic receipts, and support thin `search` surfaces without client-side authority. | 9 | 0/1/2/client |
+| V8-MEMORY-BANK-001.3 | queued | Auto-Capture + Noise Filtering Contract | Long-term memory quality collapses if every short or low-signal exchange is stored without filtering and consolidation. | After each turn, extract candidate facts from the latest user/assistant exchange, apply bounded noise filters such as minimum-length thresholds, route the result through the existing research/assimilate flow, and emit deterministic capture/consolidation receipts. | 9 | 0/1/2 |
+| V8-MEMORY-BANK-001.4 | queued | Workspace File Sync + Hash-Based Change Detection Contract | Human/operator continuity artifacts such as `MEMORY.md`, `USER.md`, and `SOUL.md` need deterministic sync into the managed memory layer without redundant uploads or hidden drift. | Add SHA-256 based file-sync over approved workspace continuity files using existing file-watcher/change-detection primitives, emit deterministic sync receipts on changed content only, and preserve explicit policy bounds for what may be synchronized. | 8 | 0/1/2/client |
+| V8-MEMORY-BANK-001.5 | queued | Agent Tools + Consolidation Pipeline Contract | Managed memory becomes usable inside agents only if search, forget, correction, and stats operations are exposed as governed tools and writes pass through one consolidation path. | Register managed tools such as `memorybank_search`, `memorybank_forget`, `memorybank_correct`, and `memorybank_stats`, route all writes through one deduplication/merge/consolidation path, and emit deterministic receipts plus policy denials for every tool action. | 9 | 0/1/2/client/app |
+| V8-MEMORY-BANK-001.6 | queued | Conduit-Only Memory Bank Boundary + Thin Client Contract | A managed backend cannot be allowed to bypass local governance, provenance, or Rust-core authority just because it is cloud-backed. | Route all Memory Bank recall/capture/sync/tool operations exclusively through Layer-0 Conduit with fail-closed policy checks, explicit bypass-rejection tests, zero client write authority, and full audit trails tied to the existing memory and safety planes. | 10 | 0/1/2/client/app |

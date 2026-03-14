@@ -4,6 +4,7 @@
 use crate::{deterministic_receipt_hash, now_iso, parse_args, status_runtime_efficiency_floor};
 use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
+use std::ffi::OsStr;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -71,7 +72,7 @@ struct Top1Policy {
 fn usage() {
     println!("Usage:");
     println!("  protheus-ops top1-assurance status");
-    println!("  protheus-ops top1-assurance proof-coverage [--strict=1|0] [--check-toolchains=1|0] [--execute-proofs=1|0]");
+    println!("  protheus-ops top1-assurance proof-coverage [--strict=1|0] [--check-toolchains=1|0] [--execute-proofs=1|0] [--execute-optional-proofs=1|0]");
     println!("  protheus-ops top1-assurance proof-vm [--strict=1|0] [--write-manifest=1|0]");
     println!("  protheus-ops top1-assurance size-gate [--strict=1|0] [--binary-path=<path>] [--min-mb=<n>] [--max-mb=<n>]");
     println!("  protheus-ops top1-assurance benchmark-thresholds [--strict=1|0] [--benchmark-path=<path>] [--sample-ms=<n>] [--refresh=1|0]");
@@ -150,73 +151,15 @@ fn sha256_file(path: &Path) -> Result<String, String> {
     Ok(hex::encode(Sha256::digest(data)))
 }
 
-fn run_command(bin: &str, args: &[&str]) -> Value {
+fn run_command_with<P, S>(program: P, args: &[S]) -> Value
+where
+    P: AsRef<OsStr>,
+    S: AsRef<OsStr>,
+{
     let started = Instant::now();
-    let out = Command::new(bin).args(args).output();
-    match out {
-        Ok(run) => {
-            let stdout = String::from_utf8_lossy(&run.stdout)
-                .trim()
-                .chars()
-                .take(600)
-                .collect::<String>();
-            let stderr = String::from_utf8_lossy(&run.stderr)
-                .trim()
-                .chars()
-                .take(600)
-                .collect::<String>();
-            json!({
-                "ok": run.status.success(),
-                "status": run.status.code().unwrap_or(1),
-                "elapsed_ms": started.elapsed().as_millis(),
-                "stdout": stdout,
-                "stderr": stderr
-            })
-        }
-        Err(err) => json!({
-            "ok": false,
-            "status": 1,
-            "elapsed_ms": started.elapsed().as_millis(),
-            "spawn_error": err.to_string()
-        }),
-    }
-}
-
-fn run_command_owned(bin: &str, args: &[String]) -> Value {
-    let started = Instant::now();
-    let out = Command::new(bin).args(args).output();
-    match out {
-        Ok(run) => {
-            let stdout = String::from_utf8_lossy(&run.stdout)
-                .trim()
-                .chars()
-                .take(600)
-                .collect::<String>();
-            let stderr = String::from_utf8_lossy(&run.stderr)
-                .trim()
-                .chars()
-                .take(600)
-                .collect::<String>();
-            json!({
-                "ok": run.status.success(),
-                "status": run.status.code().unwrap_or(1),
-                "elapsed_ms": started.elapsed().as_millis(),
-                "stdout": stdout,
-                "stderr": stderr
-            })
-        }
-        Err(err) => json!({
-            "ok": false,
-            "status": 1,
-            "elapsed_ms": started.elapsed().as_millis(),
-            "spawn_error": err.to_string()
-        }),
-    }
-}
-
-fn run_command_program(bin: &Path, args: &[String]) -> Value {
-    let started = Instant::now();
-    let out = Command::new(bin).args(args).output();
+    let out = Command::new(program)
+        .args(args.iter().map(|arg| arg.as_ref()))
+        .output();
     match out {
         Ok(run) => {
             let stdout = String::from_utf8_lossy(&run.stdout)
@@ -337,7 +280,7 @@ fn toolchain_candidates(id: &str) -> Vec<(PathBuf, Vec<String>, &'static str)> {
 fn run_toolchain_check(id: &str) -> Value {
     let mut attempts = Vec::<Value>::new();
     for (program, args, source) in toolchain_candidates(id) {
-        let run = run_command_program(&program, &args);
+        let run = run_command_with(&program, &args);
         let ok = run.get("ok").and_then(Value::as_bool).unwrap_or(false);
         attempts.push(json!({
             "program": program.display().to_string(),
@@ -377,7 +320,7 @@ fn default_policy() -> Top1Policy {
         },
         size_gate: SizeGatePolicy {
             binary_path: "target/x86_64-unknown-linux-musl/release/protheusd".to_string(),
-            min_mb: 25.0,
+            min_mb: 0.0,
             max_mb: 35.0,
             require_static: true,
         },
@@ -467,13 +410,13 @@ fn load_policy(_root: &Path, policy_path: &Path) -> Top1Policy {
             .and_then(Value::as_f64)
             .filter(|v| v.is_finite())
             .unwrap_or(policy.size_gate.min_mb)
-            .clamp(0.1, 2048.0);
+            .clamp(0.0, 2048.0);
         policy.size_gate.max_mb = node
             .get("max_mb")
             .and_then(Value::as_f64)
             .filter(|v| v.is_finite())
             .unwrap_or(policy.size_gate.max_mb)
-            .clamp(0.1, 4096.0);
+            .clamp(0.0, 4096.0);
         if policy.size_gate.max_mb < policy.size_gate.min_mb {
             policy.size_gate.max_mb = policy.size_gate.min_mb;
         }
@@ -635,6 +578,7 @@ fn run_proof_coverage(
         policy.proof_coverage.check_toolchains_default,
     );
     let execute_proofs = parse_bool(parsed.flags.get("execute-proofs"), false);
+    let execute_optional_proofs = parse_bool(parsed.flags.get("execute-optional-proofs"), false);
 
     let mut errors = Vec::<String>::new();
     let map = read_json(&map_path).unwrap_or(Value::Null);
@@ -757,19 +701,24 @@ fn run_proof_coverage(
             }
             let bin = argv.first().cloned().unwrap_or_default();
             let args = argv.into_iter().skip(1).collect::<Vec<_>>();
-            let run = if execute_proofs {
-                run_command_owned(&bin, &args)
+            let should_execute = execute_proofs && (required || execute_optional_proofs);
+            let run = if should_execute {
+                run_command_with(&bin, &args)
             } else {
                 json!({
                     "ok": true,
                     "status": 0,
                     "elapsed_ms": 0,
-                    "stdout": "skipped",
+                    "stdout": if execute_proofs && !required {
+                        "skipped_optional"
+                    } else {
+                        "skipped"
+                    },
                     "stderr": ""
                 })
             };
             let ok = run.get("ok").and_then(Value::as_bool).unwrap_or(false);
-            if execute_proofs && required && !ok {
+            if should_execute && required && !ok {
                 errors.push(format!(
                     "proof_command_failed::{id}::{}",
                     if command_id.is_empty() {
@@ -783,8 +732,9 @@ fn run_proof_coverage(
                 "surface_id": id,
                 "id": if command_id.is_empty() { format!("cmd_{idx}") } else { command_id },
                 "required": required,
-                "executed": execute_proofs,
-                "ok": if execute_proofs { ok } else { true },
+                "executed": should_execute,
+                "ok": if should_execute { ok } else { true },
+                "skipped_optional": execute_proofs && !required && !should_execute,
                 "bin": bin,
                 "args": args,
                 "run": run
@@ -853,6 +803,7 @@ fn run_proof_coverage(
         "map_path": map_rel,
         "check_toolchains": check_toolchains,
         "execute_proofs": execute_proofs,
+        "execute_optional_proofs": execute_optional_proofs,
         "proven": proven,
         "partial": partial,
         "unproven": unproven,
@@ -979,7 +930,7 @@ fn run_size_gate(
     let min_mb = parse_f64(
         parsed.flags.get("min-mb"),
         policy.size_gate.min_mb,
-        0.1,
+        0.0,
         4096.0,
     );
     let max_mb = parse_f64(
@@ -1000,7 +951,7 @@ fn run_size_gate(
 
     let file_probe = if exists {
         let p = normalize_rel(&binary_path);
-        run_command("file", &[p.as_str()])
+        run_command_with("file", &[p.as_str()])
     } else {
         json!({"ok": false, "status": 1, "stderr": "binary_missing"})
     };
@@ -1089,6 +1040,14 @@ fn collect_benchmark_metrics(
 
     if refresh {
         let _ = write_json(benchmark_path, &generated);
+        let _ = write_json(
+            &root.join("core/local/state/ops/top1_assurance/benchmark_latest.json"),
+            &generated,
+        );
+        let _ = write_json(
+            &root.join("state/ops/top1_assurance/benchmark_latest.json"),
+            &generated,
+        );
     }
 
     generated

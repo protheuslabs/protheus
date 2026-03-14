@@ -8,7 +8,7 @@ use crate::v8_kernel::{
     deterministic_merkle_root, history_path, latest_path, parse_bool, parse_u64, read_json,
     scoped_state_root, sha256_hex_str, write_json,
 };
-use crate::{clean, core_state_root, now_iso, parse_args};
+use crate::{clean, core_state_root, enterprise_hardening, now_iso, parse_args};
 use serde_json::{json, Map, Value};
 use std::collections::BTreeMap;
 use std::fs;
@@ -149,20 +149,24 @@ fn top1_benchmark_fallback(root: &Path) -> Option<(u64, f64, f64, String)> {
         let Some(payload) = read_json(&path) else {
             continue;
         };
-        let cold_start_ms = extract_first_f64(
+        let Some(cold_start_ms) = extract_first_f64(
             &payload,
             &[
                 &["metrics", "cold_start_ms"],
                 &["openclaw_measured", "cold_start_ms"],
             ],
-        )?;
-        let install_size_mb = extract_first_f64(
+        ) else {
+            continue;
+        };
+        let Some(install_size_mb) = extract_first_f64(
             &payload,
             &[
                 &["metrics", "install_size_mb"],
                 &["openclaw_measured", "install_size_mb"],
             ],
-        )?;
+        ) else {
+            continue;
+        };
         let tasks_per_sec = extract_first_f64(
             &payload,
             &[
@@ -181,6 +185,28 @@ fn top1_benchmark_fallback(root: &Path) -> Option<(u64, f64, f64, String)> {
     None
 }
 
+fn top1_binary_size_paths(root: &Path) -> Vec<PathBuf> {
+    vec![
+        root.join("target/x86_64-unknown-linux-musl/release/protheusd"),
+        root.join("target/release/protheusd"),
+        root.join("target/debug/protheusd"),
+    ]
+}
+
+fn top1_binary_size_fallback(root: &Path) -> Option<(f64, String)> {
+    for path in top1_binary_size_paths(root) {
+        let Ok(metadata) = fs::metadata(&path) else {
+            continue;
+        };
+        if !metadata.is_file() {
+            continue;
+        }
+        let size_mb = metadata.len() as f64 / (1024.0 * 1024.0);
+        return Some((size_mb, path.to_string_lossy().to_string()));
+    }
+    top1_benchmark_fallback(root).map(|(_, size_mb, _, source)| (size_mb, source))
+}
+
 fn scheduler_agent_fallback(root: &Path) -> Option<(u64, String)> {
     let path = enterprise_state_root(root).join("f100/scale_ha_certification.json");
     let payload = read_json(&path)?;
@@ -194,6 +220,46 @@ fn scheduler_agent_fallback(root: &Path) -> Option<(u64, String)> {
                 .and_then(Value::as_u64)
         })?;
     Some((agents, path.to_string_lossy().to_string()))
+}
+
+fn run_enterprise_lane(root: &Path, argv: &[&str]) -> bool {
+    let owned = argv.iter().map(|v| (*v).to_string()).collect::<Vec<_>>();
+    enterprise_hardening::run(root, &owned) == 0
+}
+
+fn ensure_benchmark_audit_evidence(root: &Path) -> Option<String> {
+    let candidates = [
+        enterprise_state_root(root).join("f100/ops_bridge.json"),
+        enterprise_state_root(root).join("moat/explorer/index.json"),
+        enterprise_state_root(root).join("f100/super_gate.json"),
+        root.join("docs/client/reports/proof_pack_latest.json"),
+        root.join("docs/client/reports/runtime_snapshots/ops/proof_pack/latest.json"),
+    ];
+    if let Some(found) = evidence_exists(&candidates) {
+        return Some(found);
+    }
+    if run_enterprise_lane(root, &["explore", "--strict=1"]) {
+        return evidence_exists(&[
+            enterprise_state_root(root).join("moat/explorer/index.json"),
+            root.join("docs/client/reports/proof_pack_latest.json"),
+            root.join("docs/client/reports/runtime_snapshots/ops/proof_pack/latest.json"),
+        ]);
+    }
+    None
+}
+
+fn ensure_benchmark_adoption_evidence(root: &Path) -> Option<String> {
+    let candidates = [
+        enterprise_state_root(root).join("f100/adoption_bootstrap/bootstrap.json"),
+        enterprise_state_root(root).join("f100/adoption_bootstrap/openapi.json"),
+    ];
+    if let Some(found) = evidence_exists(&candidates) {
+        return Some(found);
+    }
+    if run_enterprise_lane(root, &["adoption-bootstrap", "--strict=1"]) {
+        return evidence_exists(&candidates);
+    }
+    None
 }
 
 fn evidence_exists(candidates: &[PathBuf]) -> Option<String> {
@@ -1809,19 +1875,27 @@ fn benchmark_gate_command(
     let control_rows = read_jsonl(&control_snapshots_path(root));
     let top1_fallback = top1_benchmark_fallback(root);
 
-    let (cold_start_ms, binary_size_mb, performance_source) = if let (Some(cold), Some(size)) = (
-        eff.get("cold_start_ms").and_then(Value::as_u64),
-        eff.get("binary_size_mb").and_then(Value::as_f64),
-    ) {
-        (
-            cold,
-            size,
-            efficiency_path(root).to_string_lossy().to_string(),
-        )
-    } else if let Some((cold, size, _tasks, source)) = &top1_fallback {
-        (*cold, *size, source.clone())
+    let cold_start_ms = eff
+        .get("cold_start_ms")
+        .and_then(Value::as_u64)
+        .or_else(|| top1_fallback.as_ref().map(|(cold, _, _, _)| *cold))
+        .unwrap_or(9999);
+    let performance_source = if eff.get("cold_start_ms").and_then(Value::as_u64).is_some() {
+        efficiency_path(root).to_string_lossy().to_string()
     } else {
-        (9999, 9999.0, "missing".to_string())
+        top1_fallback
+            .as_ref()
+            .map(|(_, _, _, source)| source.clone())
+            .unwrap_or_else(|| "missing".to_string())
+    };
+    let (binary_size_mb, binary_size_source) = if let Some(size) =
+        eff.get("binary_size_mb").and_then(Value::as_f64)
+    {
+        (size, efficiency_path(root).to_string_lossy().to_string())
+    } else if let Some((size, source)) = top1_binary_size_fallback(root) {
+        (size, source)
+    } else {
+        (9999.0, "missing".to_string())
     };
     let (agents, orchestration_source) =
         if let Some(agent_count) = scheduler.get("agents").and_then(Value::as_u64) {
@@ -1845,11 +1919,7 @@ fn benchmark_gate_command(
     let audit_source = if !control_rows.is_empty() {
         Some(control_snapshots_path(root).to_string_lossy().to_string())
     } else {
-        evidence_exists(&[
-            enterprise_state_root(root).join("f100/ops_bridge.json"),
-            enterprise_state_root(root).join("moat/explorer/index.json"),
-            enterprise_state_root(root).join("f100/super_gate.json"),
-        ])
+        ensure_benchmark_audit_evidence(root)
     };
     let workflow_source = if !workflow_runs.is_empty() {
         Some(workflow_history_path(root).to_string_lossy().to_string())
@@ -1870,10 +1940,7 @@ fn benchmark_gate_command(
     let adoption_source = if !adoption_events.is_empty() {
         Some(adoption_history_path(root).to_string_lossy().to_string())
     } else {
-        evidence_exists(&[
-            enterprise_state_root(root).join("f100/adoption_bootstrap/bootstrap.json"),
-            enterprise_state_root(root).join("f100/adoption_bootstrap/openapi.json"),
-        ])
+        ensure_benchmark_adoption_evidence(root)
     };
 
     let categories = vec![
@@ -1924,6 +1991,7 @@ fn benchmark_gate_command(
             "evidence": {
                 "cold_start_ms": cold_start_ms,
                 "binary_size_mb": binary_size_mb,
+                "binary_size_source": binary_size_source,
                 "agents": agents,
                 "performance_source": performance_source,
                 "audit_source": audit_source,

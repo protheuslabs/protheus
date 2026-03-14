@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
-use crate::{clean, deterministic_receipt_hash, now_iso, parse_args};
-use serde_json::{json, Value};
-use std::fs;
+use crate::v8_kernel::{
+    append_jsonl, parse_bool, parse_i64_clamped, print_json, read_json, state_root_from_env_or,
+    write_json, ReceiptJsonExt,
+};
+use crate::{clean, now_iso, parse_args};
+use serde_json::json;
 use std::path::{Path, PathBuf};
 
 fn state_root(root: &Path) -> PathBuf {
-    if let Ok(v) = std::env::var("NARROW_AGENT_PARITY_STATE_ROOT") {
-        let s = v.trim();
-        if !s.is_empty() {
-            return PathBuf::from(s);
-        }
-    }
-    root.join("client").join("local").join("state").join("ops")
+    state_root_from_env_or(
+        root,
+        "NARROW_AGENT_PARITY_STATE_ROOT",
+        &["client", "local", "state", "ops"],
+    )
 }
 
 fn latest_path(root: &Path) -> PathBuf {
@@ -20,58 +21,6 @@ fn latest_path(root: &Path) -> PathBuf {
 
 fn history_path(root: &Path) -> PathBuf {
     state_root(root).join("narrow_agent_parity_harness_history.jsonl")
-}
-
-fn read_json(path: &Path) -> Option<Value> {
-    let raw = fs::read_to_string(path).ok()?;
-    serde_json::from_str::<Value>(&raw).ok()
-}
-
-fn write_json(path: &Path, value: &Value) {
-    if let Some(parent) = path.parent() {
-        let _ = fs::create_dir_all(parent);
-    }
-    if let Ok(mut body) = serde_json::to_string_pretty(value) {
-        body.push('\n');
-        let _ = fs::write(path, body);
-    }
-}
-
-fn append_jsonl(path: &Path, value: &Value) {
-    if let Some(parent) = path.parent() {
-        let _ = fs::create_dir_all(parent);
-    }
-    if let Ok(line) = serde_json::to_string(value) {
-        let _ = fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(path)
-            .and_then(|mut file| {
-                std::io::Write::write_all(&mut file, format!("{line}\n").as_bytes())
-            });
-    }
-}
-
-fn parse_i64(raw: Option<&String>, fallback: i64, lo: i64, hi: i64) -> i64 {
-    raw.and_then(|v| v.trim().parse::<i64>().ok())
-        .unwrap_or(fallback)
-        .clamp(lo, hi)
-}
-
-fn parse_bool(raw: Option<&String>, fallback: bool) -> bool {
-    match raw.map(|v| v.trim().to_ascii_lowercase()) {
-        Some(v) if matches!(v.as_str(), "1" | "true" | "yes" | "on") => true,
-        Some(v) if matches!(v.as_str(), "0" | "false" | "no" | "off") => false,
-        _ => fallback,
-    }
-}
-
-fn print_receipt(value: &Value) {
-    println!(
-        "{}",
-        serde_json::to_string_pretty(value)
-            .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"encode_failed\"}".to_string())
-    );
 }
 
 pub fn run(root: &Path, argv: &[String]) -> i32 {
@@ -95,15 +44,15 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
     let history = history_path(root);
 
     if command == "status" {
-        let mut out = json!({
+        let out = json!({
             "ok": true,
             "type": "narrow_agent_parity_harness_status",
             "lane": "core/layer0/ops",
             "ts": now_iso(),
             "latest": read_json(&latest)
-        });
-        out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
-        print_receipt(&out);
+        })
+        .with_receipt_hash();
+        print_json(&out);
         return 0;
     }
 
@@ -116,10 +65,10 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             .unwrap_or_else(|| now_iso().chars().take(10).collect()),
         32,
     );
-    let days = parse_i64(parsed.flags.get("days"), 180, 1, 365);
+    let days = parse_i64_clamped(parsed.flags.get("days"), 180, 1, 365);
     let strict = parse_bool(parsed.flags.get("strict"), false);
 
-    let mut out = json!({
+    let out = json!({
         "ok": true,
         "type": "narrow_agent_parity_harness",
         "lane": "core/layer0/ops",
@@ -133,10 +82,10 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             "cost_pressure": 1.0,
             "note": "core_authoritative_placeholder"
         }
-    });
-    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
-    write_json(&latest, &out);
-    append_jsonl(&history, &out);
-    print_receipt(&out);
+    })
+    .with_receipt_hash();
+    let _ = write_json(&latest, &out);
+    let _ = append_jsonl(&history, &out);
+    print_json(&out);
     0
 }

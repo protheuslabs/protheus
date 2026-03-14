@@ -19,6 +19,18 @@ pub fn scoped_state_root(root: &Path, env_key: &str, scope: &str) -> PathBuf {
     crate::core_state_root(root).join("ops").join(scope)
 }
 
+pub fn state_root_from_env_or(root: &Path, env_key: &str, default_rel: &[&str]) -> PathBuf {
+    if let Ok(v) = std::env::var(env_key) {
+        let trimmed = v.trim();
+        if !trimmed.is_empty() {
+            return PathBuf::from(trimmed);
+        }
+    }
+    default_rel
+        .iter()
+        .fold(root.to_path_buf(), |path, segment| path.join(segment))
+}
+
 pub fn latest_path(root: &Path, env_key: &str, scope: &str) -> PathBuf {
     scoped_state_root(root, env_key, scope).join("latest.json")
 }
@@ -30,6 +42,17 @@ pub fn history_path(root: &Path, env_key: &str, scope: &str) -> PathBuf {
 pub fn read_json(path: &Path) -> Option<Value> {
     let raw = fs::read_to_string(path).ok()?;
     serde_json::from_str::<Value>(&raw).ok()
+}
+
+pub fn read_jsonl(path: &Path) -> Vec<Value> {
+    fs::read_to_string(path)
+        .ok()
+        .map(|raw| {
+            raw.lines()
+                .filter_map(|line| serde_json::from_str::<Value>(line).ok())
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default()
 }
 
 pub fn write_json(path: &Path, value: &Value) -> Result<(), String> {
@@ -133,6 +156,23 @@ pub fn parse_u64_str(raw: Option<&str>, fallback: u64) -> u64 {
 pub fn parse_i64(raw: Option<&String>, fallback: i64) -> i64 {
     raw.and_then(|v| v.trim().parse::<i64>().ok())
         .unwrap_or(fallback)
+}
+
+pub fn parse_i64_clamped(raw: Option<&String>, fallback: i64, lo: i64, hi: i64) -> i64 {
+    parse_i64(raw, fallback).clamp(lo, hi)
+}
+
+pub fn parse_json_or_empty(raw: Option<&String>) -> Value {
+    raw.and_then(|s| serde_json::from_str::<Value>(s).ok())
+        .unwrap_or_else(|| json!({}))
+}
+
+pub fn date_or_today(raw: Option<&String>) -> String {
+    let candidate = raw.map(|v| v.trim().to_string()).unwrap_or_default();
+    if !candidate.is_empty() && chrono::NaiveDate::parse_from_str(&candidate, "%Y-%m-%d").is_ok() {
+        return candidate;
+    }
+    now_iso().chars().take(10).collect()
 }
 
 pub fn parse_i64_str(raw: Option<&str>, fallback: i64) -> i64 {
@@ -424,6 +464,27 @@ pub fn emit_plane_receipt(
             }));
             1
         }
+    }
+}
+
+pub fn emit_attached_plane_receipt(
+    root: &Path,
+    env_key: &str,
+    scope: &str,
+    strict: bool,
+    payload: Value,
+    conduit: Option<&Value>,
+) -> i32 {
+    let out = attach_conduit(payload, conduit);
+    let _ = write_json(&latest_path(root, env_key, scope), &out);
+    let _ = append_jsonl(&history_path(root, env_key, scope), &out);
+    print_json(&out);
+    if strict && !out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
+        1
+    } else if out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
+        0
+    } else {
+        1
     }
 }
 
