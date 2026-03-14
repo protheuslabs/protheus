@@ -8,7 +8,7 @@
     "client/runtime/config/contracts/adaptive_store.schema.json"
   ],
   "outputs": {
-    "latest_path": "state/contracts/adaptive_contract_version_governance_closure/latest.json",
-    "history_path": "state/contracts/adaptive_contract_version_governance_closure/history.jsonl"
+    "latest_path": "local/state/contracts/adaptive_contract_version_governance_closure/latest.json",
+    "history_path": "local/state/contracts/adaptive_contract_version_governance_closure/history.jsonl"
   }
 }

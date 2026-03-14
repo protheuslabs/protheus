@@ -23,6 +23,6 @@
       "operational"
     ]
   },
-  "state_path": "state/runtime/scheduler_mode/latest.json",
-  "receipts_path": "state/runtime/scheduler_mode/receipts.jsonl"
+  "state_path": "local/state/runtime/scheduler_mode/latest.json",
+  "receipts_path": "local/state/runtime/scheduler_mode/receipts.jsonl"
 }

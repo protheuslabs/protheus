@@ -18,9 +18,9 @@
   "paths": {
     "memory_dir": "client/memory/spine/rsi_idle_hands_scheduler",
     "adaptive_index_path": "client/cognition/adaptive/spine/rsi_idle_hands_scheduler/index.json",
-    "events_path": "state/spine/rsi_idle_hands_scheduler/events.jsonl",
-    "latest_path": "state/spine/rsi_idle_hands_scheduler/latest.json",
-    "receipts_path": "state/spine/rsi_idle_hands_scheduler/receipts.jsonl",
-    "scheduler_state_path": "state/spine/rsi_idle_hands_scheduler/state.json"
+    "events_path": "local/state/spine/rsi_idle_hands_scheduler/events.jsonl",
+    "latest_path": "local/state/spine/rsi_idle_hands_scheduler/latest.json",
+    "receipts_path": "local/state/spine/rsi_idle_hands_scheduler/receipts.jsonl",
+    "scheduler_state_path": "local/state/spine/rsi_idle_hands_scheduler/state.json"
   }
 }

@@ -147,13 +147,13 @@ pub fn default_policy(root: &Path) -> Policy {
             })
             .collect(),
         paths: Paths {
-            state_path: root.join("state/ops/perception_polish_program/state.json"),
-            latest_path: root.join("state/ops/perception_polish_program/latest.json"),
-            receipts_path: root.join("state/ops/perception_polish_program/receipts.jsonl"),
-            history_path: root.join("state/ops/perception_polish_program/history.jsonl"),
+            state_path: root.join("local/state/ops/perception_polish_program/state.json"),
+            latest_path: root.join("local/state/ops/perception_polish_program/latest.json"),
+            receipts_path: root.join("local/state/ops/perception_polish_program/receipts.jsonl"),
+            history_path: root.join("local/state/ops/perception_polish_program/history.jsonl"),
             flags_path: root.join("client/runtime/config/feature_flags/perception_flags.json"),
-            observability_panel_path: root.join("state/ops/protheus_top/observability_panel.json"),
-            reasoning_footer_path: root.join("state/ops/protheus_top/reasoning_mirror_footer.txt"),
+            observability_panel_path: root.join("local/state/ops/protheus_top/observability_panel.json"),
+            reasoning_footer_path: root.join("local/state/ops/protheus_top/reasoning_mirror_footer.txt"),
             tone_policy_path: root.join("client/runtime/config/perception_tone_policy.json"),
             post_reveal_easter_egg_path: root
                 .join("docs/client/blog/the_fort_was_empty_easter_egg.md"),
@@ -207,22 +207,22 @@ pub fn load_policy(root: &Path, policy_path: &Path) -> Policy {
         state_path: resolve_path(
             root,
             paths.get("state_path"),
-            "state/ops/perception_polish_program/state.json",
+            "local/state/ops/perception_polish_program/state.json",
         ),
         latest_path: resolve_path(
             root,
             paths.get("latest_path"),
-            "state/ops/perception_polish_program/latest.json",
+            "local/state/ops/perception_polish_program/latest.json",
         ),
         receipts_path: resolve_path(
             root,
             paths.get("receipts_path"),
-            "state/ops/perception_polish_program/receipts.jsonl",
+            "local/state/ops/perception_polish_program/receipts.jsonl",
         ),
         history_path: resolve_path(
             root,
             paths.get("history_path"),
-            "state/ops/perception_polish_program/history.jsonl",
+            "local/state/ops/perception_polish_program/history.jsonl",
         ),
         flags_path: resolve_path(
             root,
@@ -232,12 +232,12 @@ pub fn load_policy(root: &Path, policy_path: &Path) -> Policy {
         observability_panel_path: resolve_path(
             root,
             paths.get("observability_panel_path"),
-            "state/ops/protheus_top/observability_panel.json",
+            "local/state/ops/protheus_top/observability_panel.json",
         ),
         reasoning_footer_path: resolve_path(
             root,
             paths.get("reasoning_footer_path"),
-            "state/ops/protheus_top/reasoning_mirror_footer.txt",
+            "local/state/ops/protheus_top/reasoning_mirror_footer.txt",
         ),
         tone_policy_path: resolve_path(
             root,
@@ -354,7 +354,7 @@ fn run_lane(
                     "Export signed trace bundle before raising attempt cap."
                 ],
                 "export": {
-                    "receipt_bundle_path": "state/ops/protheus_top/exports/observability_trace_bundle.jsonl"
+                    "receipt_bundle_path": "local/state/ops/protheus_top/exports/observability_trace_bundle.jsonl"
                 }
             });
             if apply {

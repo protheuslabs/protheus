@@ -316,14 +316,14 @@ fn load_policy(root: &Path, policy_override: Option<&String>) -> Policy {
             outputs
                 .and_then(|o| o.get("latest_path"))
                 .and_then(Value::as_str),
-            "state/ops/sdlc_change_control/latest.json",
+            "local/state/ops/sdlc_change_control/latest.json",
         ),
         history_path: resolve_path(
             root,
             outputs
                 .and_then(|o| o.get("history_path"))
                 .and_then(Value::as_str),
-            "state/ops/sdlc_change_control/history.jsonl",
+            "local/state/ops/sdlc_change_control/history.jsonl",
         ),
         policy_path,
     }
@@ -597,12 +597,12 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
     let pr_body_path = resolve_path(
         root,
         parsed.flags.get("pr-body-path").map(String::as_str),
-        "state/ops/sdlc_change_control/pr_body.md",
+        "local/state/ops/sdlc_change_control/pr_body.md",
     );
     let changed_paths_path = resolve_path(
         root,
         parsed.flags.get("changed-paths-path").map(String::as_str),
-        "state/ops/sdlc_change_control/changed_paths.txt",
+        "local/state/ops/sdlc_change_control/changed_paths.txt",
     );
 
     match cmd.as_str() {
@@ -654,8 +654,8 @@ mod tests {
                 "high_risk_path_prefixes": ["core/layer0/security/", "client/runtime/systems/security/"],
                 "major_path_prefixes": ["core/layer0/ops/", "client/runtime/systems/ops/"],
                 "outputs": {
-                    "latest_path": "state/ops/sdlc_change_control/latest.json",
-                    "history_path": "state/ops/sdlc_change_control/history.jsonl"
+                    "latest_path": "local/state/ops/sdlc_change_control/latest.json",
+                    "history_path": "local/state/ops/sdlc_change_control/history.jsonl"
                 }
             }).to_string(),
         );
@@ -668,11 +668,11 @@ mod tests {
         write_policy(root);
 
         write_text(
-            &root.join("state/ops/sdlc_change_control/pr_body.md"),
+            &root.join("local/state/ops/sdlc_change_control/pr_body.md"),
             "- Risk class: high-risk\n- Rollback plan: revert and freeze\n- Rollback owner: ops-oncall\n- Approvers: alice\n- Approval receipts: docs/client/approvals/one.md\n- Rollback drill receipt: docs/client/drills/rollback.json\n",
         );
         write_text(
-            &root.join("state/ops/sdlc_change_control/changed_paths.txt"),
+            &root.join("local/state/ops/sdlc_change_control/changed_paths.txt"),
             "core/layer0/security/src/lib.rs\n",
         );
 
@@ -684,14 +684,14 @@ mod tests {
             &[
                 "run".to_string(),
                 "--strict=1".to_string(),
-                "--pr-body-path=state/ops/sdlc_change_control/pr_body.md".to_string(),
-                "--changed-paths-path=state/ops/sdlc_change_control/changed_paths.txt".to_string(),
+                "--pr-body-path=local/state/ops/sdlc_change_control/pr_body.md".to_string(),
+                "--changed-paths-path=local/state/ops/sdlc_change_control/changed_paths.txt".to_string(),
             ],
         );
         assert_eq!(code, 1);
 
         let latest =
-            fs::read_to_string(root.join("state/ops/sdlc_change_control/latest.json")).unwrap();
+            fs::read_to_string(root.join("local/state/ops/sdlc_change_control/latest.json")).unwrap();
         let payload: Value = serde_json::from_str(&latest).unwrap();
         assert_eq!(payload.get("ok").and_then(Value::as_bool), Some(false));
         assert!(payload
@@ -713,11 +713,11 @@ mod tests {
         write_text(&root.join("docs/client/approvals/approve-1.md"), "receipt");
 
         write_text(
-            &root.join("state/ops/sdlc_change_control/pr_body.md"),
+            &root.join("local/state/ops/sdlc_change_control/pr_body.md"),
             "- Risk class: major\n- RFC link: docs/client/rfc/RFC-1.md\n- Rollback plan: git revert\n- Rollback owner: platform\n- Approvers: alice\n- Approval receipts: docs/client/approvals/approve-1.md\n",
         );
         write_text(
-            &root.join("state/ops/sdlc_change_control/changed_paths.txt"),
+            &root.join("local/state/ops/sdlc_change_control/changed_paths.txt"),
             "core/layer0/ops/src/main.rs\n",
         );
 
@@ -726,14 +726,14 @@ mod tests {
             &[
                 "run".to_string(),
                 "--strict=1".to_string(),
-                "--pr-body-path=state/ops/sdlc_change_control/pr_body.md".to_string(),
-                "--changed-paths-path=state/ops/sdlc_change_control/changed_paths.txt".to_string(),
+                "--pr-body-path=local/state/ops/sdlc_change_control/pr_body.md".to_string(),
+                "--changed-paths-path=local/state/ops/sdlc_change_control/changed_paths.txt".to_string(),
             ],
         );
         assert_eq!(code, 0);
 
         let latest =
-            fs::read_to_string(root.join("state/ops/sdlc_change_control/latest.json")).unwrap();
+            fs::read_to_string(root.join("local/state/ops/sdlc_change_control/latest.json")).unwrap();
         let payload: Value = serde_json::from_str(&latest).unwrap();
         assert_eq!(payload.get("ok").and_then(Value::as_bool), Some(true));
         assert_eq!(

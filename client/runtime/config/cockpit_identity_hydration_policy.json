@@ -4,13 +4,13 @@
   "startup_token_budget": 180,
   "per_file_max_chars": 220,
   "base_files": [
-    "docs/workspace/SOUL.md",
-    "docs/workspace/USER.md"
+    "local/workspace/assistant/SOUL.md",
+    "local/workspace/assistant/USER.md"
   ],
   "lazy_pages": [
     "docs/workspace/MEMORY_INDEX.md",
     "docs/workspace/TAGS_INDEX.md",
-    "docs/workspace/MEMORY.md",
+    "local/workspace/assistant/MEMORY.md",
     "client/runtime/local/state/memory/conversation_eye/nodes.jsonl",
     "client/runtime/local/state/attention/latest.json"
   ]

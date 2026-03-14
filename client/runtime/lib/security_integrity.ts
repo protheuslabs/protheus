@@ -6,7 +6,7 @@ const { hashFileSha256 } = require('./integrity_hash_utility.ts');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_POLICY_PATH = path.join(REPO_ROOT, 'config', 'security_integrity_policy.json');
-const DEFAULT_LOG_PATH = path.join(REPO_ROOT, 'state', 'security', 'integrity_violations.jsonl');
+const DEFAULT_LOG_PATH = path.join(REPO_ROOT, 'local', 'state', 'security', 'integrity_violations.jsonl');
 
 function asStringArray(v) {
   if (!Array.isArray(v)) return [];

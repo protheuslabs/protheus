@@ -3,7 +3,7 @@
   "enabled": true,
   "shadow_only": true,
   "max_updates_per_session": 12,
-  "receipts_path": "state/client/memory/dynamic_embedding_adapter/receipts.jsonl",
-  "sessions_path": "state/client/memory/dynamic_embedding_adapter/sessions.json",
-  "latest_path": "state/client/memory/dynamic_embedding_adapter/latest.json"
+  "receipts_path": "local/state/client/memory/dynamic_embedding_adapter/receipts.jsonl",
+  "sessions_path": "local/state/client/memory/dynamic_embedding_adapter/sessions.json",
+  "latest_path": "local/state/client/memory/dynamic_embedding_adapter/latest.json"
 }

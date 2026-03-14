@@ -12,7 +12,7 @@
     "config",
     "tests/client-memory-tools"
   ],
-  "receipts_path": "state/primitives/iterative_repair/receipts.jsonl",
-  "latest_path": "state/primitives/iterative_repair/latest.json",
-  "state_path": "state/primitives/iterative_repair/state.json"
+  "receipts_path": "local/state/primitives/iterative_repair/receipts.jsonl",
+  "latest_path": "local/state/primitives/iterative_repair/latest.json",
+  "state_path": "local/state/primitives/iterative_repair/state.json"
 }

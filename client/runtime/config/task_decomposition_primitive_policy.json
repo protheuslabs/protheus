@@ -72,20 +72,20 @@
     "storm_executor": "storm_human_lane",
     "universal_execution_script": "client/runtime/systems/actuation/universal_execution_primitive.ts",
     "workflow_executor_script": "client/runtime/systems/workflow/workflow_executor.ts",
-    "dispatch_queue_path": "state/execution/task_decomposition_primitive/execution_dispatch_queue.jsonl",
-    "execution_log_path": "state/execution/task_decomposition_primitive/execution_log.jsonl"
+    "dispatch_queue_path": "local/state/execution/task_decomposition_primitive/execution_dispatch_queue.jsonl",
+    "execution_log_path": "local/state/execution/task_decomposition_primitive/execution_log.jsonl"
   },
   "state": {
-    "root": "state/execution/task_decomposition_primitive",
-    "runs_dir": "state/execution/task_decomposition_primitive/runs",
-    "latest_path": "state/execution/task_decomposition_primitive/latest.json",
-    "history_path": "state/execution/task_decomposition_primitive/history.jsonl",
-    "events_path": "state/execution/task_decomposition_primitive/events.jsonl",
-    "ide_events_path": "state/execution/task_decomposition_primitive/ide_events.jsonl",
-    "receipts_path": "state/execution/task_decomposition_primitive/receipts.jsonl",
-    "profiles_dir": "state/execution/task_decomposition_primitive/profiles",
-    "weaver_queue_path": "state/autonomy/weaver/task_decomposition_queue.jsonl",
-    "storm_queue_path": "state/storm/micro_tasks_queue.jsonl",
-    "obsidian_queue_path": "state/execution/task_decomposition_primitive/obsidian_projection.jsonl"
+    "root": "local/state/execution/task_decomposition_primitive",
+    "runs_dir": "local/state/execution/task_decomposition_primitive/runs",
+    "latest_path": "local/state/execution/task_decomposition_primitive/latest.json",
+    "history_path": "local/state/execution/task_decomposition_primitive/history.jsonl",
+    "events_path": "local/state/execution/task_decomposition_primitive/events.jsonl",
+    "ide_events_path": "local/state/execution/task_decomposition_primitive/ide_events.jsonl",
+    "receipts_path": "local/state/execution/task_decomposition_primitive/receipts.jsonl",
+    "profiles_dir": "local/state/execution/task_decomposition_primitive/profiles",
+    "weaver_queue_path": "local/state/autonomy/weaver/task_decomposition_queue.jsonl",
+    "storm_queue_path": "local/state/storm/micro_tasks_queue.jsonl",
+    "obsidian_queue_path": "local/state/execution/task_decomposition_primitive/obsidian_projection.jsonl"
   }
 }

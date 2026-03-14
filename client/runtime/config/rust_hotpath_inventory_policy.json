@@ -3,8 +3,8 @@
   "enabled": true,
   "strict_default": true,
   "paths": {
-    "latest_path": "state/ops/rust_hotpath_inventory/latest.json",
-    "history_path": "state/ops/rust_hotpath_inventory/history.jsonl"
+    "latest_path": "local/state/ops/rust_hotpath_inventory/latest.json",
+    "history_path": "local/state/ops/rust_hotpath_inventory/history.jsonl"
   },
   "scan": {
     "roots": ["systems", "lib"],

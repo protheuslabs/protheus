@@ -7,9 +7,9 @@
     "T1_generational_wealth_v1": 0.03
   },
   "paths": {
-    "input_dir": "state/sensory/analysis/objective_interference",
-    "output_dir": "state/sensory/analysis/objective_interference_guard",
-    "latest_path": "state/sensory/analysis/objective_interference_guard/latest.json",
-    "receipts_path": "state/sensory/analysis/objective_interference_guard/receipts.jsonl"
+    "input_dir": "local/state/sensory/analysis/objective_interference",
+    "output_dir": "local/state/sensory/analysis/objective_interference_guard",
+    "latest_path": "local/state/sensory/analysis/objective_interference_guard/latest.json",
+    "receipts_path": "local/state/sensory/analysis/objective_interference_guard/receipts.jsonl"
   }
 }

@@ -9,7 +9,7 @@
   "fallback_runtime": "cross_platform_runtime",
   "rollback_command": "node client/runtime/systems/runtime/windows_native_runtime_parity.ts run --force-fallback=1",
   "paths": {
-    "latest_path": "state/runtime/windows_native_runtime_parity/latest.json",
-    "history_path": "state/runtime/windows_native_runtime_parity/history.jsonl"
+    "latest_path": "local/state/runtime/windows_native_runtime_parity/latest.json",
+    "history_path": "local/state/runtime/windows_native_runtime_parity/history.jsonl"
   }
 }

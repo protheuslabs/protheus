@@ -14,10 +14,10 @@
     "population": 0.2
   },
   "paths": {
-    "baseline_path": "state/sensory/features/baseline.json",
-    "current_dir": "state/sensory/features/current",
-    "output_dir": "state/sensory/analysis/distribution_shift",
-    "latest_path": "state/sensory/analysis/distribution_shift/latest.json",
-    "receipts_path": "state/sensory/analysis/distribution_shift/receipts.jsonl"
+    "baseline_path": "local/state/sensory/features/baseline.json",
+    "current_dir": "local/state/sensory/features/current",
+    "output_dir": "local/state/sensory/analysis/distribution_shift",
+    "latest_path": "local/state/sensory/analysis/distribution_shift/latest.json",
+    "receipts_path": "local/state/sensory/analysis/distribution_shift/receipts.jsonl"
   }
 }

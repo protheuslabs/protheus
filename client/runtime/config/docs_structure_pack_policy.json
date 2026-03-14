@@ -8,12 +8,12 @@
     "adr_root": "docs/client/adr",
     "service_catalog_path": "client/runtime/config/service_catalog.json",
     "interface_registry_path": "client/runtime/config/interface_contract_registry.json",
-    "control_evidence_matrix_path": "state/ops/docs_structure/control_evidence_matrix.json",
+    "control_evidence_matrix_path": "local/state/ops/docs_structure/control_evidence_matrix.json",
     "release_templates_root": "docs/client/release/templates",
     "data_governance_matrix_path": "docs/client/data_governance_matrix.md",
     "environment_matrix_path": "docs/client/environment_matrix.md",
-    "latest_path": "state/ops/docs_structure/latest.json",
-    "receipts_path": "state/ops/docs_structure/receipts.jsonl",
+    "latest_path": "local/state/ops/docs_structure/latest.json",
+    "receipts_path": "local/state/ops/docs_structure/receipts.jsonl",
     "compliance_controls_map_path": "client/runtime/config/compliance_controls_map.json"
   }
 }

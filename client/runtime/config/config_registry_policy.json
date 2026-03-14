@@ -14,8 +14,8 @@
   ],
   "shape_depth": 3,
   "max_files": 4000,
-  "inventory_output_path": "state/ops/config_registry/latest.json",
-  "inventory_history_jsonl_path": "state/ops/config_registry/history.jsonl",
+  "inventory_output_path": "local/state/ops/config_registry/latest.json",
+  "inventory_history_jsonl_path": "local/state/ops/config_registry/history.jsonl",
   "consolidation": {
     "enabled": true,
     "min_shape_group_size": 2,

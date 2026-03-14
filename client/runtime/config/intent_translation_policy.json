@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/intent",
     "adaptive_index_path": "client/cognition/adaptive/intent/index.json",
-    "events_path": "state/intent/translation/events.jsonl",
-    "latest_path": "state/intent/translation/latest.json",
-    "receipts_path": "state/intent/translation/receipts.jsonl"
+    "events_path": "local/state/intent/translation/events.jsonl",
+    "latest_path": "local/state/intent/translation/latest.json",
+    "receipts_path": "local/state/intent/translation/receipts.jsonl"
   }
 }

@@ -26,10 +26,10 @@
     "client/runtime/config/workflow_policy.json"
   ],
   "outputs": {
-    "central_plane_path": "state/ops/config_plane/pilot_latest.json",
+    "central_plane_path": "local/state/ops/config_plane/pilot_latest.json",
     "migration_map_path": "docs/client/CONFIG_PLANE_PILOT_MAP.md",
     "compat_shim_path": "client/runtime/config/config_plane_compat_shims.json",
-    "latest_path": "state/ops/config_plane_pilot/latest.json",
-    "history_path": "state/ops/config_plane_pilot/history.jsonl"
+    "latest_path": "local/state/ops/config_plane_pilot/latest.json",
+    "history_path": "local/state/ops/config_plane_pilot/history.jsonl"
   }
 }

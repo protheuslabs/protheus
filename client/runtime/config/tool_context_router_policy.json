@@ -28,7 +28,7 @@
     }
   ],
   "paths": {
-    "latest_path": "state/tools/tool_context_router/latest.json",
-    "history_path": "state/tools/tool_context_router/history.jsonl"
+    "latest_path": "local/state/tools/tool_context_router/latest.json",
+    "history_path": "local/state/tools/tool_context_router/history.jsonl"
   }
 }

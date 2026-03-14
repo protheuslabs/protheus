@@ -14,9 +14,9 @@
   "paths": {
     "memory_dir": "client/memory/ops/benchmarks",
     "adaptive_index_path": "client/cognition/adaptive/ops/benchmarks/index.json",
-    "events_path": "state/ops/competitive_benchmark/events.jsonl",
-    "latest_path": "state/ops/competitive_benchmark/latest.json",
-    "receipts_path": "state/ops/competitive_benchmark/receipts.jsonl",
-    "scorecards_path": "state/ops/competitive_benchmark/scorecards.jsonl"
+    "events_path": "local/state/ops/competitive_benchmark/events.jsonl",
+    "latest_path": "local/state/ops/competitive_benchmark/latest.json",
+    "receipts_path": "local/state/ops/competitive_benchmark/receipts.jsonl",
+    "scorecards_path": "local/state/ops/competitive_benchmark/scorecards.jsonl"
   }
 }

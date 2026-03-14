@@ -14,10 +14,10 @@
     "inversion",
     "research"
   ],
-  "candidates_path": "state/primitives/synthesis/candidates.json",
-  "archive_path": "state/primitives/synthesis/archive.jsonl",
-  "promotions_path": "state/primitives/synthesis/promotions.jsonl",
-  "receipts_path": "state/primitives/synthesis/receipts.jsonl",
+  "candidates_path": "local/state/primitives/synthesis/candidates.json",
+  "archive_path": "local/state/primitives/synthesis/archive.jsonl",
+  "promotions_path": "local/state/primitives/synthesis/promotions.jsonl",
+  "receipts_path": "local/state/primitives/synthesis/receipts.jsonl",
   "invariant_check_command": [
     "node",
     "client/runtime/systems/security/formal_invariant_engine.ts",

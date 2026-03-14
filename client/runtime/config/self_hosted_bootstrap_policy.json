@@ -18,8 +18,8 @@
     ["node", "client/runtime/systems/security/supply_chain_trust_plane.ts", "run", "--strict=1", "--verify-only=1"]
   ],
   "outputs": {
-    "state_path": "state/ops/self_hosted_bootstrap/state.json",
-    "latest_path": "state/ops/self_hosted_bootstrap/latest.json",
-    "receipts_path": "state/ops/self_hosted_bootstrap/receipts.jsonl"
+    "state_path": "local/state/ops/self_hosted_bootstrap/state.json",
+    "latest_path": "local/state/ops/self_hosted_bootstrap/latest.json",
+    "receipts_path": "local/state/ops/self_hosted_bootstrap/receipts.jsonl"
   }
 }

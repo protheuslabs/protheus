@@ -200,7 +200,7 @@ mod tests {
         vec![ClaimEvidenceRow {
             claim: "selector decision is deterministic".to_string(),
             evidence: vec![
-                "state/client/memory/rust_transition/selector.json".to_string(),
+                "local/state/client/memory/rust_transition/selector.json".to_string(),
                 "backend:rust_shadow".to_string(),
             ],
             persona_lenses: vec!["Migration_Guard".to_string(), "operator_safety".to_string()],

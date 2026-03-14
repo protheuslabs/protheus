@@ -19,9 +19,9 @@
     "resurrection_restore_preview": ["node", "client/runtime/systems/continuity/resurrection_protocol.ts", "restore"]
   },
   "paths": {
-    "state_path": "state/continuity/sovereign_resurrection_substrate/state.json",
-    "latest_path": "state/continuity/sovereign_resurrection_substrate/latest.json",
-    "receipts_path": "state/continuity/sovereign_resurrection_substrate/receipts.jsonl",
-    "drills_path": "state/continuity/sovereign_resurrection_substrate/drills.jsonl"
+    "state_path": "local/state/continuity/sovereign_resurrection_substrate/state.json",
+    "latest_path": "local/state/continuity/sovereign_resurrection_substrate/latest.json",
+    "receipts_path": "local/state/continuity/sovereign_resurrection_substrate/receipts.jsonl",
+    "drills_path": "local/state/continuity/sovereign_resurrection_substrate/drills.jsonl"
   }
 }

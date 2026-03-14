@@ -21,6 +21,6 @@
     "enforce_budget_guard": true,
     "extra_signals_when_budget_exhausted": 1
   },
-  "state_path": "state/security/safety_resilience/state.json",
-  "receipts_path": "state/security/safety_resilience/receipts.jsonl"
+  "state_path": "local/state/security/safety_resilience/state.json",
+  "receipts_path": "local/state/security/safety_resilience/receipts.jsonl"
 }

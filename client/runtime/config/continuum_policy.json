@@ -113,7 +113,7 @@
   },
   "training_queue": {
     "enabled": true,
-    "path": "state/nursery/training/continuum_queue.jsonl",
+    "path": "local/state/nursery/training/continuum_queue.jsonl",
     "max_rows_per_pulse": 6,
     "metadata_strict": true,
     "trainability_strict": true,

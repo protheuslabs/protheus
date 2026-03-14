@@ -3,9 +3,9 @@
   "enabled": true,
   "compaction": {
     "source_paths": [
-      "state/autonomy/weaver/history.jsonl",
-      "state/autonomy/mirror_organ/history.jsonl",
-      "state/workflow/learning_conduit/receipts.jsonl"
+      "local/state/autonomy/weaver/history.jsonl",
+      "local/state/autonomy/mirror_organ/history.jsonl",
+      "local/state/workflow/learning_conduit/receipts.jsonl"
     ],
     "max_source_rows_per_path": 5000
   },
@@ -21,7 +21,7 @@
     "local_instance_id": "local_instance",
     "exchange_model": "hereditary_master_reviewed",
     "peer_to_peer_network_effect": false,
-    "hereditary_update_queue_path": "state/brain/hereditary_advancement_queue.jsonl",
-    "master_review_queue_path": "state/brain/master_review_advancement_queue.jsonl"
+    "hereditary_update_queue_path": "local/state/brain/hereditary_advancement_queue.jsonl",
+    "master_review_queue_path": "local/state/brain/master_review_advancement_queue.jsonl"
   }
 }

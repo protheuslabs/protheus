@@ -167,11 +167,11 @@
     }
   ],
   "paths": {
-    "latest_path": "state/ops/rust50_migration_program/latest.json",
-    "receipts_path": "state/ops/rust50_migration_program/receipts.jsonl",
-    "history_path": "state/ops/rust50_migration_program/history.jsonl",
-    "state_dir": "state/ops/rust50_migration_program/items",
-    "artifact_dir": "state/ops/rust50_migration_program/artifacts",
-    "gate_state_path": "state/ops/rust50_migration_program/rust50_gate_state.json"
+    "latest_path": "local/state/ops/rust50_migration_program/latest.json",
+    "receipts_path": "local/state/ops/rust50_migration_program/receipts.jsonl",
+    "history_path": "local/state/ops/rust50_migration_program/history.jsonl",
+    "state_dir": "local/state/ops/rust50_migration_program/items",
+    "artifact_dir": "local/state/ops/rust50_migration_program/artifacts",
+    "gate_state_path": "local/state/ops/rust50_migration_program/rust50_gate_state.json"
   }
 }

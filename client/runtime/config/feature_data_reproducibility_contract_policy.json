@@ -4,9 +4,9 @@
   "decision_threshold": 0.5,
   "detector_version_default": "detector_v1",
   "paths": {
-    "features_dir": "state/sensory/features",
-    "output_dir": "state/sensory/analysis/reproducibility",
-    "latest_path": "state/sensory/analysis/reproducibility/latest.json",
-    "receipts_path": "state/sensory/analysis/reproducibility/receipts.jsonl"
+    "features_dir": "local/state/sensory/features",
+    "output_dir": "local/state/sensory/analysis/reproducibility",
+    "latest_path": "local/state/sensory/analysis/reproducibility/latest.json",
+    "receipts_path": "local/state/sensory/analysis/reproducibility/receipts.jsonl"
   }
 }

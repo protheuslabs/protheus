@@ -68,7 +68,7 @@
     "max_build_steps": 8
   },
   "integration": {
-    "weaver_latest_path": "state/autonomy/weaver/latest.json",
+    "weaver_latest_path": "local/state/autonomy/weaver/latest.json",
     "research_organ_enabled": true,
     "nursery_shadow_only": true,
     "adversarial_shadow_only": true,
@@ -93,7 +93,7 @@
     "generative_meta_model_policy_path": "client/runtime/config/generative_meta_model_primitive_policy.json",
     "self_teacher_distillation_policy_path": "client/runtime/config/self_teacher_distillation_primitive_policy.json",
     "adaptive_ensemble_routing_policy_path": "client/runtime/config/adaptive_ensemble_routing_primitive_policy.json",
-    "weaver_ensemble_profiles_path": "state/autonomy/weaver/adaptive_ensemble_profiles.jsonl"
+    "weaver_ensemble_profiles_path": "local/state/autonomy/weaver/adaptive_ensemble_profiles.jsonl"
   },
   "outputs": {
     "emit_events": true,

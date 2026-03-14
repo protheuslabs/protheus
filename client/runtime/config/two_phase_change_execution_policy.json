@@ -7,8 +7,8 @@
     "contracts"
   ],
   "outputs": {
-    "latest_path": "state/autonomy/two_phase_change_execution/latest.json",
-    "history_path": "state/autonomy/two_phase_change_execution/history.jsonl",
-    "phase_receipts_path": "state/autonomy/improvements/phase_receipts"
+    "latest_path": "local/state/autonomy/two_phase_change_execution/latest.json",
+    "history_path": "local/state/autonomy/two_phase_change_execution/history.jsonl",
+    "phase_receipts_path": "local/state/autonomy/improvements/phase_receipts"
   }
 }

@@ -9,9 +9,9 @@
     "prediction": 8
   },
   "paths": {
-    "latest_path": "state/science/loop/latest.json",
-    "history_path": "state/science/loop/history.jsonl",
-    "runs_dir": "state/science/loop/runs",
-    "replay_latest_path": "state/science/loop/replay_latest.json"
+    "latest_path": "local/state/science/loop/latest.json",
+    "history_path": "local/state/science/loop/history.jsonl",
+    "runs_dir": "local/state/science/loop/runs",
+    "replay_latest_path": "local/state/science/loop/replay_latest.json"
   }
 }

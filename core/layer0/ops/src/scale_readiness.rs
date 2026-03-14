@@ -179,12 +179,12 @@ pub fn default_policy(root: &Path) -> Policy {
             "1M".to_string(),
         ],
         paths: Paths {
-            state_path: root.join("state/ops/scale_readiness_program/state.json"),
-            latest_path: root.join("state/ops/scale_readiness_program/latest.json"),
-            receipts_path: root.join("state/ops/scale_readiness_program/receipts.jsonl"),
-            history_path: root.join("state/ops/scale_readiness_program/history.jsonl"),
+            state_path: root.join("local/state/ops/scale_readiness_program/state.json"),
+            latest_path: root.join("local/state/ops/scale_readiness_program/latest.json"),
+            receipts_path: root.join("local/state/ops/scale_readiness_program/receipts.jsonl"),
+            history_path: root.join("local/state/ops/scale_readiness_program/history.jsonl"),
             contract_dir: root.join("client/runtime/config/scale_readiness"),
-            report_dir: root.join("state/ops/scale_readiness_program/reports"),
+            report_dir: root.join("local/state/ops/scale_readiness_program/reports"),
         },
         budgets: Budgets {
             max_cost_per_user_usd: 0.18,
@@ -257,22 +257,22 @@ pub fn load_policy(root: &Path, policy_path: &Path) -> Policy {
         state_path: resolve_path(
             root,
             paths.get("state_path"),
-            "state/ops/scale_readiness_program/state.json",
+            "local/state/ops/scale_readiness_program/state.json",
         ),
         latest_path: resolve_path(
             root,
             paths.get("latest_path"),
-            "state/ops/scale_readiness_program/latest.json",
+            "local/state/ops/scale_readiness_program/latest.json",
         ),
         receipts_path: resolve_path(
             root,
             paths.get("receipts_path"),
-            "state/ops/scale_readiness_program/receipts.jsonl",
+            "local/state/ops/scale_readiness_program/receipts.jsonl",
         ),
         history_path: resolve_path(
             root,
             paths.get("history_path"),
-            "state/ops/scale_readiness_program/history.jsonl",
+            "local/state/ops/scale_readiness_program/history.jsonl",
         ),
         contract_dir: resolve_path(
             root,
@@ -282,7 +282,7 @@ pub fn load_policy(root: &Path, policy_path: &Path) -> Policy {
         report_dir: resolve_path(
             root,
             paths.get("report_dir"),
-            "state/ops/scale_readiness_program/reports",
+            "local/state/ops/scale_readiness_program/reports",
         ),
     };
 
@@ -486,7 +486,7 @@ fn lane_scale(
             });
             receipt["artifacts"] = json!({
                 "load_model_contract_path": contract_path,
-                "baseline_state_path": "state/ops/scale_envelope/latest.json"
+                "baseline_state_path": "local/state/ops/scale_envelope/latest.json"
             });
             Ok(receipt)
         }

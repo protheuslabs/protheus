@@ -5,10 +5,10 @@
   "paths": {
     "package_json_path": "package.json",
     "registry_path": "client/runtime/config/command_registry.json",
-    "generated_registry_path": "state/ops/command_registry/generated_registry.json",
+    "generated_registry_path": "local/state/ops/command_registry/generated_registry.json",
     "docs_path": "docs/client/ops/COMMAND_REGISTRY.md",
-    "latest_path": "state/ops/command_registry/latest.json",
-    "receipts_path": "state/ops/command_registry/receipts.jsonl"
+    "latest_path": "local/state/ops/command_registry/latest.json",
+    "receipts_path": "local/state/ops/command_registry/receipts.jsonl"
   },
   "curated_operator_surface": [
     "dev",

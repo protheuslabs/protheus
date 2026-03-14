@@ -9,13 +9,13 @@
   },
   "protheusctl_script": "client/runtime/systems/ops/protheusctl.ts",
   "rsi_policy_path": "client/runtime/config/rsi_bootstrap_policy.json",
-  "rsi_history_path": "state/client/cognition/adaptive/rsi/receipts.jsonl",
+  "rsi_history_path": "local/state/client/cognition/adaptive/rsi/receipts.jsonl",
   "paths": {
     "memory_dir": "client/memory/ops/rsi_control_plane_cli_surface_contract",
     "adaptive_index_path": "client/cognition/adaptive/ops/rsi_control_plane_cli_surface_contract/index.json",
-    "events_path": "state/ops/rsi_control_plane_cli_surface_contract/events.jsonl",
-    "latest_path": "state/ops/rsi_control_plane_cli_surface_contract/latest.json",
-    "receipts_path": "state/ops/rsi_control_plane_cli_surface_contract/receipts.jsonl",
-    "contract_state_path": "state/ops/rsi_control_plane_cli_surface_contract/state.json"
+    "events_path": "local/state/ops/rsi_control_plane_cli_surface_contract/events.jsonl",
+    "latest_path": "local/state/ops/rsi_control_plane_cli_surface_contract/latest.json",
+    "receipts_path": "local/state/ops/rsi_control_plane_cli_surface_contract/receipts.jsonl",
+    "contract_state_path": "local/state/ops/rsi_control_plane_cli_surface_contract/state.json"
   }
 }

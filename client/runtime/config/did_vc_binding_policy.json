@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/identity/did",
     "adaptive_index_path": "client/cognition/adaptive/identity/did/index.json",
-    "events_path": "state/identity/did_vc/events.jsonl",
-    "latest_path": "state/identity/did_vc/latest.json",
-    "receipts_path": "state/identity/did_vc/receipts.jsonl"
+    "events_path": "local/state/identity/did_vc/events.jsonl",
+    "latest_path": "local/state/identity/did_vc/latest.json",
+    "receipts_path": "local/state/identity/did_vc/receipts.jsonl"
   }
 }

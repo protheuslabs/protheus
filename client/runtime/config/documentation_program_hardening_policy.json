@@ -5,7 +5,7 @@
   "required_files": ["docs/client/adr/README.md", "docs/client/adr/TEMPLATE.md", "docs/client/adr/INDEX.md"],
   "required_sections": ["ownership model", "review cadence", "artifact tiers", "adr", "freshness process", "backlog + release linkage"],
   "paths": {
-    "latest_path": "state/ops/documentation_program_hardening/latest.json",
-    "history_path": "state/ops/documentation_program_hardening/history.jsonl"
+    "latest_path": "local/state/ops/documentation_program_hardening/latest.json",
+    "history_path": "local/state/ops/documentation_program_hardening/history.jsonl"
   }
 }

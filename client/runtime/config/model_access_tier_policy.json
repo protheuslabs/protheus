@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/economy/model_access",
     "adaptive_index_path": "client/cognition/adaptive/economy/model_access/index.json",
-    "events_path": "state/economy\/model_access_tiers/events.jsonl",
-    "latest_path": "state/economy\/model_access_tiers/latest.json",
-    "receipts_path": "state/economy\/model_access_tiers/receipts.jsonl"
+    "events_path": "local/state/economy\/model_access_tiers/events.jsonl",
+    "latest_path": "local/state/economy\/model_access_tiers/latest.json",
+    "receipts_path": "local/state/economy\/model_access_tiers/receipts.jsonl"
   }
 }

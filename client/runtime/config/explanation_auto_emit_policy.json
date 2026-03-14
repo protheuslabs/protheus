@@ -10,8 +10,8 @@
     "policy_decision"
   ],
   "only_failures": true,
-  "canonical_events_dir": "state/runtime/canonical_events",
-  "explanation_index_path": "state/primitives/explanation_primitive/index.json",
-  "latest_path": "state/primitives/explanation_auto_emit/latest.json",
-  "receipts_path": "state/primitives/explanation_auto_emit/receipts.jsonl"
+  "canonical_events_dir": "local/state/runtime/canonical_events",
+  "explanation_index_path": "local/state/primitives/explanation_primitive/index.json",
+  "latest_path": "local/state/primitives/explanation_auto_emit/latest.json",
+  "receipts_path": "local/state/primitives/explanation_auto_emit/receipts.jsonl"
 }

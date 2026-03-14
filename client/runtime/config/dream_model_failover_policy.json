@@ -9,8 +9,8 @@
   "base_cooldown_minutes": 30,
   "max_cooldown_minutes": 360,
   "outputs": {
-    "state_path": "state/client/memory/dream_model_failover/state.json",
-    "latest_path": "state/client/memory/dream_model_failover/latest.json",
-    "history_path": "state/client/memory/dream_model_failover/history.jsonl"
+    "state_path": "local/state/client/memory/dream_model_failover/state.json",
+    "latest_path": "local/state/client/memory/dream_model_failover/latest.json",
+    "history_path": "local/state/client/memory/dream_model_failover/history.jsonl"
   }
 }

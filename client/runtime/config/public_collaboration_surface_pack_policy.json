@@ -37,7 +37,7 @@
     "docs/client/DOCUMENTATION_PROGRAM_GOVERNANCE.md"
   ],
   "paths": {
-    "latest_path": "state/ops/public_collaboration_surface_pack/latest.json",
-    "history_path": "state/ops/public_collaboration_surface_pack/history.jsonl"
+    "latest_path": "local/state/ops/public_collaboration_surface_pack/latest.json",
+    "history_path": "local/state/ops/public_collaboration_surface_pack/history.jsonl"
   }
 }

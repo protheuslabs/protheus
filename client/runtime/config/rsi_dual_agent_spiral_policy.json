@@ -22,9 +22,9 @@
   "paths": {
     "memory_dir": "client/memory/client/cognition/adaptive/rsi_dual_agent_spiral",
     "adaptive_index_path": "client/cognition/adaptive/rsi/dual_agent_spiral/index.json",
-    "events_path": "state/client/cognition/adaptive/rsi_dual_agent_spiral/events.jsonl",
-    "latest_path": "state/client/cognition/adaptive/rsi_dual_agent_spiral/latest.json",
-    "receipts_path": "state/client/cognition/adaptive/rsi_dual_agent_spiral/receipts.jsonl",
-    "spiral_state_path": "state/client/cognition/adaptive/rsi_dual_agent_spiral/state.json"
+    "events_path": "local/state/client/cognition/adaptive/rsi_dual_agent_spiral/events.jsonl",
+    "latest_path": "local/state/client/cognition/adaptive/rsi_dual_agent_spiral/latest.json",
+    "receipts_path": "local/state/client/cognition/adaptive/rsi_dual_agent_spiral/receipts.jsonl",
+    "spiral_state_path": "local/state/client/cognition/adaptive/rsi_dual_agent_spiral/state.json"
   }
 }

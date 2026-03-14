@@ -18,7 +18,7 @@
   ],
   "min_recovery_shards": 3,
   "drill_max_age_days": 30,
-  "state_path": "state/security/key_lifecycle/state.json",
-  "receipts_path": "state/security/key_lifecycle/receipts.jsonl",
+  "state_path": "local/state/security/key_lifecycle/state.json",
+  "receipts_path": "local/state/security/key_lifecycle/receipts.jsonl",
   "crypto_agility_contract_path": "client/runtime/config/crypto_agility_contract.json"
 }

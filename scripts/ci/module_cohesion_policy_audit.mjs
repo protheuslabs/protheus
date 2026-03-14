@@ -6,7 +6,7 @@ import { execSync } from 'node:child_process';
 
 const ROOT = process.cwd();
 const OUT_JSON_DEFAULT = 'core/local/artifacts/module_cohesion_audit_current.json';
-const OUT_MD_DEFAULT = 'docs/workspace/MODULE_COHESION_AUDIT_CURRENT.md';
+const OUT_MD_DEFAULT = 'local/workspace/reports/MODULE_COHESION_AUDIT_CURRENT.md';
 
 function parseArgs(argv) {
   const out = {

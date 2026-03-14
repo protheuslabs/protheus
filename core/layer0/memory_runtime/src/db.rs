@@ -44,7 +44,7 @@ fn now_iso() -> String {
 }
 
 fn default_db_path(root: &Path) -> PathBuf {
-    root.join("state")
+    root.join("local").join("state")
         .join("memory")
         .join("runtime_memory.sqlite")
 }
@@ -70,6 +70,7 @@ fn derive_key_material(root: &Path) -> String {
         }
     }
     let keyring_path = root
+        .join("local")
         .join("state")
         .join("security")
         .join("organ_state_encryption")

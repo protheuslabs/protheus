@@ -11,14 +11,14 @@
     "mac": "hmac-sha256"
   },
   "paths": {
-    "keyring_path": "state/security/organ_state_encryption/keyring.json",
-    "audit_path": "state/security/organ_state_encryption/audit.jsonl",
-    "alerts_path": "state/ops/system_health/events.jsonl"
+    "keyring_path": "local/state/security/organ_state_encryption/keyring.json",
+    "audit_path": "local/state/security/organ_state_encryption/audit.jsonl",
+    "alerts_path": "local/state/ops/system_health/events.jsonl"
   },
   "lane_roots": {
     "state": "state",
     "memory": "memory",
-    "cryonics": "state/_cryonics"
+    "cryonics": "local/state/_cryonics"
   },
   "organs": {
     "workflow": {

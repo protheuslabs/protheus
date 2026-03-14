@@ -5,11 +5,11 @@
     "warm_days": 180,
     "cold_days": 365
   },
-  "archive_root": "state/_retention",
-  "index_path": "state/ops/compliance_retention_index.json",
-  "state_path": "state/ops/compliance_retention_uplift.json",
-  "history_path": "state/ops/compliance_retention_uplift_history.jsonl",
-  "attestation_dir": "state/ops/compliance_retention_attestations",
+  "archive_root": "local/state/_retention",
+  "index_path": "local/state/ops/compliance_retention_index.json",
+  "state_path": "local/state/ops/compliance_retention_uplift.json",
+  "history_path": "local/state/ops/compliance_retention_uplift_history.jsonl",
+  "attestation_dir": "local/state/ops/compliance_retention_attestations",
   "include_extensions": [
     ".json",
     ".jsonl",
@@ -18,14 +18,14 @@
     ".txt"
   ],
   "scopes": [
-    "state/observability",
-    "state/security",
-    "state/actuation/receipts",
-    "state/autonomy/health_reports",
-    "state/autonomy/health_alerts"
+    "local/state/observability",
+    "local/state/security",
+    "local/state/actuation/receipts",
+    "local/state/autonomy/health_reports",
+    "local/state/autonomy/health_alerts"
   ],
   "exclude_contains": [
-    "/state/_retention/"
+    "/local/state/_retention/"
   ]
 }
 

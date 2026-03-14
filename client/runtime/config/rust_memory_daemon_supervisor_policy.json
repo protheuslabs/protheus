@@ -28,11 +28,11 @@
     "env": {}
   },
   "paths": {
-    "pid_path": "state/client/memory/rust_transition/memory_daemon.pid",
-    "log_path": "state/client/memory/rust_transition/memory_daemon.log",
-    "stale_socket_path": "state/client/memory/rust_transition/memory_daemon.sock",
-    "latest_path": "state/client/memory/rust_transition/daemon_supervisor/latest.json",
-    "receipts_path": "state/client/memory/rust_transition/daemon_supervisor/receipts.jsonl",
-    "state_path": "state/client/memory/rust_transition/daemon_supervisor/state.json"
+    "pid_path": "local/state/client/memory/rust_transition/memory_daemon.pid",
+    "log_path": "local/state/client/memory/rust_transition/memory_daemon.log",
+    "stale_socket_path": "local/state/client/memory/rust_transition/memory_daemon.sock",
+    "latest_path": "local/state/client/memory/rust_transition/daemon_supervisor/latest.json",
+    "receipts_path": "local/state/client/memory/rust_transition/daemon_supervisor/receipts.jsonl",
+    "state_path": "local/state/client/memory/rust_transition/daemon_supervisor/state.json"
   }
 }

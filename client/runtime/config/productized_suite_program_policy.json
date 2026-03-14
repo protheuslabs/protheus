@@ -88,10 +88,10 @@
     }
   ],
   "paths": {
-    "latest_path": "state/ops/productized_suite_program/latest.json",
-    "receipts_path": "state/ops/productized_suite_program/receipts.jsonl",
-    "history_path": "state/ops/productized_suite_program/history.jsonl",
-    "state_dir": "state/ops/productized_suite_program/items",
-    "artifact_dir": "state/ops/productized_suite_program/artifacts"
+    "latest_path": "local/state/ops/productized_suite_program/latest.json",
+    "receipts_path": "local/state/ops/productized_suite_program/receipts.jsonl",
+    "history_path": "local/state/ops/productized_suite_program/history.jsonl",
+    "state_dir": "local/state/ops/productized_suite_program/items",
+    "artifact_dir": "local/state/ops/productized_suite_program/artifacts"
   }
 }

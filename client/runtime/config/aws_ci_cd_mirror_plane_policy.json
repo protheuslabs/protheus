@@ -5,12 +5,12 @@
   "required_branches": ["main"],
   "required_gates": ["build", "test", "formal", "chaos", "fis"],
   "sources": {
-    "github_state_path": "state/ops/aws_ci_cd_mirror/github_latest.json",
-    "aws_state_path": "state/ops/aws_ci_cd_mirror/aws_latest.json"
+    "github_state_path": "local/state/ops/aws_ci_cd_mirror/github_latest.json",
+    "aws_state_path": "local/state/ops/aws_ci_cd_mirror/aws_latest.json"
   },
   "paths": {
-    "state_path": "state/ops/aws_ci_cd_mirror_plane/state.json",
-    "latest_path": "state/ops/aws_ci_cd_mirror_plane/latest.json",
-    "history_path": "state/ops/aws_ci_cd_mirror_plane/history.jsonl"
+    "state_path": "local/state/ops/aws_ci_cd_mirror_plane/state.json",
+    "latest_path": "local/state/ops/aws_ci_cd_mirror_plane/latest.json",
+    "history_path": "local/state/ops/aws_ci_cd_mirror_plane/history.jsonl"
   }
 }

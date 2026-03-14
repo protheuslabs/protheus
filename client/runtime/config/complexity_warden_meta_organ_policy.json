@@ -22,9 +22,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/fractal/complexity_warden_meta_organ/state.json",
-    "latest_path": "state/fractal/complexity_warden_meta_organ/latest.json",
-    "receipts_path": "state/fractal/complexity_warden_meta_organ/receipts.jsonl",
-    "history_path": "state/fractal/complexity_warden_meta_organ/history.jsonl"
+    "state_path": "local/state/fractal/complexity_warden_meta_organ/state.json",
+    "latest_path": "local/state/fractal/complexity_warden_meta_organ/latest.json",
+    "receipts_path": "local/state/fractal/complexity_warden_meta_organ/receipts.jsonl",
+    "history_path": "local/state/fractal/complexity_warden_meta_organ/history.jsonl"
   }
 }

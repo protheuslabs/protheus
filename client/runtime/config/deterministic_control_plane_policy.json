@@ -5,6 +5,6 @@
   "quorum_size": 2,
   "local_trust_domain": "primary",
   "leader_strategy": "lexicographic_node_id",
-  "state_path": "state/distributed/control_plane/latest.json",
-  "history_path": "state/distributed/control_plane/history.jsonl"
+  "state_path": "local/state/distributed/control_plane/latest.json",
+  "history_path": "local/state/distributed/control_plane/history.jsonl"
 }

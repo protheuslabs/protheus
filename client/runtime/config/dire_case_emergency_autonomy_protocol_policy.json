@@ -6,9 +6,9 @@
   "protocol_ttl_minutes": 90,
   "human_override_always_available": true,
   "paths": {
-    "latest_path": "state/security/dire_case_emergency_autonomy_protocol/latest.json",
-    "receipts_path": "state/security/dire_case_emergency_autonomy_protocol/receipts.jsonl",
-    "ledger_path": "state/security/dire_case_emergency_autonomy_protocol/ledger.jsonl",
-    "state_path": "state/security/dire_case_emergency_autonomy_protocol/state.json"
+    "latest_path": "local/state/security/dire_case_emergency_autonomy_protocol/latest.json",
+    "receipts_path": "local/state/security/dire_case_emergency_autonomy_protocol/receipts.jsonl",
+    "ledger_path": "local/state/security/dire_case_emergency_autonomy_protocol/ledger.jsonl",
+    "state_path": "local/state/security/dire_case_emergency_autonomy_protocol/state.json"
   }
 }

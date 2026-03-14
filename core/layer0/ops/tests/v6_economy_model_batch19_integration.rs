@@ -51,7 +51,7 @@ fn economy_latest_path(root: &Path) -> PathBuf {
 }
 
 fn model_latest_path(root: &Path) -> PathBuf {
-    root.join("state")
+    root.join("local").join("state")
         .join("ops")
         .join("model_router")
         .join("latest.json")

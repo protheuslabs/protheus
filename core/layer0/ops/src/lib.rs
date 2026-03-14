@@ -492,8 +492,8 @@ pub fn default_policy(root: &Path) -> Policy {
             max_mb: 60.0,
             paths: vec!["dist".to_string()],
         },
-        state_path: root.join("state/ops/runtime_efficiency_floor.json"),
-        history_path: root.join("state/ops/runtime_efficiency_floor_history.jsonl"),
+        state_path: root.join("local/state/ops/runtime_efficiency_floor.json"),
+        history_path: root.join("local/state/ops/runtime_efficiency_floor_history.jsonl"),
     }
 }
 
@@ -1092,8 +1092,8 @@ mod tests {
                 },
                 "idle_rss_probe": {"samples": 1, "max_mb": 9999, "require_modules": []},
                 "install_artifact_probe": {"max_mb": 9999, "paths": ["dist"]},
-                "state_path": "state/ops/runtime_efficiency_floor.json",
-                "history_path": "state/ops/runtime_efficiency_floor_history.jsonl"
+                "state_path": "local/state/ops/runtime_efficiency_floor.json",
+                "history_path": "local/state/ops/runtime_efficiency_floor_history.jsonl"
             }))
             .unwrap(),
         )

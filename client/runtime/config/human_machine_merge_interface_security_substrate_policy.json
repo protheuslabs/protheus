@@ -21,9 +21,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/continuity/human_machine_merge_interface_security_substrate/state.json",
-    "latest_path": "state/continuity/human_machine_merge_interface_security_substrate/latest.json",
-    "receipts_path": "state/continuity/human_machine_merge_interface_security_substrate/receipts.jsonl",
-    "history_path": "state/continuity/human_machine_merge_interface_security_substrate/history.jsonl"
+    "state_path": "local/state/continuity/human_machine_merge_interface_security_substrate/state.json",
+    "latest_path": "local/state/continuity/human_machine_merge_interface_security_substrate/latest.json",
+    "receipts_path": "local/state/continuity/human_machine_merge_interface_security_substrate/receipts.jsonl",
+    "history_path": "local/state/continuity/human_machine_merge_interface_security_substrate/history.jsonl"
   }
 }

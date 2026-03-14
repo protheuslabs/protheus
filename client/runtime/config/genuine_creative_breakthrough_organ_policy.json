@@ -10,9 +10,9 @@
   ],
   "novelty_floor": 0.65,
   "state": {
-    "state_path": "state/autonomy/genuine_creative_breakthrough/state.json",
-    "latest_path": "state/autonomy/genuine_creative_breakthrough/latest.json",
-    "receipts_path": "state/autonomy/genuine_creative_breakthrough/receipts.jsonl",
-    "candidates_path": "state/autonomy/genuine_creative_breakthrough/candidates.jsonl"
+    "state_path": "local/state/autonomy/genuine_creative_breakthrough/state.json",
+    "latest_path": "local/state/autonomy/genuine_creative_breakthrough/latest.json",
+    "receipts_path": "local/state/autonomy/genuine_creative_breakthrough/receipts.jsonl",
+    "candidates_path": "local/state/autonomy/genuine_creative_breakthrough/candidates.jsonl"
   }
 }

@@ -21,9 +21,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/security/adversarial_goal_drift_auditor/state.json",
-    "latest_path": "state/security/adversarial_goal_drift_auditor/latest.json",
-    "receipts_path": "state/security/adversarial_goal_drift_auditor/receipts.jsonl",
-    "history_path": "state/security/adversarial_goal_drift_auditor/history.jsonl"
+    "state_path": "local/state/security/adversarial_goal_drift_auditor/state.json",
+    "latest_path": "local/state/security/adversarial_goal_drift_auditor/latest.json",
+    "receipts_path": "local/state/security/adversarial_goal_drift_auditor/receipts.jsonl",
+    "history_path": "local/state/security/adversarial_goal_drift_auditor/history.jsonl"
   }
 }

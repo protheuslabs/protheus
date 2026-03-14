@@ -21,15 +21,15 @@
   },
   "doctor_feedback": {
     "enabled": true,
-    "queue_path": "state/ops/autotest_doctor/memory_evolution_feedback.jsonl",
+    "queue_path": "local/state/ops/autotest_doctor/memory_evolution_feedback.jsonl",
     "q_alert_threshold": -0.15
   },
   "state": {
-    "root": "state/assimilation/memory_evolution",
-    "q_values_path": "state/assimilation/memory_evolution/q_values.json",
-    "episodes_path": "state/assimilation/memory_evolution/episodes.jsonl",
-    "latest_path": "state/assimilation/memory_evolution/latest.json",
-    "receipts_path": "state/assimilation/memory_evolution/receipts.jsonl",
-    "causal_graph_state_path": "state/client/memory/causal_temporal_graph/state.json"
+    "root": "local/state/assimilation/memory_evolution",
+    "q_values_path": "local/state/assimilation/memory_evolution/q_values.json",
+    "episodes_path": "local/state/assimilation/memory_evolution/episodes.jsonl",
+    "latest_path": "local/state/assimilation/memory_evolution/latest.json",
+    "receipts_path": "local/state/assimilation/memory_evolution/receipts.jsonl",
+    "causal_graph_state_path": "local/state/client/memory/causal_temporal_graph/state.json"
   }
 }

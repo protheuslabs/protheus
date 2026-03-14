@@ -10,12 +10,12 @@
     "soul_vector_refresh_script": "client/runtime/systems/symbiosis/soul_vector_substrate.ts"
   },
   "paths": {
-    "bundle_dir": "state/soul/continuity_adapters/bundles",
-    "state_path": "state/soul/continuity_adapters/state.json",
-    "latest_path": "state/soul/continuity_adapters/latest.json",
-    "receipts_path": "state/soul/continuity_adapters/receipts.jsonl",
-    "soul_vector_latest_path": "state/symbiosis/soul_vector/latest.json",
-    "identity_path": "docs/workspace/IDENTITY.md",
+    "bundle_dir": "local/state/soul/continuity_adapters/bundles",
+    "state_path": "local/state/soul/continuity_adapters/state.json",
+    "latest_path": "local/state/soul/continuity_adapters/latest.json",
+    "receipts_path": "local/state/soul/continuity_adapters/receipts.jsonl",
+    "soul_vector_latest_path": "local/state/symbiosis/soul_vector/latest.json",
+    "identity_path": "local/workspace/assistant/IDENTITY.md",
     "constitution_path": "docs/workspace/AGENT-CONSTITUTION.md"
   }
 }

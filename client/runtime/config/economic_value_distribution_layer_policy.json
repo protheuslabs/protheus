@@ -14,8 +14,8 @@
     "plan"
   ],
   "paths": {
-    "latest_path": "state/storm/economic_value_distribution_layer/latest.json",
-    "receipts_path": "state/storm/economic_value_distribution_layer/receipts.jsonl",
-    "ledger_path": "state/storm/economic_value_distribution_layer/ledger.jsonl"
+    "latest_path": "local/state/storm/economic_value_distribution_layer/latest.json",
+    "receipts_path": "local/state/storm/economic_value_distribution_layer/receipts.jsonl",
+    "ledger_path": "local/state/storm/economic_value_distribution_layer/ledger.jsonl"
   }
 }

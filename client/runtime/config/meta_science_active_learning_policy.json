@@ -18,11 +18,11 @@
     "max_candidates": 3
   },
   "paths": {
-    "active_learning_queue_path": "state/sensory/analysis/active_learning/queue.jsonl",
-    "scientific_mode_latest_path": "state/science/scientific_mode_v4/latest.json",
-    "latest_path": "state/science/meta_science/latest.json",
-    "history_path": "state/science/meta_science/history.jsonl",
-    "requests_path": "state/science/meta_science/active_learning_requests.json",
-    "proposals_path": "state/science/meta_science/primitive_candidates.json"
+    "active_learning_queue_path": "local/state/sensory/analysis/active_learning/queue.jsonl",
+    "scientific_mode_latest_path": "local/state/science/scientific_mode_v4/latest.json",
+    "latest_path": "local/state/science/meta_science/latest.json",
+    "history_path": "local/state/science/meta_science/history.jsonl",
+    "requests_path": "local/state/science/meta_science/active_learning_requests.json",
+    "proposals_path": "local/state/science/meta_science/primitive_candidates.json"
   }
 }

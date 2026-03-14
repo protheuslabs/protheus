@@ -30,22 +30,22 @@
     },
     {
       "id": "science",
-      "path": "state/science",
+      "path": "local/state/science",
       "required": false
     },
     {
       "id": "routing",
-      "path": "state/routing",
+      "path": "local/state/routing",
       "required": false
     }
   ],
   "core_bridge": {
-    "registry_path": "state/migration/core_bridge/registry.json",
-    "checkpoints_root": "state/migration/core_bridge/checkpoints"
+    "registry_path": "local/state/migration/core_bridge/registry.json",
+    "checkpoints_root": "local/state/migration/core_bridge/checkpoints"
   },
   "paths": {
-    "latest_path": "state/migration/post_migration_verification/latest.json",
-    "receipts_path": "state/migration/post_migration_verification/receipts.jsonl",
-    "reports_root": "state/migration/post_migration_verification/reports"
+    "latest_path": "local/state/migration/post_migration_verification/latest.json",
+    "receipts_path": "local/state/migration/post_migration_verification/receipts.jsonl",
+    "reports_root": "local/state/migration/post_migration_verification/reports"
   }
 }

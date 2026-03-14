@@ -12,12 +12,12 @@
   "require_human_veto_policy": true,
   "paths": {
     "inversion_policy": "client/runtime/config/inversion_policy.json",
-    "receipts": "state/autonomy/inversion/receipts.jsonl",
-    "events": "state/autonomy/inversion/events",
-    "history": "state/autonomy/inversion/history.jsonl",
-    "latest_state": "state/autonomy/inversion/latest.json",
-    "activation_receipt": "state/autonomy/inversion/live_activation_receipt.json",
-    "out_latest": "state/autonomy/inversion/readiness/latest.json",
-    "out_history": "state/autonomy/inversion/readiness/history.jsonl"
+    "receipts": "local/state/autonomy/inversion/receipts.jsonl",
+    "events": "local/state/autonomy/inversion/events",
+    "history": "local/state/autonomy/inversion/history.jsonl",
+    "latest_state": "local/state/autonomy/inversion/latest.json",
+    "activation_receipt": "local/state/autonomy/inversion/live_activation_receipt.json",
+    "out_latest": "local/state/autonomy/inversion/readiness/latest.json",
+    "out_history": "local/state/autonomy/inversion/readiness/history.jsonl"
   }
 }

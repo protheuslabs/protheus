@@ -5,12 +5,12 @@
   "lane_id": "V4-SELF-001",
   "signing_secret_env": "ILLUSION_AUDIT_SIGNING_SECRET",
   "paths": {
-    "state_path": "state/self_audit/illusion_integrity/state.json",
-    "latest_path": "state/self_audit/illusion_integrity/latest.json",
-    "receipts_path": "state/self_audit/illusion_integrity/receipts.jsonl",
-    "history_path": "state/self_audit/illusion_integrity/history.jsonl",
-    "reports_dir": "state/self_audit/illusion_integrity/reports",
-    "patches_dir": "state/self_audit/illusion_integrity/patches"
+    "state_path": "local/state/self_audit/illusion_integrity/state.json",
+    "latest_path": "local/state/self_audit/illusion_integrity/latest.json",
+    "receipts_path": "local/state/self_audit/illusion_integrity/receipts.jsonl",
+    "history_path": "local/state/self_audit/illusion_integrity/history.jsonl",
+    "reports_dir": "local/state/self_audit/illusion_integrity/reports",
+    "patches_dir": "local/state/self_audit/illusion_integrity/patches"
   },
   "engine": {
     "mode": "auto",

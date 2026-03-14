@@ -25,6 +25,6 @@
       "dist"
     ]
   },
-  "state_path": "state/ops/runtime_efficiency_floor.json",
-  "history_path": "state/ops/runtime_efficiency_floor_history.jsonl"
+  "state_path": "local/state/ops/runtime_efficiency_floor.json",
+  "history_path": "local/state/ops/runtime_efficiency_floor_history.jsonl"
 }

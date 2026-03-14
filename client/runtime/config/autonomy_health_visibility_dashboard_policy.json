@@ -8,16 +8,16 @@
     "drift_ratio_warn": 0.4
   },
   "inputs": {
-    "eyes_registry_path": "state/sensory/eyes/registry.json",
-    "queue_log_path": "state/sensory/queue_log.jsonl",
-    "autonomy_runs_path": "state/autonomy/runs",
-    "receipt_summary_path": "state/autonomy/receipt_summary/latest.json"
+    "eyes_registry_path": "local/state/sensory/eyes/registry.json",
+    "queue_log_path": "local/state/sensory/queue_log.jsonl",
+    "autonomy_runs_path": "local/state/autonomy/runs",
+    "receipt_summary_path": "local/state/autonomy/receipt_summary/latest.json"
   },
   "outputs": {
-    "daily_path": "state/ops/autonomy_health_visibility_dashboard/daily.json",
-    "weekly_path": "state/ops/autonomy_health_visibility_dashboard/weekly.json",
-    "alerts_path": "state/ops/autonomy_health_visibility_dashboard/alerts.jsonl",
-    "latest_path": "state/ops/autonomy_health_visibility_dashboard/latest.json",
-    "history_path": "state/ops/autonomy_health_visibility_dashboard/history.jsonl"
+    "daily_path": "local/state/ops/autonomy_health_visibility_dashboard/daily.json",
+    "weekly_path": "local/state/ops/autonomy_health_visibility_dashboard/weekly.json",
+    "alerts_path": "local/state/ops/autonomy_health_visibility_dashboard/alerts.jsonl",
+    "latest_path": "local/state/ops/autonomy_health_visibility_dashboard/latest.json",
+    "history_path": "local/state/ops/autonomy_health_visibility_dashboard/history.jsonl"
   }
 }

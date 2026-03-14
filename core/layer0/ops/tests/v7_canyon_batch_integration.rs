@@ -96,7 +96,7 @@ fn v7_canyon_contracts_are_behavior_proven() {
     let _guard = test_env_lock();
     let tmp = temp_root("canyon_batch");
     let root = tmp.path();
-    let canyon_state = root.join("state").join("canyon");
+    let canyon_state = root.join("local").join("state").join("canyon");
     std::env::set_var(ENV_KEY, &canyon_state);
 
     let stub_bin = install_stub_binary(root);
@@ -429,7 +429,7 @@ fn v7_canyon_fail_closed_paths_reject_bypass_and_failed_benchmarks() {
     let _guard = test_env_lock();
     let tmp = temp_root("canyon_fail_closed");
     let root = tmp.path();
-    let canyon_state = root.join("state").join("canyon");
+    let canyon_state = root.join("local").join("state").join("canyon");
     std::env::set_var(ENV_KEY, &canyon_state);
 
     assert_eq!(
@@ -524,7 +524,7 @@ fn v7_canyon_benchmark_gate_uses_adjacent_evidence_when_local_state_is_empty() {
     let _guard = test_env_lock();
     let tmp = temp_root("canyon_adjacent_benchmark");
     let root = tmp.path();
-    let canyon_state = root.join("state").join("canyon");
+    let canyon_state = root.join("local").join("state").join("canyon");
     std::env::set_var(ENV_KEY, &canyon_state);
 
     write_json(
@@ -556,7 +556,7 @@ fn v7_canyon_benchmark_gate_uses_adjacent_evidence_when_local_state_is_empty() {
     );
     write_json(
         root,
-        "state/canyon/latest.json",
+        "local/state/canyon/latest.json",
         &serde_json::json!({"ok": true}),
     );
 
@@ -598,7 +598,7 @@ fn v7_canyon_benchmark_gate_prefers_real_binary_and_materializes_missing_enterpr
     let _guard = test_env_lock();
     let tmp = temp_root("canyon_gate_materialize");
     let root = tmp.path();
-    let canyon_state = root.join("state").join("canyon");
+    let canyon_state = root.join("local").join("state").join("canyon");
     std::env::set_var(ENV_KEY, &canyon_state);
 
     install_static_protheusd_fixture(root, 3);
@@ -620,7 +620,7 @@ fn v7_canyon_benchmark_gate_prefers_real_binary_and_materializes_missing_enterpr
         "core/local/state/ops/enterprise_hardening/f100/scale_ha_certification.json",
         &serde_json::json!({"airgap_agents": 10000, "regions": 3}),
     );
-    write_json(root, "state/canyon/latest.json", &serde_json::json!({"ok": true}));
+    write_json(root, "local/state/canyon/latest.json", &serde_json::json!({"ok": true}));
 
     assert_eq!(
         canyon_plane::run(

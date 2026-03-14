@@ -7,16 +7,16 @@
   "key_min_length": 24,
   "max_index_entries": 500,
   "source": {
-    "checkpoint_dir": "state/continuity/checkpoints",
-    "index_path": "state/continuity/checkpoints/index.json"
+    "checkpoint_dir": "local/state/continuity/checkpoints",
+    "index_path": "local/state/continuity/checkpoints/index.json"
   },
   "state": {
-    "root": "state/continuity/vault",
-    "checkpoint_dir": "state/continuity/vault/checkpoints",
-    "index_path": "state/continuity/vault/index.json",
-    "latest_path": "state/continuity/vault/latest.json",
-    "receipts_path": "state/continuity/vault/receipts.jsonl",
-    "recovery_dir": "state/continuity/vault/recovery"
+    "root": "local/state/continuity/vault",
+    "checkpoint_dir": "local/state/continuity/vault/checkpoints",
+    "index_path": "local/state/continuity/vault/index.json",
+    "latest_path": "local/state/continuity/vault/latest.json",
+    "receipts_path": "local/state/continuity/vault/receipts.jsonl",
+    "recovery_dir": "local/state/continuity/vault/recovery"
   }
 }
 

@@ -34,9 +34,9 @@
     }
   },
   "paths": {
-    "state_path": "state/autonomy/hold_remediation_engine/state.json",
-    "latest_path": "state/autonomy/hold_remediation_engine/latest.json",
-    "receipts_path": "state/autonomy/hold_remediation_engine/receipts.jsonl",
-    "history_path": "state/autonomy/hold_remediation_engine/history.jsonl"
+    "state_path": "local/state/autonomy/hold_remediation_engine/state.json",
+    "latest_path": "local/state/autonomy/hold_remediation_engine/latest.json",
+    "receipts_path": "local/state/autonomy/hold_remediation_engine/receipts.jsonl",
+    "history_path": "local/state/autonomy/hold_remediation_engine/history.jsonl"
   }
 }

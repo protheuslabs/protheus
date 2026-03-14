@@ -25,13 +25,13 @@
     "budget_throttle_step_pct": 10
   },
   "paths": {
-    "execution_reliability_history": "state/ops/execution_reliability_slo_history.jsonl",
-    "token_economics_history": "state/ops/token_economics_engine_history.jsonl",
-    "queue_hygiene_state": "state/ops/queue_hygiene_state.json",
-    "model_health_latest": "state/routing/model_health_auto_recovery/latest.json",
-    "banned_models": "state/routing/banned_models.json",
-    "latest": "state/ops/predictive_capacity_forecast/latest.json",
-    "history": "state/ops/predictive_capacity_forecast/history.jsonl",
-    "errors": "state/ops/predictive_capacity_forecast/forecast_errors.jsonl"
+    "execution_reliability_history": "local/state/ops/execution_reliability_slo_history.jsonl",
+    "token_economics_history": "local/state/ops/token_economics_engine_history.jsonl",
+    "queue_hygiene_state": "local/state/ops/queue_hygiene_state.json",
+    "model_health_latest": "local/state/routing/model_health_auto_recovery/latest.json",
+    "banned_models": "local/state/routing/banned_models.json",
+    "latest": "local/state/ops/predictive_capacity_forecast/latest.json",
+    "history": "local/state/ops/predictive_capacity_forecast/history.jsonl",
+    "errors": "local/state/ops/predictive_capacity_forecast/forecast_errors.jsonl"
   }
 }

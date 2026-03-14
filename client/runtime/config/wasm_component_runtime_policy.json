@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/wasm",
     "adaptive_index_path": "client/cognition/adaptive/wasm/index.json",
-    "events_path": "state/wasm/component_runtime/events.jsonl",
-    "latest_path": "state/wasm/component_runtime/latest.json",
-    "receipts_path": "state/wasm/component_runtime/receipts.jsonl"
+    "events_path": "local/state/wasm/component_runtime/events.jsonl",
+    "latest_path": "local/state/wasm/component_runtime/latest.json",
+    "receipts_path": "local/state/wasm/component_runtime/receipts.jsonl"
   }
 }

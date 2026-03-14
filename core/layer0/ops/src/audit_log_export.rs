@@ -87,21 +87,21 @@ fn load_policy(root: &Path, policy_override: Option<&String>) -> Policy {
         output_dir: resolve_path(
             root,
             raw.get("output_dir").and_then(Value::as_str),
-            "state/ops/audit_log_export/exports",
+            "local/state/ops/audit_log_export/exports",
         ),
         latest_path: resolve_path(
             root,
             outputs
                 .and_then(|o| o.get("latest_path"))
                 .and_then(Value::as_str),
-            "state/ops/audit_log_export/latest.json",
+            "local/state/ops/audit_log_export/latest.json",
         ),
         history_path: resolve_path(
             root,
             outputs
                 .and_then(|o| o.get("history_path"))
                 .and_then(Value::as_str),
-            "state/ops/audit_log_export/history.jsonl",
+            "local/state/ops/audit_log_export/history.jsonl",
         ),
         policy_path,
     }
@@ -190,7 +190,7 @@ fn export_run(
     let input_path = resolve_path(
         root,
         flags.get("input").map(String::as_str),
-        "state/security/autonomy_human_escalations.jsonl",
+        "local/state/security/autonomy_human_escalations.jsonl",
     );
 
     let events = parse_input_events(&input_path, policy.max_events_per_export).unwrap_or_default();
@@ -389,10 +389,10 @@ mod tests {
             &json!({
                 "strict_default": true,
                 "max_events_per_export": 100,
-                "output_dir": "state/ops/audit_log_export/exports",
+                "output_dir": "local/state/ops/audit_log_export/exports",
                 "outputs": {
-                    "latest_path": "state/ops/audit_log_export/latest.json",
-                    "history_path": "state/ops/audit_log_export/history.jsonl"
+                    "latest_path": "local/state/ops/audit_log_export/latest.json",
+                    "history_path": "local/state/ops/audit_log_export/history.jsonl"
                 }
             })
             .to_string(),
@@ -404,7 +404,7 @@ mod tests {
         let tmp = tempdir().expect("tmp");
         write_policy(tmp.path());
         write_text(
-            &tmp.path().join("state/input.jsonl"),
+            &tmp.path().join("local/state/input.jsonl"),
             "{\"id\":1,\"msg\":\"x\"}\n",
         );
         let code = run(
@@ -412,7 +412,7 @@ mod tests {
             &[
                 "export".to_string(),
                 "--target=unknown".to_string(),
-                "--input=state/input.jsonl".to_string(),
+                "--input=local/state/input.jsonl".to_string(),
                 "--strict=1".to_string(),
             ],
         );
@@ -424,7 +424,7 @@ mod tests {
         let tmp = tempdir().expect("tmp");
         write_policy(tmp.path());
         write_text(
-            &tmp.path().join("state/input.jsonl"),
+            &tmp.path().join("local/state/input.jsonl"),
             "{\"id\":1,\"msg\":\"x\"}\n{\"id\":2,\"msg\":\"y\"}\n",
         );
         let code = run(
@@ -432,7 +432,7 @@ mod tests {
             &[
                 "export".to_string(),
                 "--target=splunk".to_string(),
-                "--input=state/input.jsonl".to_string(),
+                "--input=local/state/input.jsonl".to_string(),
                 "--strict=1".to_string(),
             ],
         );

@@ -34,10 +34,10 @@ const origJoin = path.join;
 path.join = (...args) => {
   const result = origJoin(...args);
   // Redirect state paths to test dir
-  if (result.includes('/state/sensory/')) {
+  if (result.includes('/local/state/sensory/')) {
     return result.replace(/.*\/state\/sensory/, SENSORY_DIR);
   }
-  if (result.includes('/state/queue/')) {
+  if (result.includes('/local/state/queue/')) {
     return result.replace(/.*\/state\/queue/, QUEUE_DIR);
   }
   return result;

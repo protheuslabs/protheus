@@ -24,7 +24,7 @@
   "review": {
     "interval_days": 90,
     "next_review_due": "2026-05-27",
-    "artifact_path": "state/security/repo_access_review/latest.json",
-    "history_path": "state/security/repo_access_review/history.jsonl"
+    "artifact_path": "local/state/security/repo_access_review/latest.json",
+    "history_path": "local/state/security/repo_access_review/history.jsonl"
   }
 }

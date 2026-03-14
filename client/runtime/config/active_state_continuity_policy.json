@@ -10,8 +10,8 @@
     "credential"
   ],
   "outputs": {
-    "state_path": "state/continuity/active_state_continuity/state.json",
-    "latest_path": "state/continuity/active_state_continuity/latest.json",
-    "history_path": "state/continuity/active_state_continuity/history.jsonl"
+    "state_path": "local/state/continuity/active_state_continuity/state.json",
+    "latest_path": "local/state/continuity/active_state_continuity/latest.json",
+    "history_path": "local/state/continuity/active_state_continuity/history.jsonl"
   }
 }

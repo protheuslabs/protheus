@@ -12,12 +12,12 @@
     "chaos"
   ],
   "sources": {
-    "github_state_path": "state/ops/scm_mirror/github_latest.json",
-    "azure_state_path": "state/ops/scm_mirror/azure_latest.json"
+    "github_state_path": "local/state/ops/scm_mirror/github_latest.json",
+    "azure_state_path": "local/state/ops/scm_mirror/azure_latest.json"
   },
   "paths": {
-    "state_path": "state/ops/enterprise_scm_cd_mirror_plane/state.json",
-    "latest_path": "state/ops/enterprise_scm_cd_mirror_plane/latest.json",
-    "history_path": "state/ops/enterprise_scm_cd_mirror_plane/history.jsonl"
+    "state_path": "local/state/ops/enterprise_scm_cd_mirror_plane/state.json",
+    "latest_path": "local/state/ops/enterprise_scm_cd_mirror_plane/latest.json",
+    "history_path": "local/state/ops/enterprise_scm_cd_mirror_plane/history.jsonl"
   }
 }

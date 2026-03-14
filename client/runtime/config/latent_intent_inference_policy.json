@@ -15,9 +15,9 @@
     { "topic_contains": "generational_wealth", "implied_need": "wealth_compounding_offer_design", "weight": 0.82 }
   ],
   "paths": {
-    "hypotheses_dir": "state/sensory/cross_signal/hypotheses",
-    "output_dir": "state/sensory/analysis/latent_intent",
-    "latest_path": "state/sensory/analysis/latent_intent/latest.json",
-    "receipts_path": "state/sensory/analysis/latent_intent/receipts.jsonl"
+    "hypotheses_dir": "local/state/sensory/cross_signal/hypotheses",
+    "output_dir": "local/state/sensory/analysis/latent_intent",
+    "latest_path": "local/state/sensory/analysis/latent_intent/latest.json",
+    "receipts_path": "local/state/sensory/analysis/latent_intent/receipts.jsonl"
   }
 }

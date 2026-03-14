@@ -17,8 +17,8 @@
     "medium": 0.55
   },
   "state": {
-    "state_path": "state/autonomy/zero_permission_layer/state.json",
-    "latest_path": "state/autonomy/zero_permission_layer/latest.json",
-    "receipts_path": "state/autonomy/zero_permission_layer/receipts.jsonl"
+    "state_path": "local/state/autonomy/zero_permission_layer/state.json",
+    "latest_path": "local/state/autonomy/zero_permission_layer/latest.json",
+    "receipts_path": "local/state/autonomy/zero_permission_layer/receipts.jsonl"
   }
 }

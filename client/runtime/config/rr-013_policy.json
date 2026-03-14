@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/ops/rr-013",
     "adaptive_index_path": "client/cognition/adaptive/ops/rr-013/index.json",
-    "events_path": "state/ops/rr-013/events.jsonl",
-    "latest_path": "state/ops/rr-013/latest.json",
-    "receipts_path": "state/ops/rr-013/receipts.jsonl"
+    "events_path": "local/state/ops/rr-013/events.jsonl",
+    "latest_path": "local/state/ops/rr-013/latest.json",
+    "receipts_path": "local/state/ops/rr-013/receipts.jsonl"
   }
 }

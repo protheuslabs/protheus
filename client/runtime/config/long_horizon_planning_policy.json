@@ -23,8 +23,8 @@
     "debate_mode_threshold": 0.8
   },
   "state": {
-    "latest_path": "state/primitives/long_horizon_planning/latest.json",
-    "history_path": "state/primitives/long_horizon_planning/history.jsonl",
-    "receipts_path": "state/primitives/long_horizon_planning/receipts.jsonl"
+    "latest_path": "local/state/primitives/long_horizon_planning/latest.json",
+    "history_path": "local/state/primitives/long_horizon_planning/history.jsonl",
+    "receipts_path": "local/state/primitives/long_horizon_planning/receipts.jsonl"
   }
 }

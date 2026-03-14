@@ -7,7 +7,7 @@
     "max_build_ms": 900000
   },
   "manifests": {
-    "output_path": "state/hybrid/mobile_adapter/mobile_manifest.json"
+    "output_path": "local/state/hybrid/mobile_adapter/mobile_manifest.json"
   },
   "build": {
     "rust_release_cmd": [
@@ -31,9 +31,9 @@
     ]
   },
   "paths": {
-    "latest_path": "state/hybrid/mobile_adapter/latest.json",
-    "receipts_path": "state/hybrid/mobile_adapter/receipts.jsonl",
-    "history_path": "state/hybrid/mobile_adapter/history.jsonl",
-    "state_path": "state/hybrid/mobile_adapter/state.json"
+    "latest_path": "local/state/hybrid/mobile_adapter/latest.json",
+    "receipts_path": "local/state/hybrid/mobile_adapter/receipts.jsonl",
+    "history_path": "local/state/hybrid/mobile_adapter/history.jsonl",
+    "state_path": "local/state/hybrid/mobile_adapter/state.json"
   }
 }

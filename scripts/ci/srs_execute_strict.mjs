@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 
 const ROOT = resolve('.');
 const OUT_JSON = resolve('core/local/artifacts/srs_execute_strict_current.json');
-const OUT_MD = resolve('docs/workspace/SRS_EXECUTE_STRICT_CURRENT.md');
+const OUT_MD = resolve('local/workspace/reports/SRS_EXECUTE_STRICT_CURRENT.md');
 const MAP_JSON = resolve('core/local/artifacts/srs_actionable_map_current.json');
 const QUEUE_JSON = resolve('client/local/state/ops/backlog_queue_executor/latest.json');
 const FULL_JSON = resolve('core/local/artifacts/srs_full_regression_current.json');

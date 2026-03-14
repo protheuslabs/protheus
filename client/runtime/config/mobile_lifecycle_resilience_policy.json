@@ -25,9 +25,9 @@
   "paths": {
     "memory_dir": "client/memory/edge/lifecycle",
     "adaptive_index_path": "client/cognition/adaptive/edge/lifecycle/index.json",
-    "events_path": "state/edge/mobile_lifecycle/events.jsonl",
-    "latest_path": "state/edge/mobile_lifecycle/latest.json",
-    "receipts_path": "state/edge/mobile_lifecycle/receipts.jsonl",
-    "lifecycle_state_path": "state/edge/mobile_lifecycle/state.json"
+    "events_path": "local/state/edge/mobile_lifecycle/events.jsonl",
+    "latest_path": "local/state/edge/mobile_lifecycle/latest.json",
+    "receipts_path": "local/state/edge/mobile_lifecycle/receipts.jsonl",
+    "lifecycle_state_path": "local/state/edge/mobile_lifecycle/state.json"
   }
 }

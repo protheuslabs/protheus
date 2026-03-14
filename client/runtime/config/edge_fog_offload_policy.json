@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/compute/offload",
     "adaptive_index_path": "client/cognition/adaptive/compute/offload/index.json",
-    "events_path": "state/hardware\/edge_fog_offload/events.jsonl",
-    "latest_path": "state/hardware\/edge_fog_offload/latest.json",
-    "receipts_path": "state/hardware\/edge_fog_offload/receipts.jsonl"
+    "events_path": "local/state/hardware\/edge_fog_offload/events.jsonl",
+    "latest_path": "local/state/hardware\/edge_fog_offload/latest.json",
+    "receipts_path": "local/state/hardware\/edge_fog_offload/receipts.jsonl"
   }
 }

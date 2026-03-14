@@ -2,14 +2,14 @@
   "version": "1.0",
   "enabled": true,
   "blocked_globs": [
-    "state/**",
+    "local/state/**",
     "tmp/**",
     "client/runtime/local/logs/**",
     "dist/**"
   ],
   "allow_globs": [
-    "state/README.md",
-    "state/**/.gitkeep"
+    "local/state/README.md",
+    "local/state/**/.gitkeep"
   ],
   "outputs": {
     "latest_path": "local/state/ops/repo_hygiene_generated_guard/latest.json",

@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
-const STOP_PATH = path.join(REPO_ROOT, 'state', 'security', 'emergency_stop.json');
+const STOP_PATH = path.join(REPO_ROOT, 'local', 'state', 'security', 'emergency_stop.json');
 const VALID_SCOPES = new Set(['all', 'autonomy', 'routing', 'actuation', 'spine']);
 
 function nowIso() {

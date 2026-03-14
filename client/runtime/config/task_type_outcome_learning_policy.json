@@ -7,8 +7,8 @@
     "min_samples_for_strong_bias": 5
   },
   "outputs": {
-    "matrix_path": "state/routing/task_type_outcome_learning/matrix.json",
-    "latest_path": "state/routing/task_type_outcome_learning/latest.json",
-    "history_path": "state/routing/task_type_outcome_learning/history.jsonl"
+    "matrix_path": "local/state/routing/task_type_outcome_learning/matrix.json",
+    "latest_path": "local/state/routing/task_type_outcome_learning/latest.json",
+    "history_path": "local/state/routing/task_type_outcome_learning/history.jsonl"
   }
 }

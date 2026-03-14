@@ -12,7 +12,7 @@ use crate::{clean, deterministic_receipt_hash, now_iso};
 
 const DEFAULT_STRATEGY_DIR_REL: &str = "client/runtime/config/strategies";
 const DEFAULT_WEAVER_OVERLAY_REL: &str =
-    "client/runtime/state/autonomy/weaver/strategy_overlay.json";
+    "client/runtime/local/state/autonomy/weaver/strategy_overlay.json";
 
 fn print_json_line(value: &Value) {
     println!(

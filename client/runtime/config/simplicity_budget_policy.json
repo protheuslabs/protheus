@@ -10,6 +10,6 @@
   "require_offset_receipt_for_new_organs": true,
   "systems_root": "systems",
   "baseline_path": "client/runtime/config/simplicity_baseline.json",
-  "offset_receipts_path": "state/ops/complexity_offsets.jsonl",
-  "latest_path": "state/ops/simplicity_budget/latest.json"
+  "offset_receipts_path": "local/state/ops/complexity_offsets.jsonl",
+  "latest_path": "local/state/ops/simplicity_budget/latest.json"
 }

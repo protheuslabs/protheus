@@ -3,9 +3,9 @@ import fs from "fs";
 import path from "path";
 
 const ROOT = process.cwd();
-const INPUT = path.join(ROOT, "artifacts", "srs_actionable_map_current.json");
-const OUT_JSON = path.join(ROOT, "artifacts", "todo_execution_full_current.json");
-const OUT_MD = path.join(ROOT, "docs", "workspace", "TODO_EXECUTION_FULL.md");
+const INPUT = path.join(ROOT, "core", "local", "artifacts", "srs_actionable_map_current.json");
+const OUT_JSON = path.join(ROOT, "core", "local", "artifacts", "todo_execution_full_current.json");
+const OUT_MD = path.join(ROOT, "local", "workspace", "reports", "TODO_EXECUTION_FULL.md");
 
 function readJson(p) {
   return JSON.parse(fs.readFileSync(p, "utf8"));

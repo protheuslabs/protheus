@@ -21,9 +21,9 @@
     "max_recovery_p95_ms": 45000
   },
   "outputs": {
-    "state_path": "state/ops/continuous_chaos_resilience/state.json",
-    "latest_path": "state/ops/continuous_chaos_resilience/latest.json",
-    "receipts_path": "state/ops/continuous_chaos_resilience/receipts.jsonl",
-    "gate_receipts_path": "state/ops/continuous_chaos_resilience/gate_receipts.jsonl"
+    "state_path": "local/state/ops/continuous_chaos_resilience/state.json",
+    "latest_path": "local/state/ops/continuous_chaos_resilience/latest.json",
+    "receipts_path": "local/state/ops/continuous_chaos_resilience/receipts.jsonl",
+    "gate_receipts_path": "local/state/ops/continuous_chaos_resilience/gate_receipts.jsonl"
   }
 }

@@ -27,9 +27,9 @@
     }
   },
   "dependencies": {
-    "burn_oracle_latest_path": "state/ops/dynamic_burn_budget_oracle/latest.json",
+    "burn_oracle_latest_path": "local/state/ops/dynamic_burn_budget_oracle/latest.json",
     "disposable_infra_policy_path": "client/runtime/config/disposable_infrastructure_organ_policy.json",
-    "weaver_latest_path": "state/autonomy/weaver/latest.json"
+    "weaver_latest_path": "local/state/autonomy/weaver/latest.json"
   },
   "profile_pack": {
     "actions": [
@@ -70,10 +70,10 @@
     }
   },
   "state": {
-    "state_path": "state/workflow/universal_outreach_primitive/state.json",
-    "campaigns_dir": "state/workflow/universal_outreach_primitive/campaigns",
-    "latest_path": "state/workflow/universal_outreach_primitive/latest.json",
-    "receipts_path": "state/workflow/universal_outreach_primitive/receipts.jsonl",
-    "weaver_hints_path": "state/autonomy/weaver/outreach_hints.jsonl"
+    "state_path": "local/state/workflow/universal_outreach_primitive/state.json",
+    "campaigns_dir": "local/state/workflow/universal_outreach_primitive/campaigns",
+    "latest_path": "local/state/workflow/universal_outreach_primitive/latest.json",
+    "receipts_path": "local/state/workflow/universal_outreach_primitive/receipts.jsonl",
+    "weaver_hints_path": "local/state/autonomy/weaver/outreach_hints.jsonl"
   }
 }

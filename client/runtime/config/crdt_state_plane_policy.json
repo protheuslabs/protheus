@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/crdt",
     "adaptive_index_path": "client/cognition/adaptive/crdt/index.json",
-    "events_path": "state/pinnacle/crdt_state_plane/events.jsonl",
-    "latest_path": "state/pinnacle/crdt_state_plane/latest.json",
-    "receipts_path": "state/pinnacle/crdt_state_plane/receipts.jsonl"
+    "events_path": "local/state/pinnacle/crdt_state_plane/events.jsonl",
+    "latest_path": "local/state/pinnacle/crdt_state_plane/latest.json",
+    "receipts_path": "local/state/pinnacle/crdt_state_plane/receipts.jsonl"
   }
 }

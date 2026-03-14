@@ -7,9 +7,9 @@
   "high_impact_shift": 0.15,
   "require_user_review_above_shift": true,
   "constitution_path": "docs/workspace/AGENT-CONSTITUTION.md",
-  "first_principles_path": "state/autonomy/inversion/first_principles.jsonl",
-  "current_anchor_path": "state/autonomy/echo/value_anchor/current.json",
-  "proposals_path": "state/autonomy/echo/value_anchor/proposals.jsonl",
-  "history_path": "state/autonomy/echo/value_anchor/history.jsonl",
-  "receipts_path": "state/autonomy/echo/value_anchor/receipts.jsonl"
+  "first_principles_path": "local/state/autonomy/inversion/first_principles.jsonl",
+  "current_anchor_path": "local/state/autonomy/echo/value_anchor/current.json",
+  "proposals_path": "local/state/autonomy/echo/value_anchor/proposals.jsonl",
+  "history_path": "local/state/autonomy/echo/value_anchor/history.jsonl",
+  "receipts_path": "local/state/autonomy/echo/value_anchor/receipts.jsonl"
 }

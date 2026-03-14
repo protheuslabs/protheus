@@ -30,7 +30,7 @@
     "benchmark",
     "source:",
     "docs/client/",
-    "state/"
+    "local/state/"
   ],
   "required_policy_terms": [
     "measurable",
@@ -47,7 +47,7 @@
     "status"
   ],
   "paths": {
-    "latest_path": "state/ops/empty_fort_integrity_guard/latest.json",
-    "history_path": "state/ops/empty_fort_integrity_guard/history.jsonl"
+    "latest_path": "local/state/ops/empty_fort_integrity_guard/latest.json",
+    "history_path": "local/state/ops/empty_fort_integrity_guard/history.jsonl"
   }
 }

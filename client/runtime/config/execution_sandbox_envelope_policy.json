@@ -65,7 +65,7 @@
   "high_risk_actuation_classes": ["payments", "auth", "filesystem", "shell", "network-control"],
   "require_approval_for_high_risk_actuation": true,
   "paths": {
-    "latest_path": "state/security/execution_sandbox_envelope/latest.json",
-    "audit_path": "state/security/execution_sandbox_envelope/audit.jsonl"
+    "latest_path": "local/state/security/execution_sandbox_envelope/latest.json",
+    "audit_path": "local/state/security/execution_sandbox_envelope/audit.jsonl"
   }
 }

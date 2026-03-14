@@ -23,14 +23,14 @@
   },
   "helix": {
     "enabled": true,
-    "events_path": "state/helix/events.jsonl"
+    "events_path": "local/state/helix/events.jsonl"
   },
   "state": {
-    "root": "state/assimilation/value_attribution",
-    "records_path": "state/assimilation/value_attribution/records.jsonl",
-    "latest_path": "state/assimilation/value_attribution/latest.json",
-    "history_path": "state/assimilation/value_attribution/history.jsonl",
-    "receipts_path": "state/assimilation/value_attribution/receipts.jsonl"
+    "root": "local/state/assimilation/value_attribution",
+    "records_path": "local/state/assimilation/value_attribution/records.jsonl",
+    "latest_path": "local/state/assimilation/value_attribution/latest.json",
+    "history_path": "local/state/assimilation/value_attribution/history.jsonl",
+    "receipts_path": "local/state/assimilation/value_attribution/receipts.jsonl"
   },
   "read_api": {
     "default_limit": 100,

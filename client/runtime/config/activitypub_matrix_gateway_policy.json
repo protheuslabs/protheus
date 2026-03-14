@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/federation/channels",
     "adaptive_index_path": "client/cognition/adaptive/federation/channels/index.json",
-    "events_path": "state/federation\/activitypub_matrix/events.jsonl",
-    "latest_path": "state/federation\/activitypub_matrix/latest.json",
-    "receipts_path": "state/federation\/activitypub_matrix/receipts.jsonl"
+    "events_path": "local/state/federation\/activitypub_matrix/events.jsonl",
+    "latest_path": "local/state/federation\/activitypub_matrix/latest.json",
+    "receipts_path": "local/state/federation\/activitypub_matrix/receipts.jsonl"
   }
 }

@@ -5,14 +5,14 @@
   "phone_seed_segment_limit": 128,
   "paths": {
     "vault_root": "memory",
-    "wisdom_root": "state/obsidian/projections/wisdom",
-    "cards_root": "state/obsidian/projections/cards",
-    "canvas_root": "state/obsidian/projections/canvas",
-    "intents_root": "state/obsidian/intents",
-    "mobile_root": "state/obsidian/mobile",
-    "identity_bus_path": "state/obsidian/identity_bus.json",
-    "plugin_state_path": "state/obsidian/plugin_state.json",
-    "latest_path": "state/obsidian/phase_pack_latest.json",
-    "receipts_path": "state/obsidian/phase_pack_receipts.jsonl"
+    "wisdom_root": "local/state/obsidian/projections/wisdom",
+    "cards_root": "local/state/obsidian/projections/cards",
+    "canvas_root": "local/state/obsidian/projections/canvas",
+    "intents_root": "local/state/obsidian/intents",
+    "mobile_root": "local/state/obsidian/mobile",
+    "identity_bus_path": "local/state/obsidian/identity_bus.json",
+    "plugin_state_path": "local/state/obsidian/plugin_state.json",
+    "latest_path": "local/state/obsidian/phase_pack_latest.json",
+    "receipts_path": "local/state/obsidian/phase_pack_receipts.jsonl"
   }
 }

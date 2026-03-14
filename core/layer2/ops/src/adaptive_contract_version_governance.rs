@@ -9,9 +9,9 @@ use std::path::{Path, PathBuf};
 const DEFAULT_POLICY_REL: &str =
     "client/runtime/config/adaptive_contract_version_governance_policy.json";
 const DEFAULT_LATEST_REL: &str =
-    "state/contracts/adaptive_contract_version_governance_closure/latest.json";
+    "local/state/contracts/adaptive_contract_version_governance_closure/latest.json";
 const DEFAULT_HISTORY_REL: &str =
-    "state/contracts/adaptive_contract_version_governance_closure/history.jsonl";
+    "local/state/contracts/adaptive_contract_version_governance_closure/history.jsonl";
 
 fn print_json(value: &Value) {
     println!(

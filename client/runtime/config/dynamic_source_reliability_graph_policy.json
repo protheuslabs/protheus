@@ -19,11 +19,11 @@
     "invalidated"
   ],
   "paths": {
-    "hypotheses_dir": "state/sensory/cross_signal/hypotheses",
-    "outcomes_dir": "state/sensory/analysis/hypothesis_outcomes",
-    "state_path": "state/sensory/analysis/source_reliability/state.json",
-    "output_dir": "state/sensory/analysis/source_reliability",
-    "latest_path": "state/sensory/analysis/source_reliability/latest.json",
-    "receipts_path": "state/sensory/analysis/source_reliability/receipts.jsonl"
+    "hypotheses_dir": "local/state/sensory/cross_signal/hypotheses",
+    "outcomes_dir": "local/state/sensory/analysis/hypothesis_outcomes",
+    "state_path": "local/state/sensory/analysis/source_reliability/state.json",
+    "output_dir": "local/state/sensory/analysis/source_reliability",
+    "latest_path": "local/state/sensory/analysis/source_reliability/latest.json",
+    "receipts_path": "local/state/sensory/analysis/source_reliability/receipts.jsonl"
   }
 }

@@ -23,8 +23,8 @@
     "signal_policy_path": "client/runtime/config/symbiosis_coherence_policy.json"
   },
   "paths": {
-    "state_path": "state/autonomy/gated_self_improvement/state.json",
-    "receipts_path": "state/autonomy/gated_self_improvement/receipts.jsonl",
-    "latest_path": "state/autonomy/gated_self_improvement/latest.json"
+    "state_path": "local/state/autonomy/gated_self_improvement/state.json",
+    "receipts_path": "local/state/autonomy/gated_self_improvement/receipts.jsonl",
+    "latest_path": "local/state/autonomy/gated_self_improvement/latest.json"
   }
 }

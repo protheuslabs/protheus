@@ -58,9 +58,9 @@
     "enabled": true,
     "mode": "autotest_sync",
     "snapshot_files": [
-      "state/ops/autotest/latest.json",
-      "state/ops/autotest/status.json",
-      "state/ops/autotest/registry.json"
+      "local/state/ops/autotest/latest.json",
+      "local/state/ops/autotest/status.json",
+      "local/state/ops/autotest/registry.json"
     ],
     "store_broken_pieces": true,
     "max_excerpt_files": 10,
@@ -88,7 +88,7 @@
   },
   "research_quarantine": {
     "enabled": true,
-    "maturity_state_path": "state/autonomy/inversion/maturity.json",
+    "maturity_state_path": "local/state/autonomy/inversion/maturity.json",
     "default_maturity_band": "developing",
     "min_days": 1,
     "max_days": 120,
@@ -112,8 +112,8 @@
     "require_signature": true,
     "max_manifest_age_hours": 336,
     "key_env": "AUTOTEST_DOCTOR_RECIPE_KEY",
-    "manifest_path": "state/ops/autotest_doctor/recipe_release_manifest.json",
-    "state_path": "state/ops/autotest_doctor/recipe_release_state.json",
+    "manifest_path": "local/state/ops/autotest_doctor/recipe_release_manifest.json",
+    "state_path": "local/state/ops/autotest_doctor/recipe_release_state.json",
     "allowed_channels": [
       "stable",
       "canary"
@@ -128,14 +128,14 @@
     "max_rollbacks_before_demote": 1,
     "require_recent_verification": true,
     "verification_max_age_hours": 168,
-    "state_path": "state/ops/autotest_doctor/recipe_rollout_state.json",
-    "verifier_state_path": "state/ops/autotest_doctor/recipe_verifier_state.json"
+    "state_path": "local/state/ops/autotest_doctor/recipe_rollout_state.json",
+    "verifier_state_path": "local/state/ops/autotest_doctor/recipe_verifier_state.json"
   },
   "watchdog": {
     "enabled": true,
     "fail_closed": true,
     "force_shadow_on_block": true,
-    "block_file_path": "state/ops/autotest_doctor/watchdog_block.json"
+    "block_file_path": "local/state/ops/autotest_doctor/watchdog_block.json"
   },
   "telemetry": {
     "emit_system_health": true,

@@ -15,9 +15,9 @@
   "paths": {
     "memory_dir": "client/memory/security/critical_runtime_formal_depth_pack",
     "adaptive_index_path": "client/cognition/adaptive/security/critical_runtime_formal_depth_pack/index.json",
-    "events_path": "state/security/critical_runtime_formal_depth_pack/events.jsonl",
-    "latest_path": "state/security/critical_runtime_formal_depth_pack/latest.json",
-    "receipts_path": "state/security/critical_runtime_formal_depth_pack/receipts.jsonl",
-    "depth_pack_state_path": "state/security/critical_runtime_formal_depth_pack/state.json"
+    "events_path": "local/state/security/critical_runtime_formal_depth_pack/events.jsonl",
+    "latest_path": "local/state/security/critical_runtime_formal_depth_pack/latest.json",
+    "receipts_path": "local/state/security/critical_runtime_formal_depth_pack/receipts.jsonl",
+    "depth_pack_state_path": "local/state/security/critical_runtime_formal_depth_pack/state.json"
   }
 }

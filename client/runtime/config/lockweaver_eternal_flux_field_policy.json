@@ -22,9 +22,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/security/lockweaver_eternal_flux_field/state.json",
-    "latest_path": "state/security/lockweaver_eternal_flux_field/latest.json",
-    "receipts_path": "state/security/lockweaver_eternal_flux_field/receipts.jsonl",
-    "history_path": "state/security/lockweaver_eternal_flux_field/history.jsonl"
+    "state_path": "local/state/security/lockweaver_eternal_flux_field/state.json",
+    "latest_path": "local/state/security/lockweaver_eternal_flux_field/latest.json",
+    "receipts_path": "local/state/security/lockweaver_eternal_flux_field/receipts.jsonl",
+    "history_path": "local/state/security/lockweaver_eternal_flux_field/history.jsonl"
   }
 }

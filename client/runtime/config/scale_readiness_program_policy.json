@@ -22,11 +22,11 @@
     "error_budget_pct": 0.01
   },
   "paths": {
-    "state_path": "state/ops/scale_readiness_program/state.json",
-    "latest_path": "state/ops/scale_readiness_program/latest.json",
-    "receipts_path": "state/ops/scale_readiness_program/receipts.jsonl",
-    "history_path": "state/ops/scale_readiness_program/history.jsonl",
+    "state_path": "local/state/ops/scale_readiness_program/state.json",
+    "latest_path": "local/state/ops/scale_readiness_program/latest.json",
+    "receipts_path": "local/state/ops/scale_readiness_program/receipts.jsonl",
+    "history_path": "local/state/ops/scale_readiness_program/history.jsonl",
     "contract_dir": "client/runtime/config/scale_readiness",
-    "report_dir": "state/ops/scale_readiness_program/reports"
+    "report_dir": "local/state/ops/scale_readiness_program/reports"
   }
 }

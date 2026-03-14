@@ -19,10 +19,10 @@
   "paths": {
     "memory_dir": "client/memory/executive/system3_meta_curriculum_bridge",
     "adaptive_index_path": "client/cognition/adaptive/executive/system3_meta_curriculum_bridge/index.json",
-    "events_path": "state/executive/system3_meta_curriculum_bridge/events.jsonl",
-    "latest_path": "state/executive/system3_meta_curriculum_bridge/latest.json",
-    "receipts_path": "state/executive/system3_meta_curriculum_bridge/receipts.jsonl",
-    "curriculum_state_path": "state/executive/system3_meta_curriculum_bridge/state.json",
-    "curriculum_artifact_path": "state/executive/system3_meta_curriculum_bridge/curriculum_latest.json"
+    "events_path": "local/state/executive/system3_meta_curriculum_bridge/events.jsonl",
+    "latest_path": "local/state/executive/system3_meta_curriculum_bridge/latest.json",
+    "receipts_path": "local/state/executive/system3_meta_curriculum_bridge/receipts.jsonl",
+    "curriculum_state_path": "local/state/executive/system3_meta_curriculum_bridge/state.json",
+    "curriculum_artifact_path": "local/state/executive/system3_meta_curriculum_bridge/curriculum_latest.json"
   }
 }

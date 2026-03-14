@@ -4,7 +4,7 @@ use serde_json::{json, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const STATE_REL: &str = "state/ops/persona_schema_contract/latest.json";
+const STATE_REL: &str = "local/state/ops/persona_schema_contract/latest.json";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ValidationIssue {

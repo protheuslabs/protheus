@@ -28,8 +28,8 @@
     "split_brain_quorum_drill_monthly": true
   },
   "outputs": {
-    "latest_path": "state/ops/distributed_runtime_proof/latest.json",
-    "history_path": "state/ops/distributed_runtime_proof/history.jsonl"
+    "latest_path": "local/state/ops/distributed_runtime_proof/latest.json",
+    "history_path": "local/state/ops/distributed_runtime_proof/history.jsonl"
   },
   "rollback": {
     "fallback_profile": "single_node_safe",

@@ -10,8 +10,8 @@
   "snapshot_patterns": [
     "client/runtime/local/memory/_snapshots/",
     "client/memory/*.backup.*",
-    "state/client/memory/snapshots/*.json",
-    "state/client/memory/snapshots/*.jsonl"
+    "local/state/client/memory/snapshots/*.json",
+    "local/state/client/memory/snapshots/*.jsonl"
   ],
   "outputs": {
     "latest_path": "local/state/ops/memory_snapshot_ignore_gate/latest.json",

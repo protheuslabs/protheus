@@ -104,7 +104,7 @@ fn v6_memory_batch22_taxonomy_and_causality_lanes_are_receipted() {
         0
     );
 
-    let latest = root.join("state/client/memory/ambient/latest.json");
+    let latest = root.join("local/state/client/memory/ambient/latest.json");
 
     assert_eq!(
         run_rag(
@@ -326,24 +326,24 @@ fn v6_memory_batch22_taxonomy_and_causality_lanes_are_receipted() {
     );
     assert!(has_claim(&fuse, "V6-MEMORY-012.4"));
 
-    assert!(root.join("state/ops/local_rag/taxonomy_4w.json").exists());
+    assert!(root.join("local/state/ops/local_rag/taxonomy_4w.json").exists());
     assert!(root
-        .join("state/ops/local_rag/metacognitive_config.json")
+        .join("local/state/ops/local_rag/metacognitive_config.json")
         .exists());
     assert!(root
-        .join("state/ops/local_rag/causality_graph.json")
+        .join("local/state/ops/local_rag/causality_graph.json")
         .exists());
     assert!(root
-        .join("state/ops/local_rag/ama_benchmark_latest.json")
+        .join("local/state/ops/local_rag/ama_benchmark_latest.json")
         .exists());
     assert!(root
-        .join("state/ops/local_rag/sharing_ledger.jsonl")
+        .join("local/state/ops/local_rag/sharing_ledger.jsonl")
         .exists());
     assert!(root
-        .join("state/ops/local_rag/evolution_state.json")
+        .join("local/state/ops/local_rag/evolution_state.json")
         .exists());
     assert!(root
-        .join("state/ops/local_rag/fusion_snapshot.json")
+        .join("local/state/ops/local_rag/fusion_snapshot.json")
         .exists());
 }
 
@@ -367,7 +367,7 @@ fn v6_memory_batch22_rejects_strict_conduit_bypass() {
         ),
         1
     );
-    let latest = root.join("state/client/memory/ambient/latest.json");
+    let latest = root.join("local/state/client/memory/ambient/latest.json");
     let taxonomy_gate = read_json(&latest);
     assert_eq!(
         taxonomy_gate.get("type").and_then(Value::as_str),

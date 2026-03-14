@@ -53,10 +53,10 @@ function normalizePolicy(opts, policyPath, raw) {
   const pathsRaw = merged.paths && typeof merged.paths === 'object' ? merged.paths : {};
   const basePaths = base.paths && typeof base.paths === 'object' ? base.paths : {};
   const laneType = normalizeToken(opts.type || 'lane', 80) || 'lane';
-  const statePathRaw = cleanText(pathsRaw.state_path || basePaths.state_path || ('state/ops/' + laneType + '/state.json'), 520);
-  const latestPathRaw = cleanText(pathsRaw.latest_path || basePaths.latest_path || ('state/ops/' + laneType + '/latest.json'), 520);
-  const receiptsPathRaw = cleanText(pathsRaw.receipts_path || basePaths.receipts_path || ('state/ops/' + laneType + '/receipts.jsonl'), 520);
-  const historyPathRaw = cleanText(pathsRaw.history_path || basePaths.history_path || ('state/ops/' + laneType + '/history.jsonl'), 520);
+  const statePathRaw = cleanText(pathsRaw.state_path || basePaths.state_path || ('local/state/ops/' + laneType + '/state.json'), 520);
+  const latestPathRaw = cleanText(pathsRaw.latest_path || basePaths.latest_path || ('local/state/ops/' + laneType + '/latest.json'), 520);
+  const receiptsPathRaw = cleanText(pathsRaw.receipts_path || basePaths.receipts_path || ('local/state/ops/' + laneType + '/receipts.jsonl'), 520);
+  const historyPathRaw = cleanText(pathsRaw.history_path || basePaths.history_path || ('local/state/ops/' + laneType + '/history.jsonl'), 520);
 
   return {
     version: cleanText(merged.version || base.version || '1.0', 32) || '1.0',

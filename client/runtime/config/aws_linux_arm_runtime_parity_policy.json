@@ -11,7 +11,7 @@
   "fallback_runtime": "cross_platform_runtime",
   "rollback_command": "node client/runtime/systems/runtime/aws_linux_arm_runtime_parity.ts run --force-fallback=1",
   "paths": {
-    "latest_path": "state/runtime/aws_linux_arm_runtime_parity/latest.json",
-    "history_path": "state/runtime/aws_linux_arm_runtime_parity/history.jsonl"
+    "latest_path": "local/state/runtime/aws_linux_arm_runtime_parity/latest.json",
+    "history_path": "local/state/runtime/aws_linux_arm_runtime_parity/history.jsonl"
   }
 }

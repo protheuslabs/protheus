@@ -14,10 +14,10 @@ const DEFAULT_SECRETS_DIR = process.env.SECRET_BROKER_SECRETS_DIR
   : path.join(os.homedir(), '.config', 'protheus', 'secrets');
 const STATE_PATH = process.env.SECRET_BROKER_STATE_PATH
   ? path.resolve(process.env.SECRET_BROKER_STATE_PATH)
-  : path.join(REPO_ROOT, 'state', 'security', 'secret_broker_state.json');
+  : path.join(REPO_ROOT, 'local', 'state', 'security', 'secret_broker_state.json');
 const AUDIT_PATH = process.env.SECRET_BROKER_AUDIT_PATH
   ? path.resolve(process.env.SECRET_BROKER_AUDIT_PATH)
-  : path.join(REPO_ROOT, 'state', 'security', 'secret_broker_audit.jsonl');
+  : path.join(REPO_ROOT, 'local', 'state', 'security', 'secret_broker_audit.jsonl');
 const POLICY_PATH = process.env.SECRET_BROKER_POLICY_PATH
   ? path.resolve(process.env.SECRET_BROKER_POLICY_PATH)
   : path.join(REPO_ROOT, 'config', 'secret_broker_policy.json');

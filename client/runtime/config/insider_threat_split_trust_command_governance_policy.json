@@ -21,9 +21,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/security/insider_threat_split_trust_command_governance/state.json",
-    "latest_path": "state/security/insider_threat_split_trust_command_governance/latest.json",
-    "receipts_path": "state/security/insider_threat_split_trust_command_governance/receipts.jsonl",
-    "history_path": "state/security/insider_threat_split_trust_command_governance/history.jsonl"
+    "state_path": "local/state/security/insider_threat_split_trust_command_governance/state.json",
+    "latest_path": "local/state/security/insider_threat_split_trust_command_governance/latest.json",
+    "receipts_path": "local/state/security/insider_threat_split_trust_command_governance/receipts.jsonl",
+    "history_path": "local/state/security/insider_threat_split_trust_command_governance/history.jsonl"
   }
 }

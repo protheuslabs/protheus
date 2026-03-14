@@ -17,7 +17,7 @@
   },
   "max_prior_delta_per_run": 0.03,
   "integration": {
-    "weaver_latest_path": "state/autonomy/weaver/latest.json",
-    "mirror_latest_path": "state/autonomy/mirror_organ/latest.json"
+    "weaver_latest_path": "local/state/autonomy/weaver/latest.json",
+    "mirror_latest_path": "local/state/autonomy/mirror_organ/latest.json"
   }
 }

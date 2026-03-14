@@ -52,7 +52,7 @@ function main() {
     fail('missing_contract', { id, contractPath });
   }
 
-  const receiptPath = resolve(`state/ops/srs_contract_runtime/${id}/latest.json`);
+  const receiptPath = resolve(`local/state/ops/srs_contract_runtime/${id}/latest.json`);
   if (dryRun) {
     console.log(
       JSON.stringify(

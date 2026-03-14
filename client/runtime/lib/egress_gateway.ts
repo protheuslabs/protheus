@@ -18,8 +18,8 @@ const {
 type AnyObj = Record<string, any>;
 
 const DEFAULT_POLICY_REL = 'config/egress_gateway_policy.json';
-const DEFAULT_STATE_REL = 'state/security/egress_gateway/state.json';
-const DEFAULT_AUDIT_REL = 'state/security/egress_gateway/audit.jsonl';
+const DEFAULT_STATE_REL = 'local/state/security/egress_gateway/state.json';
+const DEFAULT_AUDIT_REL = 'local/state/security/egress_gateway/audit.jsonl';
 
 class EgressGatewayError extends Error {
   decision: AnyObj;

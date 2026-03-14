@@ -20,7 +20,7 @@ npm run -s ops:blocked-external:evidence
 
 Current status report is written to:
 
-- `docs/workspace/BLOCKED_EXTERNAL_EVIDENCE_STATUS.md`
+- `local/workspace/reports/BLOCKED_EXTERNAL_EVIDENCE_STATUS.md`
 - `core/local/artifacts/blocked_external_evidence_status_current.json`
 
 Do not place secrets in this tree without explicit approval and policy coverage.

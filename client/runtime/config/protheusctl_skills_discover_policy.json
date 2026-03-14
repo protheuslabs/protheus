@@ -2,7 +2,7 @@
   "enabled": true,
   "require_mcp_flag": true,
   "paths": {
-    "latest_path": "state/ops/protheusctl_skills_discover/latest.json",
-    "receipts_path": "state/ops/protheusctl_skills_discover/receipts.jsonl"
+    "latest_path": "local/state/ops/protheusctl_skills_discover/latest.json",
+    "receipts_path": "local/state/ops/protheusctl_skills_discover/receipts.jsonl"
   }
 }

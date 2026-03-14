@@ -13,7 +13,7 @@
     "adaptive": {
       "roots": [
         "client/cognition/adaptive/",
-        "state/client/cognition/adaptive/"
+        "local/state/client/cognition/adaptive/"
       ],
       "controllers": [
         "client/runtime/systems/adaptive/"
@@ -22,7 +22,7 @@
     },
     "runtime_state_logs": {
       "roots": [
-        "state/",
+        "local/state/",
         "client/runtime/local/logs/",
         "client/runtime/local/logs/habits/"
       ],

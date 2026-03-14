@@ -90,7 +90,7 @@ fn v7_adaptive_intelligence_dual_runtime_connector_and_degradation_are_behavior_
     let _guard = test_env_lock();
     let tmp = temp_root("adaptive_intelligence_dual");
     let root = tmp.path();
-    let state_root = root.join("state");
+    let state_root = root.join("local").join("state");
     std::env::set_var("PROTHEUS_CORE_STATE_ROOT", &state_root);
     let ollama_bin = install_ollama_stub(root);
     std::env::set_var("PROTHEUS_LOCAL_AI_BIN", &ollama_bin);
@@ -102,7 +102,7 @@ fn v7_adaptive_intelligence_dual_runtime_connector_and_degradation_are_behavior_
     );
     write_text(
         root,
-        "state/ops/organism_layer/dream_log.jsonl",
+        "local/state/ops/organism_layer/dream_log.jsonl",
         "{\"insight\":\"Prefer smaller reversible actions first\"}\n{\"insight\":\"Novel path: combine audit replay with rollout proofs\"}\n",
     );
 
@@ -176,7 +176,7 @@ fn v7_adaptive_intelligence_shadow_training_and_human_only_graduation_are_proven
     let _guard = test_env_lock();
     let tmp = temp_root("adaptive_intelligence_train");
     let root = tmp.path();
-    let state_root = root.join("state");
+    let state_root = root.join("local").join("state");
     std::env::set_var("PROTHEUS_CORE_STATE_ROOT", &state_root);
 
     write_text(
@@ -186,7 +186,7 @@ fn v7_adaptive_intelligence_shadow_training_and_human_only_graduation_are_proven
     );
     write_text(
         root,
-        "state/ops/organism_layer/dream_log.jsonl",
+        "local/state/ops/organism_layer/dream_log.jsonl",
         "{\"insight\":\"Blend shadow-training with nightly reflection\"}\n{\"insight\":\"Use logical-first degradation on small hardware\"}\n",
     );
 

@@ -16,9 +16,9 @@
   "paths": {
     "memory_dir": "client/memory/edge/swarm",
     "adaptive_index_path": "client/cognition/adaptive/edge/swarm/index.json",
-    "events_path": "state/spawn/mobile_edge_swarm_bridge/events.jsonl",
-    "latest_path": "state/spawn/mobile_edge_swarm_bridge/latest.json",
-    "receipts_path": "state/spawn/mobile_edge_swarm_bridge/receipts.jsonl",
-    "enrollment_state_path": "state/spawn/mobile_edge_swarm_bridge/state.json"
+    "events_path": "local/state/spawn/mobile_edge_swarm_bridge/events.jsonl",
+    "latest_path": "local/state/spawn/mobile_edge_swarm_bridge/latest.json",
+    "receipts_path": "local/state/spawn/mobile_edge_swarm_bridge/receipts.jsonl",
+    "enrollment_state_path": "local/state/spawn/mobile_edge_swarm_bridge/state.json"
   }
 }

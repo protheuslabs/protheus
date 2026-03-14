@@ -50,12 +50,12 @@
     "knowledge_possession"
   ],
   "outputs": {
-    "state_root": "state/security/soul_biometric",
-    "latest_path": "state/security/soul_biometric/latest.json",
-    "runtime_state_path": "state/security/soul_biometric/runtime_state.json",
-    "receipts_path": "state/security/soul_biometric/receipts.jsonl",
-    "events_path": "state/security/soul_biometric/events.jsonl",
-    "obsidian_path": "state/security/soul_biometric/obsidian_projection.jsonl",
+    "state_root": "local/state/security/soul_biometric",
+    "latest_path": "local/state/security/soul_biometric/latest.json",
+    "runtime_state_path": "local/state/security/soul_biometric/runtime_state.json",
+    "receipts_path": "local/state/security/soul_biometric/receipts.jsonl",
+    "events_path": "local/state/security/soul_biometric/events.jsonl",
+    "obsidian_path": "local/state/security/soul_biometric/obsidian_projection.jsonl",
     "emit_holo_events": true,
     "emit_obsidian_receipts": true
   }

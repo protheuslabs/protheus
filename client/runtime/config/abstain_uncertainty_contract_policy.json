@@ -10,10 +10,10 @@
     "low_support": "insufficient_support_events"
   },
   "paths": {
-    "hypotheses_dir": "state/sensory/cross_signal/hypotheses",
-    "resolution_dir": "state/sensory/analysis/abstain_resolution",
-    "output_dir": "state/sensory/analysis/abstain_uncertainty",
-    "latest_path": "state/sensory/analysis/abstain_uncertainty/latest.json",
-    "receipts_path": "state/sensory/analysis/abstain_uncertainty/receipts.jsonl"
+    "hypotheses_dir": "local/state/sensory/cross_signal/hypotheses",
+    "resolution_dir": "local/state/sensory/analysis/abstain_resolution",
+    "output_dir": "local/state/sensory/analysis/abstain_uncertainty",
+    "latest_path": "local/state/sensory/analysis/abstain_uncertainty/latest.json",
+    "receipts_path": "local/state/sensory/analysis/abstain_uncertainty/receipts.jsonl"
   }
 }

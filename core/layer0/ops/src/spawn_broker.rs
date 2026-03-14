@@ -249,7 +249,7 @@ fn state_dir(root: &Path) -> PathBuf {
             return root.join(p);
         }
     }
-    root_client_runtime(root).join("state").join("spawn")
+    root_client_runtime(root).join("local").join("state").join("spawn")
 }
 
 fn state_path(root: &Path) -> PathBuf {
@@ -289,6 +289,7 @@ fn autopause_path(root: &Path) -> PathBuf {
         }
     }
     root_client_runtime(root)
+        .join("local")
         .join("state")
         .join("autonomy")
         .join("budget_autopause.json")

@@ -35,8 +35,8 @@
     "loop_script": "client/runtime/systems/autonomy/gated_self_improvement_loop.ts"
   },
   "paths": {
-    "state_path": "state/autonomy/persistent_fractal_meta_organ/state.json",
-    "latest_path": "state/autonomy/persistent_fractal_meta_organ/latest.json",
-    "receipts_path": "state/autonomy/persistent_fractal_meta_organ/receipts.jsonl"
+    "state_path": "local/state/autonomy/persistent_fractal_meta_organ/state.json",
+    "latest_path": "local/state/autonomy/persistent_fractal_meta_organ/latest.json",
+    "receipts_path": "local/state/autonomy/persistent_fractal_meta_organ/receipts.jsonl"
   }
 }

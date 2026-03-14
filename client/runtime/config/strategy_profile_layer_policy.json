@@ -20,7 +20,7 @@
     ]
   },
   "outputs": {
-    "latest_path": "state/strategy/profile_layer/latest.json",
-    "history_path": "state/strategy/profile_layer/history.jsonl"
+    "latest_path": "local/state/strategy/profile_layer/latest.json",
+    "history_path": "local/state/strategy/profile_layer/history.jsonl"
   }
 }

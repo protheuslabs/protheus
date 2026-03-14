@@ -14,7 +14,7 @@
     "ext_v3_race_conf_002_legacy_path_aliases"
   ],
   "outputs": {
-    "latest_path": "state/ops/requirement_conformance/latest.json",
-    "history_path": "state/ops/requirement_conformance/history.jsonl"
+    "latest_path": "local/state/ops/requirement_conformance/latest.json",
+    "history_path": "local/state/ops/requirement_conformance/history.jsonl"
   }
 }

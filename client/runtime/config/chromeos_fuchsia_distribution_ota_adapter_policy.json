@@ -18,9 +18,9 @@
   ],
   "min_rollback_window_minutes": 60,
   "paths": {
-    "manifest_path": "state/ops/chromeos_fuchsia_distribution_ota_adapter/manifest.json",
-    "channel_state_path": "state/ops/chromeos_fuchsia_distribution_ota_adapter/channel_state.json",
-    "latest_path": "state/ops/chromeos_fuchsia_distribution_ota_adapter/latest.json",
-    "history_path": "state/ops/chromeos_fuchsia_distribution_ota_adapter/history.jsonl"
+    "manifest_path": "local/state/ops/chromeos_fuchsia_distribution_ota_adapter/manifest.json",
+    "channel_state_path": "local/state/ops/chromeos_fuchsia_distribution_ota_adapter/channel_state.json",
+    "latest_path": "local/state/ops/chromeos_fuchsia_distribution_ota_adapter/latest.json",
+    "history_path": "local/state/ops/chromeos_fuchsia_distribution_ota_adapter/history.jsonl"
   }
 }

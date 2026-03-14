@@ -28,10 +28,10 @@
     ]
   },
   "state": {
-    "state_path": "state/autonomy/background_persistent_runtime/state.json",
-    "queue_path": "state/autonomy/background_persistent_runtime/queue.jsonl",
-    "latest_path": "state/autonomy/background_persistent_runtime/latest.json",
-    "receipts_path": "state/autonomy/background_persistent_runtime/receipts.jsonl"
+    "state_path": "local/state/autonomy/background_persistent_runtime/state.json",
+    "queue_path": "local/state/autonomy/background_persistent_runtime/queue.jsonl",
+    "latest_path": "local/state/autonomy/background_persistent_runtime/latest.json",
+    "receipts_path": "local/state/autonomy/background_persistent_runtime/receipts.jsonl"
   }
 }
 

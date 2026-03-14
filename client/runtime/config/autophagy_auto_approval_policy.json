@@ -19,9 +19,9 @@
     }
   },
   "paths": {
-    "state_path": "state/autonomy/autophagy_auto_approval/state.json",
-    "latest_path": "state/autonomy/autophagy_auto_approval/latest.json",
-    "receipts_path": "state/autonomy/autophagy_auto_approval/receipts.jsonl",
-    "regrets_path": "state/autonomy/autophagy_auto_approval/regrets.jsonl"
+    "state_path": "local/state/autonomy/autophagy_auto_approval/state.json",
+    "latest_path": "local/state/autonomy/autophagy_auto_approval/latest.json",
+    "receipts_path": "local/state/autonomy/autophagy_auto_approval/receipts.jsonl",
+    "regrets_path": "local/state/autonomy/autophagy_auto_approval/regrets.jsonl"
   }
 }

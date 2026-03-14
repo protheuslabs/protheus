@@ -65,7 +65,7 @@ fn v6_batch21_cognition_and_cockpit_lanes_are_receipted() {
         ),
         0
     );
-    let cognition_latest = root_path.join("state/ops/assimilation_controller/latest.json");
+    let cognition_latest = root_path.join("local/state/ops/assimilation_controller/latest.json");
     let enable = read_json(&cognition_latest);
     assert_eq!(
         enable.get("type").and_then(Value::as_str),
@@ -185,7 +185,7 @@ fn v6_batch21_cognition_and_cockpit_lanes_are_receipted() {
         ),
         0
     );
-    let ambient_latest = root_path.join("state/client/memory/ambient/latest.json");
+    let ambient_latest = root_path.join("local/state/client/memory/ambient/latest.json");
     let chat = read_json(&ambient_latest);
     assert_eq!(
         chat.get("memory_command").and_then(Value::as_str),
@@ -298,7 +298,7 @@ fn v6_batch21_cognition_and_cockpit_reject_strict_bypass() {
         1
     );
 
-    let ambient_latest = root_path.join("state/client/memory/ambient/latest.json");
+    let ambient_latest = root_path.join("local/state/client/memory/ambient/latest.json");
     let gate = read_json(&ambient_latest);
     assert_eq!(
         gate.get("type").and_then(Value::as_str),

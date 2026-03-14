@@ -185,17 +185,17 @@ fn load_policy(root: &Path) -> PersonaAmbientPolicy {
         cache_path: normalize_path(
             root,
             personas.and_then(|v| v.get("cache_path")),
-            "state/personas/ambient_stance/cache.json",
+            "local/state/personas/ambient_stance/cache.json",
         ),
         latest_path: normalize_path(
             root,
             personas.and_then(|v| v.get("latest_path")),
-            "state/personas/ambient_stance/latest.json",
+            "local/state/personas/ambient_stance/latest.json",
         ),
         receipts_path: normalize_path(
             root,
             personas.and_then(|v| v.get("receipts_path")),
-            "state/personas/ambient_stance/receipts.jsonl",
+            "local/state/personas/ambient_stance/receipts.jsonl",
         ),
         max_personas: personas
             .and_then(|v| v.get("max_personas"))
@@ -796,9 +796,9 @@ mod tests {
                 "ambient_stance": true,
                 "auto_apply": true,
                 "full_reload": full_reload,
-                "cache_path": "state/personas/ambient_stance/cache.json",
-                "latest_path": "state/personas/ambient_stance/latest.json",
-                "receipts_path": "state/personas/ambient_stance/receipts.jsonl",
+                "cache_path": "local/state/personas/ambient_stance/cache.json",
+                "latest_path": "local/state/personas/ambient_stance/latest.json",
+                "receipts_path": "local/state/personas/ambient_stance/receipts.jsonl",
                 "max_personas": 8,
                 "max_patch_bytes": 8192
             }
@@ -849,6 +849,7 @@ mod tests {
 
         let cache = read_json(
             &dir.path()
+                .join("local")
                 .join("state")
                 .join("personas")
                 .join("ambient_stance")

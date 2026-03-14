@@ -27,7 +27,7 @@
     "centuries": 36500
   },
   "state": {
-    "latest_path": "state/assimilation/generative_simulation/latest.json",
-    "receipts_path": "state/assimilation/generative_simulation/receipts.jsonl"
+    "latest_path": "local/state/assimilation/generative_simulation/latest.json",
+    "receipts_path": "local/state/assimilation/generative_simulation/receipts.jsonl"
   }
 }

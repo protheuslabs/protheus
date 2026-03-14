@@ -32,7 +32,7 @@ function main() {
 
   for (const id of ids) {
     const contractPath = path.join(ROOT, 'planes/contracts/srs', `${id}.json`);
-    const latestPath = path.join(ROOT, 'state/ops/srs_contract_runtime', id, 'latest.json');
+    const latestPath = path.join(ROOT, 'local/state/ops/srs_contract_runtime', id, 'latest.json');
     try {
       assert(fs.existsSync(contractPath), `missing contract: ${contractPath}`);
       assert(fs.existsSync(latestPath), `missing runtime receipt: ${latestPath}`);

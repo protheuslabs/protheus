@@ -6,7 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 const DEFAULT_MAX_AGE_HOURS: f64 = 12.0;
-const DEFAULT_CACHE_REL: &str = "state/sensory/eyes/cache";
+const DEFAULT_CACHE_REL: &str = "local/state/sensory/eyes/cache";
 
 fn print_json(value: &Value) {
     println!(

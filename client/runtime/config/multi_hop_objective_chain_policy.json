@@ -27,10 +27,10 @@
     ]
   },
   "paths": {
-    "hypotheses_dir": "state/sensory/cross_signal/hypotheses",
-    "latent_intent_dir": "state/sensory/analysis/latent_intent",
-    "output_dir": "state/sensory/analysis/objective_chain_mapper",
-    "latest_path": "state/sensory/analysis/objective_chain_mapper/latest.json",
-    "receipts_path": "state/sensory/analysis/objective_chain_mapper/receipts.jsonl"
+    "hypotheses_dir": "local/state/sensory/cross_signal/hypotheses",
+    "latent_intent_dir": "local/state/sensory/analysis/latent_intent",
+    "output_dir": "local/state/sensory/analysis/objective_chain_mapper",
+    "latest_path": "local/state/sensory/analysis/objective_chain_mapper/latest.json",
+    "receipts_path": "local/state/sensory/analysis/objective_chain_mapper/receipts.jsonl"
   }
 }

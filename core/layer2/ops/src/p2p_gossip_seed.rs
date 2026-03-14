@@ -93,7 +93,7 @@ fn conduit_enforcement(argv: &[String], command: &str, strict: bool) -> Value {
 }
 
 fn state_dir(root: &Path) -> PathBuf {
-    root.join("state").join("ops").join("p2p_gossip_seed")
+    root.join("local").join("state").join("ops").join("p2p_gossip_seed")
 }
 
 fn latest_path(root: &Path) -> PathBuf {

@@ -4,10 +4,10 @@
   "shadow_only": true,
   "max_workers_per_mesh": 32,
   "paths": {
-    "latest_path": "state/hardware/device_mesh_adaptive_runtime/latest.json",
-    "receipts_path": "state/hardware/device_mesh_adaptive_runtime/receipts.jsonl",
-    "state_path": "state/hardware/device_mesh_adaptive_runtime/state.json",
-    "mesh_source_path": "state/ops/federated_sovereign_mesh_runtime/state.json",
-    "surface_budget_path": "state/hardware/surface_budget/latest.json"
+    "latest_path": "local/state/hardware/device_mesh_adaptive_runtime/latest.json",
+    "receipts_path": "local/state/hardware/device_mesh_adaptive_runtime/receipts.jsonl",
+    "state_path": "local/state/hardware/device_mesh_adaptive_runtime/state.json",
+    "mesh_source_path": "local/state/ops/federated_sovereign_mesh_runtime/state.json",
+    "surface_budget_path": "local/state/hardware/surface_budget/latest.json"
   }
 }

@@ -227,12 +227,12 @@ fn default_policy(root: &Path) -> TransitionPolicy {
         enabled: true,
         shadow_only: true,
         paths: TransitionPaths {
-            latest_path: root.join("state/client/memory/rust_transition/latest.json"),
-            receipts_path: root.join("state/client/memory/rust_transition/receipts.jsonl"),
-            selector_path: root.join("state/client/memory/rust_transition/backend_selector.json"),
-            benchmark_path: root.join("state/client/memory/rust_transition/benchmark_history.json"),
+            latest_path: root.join("local/state/client/memory/rust_transition/latest.json"),
+            receipts_path: root.join("local/state/client/memory/rust_transition/receipts.jsonl"),
+            selector_path: root.join("local/state/client/memory/rust_transition/backend_selector.json"),
+            benchmark_path: root.join("local/state/client/memory/rust_transition/benchmark_history.json"),
             benchmark_latest_path: root
-                .join("state/client/memory/rust_transition/benchmark_latest.json"),
+                .join("local/state/client/memory/rust_transition/benchmark_latest.json"),
             benchmark_report_path: root.join("benchmarks/memory-stage1.md"),
             memory_index_path: root.join("client/memory/MEMORY_INDEX.md"),
             rust_crate_path: root.join("core/layer0/memory"),
@@ -255,8 +255,8 @@ fn default_policy(root: &Path) -> TransitionPolicy {
             "max_fallback_trigger_count": 0,
             "max_restart_count": 2,
             "max_rust_p99_ms": 2000,
-            "restart_history_path": "state/client/memory/rust_transition/daemon_restart_history.jsonl",
-            "promotion_decisions_path": "state/client/memory/rust_transition/soak_promotion_decisions.jsonl"
+            "restart_history_path": "local/state/client/memory/rust_transition/daemon_restart_history.jsonl",
+            "promotion_decisions_path": "local/state/client/memory/rust_transition/soak_promotion_decisions.jsonl"
         }),
     }
 }
@@ -285,27 +285,27 @@ fn load_policy(root: &Path, policy_path: &Path) -> TransitionPolicy {
             latest_path: resolve_path(
                 root,
                 paths_raw.get("latest_path"),
-                "state/client/memory/rust_transition/latest.json",
+                "local/state/client/memory/rust_transition/latest.json",
             ),
             receipts_path: resolve_path(
                 root,
                 paths_raw.get("receipts_path"),
-                "state/client/memory/rust_transition/receipts.jsonl",
+                "local/state/client/memory/rust_transition/receipts.jsonl",
             ),
             selector_path: resolve_path(
                 root,
                 paths_raw.get("selector_path"),
-                "state/client/memory/rust_transition/backend_selector.json",
+                "local/state/client/memory/rust_transition/backend_selector.json",
             ),
             benchmark_path: resolve_path(
                 root,
                 paths_raw.get("benchmark_path"),
-                "state/client/memory/rust_transition/benchmark_history.json",
+                "local/state/client/memory/rust_transition/benchmark_history.json",
             ),
             benchmark_latest_path: resolve_path(
                 root,
                 paths_raw.get("benchmark_latest_path"),
-                "state/client/memory/rust_transition/benchmark_latest.json",
+                "local/state/client/memory/rust_transition/benchmark_latest.json",
             ),
             benchmark_report_path: resolve_path(
                 root,
@@ -749,11 +749,11 @@ mod tests {
     fn evaluate_auto_selector_matches_threshold_gate() {
         let root = unique_temp_dir("transition-lane-auto-selector");
         let policy_path = root.join("policy.json");
-        fs::create_dir_all(root.join("state/client/memory/rust_transition")).expect("mkdir state");
+        fs::create_dir_all(root.join("local/state/client/memory/rust_transition")).expect("mkdir state");
         fs::write(&policy_path, "{}").expect("write policy");
         let policy = load_policy(&root, &policy_path);
         let scope_id = policy_scope_id(&policy);
-        let history_path = root.join("state/client/memory/rust_transition/benchmark_history.json");
+        let history_path = root.join("local/state/client/memory/rust_transition/benchmark_history.json");
         let rows = (0..12)
             .map(|idx| {
                 json!({
@@ -784,7 +784,7 @@ mod tests {
         let claims = vec![ClaimEvidenceRow {
             claim: "auto selector is benchmark-threshold gated".to_string(),
             evidence: vec![
-                "path:state/client/memory/rust_transition/benchmark_history.json".to_string(),
+                "path:local/state/client/memory/rust_transition/benchmark_history.json".to_string(),
                 "stable_runs:10".to_string(),
             ],
             persona_lenses: vec![
@@ -809,11 +809,11 @@ mod tests {
 
         write_transition_receipt(&policy, &payload_a, &claims);
         let first =
-            fs::read_to_string(root.join("state/client/memory/rust_transition/latest.json"))
+            fs::read_to_string(root.join("local/state/client/memory/rust_transition/latest.json"))
                 .expect("read first");
         write_transition_receipt(&policy, &payload_b, &claims);
         let second =
-            fs::read_to_string(root.join("state/client/memory/rust_transition/latest.json"))
+            fs::read_to_string(root.join("local/state/client/memory/rust_transition/latest.json"))
                 .expect("read second");
 
         let first_hash = serde_json::from_str::<serde_json::Value>(&first)

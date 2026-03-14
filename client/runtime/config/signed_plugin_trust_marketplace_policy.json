@@ -21,9 +21,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/security/signed_plugin_trust_marketplace/state.json",
-    "latest_path": "state/security/signed_plugin_trust_marketplace/latest.json",
-    "receipts_path": "state/security/signed_plugin_trust_marketplace/receipts.jsonl",
-    "history_path": "state/security/signed_plugin_trust_marketplace/history.jsonl"
+    "state_path": "local/state/security/signed_plugin_trust_marketplace/state.json",
+    "latest_path": "local/state/security/signed_plugin_trust_marketplace/latest.json",
+    "receipts_path": "local/state/security/signed_plugin_trust_marketplace/receipts.jsonl",
+    "history_path": "local/state/security/signed_plugin_trust_marketplace/history.jsonl"
   }
 }

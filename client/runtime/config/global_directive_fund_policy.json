@@ -9,9 +9,9 @@
   "paths": {
     "memory_preferences_dir": "client/memory/economy/preferences",
     "adaptive_index_path": "client/cognition/adaptive/economy/preferences/index.json",
-    "objectives_path": "state/economy/global_directive_fund/objectives.json",
-    "votes_path": "state/economy/global_directive_fund/votes.jsonl",
-    "latest_path": "state/economy/global_directive_fund/latest.json",
-    "receipts_path": "state/economy/global_directive_fund/receipts.jsonl"
+    "objectives_path": "local/state/economy/global_directive_fund/objectives.json",
+    "votes_path": "local/state/economy/global_directive_fund/votes.jsonl",
+    "latest_path": "local/state/economy/global_directive_fund/latest.json",
+    "receipts_path": "local/state/economy/global_directive_fund/receipts.jsonl"
   }
 }

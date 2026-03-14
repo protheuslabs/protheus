@@ -10,8 +10,8 @@ const DEFAULT_POLICY_REL: &str =
     "client/runtime/config/observability_slo_runbook_closure_policy.json";
 const DEFAULT_SLO_MAP_REL: &str = "config/autonomy_slo_runbook_map.json";
 const DEFAULT_RUNBOOK_REL: &str = "docs/OPERATOR_RUNBOOK.md";
-const DEFAULT_LATEST_REL: &str = "state/ops/observability_slo_runbook_closure/latest.json";
-const DEFAULT_HISTORY_REL: &str = "state/ops/observability_slo_runbook_closure/history.jsonl";
+const DEFAULT_LATEST_REL: &str = "local/state/ops/observability_slo_runbook_closure/latest.json";
+const DEFAULT_HISTORY_REL: &str = "local/state/ops/observability_slo_runbook_closure/history.jsonl";
 
 fn print_json(value: &Value) {
     println!(

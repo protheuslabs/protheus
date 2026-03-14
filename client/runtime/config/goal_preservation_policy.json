@@ -23,7 +23,7 @@
     "signal_policy_path": "client/runtime/config/symbiosis_coherence_policy.json"
   },
   "output": {
-    "state_path": "state/security/goal_preservation/latest.json",
-    "receipts_path": "state/security/goal_preservation/receipts.jsonl"
+    "state_path": "local/state/security/goal_preservation/latest.json",
+    "receipts_path": "local/state/security/goal_preservation/receipts.jsonl"
   }
 }

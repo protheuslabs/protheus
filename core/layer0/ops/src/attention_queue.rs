@@ -509,22 +509,22 @@ fn load_contract(root: &Path) -> AttentionContract {
         queue_path: normalize_path(
             root,
             eyes.and_then(|v| v.get("attention_queue_path")),
-            "state/attention/queue.jsonl",
+            "local/state/attention/queue.jsonl",
         ),
         receipts_path: normalize_path(
             root,
             eyes.and_then(|v| v.get("receipts_path")),
-            "state/attention/receipts.jsonl",
+            "local/state/attention/receipts.jsonl",
         ),
         latest_path: normalize_path(
             root,
             eyes.and_then(|v| v.get("latest_path")),
-            "state/attention/latest.json",
+            "local/state/attention/latest.json",
         ),
         cursor_state_path: normalize_path(
             root,
             contract_obj.and_then(|v| v.get("cursor_state_path")),
-            "state/attention/cursor_state.json",
+            "local/state/attention/cursor_state.json",
         ),
         max_queue_depth: contract_obj
             .and_then(|v| v.get("max_queue_depth"))
@@ -1441,9 +1441,9 @@ mod tests {
             "enabled": true,
             "eyes": {
                 "push_attention_queue": true,
-                "attention_queue_path": "state/attention/queue.jsonl",
-                "receipts_path": "state/attention/receipts.jsonl",
-                "latest_path": "state/attention/latest.json",
+                "attention_queue_path": "local/state/attention/queue.jsonl",
+                "receipts_path": "local/state/attention/receipts.jsonl",
+                "latest_path": "local/state/attention/latest.json",
                 "attention_contract": {
                     "max_queue_depth": max_queue_depth,
                     "ttl_hours": 12,
@@ -1509,7 +1509,7 @@ mod tests {
         );
         assert_eq!(code_b, 0);
 
-        let queue = read_jsonl(&dir.path().join("state/attention/queue.jsonl"));
+        let queue = read_jsonl(&dir.path().join("local/state/attention/queue.jsonl"));
         assert_eq!(queue.len(), 1);
     }
 
@@ -1556,7 +1556,7 @@ mod tests {
         );
         assert_eq!(code_b, 2);
 
-        let queue = read_jsonl(&dir.path().join("state/attention/queue.jsonl"));
+        let queue = read_jsonl(&dir.path().join("local/state/attention/queue.jsonl"));
         assert_eq!(queue.len(), 1);
         assert_eq!(
             queue[0].get("severity").and_then(Value::as_str),
@@ -1599,7 +1599,7 @@ mod tests {
         assert_eq!(enqueue_event(dir.path(), &mid), 0);
         assert_eq!(enqueue_event(dir.path(), &high), 0);
 
-        let queue = read_jsonl(&dir.path().join("state/attention/queue.jsonl"));
+        let queue = read_jsonl(&dir.path().join("local/state/attention/queue.jsonl"));
         assert_eq!(queue.len(), 3);
         assert_eq!(
             queue[0].get("attention_key").and_then(Value::as_str),
@@ -1628,7 +1628,7 @@ mod tests {
             "attention_key": "importance-meta"
         });
         assert_eq!(enqueue_event(dir.path(), &event), 0);
-        let queue = read_jsonl(&dir.path().join("state/attention/queue.jsonl"));
+        let queue = read_jsonl(&dir.path().join("local/state/attention/queue.jsonl"));
         assert_eq!(queue.len(), 1);
         let row = &queue[0];
         let score = row.get("score").and_then(Value::as_f64).unwrap_or(0.0);

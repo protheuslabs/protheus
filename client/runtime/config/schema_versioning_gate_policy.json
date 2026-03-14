@@ -22,7 +22,7 @@
     "allow_add_missing_fields_only": true
   },
   "outputs": {
-    "latest_path": "state/contracts/schema_versioning_gate/latest.json",
-    "history_path": "state/contracts/schema_versioning_gate/history.jsonl"
+    "latest_path": "local/state/contracts/schema_versioning_gate/latest.json",
+    "history_path": "local/state/contracts/schema_versioning_gate/history.jsonl"
   }
 }

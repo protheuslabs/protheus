@@ -21,10 +21,10 @@
     "deny_at_ratio": 1.0
   },
   "outputs": {
-    "state_path": "state/budget/unified_global_budget_governor/state.json",
-    "decisions_path": "state/budget/unified_global_budget_governor/decisions.jsonl",
-    "latest_path": "state/budget/unified_global_budget_governor/latest.json",
-    "history_path": "state/budget/unified_global_budget_governor/history.jsonl",
-    "autopause_path": "state/autonomy/budget_autopause.json"
+    "state_path": "local/state/budget/unified_global_budget_governor/state.json",
+    "decisions_path": "local/state/budget/unified_global_budget_governor/decisions.jsonl",
+    "latest_path": "local/state/budget/unified_global_budget_governor/latest.json",
+    "history_path": "local/state/budget/unified_global_budget_governor/history.jsonl",
+    "autopause_path": "local/state/autonomy/budget_autopause.json"
   }
 }

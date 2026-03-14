@@ -131,13 +131,13 @@ function defaultPolicy() {
       max_recent_scores: 200
     },
     paths: {
-      state_path: 'state/symbiosis/coherence/state.json',
-      latest_path: 'state/symbiosis/coherence/latest.json',
-      receipts_path: 'state/symbiosis/coherence/receipts.jsonl',
-      identity_latest_path: 'state/autonomy/identity_anchor/latest.json',
-      pre_neuralink_state_path: 'state/symbiosis/pre_neuralink_interface/state.json',
-      deep_symbiosis_state_path: 'state/symbiosis/deep_understanding/state.json',
-      observer_mirror_latest_path: 'state/autonomy/observer_mirror/latest.json'
+      state_path: 'local/state/symbiosis/coherence/state.json',
+      latest_path: 'local/state/symbiosis/coherence/latest.json',
+      receipts_path: 'local/state/symbiosis/coherence/receipts.jsonl',
+      identity_latest_path: 'local/state/autonomy/identity_anchor/latest.json',
+      pre_neuralink_state_path: 'local/state/symbiosis/pre_neuralink_interface/state.json',
+      deep_symbiosis_state_path: 'local/state/symbiosis/deep_understanding/state.json',
+      observer_mirror_latest_path: 'local/state/autonomy/observer_mirror/latest.json'
     }
   };
 }

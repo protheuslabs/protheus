@@ -95,11 +95,11 @@ function isStrict(channel, opts = {}) {
 }
 
 function violationPath(channel) {
-  return path.join(REPO_ROOT, 'state', 'security', `${String(channel || 'unknown')}_mutation_violations.jsonl`);
+  return path.join(REPO_ROOT, 'local', 'state', 'security', `${String(channel || 'unknown')}_mutation_violations.jsonl`);
 }
 
 function auditPath(channel) {
-  return path.join(REPO_ROOT, 'state', 'security', `${String(channel || 'unknown')}_mutations.jsonl`);
+  return path.join(REPO_ROOT, 'local', 'state', 'security', `${String(channel || 'unknown')}_mutations.jsonl`);
 }
 
 function enforceMutationProvenance(channel, meta, opts = {}) {

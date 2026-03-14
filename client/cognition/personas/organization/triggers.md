@@ -16,6 +16,6 @@ Purpose: make persona consults part of normal workflow instead of manual one-off
 
 ## weekly-checkin
 
-- Route: `protheus lens trigger weekly-checkin --persona=jay_haslam --heartbeat=docs/workspace/HEARTBEAT.md`
+- Route: `protheus lens trigger weekly-checkin --persona=jay_haslam --heartbeat=local/workspace/assistant/HEARTBEAT.md`
 - Default behavior: run checkin routine and append structured correspondence + memory node.
 - Use when: weekly planning review and accountability closeout.

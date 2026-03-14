@@ -10,7 +10,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 const WORKSPACE_DIR = path.join(__dirname, '..', '..', '..', '..');
-const STATE_DIR = path.join(WORKSPACE_DIR, 'state');
+const STATE_DIR = path.join(WORKSPACE_DIR, 'local', 'state');
 const SENSORY_PROPOSALS_DIR = path.join(STATE_DIR, 'sensory', 'proposals');
 const QUEUE_DECISIONS_DIR = path.join(STATE_DIR, 'queue', 'decisions');
 const GIT_OUTCOMES_DIR = path.join(STATE_DIR, 'git', 'outcomes');

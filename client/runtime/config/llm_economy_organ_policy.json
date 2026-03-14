@@ -38,7 +38,7 @@
       {
         "id": "provider_market_feed",
         "enabled": true,
-        "path": "state/routing/provider_market_feed_latest.json",
+        "path": "local/state/routing/provider_market_feed_latest.json",
         "providers_path": "providers"
       }
     ]
@@ -82,16 +82,16 @@
     "reason_code": "sovereign_root_tithe_required"
   },
   "paths": {
-    "burn_oracle_latest_path": "state/ops/dynamic_burn_budget_oracle/latest.json",
-    "state_path": "state/ops/llm_economy_organ/state.json",
-    "latest_path": "state/ops/llm_economy_organ/latest.json",
-    "history_path": "state/ops/llm_economy_organ/history.jsonl",
-    "receipts_path": "state/ops/llm_economy_organ/receipts.jsonl",
-    "provider_library_path": "state/routing/provider_library_latest.json",
-    "weaver_hint_path": "state/autonomy/weaver/llm_economy_hints.jsonl",
-    "strategy_hint_path": "state/autonomy/llm_economy_strategy_hints.jsonl",
-    "capital_hint_path": "state/budget/llm_economy_capital_hints.jsonl",
-    "self_improvement_hint_path": "state/autonomy/self_improvement/llm_economy_hints.jsonl",
-    "purchase_intents_path": "state/blockchain/llm_purchase_intents.jsonl"
+    "burn_oracle_latest_path": "local/state/ops/dynamic_burn_budget_oracle/latest.json",
+    "state_path": "local/state/ops/llm_economy_organ/state.json",
+    "latest_path": "local/state/ops/llm_economy_organ/latest.json",
+    "history_path": "local/state/ops/llm_economy_organ/history.jsonl",
+    "receipts_path": "local/state/ops/llm_economy_organ/receipts.jsonl",
+    "provider_library_path": "local/state/routing/provider_library_latest.json",
+    "weaver_hint_path": "local/state/autonomy/weaver/llm_economy_hints.jsonl",
+    "strategy_hint_path": "local/state/autonomy/llm_economy_strategy_hints.jsonl",
+    "capital_hint_path": "local/state/budget/llm_economy_capital_hints.jsonl",
+    "self_improvement_hint_path": "local/state/autonomy/self_improvement/llm_economy_hints.jsonl",
+    "purchase_intents_path": "local/state/blockchain/llm_purchase_intents.jsonl"
   }
 }

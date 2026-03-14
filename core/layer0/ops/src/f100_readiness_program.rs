@@ -158,7 +158,7 @@ fn lane_004_compliance_bundle(root: &Path, policy: &Policy) -> Value {
     let bundle_path = resolve_path(
         root,
         lane_policy.get("bundle_path").and_then(Value::as_str),
-        "state/ops/compliance_evidence_bundle/latest.json",
+        "local/state/ops/compliance_evidence_bundle/latest.json",
     );
 
     let map = read_json(&control_map_path).unwrap_or_else(|| json!({"controls":[]}));
@@ -328,7 +328,7 @@ fn lane_006_multi_tenant(root: &Path, policy: &Policy) -> Value {
     let adversarial_path = resolve_path(
         root,
         lane_policy.get("adversarial_path").and_then(Value::as_str),
-        "state/security/multi_tenant_isolation_adversarial/latest.json",
+        "local/state/security/multi_tenant_isolation_adversarial/latest.json",
     );
 
     let adv = read_json(&adversarial_path).unwrap_or_else(|| json!({}));
@@ -448,7 +448,7 @@ fn lane_008_oncall(root: &Path, policy: &Policy) -> Value {
     let gameday_path = resolve_path(
         root,
         lane_policy.get("gameday_path").and_then(Value::as_str),
-        "state/ops/oncall_gameday/latest.json",
+        "local/state/ops/oncall_gameday/latest.json",
     );
     let required_docs = lane_policy
         .get("required_docs")
@@ -504,7 +504,7 @@ fn lane_009_onboarding(root: &Path, policy: &Policy) -> Value {
     let metrics_path = resolve_path(
         root,
         lane_policy.get("metrics_path").and_then(Value::as_str),
-        "state/ops/onboarding_portal/success_metrics.json",
+        "local/state/ops/onboarding_portal/success_metrics.json",
     );
     let tracks = lane_policy
         .get("track_docs")
@@ -646,12 +646,12 @@ fn lane_012_scorecard(root: &Path, policy: &Policy) -> Value {
     let scorecard_path = resolve_path(
         root,
         lane_policy.get("scorecard_path").and_then(Value::as_str),
-        "state/ops/executive_readiness_scorecard/latest.json",
+        "local/state/ops/executive_readiness_scorecard/latest.json",
     );
     let history_path = resolve_path(
         root,
         lane_policy.get("history_path").and_then(Value::as_str),
-        "state/ops/executive_readiness_scorecard/history.jsonl",
+        "local/state/ops/executive_readiness_scorecard/history.jsonl",
     );
 
     let source_lanes = lane_policy
@@ -1059,21 +1059,21 @@ fn load_policy(root: &Path, policy_override: Option<&String>) -> Policy {
             outputs
                 .and_then(|o| o.get("state_root"))
                 .and_then(Value::as_str),
-            "state/ops/f100_readiness_program",
+            "local/state/ops/f100_readiness_program",
         ),
         latest_path: resolve_path(
             root,
             outputs
                 .and_then(|o| o.get("latest_path"))
                 .and_then(Value::as_str),
-            "state/ops/f100_readiness_program/latest.json",
+            "local/state/ops/f100_readiness_program/latest.json",
         ),
         history_path: resolve_path(
             root,
             outputs
                 .and_then(|o| o.get("history_path"))
                 .and_then(Value::as_str),
-            "state/ops/f100_readiness_program/history.jsonl",
+            "local/state/ops/f100_readiness_program/history.jsonl",
         ),
         policy_path,
         raw,
@@ -1271,9 +1271,9 @@ mod tests {
             &json!({
                 "strict_default": true,
                 "outputs": {
-                    "state_root": "state/ops/f100_readiness_program",
-                    "latest_path": "state/ops/f100_readiness_program/latest.json",
-                    "history_path": "state/ops/f100_readiness_program/history.jsonl"
+                    "state_root": "local/state/ops/f100_readiness_program",
+                    "latest_path": "local/state/ops/f100_readiness_program/latest.json",
+                    "history_path": "local/state/ops/f100_readiness_program/history.jsonl"
                 },
                 "lanes": {
                     "V6-F100-005": {

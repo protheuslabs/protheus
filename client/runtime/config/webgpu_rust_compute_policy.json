@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/client_compute",
     "adaptive_index_path": "client/cognition/adaptive/client_compute/index.json",
-    "events_path": "state/client\/webgpu_rust/events.jsonl",
-    "latest_path": "state/client\/webgpu_rust/latest.json",
-    "receipts_path": "state/client\/webgpu_rust/receipts.jsonl"
+    "events_path": "local/state/client\/webgpu_rust/events.jsonl",
+    "latest_path": "local/state/client\/webgpu_rust/latest.json",
+    "receipts_path": "local/state/client\/webgpu_rust/receipts.jsonl"
   }
 }

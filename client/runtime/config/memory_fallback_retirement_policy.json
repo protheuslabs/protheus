@@ -3,8 +3,8 @@
   "enabled": true,
   "allow_js_fallback": false,
   "paths": {
-    "emergency_toggle_path": "state/client/memory/rust_transition/emergency_js_fallback_toggle.json",
-    "latest_path": "state/client/memory/rust_transition/js_fallback_gate/latest.json",
-    "receipts_path": "state/client/memory/rust_transition/js_fallback_gate/receipts.jsonl"
+    "emergency_toggle_path": "local/state/client/memory/rust_transition/emergency_js_fallback_toggle.json",
+    "latest_path": "local/state/client/memory/rust_transition/js_fallback_gate/latest.json",
+    "receipts_path": "local/state/client/memory/rust_transition/js_fallback_gate/receipts.jsonl"
   }
 }

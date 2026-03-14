@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "install_root": "/Users/jay/.openclaw/workspace/skills",
-  "receipt_dir": "/Users/jay/.openclaw/workspace/state/security/skill_quarantine/install_receipts",
+  "receipt_dir": "/Users/jay/.openclaw/workspace/local/state/security/skill_quarantine/install_receipts",
   "allowed_spec_prefixes": [
     "github:",
     "local:",

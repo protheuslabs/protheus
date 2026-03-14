@@ -22,7 +22,7 @@
       "drawdown_stop_pct": 0.2
     }
   },
-  "state_path": "state/budget/capital_allocation/state.json",
-  "latest_path": "state/budget/capital_allocation/latest.json",
-  "receipts_path": "state/budget/capital_allocation/receipts.jsonl"
+  "state_path": "local/state/budget/capital_allocation/state.json",
+  "latest_path": "local/state/budget/capital_allocation/latest.json",
+  "receipts_path": "local/state/budget/capital_allocation/receipts.jsonl"
 }

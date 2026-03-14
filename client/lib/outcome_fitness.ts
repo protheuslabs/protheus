@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
-const DEFAULT_POLICY_PATH = path.join(REPO_ROOT, 'state', 'adaptive', 'strategy', 'outcome_fitness.json');
+const DEFAULT_POLICY_PATH = path.join(REPO_ROOT, 'local', 'state', 'adaptive', 'strategy', 'outcome_fitness.json');
 
 const THRESHOLD_KEYS = new Set([
   'min_signal_quality',
@@ -233,7 +233,7 @@ function loadOutcomeFitnessPolicy(rootDir = REPO_ROOT, overridePath = null) {
     ? path.resolve(String(overridePath))
     : (envPath
       ? path.resolve(envPath)
-      : path.join(path.resolve(String(rootDir || REPO_ROOT)), 'state', 'adaptive', 'strategy', 'outcome_fitness.json'));
+      : path.join(path.resolve(String(rootDir || REPO_ROOT)), 'local', 'state', 'adaptive', 'strategy', 'outcome_fitness.json'));
   const raw = readJsonSafe(filePath, null);
   const strategyPolicy = raw && raw.strategy_policy && typeof raw.strategy_policy === 'object'
     ? raw.strategy_policy

@@ -16,7 +16,7 @@
     "--strict=1"
   ],
   "paths": {
-    "latest_path": "state/ops/critical_protocol_formal_suite/latest.json",
-    "receipts_path": "state/ops/critical_protocol_formal_suite/receipts.jsonl"
+    "latest_path": "local/state/ops/critical_protocol_formal_suite/latest.json",
+    "receipts_path": "local/state/ops/critical_protocol_formal_suite/receipts.jsonl"
   }
 }

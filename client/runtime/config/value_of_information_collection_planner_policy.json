@@ -12,10 +12,10 @@
     "unresolved_abstain_rate": 0.4
   },
   "paths": {
-    "abstain_dir": "state/sensory/analysis/abstain_uncertainty",
-    "chain_mapper_dir": "state/sensory/analysis/objective_chain_mapper",
-    "output_dir": "state/sensory/analysis/value_information_planner",
-    "latest_path": "state/sensory/analysis/value_information_planner/latest.json",
-    "receipts_path": "state/sensory/analysis/value_information_planner/receipts.jsonl"
+    "abstain_dir": "local/state/sensory/analysis/abstain_uncertainty",
+    "chain_mapper_dir": "local/state/sensory/analysis/objective_chain_mapper",
+    "output_dir": "local/state/sensory/analysis/value_information_planner",
+    "latest_path": "local/state/sensory/analysis/value_information_planner/latest.json",
+    "receipts_path": "local/state/sensory/analysis/value_information_planner/receipts.jsonl"
   }
 }

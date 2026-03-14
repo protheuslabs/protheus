@@ -25,7 +25,7 @@
     "policy_path": "client/runtime/config/enhanced_reasoning_mirror_policy.json"
   },
   "paths": {
-    "latest_path": "state/science/scientific_mode_v4/latest.json",
-    "history_path": "state/science/scientific_mode_v4/history.jsonl"
+    "latest_path": "local/state/science/scientific_mode_v4/latest.json",
+    "history_path": "local/state/science/scientific_mode_v4/history.jsonl"
   }
 }

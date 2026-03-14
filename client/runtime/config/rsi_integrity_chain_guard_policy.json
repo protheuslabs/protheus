@@ -7,16 +7,16 @@
     "publish": true,
     "stream": "adaptive.rsi.integrity_chain_guard"
   },
-  "rsi_chain_path": "state/client/cognition/adaptive/rsi/chain.jsonl",
-  "rsi_merkle_path": "state/client/cognition/adaptive/rsi/merkle.json",
+  "rsi_chain_path": "local/state/client/cognition/adaptive/rsi/chain.jsonl",
+  "rsi_merkle_path": "local/state/client/cognition/adaptive/rsi/merkle.json",
   "reversion_script": "client/runtime/systems/autonomy/self_mod_reversion_drill.ts",
   "continuity_script": "client/runtime/systems/continuity/resurrection_protocol.ts",
   "paths": {
     "memory_dir": "client/memory/client/cognition/adaptive/rsi_integrity_chain_guard",
     "adaptive_index_path": "client/cognition/adaptive/rsi/integrity_chain_guard/index.json",
-    "events_path": "state/client/cognition/adaptive/rsi_integrity_chain_guard/events.jsonl",
-    "latest_path": "state/client/cognition/adaptive/rsi_integrity_chain_guard/latest.json",
-    "receipts_path": "state/client/cognition/adaptive/rsi_integrity_chain_guard/receipts.jsonl",
-    "integrity_state_path": "state/client/cognition/adaptive/rsi_integrity_chain_guard/state.json"
+    "events_path": "local/state/client/cognition/adaptive/rsi_integrity_chain_guard/events.jsonl",
+    "latest_path": "local/state/client/cognition/adaptive/rsi_integrity_chain_guard/latest.json",
+    "receipts_path": "local/state/client/cognition/adaptive/rsi_integrity_chain_guard/receipts.jsonl",
+    "integrity_state_path": "local/state/client/cognition/adaptive/rsi_integrity_chain_guard/state.json"
   }
 }

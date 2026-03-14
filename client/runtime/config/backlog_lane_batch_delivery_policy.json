@@ -1541,9 +1541,9 @@
     }
   },
   "outputs": {
-    "state_dir": "state/ops/backlog_lane_batch_delivery",
-    "latest_path": "state/ops/backlog_lane_batch_delivery/latest.json",
-    "receipts_path": "state/ops/backlog_lane_batch_delivery/receipts.jsonl",
-    "history_path": "state/ops/backlog_lane_batch_delivery/history.jsonl"
+    "state_dir": "local/state/ops/backlog_lane_batch_delivery",
+    "latest_path": "local/state/ops/backlog_lane_batch_delivery/latest.json",
+    "receipts_path": "local/state/ops/backlog_lane_batch_delivery/receipts.jsonl",
+    "history_path": "local/state/ops/backlog_lane_batch_delivery/history.jsonl"
   }
 }

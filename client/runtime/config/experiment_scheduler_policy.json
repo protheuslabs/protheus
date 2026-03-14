@@ -8,10 +8,10 @@
   "default_deny_without_consent": true,
   "sandbox_required": true,
   "paths": {
-    "hypotheses_path": "state/science/hypothesis_forge/ranked.json",
-    "queue_path": "state/science/experiment_scheduler/queue.jsonl",
-    "latest_path": "state/science/experiment_scheduler/latest.json",
-    "history_path": "state/science/experiment_scheduler/history.jsonl",
-    "no_op_state_path": "state/science/experiment_scheduler/noop_state.json"
+    "hypotheses_path": "local/state/science/hypothesis_forge/ranked.json",
+    "queue_path": "local/state/science/experiment_scheduler/queue.jsonl",
+    "latest_path": "local/state/science/experiment_scheduler/latest.json",
+    "history_path": "local/state/science/experiment_scheduler/history.jsonl",
+    "no_op_state_path": "local/state/science/experiment_scheduler/noop_state.json"
   }
 }

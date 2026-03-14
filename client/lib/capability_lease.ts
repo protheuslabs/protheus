@@ -7,10 +7,10 @@ const crypto = require('crypto');
 const ROOT = path.resolve(__dirname, '..');
 const LEASE_STATE_PATH = process.env.CAPABILITY_LEASE_STATE_PATH
   ? path.resolve(process.env.CAPABILITY_LEASE_STATE_PATH)
-  : path.join(ROOT, 'state', 'security', 'capability_leases.json');
+  : path.join(ROOT, 'local', 'state', 'security', 'capability_leases.json');
 const LEASE_AUDIT_PATH = process.env.CAPABILITY_LEASE_AUDIT_PATH
   ? path.resolve(process.env.CAPABILITY_LEASE_AUDIT_PATH)
-  : path.join(ROOT, 'state', 'security', 'capability_leases.jsonl');
+  : path.join(ROOT, 'local', 'state', 'security', 'capability_leases.jsonl');
 const LEASE_DEFAULT_TTL_SEC = Number(process.env.CAPABILITY_LEASE_DEFAULT_TTL_SEC || 300);
 const LEASE_MIN_TTL_SEC = Number(process.env.CAPABILITY_LEASE_MIN_TTL_SEC || 30);
 const LEASE_MAX_TTL_SEC = Number(process.env.CAPABILITY_LEASE_MAX_TTL_SEC || 3600);

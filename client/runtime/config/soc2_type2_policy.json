@@ -12,11 +12,11 @@
     "framework_readiness",
     "compliance_control_inventory"
   ],
-  "history_path": "state/ops/compliance/history.jsonl",
-  "state_path": "state/ops/soc2_type2_track/latest.json",
-  "window_history_path": "state/ops/soc2_type2_track/window_history.jsonl",
-  "exceptions_path": "state/ops/soc2_type2_track/exceptions.json",
-  "bundle_dir": "state/ops/soc2_type2_track/bundles",
-  "receipts_path": "state/ops/soc2_type2_track/receipts.jsonl",
+  "history_path": "local/state/ops/compliance/history.jsonl",
+  "state_path": "local/state/ops/soc2_type2_track/latest.json",
+  "window_history_path": "local/state/ops/soc2_type2_track/window_history.jsonl",
+  "exceptions_path": "local/state/ops/soc2_type2_track/exceptions.json",
+  "bundle_dir": "local/state/ops/soc2_type2_track/bundles",
+  "receipts_path": "local/state/ops/soc2_type2_track/receipts.jsonl",
   "attestation_format_version": "1.0"
 }

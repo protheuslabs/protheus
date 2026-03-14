@@ -21,9 +21,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/security/irrevocable_geas_covenant/state.json",
-    "latest_path": "state/security/irrevocable_geas_covenant/latest.json",
-    "receipts_path": "state/security/irrevocable_geas_covenant/receipts.jsonl",
-    "history_path": "state/security/irrevocable_geas_covenant/history.jsonl"
+    "state_path": "local/state/security/irrevocable_geas_covenant/state.json",
+    "latest_path": "local/state/security/irrevocable_geas_covenant/latest.json",
+    "receipts_path": "local/state/security/irrevocable_geas_covenant/receipts.jsonl",
+    "history_path": "local/state/security/irrevocable_geas_covenant/history.jsonl"
   }
 }

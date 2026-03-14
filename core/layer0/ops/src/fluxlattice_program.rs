@@ -258,12 +258,12 @@ pub fn default_policy(root: &Path) -> Policy {
             })
             .collect(),
         paths: Paths {
-            state_path: root.join("state/ops/fluxlattice_program/state.json"),
-            latest_path: root.join("state/ops/fluxlattice_program/latest.json"),
-            receipts_path: root.join("state/ops/fluxlattice_program/receipts.jsonl"),
-            history_path: root.join("state/ops/fluxlattice_program/history.jsonl"),
-            security_panel_path: root.join("state/ops/protheus_top/security_panel.json"),
-            flux_events_path: root.join("state/ops/fluxlattice_program/flux_events.jsonl"),
+            state_path: root.join("local/state/ops/fluxlattice_program/state.json"),
+            latest_path: root.join("local/state/ops/fluxlattice_program/latest.json"),
+            receipts_path: root.join("local/state/ops/fluxlattice_program/receipts.jsonl"),
+            history_path: root.join("local/state/ops/fluxlattice_program/history.jsonl"),
+            security_panel_path: root.join("local/state/ops/protheus_top/security_panel.json"),
+            flux_events_path: root.join("local/state/ops/fluxlattice_program/flux_events.jsonl"),
             migration_profiles_path: root
                 .join("client/runtime/config/fluxlattice_migration_profiles.json"),
             lens_mode_policy_path: root.join("client/runtime/config/lens_mode_policy.json"),
@@ -318,32 +318,32 @@ pub fn load_policy(root: &Path, policy_path: &Path) -> Policy {
         state_path: resolve_path(
             root,
             paths.get("state_path"),
-            "state/ops/fluxlattice_program/state.json",
+            "local/state/ops/fluxlattice_program/state.json",
         ),
         latest_path: resolve_path(
             root,
             paths.get("latest_path"),
-            "state/ops/fluxlattice_program/latest.json",
+            "local/state/ops/fluxlattice_program/latest.json",
         ),
         receipts_path: resolve_path(
             root,
             paths.get("receipts_path"),
-            "state/ops/fluxlattice_program/receipts.jsonl",
+            "local/state/ops/fluxlattice_program/receipts.jsonl",
         ),
         history_path: resolve_path(
             root,
             paths.get("history_path"),
-            "state/ops/fluxlattice_program/history.jsonl",
+            "local/state/ops/fluxlattice_program/history.jsonl",
         ),
         security_panel_path: resolve_path(
             root,
             paths.get("security_panel_path"),
-            "state/ops/protheus_top/security_panel.json",
+            "local/state/ops/protheus_top/security_panel.json",
         ),
         flux_events_path: resolve_path(
             root,
             paths.get("flux_events_path"),
-            "state/ops/fluxlattice_program/flux_events.jsonl",
+            "local/state/ops/fluxlattice_program/flux_events.jsonl",
         ),
         migration_profiles_path: resolve_path(
             root,
@@ -467,7 +467,7 @@ fn write_security_panel(
         "receipt_chain_hash": state["covenant"]["receipt_chain_hash"],
         "active_integrity_checks": ["covenant_gate", "tamper_detector", "snapshot_recovery"],
         "anomaly_status": if state["tamper"]["anomalies"].as_bool().unwrap_or(false) { "Alert" } else { "No anomalies detected" },
-        "trace_link": "state/ops/fluxlattice_program/receipts.jsonl"
+        "trace_link": "local/state/ops/fluxlattice_program/receipts.jsonl"
     });
 
     if apply {

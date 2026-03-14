@@ -124,40 +124,40 @@ fn select_route_model(
 }
 
 fn model_router_state_paths(root: &Path) -> (PathBuf, PathBuf) {
-    let dir = root.join("state/ops/model_router");
+    let dir = root.join("local/state/ops/model_router");
     (dir.join("latest.json"), dir.join("history.jsonl"))
 }
 
 fn provider_profile_path(root: &Path) -> PathBuf {
-    root.join("state/ops/model_router/provider_profile.json")
+    root.join("local/state/ops/model_router/provider_profile.json")
 }
 
 fn reset_state_path(root: &Path) -> PathBuf {
-    root.join("state/ops/model_router/reset_state.json")
+    root.join("local/state/ops/model_router/reset_state.json")
 }
 
 fn night_schedule_path(root: &Path) -> PathBuf {
-    root.join("state/ops/model_router/night_schedule.json")
+    root.join("local/state/ops/model_router/night_schedule.json")
 }
 
 fn bitnet_backend_path(root: &Path) -> PathBuf {
-    root.join("state/ops/model_router/bitnet_backend.json")
+    root.join("local/state/ops/model_router/bitnet_backend.json")
 }
 
 fn bitnet_auto_route_path(root: &Path) -> PathBuf {
-    root.join("state/ops/model_router/bitnet_auto_route.json")
+    root.join("local/state/ops/model_router/bitnet_auto_route.json")
 }
 
 fn bitnet_conversion_path(root: &Path) -> PathBuf {
-    root.join("state/ops/model_router/bitnet_conversion.json")
+    root.join("local/state/ops/model_router/bitnet_conversion.json")
 }
 
 fn bitnet_telemetry_path(root: &Path) -> PathBuf {
-    root.join("state/ops/model_router/bitnet_telemetry.json")
+    root.join("local/state/ops/model_router/bitnet_telemetry.json")
 }
 
 fn bitnet_attestation_path(root: &Path) -> PathBuf {
-    root.join("state/ops/model_router/bitnet_attestation.json")
+    root.join("local/state/ops/model_router/bitnet_attestation.json")
 }
 
 fn read_json(path: &Path) -> Option<Value> {
@@ -1155,9 +1155,9 @@ pub const ROUTER_MAX_REQUEST_TOKENS: i64 = 12_000;
 pub const ROUTER_PROBE_SUPPRESSION_TIMEOUT_STREAK_DEFAULT: i64 = 3;
 pub const ROUTER_PROBE_SUPPRESSION_MINUTES_DEFAULT: i64 = 45;
 pub const ROUTER_PROBE_REHAB_SUCCESS_THRESHOLD_DEFAULT: i64 = 2;
-pub const ROUTER_BUDGET_DIR_DEFAULT: &str = "state/autonomy/daily_budget";
+pub const ROUTER_BUDGET_DIR_DEFAULT: &str = "local/state/autonomy/daily_budget";
 pub const ROUTER_BURN_ORACLE_LATEST_PATH_REL_DEFAULT: &str =
-    "state/ops/dynamic_burn_budget_oracle/latest.json";
+    "local/state/ops/dynamic_burn_budget_oracle/latest.json";
 pub const DEFAULT_FAST_PATH_DISALLOW_REGEXES: [&str; 5] = [
     "https?:\\/\\/",
     "(^|\\s)--?[a-z0-9][a-z0-9_-]*\\b",
@@ -3956,7 +3956,7 @@ mod tests {
         assert!(defaults.escalate_on_no_local_fallback);
         assert!((defaults.cloud_penalty_soft - 4.0).abs() < 1e-9);
         assert!((defaults.cloud_penalty_hard - 10.0).abs() < 1e-9);
-        assert!(defaults.state_dir.ends_with("state/autonomy/daily_budget"));
+        assert!(defaults.state_dir.ends_with("local/state/autonomy/daily_budget"));
         assert_eq!(
             defaults
                 .class_token_multipliers
@@ -4053,7 +4053,7 @@ mod tests {
                 "projected_runway_days": "1.5",
                 "projected_days_to_reset": 3,
                 "reason_codes": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"],
-                "latest_path_rel": "state/ops/dynamic_burn_budget_oracle/latest.json"
+                "latest_path_rel": "local/state/ops/dynamic_burn_budget_oracle/latest.json"
             })),
             ROUTER_BURN_ORACLE_LATEST_PATH_REL_DEFAULT,
         );
@@ -4064,18 +4064,18 @@ mod tests {
         assert_eq!(signal["projected_days_to_reset"], 3.0);
         assert_eq!(
             signal["source_path"],
-            "state/ops/dynamic_burn_budget_oracle/latest.json"
+            "local/state/ops/dynamic_burn_budget_oracle/latest.json"
         );
         assert_eq!(
             signal["reason_codes"].as_array().map(|rows| rows.len()),
             Some(10)
         );
 
-        let fallback = router_burn_oracle_signal(None, "state/default/latest.json");
+        let fallback = router_burn_oracle_signal(None, "local/state/default/latest.json");
         assert_eq!(fallback["available"], false);
         assert_eq!(fallback["pressure"], "none");
         assert_eq!(fallback["pressure_rank"], 0);
-        assert_eq!(fallback["source_path"], "state/default/latest.json");
+        assert_eq!(fallback["source_path"], "local/state/default/latest.json");
         assert_eq!(
             fallback["reason_codes"].as_array().map(|rows| rows.len()),
             Some(0)
@@ -4121,7 +4121,7 @@ mod tests {
         assert_eq!(unavailable["available"], false);
         assert_eq!(
             unavailable["path"],
-            "/repo/state/autonomy/daily_budget/2026-03-06.json"
+            "/repo/local/state/autonomy/daily_budget/2026-03-06.json"
         );
         assert_eq!(unavailable["pressure"], "none");
         assert_eq!(unavailable["oracle"]["pressure"], "soft");

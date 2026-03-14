@@ -5,8 +5,8 @@
   "sprint_id": "V6-RUST50-CONF-002",
   "accepted_preamble": "ENFORCER RULES ACTIVE — READ docs/workspace/codex_enforcer.md FIRST.",
   "paths": {
-    "latest_path": "state/ops/rust50_sprint_contract/latest.json",
-    "history_path": "state/ops/rust50_sprint_contract/history.jsonl",
-    "audit_dir": "state/ops/rust50_sprint_contract/audits"
+    "latest_path": "local/state/ops/rust50_sprint_contract/latest.json",
+    "history_path": "local/state/ops/rust50_sprint_contract/history.jsonl",
+    "audit_dir": "local/state/ops/rust50_sprint_contract/audits"
   }
 }

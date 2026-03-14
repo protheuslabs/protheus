@@ -63,13 +63,13 @@
   },
   "routes": {
     "emit_shadow_routes": true,
-    "mirror_suggestions_dir": "state/autonomy/mirror_organ/suggestions",
-    "doctor_queue_path": "state/ops/autotest_doctor/echo_intake.jsonl",
-    "security_queue_path": "state/security/echo_purification_queue.jsonl",
-    "belief_review_queue_path": "state/autonomy/echo/belief_review.jsonl",
-    "belief_update_queue_path": "state/autonomy/echo/belief_updates/pending.jsonl",
-    "training_quarantine_queue_path": "state/nursery/containment/quarantine/training-data/echo_input_queue.jsonl",
-    "weaver_hint_queue_path": "state/autonomy/weaver/echo_value_hints.jsonl"
+    "mirror_suggestions_dir": "local/state/autonomy/mirror_organ/suggestions",
+    "doctor_queue_path": "local/state/ops/autotest_doctor/echo_intake.jsonl",
+    "security_queue_path": "local/state/security/echo_purification_queue.jsonl",
+    "belief_review_queue_path": "local/state/autonomy/echo/belief_review.jsonl",
+    "belief_update_queue_path": "local/state/autonomy/echo/belief_updates/pending.jsonl",
+    "training_quarantine_queue_path": "local/state/nursery/containment/quarantine/training-data/echo_input_queue.jsonl",
+    "weaver_hint_queue_path": "local/state/autonomy/weaver/echo_value_hints.jsonl"
   },
   "outputs": {
     "emit_events": true,

@@ -132,7 +132,7 @@ fn root_from_args(args: &HashMap<String, String>) -> PathBuf {
 fn state_root(root: &Path, args: &HashMap<String, String>) -> PathBuf {
     let raw = clean_text(args.get("state-root").map_or("", String::as_str), 600);
     if raw.is_empty() {
-        root.join("state").join("ops").join("local_rag")
+        root.join("local").join("state").join("ops").join("local_rag")
     } else {
         let p = PathBuf::from(raw);
         if p.is_absolute() {

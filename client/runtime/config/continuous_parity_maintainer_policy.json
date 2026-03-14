@@ -12,8 +12,8 @@
     "--strict=1"
   ],
   "paths": {
-    "latest_path": "state/ops/continuous_parity_maintainer/latest.json",
-    "receipts_path": "state/ops/continuous_parity_maintainer/receipts.jsonl",
-    "remediation_queue_path": "state/ops/continuous_parity_maintainer/remediation_queue.json"
+    "latest_path": "local/state/ops/continuous_parity_maintainer/latest.json",
+    "receipts_path": "local/state/ops/continuous_parity_maintainer/receipts.jsonl",
+    "remediation_queue_path": "local/state/ops/continuous_parity_maintainer/remediation_queue.json"
   }
 }

@@ -21,9 +21,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/routing/model_behavior_drift_containment_shield/state.json",
-    "latest_path": "state/routing/model_behavior_drift_containment_shield/latest.json",
-    "receipts_path": "state/routing/model_behavior_drift_containment_shield/receipts.jsonl",
-    "history_path": "state/routing/model_behavior_drift_containment_shield/history.jsonl"
+    "state_path": "local/state/routing/model_behavior_drift_containment_shield/state.json",
+    "latest_path": "local/state/routing/model_behavior_drift_containment_shield/latest.json",
+    "receipts_path": "local/state/routing/model_behavior_drift_containment_shield/receipts.jsonl",
+    "history_path": "local/state/routing/model_behavior_drift_containment_shield/history.jsonl"
   }
 }

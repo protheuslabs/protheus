@@ -21,9 +21,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/security/formal_mind_sovereignty_verification/state.json",
-    "latest_path": "state/security/formal_mind_sovereignty_verification/latest.json",
-    "receipts_path": "state/security/formal_mind_sovereignty_verification/receipts.jsonl",
-    "history_path": "state/security/formal_mind_sovereignty_verification/history.jsonl"
+    "state_path": "local/state/security/formal_mind_sovereignty_verification/state.json",
+    "latest_path": "local/state/security/formal_mind_sovereignty_verification/latest.json",
+    "receipts_path": "local/state/security/formal_mind_sovereignty_verification/receipts.jsonl",
+    "history_path": "local/state/security/formal_mind_sovereignty_verification/history.jsonl"
   }
 }

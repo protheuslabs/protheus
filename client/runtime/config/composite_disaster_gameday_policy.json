@@ -42,8 +42,8 @@
     }
   ],
   "outputs": {
-    "latest_path": "state/ops/composite_disaster_gameday/latest.json",
-    "history_path": "state/ops/composite_disaster_gameday/history.jsonl",
-    "postmortem_dir": "state/ops/composite_disaster_gameday/postmortems"
+    "latest_path": "local/state/ops/composite_disaster_gameday/latest.json",
+    "history_path": "local/state/ops/composite_disaster_gameday/history.jsonl",
+    "postmortem_dir": "local/state/ops/composite_disaster_gameday/postmortems"
   }
 }

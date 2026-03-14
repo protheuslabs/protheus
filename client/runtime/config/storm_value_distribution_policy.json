@@ -8,7 +8,7 @@
     "block_on_constitution_deny": true
   },
   "inputs": {
-    "attribution_records_path": "state/assimilation/value_attribution/records.jsonl",
+    "attribution_records_path": "local/state/assimilation/value_attribution/records.jsonl",
     "creator_index_policy_path": "client/runtime/config/creator_optin_ledger_policy.json"
   },
   "distribution": {
@@ -31,15 +31,15 @@
     "fail_closed_on_mismatch": true
   },
   "state": {
-    "root": "state/storm/value_distribution",
-    "plans_dir": "state/storm/value_distribution/plans",
-    "latest_path": "state/storm/value_distribution/latest.json",
-    "history_path": "state/storm/value_distribution/history.jsonl",
-    "reversals_path": "state/storm/value_distribution/reversals.jsonl",
-    "receipts_path": "state/storm/value_distribution/receipts.jsonl",
-    "settlements_dir": "state/storm/value_distribution/settlements",
-    "settlements_history_path": "state/storm/value_distribution/settlements/history.jsonl",
-    "settlements_latest_path": "state/storm/value_distribution/settlements/latest.json"
+    "root": "local/state/storm/value_distribution",
+    "plans_dir": "local/state/storm/value_distribution/plans",
+    "latest_path": "local/state/storm/value_distribution/latest.json",
+    "history_path": "local/state/storm/value_distribution/history.jsonl",
+    "reversals_path": "local/state/storm/value_distribution/reversals.jsonl",
+    "receipts_path": "local/state/storm/value_distribution/receipts.jsonl",
+    "settlements_dir": "local/state/storm/value_distribution/settlements",
+    "settlements_history_path": "local/state/storm/value_distribution/settlements/history.jsonl",
+    "settlements_latest_path": "local/state/storm/value_distribution/settlements/latest.json"
   },
   "settlement": {
     "enabled": true,

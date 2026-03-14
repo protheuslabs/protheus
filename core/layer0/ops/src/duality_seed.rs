@@ -11,8 +11,8 @@ use crate::{clean, deterministic_receipt_hash, now_iso};
 
 const DEFAULT_POLICY_REL: &str = "client/runtime/config/duality_seed_policy.json";
 const DEFAULT_CODEX_REL: &str = "client/runtime/config/duality_codex.txt";
-const DEFAULT_LATEST_REL: &str = "state/autonomy/duality/latest.json";
-const DEFAULT_HISTORY_REL: &str = "state/autonomy/duality/history.jsonl";
+const DEFAULT_LATEST_REL: &str = "local/state/autonomy/duality/latest.json";
+const DEFAULT_HISTORY_REL: &str = "local/state/autonomy/duality/history.jsonl";
 
 const TRIT_PAIN: i64 = -1;
 const TRIT_UNKNOWN: i64 = 0;

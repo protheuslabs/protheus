@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 
 const LANE_ID: &str = "autonomy_controller";
 const REPLACEMENT: &str = "protheus-ops autonomy-controller";
-const STATE_DIR: &str = "state/ops/autonomy_controller";
+const STATE_DIR: &str = "local/state/ops/autonomy_controller";
 const STATE_ENV: &str = "AUTONOMY_CONTROLLER_STATE_ROOT";
 const STATE_SCOPE: &str = "autonomy_controller";
 

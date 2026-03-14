@@ -17,8 +17,8 @@
     "banner_path": "docs/client/migration/community_repo_banner.md",
     "pinned_issue_path": "docs/client/migration/pinned_migration_issue.md",
     "redirect_metadata_path": "docs/client/migration/repo_redirect.json",
-    "latest_path": "state/migration/community_repo_graduation/latest.json",
-    "receipts_path": "state/migration/community_repo_graduation/receipts.jsonl"
+    "latest_path": "local/state/migration/community_repo_graduation/latest.json",
+    "receipts_path": "local/state/migration/community_repo_graduation/receipts.jsonl"
   },
   "readme_banner_markers": {
     "start": "<!-- MIGRATION_BANNER_START -->",

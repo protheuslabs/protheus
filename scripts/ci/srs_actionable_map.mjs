@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 
 const SRS_PATH = 'docs/workspace/SRS.md';
 const OUT_JSON = 'core/local/artifacts/srs_actionable_map_current.json';
-const OUT_MD = 'docs/workspace/SRS_ACTIONABLE_MAP_CURRENT.md';
+const OUT_MD = 'local/workspace/reports/SRS_ACTIONABLE_MAP_CURRENT.md';
 
 function read(path) {
   return readFileSync(resolve(path), 'utf8');
@@ -248,8 +248,8 @@ function main() {
   };
 
   const out = { ok: true, type: 'srs_actionable_map', summary, rows };
-  mkdirSync(resolve('artifacts'), { recursive: true });
-  mkdirSync(resolve('docs/workspace'), { recursive: true });
+  mkdirSync(dirname(resolve(OUT_JSON)), { recursive: true });
+  mkdirSync(dirname(resolve(OUT_MD)), { recursive: true });
   writeFileSync(resolve(OUT_JSON), JSON.stringify(out, null, 2) + '\n');
   writeFileSync(resolve(OUT_MD), toMarkdown(summary, rows));
   console.log(JSON.stringify({ ok: true, type: out.type, out_json: OUT_JSON, out_md: OUT_MD, summary }, null, 2));

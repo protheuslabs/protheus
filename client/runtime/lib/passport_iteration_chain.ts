@@ -32,10 +32,10 @@ type AnyObj = Record<string, any>;
 const ROOT = path.resolve(__dirname, '..');
 const CHAIN_PATH = process.env.PASSPORT_ITERATION_CHAIN_PATH
   ? path.resolve(process.env.PASSPORT_ITERATION_CHAIN_PATH)
-  : path.join(ROOT, 'state', 'security', 'passport_iteration_chain.jsonl');
+  : path.join(ROOT, 'local', 'state', 'security', 'passport_iteration_chain.jsonl');
 const LATEST_PATH = process.env.PASSPORT_ITERATION_CHAIN_LATEST_PATH
   ? path.resolve(process.env.PASSPORT_ITERATION_CHAIN_LATEST_PATH)
-  : path.join(ROOT, 'state', 'security', 'passport_iteration_chain.latest.json');
+  : path.join(ROOT, 'local', 'state', 'security', 'passport_iteration_chain.latest.json');
 
 function nowIso() {
   return new Date().toISOString();

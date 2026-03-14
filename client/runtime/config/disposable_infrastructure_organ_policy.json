@@ -7,7 +7,7 @@
     "enforce_opt_out_footer": true,
     "enforce_identity_disclosure": true,
     "default_jurisdiction": "us",
-    "do_not_contact_path": "state/compliance/do_not_contact.json"
+    "do_not_contact_path": "local/state/compliance/do_not_contact.json"
   },
   "risk": {
     "max_daily_sends_per_account": 40,
@@ -49,9 +49,9 @@
     }
   },
   "state": {
-    "state_path": "state/actuation/disposable_infrastructure_organ/state.json",
-    "latest_path": "state/actuation/disposable_infrastructure_organ/latest.json",
-    "receipts_path": "state/actuation/disposable_infrastructure_organ/receipts.jsonl",
-    "sessions_path": "state/actuation/disposable_infrastructure_organ/sessions.jsonl"
+    "state_path": "local/state/actuation/disposable_infrastructure_organ/state.json",
+    "latest_path": "local/state/actuation/disposable_infrastructure_organ/latest.json",
+    "receipts_path": "local/state/actuation/disposable_infrastructure_organ/receipts.jsonl",
+    "sessions_path": "local/state/actuation/disposable_infrastructure_organ/sessions.jsonl"
   }
 }

@@ -4,8 +4,8 @@
   "high_impact_threshold": 0.7,
   "require_shadow_persona_for_high_impact": true,
   "paths": {
-    "latest_path": "state/adaptive/review_bridge/latest.json",
-    "history_path": "state/adaptive/review_bridge/history.jsonl",
-    "queue_path": "state/adaptive/review_bridge/review_queue.jsonl"
+    "latest_path": "local/state/adaptive/review_bridge/latest.json",
+    "history_path": "local/state/adaptive/review_bridge/history.jsonl",
+    "queue_path": "local/state/adaptive/review_bridge/review_queue.jsonl"
   }
 }

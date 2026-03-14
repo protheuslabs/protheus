@@ -3,8 +3,8 @@
   "enabled": true,
   "default_hours": 24,
   "include_ok_default": false,
-  "gateway_log_path": "state/routing/llm_gateway_calls.jsonl",
-  "canonical_events_dir": "state/runtime/canonical_events",
-  "latest_path": "state/routing/llm_gateway_failure_classifier/latest.json",
-  "receipts_path": "state/routing/llm_gateway_failure_classifier/receipts.jsonl"
+  "gateway_log_path": "local/state/routing/llm_gateway_calls.jsonl",
+  "canonical_events_dir": "local/state/runtime/canonical_events",
+  "latest_path": "local/state/routing/llm_gateway_failure_classifier/latest.json",
+  "receipts_path": "local/state/routing/llm_gateway_failure_classifier/receipts.jsonl"
 }

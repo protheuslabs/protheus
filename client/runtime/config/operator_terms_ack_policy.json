@@ -7,8 +7,8 @@
   "paths": {
     "tos_path": "docs/client/legal/archive/TERMS_OF_SERVICE.md",
     "eula_path": "docs/client/legal/archive/EULA.md",
-    "state_path": "state/security/operator_terms_ack/state.json",
-    "latest_path": "state/security/operator_terms_ack/latest.json",
-    "receipts_path": "state/security/operator_terms_ack/receipts.jsonl"
+    "state_path": "local/state/security/operator_terms_ack/state.json",
+    "latest_path": "local/state/security/operator_terms_ack/latest.json",
+    "receipts_path": "local/state/security/operator_terms_ack/receipts.jsonl"
   }
 }

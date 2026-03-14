@@ -6,8 +6,8 @@
   "outputs": {
     "review_registry_path": "client/runtime/config/backlog_review_registry.json",
     "reviewed_view_path": "docs/client/backlog_views/reviewed.md",
-    "latest_path": "state/ops/backlog_implementation_review/latest.json",
-    "history_path": "state/ops/backlog_implementation_review/history.jsonl"
+    "latest_path": "local/state/ops/backlog_implementation_review/latest.json",
+    "history_path": "local/state/ops/backlog_implementation_review/history.jsonl"
   },
   "review": {
     "done_statuses": [

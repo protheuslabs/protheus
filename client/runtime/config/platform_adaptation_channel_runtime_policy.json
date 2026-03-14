@@ -2,9 +2,9 @@
   "schema_id": "platform_adaptation_channel_runtime_policy",
   "schema_version": "1.0",
   "enabled": true,
-  "oracle_state_path": "state/ops/platform_oracle_hostprofile/latest.json",
+  "oracle_state_path": "local/state/ops/platform_oracle_hostprofile/latest.json",
   "channels_registry_path": "client/runtime/config/platform_adaptation_channels.json",
-  "state_path": "state/ops/platform_adaptation_channel_runtime/latest.json",
-  "history_path": "state/ops/platform_adaptation_channel_runtime/history.jsonl",
+  "state_path": "local/state/ops/platform_adaptation_channel_runtime/latest.json",
+  "history_path": "local/state/ops/platform_adaptation_channel_runtime/history.jsonl",
   "signing_secret": "platform_adaptation_channel_runtime_secret"
 }

@@ -7,10 +7,10 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 const DEFAULT_POLICY_PATH: &str = "client/runtime/config/autophagy_auto_approval_policy.json";
-const DEFAULT_STATE_PATH: &str = "state/autonomy/autophagy_auto_approval/state.json";
-const DEFAULT_LATEST_PATH: &str = "state/autonomy/autophagy_auto_approval/latest.json";
-const DEFAULT_RECEIPTS_PATH: &str = "state/autonomy/autophagy_auto_approval/receipts.jsonl";
-const DEFAULT_REGRETS_PATH: &str = "state/autonomy/autophagy_auto_approval/regrets.jsonl";
+const DEFAULT_STATE_PATH: &str = "local/state/autonomy/autophagy_auto_approval/state.json";
+const DEFAULT_LATEST_PATH: &str = "local/state/autonomy/autophagy_auto_approval/latest.json";
+const DEFAULT_RECEIPTS_PATH: &str = "local/state/autonomy/autophagy_auto_approval/receipts.jsonl";
+const DEFAULT_REGRETS_PATH: &str = "local/state/autonomy/autophagy_auto_approval/regrets.jsonl";
 
 const USAGE: &[&str] = &[
     "Usage:",

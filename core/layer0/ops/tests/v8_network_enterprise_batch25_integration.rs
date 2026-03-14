@@ -323,7 +323,7 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
     write_json(
         &root.join("client/runtime/config/siem_bridge_policy.json"),
         &json!({
-            "latest_export_path": "state/observability/siem_bridge/latest_export.json"
+            "latest_export_path": "local/state/observability/siem_bridge/latest_export.json"
         }),
     );
     write_json(

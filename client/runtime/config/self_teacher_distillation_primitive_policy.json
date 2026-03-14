@@ -14,8 +14,8 @@
     "acceptance_threshold": 0.66
   },
   "state": {
-    "ledger_path": "state/assimilation/self_teacher_distillation/ledger.json",
-    "latest_path": "state/assimilation/self_teacher_distillation/latest.json",
-    "receipts_path": "state/assimilation/self_teacher_distillation/receipts.jsonl"
+    "ledger_path": "local/state/assimilation/self_teacher_distillation/ledger.json",
+    "latest_path": "local/state/assimilation/self_teacher_distillation/latest.json",
+    "receipts_path": "local/state/assimilation/self_teacher_distillation/receipts.jsonl"
   }
 }

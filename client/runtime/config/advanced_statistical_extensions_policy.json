@@ -11,7 +11,7 @@
   "allow_external_python": false,
   "allow_external_rust": false,
   "paths": {
-    "latest_path": "state/science/advanced_statistical_extensions/latest.json",
-    "history_path": "state/science/advanced_statistical_extensions/history.jsonl"
+    "latest_path": "local/state/science/advanced_statistical_extensions/latest.json",
+    "history_path": "local/state/science/advanced_statistical_extensions/history.jsonl"
   }
 }

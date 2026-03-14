@@ -171,14 +171,14 @@ fn load_policy(root: &Path, policy_override: Option<&String>) -> Policy {
             outputs
                 .and_then(|o| o.get("latest_path"))
                 .and_then(Value::as_str),
-            "state/ops/identity_federation/latest.json",
+            "local/state/ops/identity_federation/latest.json",
         ),
         history_path: resolve_path(
             root,
             outputs
                 .and_then(|o| o.get("history_path"))
                 .and_then(Value::as_str),
-            "state/ops/identity_federation/history.jsonl",
+            "local/state/ops/identity_federation/history.jsonl",
         ),
         policy_path,
     }
@@ -510,8 +510,8 @@ mod tests {
                     }
                 },
                 "outputs": {
-                    "latest_path": "state/ops/identity_federation/latest.json",
-                    "history_path": "state/ops/identity_federation/history.jsonl"
+                    "latest_path": "local/state/ops/identity_federation/latest.json",
+                    "history_path": "local/state/ops/identity_federation/history.jsonl"
                 }
             })
             .to_string(),

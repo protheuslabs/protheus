@@ -11,7 +11,7 @@
     "max_safety_stop_increase": 0
   },
   "churn_excludes": [
-    "state/**",
+    "local/state/**",
     "client/runtime/local/memory/.rebuild_delta_cache.json",
     "client/memory/MEMORY_INDEX.md",
     "client/memory/TAGS_INDEX.md",

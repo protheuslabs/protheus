@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/federation/solid",
     "adaptive_index_path": "client/cognition/adaptive/federation/solid/index.json",
-    "events_path": "state/federation\/solid_pod/events.jsonl",
-    "latest_path": "state/federation\/solid_pod/latest.json",
-    "receipts_path": "state/federation\/solid_pod/receipts.jsonl"
+    "events_path": "local/state/federation\/solid_pod/events.jsonl",
+    "latest_path": "local/state/federation\/solid_pod/latest.json",
+    "receipts_path": "local/state/federation\/solid_pod/receipts.jsonl"
   }
 }

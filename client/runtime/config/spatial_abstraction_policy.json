@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/spatial",
     "adaptive_index_path": "client/cognition/adaptive/spatial/index.json",
-    "events_path": "state/spatial\/abstraction/events.jsonl",
-    "latest_path": "state/spatial\/abstraction/latest.json",
-    "receipts_path": "state/spatial\/abstraction/receipts.jsonl"
+    "events_path": "local/state/spatial\/abstraction/events.jsonl",
+    "latest_path": "local/state/spatial\/abstraction/latest.json",
+    "receipts_path": "local/state/spatial\/abstraction/receipts.jsonl"
   }
 }

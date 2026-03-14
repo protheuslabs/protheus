@@ -13,7 +13,7 @@
     "require_attestation_decision": "allow"
   },
   "gated_cycle": {
-    "policy_path": "state/autonomy/private_cycle_headstart/gated_self_improvement_policy.private.json",
+    "policy_path": "local/state/autonomy/private_cycle_headstart/gated_self_improvement_policy.private.json",
     "objective_id": "t1_make_jay_billionaire_v1",
     "target_path": "client/runtime/systems/autonomy/gated_self_improvement_loop.ts",
     "risk": "medium",
@@ -47,14 +47,14 @@
     ]
   },
   "paths": {
-    "root": "state/autonomy/runtime_stability_soak",
-    "state_path": "state/autonomy/runtime_stability_soak/state.json",
-    "latest_path": "state/autonomy/runtime_stability_soak/latest.json",
-    "checks_path": "state/autonomy/runtime_stability_soak/checks.jsonl",
-    "cycles_path": "state/autonomy/runtime_stability_soak/cycles.jsonl",
-    "reports_dir": "state/autonomy/runtime_stability_soak/reports",
-    "proposals_dir": "state/sensory/proposals",
-    "runs_dir": "state/autonomy/runs",
-    "daily_budget_dir": "state/autonomy/daily_budget"
+    "root": "local/state/autonomy/runtime_stability_soak",
+    "state_path": "local/state/autonomy/runtime_stability_soak/state.json",
+    "latest_path": "local/state/autonomy/runtime_stability_soak/latest.json",
+    "checks_path": "local/state/autonomy/runtime_stability_soak/checks.jsonl",
+    "cycles_path": "local/state/autonomy/runtime_stability_soak/cycles.jsonl",
+    "reports_dir": "local/state/autonomy/runtime_stability_soak/reports",
+    "proposals_dir": "local/state/sensory/proposals",
+    "runs_dir": "local/state/autonomy/runs",
+    "daily_budget_dir": "local/state/autonomy/daily_budget"
   }
 }

@@ -6,18 +6,18 @@
     {
       "id": "protheus-ops",
       "artifact_path": "target/release/protheus-ops",
-      "sbom_path": "state/release/provenance/sbom/protheus-ops.cdx.json",
-      "signature_path": "state/release/provenance/signatures/protheus-ops.sig"
+      "sbom_path": "local/state/release/provenance/sbom/protheus-ops.cdx.json",
+      "signature_path": "local/state/release/provenance/signatures/protheus-ops.sig"
     },
     {
       "id": "conduit-daemon",
       "artifact_path": "target/release/conduit_daemon",
-      "sbom_path": "state/release/provenance/sbom/conduit_daemon.cdx.json",
-      "signature_path": "state/release/provenance/signatures/conduit_daemon.sig"
+      "sbom_path": "local/state/release/provenance/sbom/conduit_daemon.cdx.json",
+      "signature_path": "local/state/release/provenance/signatures/conduit_daemon.sig"
     }
   ],
-  "bundle_path": "state/release/provenance_bundle/latest.json",
-  "vulnerability_summary_path": "state/release/provenance_bundle/dependency_vulnerability_summary.json",
+  "bundle_path": "local/state/release/provenance_bundle/latest.json",
+  "vulnerability_summary_path": "local/state/release/provenance_bundle/dependency_vulnerability_summary.json",
   "rollback_policy_path": "client/runtime/config/release_rollback_policy.json",
   "vulnerability_sla": {
     "max_critical": 0,
@@ -26,7 +26,7 @@
     "max_report_age_hours": 24
   },
   "outputs": {
-    "latest_path": "state/ops/supply_chain_provenance_v2/latest.json",
-    "history_path": "state/ops/supply_chain_provenance_v2/history.jsonl"
+    "latest_path": "local/state/ops/supply_chain_provenance_v2/latest.json",
+    "history_path": "local/state/ops/supply_chain_provenance_v2/history.jsonl"
   }
 }

@@ -3,12 +3,12 @@
   "enabled": true,
   "default_hours": 24,
   "sources": {
-    "llm_gateway": "state/routing/llm_gateway_calls.jsonl",
-    "budget_events": "state/autonomy/budget_events.jsonl",
-    "command_bus": "state/eye/audit/command_bus.jsonl",
-    "canonical_events": "state/runtime/canonical_events"
+    "llm_gateway": "local/state/routing/llm_gateway_calls.jsonl",
+    "budget_events": "local/state/autonomy/budget_events.jsonl",
+    "command_bus": "local/state/eye/audit/command_bus.jsonl",
+    "canonical_events": "local/state/runtime/canonical_events"
   },
-  "normalized_events_path": "state/ops/deny_telemetry/normalized_events.jsonl",
-  "latest_path": "state/ops/deny_telemetry/latest.json",
-  "receipts_path": "state/ops/deny_telemetry/receipts.jsonl"
+  "normalized_events_path": "local/state/ops/deny_telemetry/normalized_events.jsonl",
+  "latest_path": "local/state/ops/deny_telemetry/latest.json",
+  "receipts_path": "local/state/ops/deny_telemetry/receipts.jsonl"
 }

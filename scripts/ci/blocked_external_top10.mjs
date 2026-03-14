@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 
 const PLAN_JSON = 'core/local/artifacts/blocked_external_unblock_plan_current.json';
 const EVIDENCE_JSON = 'core/local/artifacts/blocked_external_evidence_status_current.json';
 const OUT_JSON = 'core/local/artifacts/blocked_external_top10_current.json';
-const OUT_MD = 'docs/workspace/BLOCKED_EXTERNAL_TOP10.md';
+const OUT_MD = 'local/workspace/reports/BLOCKED_EXTERNAL_TOP10.md';
 
 function read(path) {
   return JSON.parse(readFileSync(resolve(path), 'utf8'));
@@ -56,8 +56,8 @@ function main() {
     top10,
   };
 
-  mkdirSync(resolve('artifacts'), { recursive: true });
-  mkdirSync(resolve('docs/workspace'), { recursive: true });
+  mkdirSync(dirname(resolve(OUT_JSON)), { recursive: true });
+  mkdirSync(dirname(resolve(OUT_MD)), { recursive: true });
   writeFileSync(resolve(OUT_JSON), `${JSON.stringify(payload, null, 2)}\n`);
 
   const lines = [];

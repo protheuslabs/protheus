@@ -12,8 +12,8 @@
   "max_observation_window": 200,
   "codex_path": "client/runtime/config/duality_codex.txt",
   "state": {
-    "latest_path": "state/autonomy/duality/latest.json",
-    "history_path": "state/autonomy/duality/history.jsonl"
+    "latest_path": "local/state/autonomy/duality/latest.json",
+    "history_path": "local/state/autonomy/duality/history.jsonl"
   },
   "integration": {
     "belief_formation": true,

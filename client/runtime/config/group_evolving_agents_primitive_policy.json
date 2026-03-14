@@ -23,11 +23,11 @@
     "min_attestation_score": 0.55,
     "import_trust_gain": 0.03,
     "import_trust_penalty": 0.05,
-    "archive_dir": "state/assimilation/group_evolving_agents/federation"
+    "archive_dir": "local/state/assimilation/group_evolving_agents/federation"
   },
   "state": {
-    "pool_path": "state/assimilation/group_evolving_agents/pool.json",
-    "latest_path": "state/assimilation/group_evolving_agents/latest.json",
-    "receipts_path": "state/assimilation/group_evolving_agents/receipts.jsonl"
+    "pool_path": "local/state/assimilation/group_evolving_agents/pool.json",
+    "latest_path": "local/state/assimilation/group_evolving_agents/latest.json",
+    "receipts_path": "local/state/assimilation/group_evolving_agents/receipts.jsonl"
   }
 }

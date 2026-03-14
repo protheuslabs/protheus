@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "state_dir": "state/security/model_vaccine",
+  "state_dir": "local/state/security/model_vaccine",
   "max_high_findings": 1,
   "max_critical_findings": 0,
   "require_sandbox_snapshot": true,

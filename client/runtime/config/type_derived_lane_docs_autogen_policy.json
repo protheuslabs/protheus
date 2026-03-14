@@ -16,8 +16,8 @@
     "rust_reference_path": "docs/client/generated/RUST_LANE_TYPE_REFERENCE.md"
   },
   "paths": {
-    "latest_path": "state/ops/type_derived_lane_docs_autogen/latest.json",
-    "receipts_path": "state/ops/type_derived_lane_docs_autogen/receipts.jsonl",
-    "snapshots_root": "state/ops/type_derived_lane_docs_autogen/snapshots"
+    "latest_path": "local/state/ops/type_derived_lane_docs_autogen/latest.json",
+    "receipts_path": "local/state/ops/type_derived_lane_docs_autogen/receipts.jsonl",
+    "snapshots_root": "local/state/ops/type_derived_lane_docs_autogen/snapshots"
   }
 }

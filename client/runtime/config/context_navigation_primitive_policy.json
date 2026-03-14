@@ -14,7 +14,7 @@
     "max_total_chars": 64000
   },
   "state": {
-    "latest_path": "state/assimilation/context_navigation/latest.json",
-    "receipts_path": "state/assimilation/context_navigation/receipts.jsonl"
+    "latest_path": "local/state/assimilation/context_navigation/latest.json",
+    "receipts_path": "local/state/assimilation/context_navigation/receipts.jsonl"
   }
 }

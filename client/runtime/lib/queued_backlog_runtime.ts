@@ -184,16 +184,16 @@ function rewriteLegacyRuntimeRelative(relPath: string) {
     const suffix = rel === 'local' ? '' : rel.slice('local/'.length);
     return normalizeRelativePathToken(path.join('client', 'runtime', 'local', suffix));
   }
-  if (rel === 'state' || rel.startsWith('state/')) {
-    const suffix = rel === 'state' ? '' : rel.slice('state/'.length);
+  if (rel === 'state' || rel.startsWith('local/state/')) {
+    const suffix = rel === 'state' ? '' : rel.slice('local/state/'.length);
     return normalizeRelativePathToken(path.join('client', 'runtime', 'local', 'state', suffix));
   }
-  if (rel === 'client/runtime/state' || rel.startsWith('client/runtime/state/')) {
-    const suffix = rel === 'client/runtime/state' ? '' : rel.slice('client/runtime/state/'.length);
+  if (rel === 'client/runtime/state' || rel.startsWith('client/runtime/local/state/')) {
+    const suffix = rel === 'client/runtime/state' ? '' : rel.slice('client/runtime/local/state/'.length);
     return normalizeRelativePathToken(path.join('client', 'runtime', 'local', 'state', suffix));
   }
-  if (rel === 'core/state' || rel.startsWith('core/state/')) {
-    const suffix = rel === 'core/state' ? '' : rel.slice('core/state/'.length);
+  if (rel === 'core/state' || rel.startsWith('core/local/state/')) {
+    const suffix = rel === 'core/state' ? '' : rel.slice('core/local/state/'.length);
     return normalizeRelativePathToken(path.join('core', 'local', 'state', suffix));
   }
   return rel;

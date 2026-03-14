@@ -10,8 +10,8 @@
     "memory_regression_pct_max": 8
   },
   "required_receipts": [
-    "state/ops/rust_control_plane_cutover/benchmark_history.jsonl",
-    "state/ops/scale_benchmark/latest.json"
+    "local/state/ops/rust_control_plane_cutover/benchmark_history.jsonl",
+    "local/state/ops/scale_benchmark/latest.json"
   ],
   "ci_gate": {
     "workflow": ".github/workflows/rust-perf-regression-gate.yml",

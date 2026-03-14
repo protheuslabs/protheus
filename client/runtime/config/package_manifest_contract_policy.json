@@ -13,7 +13,7 @@
   ],
   "paths": {
     "package_json_path": "package.json",
-    "latest_path": "state/ops/package_manifest_contract/latest.json",
-    "receipts_path": "state/ops/package_manifest_contract/receipts.jsonl"
+    "latest_path": "local/state/ops/package_manifest_contract/latest.json",
+    "receipts_path": "local/state/ops/package_manifest_contract/receipts.jsonl"
   }
 }

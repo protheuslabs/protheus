@@ -6,7 +6,7 @@
     "max_tokens_per_batch": 1800
   },
   "outputs": {
-    "latest_path": "state/ops/low_urgency_batch_execution_lane/latest.json",
-    "history_path": "state/ops/low_urgency_batch_execution_lane/history.jsonl"
+    "latest_path": "local/state/ops/low_urgency_batch_execution_lane/latest.json",
+    "history_path": "local/state/ops/low_urgency_batch_execution_lane/history.jsonl"
   }
 }

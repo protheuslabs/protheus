@@ -11,7 +11,7 @@
     "verification": 0.3
   },
   "outputs": {
-    "latest_path": "state/ops/pipeline_handoff_score/latest.json",
-    "history_path": "state/ops/pipeline_handoff_score/history.jsonl"
+    "latest_path": "local/state/ops/pipeline_handoff_score/latest.json",
+    "history_path": "local/state/ops/pipeline_handoff_score/history.jsonl"
   }
 }

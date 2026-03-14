@@ -6,10 +6,10 @@
   "replication_quorum": 2,
   "min_trust_score": 0.65,
   "paths": {
-    "state_path": "state/ops/federated_sovereign_mesh_runtime/state.json",
-    "latest_path": "state/ops/federated_sovereign_mesh_runtime/latest.json",
-    "receipts_path": "state/ops/federated_sovereign_mesh_runtime/receipts.jsonl",
-    "replication_log_path": "state/ops/federated_sovereign_mesh_runtime/replication_log.jsonl",
-    "partition_drills_path": "state/ops/federated_sovereign_mesh_runtime/partition_drills.jsonl"
+    "state_path": "local/state/ops/federated_sovereign_mesh_runtime/state.json",
+    "latest_path": "local/state/ops/federated_sovereign_mesh_runtime/latest.json",
+    "receipts_path": "local/state/ops/federated_sovereign_mesh_runtime/receipts.jsonl",
+    "replication_log_path": "local/state/ops/federated_sovereign_mesh_runtime/replication_log.jsonl",
+    "partition_drills_path": "local/state/ops/federated_sovereign_mesh_runtime/partition_drills.jsonl"
   }
 }

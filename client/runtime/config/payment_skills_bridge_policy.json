@@ -40,9 +40,9 @@
     }
   },
   "paths": {
-    "state": "state/workflow/payment_bridge/latest.json",
-    "history": "state/workflow/payment_bridge/history.jsonl",
-    "holds": "state/workflow/payment_bridge/holds.json",
-    "negotiations": "state/workflow/payment_bridge/negotiations.json"
+    "state": "local/state/workflow/payment_bridge/latest.json",
+    "history": "local/state/workflow/payment_bridge/history.jsonl",
+    "holds": "local/state/workflow/payment_bridge/holds.json",
+    "negotiations": "local/state/workflow/payment_bridge/negotiations.json"
   }
 }

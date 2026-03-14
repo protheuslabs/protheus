@@ -13,7 +13,7 @@
   ],
   "paths": {
     "feature_flags_path": "client/runtime/config/feature_flags.json",
-    "latest_path": "state/ops/guided_recovery_error_ux/latest.json",
-    "history_path": "state/ops/guided_recovery_error_ux/history.jsonl"
+    "latest_path": "local/state/ops/guided_recovery_error_ux/latest.json",
+    "history_path": "local/state/ops/guided_recovery_error_ux/history.jsonl"
   }
 }

@@ -75,7 +75,7 @@
       "canonical_backlog_id": "V3-RACE-CONF-002",
       "file_anchors": [
         "client/runtime/systems/compat/legacy_alias_adapter.ts",
-        "client/runtime/systems/state/event_stream.ts",
+        "client/runtime/systems/local/state/event_stream.ts",
         "client/runtime/systems/autogenesis/trace_habit_autogenesis.ts",
         "client/runtime/systems/autogenesis/trace_habit_loop.ts"
       ],

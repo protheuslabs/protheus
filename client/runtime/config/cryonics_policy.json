@@ -4,7 +4,7 @@
   "profiles": {
     "state_phase1": {
       "description": "Phase 1 cryonics: state-only archival for high-churn runtime data.",
-      "registry_path": "state/client/memory/cryonics_registry.json",
+      "registry_path": "local/state/client/memory/cryonics_registry.json",
       "remove_source_after_verify": true,
       "keep_versions_per_source": 6,
       "max_files_per_run": 5000,
@@ -12,11 +12,11 @@
         {
           "id": "warm",
           "source_prefixes": [
-            "state/sensory/eyes/raw",
-            "state/spine/runs",
-            "state/autonomy/runs"
+            "local/state/sensory/eyes/raw",
+            "local/state/spine/runs",
+            "local/state/autonomy/runs"
           ],
-          "dest_prefix": "state/_cryonics/warm",
+          "dest_prefix": "local/state/_cryonics/warm",
           "compression": "gzip",
           "min_age_days": 7
         }

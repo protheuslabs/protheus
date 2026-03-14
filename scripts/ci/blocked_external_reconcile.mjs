@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 
 const EVIDENCE_JSON = 'core/local/artifacts/blocked_external_evidence_status_current.json';
 const SRS_PATH = 'docs/workspace/SRS.md';
 const BACKLOG_PATH = 'docs/workspace/UPGRADE_BACKLOG.md';
 const OUT_JSON = 'core/local/artifacts/blocked_external_reconcile_candidates_current.json';
-const OUT_MD = 'docs/workspace/BLOCKED_EXTERNAL_RECONCILE_CANDIDATES.md';
+const OUT_MD = 'local/workspace/reports/BLOCKED_EXTERNAL_RECONCILE_CANDIDATES.md';
 
 function read(path) {
   return readFileSync(resolve(path), 'utf8');
@@ -108,8 +108,8 @@ function main() {
     candidateIds,
   };
 
-  mkdirSync(resolve('artifacts'), { recursive: true });
-  mkdirSync(resolve('docs/workspace'), { recursive: true });
+  mkdirSync(dirname(resolve(OUT_JSON)), { recursive: true });
+  mkdirSync(dirname(resolve(OUT_MD)), { recursive: true });
   write(OUT_JSON, `${JSON.stringify(payload, null, 2)}\n`);
   write(OUT_MD, toMarkdown(payload));
   console.log(

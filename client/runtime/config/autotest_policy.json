@@ -75,28 +75,28 @@
   },
   "health_ingest": {
     "enabled": true,
-    "pain_signal_log_path": "state/autonomy/pain_signals.jsonl",
+    "pain_signal_log_path": "local/state/autonomy/pain_signals.jsonl",
     "window_hours": 24,
     "max_log_bytes": 8388608,
     "sources": [
       {
-        "path": "state/ops/system_health/events.jsonl",
+        "path": "local/state/ops/system_health/events.jsonl",
         "format": "system_health"
       },
       {
-        "path": "state/autonomy/pain_signals.jsonl",
+        "path": "local/state/autonomy/pain_signals.jsonl",
         "format": "pain_signal"
       },
       {
-        "path": "state/autonomy/exception_events.jsonl",
+        "path": "local/state/autonomy/exception_events.jsonl",
         "format": "generic"
       },
       {
-        "path": "state/observability/alerts/routed.jsonl",
+        "path": "local/state/observability/alerts/routed.jsonl",
         "format": "generic"
       },
       {
-        "path": "state/security/strategy_controller_audit.jsonl",
+        "path": "local/state/security/strategy_controller_audit.jsonl",
         "format": "audit_error"
       }
     ]

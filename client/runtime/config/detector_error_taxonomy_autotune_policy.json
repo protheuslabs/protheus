@@ -9,10 +9,10 @@
   "regression_f1_tolerance": 0.005,
   "rollback_on_regression": true,
   "paths": {
-    "eval_pack_dir": "state/sensory/eval/champion_challenger",
-    "state_path": "state/sensory/analysis/detector_autotune/state.json",
-    "output_dir": "state/sensory/analysis/detector_autotune",
-    "latest_path": "state/sensory/analysis/detector_autotune/latest.json",
-    "receipts_path": "state/sensory/analysis/detector_autotune/receipts.jsonl"
+    "eval_pack_dir": "local/state/sensory/eval/champion_challenger",
+    "state_path": "local/state/sensory/analysis/detector_autotune/state.json",
+    "output_dir": "local/state/sensory/analysis/detector_autotune",
+    "latest_path": "local/state/sensory/analysis/detector_autotune/latest.json",
+    "receipts_path": "local/state/sensory/analysis/detector_autotune/receipts.jsonl"
   }
 }

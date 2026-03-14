@@ -804,6 +804,7 @@ pub fn run_integrity_reseal_assistant(repo_root: &Path, argv: &[String]) -> (Val
 
 fn emergency_stop_state_path(repo_root: &Path) -> PathBuf {
     runtime_root(repo_root)
+        .join("local")
         .join("state")
         .join("security")
         .join("emergency_stop.json")
@@ -1526,6 +1527,7 @@ fn startup_secret_candidates(repo_root: &Path) -> Vec<PathBuf> {
     );
     out.push(
         runtime_root(repo_root)
+            .join("local")
             .join("state")
             .join("security")
             .join("secret_broker_key.txt"),

@@ -695,7 +695,7 @@
       "wave": "BL"
     },
     {
-      "acceptance": "Added `improvement_controller.js start-validated` implementing deterministic `plan -> apply(commit-on-head) -> verify(core checks) -> commit(trial start)` flow; failed verify triggers optional auto-revert and writes contract receipts with root cause (`state/autonomy/improvements/phase_receipts/`) Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/bl_022_anchor.ts`.",
+      "acceptance": "Added `improvement_controller.js start-validated` implementing deterministic `plan -> apply(commit-on-head) -> verify(core checks) -> commit(trial start)` flow; failed verify triggers optional auto-revert and writes contract receipts with root cause (`local/state/autonomy/improvements/phase_receipts/`) Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/bl_022_anchor.ts`.",
       "class": "backlog",
       "dependencies": [],
       "id": "BL-022",
@@ -705,7 +705,7 @@
       "wave": "BL"
     },
     {
-      "acceptance": "Spawn token budgeting now shares global `system_budget` state/events path by default, autonomy reads same global state dir, focus controller enforces per-run budget gating + writes allow/degrade/deny decisions, and all contention decisions are auditable in centralized budget events Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/bl_023_anchor.ts`.",
+      "acceptance": "Spawn token budgeting now shares global `system_budget` local/state/events path by default, autonomy reads same global state dir, focus controller enforces per-run budget gating + writes allow/degrade/deny decisions, and all contention decisions are auditable in centralized budget events Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/bl_023_anchor.ts`.",
       "class": "backlog",
       "dependencies": [],
       "id": "BL-023",
@@ -755,7 +755,7 @@
       "wave": "BL"
     },
     {
-      "acceptance": "`client/runtime/systems/autonomy/proposal_type_outcome_calibrator.ts` now emits bounded per-type threshold offsets (strategy policy proposal type threshold offsets) plus per-type audit reasoning, writes calibration receipts on offset changes (`state/client/cognition/adaptive/strategy/receipts.jsonl`), and proposal admission/gating consume offsets via shared outcome-fitness policy helpers",
+      "acceptance": "`client/runtime/systems/autonomy/proposal_type_outcome_calibrator.ts` now emits bounded per-type threshold offsets (strategy policy proposal type threshold offsets) plus per-type audit reasoning, writes calibration receipts on offset changes (`local/state/client/cognition/adaptive/strategy/receipts.jsonl`), and proposal admission/gating consume offsets via shared outcome-fitness policy helpers",
       "class": "backlog",
       "dependencies": [],
       "id": "BL-028",
@@ -775,7 +775,7 @@
       "wave": "BL"
     },
     {
-      "acceptance": "Added `client/runtime/lib/secret_broker.ts` + `client/runtime/systems/security/secret_broker.ts`; autonomous Moltbook flows issue/resolve time-scoped handles; credential reads centralized in broker and audited to `state/security/secret_broker_audit.jsonl`",
+      "acceptance": "Added `client/runtime/lib/secret_broker.ts` + `client/runtime/systems/security/secret_broker.ts`; autonomous Moltbook flows issue/resolve time-scoped handles; credential reads centralized in broker and audited to `local/state/security/secret_broker_audit.jsonl`",
       "class": "backlog",
       "dependencies": [],
       "id": "BL-030",
@@ -785,7 +785,7 @@
       "wave": "BL"
     },
     {
-      "acceptance": "Added `client/runtime/lib/egress_gateway.ts` + `client/runtime/systems/security/egress_gateway.ts` with `client/runtime/config/egress_gateway_policy.json`; sensory collectors/focus and Moltbook API/guard route outbound HTTP through gateway with allowlists, rate caps, and decision audits in `state/security/egress_audit.jsonl`",
+      "acceptance": "Added `client/runtime/lib/egress_gateway.ts` + `client/runtime/systems/security/egress_gateway.ts` with `client/runtime/config/egress_gateway_policy.json`; sensory collectors/focus and Moltbook API/guard route outbound HTTP through gateway with allowlists, rate caps, and decision audits in `local/state/security/egress_audit.jsonl`",
       "class": "backlog",
       "dependencies": [],
       "id": "BL-031",
@@ -835,7 +835,7 @@
       "wave": "BL"
     },
     {
-      "acceptance": "`client/runtime/systems/autonomy/alignment_oracle.ts` writes weekly `alignment_score` artifacts (`state/autonomy/alignment_oracle/`), links to proposal/receipt evidence, emits deduped `autonomy_human_escalation` rows on low-streak escalation, and is executed by spine via `SPINE_ALIGNMENT_ORACLE_ENABLED`",
+      "acceptance": "`client/runtime/systems/autonomy/alignment_oracle.ts` writes weekly `alignment_score` artifacts (`local/state/autonomy/alignment_oracle/`), links to proposal/receipt evidence, emits deduped `autonomy_human_escalation` rows on low-streak escalation, and is executed by spine via `SPINE_ALIGNMENT_ORACLE_ENABLED`",
       "class": "backlog",
       "dependencies": [],
       "id": "BL-036",
@@ -895,7 +895,7 @@
       "wave": "BL"
     },
     {
-      "acceptance": "`client/runtime/systems/routing/llm_gateway.ts` now stores prompt/result cache entries with TTL + LRU pruning in `state/routing/prompt_result_cache`, supports source fingerprint + bust key invalidation hooks, and emits cache-hit/miss telemetry in gateway audit logs",
+      "acceptance": "`client/runtime/systems/routing/llm_gateway.ts` now stores prompt/result cache entries with TTL + LRU pruning in `local/state/routing/prompt_result_cache`, supports source fingerprint + bust key invalidation hooks, and emits cache-hit/miss telemetry in gateway audit logs",
       "class": "backlog",
       "dependencies": [],
       "id": "BL-042",
@@ -1245,7 +1245,7 @@
       "wave": "BL"
     },
     {
-      "acceptance": "Added inventory runtime and policy (`client/runtime/systems/ops/rust_hotpath_inventory.ts`, `client/runtime/config/rust_hotpath_inventory_policy.json`) with artifact outputs (`state/ops/rust_hotpath_inventory/latest.json`, `history.jsonl`) and docs (`docs/client/RUST50_HOTPATH_INVENTORY.md`). Regression + sovereignty checks pass (`tests/client-memory-tools/rust_hotpath_inventory.test.js`, `tests/client-memory-tools/protheusctl_dispatch_security_gate.test.js`).",
+      "acceptance": "Added inventory runtime and policy (`client/runtime/systems/ops/rust_hotpath_inventory.ts`, `client/runtime/config/rust_hotpath_inventory_policy.json`) with artifact outputs (`local/state/ops/rust_hotpath_inventory/latest.json`, `history.jsonl`) and docs (`docs/client/RUST50_HOTPATH_INVENTORY.md`). Regression + sovereignty checks pass (`tests/client-memory-tools/rust_hotpath_inventory.test.js`, `tests/client-memory-tools/protheusctl_dispatch_security_gate.test.js`).",
       "class": "backlog",
       "dependencies": [],
       "id": "BL-077",
@@ -4241,7 +4241,7 @@
       "wave": "V2"
     },
     {
-      "acceptance": "Give operators fast, intuitive visibility into adaptive system state/flows without log spelunking",
+      "acceptance": "Give operators fast, intuitive visibility into adaptive system local/state/flows without log spelunking",
       "class": "backlog",
       "dependencies": [
         "BLACK-BOX"
@@ -4333,7 +4333,7 @@
       "wave": "V2"
     },
     {
-      "acceptance": "`organism_cycle` updates TTL-bound trit tags and now emits cycle verification checks + per-run rollback plans (`state/autonomy/fractal/rollback_plans/YYYY-MM-DD.json`) to restore epigenetic/archetype state deterministically. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v2_033_anchor.ts`.",
+      "acceptance": "`organism_cycle` updates TTL-bound trit tags and now emits cycle verification checks + per-run rollback plans (`local/state/autonomy/fractal/rollback_plans/YYYY-MM-DD.json`) to restore epigenetic/archetype state deterministically. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v2_033_anchor.ts`.",
       "class": "backlog",
       "dependencies": [],
       "id": "V2-033",
@@ -4373,7 +4373,7 @@
       "wave": "V2"
     },
     {
-      "acceptance": "`client/runtime/systems/autonomy/observer_mirror.ts` emits daily mood/statement/recommendation snapshots under `state/autonomy/observer_mirror/` and spine runs it as `spine_observer_mirror`",
+      "acceptance": "`client/runtime/systems/autonomy/observer_mirror.ts` emits daily mood/statement/recommendation snapshots under `local/state/autonomy/observer_mirror/` and spine runs it as `spine_observer_mirror`",
       "class": "backlog",
       "dependencies": [],
       "id": "V2-037",
@@ -4393,7 +4393,7 @@
       "wave": "V2"
     },
     {
-      "acceptance": "`client/runtime/systems/nursery/specialist_training.ts` now enforces eval/data minimums, optional drift/regression caps, checkpoint lineage, cooldown windows, and promotion manifests in `state/nursery/training/promotions/`",
+      "acceptance": "`client/runtime/systems/nursery/specialist_training.ts` now enforces eval/data minimums, optional drift/regression caps, checkpoint lineage, cooldown windows, and promotion manifests in `local/state/nursery/training/promotions/`",
       "class": "backlog",
       "dependencies": [],
       "id": "V2-039",
@@ -4446,7 +4446,7 @@
       "wave": "V2"
     },
     {
-      "acceptance": "`client/runtime/systems/workflow/workflow_executor.ts` now applies bounded runtime mutations at step boundaries (`retry_tuning`, `guard_hardening`, `rollback_path`) under `client/runtime/config/workflow_executor_policy.json` caps, emits per-mutation receipts to `state/client/cognition/adaptive/workflows/executor/mutations/`, retries immediately after apply, and rolls back mutation patches on regression. Spine guard includes policy path. Coverage: `tests/client-memory-tools/workflow_executor.test.js`.",
+      "acceptance": "`client/runtime/systems/workflow/workflow_executor.ts` now applies bounded runtime mutations at step boundaries (`retry_tuning`, `guard_hardening`, `rollback_path`) under `client/runtime/config/workflow_executor_policy.json` caps, emits per-mutation receipts to `local/state/client/cognition/adaptive/workflows/executor/mutations/`, retries immediately after apply, and rolls back mutation patches on regression. Spine guard includes policy path. Coverage: `tests/client-memory-tools/workflow_executor.test.js`.",
       "class": "backlog",
       "dependencies": [],
       "id": "V2-044",
@@ -4456,7 +4456,7 @@
       "wave": "V2"
     },
     {
-      "acceptance": "Implemented in `client/runtime/systems/identity/identity_anchor.ts` (plus `client/runtime/config/identity_anchor_policy.json`) with branch-level objective/value coherence checks over workflow grafts and morph plans, receipt emission under `state/autonomy/identity_anchor/`, workflow promotion blocking on identity violations, morph-action filtering, and spine telemetry stage (`spine_identity_anchor`). Spec reference: `tmp/grok_fractal_organs_2026-02-25.md`",
+      "acceptance": "Implemented in `client/runtime/systems/identity/identity_anchor.ts` (plus `client/runtime/config/identity_anchor_policy.json`) with branch-level objective/value coherence checks over workflow grafts and morph plans, receipt emission under `local/state/autonomy/identity_anchor/`, workflow promotion blocking on identity violations, morph-action filtering, and spine telemetry stage (`spine_identity_anchor`). Spec reference: `tmp/grok_fractal_organs_2026-02-25.md`",
       "class": "backlog",
       "dependencies": [],
       "id": "V2-045",
@@ -4466,7 +4466,7 @@
       "wave": "V2"
     },
     {
-      "acceptance": "Implemented in `client/runtime/systems/fractal/regime_organ.ts` (+ runtime mirror `client/runtime/systems/fractal/regime_organ.ts`) with regime scoring from queue/runs/simulation/trit/budget signals, hysteresis + dwell + cooldown state in `state/autonomy/fractal/regime/state.json`, proposal-only bounded morph actions, identity-anchor filtering, non-regression simulation gating before promotion, daily receipts in `state/autonomy/fractal/regime/YYYY-MM-DD.jsonl`, and spine telemetry stage (`spine_fractal_regime_organ`). Coverage: `tests/client-memory-tools/fractal_regime_organ.test.js`. Spec reference: `tmp/grok_fractal_organs_2026-02-25.md`",
+      "acceptance": "Implemented in `client/runtime/systems/fractal/regime_organ.ts` (+ runtime mirror `client/runtime/systems/fractal/regime_organ.ts`) with regime scoring from queue/runs/simulation/trit/budget signals, hysteresis + dwell + cooldown state in `local/state/autonomy/fractal/regime/state.json`, proposal-only bounded morph actions, identity-anchor filtering, non-regression simulation gating before promotion, daily receipts in `local/state/autonomy/fractal/regime/YYYY-MM-DD.jsonl`, and spine telemetry stage (`spine_fractal_regime_organ`). Coverage: `tests/client-memory-tools/fractal_regime_organ.test.js`. Spec reference: `tmp/grok_fractal_organs_2026-02-25.md`",
       "class": "backlog",
       "dependencies": [],
       "id": "V2-046",
@@ -4476,7 +4476,7 @@
       "wave": "V2"
     },
     {
-      "acceptance": "Implemented via `client/runtime/systems/autonomy/mirror_organ.ts` + wrapper, with proposal-only outputs, confidence scoring, replayable evidence (`replay --proposal-id`), spine stage (`spine_mirror_organ`), continuum self-improvement integration, and suggestion-lane ingestion from `state/autonomy/mirror_organ/suggestions/`. Coverage: `tests/client-memory-tools/mirror_organ.test.js`, `tests/client-memory-tools/suggestion_lane.test.js`, `tests/client-memory-tools/continuum_core.test.js`.",
+      "acceptance": "Implemented via `client/runtime/systems/autonomy/mirror_organ.ts` + wrapper, with proposal-only outputs, confidence scoring, replayable evidence (`replay --proposal-id`), spine stage (`spine_mirror_organ`), continuum self-improvement integration, and suggestion-lane ingestion from `local/state/autonomy/mirror_organ/suggestions/`. Coverage: `tests/client-memory-tools/mirror_organ.test.js`, `tests/client-memory-tools/suggestion_lane.test.js`, `tests/client-memory-tools/continuum_core.test.js`.",
       "class": "backlog",
       "dependencies": [],
       "id": "V2-047",
@@ -4516,7 +4516,7 @@
       "wave": "V2"
     },
     {
-      "acceptance": "Doctor now enqueues rollback bundles into deterministic lab queue (`state/ops/autotest_doctor/broken_lab_queue.jsonl`), and `client/runtime/systems/ops/broken_piece_lab.ts` clusters signatures + exports deterministic JSON/Markdown reimplementation proposals; coverage in `tests/client-memory-tools/broken_piece_lab.test.js`",
+      "acceptance": "Doctor now enqueues rollback bundles into deterministic lab queue (`local/state/ops/autotest_doctor/broken_lab_queue.jsonl`), and `client/runtime/systems/ops/broken_piece_lab.ts` clusters signatures + exports deterministic JSON/Markdown reimplementation proposals; coverage in `tests/client-memory-tools/broken_piece_lab.test.js`",
       "class": "backlog",
       "dependencies": [],
       "id": "V2-051",
@@ -4526,7 +4526,7 @@
       "wave": "V2"
     },
     {
-      "acceptance": "Added independent watcher `client/runtime/systems/ops/autotest_doctor_watchdog.ts` with history/state/attestation checks and block-file quarantine lane wired into doctor apply-mode; coverage in `tests/client-memory-tools/autotest_doctor_watchdog.test.js`",
+      "acceptance": "Added independent watcher `client/runtime/systems/ops/autotest_doctor_watchdog.ts` with history/local/state/attestation checks and block-file quarantine lane wired into doctor apply-mode; coverage in `tests/client-memory-tools/autotest_doctor_watchdog.test.js`",
       "class": "backlog",
       "dependencies": [],
       "id": "V2-052",
@@ -5330,7 +5330,7 @@
         "FAIL-CLOSED"
       ],
       "id": "V3-025",
-      "problem": "Per-organ encrypted state/memory + cryonics encryption plane",
+      "problem": "Per-organ encrypted local/state/memory + cryonics encryption plane",
       "status": "v3",
       "title": "done",
       "wave": "V3"
@@ -6001,7 +6001,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Delivered `client/runtime/systems/assimilation/collective_reasoning_primitive.ts` + policy `client/runtime/config/collective_reasoning_primitive_policy.json`; quorum/trust-weighted consensus + delegation profiles + trust ledger updates, emitted weaver collective profile stream (`state/autonomy/weaver/collective_reasoning_profiles.jsonl`), and validated by `tests/client-memory-tools/collective_reasoning_primitive.test.js` + assimilation integration tests.",
+      "acceptance": "Delivered `client/runtime/systems/assimilation/collective_reasoning_primitive.ts` + policy `client/runtime/config/collective_reasoning_primitive_policy.json`; quorum/trust-weighted consensus + delegation profiles + trust ledger updates, emitted weaver collective profile stream (`local/state/autonomy/weaver/collective_reasoning_profiles.jsonl`), and validated by `tests/client-memory-tools/collective_reasoning_primitive.test.js` + assimilation integration tests.",
       "class": "backlog",
       "dependencies": [],
       "id": "V3-ASSIM-007",
@@ -6061,7 +6061,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Delivered `client/runtime/systems/assimilation/adaptive_ensemble_routing_primitive.ts` + policy `client/runtime/config/adaptive_ensemble_routing_primitive_policy.json`; context-aware aligned/complementary specialist routing with weaver stream emission (`state/autonomy/weaver/adaptive_ensemble_profiles.jsonl`) and assimilation integration (`adaptive_ensemble_routing` lane), validated by `tests/client-memory-tools/adaptive_ensemble_routing_primitive.test.js` + assimilation integration tests.",
+      "acceptance": "Delivered `client/runtime/systems/assimilation/adaptive_ensemble_routing_primitive.ts` + policy `client/runtime/config/adaptive_ensemble_routing_primitive_policy.json`; context-aware aligned/complementary specialist routing with weaver stream emission (`local/state/autonomy/weaver/adaptive_ensemble_profiles.jsonl`) and assimilation integration (`adaptive_ensemble_routing` lane), validated by `tests/client-memory-tools/adaptive_ensemble_routing_primitive.test.js` + assimilation integration tests.",
       "class": "backlog",
       "dependencies": [],
       "id": "V3-ASSIM-013",
@@ -7297,7 +7297,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/security/post_quantum_migration_lane.ts` + `client/runtime/config/post_quantum_migration_policy.json` to run/verify/status migration state, scan critical surface for legacy vs PQ markers, update key/contract migration targets under policy-gated apply mode, emit deterministic state/latest/receipts/surface-manifest artifacts, and enforce 72-hour soak-plan contracts. Wired into merge/contract/foundation checks and added regression test `tests/client-memory-tools/post_quantum_migration_lane.test.js`.",
+      "acceptance": "Added `client/runtime/systems/security/post_quantum_migration_lane.ts` + `client/runtime/config/post_quantum_migration_policy.json` to run/verify/status migration state, scan critical surface for legacy vs PQ markers, update key/contract migration targets under policy-gated apply mode, emit deterministic local/state/latest/receipts/surface-manifest artifacts, and enforce 72-hour soak-plan contracts. Wired into merge/contract/foundation checks and added regression test `tests/client-memory-tools/post_quantum_migration_lane.test.js`.",
       "class": "backlog",
       "dependencies": [
         "V3-051",
@@ -7648,7 +7648,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `soak-gate` lane to `client/runtime/systems/memory/rust_memory_transition_lane.ts` + policy wiring in `client/runtime/config/rust_memory_transition_policy.json` to evaluate 24-48h windows for p99 latency, pass rate, fallback-trigger count, and daemon restart count, with fail-closed strict mode and receipt persistence (`state/client/memory/rust_transition/soak_promotion_decisions.jsonl`); coverage added in `tests/client-memory-tools/rust_memory_transition_lane.test.js`.",
+      "acceptance": "Added `soak-gate` lane to `client/runtime/systems/memory/rust_memory_transition_lane.ts` + policy wiring in `client/runtime/config/rust_memory_transition_policy.json` to evaluate 24-48h windows for p99 latency, pass rate, fallback-trigger count, and daemon restart count, with fail-closed strict mode and receipt persistence (`local/state/client/memory/rust_transition/soak_promotion_decisions.jsonl`); coverage added in `tests/client-memory-tools/rust_memory_transition_lane.test.js`.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-023",
@@ -7915,7 +7915,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Implemented policy-evaluated reproducible-build lane in `client/runtime/systems/security/supply_chain_reproducible_build_plane.ts` (attest/status, required checks, state/history/receipts persistence). Verified by `tests/client-memory-tools/supply_chain_reproducible_build_plane.test.js`.",
+      "acceptance": "Implemented policy-evaluated reproducible-build lane in `client/runtime/systems/security/supply_chain_reproducible_build_plane.ts` (attest/status, required checks, local/state/history/receipts persistence). Verified by `tests/client-memory-tools/supply_chain_reproducible_build_plane.test.js`.",
       "class": "status-reconciliation",
       "dependencies": [],
       "id": "V3-RACE-043",
@@ -8346,7 +8346,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/latent_intent_inference_graph.{ts,js}` + `client/runtime/config/latent_intent_inference_policy.json` to emit `implied_need` edges with evidence spans/confidence from cross-signal hypotheses, enforce false-positive-ceiling validator contracts, and persist receipted outputs under `state/sensory/analysis/latent_intent/`; regression coverage in `tests/client-memory-tools/latent_intent_inference_graph.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/latent_intent_inference_graph.{ts,js}` + `client/runtime/config/latent_intent_inference_policy.json` to emit `implied_need` edges with evidence spans/confidence from cross-signal hypotheses, enforce false-positive-ceiling validator contracts, and persist receipted outputs under `local/state/sensory/analysis/latent_intent/`; regression coverage in `tests/client-memory-tools/latent_intent_inference_graph.test.js`.",
       "class": "primitive-upgrade",
       "dependencies": [
         "V3-RACE-078",
@@ -8385,7 +8385,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/counterfactual_signal_replay.{ts,js}` + `client/runtime/config/counterfactual_signal_replay_policy.json` to replay historical windows (default 180-day offset), compute precision/recall uplift deltas, and emit promotion-block signals on negative uplift; receipted outputs persist under `state/sensory/analysis/counterfactual_replay/` with regression coverage in `tests/client-memory-tools/counterfactual_signal_replay.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/counterfactual_signal_replay.{ts,js}` + `client/runtime/config/counterfactual_signal_replay_policy.json` to replay historical windows (default 180-day offset), compute precision/recall uplift deltas, and emit promotion-block signals on negative uplift; receipted outputs persist under `local/state/sensory/analysis/counterfactual_replay/` with regression coverage in `tests/client-memory-tools/counterfactual_signal_replay.test.js`.",
       "class": "extension",
       "dependencies": [
         "V3-RACE-003",
@@ -8399,7 +8399,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/adversarial_hypothesis_challenger.{ts,js}` + `client/runtime/config/adversarial_hypothesis_challenger_policy.json` to generate disconfirmation claims for high-priority hypotheses, verify challenger outcomes (`win`/`unresolved`/`loss`), and block promotion when unresolved or winning challengers remain; receipted outputs persist under `state/sensory/analysis/adversarial_challenger/` with regression coverage in `tests/client-memory-tools/adversarial_hypothesis_challenger.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/adversarial_hypothesis_challenger.{ts,js}` + `client/runtime/config/adversarial_hypothesis_challenger_policy.json` to generate disconfirmation claims for high-priority hypotheses, verify challenger outcomes (`win`/`unresolved`/`loss`), and block promotion when unresolved or winning challengers remain; receipted outputs persist under `local/state/sensory/analysis/adversarial_challenger/` with regression coverage in `tests/client-memory-tools/adversarial_hypothesis_challenger.test.js`.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-081",
@@ -8412,7 +8412,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/multi_hop_objective_chain_mapper.{ts,js}` + `client/runtime/config/multi_hop_objective_chain_policy.json` to fuse cross-signal hypotheses and latent-intent edges into explainable four-hop paths (`eye -> topic -> implication -> objective`) with confidence-weighted ranking receipts under `state/sensory/analysis/objective_chain_mapper/`; regression coverage in `tests/client-memory-tools/multi_hop_objective_chain_mapper.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/multi_hop_objective_chain_mapper.{ts,js}` + `client/runtime/config/multi_hop_objective_chain_policy.json` to fuse cross-signal hypotheses and latent-intent edges into explainable four-hop paths (`eye -> topic -> implication -> objective`) with confidence-weighted ranking receipts under `local/state/sensory/analysis/objective_chain_mapper/`; regression coverage in `tests/client-memory-tools/multi_hop_objective_chain_mapper.test.js`.",
       "class": "primitive-upgrade",
       "dependencies": [
         "V3-RACE-078",
@@ -8427,7 +8427,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/multimodal_signal_adapter_plane.{ts,js}` + `client/runtime/config/multimodal_signal_adapter_policy.json` to normalize repo/image/market non-text features into one bounded-influence adapter stream (`state/sensory/analysis/multimodal_adapter/`) with strict source requirements and audit receipts; regression coverage in `tests/client-memory-tools/multimodal_signal_adapter_plane.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/multimodal_signal_adapter_plane.{ts,js}` + `client/runtime/config/multimodal_signal_adapter_policy.json` to normalize repo/image/market non-text features into one bounded-influence adapter stream (`local/state/sensory/analysis/multimodal_adapter/`) with strict source requirements and audit receipts; regression coverage in `tests/client-memory-tools/multimodal_signal_adapter_plane.test.js`.",
       "class": "extension",
       "dependencies": [
         "V3-RACE-007",
@@ -8441,7 +8441,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/gold_eval_blind_scoring_lane.{ts,js}` + `client/runtime/config/gold_eval_blind_scoring_policy.json` to run deterministic blind-ordered scoring on labeled eval packs with precision/recall/F1/Brier outputs and promotion gate receipts under `state/sensory/analysis/gold_eval_blind/`; regression coverage in `tests/client-memory-tools/gold_eval_blind_scoring_lane.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/gold_eval_blind_scoring_lane.{ts,js}` + `client/runtime/config/gold_eval_blind_scoring_policy.json` to run deterministic blind-ordered scoring on labeled eval packs with precision/recall/F1/Brier outputs and promotion gate receipts under `local/state/sensory/analysis/gold_eval_blind/`; regression coverage in `tests/client-memory-tools/gold_eval_blind_scoring_lane.test.js`.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-081",
@@ -8454,7 +8454,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/champion_challenger_detector_promotion.{ts,js}` + `client/runtime/config/champion_challenger_detector_policy.json` to run parallel champion/challenger scoring on the same gold rows, compute uplift/regression deltas (`precision/recall/F1/Brier`), and fail promotion on policy violations with receipted outputs under `state/sensory/analysis/champion_challenger/`; regression coverage in `tests/client-memory-tools/champion_challenger_detector_promotion.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/champion_challenger_detector_promotion.{ts,js}` + `client/runtime/config/champion_challenger_detector_policy.json` to run parallel champion/challenger scoring on the same gold rows, compute uplift/regression deltas (`precision/recall/F1/Brier`), and fail promotion on policy violations with receipted outputs under `local/state/sensory/analysis/champion_challenger/`; regression coverage in `tests/client-memory-tools/champion_challenger_detector_promotion.test.js`.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-086",
@@ -8467,7 +8467,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/abstain_uncertainty_contract.{ts,js}` + `client/runtime/config/abstain_uncertainty_contract_policy.json` to emit abstain reason codes for weak-evidence hypotheses, route abstained cases to review queue, and track abstain-resolution outcomes in receipted artifacts under `state/sensory/analysis/abstain_uncertainty/`; regression coverage in `tests/client-memory-tools/abstain_uncertainty_contract.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/abstain_uncertainty_contract.{ts,js}` + `client/runtime/config/abstain_uncertainty_contract_policy.json` to emit abstain reason codes for weak-evidence hypotheses, route abstained cases to review queue, and track abstain-resolution outcomes in receipted artifacts under `local/state/sensory/analysis/abstain_uncertainty/`; regression coverage in `tests/client-memory-tools/abstain_uncertainty_contract.test.js`.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-081",
@@ -8480,7 +8480,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/dynamic_source_reliability_graph.{ts,js}` + `client/runtime/config/dynamic_source_reliability_graph_policy.json` to update per-source reliability scores from hypothesis truth outcomes with bounded per-event influence, neutral-decay behavior, and calibration receipts under `state/sensory/analysis/source_reliability/`; regression coverage in `tests/client-memory-tools/dynamic_source_reliability_graph.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/dynamic_source_reliability_graph.{ts,js}` + `client/runtime/config/dynamic_source_reliability_graph_policy.json` to update per-source reliability scores from hypothesis truth outcomes with bounded per-event influence, neutral-decay behavior, and calibration receipts under `local/state/sensory/analysis/source_reliability/`; regression coverage in `tests/client-memory-tools/dynamic_source_reliability_graph.test.js`.",
       "class": "primitive-upgrade",
       "dependencies": [
         "V3-RACE-078",
@@ -8493,7 +8493,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/causal_vs_correlation_signal_scorer.{ts,js}` + `client/runtime/config/causal_vs_correlation_signal_scorer_policy.json` to combine chain confidence, replay uplift, and source reliability into causal scores, apply bounded penalties to correlation-only paths, and emit ranked receipts under `state/sensory/analysis/causal_signal_scorer/`; regression coverage in `tests/client-memory-tools/causal_vs_correlation_signal_scorer.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/causal_vs_correlation_signal_scorer.{ts,js}` + `client/runtime/config/causal_vs_correlation_signal_scorer_policy.json` to combine chain confidence, replay uplift, and source reliability into causal scores, apply bounded penalties to correlation-only paths, and emit ranked receipts under `local/state/sensory/analysis/causal_signal_scorer/`; regression coverage in `tests/client-memory-tools/causal_vs_correlation_signal_scorer.test.js`.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-082",
@@ -8507,7 +8507,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/value_of_information_collection_planner.{ts,js}` + `client/runtime/config/value_of_information_collection_planner_policy.json` to rank collection actions by expected information gain from uncertainty and objective-impact signals, including predicted uncertainty-reduction receipts under `state/sensory/analysis/value_information_planner/`; regression coverage in `tests/client-memory-tools/value_of_information_collection_planner.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/value_of_information_collection_planner.{ts,js}` + `client/runtime/config/value_of_information_collection_planner_policy.json` to rank collection actions by expected information gain from uncertainty and objective-impact signals, including predicted uncertainty-reduction receipts under `local/state/sensory/analysis/value_information_planner/`; regression coverage in `tests/client-memory-tools/value_of_information_collection_planner.test.js`.",
       "class": "extension",
       "dependencies": [
         "V3-RACE-080",
@@ -8521,7 +8521,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/hypothesis_lifecycle_ledger.{ts,js}` + `client/runtime/config/hypothesis_lifecycle_ledger_policy.json` to persist hypothesis state transitions (`proposed/tested/accepted/rejected`) with challenger/outcome linkage into a durable ledger and lifecycle state artifacts under `state/sensory/analysis/hypothesis_lifecycle/`; regression coverage in `tests/client-memory-tools/hypothesis_lifecycle_ledger.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/hypothesis_lifecycle_ledger.{ts,js}` + `client/runtime/config/hypothesis_lifecycle_ledger_policy.json` to persist hypothesis state transitions (`proposed/tested/accepted/rejected`) with challenger/outcome linkage into a durable ledger and lifecycle state artifacts under `local/state/sensory/analysis/hypothesis_lifecycle/`; regression coverage in `tests/client-memory-tools/hypothesis_lifecycle_ledger.test.js`.",
       "class": "primitive-upgrade",
       "dependencies": [
         "V3-RACE-083",
@@ -8534,7 +8534,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/detector_error_taxonomy_autotune.{ts,js}` + `client/runtime/config/detector_error_taxonomy_autotune_policy.json` to classify FP/FN error buckets, propose bounded threshold retunes, and enforce rollback-on-regression safeguards with receipts under `state/sensory/analysis/detector_autotune/`; regression coverage in `tests/client-memory-tools/detector_error_taxonomy_autotune.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/detector_error_taxonomy_autotune.{ts,js}` + `client/runtime/config/detector_error_taxonomy_autotune_policy.json` to classify FP/FN error buckets, propose bounded threshold retunes, and enforce rollback-on-regression safeguards with receipts under `local/state/sensory/analysis/detector_autotune/`; regression coverage in `tests/client-memory-tools/detector_error_taxonomy_autotune.test.js`.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-086",
@@ -8548,7 +8548,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/ensemble_disagreement_escalation_lane.{ts,js}` + `client/runtime/config/ensemble_disagreement_escalation_policy.json` to compute ensemble divergence metrics (stddev/range), apply risk-tier thresholds, and route high-divergence cases to adjudication with receipts under `state/sensory/analysis/ensemble_disagreement/`; regression coverage in `tests/client-memory-tools/ensemble_disagreement_escalation_lane.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/ensemble_disagreement_escalation_lane.{ts,js}` + `client/runtime/config/ensemble_disagreement_escalation_policy.json` to compute ensemble divergence metrics (stddev/range), apply risk-tier thresholds, and route high-divergence cases to adjudication with receipts under `local/state/sensory/analysis/ensemble_disagreement/`; regression coverage in `tests/client-memory-tools/ensemble_disagreement_escalation_lane.test.js`.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-083",
@@ -8561,7 +8561,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/novelty_saturation_prioritization_engine.{ts,js}` + `client/runtime/config/novelty_saturation_prioritization_policy.json` to score topics against historical frequency baselines, compute novelty/saturation/anomaly signals, and emit prioritized outputs/receipts under `state/sensory/analysis/novelty_saturation/`; regression coverage in `tests/client-memory-tools/novelty_saturation_prioritization_engine.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/novelty_saturation_prioritization_engine.{ts,js}` + `client/runtime/config/novelty_saturation_prioritization_policy.json` to score topics against historical frequency baselines, compute novelty/saturation/anomaly signals, and emit prioritized outputs/receipts under `local/state/sensory/analysis/novelty_saturation/`; regression coverage in `tests/client-memory-tools/novelty_saturation_prioritization_engine.test.js`.",
       "class": "extension",
       "dependencies": [
         "V3-RACE-080",
@@ -8574,7 +8574,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/analysis_quality_slo_contract.{ts,js}` + `client/runtime/config/analysis_quality_slo_contract_policy.json` to enforce analysis-specific SLO gates (`precision/recall/F1/Brier/abstain_rate`) independently from execution-green signals, with promotion fail-closed receipts under `state/sensory/analysis/quality_slo/`; regression coverage in `tests/client-memory-tools/analysis_quality_slo_contract.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/analysis_quality_slo_contract.{ts,js}` + `client/runtime/config/analysis_quality_slo_contract_policy.json` to enforce analysis-specific SLO gates (`precision/recall/F1/Brier/abstain_rate`) independently from execution-green signals, with promotion fail-closed receipts under `local/state/sensory/analysis/quality_slo/`; regression coverage in `tests/client-memory-tools/analysis_quality_slo_contract.test.js`.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-086",
@@ -8587,7 +8587,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/ground_truth_label_adjudication_lane.{ts,js}` + `client/runtime/config/ground_truth_label_adjudication_policy.json` to compute reviewer agreement/confidence, adjudicate labels into accepted vs quarantined sets, and emit governance receipts while writing promotion/quarantine corpora under `state/sensory/labels/`; regression coverage in `tests/client-memory-tools/ground_truth_label_adjudication_lane.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/ground_truth_label_adjudication_lane.{ts,js}` + `client/runtime/config/ground_truth_label_adjudication_policy.json` to compute reviewer agreement/confidence, adjudicate labels into accepted vs quarantined sets, and emit governance receipts while writing promotion/quarantine corpora under `local/state/sensory/labels/`; regression coverage in `tests/client-memory-tools/ground_truth_label_adjudication_lane.test.js`.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-086"
@@ -8599,7 +8599,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/feature_data_reproducibility_contract.{ts,js}` + `client/runtime/config/feature_data_reproducibility_contract_policy.json` to pin feature schema/data hashes, detector version, and decision hashes per snapshot and verify replay equivalence with deterministic receipts under `state/sensory/analysis/reproducibility/`; regression coverage in `tests/client-memory-tools/feature_data_reproducibility_contract.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/feature_data_reproducibility_contract.{ts,js}` + `client/runtime/config/feature_data_reproducibility_contract_policy.json` to pin feature schema/data hashes, detector version, and decision hashes per snapshot and verify replay equivalence with deterministic receipts under `local/state/sensory/analysis/reproducibility/`; regression coverage in `tests/client-memory-tools/feature_data_reproducibility_contract.test.js`.",
       "class": "primitive-upgrade",
       "dependencies": [
         "V3-RACE-003",
@@ -8613,7 +8613,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/distribution_shift_decomposition_engine.{ts,js}` + `client/runtime/config/distribution_shift_decomposition_policy.json` to compute per-component distribution shift scores (source/topic/style/population), trigger threshold-based remediation actions, and emit receipted decomposition artifacts under `state/sensory/analysis/distribution_shift/`; regression coverage in `tests/client-memory-tools/distribution_shift_decomposition_engine.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/distribution_shift_decomposition_engine.{ts,js}` + `client/runtime/config/distribution_shift_decomposition_policy.json` to compute per-component distribution shift scores (source/topic/style/population), trigger threshold-based remediation actions, and emit receipted decomposition artifacts under `local/state/sensory/analysis/distribution_shift/`; regression coverage in `tests/client-memory-tools/distribution_shift_decomposition_engine.test.js`.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-080",
@@ -8626,7 +8626,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/causal_validation_gate_high_impact.{ts,js}` + `client/runtime/config/causal_validation_gate_policy.json` to score high-impact claims for causal confidence from replay/intervention evidence and fail closed when policy thresholds are not met, with receipts under `state/sensory/analysis/causal_validation_gate/`; regression coverage in `tests/client-memory-tools/causal_validation_gate_high_impact.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/causal_validation_gate_high_impact.{ts,js}` + `client/runtime/config/causal_validation_gate_policy.json` to score high-impact claims for causal confidence from replay/intervention evidence and fail closed when policy thresholds are not met, with receipts under `local/state/sensory/analysis/causal_validation_gate/`; regression coverage in `tests/client-memory-tools/causal_validation_gate_high_impact.test.js`.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-082",
@@ -8639,7 +8639,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/active_learning_uncertainty_queue.{ts,js}` + `client/runtime/config/active_learning_uncertainty_queue_policy.json` to auto-queue abstain/disagreement cases into prioritized review lanes and track accepted-label feedback intake with receipted outputs under `state/sensory/analysis/active_learning/`; regression coverage in `tests/client-memory-tools/active_learning_uncertainty_queue.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/active_learning_uncertainty_queue.{ts,js}` + `client/runtime/config/active_learning_uncertainty_queue_policy.json` to auto-queue abstain/disagreement cases into prioritized review lanes and track accepted-label feedback intake with receipted outputs under `local/state/sensory/analysis/active_learning/`; regression coverage in `tests/client-memory-tools/active_learning_uncertainty_queue.test.js`.",
       "class": "extension",
       "dependencies": [
         "V3-RACE-088",
@@ -8653,7 +8653,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/offline_statistical_lab_artifact_bridge.{ts,js}` + `client/runtime/config/offline_statistical_lab_artifact_bridge_policy.json` to ingest signed offline lab artifacts with required-field + trusted-key provenance checks and fail-closed behavior, persisting verified core/local/artifacts/receipts under `state/sensory/analysis/offline_lab_bridge/`; regression coverage in `tests/client-memory-tools/offline_statistical_lab_artifact_bridge.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/offline_statistical_lab_artifact_bridge.{ts,js}` + `client/runtime/config/offline_statistical_lab_artifact_bridge_policy.json` to ingest signed offline lab artifacts with required-field + trusted-key provenance checks and fail-closed behavior, persisting verified core/local/artifacts/receipts under `local/state/sensory/analysis/offline_lab_bridge/`; regression coverage in `tests/client-memory-tools/offline_statistical_lab_artifact_bridge.test.js`.",
       "class": "extension",
       "dependencies": [
         "V3-RACE-086",
@@ -8667,7 +8667,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/sensitivity_privacy_aware_scoring_contract.{ts,js}` + `client/runtime/config/sensitivity_privacy_scoring_policy.json` to enforce sensitive-class handling contracts (approval-required, score restriction, field masking, fail-closed blocking) with audit receipts under `state/sensory/analysis/privacy_scoring/`; regression coverage in `tests/client-memory-tools/sensitivity_privacy_aware_scoring_contract.test.js`. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-103 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-103; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected.",
+      "acceptance": "Added `client/runtime/systems/sensory/sensitivity_privacy_aware_scoring_contract.{ts,js}` + `client/runtime/config/sensitivity_privacy_scoring_policy.json` to enforce sensitive-class handling contracts (approval-required, score restriction, field masking, fail-closed blocking) with audit receipts under `local/state/sensory/analysis/privacy_scoring/`; regression coverage in `tests/client-memory-tools/sensitivity_privacy_aware_scoring_contract.test.js`. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-103 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-103; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-033",
@@ -8681,7 +8681,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/detector_rollback_migration_safety_contract.{ts,js}` + `client/runtime/config/detector_rollback_migration_safety_policy.json` to snapshot detector bundles, enforce schema-compatibility and replay-parity checks, and perform one-command rollback with auditable history/receipts under `state/sensory/analysis/detector_rollback/`; regression coverage in `tests/client-memory-tools/detector_rollback_migration_safety_contract.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/detector_rollback_migration_safety_contract.{ts,js}` + `client/runtime/config/detector_rollback_migration_safety_policy.json` to snapshot detector bundles, enforce schema-compatibility and replay-parity checks, and perform one-command rollback with auditable history/receipts under `local/state/sensory/analysis/detector_rollback/`; regression coverage in `tests/client-memory-tools/detector_rollback_migration_safety_contract.test.js`.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-087",
@@ -8694,7 +8694,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/sensory/cross_objective_interference_guard.{ts,js}` + `client/runtime/config/cross_objective_interference_guard_policy.json` to evaluate multi-objective before/after deltas against per-objective interference budgets and fail promotion when any objective exceeds allowed regression, with guard receipts under `state/sensory/analysis/objective_interference_guard/`; regression coverage in `tests/client-memory-tools/cross_objective_interference_guard.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/cross_objective_interference_guard.{ts,js}` + `client/runtime/config/cross_objective_interference_guard_policy.json` to evaluate multi-objective before/after deltas against per-objective interference budgets and fail promotion when any objective exceeds allowed regression, with guard receipts under `local/state/sensory/analysis/objective_interference_guard/`; regression coverage in `tests/client-memory-tools/cross_objective_interference_guard.test.js`.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-084",
@@ -9007,7 +9007,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Delivered `client/runtime/systems/ops/script_surface_reduction_wave2.{ts,js}` + policy (`client/runtime/config/script_surface_reduction_wave2_policy.json`), executed apply lane to retire 213 non-critical `:status` aliases (script count `798 -> 585`), preserved critical/referenced surface, and published migration receipts + command-map diff (`state/ops/script_surface_reduction_wave2/*`, `docs/client/ops/SCRIPT_SURFACE_REDUCTION_WAVE2.md`).",
+      "acceptance": "Delivered `client/runtime/systems/ops/script_surface_reduction_wave2.{ts,js}` + policy (`client/runtime/config/script_surface_reduction_wave2_policy.json`), executed apply lane to retire 213 non-critical `:status` aliases (script count `798 -> 585`), preserved critical/referenced surface, and published migration receipts + command-map diff (`local/state/ops/script_surface_reduction_wave2/*`, `docs/client/ops/SCRIPT_SURFACE_REDUCTION_WAVE2.md`).",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-115",
@@ -9091,7 +9091,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added deterministic signature generator (`client/runtime/systems/identity/visual_signature_engine.{ts,js}` with optional Rust helper path) and policy contracts; user-specific rendered signature state/history persists in with adaptive style-tuning metadata in `client/cognition/adaptive/identity/signature/`; rendering algorithms, schemas, and verification logic stay in `client/runtime/systems/identity/` + `client/runtime/config/`; CLI/UI surfaces consume signed render manifests. Verify via npm run -s lane:v3-race-134:run and npm run -s test:lane:v3-race-134; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/identity/visual_signature_engine.ts`, `client/runtime/systems/identity`, `config`, `client/runtime/systems/ops/data_scope_boundary_check.ts`.",
+      "acceptance": "Added deterministic signature generator (`client/runtime/systems/identity/visual_signature_engine.{ts,js}` with optional Rust helper path) and policy contracts; user-specific rendered signature local/state/history persists in with adaptive style-tuning metadata in `client/cognition/adaptive/identity/signature/`; rendering algorithms, schemas, and verification logic stay in `client/runtime/systems/identity/` + `client/runtime/config/`; CLI/UI surfaces consume signed render manifests. Verify via npm run -s lane:v3-race-134:run and npm run -s test:lane:v3-race-134; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/identity/visual_signature_engine.ts`, `client/runtime/systems/identity`, `config`, `client/runtime/systems/ops/data_scope_boundary_check.ts`.",
       "class": "extension",
       "dependencies": [
         "V3-RACE-008",
@@ -9105,7 +9105,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/research/pinnacle_tech_integration_engine.{ts,js}` + policy `client/runtime/config/pinnacle_tech_integration_policy.json` to continuously scan CRDT/ZK/FHE/DID/IPFS/WASM/intent/time-lock classes and emit governed integration proposals only; non-user canonical research cataclient/logs/proposals remain in `client/runtime/systems/research/` + `state/research/`; optional user adoption preferences persist under + `client/cognition/adaptive/research/preferences/`. Evidence: `client/runtime/systems/research/pinnacle_tech_integration_engine.ts`, `client/runtime/systems/research`, `client/runtime/systems/ops/data_scope_boundary_check.ts`.",
+      "acceptance": "Added `client/runtime/systems/research/pinnacle_tech_integration_engine.{ts,js}` + policy `client/runtime/config/pinnacle_tech_integration_policy.json` to continuously scan CRDT/ZK/FHE/DID/IPFS/WASM/intent/time-lock classes and emit governed integration proposals only; non-user canonical research cataclient/logs/proposals remain in `client/runtime/systems/research/` + `local/state/research/`; optional user adoption preferences persist under + `client/cognition/adaptive/research/preferences/`. Evidence: `client/runtime/systems/research/pinnacle_tech_integration_engine.ts`, `client/runtime/systems/research`, `client/runtime/systems/ops/data_scope_boundary_check.ts`.",
       "class": "extension",
       "dependencies": [
         "V3-018",
@@ -9654,7 +9654,7 @@
         "V3-RACE-171"
       ],
       "id": "V3-RACE-173",
-      "problem": "Multi-agent role execution is higher leverage when template-driven and governed by explicit shared-state/clearance boundaries.",
+      "problem": "Multi-agent role execution is higher leverage when template-driven and governed by explicit shared-local/state/clearance boundaries.",
       "status": "done",
       "title": "Role-Based Crew Spawn Orchestrator (Shared Namespace Governance)",
       "wave": "V3"
@@ -9881,7 +9881,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Shipped lifecycle lane + policy thresholds for battery/thermal/doze/background-kill/wake-lock, with recovery command path and deterministic state/receipt artifacts for 24h/72h survivability checks.",
+      "acceptance": "Shipped lifecycle lane + policy thresholds for battery/thermal/doze/background-kill/wake-lock, with recovery command path and deterministic local/state/receipt artifacts for 24h/72h survivability checks.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-148",
@@ -10148,7 +10148,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/ops/platform_oracle_hostprofile.{ts,js}` + `client/runtime/config/platform_oracle_hostprofile_policy.json` to run boot/promotion/periodic host probing with signed `HostProfile` receipts (OS/distro/variant/kernel/runtime/cloud/hardware/capabilities), fail-closed minimal fallback, and rollback to last-known-good profile; deterministic artifacts are written to `state/ops/platform_oracle_hostprofile/` and covered by `tests/client-memory-tools/platform_adaptation_stack.test.js`. Verify via npm run -s lane:v3-race-209:run and npm run -s test:lane:v3-race-209; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/platform_oracle_hostprofile.ts`.",
+      "acceptance": "Added `client/runtime/systems/ops/platform_oracle_hostprofile.{ts,js}` + `client/runtime/config/platform_oracle_hostprofile_policy.json` to run boot/promotion/periodic host probing with signed `HostProfile` receipts (OS/distro/variant/kernel/runtime/cloud/hardware/capabilities), fail-closed minimal fallback, and rollback to last-known-good profile; deterministic artifacts are written to `local/state/ops/platform_oracle_hostprofile/` and covered by `tests/client-memory-tools/platform_adaptation_stack.test.js`. Verify via npm run -s lane:v3-race-209:run and npm run -s test:lane:v3-race-209; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/platform_oracle_hostprofile.ts`.",
       "class": "primitive-upgrade",
       "dependencies": [
         "V3-RACE-034",
@@ -10305,7 +10305,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Implemented WASI2 completeness gate in `client/runtime/systems/ops/wasi2_execution_completeness_gate.ts` with target-lane parity/safety/latency evaluation, strict gating, and state/history/receipt persistence. Verified by `tests/client-memory-tools/wasi2_execution_completeness_gate.test.js`.",
+      "acceptance": "Implemented WASI2 completeness gate in `client/runtime/systems/ops/wasi2_execution_completeness_gate.ts` with target-lane parity/safety/latency evaluation, strict gating, and local/state/history/receipt persistence. Verified by `tests/client-memory-tools/wasi2_execution_completeness_gate.test.js`.",
       "class": "status-reconciliation",
       "dependencies": [],
       "id": "V3-RACE-220",
@@ -10315,7 +10315,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Add benchmark target matrix for state/security/actuation hot paths with minimum multiplier thresholds, fail closed on regression, publish reproducible performance receipts, and include rollback-safe threshold profile downgrade when noisy hardware classes are detected. Verify via npm run -s lane:v3-race-221:run and npm run -s test:lane:v3-race-221; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/backlog_queue_executor.ts`.",
+      "acceptance": "Add benchmark target matrix for local/state/security/actuation hot paths with minimum multiplier thresholds, fail closed on regression, publish reproducible performance receipts, and include rollback-safe threshold profile downgrade when noisy hardware classes are detected. Verify via npm run -s lane:v3-race-221:run and npm run -s test:lane:v3-race-221; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/backlog_queue_executor.ts`.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-174",
@@ -12223,7 +12223,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Implemented discover/activate lifecycle in `platform_socket_runtime` with deterministic socket selection from registry, fail-closed fallback to generic socket, signed lifecycle receipts, and persisted install/update/test state under `state/ops/platform_socket_runtime/installed.json` plus audit history in `state/ops/platform_socket_runtime/history.jsonl`. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-357 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-357; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected.",
+      "acceptance": "Implemented discover/activate lifecycle in `platform_socket_runtime` with deterministic socket selection from registry, fail-closed fallback to generic socket, signed lifecycle receipts, and persisted install/update/test state under `local/state/ops/platform_socket_runtime/installed.json` plus audit history in `local/state/ops/platform_socket_runtime/history.jsonl`. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-357 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-357; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected.",
       "class": "primitive-upgrade",
       "dependencies": [
         "V3-RACE-356",
@@ -12281,7 +12281,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/research/offline_r_analytics_runner.{ts,js}` + `client/runtime/config/offline_r_analytics_runner_policy.json` (with optional script `research/r/offline_research_analytics.R`) to emit signed artifacts into `state/sensory/offline_lab/artifacts/` and auto-run `offline_statistical_lab_artifact_bridge`; integrated `client/runtime/systems/research/research_organ.ts` + `client/runtime/config/research_organ_policy.json` with analytics-bridge fit criteria (`sample_size`, `brier_improvement`, `causal_precision_lift`) and bounded confidence uplift with fail-safe fallback behavior; regression test coverage in `tests/client-memory-tools/offline_r_analytics_runner.test.js` and `tests/client-memory-tools/research_organ.test.js`.",
+      "acceptance": "Added `client/runtime/systems/research/offline_r_analytics_runner.{ts,js}` + `client/runtime/config/offline_r_analytics_runner_policy.json` (with optional script `research/r/offline_research_analytics.R`) to emit signed artifacts into `local/state/sensory/offline_lab/artifacts/` and auto-run `offline_statistical_lab_artifact_bridge`; integrated `client/runtime/systems/research/research_organ.ts` + `client/runtime/config/research_organ_policy.json` with analytics-bridge fit criteria (`sample_size`, `brier_improvement`, `causal_precision_lift`) and bounded confidence uplift with fail-safe fallback behavior; regression test coverage in `tests/client-memory-tools/offline_r_analytics_runner.test.js` and `tests/client-memory-tools/research_organ.test.js`.",
       "class": "extension",
       "dependencies": [
         "V3-RACE-102",
@@ -12308,7 +12308,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added thin compatibility wrappers at `client/runtime/systems/state/event_stream.{ts,js}` and forwarding to canonical ops lanes via `client/runtime/systems/compat/legacy_alias_adapter.{ts,js}` with deprecation receipts in `state/ops/legacy_path_alias_adapters/*`; parity + receipt coverage landed in `tests/client-memory-tools/legacy_path_alias_adapters.test.js`. Evidence: `client/runtime/systems/state/event_stream.ts`, `client/runtime/systems/compat/legacy_alias_adapter.ts`, `client/runtime/config/requirement_conformance_matrix.json`.",
+      "acceptance": "Added thin compatibility wrappers at `client/runtime/systems/local/state/event_stream.{ts,js}` and forwarding to canonical ops lanes via `client/runtime/systems/compat/legacy_alias_adapter.{ts,js}` with deprecation receipts in `local/state/ops/legacy_path_alias_adapters/*`; parity + receipt coverage landed in `tests/client-memory-tools/legacy_path_alias_adapters.test.js`. Evidence: `client/runtime/systems/local/state/event_stream.ts`, `client/runtime/systems/compat/legacy_alias_adapter.ts`, `client/runtime/config/requirement_conformance_matrix.json`.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-017",
@@ -12317,7 +12317,7 @@
       "id": "V3-RACE-CONF-002",
       "problem": "External prompts/tools may target legacy paths; absent adapters create false-negative \"missing implementation\" reports despite canonical coverage.",
       "status": "done",
-      "title": "Legacy Path Alias Adapters (`client/runtime/systems/state/event_stream.ts`, `client/runtime/systems/autogenesis/*`)",
+      "title": "Legacy Path Alias Adapters (`client/runtime/systems/local/state/event_stream.ts`, `client/runtime/systems/autogenesis/*`)",
       "wave": "V3"
     },
     {
@@ -12347,7 +12347,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Added `client/runtime/systems/memory/napi_build_surface_compat.{ts,js}` + `client/runtime/config/napi_build_surface_compat_policy.json`, canonical scripts (`build:memory`, `postinstall:memory`, `memory:napi-build:status`), and generated matrix artifacts (`docs/client/MEMORY_BUILD_SURFACE.md`, `state/client/memory/napi_build_surface_compat/build_matrix.json`) while keeping daemon-first production defaults; regression coverage in `tests/client-memory-tools/napi_build_surface_compat.test.js`. Verify via npm run -s lane:v3-race-conf-005:run and npm run -s test:lane:v3-race-conf-005; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/memory/napi_build_surface_compat.ts`.",
+      "acceptance": "Added `client/runtime/systems/memory/napi_build_surface_compat.{ts,js}` + `client/runtime/config/napi_build_surface_compat_policy.json`, canonical scripts (`build:memory`, `postinstall:memory`, `memory:napi-build:status`), and generated matrix artifacts (`docs/client/MEMORY_BUILD_SURFACE.md`, `local/state/client/memory/napi_build_surface_compat/build_matrix.json`) while keeping daemon-first production defaults; regression coverage in `tests/client-memory-tools/napi_build_surface_compat.test.js`. Verify via npm run -s lane:v3-race-conf-005:run and npm run -s test:lane:v3-race-conf-005; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/memory/napi_build_surface_compat.ts`.",
       "class": "hardening",
       "dependencies": [
         "V3-RACE-028",
@@ -12969,7 +12969,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "SKIN runtime attestation now combines integrity kernel + remote heartbeat posture checks (`integrity_policy_path`, heartbeat latest/quarantine alignment), and can transition to deterministic stasis containment state (`state/security/skin_protection/stasis_state.json`) via `verify/enforce` flows with forensic history receipts. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_skin_002_anchor.ts`.",
+      "acceptance": "SKIN runtime attestation now combines integrity kernel + remote heartbeat posture checks (`integrity_policy_path`, heartbeat latest/quarantine alignment), and can transition to deterministic stasis containment state (`local/state/security/skin_protection/stasis_state.json`) via `verify/enforce` flows with forensic history receipts. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_skin_002_anchor.ts`.",
       "class": "backlog",
       "dependencies": [
         "V3-BIN-003",
@@ -13125,7 +13125,7 @@
       "wave": "V3"
     },
     {
-      "acceptance": "Implemented policy-defined stealth lease windows (timed lease stealth window hours) that defer staged hit escalation, followed by deterministic ramp (tease -> challenge -> degrade -> lockout) with cooldown lockout timers and session state persistence in `state/security/venom_containment/*`. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_venom_004_anchor.ts`.",
+      "acceptance": "Implemented policy-defined stealth lease windows (timed lease stealth window hours) that defer staged hit escalation, followed by deterministic ramp (tease -> challenge -> degrade -> lockout) with cooldown lockout timers and session state persistence in `local/state/security/venom_containment/*`. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_venom_004_anchor.ts`.",
       "class": "backlog",
       "dependencies": [
         "V3-CPY-001",
@@ -13390,7 +13390,7 @@
       "wave": "V4"
     },
     {
-      "acceptance": "`relocatable_path_contract` now emits deterministic habits path rewrite inventory (`state/ops/relocatable_path_contract/path_rewrite_inventory.json`) with absolute-include support and rewrite-contract checks, preserving compatibility wrappers and pass behavior (`tests/client-memory-tools/relocatable_path_contract.test.js`, `tests/client-memory-tools/legacy_path_alias_adapters.test.js`). Evidence: `client/runtime/systems/ops/relocatable_path_contract.ts`, `client/runtime/systems/ops/event_sourced_control_plane.ts`, `client/runtime/systems/state/event_stream.ts`, `client/runtime/systems/ops/trace_habit_autogenesis.ts`.",
+      "acceptance": "`relocatable_path_contract` now emits deterministic habits path rewrite inventory (`local/state/ops/relocatable_path_contract/path_rewrite_inventory.json`) with absolute-include support and rewrite-contract checks, preserving compatibility wrappers and pass behavior (`tests/client-memory-tools/relocatable_path_contract.test.js`, `tests/client-memory-tools/legacy_path_alias_adapters.test.js`). Evidence: `client/runtime/systems/ops/relocatable_path_contract.ts`, `client/runtime/systems/ops/event_sourced_control_plane.ts`, `client/runtime/systems/local/state/event_stream.ts`, `client/runtime/systems/ops/trace_habit_autogenesis.ts`.",
       "class": "hygiene",
       "dependencies": [],
       "id": "V4-CLEAN-001",
@@ -15274,7 +15274,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Implemented `REQ-13-005` via `client/runtime/config/security_layer_inventory.json`, runtime verifier `client/runtime/systems/ops/security_layer_inventory_gate.ts`, generated inventory doc `docs/client/security/SECURITY_LAYER_INVENTORY.md`, state receipt under `state/ops/security_layer_inventory_gate/latest.json`, and regression test `tests/client-memory-tools/security_layer_inventory_gate.test.js`.",
+      "acceptance": "Implemented `REQ-13-005` via `client/runtime/config/security_layer_inventory.json`, runtime verifier `client/runtime/systems/ops/security_layer_inventory_gate.ts`, generated inventory doc `docs/client/security/SECURITY_LAYER_INVENTORY.md`, state receipt under `local/state/ops/security_layer_inventory_gate/latest.json`, and regression test `tests/client-memory-tools/security_layer_inventory_gate.test.js`.",
       "class": "backlog",
       "dependencies": [],
       "id": "V6-COMP-004",
@@ -15453,7 +15453,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Added Rust lane `protheus-ops sdlc-change-control run|status` (`core/layer0/ops/src/sdlc_change_control.rs`) with policy `client/runtime/config/sdlc_change_control_policy.json`; merge gate workflow `.github/workflows/sdlc-change-control.yml` fail-closes PRs when risk class is understated or required RFC/ADR/approver/rollback evidence is missing. PR template now captures required fields (`.github/pull_request_template.md`) and receipts are persisted in `state/ops/sdlc_change_control/`.",
+      "acceptance": "Added Rust lane `protheus-ops sdlc-change-control run|status` (`core/layer0/ops/src/sdlc_change_control.rs`) with policy `client/runtime/config/sdlc_change_control_policy.json`; merge gate workflow `.github/workflows/sdlc-change-control.yml` fail-closes PRs when risk class is understated or required RFC/ADR/approver/rollback evidence is missing. PR template now captures required fields (`.github/pull_request_template.md`) and receipts are persisted in `local/state/ops/sdlc_change_control/`.",
       "class": "governance",
       "dependencies": [
         "V6-F100-001"
@@ -15477,7 +15477,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Implemented in lane `V6-F100-004` with control map (`client/runtime/config/compliance_control_map.json`) and deterministic bundle output (`state/ops/compliance_evidence_bundle/latest.json`) including freshness enforcement.",
+      "acceptance": "Implemented in lane `V6-F100-004` with control map (`client/runtime/config/compliance_control_map.json`) and deterministic bundle output (`local/state/ops/compliance_evidence_bundle/latest.json`) including freshness enforcement.",
       "class": "governance",
       "dependencies": [
         "V6-F100-002",
@@ -15490,7 +15490,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Implemented in `core/layer0/ops/src/f100_readiness_program.rs` lane `V6-F100-005` with profile budgets (`client/runtime/config/one_million_performance_profile.json`) and strict receipts under `state/ops/f100_readiness_program/`.",
+      "acceptance": "Implemented in `core/layer0/ops/src/f100_readiness_program.rs` lane `V6-F100-005` with profile budgets (`client/runtime/config/one_million_performance_profile.json`) and strict receipts under `local/state/ops/f100_readiness_program/`.",
       "class": "scale-readiness",
       "dependencies": [
         "V6-F100-001",
@@ -15503,7 +15503,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Implemented in lane `V6-F100-006` with isolation contract (`client/runtime/config/multi_tenant_isolation_contract.json`) + adversarial evidence (`state/security/multi_tenant_isolation_adversarial/latest.json`) and strict fail-closed receipts.",
+      "acceptance": "Implemented in lane `V6-F100-006` with isolation contract (`client/runtime/config/multi_tenant_isolation_contract.json`) + adversarial evidence (`local/state/security/multi_tenant_isolation_adversarial/latest.json`) and strict fail-closed receipts.",
       "class": "hardening",
       "dependencies": [
         "V6-F100-003",
@@ -15541,7 +15541,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Implemented in lane `V6-F100-009` via role onboarding docs + bootstrap script `client/cli/bin/protheus_onboarding_bootstrap.sh` and success telemetry gates (`state/ops/onboarding_portal/success_metrics.json`).",
+      "acceptance": "Implemented in lane `V6-F100-009` via role onboarding docs + bootstrap script `client/cli/bin/protheus_onboarding_bootstrap.sh` and success telemetry gates (`local/state/ops/onboarding_portal/success_metrics.json`).",
       "class": "launch-polish",
       "dependencies": [
         "V6-F100-001"
@@ -15572,13 +15572,13 @@
         "V6-F100-010"
       ],
       "id": "V6-F100-011",
-      "problem": "UX and operator surfaces are strong but not yet governed by one consistent state/tone/interaction contract across all commands/panels.",
+      "problem": "UX and operator surfaces are strong but not yet governed by one consistent local/state/tone/interaction contract across all commands/panels.",
       "status": "done",
       "title": "Operator Surface Consistency Program (UX/Tone/State Model)",
       "wave": "V6"
     },
     {
-      "acceptance": "Implemented in lane `V6-F100-012` with weighted scorecard receipts under `state/ops/executive_readiness_scorecard/`, two-cycle sustain gating, and strict promotion block on unsustained scores.",
+      "acceptance": "Implemented in lane `V6-F100-012` with weighted scorecard receipts under `local/state/ops/executive_readiness_scorecard/`, two-cycle sustain gating, and strict promotion block on unsustained scores.",
       "class": "governance",
       "dependencies": [
         "V6-F100-001",
@@ -15746,7 +15746,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "`core/layer0/ops/src/ab_lane_eval.rs` adds `protheus-ops ab-lane-eval status|run` with deterministic score math, winner selection, and state receipts under `state/ops/ab_lane_eval/`.",
+      "acceptance": "`core/layer0/ops/src/ab_lane_eval.rs` adds `protheus-ops ab-lane-eval status|run` with deterministic score math, winner selection, and state receipts under `local/state/ops/ab_lane_eval/`.",
       "class": "backlog",
       "dependencies": [],
       "id": "V6-F100-031",
@@ -15866,7 +15866,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Human-governed certification artifacts are attached under `state/ops/evidence/` and linked from `SECURITY.md`; see `HMAN-026` and `HMAN-027`.",
+      "acceptance": "Human-governed certification artifacts are attached under `local/state/ops/evidence/` and linked from `SECURITY.md`; see `HMAN-026` and `HMAN-027`.",
       "class": "backlog",
       "dependencies": [],
       "id": "V6-F100-043",
@@ -16123,7 +16123,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Added deterministic pre-commit gate `client/runtime/systems/personas/pre_commit_lens_gate.ts` (wrapper: `.js`) and wired `.githooks/pre-commit` to run it after staged format/lint. Gate writes receipts under `state/personas/pre_commit_lens_gate/` and fail-closes on high-risk staged diff patterns unless explicitly overridden. Verified by `node tests/client-memory-tools/pre_commit_lens_gate.test.js`. Rollback by removing hook invocation and script lane.",
+      "acceptance": "Added deterministic pre-commit gate `client/runtime/systems/personas/pre_commit_lens_gate.ts` (wrapper: `.js`) and wired `.githooks/pre-commit` to run it after staged format/lint. Gate writes receipts under `local/state/personas/pre_commit_lens_gate/` and fail-closes on high-risk staged diff patterns unless explicitly overridden. Verified by `node tests/client-memory-tools/pre_commit_lens_gate.test.js`. Rollback by removing hook invocation and script lane.",
       "class": "hardening",
       "dependencies": [
         "V3-FCH-002",
@@ -16323,7 +16323,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Migrate memory core hot paths to Rust crate-first architecture with wasm32/iOS/Android targets, preserve thin TS wrapper only, and enforce call-level sovereignty + signed receipts. Verify via device-profile benchmark receipts (`recall <3ms`, memory call p95 `<5ms`, battery impact `<0.8%/24h`) and rollback by feature-flagging Rust memory lane to prior adapter profile. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/memory_hotpath.rs`, `state/ops/rust50_migration_program/artifacts/v6_rust50_001_memory_core.json`, `tests/client-memory-tools/rust50_migration_program.test.js`.",
+      "acceptance": "Migrate memory core hot paths to Rust crate-first architecture with wasm32/iOS/Android targets, preserve thin TS wrapper only, and enforce call-level sovereignty + signed receipts. Verify via device-profile benchmark receipts (`recall <3ms`, memory call p95 `<5ms`, battery impact `<0.8%/24h`) and rollback by feature-flagging Rust memory lane to prior adapter profile. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/memory_hotpath.rs`, `local/state/ops/rust50_migration_program/artifacts/v6_rust50_001_memory_core.json`, `tests/client-memory-tools/rust50_migration_program.test.js`.",
       "class": "primitive-upgrade",
       "dependencies": [
         "V5-RUST-HYB-002",
@@ -16337,7 +16337,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Complete Rust execution runtime + deterministic replay receipt proofs with WASM verification and mobile-safe bindings, retaining TS CLI parse layer only. Verify via 1000-run drift tests + replay parity receipts (`step p95 <5ms`, battery impact `<1.2%/24h`) and rollback by switching runtime selector to prior execution engine. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/execution_replay.rs`, `state/ops/rust50_migration_program/artifacts/v6_rust50_002_execution_core.json`, `tests/client-memory-tools/rust50_migration_program.test.js`.",
+      "acceptance": "Complete Rust execution runtime + deterministic replay receipt proofs with WASM verification and mobile-safe bindings, retaining TS CLI parse layer only. Verify via 1000-run drift tests + replay parity receipts (`step p95 <5ms`, battery impact `<1.2%/24h`) and rollback by switching runtime selector to prior execution engine. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/execution_replay.rs`, `local/state/ops/rust50_migration_program/artifacts/v6_rust50_002_execution_core.json`, `tests/client-memory-tools/rust50_migration_program.test.js`.",
       "class": "primitive-upgrade",
       "dependencies": [
         "V5-RUST-HYB-003",
@@ -16351,7 +16351,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Move Pinnacle CRDT merge engine fully to Rust with WASM/Tauri mobile background sync hooks and per-merge sovereignty checks. Verify via convergence replay suite + suspend/resume sync receipts (`merge <2ms`, idle battery `<0.5%/24h`) and rollback by reverting to previous merge adapter lane. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/crdt_merge.rs`, `state/ops/rust50_migration_program/artifacts/v6_rust50_003_crdt_core.json`, `tests/client-memory-tools/rust50_migration_program.test.js`.",
+      "acceptance": "Move Pinnacle CRDT merge engine fully to Rust with WASM/Tauri mobile background sync hooks and per-merge sovereignty checks. Verify via convergence replay suite + suspend/resume sync receipts (`merge <2ms`, idle battery `<0.5%/24h`) and rollback by reverting to previous merge adapter lane. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/crdt_merge.rs`, `local/state/ops/rust50_migration_program/artifacts/v6_rust50_003_crdt_core.json`, `tests/client-memory-tools/rust50_migration_program.test.js`.",
       "class": "primitive-upgrade",
       "dependencies": [
         "V5-RUST-HYB-005",
@@ -16365,7 +16365,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Consolidate vault/security compute primitives into shared Rust core with enforced fail-closed covenant behavior and mobile-safe performance constraints. Verify via tamper simulation + crypto policy conformance receipts (`seal <4ms`, background heap growth `0`) and rollback by restoring prior hardened security profiles under emergency policy gate. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/security_vault.rs`, `client/runtime/systems/hybrid/rust/src/econ_crypto.rs`, `state/ops/rust50_migration_program/artifacts/v6_rust50_004_security_vault_core.json`.",
+      "acceptance": "Consolidate vault/security compute primitives into shared Rust core with enforced fail-closed covenant behavior and mobile-safe performance constraints. Verify via tamper simulation + crypto policy conformance receipts (`seal <4ms`, background heap growth `0`) and rollback by restoring prior hardened security profiles under emergency policy gate. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/security_vault.rs`, `client/runtime/systems/hybrid/rust/src/econ_crypto.rs`, `local/state/ops/rust50_migration_program/artifacts/v6_rust50_004_security_vault_core.json`.",
       "class": "hardening",
       "dependencies": [
         "V5-RUST-HYB-004",
@@ -16379,7 +16379,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Deliver Rust-first chaos + telemetry core with signed proof artifacts, sovereignty scoring, and low-overhead trace emit path for Tauri/mobile bindings. Verify via chaos throughput + telemetry overhead receipts (`telemetry overhead <1ms`, chaos battery `<3%/24h`) and rollback by toggling back to previous chaos/observability adapters. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/red_chaos.rs`, `client/runtime/systems/hybrid/rust/src/telemetry_emit.rs`, `state/ops/rust50_migration_program/artifacts/v6_rust50_005_chaos_observability_core.json`.",
+      "acceptance": "Deliver Rust-first chaos + telemetry core with signed proof artifacts, sovereignty scoring, and low-overhead trace emit path for Tauri/mobile bindings. Verify via chaos throughput + telemetry overhead receipts (`telemetry overhead <1ms`, chaos battery `<3%/24h`) and rollback by toggling back to previous chaos/observability adapters. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/red_chaos.rs`, `client/runtime/systems/hybrid/rust/src/telemetry_emit.rs`, `local/state/ops/rust50_migration_program/artifacts/v6_rust50_005_chaos_observability_core.json`.",
       "class": "extension",
       "dependencies": [
         "V5-RUST-HYB-007",
@@ -16393,7 +16393,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Build Rust mobile adapter layer with one-command WASM/Tauri build, background service integration (iOS/Android), and unified `protheus-mobile` binary interface for crate surfaces. Verify via mobile build matrix + background service receipts with total background battery `<5%/24h`; rollback by disabling mobile adapter lane and reverting to existing device bridges. Evidence: `client/runtime/systems/hybrid/mobile/protheus_mobile_adapter.ts`, `client/runtime/config/protheus_mobile_adapter_policy.json`, `state/hybrid/mobile_adapter/state.json`, `state/ops/rust50_migration_program/artifacts/v6_rust50_006_mobile_adapter.json`.",
+      "acceptance": "Build Rust mobile adapter layer with one-command WASM/Tauri build, background service integration (iOS/Android), and unified `protheus-mobile` binary interface for crate surfaces. Verify via mobile build matrix + background service receipts with total background battery `<5%/24h`; rollback by disabling mobile adapter lane and reverting to existing device bridges. Evidence: `client/runtime/systems/hybrid/mobile/protheus_mobile_adapter.ts`, `client/runtime/config/protheus_mobile_adapter_policy.json`, `local/state/hybrid/mobile_adapter/state.json`, `local/state/ops/rust50_migration_program/artifacts/v6_rust50_006_mobile_adapter.json`.",
       "class": "extension",
       "dependencies": [
         "V5-RUST-HYB-009",
@@ -16410,7 +16410,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Add enforced migration gate requiring: critical module-weight share `>=50%` Rust, per-lane committed code diff evidence, test/CI receipts, phone battery receipt bundle, and explicit `PAUSED` state when constraints cannot be met. Verify through governance audit receipts and automated anti-fake completion checks; rollback by downgrading enforcement to advisory mode with expiry and remediation plan. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/config/rust50_migration_program_policy.json`, `docs/client/RUST50_MIGRATION_IMPLEMENTATION.md`, `state/ops/rust50_migration_program/rust50_gate_state.json`, `tests/client-memory-tools/rust50_migration_program.test.js`.",
+      "acceptance": "Add enforced migration gate requiring: critical module-weight share `>=50%` Rust, per-lane committed code diff evidence, test/CI receipts, phone battery receipt bundle, and explicit `PAUSED` state when constraints cannot be met. Verify through governance audit receipts and automated anti-fake completion checks; rollback by downgrading enforcement to advisory mode with expiry and remediation plan. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/config/rust50_migration_program_policy.json`, `docs/client/RUST50_MIGRATION_IMPLEMENTATION.md`, `local/state/ops/rust50_migration_program/rust50_gate_state.json`, `tests/client-memory-tools/rust50_migration_program.test.js`.",
       "class": "scale-readiness",
       "dependencies": [
         "V6-RUST50-001",
@@ -16428,7 +16428,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Implement real `core/layer2/execution/` crate (`cdylib` + `wasm32-unknown-unknown` target) that owns deterministic workflow runner, receipt generation, and state machine logic; retain only a thin TS wrapper in `client/runtime/systems/execution/index.ts` through stable FFI. Verify with full parity tests, successful `cargo build --target wasm32-unknown-unknown --release`, full git diff evidence, and tracked line-count delta showing Rust increase and TypeScript decrease (`git ls-files | xargs wc -l` baseline vs after). Rollback by feature-flagged runtime selector restoring previous execution lane and preserving replay compatibility receipts. Completion is blocked until explicit human approval after proof bundle review. Evidence: `client/runtime/systems/ops/rust50_conf001_execution_cutover.ts`, `client/runtime/config/rust50_conf001_execution_cutover_policy.json`, `tests/client-memory-tools/rust50_conf001_execution_cutover.test.js`, `state/ops/rust50_conf001/latest.json`.",
+      "acceptance": "Implement real `core/layer2/execution/` crate (`cdylib` + `wasm32-unknown-unknown` target) that owns deterministic workflow runner, receipt generation, and state machine logic; retain only a thin TS wrapper in `client/runtime/systems/execution/index.ts` through stable FFI. Verify with full parity tests, successful `cargo build --target wasm32-unknown-unknown --release`, full git diff evidence, and tracked line-count delta showing Rust increase and TypeScript decrease (`git ls-files | xargs wc -l` baseline vs after). Rollback by feature-flagged runtime selector restoring previous execution lane and preserving replay compatibility receipts. Completion is blocked until explicit human approval after proof bundle review. Evidence: `client/runtime/systems/ops/rust50_conf001_execution_cutover.ts`, `client/runtime/config/rust50_conf001_execution_cutover_policy.json`, `tests/client-memory-tools/rust50_conf001_execution_cutover.test.js`, `local/state/ops/rust50_conf001/latest.json`.",
       "class": "primitive-upgrade",
       "dependencies": [
         "V6-RUST50-002",
@@ -16441,7 +16441,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Implement sprint-mode contract requiring: enforcer preamble acknowledgment, single-batch ordered execution plan, immutable no-skip/no-premature-done rule, and end-of-sprint audit artifact summarizing completion, blockers, and proof references. Verify via sprint contract receipts and policy-gate tests; rollback by reverting to existing per-item lane execution flow with advisory-only sprint hints. Evidence: `client/runtime/systems/ops/rust50_sprint_contract.ts`, `client/runtime/config/rust50_sprint_contract_policy.json`, `tests/client-memory-tools/rust50_sprint_contract.test.js`, `state/ops/rust50_sprint_contract/latest.json`.",
+      "acceptance": "Implement sprint-mode contract requiring: enforcer preamble acknowledgment, single-batch ordered execution plan, immutable no-skip/no-premature-done rule, and end-of-sprint audit artifact summarizing completion, blockers, and proof references. Verify via sprint contract receipts and policy-gate tests; rollback by reverting to existing per-item lane execution flow with advisory-only sprint hints. Evidence: `client/runtime/systems/ops/rust50_sprint_contract.ts`, `client/runtime/config/rust50_sprint_contract_policy.json`, `tests/client-memory-tools/rust50_sprint_contract.test.js`, `local/state/ops/rust50_sprint_contract/latest.json`.",
       "class": "hardening",
       "dependencies": [
         "V6-RUST50-CONF-001",
@@ -16454,7 +16454,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Execute Sprint 1 strict sequence across four crate-first migrations (`execution`, `pinnacle`, `vault`, `red_legion`), blob integration in all crates, thin TS wrappers, full parity + WASM + battery receipts, and workspace updates. Completion proof must include full `crates/` + `client/runtime/systems/` diffs, successful WASM builds for each migrated crate, and tracked/public Rust language increase evidence with TS decrease. Commit contract: `feat(rust-migration): Sprint 1 - visible Rust increase + 4 core crates + blob integration`. Completion blocked until explicit human audit approval. Evidence: `client/runtime/systems/ops/rust50_sprint1_batch.ts`, `client/runtime/config/rust50_sprint1_batch_policy.json`, `state/ops/rust50_sprint1_batch/latest.json`.",
+      "acceptance": "Execute Sprint 1 strict sequence across four crate-first migrations (`execution`, `pinnacle`, `vault`, `red_legion`), blob integration in all crates, thin TS wrappers, full parity + WASM + battery receipts, and workspace updates. Completion proof must include full `crates/` + `client/runtime/systems/` diffs, successful WASM builds for each migrated crate, and tracked/public Rust language increase evidence with TS decrease. Commit contract: `feat(rust-migration): Sprint 1 - visible Rust increase + 4 core crates + blob integration`. Completion blocked until explicit human audit approval. Evidence: `client/runtime/systems/ops/rust50_sprint1_batch.ts`, `client/runtime/config/rust50_sprint1_batch_policy.json`, `local/state/ops/rust50_sprint1_batch/latest.json`.",
       "class": "primitive-upgrade",
       "dependencies": [
         "V6-RUST50-CONF-002",
@@ -16471,7 +16471,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Execute all eleven mega-sprint steps in strict sequence: migrate `execution`, `pinnacle`, `vault`, `red_legion`, `observability`, `graph`, `swarm`, and `mobile` to crate-first Rust ownership; integrate blob fold/unfold + manifest in all eight crates; maintain thin backward-compatible TS wrappers; update root Cargo workspace; and complete full parity + WASM + battery proof suite. Completion requires deterministic artifact bundle: git diff summary for `crates/` and `client/runtime/systems/`, successful `wasm32-unknown-unknown --release` builds for each migrated crate, and public GitHub language-bar evidence showing Rust `>=50%` with TypeScript decrease. Completion is hard-blocked pending explicit human approval after audit. Commit contract: `feat(rust-migration): Mega Sprint 1 - visible 50% Rust + 8 core crates + blob integration`. BLOCKED evidence: `state/ops/rust50_mega_sprint1_batch/latest.json` (`rust_share_pct_after=6.253`, `rust_share_min_pct=50`, violation `rust_share_min_ok`).",
+      "acceptance": "Execute all eleven mega-sprint steps in strict sequence: migrate `execution`, `pinnacle`, `vault`, `red_legion`, `observability`, `graph`, `swarm`, and `mobile` to crate-first Rust ownership; integrate blob fold/unfold + manifest in all eight crates; maintain thin backward-compatible TS wrappers; update root Cargo workspace; and complete full parity + WASM + battery proof suite. Completion requires deterministic artifact bundle: git diff summary for `crates/` and `client/runtime/systems/`, successful `wasm32-unknown-unknown --release` builds for each migrated crate, and public GitHub language-bar evidence showing Rust `>=50%` with TypeScript decrease. Completion is hard-blocked pending explicit human approval after audit. Commit contract: `feat(rust-migration): Mega Sprint 1 - visible 50% Rust + 8 core crates + blob integration`. BLOCKED evidence: `local/state/ops/rust50_mega_sprint1_batch/latest.json` (`rust_share_pct_after=6.253`, `rust_share_min_pct=50`, violation `rust_share_min_ok`).",
       "class": "primitive-upgrade",
       "dependencies": [
         "V6-RUST50-CONF-002",
@@ -16785,7 +16785,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Implemented bounded external-action egress controls in `client/runtime/lib/egress_gateway.ts` and `client/runtime/systems/security/egress_gateway.ts` with scope/method/domain allowlists, runtime allowlist requirements, per-scope/global rate caps, and persisted state/audit receipts. Verified by `tests/client-memory-tools/egress_gateway.test.js` and `tests/client-memory-tools/egress_gateway_lane.test.js`.",
+      "acceptance": "Implemented bounded external-action egress controls in `client/runtime/lib/egress_gateway.ts` and `client/runtime/systems/security/egress_gateway.ts` with scope/method/domain allowlists, runtime allowlist requirements, per-scope/global rate caps, and persisted local/state/audit receipts. Verified by `tests/client-memory-tools/egress_gateway.test.js` and `tests/client-memory-tools/egress_gateway_lane.test.js`.",
       "class": "backlog",
       "dependencies": [],
       "id": "V6-TOOLS-002",

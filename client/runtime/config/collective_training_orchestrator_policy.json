@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/training/contributions",
     "adaptive_index_path": "client/cognition/adaptive/training/contributions/index.json",
-    "events_path": "state/training\/collective_orchestrator/events.jsonl",
-    "latest_path": "state/training\/collective_orchestrator/latest.json",
-    "receipts_path": "state/training\/collective_orchestrator/receipts.jsonl"
+    "events_path": "local/state/training\/collective_orchestrator/events.jsonl",
+    "latest_path": "local/state/training\/collective_orchestrator/latest.json",
+    "receipts_path": "local/state/training\/collective_orchestrator/receipts.jsonl"
   }
 }

@@ -8,8 +8,8 @@ for arg in "$@"; do
     --dry-run=1) DRY_RUN=1 ;;
   esac
 done
-mkdir -p state/ops/onboarding_portal
-cat > "state/ops/onboarding_portal/bootstrap_${ROLE}.json" <<JSON
+mkdir -p local/state/ops/onboarding_portal
+cat > "local/state/ops/onboarding_portal/bootstrap_${ROLE}.json" <<JSON
 {
   "schema_id": "onboarding_bootstrap_receipt",
   "schema_version": "1.0",

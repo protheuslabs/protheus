@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 const SRS_PATH = 'docs/workspace/SRS.md';
 const TODO_PATH = 'docs/workspace/TODO.md';
 const OUT_JSON = 'core/local/artifacts/srs_full_regression_current.json';
-const OUT_MD = 'docs/workspace/SRS_FULL_REGRESSION_CURRENT.md';
+const OUT_MD = 'local/workspace/reports/SRS_FULL_REGRESSION_CURRENT.md';
 
 function read(path) {
   return readFileSync(resolve(path), 'utf8');

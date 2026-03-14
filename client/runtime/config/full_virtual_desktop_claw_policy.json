@@ -4,6 +4,6 @@
   "shadow_only": true,
   "human_veto_window_sec": 120,
   "max_recovery_attempts": 1,
-  "receipts_path": "state/actuation/full_virtual_desktop_claw/receipts.jsonl",
-  "latest_path": "state/actuation/full_virtual_desktop_claw/latest.json"
+  "receipts_path": "local/state/actuation/full_virtual_desktop_claw/receipts.jsonl",
+  "latest_path": "local/state/actuation/full_virtual_desktop_claw/latest.json"
 }

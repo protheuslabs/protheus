@@ -10,7 +10,7 @@
     "max_tokens_per_verification": 12000
   },
   "outputs": {
-    "latest_path": "state/autonomy/swarm_verification_mode/latest.json",
-    "history_path": "state/autonomy/swarm_verification_mode/history.jsonl"
+    "latest_path": "local/state/autonomy/swarm_verification_mode/latest.json",
+    "history_path": "local/state/autonomy/swarm_verification_mode/history.jsonl"
   }
 }

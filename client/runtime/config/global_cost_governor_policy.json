@@ -21,9 +21,9 @@
   "min_baseline_days": 3,
   "auto_clear_autopause": true,
   "state_paths": {
-    "usage_path": "state/budget/global_cost_governor/usage.json",
-    "autopause_path": "state/autonomy/budget_autopause.json",
-    "latest_path": "state/budget/global_cost_governor/latest.json",
-    "history_path": "state/budget/global_cost_governor/history.jsonl"
+    "usage_path": "local/state/budget/global_cost_governor/usage.json",
+    "autopause_path": "local/state/autonomy/budget_autopause.json",
+    "latest_path": "local/state/budget/global_cost_governor/latest.json",
+    "history_path": "local/state/budget/global_cost_governor/history.jsonl"
   }
 }

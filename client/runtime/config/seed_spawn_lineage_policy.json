@@ -20,9 +20,9 @@
   "paths": {
     "memory_dir": "client/memory/lineage",
     "adaptive_index_path": "client/cognition/adaptive/lineage/seed_spawn_index.json",
-    "contracts_dir": "state/spawn/seed_spawn_lineage/contracts",
-    "latest_path": "state/spawn/seed_spawn_lineage/latest.json",
-    "history_path": "state/spawn/seed_spawn_lineage/history.jsonl",
-    "receipts_path": "state/spawn/seed_spawn_lineage/receipts.jsonl"
+    "contracts_dir": "local/state/spawn/seed_spawn_lineage/contracts",
+    "latest_path": "local/state/spawn/seed_spawn_lineage/latest.json",
+    "history_path": "local/state/spawn/seed_spawn_lineage/history.jsonl",
+    "receipts_path": "local/state/spawn/seed_spawn_lineage/receipts.jsonl"
   }
 }

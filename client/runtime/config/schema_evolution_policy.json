@@ -6,8 +6,8 @@
   "default_n_minus_minor": 2,
   "auto_migrate_minor_drift": true,
   "max_auto_migrate_minor_delta": 6,
-  "latest_path": "state/ops/schema_evolution/latest.json",
-  "receipts_path": "state/ops/schema_evolution/receipts.jsonl",
+  "latest_path": "local/state/ops/schema_evolution/latest.json",
+  "receipts_path": "local/state/ops/schema_evolution/receipts.jsonl",
   "lanes": [
     {
       "id": "primitive_catalog",
@@ -32,7 +32,7 @@
         "json_path": "schema_version"
       },
       "target_paths": [
-        "state/assimilation/capability_profiles/profiles"
+        "local/state/assimilation/capability_profiles/profiles"
       ],
       "n_minus_minor": 2,
       "allow_missing_targets": true,
@@ -44,7 +44,7 @@
       "version_field": "schema_version",
       "target_version": "1.0",
       "target_paths": [
-        "state/runtime/canonical_events/events.jsonl"
+        "local/state/runtime/canonical_events/events.jsonl"
       ],
       "n_minus_minor": 2,
       "allow_missing_targets": true

@@ -41,6 +41,6 @@
       "min_surface_budget_score": 0.5
     }
   },
-  "latest_path": "state/hardware/embodiment/latest.json",
-  "receipts_path": "state/hardware/embodiment/receipts.jsonl"
+  "latest_path": "local/state/hardware/embodiment/latest.json",
+  "receipts_path": "local/state/hardware/embodiment/receipts.jsonl"
 }

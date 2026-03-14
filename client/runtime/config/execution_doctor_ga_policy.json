@@ -13,9 +13,9 @@
     "min_doctor_runs": 3
   },
   "paths": {
-    "workflow_history": "state/client/cognition/adaptive/workflows/executor/history.jsonl",
-    "doctor_history": "state/ops/autotest_doctor/history.jsonl",
-    "latest": "state/ops/execution_doctor_ga/latest.json",
-    "history": "state/ops/execution_doctor_ga/history.jsonl"
+    "workflow_history": "local/state/client/cognition/adaptive/workflows/executor/history.jsonl",
+    "doctor_history": "local/state/ops/autotest_doctor/history.jsonl",
+    "latest": "local/state/ops/execution_doctor_ga/latest.json",
+    "history": "local/state/ops/execution_doctor_ga/history.jsonl"
   }
 }

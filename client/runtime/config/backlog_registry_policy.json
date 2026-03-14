@@ -63,8 +63,8 @@
     "registry_path": "client/runtime/config/backlog_registry.json",
     "active_view_path": "docs/client/backlog_views/active.md",
     "archive_view_path": "docs/client/backlog_views/archive.md",
-    "state_path": "state/ops/backlog_registry/state.json",
-    "latest_path": "state/ops/backlog_registry/latest.json",
-    "receipts_path": "state/ops/backlog_registry/receipts.jsonl"
+    "state_path": "local/state/ops/backlog_registry/state.json",
+    "latest_path": "local/state/ops/backlog_registry/latest.json",
+    "receipts_path": "local/state/ops/backlog_registry/receipts.jsonl"
   }
 }

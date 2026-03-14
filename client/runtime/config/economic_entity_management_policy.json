@@ -30,10 +30,10 @@
     "require_counterparty": true
   },
   "paths": {
-    "state": "state/finance/economic_entity/state.json",
-    "latest": "state/finance/economic_entity/latest.json",
-    "ledger": "state/finance/economic_entity/ledger.jsonl",
-    "receipts": "state/finance/economic_entity/receipts.jsonl",
-    "tax_reports": "state/finance/economic_entity/tax_reports"
+    "state": "local/state/finance/economic_entity/state.json",
+    "latest": "local/state/finance/economic_entity/latest.json",
+    "ledger": "local/state/finance/economic_entity/ledger.jsonl",
+    "receipts": "local/state/finance/economic_entity/receipts.jsonl",
+    "tax_reports": "local/state/finance/economic_entity/tax_reports"
   }
 }

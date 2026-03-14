@@ -197,12 +197,12 @@ fn load_policy(root: &Path) -> DopamineAmbientPolicy {
         latest_path: normalize_path(
             root,
             dopamine.and_then(|v| v.get("latest_path")),
-            "state/dopamine/ambient/latest.json",
+            "local/state/dopamine/ambient/latest.json",
         ),
         receipts_path: normalize_path(
             root,
             dopamine.and_then(|v| v.get("receipts_path")),
-            "state/dopamine/ambient/receipts.jsonl",
+            "local/state/dopamine/ambient/receipts.jsonl",
         ),
         runtime_script: normalize_path(
             root,
@@ -212,12 +212,12 @@ fn load_policy(root: &Path) -> DopamineAmbientPolicy {
         status_path: normalize_path(
             root,
             state.and_then(|v| v.get("status_path")),
-            "state/ops/mech_suit_mode/latest.json",
+            "local/state/ops/mech_suit_mode/latest.json",
         ),
         history_path: normalize_path(
             root,
             state.and_then(|v| v.get("history_path")),
-            "state/ops/mech_suit_mode/history.jsonl",
+            "local/state/ops/mech_suit_mode/history.jsonl",
         ),
         policy_path,
     }

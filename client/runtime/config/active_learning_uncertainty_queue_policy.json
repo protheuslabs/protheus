@@ -4,12 +4,12 @@
   "max_queue_items": 200,
   "min_priority": 0.1,
   "paths": {
-    "abstain_dir": "state/sensory/analysis/abstain_uncertainty",
-    "disagreement_dir": "state/sensory/analysis/ensemble_disagreement",
-    "label_promotion_dir": "state/sensory/labels/promotion_corpus",
-    "queue_path": "state/sensory/analysis/active_learning/queue.jsonl",
-    "output_dir": "state/sensory/analysis/active_learning",
-    "latest_path": "state/sensory/analysis/active_learning/latest.json",
-    "receipts_path": "state/sensory/analysis/active_learning/receipts.jsonl"
+    "abstain_dir": "local/state/sensory/analysis/abstain_uncertainty",
+    "disagreement_dir": "local/state/sensory/analysis/ensemble_disagreement",
+    "label_promotion_dir": "local/state/sensory/labels/promotion_corpus",
+    "queue_path": "local/state/sensory/analysis/active_learning/queue.jsonl",
+    "output_dir": "local/state/sensory/analysis/active_learning",
+    "latest_path": "local/state/sensory/analysis/active_learning/latest.json",
+    "receipts_path": "local/state/sensory/analysis/active_learning/receipts.jsonl"
   }
 }

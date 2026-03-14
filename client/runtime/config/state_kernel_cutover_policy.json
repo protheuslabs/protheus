@@ -10,7 +10,7 @@
   "default_mode": "dual_write",
   "shadow_validation_days": 7,
   "require_parity_ok": true,
-  "state_path": "state/ops/state_kernel_cutover/state.json",
-  "history_path": "state/ops/state_kernel_cutover/history.jsonl",
-  "latest_path": "state/ops/state_kernel_cutover/latest.json"
+  "state_path": "local/state/ops/state_kernel_cutover/state.json",
+  "history_path": "local/state/ops/state_kernel_cutover/history.jsonl",
+  "latest_path": "local/state/ops/state_kernel_cutover/latest.json"
 }

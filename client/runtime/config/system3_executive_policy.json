@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/executive",
     "adaptive_index_path": "client/cognition/adaptive/executive/index.json",
-    "events_path": "state/executive\/system3/events.jsonl",
-    "latest_path": "state/executive\/system3/latest.json",
-    "receipts_path": "state/executive\/system3/receipts.jsonl"
+    "events_path": "local/state/executive\/system3/events.jsonl",
+    "latest_path": "local/state/executive\/system3/latest.json",
+    "receipts_path": "local/state/executive\/system3/receipts.jsonl"
   }
 }

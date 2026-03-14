@@ -19,7 +19,7 @@
   "require_dependency_notes": true,
   "require_duplicate_mapping": true,
   "outputs": {
-    "latest_path": "state/ops/backlog_intake_quality/latest.json",
-    "history_path": "state/ops/backlog_intake_quality/history.jsonl"
+    "latest_path": "local/state/ops/backlog_intake_quality/latest.json",
+    "history_path": "local/state/ops/backlog_intake_quality/history.jsonl"
   }
 }

@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/observations",
     "adaptive_index_path": "client/cognition/adaptive/observations/index.json",
-    "events_path": "state/memory\/observational_compression/events.jsonl",
-    "latest_path": "state/memory\/observational_compression/latest.json",
-    "receipts_path": "state/memory\/observational_compression/receipts.jsonl"
+    "events_path": "local/state/memory\/observational_compression/events.jsonl",
+    "latest_path": "local/state/memory\/observational_compression/latest.json",
+    "receipts_path": "local/state/memory\/observational_compression/receipts.jsonl"
   }
 }

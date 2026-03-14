@@ -7,7 +7,7 @@
     "integrity_kernel": "client/runtime/systems/security/integrity_kernel.ts"
   },
   "outputs": {
-    "latest_path": "state/security/startup_attestation_boot_gate/latest.json",
-    "history_path": "state/security/startup_attestation_boot_gate/history.jsonl"
+    "latest_path": "local/state/security/startup_attestation_boot_gate/latest.json",
+    "history_path": "local/state/security/startup_attestation_boot_gate/history.jsonl"
   }
 }

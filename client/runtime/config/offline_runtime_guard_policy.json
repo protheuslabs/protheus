@@ -2,8 +2,8 @@
   "schema_id": "offline_runtime_guard_policy",
   "schema_version": "1.0",
   "offline_marker_files": [
-    "state/network/OFFLINE_MODE",
-    "state/network/NO_EGRESS"
+    "local/state/network/OFFLINE_MODE",
+    "local/state/network/NO_EGRESS"
   ],
   "network_probe_targets": [
     "https://api.openai.com/v1/models",
@@ -16,5 +16,5 @@
     "local_memory_retrieval": true,
     "local_model_inference": true
   },
-  "state_path": "state/ops/offline_runtime_guard/latest.json"
+  "state_path": "local/state/ops/offline_runtime_guard/latest.json"
 }

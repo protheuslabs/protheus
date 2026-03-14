@@ -17,8 +17,8 @@
     "pinnacle": ["status", "receipt", "taxonomy"]
   },
   "paths": {
-    "latest_path": "state/ops/protheus_suite_tooling/latest.json",
-    "receipts_path": "state/ops/protheus_suite_tooling/receipts.jsonl",
-    "history_path": "state/ops/protheus_suite_tooling/history.jsonl"
+    "latest_path": "local/state/ops/protheus_suite_tooling/latest.json",
+    "receipts_path": "local/state/ops/protheus_suite_tooling/receipts.jsonl",
+    "history_path": "local/state/ops/protheus_suite_tooling/history.jsonl"
   }
 }

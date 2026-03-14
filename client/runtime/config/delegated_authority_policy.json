@@ -20,9 +20,9 @@
   "paths": {
     "key_lifecycle_policy": "client/runtime/config/key_lifecycle_policy.json",
     "constitution_guardian_policy": "client/runtime/config/constitution_guardian_policy.json",
-    "index_path": "state/security/delegated_authority/index.json",
-    "latest_path": "state/security/delegated_authority/latest.json",
-    "receipts_path": "state/security/delegated_authority/receipts.jsonl"
+    "index_path": "local/state/security/delegated_authority/index.json",
+    "latest_path": "local/state/security/delegated_authority/latest.json",
+    "receipts_path": "local/state/security/delegated_authority/receipts.jsonl"
   },
   "handoff_contract": {
     "v4_contract_id": "v4_succession_branch_handoff",

@@ -31,8 +31,8 @@
   "runtime_attestation": {
     "enabled": true,
     "integrity_policy_path": "client/runtime/config/security_integrity_policy.json",
-    "heartbeat_latest_path": "state/security/remote_tamper_heartbeat/latest.json",
-    "heartbeat_quarantine_path": "state/security/remote_tamper_heartbeat/quarantine.json",
+    "heartbeat_latest_path": "local/state/security/remote_tamper_heartbeat/latest.json",
+    "heartbeat_quarantine_path": "local/state/security/remote_tamper_heartbeat/quarantine.json",
     "max_heartbeat_age_sec": 180,
     "require_heartbeat_quarantine_alignment": true
   },
@@ -45,13 +45,13 @@
       "medium",
       "hard"
     ],
-    "binary_artifacts_path": "state/ops/binary_runtime_hardening/artifacts.json",
-    "binary_receipts_path": "state/ops/binary_runtime_hardening/receipts.jsonl",
+    "binary_artifacts_path": "local/state/ops/binary_runtime_hardening/artifacts.json",
+    "binary_receipts_path": "local/state/ops/binary_runtime_hardening/receipts.jsonl",
     "max_anti_debug_false_positives_per_day": 24
   },
   "paths": {
-    "latest_path": "state/security/skin_protection/latest.json",
-    "history_path": "state/security/skin_protection/history.jsonl",
-    "stasis_state_path": "state/security/skin_protection/stasis_state.json"
+    "latest_path": "local/state/security/skin_protection/latest.json",
+    "history_path": "local/state/security/skin_protection/history.jsonl",
+    "stasis_state_path": "local/state/security/skin_protection/stasis_state.json"
   }
 }

@@ -27,9 +27,9 @@
   "paths": {
     "memory_dir": "client/memory/ops/protheus_core_rust_binding_plane",
     "adaptive_index_path": "client/cognition/adaptive/ops/protheus_core_rust_binding_plane/index.json",
-    "events_path": "state/ops/protheus_core_rust_binding_plane/events.jsonl",
-    "latest_path": "state/ops/protheus_core_rust_binding_plane/latest.json",
-    "receipts_path": "state/ops/protheus_core_rust_binding_plane/receipts.jsonl",
-    "binding_state_path": "state/ops/protheus_core_rust_binding_plane/state.json"
+    "events_path": "local/state/ops/protheus_core_rust_binding_plane/events.jsonl",
+    "latest_path": "local/state/ops/protheus_core_rust_binding_plane/latest.json",
+    "receipts_path": "local/state/ops/protheus_core_rust_binding_plane/receipts.jsonl",
+    "binding_state_path": "local/state/ops/protheus_core_rust_binding_plane/state.json"
   }
 }

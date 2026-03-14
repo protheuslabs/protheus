@@ -357,8 +357,8 @@ fn load_policy(root: &Path, policy_override: Option<&String>) -> Policy {
         })
         .unwrap_or_else(|| {
             vec![
-                root.join("state/ops/dr_gameday_gate_receipts.jsonl"),
-                root.join("state/ops/continuous_chaos_resilience/latest.json"),
+                root.join("local/state/ops/dr_gameday_gate_receipts.jsonl"),
+                root.join("local/state/ops/continuous_chaos_resilience/latest.json"),
             ]
         });
 
@@ -373,8 +373,8 @@ fn load_policy(root: &Path, policy_override: Option<&String>) -> Policy {
         })
         .unwrap_or_else(|| {
             vec![
-                root.join("state/ops/release_gate_canary_rollback_enforcer/latest.json"),
-                root.join("state/ops/error_budget_release_gate/freeze_state.json"),
+                root.join("local/state/ops/release_gate_canary_rollback_enforcer/latest.json"),
+                root.join("local/state/ops/error_budget_release_gate/freeze_state.json"),
             ]
         });
 
@@ -389,35 +389,35 @@ fn load_policy(root: &Path, policy_override: Option<&String>) -> Policy {
             sources
                 .and_then(|s| s.get("execution_reliability_path"))
                 .and_then(Value::as_str),
-            "state/ops/execution_reliability_slo.json",
+            "local/state/ops/execution_reliability_slo.json",
         ),
         sources_error_budget_latest_path: resolve_path(
             root,
             sources
                 .and_then(|s| s.get("error_budget_latest_path"))
                 .and_then(Value::as_str),
-            "state/ops/error_budget_release_gate/latest.json",
+            "local/state/ops/error_budget_release_gate/latest.json",
         ),
         sources_error_budget_history_path: resolve_path(
             root,
             sources
                 .and_then(|s| s.get("error_budget_history_path"))
                 .and_then(Value::as_str),
-            "state/ops/error_budget_release_gate/history.jsonl",
+            "local/state/ops/error_budget_release_gate/history.jsonl",
         ),
         sources_spine_runs_dir: resolve_path(
             root,
             sources
                 .and_then(|s| s.get("spine_runs_dir"))
                 .and_then(Value::as_str),
-            "state/spine/runs",
+            "local/state/spine/runs",
         ),
         sources_incident_log_path: resolve_path(
             root,
             sources
                 .and_then(|s| s.get("incident_log_path"))
                 .and_then(Value::as_str),
-            "state/security/autonomy_human_escalations.jsonl",
+            "local/state/security/autonomy_human_escalations.jsonl",
         ),
         drill_evidence_paths,
         rollback_evidence_paths,
@@ -434,14 +434,14 @@ fn load_policy(root: &Path, policy_override: Option<&String>) -> Policy {
             outputs
                 .and_then(|s| s.get("latest_path"))
                 .and_then(Value::as_str),
-            "state/ops/f100_reliability_certification/latest.json",
+            "local/state/ops/f100_reliability_certification/latest.json",
         ),
         history_path: resolve_path(
             root,
             outputs
                 .and_then(|s| s.get("history_path"))
                 .and_then(Value::as_str),
-            "state/ops/f100_reliability_certification/history.jsonl",
+            "local/state/ops/f100_reliability_certification/history.jsonl",
         ),
         policy_path,
     }
@@ -824,23 +824,23 @@ mod tests {
                 }
             },
             "sources": {
-                "execution_reliability_path": "state/ops/execution_reliability_slo.json",
-                "error_budget_latest_path": "state/ops/error_budget_release_gate/latest.json",
-                "error_budget_history_path": "state/ops/error_budget_release_gate/history.jsonl",
-                "spine_runs_dir": "state/spine/runs",
-                "incident_log_path": "state/security/autonomy_human_escalations.jsonl",
+                "execution_reliability_path": "local/state/ops/execution_reliability_slo.json",
+                "error_budget_latest_path": "local/state/ops/error_budget_release_gate/latest.json",
+                "error_budget_history_path": "local/state/ops/error_budget_release_gate/history.jsonl",
+                "spine_runs_dir": "local/state/spine/runs",
+                "incident_log_path": "local/state/security/autonomy_human_escalations.jsonl",
                 "drill_evidence_paths": [
-                    "state/ops/dr_gameday_gate_receipts.jsonl"
+                    "local/state/ops/dr_gameday_gate_receipts.jsonl"
                 ],
                 "rollback_evidence_paths": [
-                    "state/ops/error_budget_release_gate/freeze_state.json"
+                    "local/state/ops/error_budget_release_gate/freeze_state.json"
                 ],
                 "min_drill_evidence_count": 1,
                 "min_rollback_evidence_count": 1
             },
             "outputs": {
-                "latest_path": "state/ops/f100_reliability_certification/latest.json",
-                "history_path": "state/ops/f100_reliability_certification/history.jsonl"
+                "latest_path": "local/state/ops/f100_reliability_certification/latest.json",
+                "history_path": "local/state/ops/f100_reliability_certification/history.jsonl"
             }
         });
         write_json(
@@ -851,7 +851,7 @@ mod tests {
 
     fn write_common_fixtures(root: &Path, burn_ratio: f64) {
         write_json(
-            &root.join("state/ops/execution_reliability_slo.json"),
+            &root.join("local/state/ops/execution_reliability_slo.json"),
             &json!({
                 "measured": {
                     "execution_success_rate": 0.97
@@ -859,7 +859,7 @@ mod tests {
             }),
         );
         write_json(
-            &root.join("state/ops/error_budget_release_gate/latest.json"),
+            &root.join("local/state/ops/error_budget_release_gate/latest.json"),
             &json!({
                 "ok": burn_ratio <= 0.45,
                 "gate": {
@@ -869,20 +869,20 @@ mod tests {
             }),
         );
         write_jsonl(
-            &root.join("state/ops/error_budget_release_gate/history.jsonl"),
+            &root.join("local/state/ops/error_budget_release_gate/history.jsonl"),
             &[
                 json!({"ts": "2026-03-01T10:00:00Z", "ok": true, "gate": {"promotion_blocked": false}}),
                 json!({"ts": "2026-03-02T10:00:00Z", "ok": true, "gate": {"promotion_blocked": false}}),
             ],
         );
         write_jsonl(
-            &root.join("state/security/autonomy_human_escalations.jsonl"),
+            &root.join("local/state/security/autonomy_human_escalations.jsonl"),
             &[
                 json!({"type":"autonomy_human_escalation", "ts":"2026-03-02T12:00:00Z", "status":"resolved"}),
             ],
         );
         write_jsonl(
-            &root.join("state/spine/runs/2026-03-02.jsonl"),
+            &root.join("local/state/spine/runs/2026-03-02.jsonl"),
             &[
                 json!({"type":"spine_run_complete", "elapsed_ms": 85.0}),
                 json!({"type":"spine_run_complete", "elapsed_ms": 95.0}),
@@ -890,11 +890,11 @@ mod tests {
             ],
         );
         write_jsonl(
-            &root.join("state/ops/dr_gameday_gate_receipts.jsonl"),
+            &root.join("local/state/ops/dr_gameday_gate_receipts.jsonl"),
             &[json!({"ok": true, "type": "drill"})],
         );
         write_json(
-            &root.join("state/ops/error_budget_release_gate/freeze_state.json"),
+            &root.join("local/state/ops/error_budget_release_gate/freeze_state.json"),
             &json!({"frozen": false}),
         );
     }
@@ -910,7 +910,7 @@ mod tests {
         let (_payload, code) = run_cmd(&policy, true).expect("run cmd");
         assert_eq!(code, 1);
 
-        let latest = read_json(&root.join("state/ops/f100_reliability_certification/latest.json"))
+        let latest = read_json(&root.join("local/state/ops/f100_reliability_certification/latest.json"))
             .expect("latest should exist");
         assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(false));
         assert!(latest
@@ -933,7 +933,7 @@ mod tests {
         let (_payload, code) = run_cmd(&policy, true).expect("run cmd");
         assert_eq!(code, 0);
 
-        let latest = read_json(&root.join("state/ops/f100_reliability_certification/latest.json"))
+        let latest = read_json(&root.join("local/state/ops/f100_reliability_certification/latest.json"))
             .expect("latest should exist");
         assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(true));
         assert_eq!(

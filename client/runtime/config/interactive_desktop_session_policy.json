@@ -18,7 +18,7 @@
     "assert",
     "capture"
   ],
-  "receipts_path": "state/primitives/interactive_desktop_session/receipts.jsonl",
-  "sessions_path": "state/primitives/interactive_desktop_session/sessions.json",
-  "latest_path": "state/primitives/interactive_desktop_session/latest.json"
+  "receipts_path": "local/state/primitives/interactive_desktop_session/receipts.jsonl",
+  "sessions_path": "local/state/primitives/interactive_desktop_session/sessions.json",
+  "latest_path": "local/state/primitives/interactive_desktop_session/latest.json"
 }

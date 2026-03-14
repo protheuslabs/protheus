@@ -21,9 +21,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/ops/black_swan_disaster_gamebooks/state.json",
-    "latest_path": "state/ops/black_swan_disaster_gamebooks/latest.json",
-    "receipts_path": "state/ops/black_swan_disaster_gamebooks/receipts.jsonl",
-    "history_path": "state/ops/black_swan_disaster_gamebooks/history.jsonl"
+    "state_path": "local/state/ops/black_swan_disaster_gamebooks/state.json",
+    "latest_path": "local/state/ops/black_swan_disaster_gamebooks/latest.json",
+    "receipts_path": "local/state/ops/black_swan_disaster_gamebooks/receipts.jsonl",
+    "history_path": "local/state/ops/black_swan_disaster_gamebooks/history.jsonl"
   }
 }

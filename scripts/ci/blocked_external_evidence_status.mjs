@@ -6,7 +6,7 @@ import { dirname, join, resolve } from 'node:path';
 const PLAN_JSON = 'core/local/artifacts/blocked_external_unblock_plan_current.json';
 const EVIDENCE_ROOT = 'docs/external/evidence';
 const OUT_JSON = 'core/local/artifacts/blocked_external_evidence_status_current.json';
-const OUT_MD = 'docs/workspace/BLOCKED_EXTERNAL_EVIDENCE_STATUS.md';
+const OUT_MD = 'local/workspace/reports/BLOCKED_EXTERNAL_EVIDENCE_STATUS.md';
 
 function read(path) {
   return readFileSync(resolve(path), 'utf8');

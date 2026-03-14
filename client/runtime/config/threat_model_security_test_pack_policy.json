@@ -20,7 +20,7 @@
     }
   ],
   "outputs": {
-    "latest_path": "state/security/threat_model_security_test_pack/latest.json",
-    "history_path": "state/security/threat_model_security_test_pack/history.jsonl"
+    "latest_path": "local/state/security/threat_model_security_test_pack/latest.json",
+    "history_path": "local/state/security/threat_model_security_test_pack/history.jsonl"
   }
 }

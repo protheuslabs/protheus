@@ -21,9 +21,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/security/independent_safety_coprocessor_veto_plane/state.json",
-    "latest_path": "state/security/independent_safety_coprocessor_veto_plane/latest.json",
-    "receipts_path": "state/security/independent_safety_coprocessor_veto_plane/receipts.jsonl",
-    "history_path": "state/security/independent_safety_coprocessor_veto_plane/history.jsonl"
+    "state_path": "local/state/security/independent_safety_coprocessor_veto_plane/state.json",
+    "latest_path": "local/state/security/independent_safety_coprocessor_veto_plane/latest.json",
+    "receipts_path": "local/state/security/independent_safety_coprocessor_veto_plane/receipts.jsonl",
+    "history_path": "local/state/security/independent_safety_coprocessor_veto_plane/history.jsonl"
   }
 }

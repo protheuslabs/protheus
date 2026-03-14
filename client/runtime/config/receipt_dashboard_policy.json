@@ -13,9 +13,9 @@
     "no_change"
   ],
   "paths": {
-    "runs_dir": "state/autonomy/runs",
-    "latest_path": "state/autonomy/receipt_dashboard/latest.json",
-    "history_path": "state/autonomy/receipt_dashboard/history.jsonl",
-    "reports_dir": "state/autonomy/receipt_dashboard/reports"
+    "runs_dir": "local/state/autonomy/runs",
+    "latest_path": "local/state/autonomy/receipt_dashboard/latest.json",
+    "history_path": "local/state/autonomy/receipt_dashboard/history.jsonl",
+    "reports_dir": "local/state/autonomy/receipt_dashboard/reports"
   }
 }

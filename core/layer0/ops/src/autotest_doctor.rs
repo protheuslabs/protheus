@@ -351,7 +351,7 @@ fn runtime_paths(root: &Path, policy_path: &Path) -> RuntimePaths {
         .map(PathBuf::from)
         .filter(|p| !p.as_os_str().is_empty())
         .map(|p| if p.is_absolute() { p } else { root.join(p) })
-        .unwrap_or_else(|| root.join("state/ops/autotest_doctor"));
+        .unwrap_or_else(|| root.join("local/state/ops/autotest_doctor"));
 
     RuntimePaths {
         policy_path: std::env::var("AUTOTEST_DOCTOR_POLICY_PATH")
@@ -371,13 +371,13 @@ fn runtime_paths(root: &Path, policy_path: &Path) -> RuntimePaths {
             .map(PathBuf::from)
             .filter(|p| !p.as_os_str().is_empty())
             .map(|p| if p.is_absolute() { p } else { root.join(p) })
-            .unwrap_or_else(|| root.join("state/ops/autotest/runs")),
+            .unwrap_or_else(|| root.join("local/state/ops/autotest/runs")),
         autotest_latest_path: std::env::var("AUTOTEST_DOCTOR_AUTOTEST_LATEST_PATH")
             .ok()
             .map(PathBuf::from)
             .filter(|p| !p.as_os_str().is_empty())
             .map(|p| if p.is_absolute() { p } else { root.join(p) })
-            .unwrap_or_else(|| root.join("state/ops/autotest/latest.json")),
+            .unwrap_or_else(|| root.join("local/state/ops/autotest/latest.json")),
     }
 }
 

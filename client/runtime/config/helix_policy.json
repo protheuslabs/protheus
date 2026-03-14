@@ -7,8 +7,8 @@
     "codex_path": "codex.helix",
     "key_env": "HELIX_CODEX_KEY",
     "constitution_path": "docs/workspace/AGENT-CONSTITUTION.md",
-    "soul_token_state_path": "state/security/soul_token_guard.json",
-    "soul_biometric_state_path": "state/security/soul_biometric/latest.json",
+    "soul_token_state_path": "local/state/security/soul_token_guard.json",
+    "soul_biometric_state_path": "local/state/security/soul_biometric/latest.json",
     "bootstrap_truths": [
       "preserve_constitutional_root",
       "preserve_user_sovereignty",
@@ -28,7 +28,7 @@
       ".json"
     ],
     "exclude_paths": [
-      "state/**",
+      "local/state/**",
       "dist/**",
       "node_modules/**",
       "tmp/**",
@@ -53,9 +53,9 @@
     "eye_gate_mode": "shadow_advisory"
   },
   "reweave": {
-    "snapshot_path": "state/helix/reweave_snapshot.json",
-    "receipts_path": "state/helix/reweave_receipts.jsonl",
-    "quarantine_dir": "state/helix/reweave_quarantine",
+    "snapshot_path": "local/state/helix/reweave_snapshot.json",
+    "receipts_path": "local/state/helix/reweave_receipts.jsonl",
+    "quarantine_dir": "local/state/helix/reweave_quarantine",
     "require_approval_note": true,
     "snapshot_on_clear_attest": true
   }

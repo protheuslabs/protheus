@@ -21,7 +21,7 @@
     "dispute": 4,
     "repeat_business": 24
   },
-  "state_path": "state/workflow/client_relationship_manager/state.json",
-  "latest_path": "state/workflow/client_relationship_manager/latest.json",
-  "receipts_path": "state/workflow/client_relationship_manager/receipts.jsonl"
+  "state_path": "local/state/workflow/client_relationship_manager/state.json",
+  "latest_path": "local/state/workflow/client_relationship_manager/latest.json",
+  "receipts_path": "local/state/workflow/client_relationship_manager/receipts.jsonl"
 }

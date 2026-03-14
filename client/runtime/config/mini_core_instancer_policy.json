@@ -3,7 +3,7 @@
   "enabled": true,
   "max_depth": 4,
   "max_instances": 32,
-  "namespace_root": "state/fractal/mini_core_instancer/namespaces",
+  "namespace_root": "local/state/fractal/mini_core_instancer/namespaces",
   "envelopes": {
     "token_cap_default": 400,
     "token_cap_max": 5000,

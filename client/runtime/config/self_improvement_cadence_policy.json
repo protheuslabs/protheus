@@ -40,14 +40,14 @@
       "manual"
     ],
     "paths": {
-      "gated_loop_latest_path": "state/autonomy/gated_self_improvement/latest.json",
-      "strategy_scorecard_latest_path": "state/client/cognition/adaptive/strategy/scorecards/latest.json",
-      "trigger_state_path": "state/autonomy/self_improvement_cadence/trigger_state.json"
+      "gated_loop_latest_path": "local/state/autonomy/gated_self_improvement/latest.json",
+      "strategy_scorecard_latest_path": "local/state/client/cognition/adaptive/strategy/scorecards/latest.json",
+      "trigger_state_path": "local/state/autonomy/self_improvement_cadence/trigger_state.json"
     }
   },
   "outputs": {
-    "state_path": "state/autonomy/self_improvement_cadence/state.json",
-    "latest_path": "state/autonomy/self_improvement_cadence/latest.json",
-    "receipts_path": "state/autonomy/self_improvement_cadence/receipts.jsonl"
+    "state_path": "local/state/autonomy/self_improvement_cadence/state.json",
+    "latest_path": "local/state/autonomy/self_improvement_cadence/latest.json",
+    "receipts_path": "local/state/autonomy/self_improvement_cadence/receipts.jsonl"
   }
 }

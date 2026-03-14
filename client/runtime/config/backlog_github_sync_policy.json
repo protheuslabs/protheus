@@ -12,9 +12,9 @@
   "max_sync_rows": 200,
   "paths": {
     "registry_path": "client/runtime/config/backlog_registry.json",
-    "state_path": "state/ops/backlog_github_sync/state.json",
-    "latest_path": "state/ops/backlog_github_sync/latest.json",
-    "receipts_path": "state/ops/backlog_github_sync/receipts.jsonl"
+    "state_path": "local/state/ops/backlog_github_sync/state.json",
+    "latest_path": "local/state/ops/backlog_github_sync/latest.json",
+    "receipts_path": "local/state/ops/backlog_github_sync/receipts.jsonl"
   },
   "github": {
     "host": "github.com",

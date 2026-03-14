@@ -6,7 +6,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const OUT_JSON = 'core/local/artifacts/churn_guard_current.json';
-const OUT_MD = 'docs/workspace/CHURN_GUARD_CURRENT.md';
+const OUT_MD = 'local/workspace/reports/CHURN_GUARD_CURRENT.md';
 
 function parseArgs(argv) {
   return {
@@ -30,13 +30,18 @@ function classifyPath(path) {
     return 'lensmap_churn';
   }
   if (
-    /^artifacts\/.*_current\.json$/i.test(path) ||
-    /^docs\/workspace\/SRS_.*CURRENT\.md$/i.test(path) ||
+    /^core\/local\/artifacts\/.*_current\.json$/i.test(path) ||
+    (/^docs\/workspace\/SRS_.*CURRENT\.md$/i.test(path) || /^local\/workspace\/reports\/SRS_.*CURRENT\.md$/i.test(path)) ||
     path === 'docs/workspace/BLOCKED_EXTERNAL_EVIDENCE_STATUS.md' ||
+    path === 'local/workspace/reports/BLOCKED_EXTERNAL_EVIDENCE_STATUS.md' ||
     path === 'docs/workspace/BLOCKED_EXTERNAL_RECONCILE_CANDIDATES.md' ||
+    path === 'local/workspace/reports/BLOCKED_EXTERNAL_RECONCILE_CANDIDATES.md' ||
     path === 'docs/workspace/BLOCKED_EXTERNAL_UNBLOCK_PLAN.md' ||
+    path === 'local/workspace/reports/BLOCKED_EXTERNAL_UNBLOCK_PLAN.md' ||
     path === 'docs/workspace/BLOCKED_EXTERNAL_PACKET_AUDIT.md' ||
-    path === 'docs/workspace/BLOCKED_EXTERNAL_TOP10.md'
+    path === 'local/workspace/reports/BLOCKED_EXTERNAL_PACKET_AUDIT.md' ||
+    path === 'docs/workspace/BLOCKED_EXTERNAL_TOP10.md' ||
+    path === 'local/workspace/reports/BLOCKED_EXTERNAL_TOP10.md'
   ) {
     return 'generated_report_churn';
   }
@@ -106,8 +111,8 @@ function main() {
     rows,
   };
 
-  mkdirSync(resolve('artifacts'), { recursive: true });
-  mkdirSync(resolve('docs/workspace'), { recursive: true });
+  mkdirSync(resolve('core/local/artifacts'), { recursive: true });
+  mkdirSync(resolve('local/workspace/reports'), { recursive: true });
   writeFileSync(resolve(OUT_JSON), `${JSON.stringify(payload, null, 2)}\n`);
   writeFileSync(resolve(OUT_MD), toMarkdown(payload));
 

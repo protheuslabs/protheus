@@ -18,19 +18,19 @@ const SUCCESS_CRITERIA_PATH = process.env.AUTONOMY_TRIT_SHADOW_SUCCESS_CRITERIA_
   : path.join(repoRoot(), 'config', 'trit_shadow_success_criteria.json');
 const TRUST_STATE_PATH = process.env.AUTONOMY_TRIT_SHADOW_TRUST_STATE_PATH
   ? path.resolve(process.env.AUTONOMY_TRIT_SHADOW_TRUST_STATE_PATH)
-  : path.join(repoRoot(), 'state', 'autonomy', 'trit_shadow_trust_state.json');
+  : path.join(repoRoot(), 'local', 'state', 'autonomy', 'trit_shadow_trust_state.json');
 const INFLUENCE_BUDGET_PATH = process.env.AUTONOMY_TRIT_SHADOW_INFLUENCE_BUDGET_PATH
   ? path.resolve(process.env.AUTONOMY_TRIT_SHADOW_INFLUENCE_BUDGET_PATH)
-  : path.join(repoRoot(), 'state', 'autonomy', 'trit_shadow_influence_budget.json');
+  : path.join(repoRoot(), 'local', 'state', 'autonomy', 'trit_shadow_influence_budget.json');
 const INFLUENCE_GUARD_PATH = process.env.AUTONOMY_TRIT_SHADOW_INFLUENCE_GUARD_PATH
   ? path.resolve(process.env.AUTONOMY_TRIT_SHADOW_INFLUENCE_GUARD_PATH)
-  : path.join(repoRoot(), 'state', 'autonomy', 'trit_shadow_influence_guard.json');
+  : path.join(repoRoot(), 'local', 'state', 'autonomy', 'trit_shadow_influence_guard.json');
 const REPORT_HISTORY_PATH = process.env.AUTONOMY_TRIT_SHADOW_REPORT_HISTORY_PATH
   ? path.resolve(process.env.AUTONOMY_TRIT_SHADOW_REPORT_HISTORY_PATH)
-  : path.join(repoRoot(), 'state', 'autonomy', 'trit_shadow_reports', 'history.jsonl');
+  : path.join(repoRoot(), 'local', 'state', 'autonomy', 'trit_shadow_reports', 'history.jsonl');
 const CALIBRATION_HISTORY_PATH = process.env.AUTONOMY_TRIT_SHADOW_CALIBRATION_HISTORY_PATH
   ? path.resolve(process.env.AUTONOMY_TRIT_SHADOW_CALIBRATION_HISTORY_PATH)
-  : path.join(repoRoot(), 'state', 'autonomy', 'trit_shadow_calibration', 'history.jsonl');
+  : path.join(repoRoot(), 'local', 'state', 'autonomy', 'trit_shadow_calibration', 'history.jsonl');
 
 function clampNumber(v: unknown, lo: number, hi: number, fallback: number) {
   const n = Number(v);

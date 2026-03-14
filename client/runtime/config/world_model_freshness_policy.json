@@ -10,7 +10,7 @@
   "freshness_slo_target": 0.9,
   "max_profiles_per_run": 50,
   "profile_roots": [
-    "state/assimilation/capability_profiles/profiles"
+    "local/state/assimilation/capability_profiles/profiles"
   ],
   "required_surface_checks": {
     "legal_ok": true,
@@ -18,9 +18,9 @@
     "rate_limit_hint_present": true
   },
   "outputs": {
-    "latest_path": "state/assimilation/world_model_freshness/latest.json",
-    "receipts_path": "state/assimilation/world_model_freshness/receipts.jsonl",
-    "deltas_path": "state/assimilation/world_model_freshness/deltas.jsonl",
-    "compiler_queue_path": "state/assimilation/world_model_freshness/compiler_queue.jsonl"
+    "latest_path": "local/state/assimilation/world_model_freshness/latest.json",
+    "receipts_path": "local/state/assimilation/world_model_freshness/receipts.jsonl",
+    "deltas_path": "local/state/assimilation/world_model_freshness/deltas.jsonl",
+    "compiler_queue_path": "local/state/assimilation/world_model_freshness/compiler_queue.jsonl"
   }
 }

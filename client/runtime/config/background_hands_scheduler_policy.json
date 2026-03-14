@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/ops/preferences",
     "adaptive_index_path": "client/cognition/adaptive/ops/index.json",
-    "events_path": "state/spine/background_hands/events.jsonl",
-    "latest_path": "state/spine/background_hands/latest.json",
-    "receipts_path": "state/spine/background_hands/receipts.jsonl"
+    "events_path": "local/state/spine/background_hands/events.jsonl",
+    "latest_path": "local/state/spine/background_hands/latest.json",
+    "receipts_path": "local/state/spine/background_hands/receipts.jsonl"
   }
 }

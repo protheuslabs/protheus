@@ -58,10 +58,10 @@
     }
   ],
   "paths": {
-    "latest_path": "state/ops/rust_enterprise_productivity_program/latest.json",
-    "receipts_path": "state/ops/rust_enterprise_productivity_program/receipts.jsonl",
-    "history_path": "state/ops/rust_enterprise_productivity_program/history.jsonl",
-    "state_dir": "state/ops/rust_enterprise_productivity_program/items",
-    "artifact_dir": "state/ops/rust_enterprise_productivity_program/artifacts"
+    "latest_path": "local/state/ops/rust_enterprise_productivity_program/latest.json",
+    "receipts_path": "local/state/ops/rust_enterprise_productivity_program/receipts.jsonl",
+    "history_path": "local/state/ops/rust_enterprise_productivity_program/history.jsonl",
+    "state_dir": "local/state/ops/rust_enterprise_productivity_program/items",
+    "artifact_dir": "local/state/ops/rust_enterprise_productivity_program/artifacts"
   }
 }

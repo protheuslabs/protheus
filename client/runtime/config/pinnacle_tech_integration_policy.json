@@ -17,9 +17,9 @@
   "paths": {
     "memory_dir": "client/memory/research/preferences",
     "adaptive_index_path": "client/cognition/adaptive/research/preferences/index.json",
-    "events_path": "state/research/pinnacle_tech/events.jsonl",
-    "latest_path": "state/research/pinnacle_tech/latest.json",
-    "receipts_path": "state/research/pinnacle_tech/receipts.jsonl",
-    "proposals_path": "state/research/pinnacle_tech/proposals.jsonl"
+    "events_path": "local/state/research/pinnacle_tech/events.jsonl",
+    "latest_path": "local/state/research/pinnacle_tech/latest.json",
+    "receipts_path": "local/state/research/pinnacle_tech/receipts.jsonl",
+    "proposals_path": "local/state/research/pinnacle_tech/proposals.jsonl"
   }
 }

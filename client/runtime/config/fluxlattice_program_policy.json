@@ -21,12 +21,12 @@
     { "id": "V4-PKG-007", "title": "LensMap Adoption Bridge" }
   ],
   "paths": {
-    "state_path": "state/ops/fluxlattice_program/state.json",
-    "latest_path": "state/ops/fluxlattice_program/latest.json",
-    "receipts_path": "state/ops/fluxlattice_program/receipts.jsonl",
-    "history_path": "state/ops/fluxlattice_program/history.jsonl",
-    "security_panel_path": "state/ops/protheus_top/security_panel.json",
-    "flux_events_path": "state/ops/fluxlattice_program/flux_events.jsonl",
+    "state_path": "local/state/ops/fluxlattice_program/state.json",
+    "latest_path": "local/state/ops/fluxlattice_program/latest.json",
+    "receipts_path": "local/state/ops/fluxlattice_program/receipts.jsonl",
+    "history_path": "local/state/ops/fluxlattice_program/history.jsonl",
+    "security_panel_path": "local/state/ops/protheus_top/security_panel.json",
+    "flux_events_path": "local/state/ops/fluxlattice_program/flux_events.jsonl",
     "migration_profiles_path": "client/runtime/config/fluxlattice_migration_profiles.json",
     "lens_mode_policy_path": "client/runtime/config/lens_mode_policy.json"
   }

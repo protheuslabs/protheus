@@ -10,7 +10,7 @@
     "min_parallel": 1
   },
   "outputs": {
-    "latest_path": "state/sensory/parallel_eyes_budget_aware_lane/latest.json",
-    "history_path": "state/sensory/parallel_eyes_budget_aware_lane/history.jsonl"
+    "latest_path": "local/state/sensory/parallel_eyes_budget_aware_lane/latest.json",
+    "history_path": "local/state/sensory/parallel_eyes_budget_aware_lane/history.jsonl"
   }
 }

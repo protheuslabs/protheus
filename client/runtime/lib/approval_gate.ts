@@ -17,7 +17,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const QUEUE_FILE = path.join(__dirname, '..', 'state', 'approvals_queue.yaml');
+const QUEUE_FILE = path.join(__dirname, '..', 'local', 'state', 'approvals_queue.yaml');
 
 /**
  * Load approval queue

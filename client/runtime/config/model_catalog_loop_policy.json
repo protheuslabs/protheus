@@ -33,6 +33,6 @@
     "block_on_hold": false
   },
   "paths": {
-    "burn_oracle_latest_path": "state/ops/dynamic_burn_budget_oracle/latest.json"
+    "burn_oracle_latest_path": "local/state/ops/dynamic_burn_budget_oracle/latest.json"
   }
 }

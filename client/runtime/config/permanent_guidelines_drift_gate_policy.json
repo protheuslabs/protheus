@@ -23,9 +23,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/ops/permanent_guidelines_drift_gate/state.json",
-    "latest_path": "state/ops/permanent_guidelines_drift_gate/latest.json",
-    "receipts_path": "state/ops/permanent_guidelines_drift_gate/receipts.jsonl",
-    "history_path": "state/ops/permanent_guidelines_drift_gate/history.jsonl"
+    "state_path": "local/state/ops/permanent_guidelines_drift_gate/state.json",
+    "latest_path": "local/state/ops/permanent_guidelines_drift_gate/latest.json",
+    "receipts_path": "local/state/ops/permanent_guidelines_drift_gate/receipts.jsonl",
+    "history_path": "local/state/ops/permanent_guidelines_drift_gate/history.jsonl"
   }
 }

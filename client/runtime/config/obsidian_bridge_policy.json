@@ -22,15 +22,15 @@
   },
   "projection": {
     "projection_roots": [
-      "state/obsidian/projections"
+      "local/state/obsidian/projections"
     ],
     "deny_user_authored_paths": true,
     "allow_elevated_override": true
   },
   "outputs": {
-    "receipts_path": "state/obsidian/receipts.jsonl",
-    "ingest_path": "state/obsidian/ingest_events.jsonl",
-    "latest_path": "state/obsidian/latest.json",
-    "ingest_index_path": "state/obsidian/ingest_index.json"
+    "receipts_path": "local/state/obsidian/receipts.jsonl",
+    "ingest_path": "local/state/obsidian/ingest_events.jsonl",
+    "latest_path": "local/state/obsidian/latest.json",
+    "ingest_index_path": "local/state/obsidian/ingest_index.json"
   }
 }

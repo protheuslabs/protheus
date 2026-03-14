@@ -21,9 +21,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/continuity/inter_protheus_federation_trust_web/state.json",
-    "latest_path": "state/continuity/inter_protheus_federation_trust_web/latest.json",
-    "receipts_path": "state/continuity/inter_protheus_federation_trust_web/receipts.jsonl",
-    "history_path": "state/continuity/inter_protheus_federation_trust_web/history.jsonl"
+    "state_path": "local/state/continuity/inter_protheus_federation_trust_web/state.json",
+    "latest_path": "local/state/continuity/inter_protheus_federation_trust_web/latest.json",
+    "receipts_path": "local/state/continuity/inter_protheus_federation_trust_web/receipts.jsonl",
+    "history_path": "local/state/continuity/inter_protheus_federation_trust_web/history.jsonl"
   }
 }

@@ -18,14 +18,14 @@
   ],
   "integration": {
     "self_teacher_policy_path": "client/runtime/config/self_teacher_distillation_primitive_policy.json",
-    "nursery_queue_path": "state/nursery/redteam_training_queue.jsonl",
-    "mirror_hint_path": "state/autonomy/mirror/redteam_self_improvement_hints.jsonl",
-    "formal_verifier_queue_path": "state/security/formal_verifier/redteam_candidate_queue.jsonl",
-    "broken_piece_lab_path": "state/security/red_team/broken_piece_lab.jsonl"
+    "nursery_queue_path": "local/state/nursery/redteam_training_queue.jsonl",
+    "mirror_hint_path": "local/state/autonomy/mirror/redteam_self_improvement_hints.jsonl",
+    "formal_verifier_queue_path": "local/state/security/formal_verifier/redteam_candidate_queue.jsonl",
+    "broken_piece_lab_path": "local/state/security/red_team/broken_piece_lab.jsonl"
   },
   "budget": {
     "enabled": true,
-    "burn_oracle_latest_path": "state/ops/dynamic_burn_budget_oracle/latest.json",
+    "burn_oracle_latest_path": "local/state/ops/dynamic_burn_budget_oracle/latest.json",
     "block_on_pressure": [
       "critical"
     ],
@@ -40,11 +40,11 @@
     "signal_policy_path": "client/runtime/config/symbiosis_coherence_policy.json"
   },
   "state": {
-    "root": "state/security/red_team/self_improvement",
-    "state_path": "state/security/red_team/self_improvement/state.json",
-    "latest_path": "state/security/red_team/self_improvement/latest.json",
-    "history_path": "state/security/red_team/self_improvement/history.jsonl",
-    "receipts_path": "state/security/red_team/self_improvement/receipts.jsonl",
-    "candidate_cases_path": "state/security/red_team/self_improvement/candidate_cases.json"
+    "root": "local/state/security/red_team/self_improvement",
+    "state_path": "local/state/security/red_team/self_improvement/state.json",
+    "latest_path": "local/state/security/red_team/self_improvement/latest.json",
+    "history_path": "local/state/security/red_team/self_improvement/history.jsonl",
+    "receipts_path": "local/state/security/red_team/self_improvement/receipts.jsonl",
+    "candidate_cases_path": "local/state/security/red_team/self_improvement/candidate_cases.json"
   }
 }

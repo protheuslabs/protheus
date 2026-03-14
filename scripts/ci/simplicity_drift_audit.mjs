@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const OUT_JSON = 'core/local/artifacts/simplicity_drift_audit_current.json';
-const OUT_MD = 'docs/workspace/SIMPLICITY_DRIFT_AUDIT_CURRENT.md';
+const OUT_MD = 'local/workspace/reports/SIMPLICITY_DRIFT_AUDIT_CURRENT.md';
 const CLIENT_TARGET_AUDIT = 'core/local/artifacts/client_target_contract_audit_current.json';
 
 function parseArgs(argv) {
@@ -86,8 +86,8 @@ function main() {
     duplicateCommands,
   };
 
-  mkdirSync(resolve('artifacts'), { recursive: true });
-  mkdirSync(resolve('docs/workspace'), { recursive: true });
+  mkdirSync(resolve('core/local/artifacts'), { recursive: true });
+  mkdirSync(resolve('local/workspace/reports'), { recursive: true });
   writeFileSync(resolve(OUT_JSON), `${JSON.stringify(payload, null, 2)}\n`);
   writeFileSync(resolve(OUT_MD), toMarkdown(payload));
 

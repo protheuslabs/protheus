@@ -4,6 +4,7 @@ use protheus_ops_core::{flow_plane, v8_kernel::sha256_hex_str};
 use serde_json::{json, Map, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, MutexGuard, OnceLock};
 use tempfile::TempDir;
 use walkdir::WalkDir;
 
@@ -88,8 +89,16 @@ fn canonical_json_string(value: &Value) -> String {
     serde_json::to_string(&canonicalize_json(value)).expect("encode canonical")
 }
 
+fn flow_test_lock() -> MutexGuard<'static, ()> {
+    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    LOCK.get_or_init(|| Mutex::new(()))
+        .lock()
+        .expect("flow batch10 lock")
+}
+
 #[test]
 fn v6_flow_batch10_core_lanes_execute_with_receipts() {
+    let _guard = flow_test_lock();
     let fixture = stage_fixture_root();
     let root = fixture.path();
 
@@ -356,6 +365,7 @@ fn v6_flow_batch10_core_lanes_execute_with_receipts() {
 
 #[test]
 fn v6_flow_batch10_compile_fails_unknown_node_type_in_strict_mode() {
+    let _guard = flow_test_lock();
     let fixture = stage_fixture_root();
     let root = fixture.path();
     let exit = flow_plane::run(
@@ -389,6 +399,7 @@ fn v6_flow_batch10_compile_fails_unknown_node_type_in_strict_mode() {
 
 #[test]
 fn v6_flow_batch10_rejects_bypass_when_strict() {
+    let _guard = flow_test_lock();
     let fixture = stage_fixture_root();
     let root = fixture.path();
     let exit = flow_plane::run(
@@ -419,6 +430,7 @@ fn v6_flow_batch10_rejects_bypass_when_strict() {
 
 #[test]
 fn v6_flow_batch10_default_component_manifest_passes_in_strict_mode() {
+    let _guard = flow_test_lock();
     let fixture = stage_fixture_root();
     let root = fixture.path();
     std::env::set_var(
@@ -446,6 +458,7 @@ fn v6_flow_batch10_default_component_manifest_passes_in_strict_mode() {
 
 #[test]
 fn v6_flow_batch10_default_template_manifest_passes_in_strict_mode() {
+    let _guard = flow_test_lock();
     let fixture = stage_fixture_root();
     let root = fixture.path();
     std::env::set_var(
@@ -473,6 +486,7 @@ fn v6_flow_batch10_default_template_manifest_passes_in_strict_mode() {
 
 #[test]
 fn v6_flow_batch10_run_alias_executes_through_playground() {
+    let _guard = flow_test_lock();
     let fixture = stage_fixture_root();
     let root = fixture.path();
     let exit = flow_plane::run(
@@ -495,6 +509,7 @@ fn v6_flow_batch10_run_alias_executes_through_playground() {
 
 #[test]
 fn v6_flow_batch10_install_alias_executes_template_governance() {
+    let _guard = flow_test_lock();
     let fixture = stage_fixture_root();
     let root = fixture.path();
     std::env::set_var(
@@ -514,6 +529,7 @@ fn v6_flow_batch10_install_alias_executes_template_governance() {
 
 #[test]
 fn v6_flow_batch10_rejects_bypass_for_run_alias_when_strict() {
+    let _guard = flow_test_lock();
     let fixture = stage_fixture_root();
     let root = fixture.path();
     let exit = flow_plane::run(
@@ -535,6 +551,7 @@ fn v6_flow_batch10_rejects_bypass_for_run_alias_when_strict() {
 
 #[test]
 fn v6_flow_batch10_rejects_bypass_for_install_alias_when_strict() {
+    let _guard = flow_test_lock();
     let fixture = stage_fixture_root();
     let root = fixture.path();
     let exit = flow_plane::run(

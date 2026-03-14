@@ -18,7 +18,7 @@
     "guard:merge:fast"
   ],
   "outputs": {
-    "latest_path": "state/security/required_checks_policy_guard/latest.json",
-    "history_path": "state/security/required_checks_policy_guard/history.jsonl"
+    "latest_path": "local/state/security/required_checks_policy_guard/latest.json",
+    "history_path": "local/state/security/required_checks_policy_guard/history.jsonl"
   }
 }

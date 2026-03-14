@@ -21,9 +21,9 @@
     "blocker_rows": 40
   },
   "outputs": {
-    "latest_path": "state/ops/backlog_execution_pathfinder/latest.json",
-    "history_path": "state/ops/backlog_execution_pathfinder/history.jsonl",
-    "report_path": "state/ops/backlog_execution_pathfinder/report.json",
+    "latest_path": "local/state/ops/backlog_execution_pathfinder/latest.json",
+    "history_path": "local/state/ops/backlog_execution_pathfinder/history.jsonl",
+    "report_path": "local/state/ops/backlog_execution_pathfinder/report.json",
     "report_md_path": "docs/client/backlog_views/execution_path.md"
   }
 }

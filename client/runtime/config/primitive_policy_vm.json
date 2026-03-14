@@ -7,5 +7,5 @@
   "allow_opcode_overrides": [],
   "block_opcode_overrides": [],
   "emit_audit": true,
-  "audit_path": "state/runtime/policy_vm/decisions.jsonl"
+  "audit_path": "local/state/runtime/policy_vm/decisions.jsonl"
 }

@@ -6,16 +6,16 @@
   "window_days": 14,
   "dead_window_days": 7,
   "paths": {
-    "queue_log_path": "state/sensory/queue_log.jsonl",
-    "proposals_dir": "state/sensory/proposals",
-    "decisions_dir": "state/queue/decisions",
-    "eyes_registry_path": "state/sensory/eyes/registry.json",
-    "latest_path": "state/ops/execution_yield_recovery/latest.json",
-    "history_path": "state/ops/execution_yield_recovery/history.jsonl",
-    "throttle_state_path": "state/ops/execution_yield_recovery/intake_throttle.json",
-    "salvage_queue_path": "state/ops/execution_yield_recovery/escalation_salvage.jsonl",
-    "eye_actions_history_path": "state/ops/execution_yield_recovery/eye_actions.jsonl",
-    "artifact_state_path": "state/ops/execution_yield_recovery/artifact_bridge_state.json"
+    "queue_log_path": "local/state/sensory/queue_log.jsonl",
+    "proposals_dir": "local/state/sensory/proposals",
+    "decisions_dir": "local/state/queue/decisions",
+    "eyes_registry_path": "local/state/sensory/eyes/registry.json",
+    "latest_path": "local/state/ops/execution_yield_recovery/latest.json",
+    "history_path": "local/state/ops/execution_yield_recovery/history.jsonl",
+    "throttle_state_path": "local/state/ops/execution_yield_recovery/intake_throttle.json",
+    "salvage_queue_path": "local/state/ops/execution_yield_recovery/escalation_salvage.jsonl",
+    "eye_actions_history_path": "local/state/ops/execution_yield_recovery/eye_actions.jsonl",
+    "artifact_state_path": "local/state/ops/execution_yield_recovery/artifact_bridge_state.json"
   },
   "top_k": {
     "enabled": true,

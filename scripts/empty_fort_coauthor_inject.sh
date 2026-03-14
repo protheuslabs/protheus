@@ -5,7 +5,7 @@ CSV=""
 APPLY=0
 COMMIT_REF="HEAD"
 I_UNDERSTAND=0
-OUT_DIR="state/ops/evidence"
+OUT_DIR="local/state/ops/evidence"
 
 for arg in "$@"; do
   case "$arg" in
@@ -16,7 +16,7 @@ for arg in "$@"; do
     --i-understand-history-rewrite=1) I_UNDERSTAND=1 ;;
     --help|-h)
       cat <<USAGE
-Usage: scripts/empty_fort_coauthor_inject.sh --csv=<path> [--apply] [--commit=HEAD] [--out-dir=state/ops/evidence] [--i-understand-history-rewrite=1]
+Usage: scripts/empty_fort_coauthor_inject.sh --csv=<path> [--apply] [--commit=HEAD] [--out-dir=local/state/ops/evidence] [--i-understand-history-rewrite=1]
 
 Expected CSV headers:
   github_username,email,consent_token

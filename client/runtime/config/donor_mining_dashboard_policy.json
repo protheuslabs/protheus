@@ -13,12 +13,12 @@
   },
   "accepted_statuses": ["validated", "applied", "settled"],
   "paths": {
-    "contributions_path": "state/economy/contributions.json",
-    "donor_state_path": "state/economy/donor_state.json",
-    "receipts_path": "state/economy/receipts.jsonl",
-    "ledger_path": "state/economy/tithe_ledger.jsonl",
-    "latest_path": "state/economy/mining_dashboard/latest.json",
-    "history_path": "state/economy/mining_dashboard/history.jsonl",
-    "rollback_log_path": "state/economy/mining_dashboard/rollbacks.jsonl"
+    "contributions_path": "local/state/economy/contributions.json",
+    "donor_state_path": "local/state/economy/donor_state.json",
+    "receipts_path": "local/state/economy/receipts.jsonl",
+    "ledger_path": "local/state/economy/tithe_ledger.jsonl",
+    "latest_path": "local/state/economy/mining_dashboard/latest.json",
+    "history_path": "local/state/economy/mining_dashboard/history.jsonl",
+    "rollback_log_path": "local/state/economy/mining_dashboard/rollbacks.jsonl"
   }
 }

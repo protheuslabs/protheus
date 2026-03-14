@@ -16,11 +16,11 @@
     "VSCODE_INSPECTOR_OPTIONS"
   ],
   "paths": {
-    "state_path": "state/ops/binary_runtime_hardening/state.json",
-    "latest_path": "state/ops/binary_runtime_hardening/latest.json",
-    "receipts_path": "state/ops/binary_runtime_hardening/receipts.jsonl",
-    "artifacts_path": "state/ops/binary_runtime_hardening/artifacts.json",
-    "debug_sessions_path": "state/ops/binary_runtime_hardening/debug_sessions.json",
-    "soul_guard_path": "state/security/soul_token_guard.json"
+    "state_path": "local/state/ops/binary_runtime_hardening/state.json",
+    "latest_path": "local/state/ops/binary_runtime_hardening/latest.json",
+    "receipts_path": "local/state/ops/binary_runtime_hardening/receipts.jsonl",
+    "artifacts_path": "local/state/ops/binary_runtime_hardening/artifacts.json",
+    "debug_sessions_path": "local/state/ops/binary_runtime_hardening/debug_sessions.json",
+    "soul_guard_path": "local/state/security/soul_token_guard.json"
   }
 }

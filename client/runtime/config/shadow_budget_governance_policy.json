@@ -22,5 +22,5 @@
       "compute_budget_ms": 25000
     }
   },
-  "state_path": "state/ops/shadow_budget_governance/usage.json"
+  "state_path": "local/state/ops/shadow_budget_governance/usage.json"
 }

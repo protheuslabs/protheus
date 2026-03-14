@@ -6,8 +6,8 @@
   "verify_recent_snapshots": 7,
   "alert_on_mismatch": true,
   "paths": {
-    "latest_path": "state/ops/state_backup_integrity/latest.json",
-    "history_path": "state/ops/state_backup_integrity/history.jsonl",
-    "alerts_path": "state/ops/state_backup_integrity/alerts.jsonl"
+    "latest_path": "local/state/ops/state_backup_integrity/latest.json",
+    "history_path": "local/state/ops/state_backup_integrity/history.jsonl",
+    "alerts_path": "local/state/ops/state_backup_integrity/alerts.jsonl"
   }
 }

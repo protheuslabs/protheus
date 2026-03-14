@@ -5,9 +5,9 @@
   "max_offset_abs": 0.2,
   "min_samples": 3,
   "outputs": {
-    "state_path": "state/client/cognition/adaptive/strategy/proposal_type_outcome_calibrator/state.json",
-    "latest_path": "state/client/cognition/adaptive/strategy/proposal_type_outcome_calibrator/latest.json",
-    "history_path": "state/client/cognition/adaptive/strategy/proposal_type_outcome_calibrator/history.jsonl",
-    "receipts_path": "state/client/cognition/adaptive/strategy/receipts.jsonl"
+    "state_path": "local/state/client/cognition/adaptive/strategy/proposal_type_outcome_calibrator/state.json",
+    "latest_path": "local/state/client/cognition/adaptive/strategy/proposal_type_outcome_calibrator/latest.json",
+    "history_path": "local/state/client/cognition/adaptive/strategy/proposal_type_outcome_calibrator/history.jsonl",
+    "receipts_path": "local/state/client/cognition/adaptive/strategy/receipts.jsonl"
   }
 }

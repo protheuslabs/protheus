@@ -14,7 +14,7 @@
       "node": "v22"
     }
   },
-  "state_path": "state/ops/platform_oracle_hostprofile/latest.json",
-  "history_path": "state/ops/platform_oracle_hostprofile/history.jsonl",
-  "last_known_good_path": "state/ops/platform_oracle_hostprofile/last_known_good.json"
+  "state_path": "local/state/ops/platform_oracle_hostprofile/latest.json",
+  "history_path": "local/state/ops/platform_oracle_hostprofile/history.jsonl",
+  "last_known_good_path": "local/state/ops/platform_oracle_hostprofile/last_known_good.json"
 }

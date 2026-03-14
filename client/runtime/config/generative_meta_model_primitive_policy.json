@@ -15,8 +15,8 @@
     "clamp_distance": 4
   },
   "state": {
-    "manifold_state_path": "state/assimilation/generative_meta_model/manifold_state.json",
-    "latest_path": "state/assimilation/generative_meta_model/latest.json",
-    "receipts_path": "state/assimilation/generative_meta_model/receipts.jsonl"
+    "manifold_state_path": "local/state/assimilation/generative_meta_model/manifold_state.json",
+    "latest_path": "local/state/assimilation/generative_meta_model/latest.json",
+    "receipts_path": "local/state/assimilation/generative_meta_model/receipts.jsonl"
   }
 }

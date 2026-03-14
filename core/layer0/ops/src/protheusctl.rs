@@ -89,6 +89,7 @@ fn should_offer_setup(root: &Path, skip_setup: bool) -> bool {
         return true;
     }
     let latest_path = root
+        .join("local")
         .join("state")
         .join("ops")
         .join("protheus_setup_wizard")

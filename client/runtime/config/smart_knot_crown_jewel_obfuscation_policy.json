@@ -22,9 +22,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/security/smart_knot_crown_jewel_obfuscation/state.json",
-    "latest_path": "state/security/smart_knot_crown_jewel_obfuscation/latest.json",
-    "receipts_path": "state/security/smart_knot_crown_jewel_obfuscation/receipts.jsonl",
-    "history_path": "state/security/smart_knot_crown_jewel_obfuscation/history.jsonl"
+    "state_path": "local/state/security/smart_knot_crown_jewel_obfuscation/state.json",
+    "latest_path": "local/state/security/smart_knot_crown_jewel_obfuscation/latest.json",
+    "receipts_path": "local/state/security/smart_knot_crown_jewel_obfuscation/receipts.jsonl",
+    "history_path": "local/state/security/smart_knot_crown_jewel_obfuscation/history.jsonl"
   }
 }

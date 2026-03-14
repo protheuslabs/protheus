@@ -23,9 +23,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/security/mind_fortress_principle/state.json",
-    "latest_path": "state/security/mind_fortress_principle/latest.json",
-    "receipts_path": "state/security/mind_fortress_principle/receipts.jsonl",
-    "history_path": "state/security/mind_fortress_principle/history.jsonl"
+    "state_path": "local/state/security/mind_fortress_principle/state.json",
+    "latest_path": "local/state/security/mind_fortress_principle/latest.json",
+    "receipts_path": "local/state/security/mind_fortress_principle/receipts.jsonl",
+    "history_path": "local/state/security/mind_fortress_principle/history.jsonl"
   }
 }

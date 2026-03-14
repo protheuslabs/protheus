@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/collaboration",
     "adaptive_index_path": "client/cognition/adaptive/collaboration/index.json",
-    "events_path": "state/collaboration\/realtime_presence/events.jsonl",
-    "latest_path": "state/collaboration\/realtime_presence/latest.json",
-    "receipts_path": "state/collaboration\/realtime_presence/receipts.jsonl"
+    "events_path": "local/state/collaboration\/realtime_presence/events.jsonl",
+    "latest_path": "local/state/collaboration\/realtime_presence/latest.json",
+    "receipts_path": "local/state/collaboration\/realtime_presence/receipts.jsonl"
   }
 }

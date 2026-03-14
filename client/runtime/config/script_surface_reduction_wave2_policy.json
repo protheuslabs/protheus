@@ -22,9 +22,9 @@
   "paths": {
     "package_json_path": "package.json",
     "command_registry_policy_path": "client/runtime/config/command_registry_policy.json",
-    "latest_path": "state/ops/script_surface_reduction_wave2/latest.json",
-    "receipts_path": "state/ops/script_surface_reduction_wave2/receipts.jsonl",
-    "command_map_diff_path": "state/ops/script_surface_reduction_wave2/command_map_diff.json",
+    "latest_path": "local/state/ops/script_surface_reduction_wave2/latest.json",
+    "receipts_path": "local/state/ops/script_surface_reduction_wave2/receipts.jsonl",
+    "command_map_diff_path": "local/state/ops/script_surface_reduction_wave2/command_map_diff.json",
     "migration_doc_path": "docs/client/ops/SCRIPT_SURFACE_REDUCTION_WAVE2.md"
   }
 }

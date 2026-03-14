@@ -3,8 +3,8 @@
   "enabled": true,
   "shadow_only": true,
   "paths": {
-    "benchmark_path": "state/client/memory/rust_transition/benchmark_history.json",
-    "benchmark_latest_path": "state/client/memory/rust_transition/benchmark_latest.json",
+    "benchmark_path": "local/state/client/memory/rust_transition/benchmark_history.json",
+    "benchmark_latest_path": "local/state/client/memory/rust_transition/benchmark_latest.json",
     "benchmark_report_path": "benchmarks/memory-stage1.md"
   },
   "benchmark": {
@@ -79,7 +79,7 @@
     "max_fallback_trigger_count": 0,
     "max_restart_count": 2,
     "max_rust_p99_ms": 2000,
-    "restart_history_path": "state/client/memory/rust_transition/daemon_restart_history.jsonl",
-    "promotion_decisions_path": "state/client/memory/rust_transition/soak_promotion_decisions.jsonl"
+    "restart_history_path": "local/state/client/memory/rust_transition/daemon_restart_history.jsonl",
+    "promotion_decisions_path": "local/state/client/memory/rust_transition/soak_promotion_decisions.jsonl"
   }
 }

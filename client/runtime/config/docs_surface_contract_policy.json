@@ -35,7 +35,7 @@
     "codex.helix": "docs/client/internal/persona/CODEX_HELIX.md"
   },
   "paths": {
-    "latest_path": "state/ops/docs_surface_contract/latest.json",
-    "receipts_path": "state/ops/docs_surface_contract/receipts.jsonl"
+    "latest_path": "local/state/ops/docs_surface_contract/latest.json",
+    "receipts_path": "local/state/ops/docs_surface_contract/receipts.jsonl"
   }
 }

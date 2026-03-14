@@ -19,14 +19,14 @@
     "timeout_ms": 5000
   },
   "paths": {
-    "events_path": "state/ops/event_sourced_control_plane/events.jsonl",
-    "stream_events_path": "state/ops/event_sourced_control_plane/stream_events.jsonl",
-    "views_path": "state/ops/event_sourced_control_plane/materialized_views.json",
-    "latest_path": "state/ops/event_sourced_control_plane/latest.json",
-    "receipts_path": "state/ops/event_sourced_control_plane/receipts.jsonl",
-    "jetstream_latest_path": "state/ops/event_sourced_control_plane/jetstream_latest.json",
-    "authority_state_path": "state/ops/event_sourced_control_plane/authority_state.json",
-    "reconcile_latest_path": "state/ops/event_sourced_control_plane/reconcile_latest.json",
-    "rollback_latest_path": "state/ops/event_sourced_control_plane/rollback_latest.json"
+    "events_path": "local/state/ops/event_sourced_control_plane/events.jsonl",
+    "stream_events_path": "local/state/ops/event_sourced_control_plane/stream_events.jsonl",
+    "views_path": "local/state/ops/event_sourced_control_plane/materialized_views.json",
+    "latest_path": "local/state/ops/event_sourced_control_plane/latest.json",
+    "receipts_path": "local/state/ops/event_sourced_control_plane/receipts.jsonl",
+    "jetstream_latest_path": "local/state/ops/event_sourced_control_plane/jetstream_latest.json",
+    "authority_state_path": "local/state/ops/event_sourced_control_plane/authority_state.json",
+    "reconcile_latest_path": "local/state/ops/event_sourced_control_plane/reconcile_latest.json",
+    "rollback_latest_path": "local/state/ops/event_sourced_control_plane/rollback_latest.json"
   }
 }

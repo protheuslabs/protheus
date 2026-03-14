@@ -316,7 +316,7 @@ fn default_policy() -> Top1Policy {
         proof_vm: ProofVmPolicy {
             dockerfile_path: "proofs/layer0/ProofVM.Dockerfile".to_string(),
             replay_script_path: "proofs/layer0/replay.sh".to_string(),
-            manifest_path: "state/ops/top1_assurance/proof_vm_manifest.json".to_string(),
+            manifest_path: "local/state/ops/top1_assurance/proof_vm_manifest.json".to_string(),
         },
         size_gate: SizeGatePolicy {
             binary_path: "target/x86_64-unknown-linux-musl/release/protheusd".to_string(),
@@ -325,7 +325,7 @@ fn default_policy() -> Top1Policy {
             require_static: true,
         },
         benchmark: BenchmarkThresholdPolicy {
-            benchmark_path: "state/ops/top1_assurance/benchmark_latest.json".to_string(),
+            benchmark_path: "local/state/ops/top1_assurance/benchmark_latest.json".to_string(),
             cold_start_max_ms: 80.0,
             idle_rss_max_mb: 25.0,
             tasks_per_sec_min: 5000.0,
@@ -337,8 +337,8 @@ fn default_policy() -> Top1Policy {
             output_path: "docs/comparison/protheus_vs_x.md".to_string(),
         },
         outputs: OutputPolicy {
-            latest_path: "state/ops/top1_assurance/latest.json".to_string(),
-            history_path: "state/ops/top1_assurance/history.jsonl".to_string(),
+            latest_path: "local/state/ops/top1_assurance/latest.json".to_string(),
+            history_path: "local/state/ops/top1_assurance/history.jsonl".to_string(),
         },
     }
 }
@@ -1045,7 +1045,7 @@ fn collect_benchmark_metrics(
             &generated,
         );
         let _ = write_json(
-            &root.join("state/ops/top1_assurance/benchmark_latest.json"),
+            &root.join("local/state/ops/top1_assurance/benchmark_latest.json"),
             &generated,
         );
     }
@@ -1467,7 +1467,7 @@ mod tests {
         let md = render_matrix_markdown(
             "2026-03-13T00:00:00Z",
             &projects,
-            "state/ops/top1_assurance/benchmark_latest.json",
+            "local/state/ops/top1_assurance/benchmark_latest.json",
             "client/runtime/config/competitive_benchmark_snapshot_2026_02.json",
         );
         assert!(md.contains("# Protheus vs X (CI Generated)"));

@@ -17,10 +17,10 @@
     "client/runtime/config/capability_switchboard_policy.json",
     "client/runtime/systems/security/integrity_kernel.ts"
   ],
-  "immutable_baseline_path": "state/security/governance_hardening_pack/immutable_baseline.json",
-  "emergency_stop_path": "state/security/governance_hardening_pack/emergency_stop.json",
+  "immutable_baseline_path": "local/state/security/governance_hardening_pack/immutable_baseline.json",
+  "emergency_stop_path": "local/state/security/governance_hardening_pack/emergency_stop.json",
   "outputs": {
-    "latest_path": "state/security/governance_hardening_pack/latest.json",
-    "history_path": "state/security/governance_hardening_pack/history.jsonl"
+    "latest_path": "local/state/security/governance_hardening_pack/latest.json",
+    "history_path": "local/state/security/governance_hardening_pack/history.jsonl"
   }
 }

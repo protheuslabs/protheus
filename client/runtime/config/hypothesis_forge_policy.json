@@ -9,9 +9,9 @@
     "risk_penalty": 0.15
   },
   "paths": {
-    "pending_signals_path": "state/science/hypothesis_forge/pending_signals.jsonl",
-    "latest_path": "state/science/hypothesis_forge/latest.json",
-    "history_path": "state/science/hypothesis_forge/history.jsonl",
-    "ranked_path": "state/science/hypothesis_forge/ranked.json"
+    "pending_signals_path": "local/state/science/hypothesis_forge/pending_signals.jsonl",
+    "latest_path": "local/state/science/hypothesis_forge/latest.json",
+    "history_path": "local/state/science/hypothesis_forge/history.jsonl",
+    "ranked_path": "local/state/science/hypothesis_forge/ranked.json"
   }
 }

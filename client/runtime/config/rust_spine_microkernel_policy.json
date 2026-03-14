@@ -57,11 +57,11 @@
     }
   ],
   "paths": {
-    "state_path": "state/ops/rust_spine_microkernel/state.json",
-    "latest_path": "state/ops/rust_spine_microkernel/latest.json",
-    "receipts_path": "state/ops/rust_spine_microkernel/receipts.jsonl",
-    "parity_history_path": "state/ops/rust_spine_microkernel/parity_history.jsonl",
-    "benchmark_history_path": "state/ops/rust_spine_microkernel/benchmark_history.jsonl",
-    "rollback_history_path": "state/ops/rust_spine_microkernel/rollback_history.jsonl"
+    "state_path": "local/state/ops/rust_spine_microkernel/state.json",
+    "latest_path": "local/state/ops/rust_spine_microkernel/latest.json",
+    "receipts_path": "local/state/ops/rust_spine_microkernel/receipts.jsonl",
+    "parity_history_path": "local/state/ops/rust_spine_microkernel/parity_history.jsonl",
+    "benchmark_history_path": "local/state/ops/rust_spine_microkernel/benchmark_history.jsonl",
+    "rollback_history_path": "local/state/ops/rust_spine_microkernel/rollback_history.jsonl"
   }
 }

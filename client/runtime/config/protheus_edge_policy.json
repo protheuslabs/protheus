@@ -25,10 +25,10 @@
   "paths": {
     "memory_dir": "client/memory/edge/protheus_edge",
     "adaptive_index_path": "client/cognition/adaptive/edge/protheus_edge/index.json",
-    "events_path": "state/edge/protheus_edge/events.jsonl",
-    "latest_path": "state/edge/protheus_edge/latest.json",
-    "receipts_path": "state/edge/protheus_edge/receipts.jsonl",
-    "session_state_path": "state/edge/protheus_edge/session_state.json",
-    "cache_index_path": "state/edge/protheus_edge/cache_index.json"
+    "events_path": "local/state/edge/protheus_edge/events.jsonl",
+    "latest_path": "local/state/edge/protheus_edge/latest.json",
+    "receipts_path": "local/state/edge/protheus_edge/receipts.jsonl",
+    "session_state_path": "local/state/edge/protheus_edge/session_state.json",
+    "cache_index_path": "local/state/edge/protheus_edge/cache_index.json"
   }
 }

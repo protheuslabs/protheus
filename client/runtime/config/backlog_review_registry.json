@@ -1317,7 +1317,7 @@
       "status": "done",
       "title": "Vault and Security Shared Rust Core (ZK/FHE Envelope)",
       "problem": "Security/vault primitives are not yet fully consolidated under one Rust-first cryptographic runtime with immutable fail-closed behavior.",
-      "acceptance": "Consolidate vault/security compute primitives into shared Rust core with enforced fail-closed covenant behavior and mobile-safe performance constraints. Verify via tamper simulation + crypto policy conformance receipts (`seal <4ms`, background heap growth `0`) and rollback by restoring prior hardened security profiles under emergency policy gate. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/security_vault.rs`, `client/runtime/systems/hybrid/rust/src/econ_crypto.rs`, `state/ops/rust50_migration_program/artifacts/v6_rust50_004_security_vault_core.json`.",
+      "acceptance": "Consolidate vault/security compute primitives into shared Rust core with enforced fail-closed covenant behavior and mobile-safe performance constraints. Verify via tamper simulation + crypto policy conformance receipts (`seal <4ms`, background heap growth `0`) and rollback by restoring prior hardened security profiles under emergency policy gate. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/security_vault.rs`, `client/runtime/systems/hybrid/rust/src/econ_crypto.rs`, `local/state/ops/rust50_migration_program/artifacts/v6_rust50_004_security_vault_core.json`.",
       "dependencies": [
         "V5-RUST-HYB-004",
         "V5-RUST-PROD-010",
@@ -1355,7 +1355,7 @@
       "status": "done",
       "title": "Platform Oracle HostProfile Service (Burn-Limiter Expansion)",
       "problem": "Steward-agnostic adaptation needs one authoritative, typed host identity contract before any channel or lane can safely activate.",
-      "acceptance": "Added `client/runtime/systems/ops/platform_oracle_hostprofile.{ts,js}` + `client/runtime/config/platform_oracle_hostprofile_policy.json` to run boot/promotion/periodic host probing with signed `HostProfile` receipts (OS/distro/variant/kernel/runtime/cloud/hardware/capabilities), fail-closed minimal fallback, and rollback to last-known-good profile; deterministic artifacts are written to `state/ops/platform_oracle_hostprofile/` and covered by `tests/client-memory-tools/platform_adaptation_stack.test.js`. Verify via npm run -s lane:v3-race-209:run and npm run -s test:lane:v3-race-209; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/platform_oracle_hostprofile.ts`.",
+      "acceptance": "Added `client/runtime/systems/ops/platform_oracle_hostprofile.{ts,js}` + `client/runtime/config/platform_oracle_hostprofile_policy.json` to run boot/promotion/periodic host probing with signed `HostProfile` receipts (OS/distro/variant/kernel/runtime/cloud/hardware/capabilities), fail-closed minimal fallback, and rollback to last-known-good profile; deterministic artifacts are written to `local/state/ops/platform_oracle_hostprofile/` and covered by `tests/client-memory-tools/platform_adaptation_stack.test.js`. Verify via npm run -s lane:v3-race-209:run and npm run -s test:lane:v3-race-209; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/platform_oracle_hostprofile.ts`.",
       "dependencies": [
         "V3-RACE-034",
         "V3-RACE-116",
@@ -1604,7 +1604,7 @@
       "status": "done",
       "title": "Execution Deterministic Runtime Rust Cutover + Replay Proofs",
       "problem": "Execution state machine and replay paths still rely on mixed-language orchestration that can introduce drift and overhead under high cadence workloads.",
-      "acceptance": "Complete Rust execution runtime + deterministic replay receipt proofs with WASM verification and mobile-safe bindings, retaining TS CLI parse layer only. Verify via 1000-run drift tests + replay parity receipts (`step p95 <5ms`, battery impact `<1.2%/24h`) and rollback by switching runtime selector to prior execution engine. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/execution_replay.rs`, `state/ops/rust50_migration_program/artifacts/v6_rust50_002_execution_core.json`, `tests/client-memory-tools/rust50_migration_program.test.js`.",
+      "acceptance": "Complete Rust execution runtime + deterministic replay receipt proofs with WASM verification and mobile-safe bindings, retaining TS CLI parse layer only. Verify via 1000-run drift tests + replay parity receipts (`step p95 <5ms`, battery impact `<1.2%/24h`) and rollback by switching runtime selector to prior execution engine. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/execution_replay.rs`, `local/state/ops/rust50_migration_program/artifacts/v6_rust50_002_execution_core.json`, `tests/client-memory-tools/rust50_migration_program.test.js`.",
       "dependencies": [
         "V5-RUST-HYB-003",
         "V5-RUST-PROD-003",
@@ -1735,7 +1735,7 @@
       "status": "blocked",
       "title": "Mega Sprint 1 Public 50 Percent Rust Migration (8 Crates + Blobized Core Paths)",
       "problem": "Public repository language composition remains overwhelmingly TypeScript, and prior internal/weighted migration signals do not guarantee externally visible Rust ownership at the required threshold.",
-      "acceptance": "Execute all eleven mega-sprint steps in strict sequence: migrate `execution`, `pinnacle`, `vault`, `red_legion`, `observability`, `graph`, `swarm`, and `mobile` to crate-first Rust ownership; integrate blob fold/unfold + manifest in all eight crates; maintain thin backward-compatible TS wrappers; update root Cargo workspace; and complete full parity + WASM + battery proof suite. Completion requires deterministic artifact bundle: git diff summary for `crates/` and `client/runtime/systems/`, successful `wasm32-unknown-unknown --release` builds for each migrated crate, and public GitHub language-bar evidence showing Rust `>=50%` with TypeScript decrease. Completion is hard-blocked pending explicit human approval after audit. Commit contract: `feat(rust-migration): Mega Sprint 1 - visible 50% Rust + 8 core crates + blob integration`. BLOCKED evidence: `state/ops/rust50_mega_sprint1_batch/latest.json` (`rust_share_pct_after=6.253`, `rust_share_min_pct=50`, violation `rust_share_min_ok`).",
+      "acceptance": "Execute all eleven mega-sprint steps in strict sequence: migrate `execution`, `pinnacle`, `vault`, `red_legion`, `observability`, `graph`, `swarm`, and `mobile` to crate-first Rust ownership; integrate blob fold/unfold + manifest in all eight crates; maintain thin backward-compatible TS wrappers; update root Cargo workspace; and complete full parity + WASM + battery proof suite. Completion requires deterministic artifact bundle: git diff summary for `crates/` and `client/runtime/systems/`, successful `wasm32-unknown-unknown --release` builds for each migrated crate, and public GitHub language-bar evidence showing Rust `>=50%` with TypeScript decrease. Completion is hard-blocked pending explicit human approval after audit. Commit contract: `feat(rust-migration): Mega Sprint 1 - visible 50% Rust + 8 core crates + blob integration`. BLOCKED evidence: `local/state/ops/rust50_mega_sprint1_batch/latest.json` (`rust_share_pct_after=6.253`, `rust_share_min_pct=50`, violation `rust_share_min_ok`).",
       "dependencies": [
         "V6-RUST50-CONF-002",
         "V6-RUST50-CONF-003",
@@ -2018,7 +2018,7 @@
       "status": "done",
       "title": "Execution Crate Public-Language-Bar Rust Cutover (No Weighted Tricks)",
       "problem": "Prior execution migration evidence can satisfy weighted governance while still under-delivering public repository language-bar impact and keeping too much logic outside `core/layer2/execution/`.",
-      "acceptance": "Implement real `core/layer2/execution/` crate (`cdylib` + `wasm32-unknown-unknown` target) that owns deterministic workflow runner, receipt generation, and state machine logic; retain only a thin TS wrapper in `client/runtime/systems/execution/index.ts` through stable FFI. Verify with full parity tests, successful `cargo build --target wasm32-unknown-unknown --release`, full git diff evidence, and tracked line-count delta showing Rust increase and TypeScript decrease (`git ls-files | xargs wc -l` baseline vs after). Rollback by feature-flagged runtime selector restoring previous execution lane and preserving replay compatibility receipts. Completion is blocked until explicit human approval after proof bundle review. Evidence: `client/runtime/systems/ops/rust50_conf001_execution_cutover.ts`, `client/runtime/config/rust50_conf001_execution_cutover_policy.json`, `tests/client-memory-tools/rust50_conf001_execution_cutover.test.js`, `state/ops/rust50_conf001/latest.json`.",
+      "acceptance": "Implement real `core/layer2/execution/` crate (`cdylib` + `wasm32-unknown-unknown` target) that owns deterministic workflow runner, receipt generation, and state machine logic; retain only a thin TS wrapper in `client/runtime/systems/execution/index.ts` through stable FFI. Verify with full parity tests, successful `cargo build --target wasm32-unknown-unknown --release`, full git diff evidence, and tracked line-count delta showing Rust increase and TypeScript decrease (`git ls-files | xargs wc -l` baseline vs after). Rollback by feature-flagged runtime selector restoring previous execution lane and preserving replay compatibility receipts. Completion is blocked until explicit human approval after proof bundle review. Evidence: `client/runtime/systems/ops/rust50_conf001_execution_cutover.ts`, `client/runtime/config/rust50_conf001_execution_cutover_policy.json`, `tests/client-memory-tools/rust50_conf001_execution_cutover.test.js`, `local/state/ops/rust50_conf001/latest.json`.",
       "dependencies": [
         "V6-RUST50-002",
         "V6-RUST50-007"
@@ -2071,7 +2071,7 @@
       "status": "done",
       "title": "Runtime Tamper Attestation + Self-Containment",
       "problem": "Detect live patching/removal attempts and contain safely",
-      "acceptance": "SKIN runtime attestation now combines integrity kernel + remote heartbeat posture checks (`integrity_policy_path`, heartbeat latest/quarantine alignment), and can transition to deterministic stasis containment state (`state/security/skin_protection/stasis_state.json`) via `verify/enforce` flows with forensic history receipts. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_skin_002_anchor.ts`.",
+      "acceptance": "SKIN runtime attestation now combines integrity kernel + remote heartbeat posture checks (`integrity_policy_path`, heartbeat latest/quarantine alignment), and can transition to deterministic stasis containment state (`local/state/security/skin_protection/stasis_state.json`) via `verify/enforce` flows with forensic history receipts. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_skin_002_anchor.ts`.",
       "dependencies": [],
       "impact_score": 15,
       "risk_score": 24,
@@ -2086,7 +2086,7 @@
       "status": "done",
       "title": "Red Legion Chaos + Observability Rust Merge Core",
       "problem": "Chaos and observability hot loops remain fragmented, limiting throughput and increasing runtime overhead on always-on phone and edge deployments.",
-      "acceptance": "Deliver Rust-first chaos + telemetry core with signed proof artifacts, sovereignty scoring, and low-overhead trace emit path for Tauri/mobile bindings. Verify via chaos throughput + telemetry overhead receipts (`telemetry overhead <1ms`, chaos battery `<3%/24h`) and rollback by toggling back to previous chaos/observability adapters. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/red_chaos.rs`, `client/runtime/systems/hybrid/rust/src/telemetry_emit.rs`, `state/ops/rust50_migration_program/artifacts/v6_rust50_005_chaos_observability_core.json`.",
+      "acceptance": "Deliver Rust-first chaos + telemetry core with signed proof artifacts, sovereignty scoring, and low-overhead trace emit path for Tauri/mobile bindings. Verify via chaos throughput + telemetry overhead receipts (`telemetry overhead <1ms`, chaos battery `<3%/24h`) and rollback by toggling back to previous chaos/observability adapters. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/red_chaos.rs`, `client/runtime/systems/hybrid/rust/src/telemetry_emit.rs`, `local/state/ops/rust50_migration_program/artifacts/v6_rust50_005_chaos_observability_core.json`.",
       "dependencies": [
         "V5-RUST-HYB-007",
         "V5-RUST-HYB-008",
@@ -2162,7 +2162,7 @@
       "status": "done",
       "title": "Pinnacle CRDT Rust Engine Phone-First",
       "problem": "Offline merge/conflict resolution remains partially non-Rust, limiting deterministic convergence guarantees on multi-device background sync.",
-      "acceptance": "Move Pinnacle CRDT merge engine fully to Rust with WASM/Tauri mobile background sync hooks and per-merge sovereignty checks. Verify via convergence replay suite + suspend/resume sync receipts (`merge <2ms`, idle battery `<0.5%/24h`) and rollback by reverting to previous merge adapter lane. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/crdt_merge.rs`, `state/ops/rust50_migration_program/artifacts/v6_rust50_003_crdt_core.json`, `tests/client-memory-tools/rust50_migration_program.test.js`.",
+      "acceptance": "Move Pinnacle CRDT merge engine fully to Rust with WASM/Tauri mobile background sync hooks and per-merge sovereignty checks. Verify via convergence replay suite + suspend/resume sync receipts (`merge <2ms`, idle battery `<0.5%/24h`) and rollback by reverting to previous merge adapter lane. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/crdt_merge.rs`, `local/state/ops/rust50_migration_program/artifacts/v6_rust50_003_crdt_core.json`, `tests/client-memory-tools/rust50_migration_program.test.js`.",
       "dependencies": [
         "V5-RUST-HYB-005",
         "V5-RUST-PROD-004",
@@ -2181,7 +2181,7 @@
       "status": "done",
       "title": "Sprint 1 Visible Rust Migration Batch (Execution/Pinnacle/Vault/Red Legion)",
       "problem": "Existing migration evidence can pass internal gates while under-delivering visible public repository Rust share changes and complete crate-first ownership across critical modules.",
-      "acceptance": "Execute Sprint 1 strict sequence across four crate-first migrations (`execution`, `pinnacle`, `vault`, `red_legion`), blob integration in all crates, thin TS wrappers, full parity + WASM + battery receipts, and workspace updates. Completion proof must include full `crates/` + `client/runtime/systems/` diffs, successful WASM builds for each migrated crate, and tracked/public Rust language increase evidence with TS decrease. Commit contract: `feat(rust-migration): Sprint 1 - visible Rust increase + 4 core crates + blob integration`. Completion blocked until explicit human audit approval. Evidence: `client/runtime/systems/ops/rust50_sprint1_batch.ts`, `client/runtime/config/rust50_sprint1_batch_policy.json`, `state/ops/rust50_sprint1_batch/latest.json`.",
+      "acceptance": "Execute Sprint 1 strict sequence across four crate-first migrations (`execution`, `pinnacle`, `vault`, `red_legion`), blob integration in all crates, thin TS wrappers, full parity + WASM + battery receipts, and workspace updates. Completion proof must include full `crates/` + `client/runtime/systems/` diffs, successful WASM builds for each migrated crate, and tracked/public Rust language increase evidence with TS decrease. Commit contract: `feat(rust-migration): Sprint 1 - visible Rust increase + 4 core crates + blob integration`. Completion blocked until explicit human audit approval. Evidence: `client/runtime/systems/ops/rust50_sprint1_batch.ts`, `client/runtime/config/rust50_sprint1_batch_policy.json`, `local/state/ops/rust50_sprint1_batch/latest.json`.",
       "dependencies": [
         "V6-RUST50-CONF-002",
         "V6-RUST50-CONF-001",
@@ -2631,7 +2631,7 @@
       "status": "done",
       "title": "Dynamic Source Reliability Graph",
       "problem": "Flat source weighting ignores reliability drift and harms analysis precision.",
-      "acceptance": "Added `client/runtime/systems/sensory/dynamic_source_reliability_graph.{ts,js}` + `client/runtime/config/dynamic_source_reliability_graph_policy.json` to update per-source reliability scores from hypothesis truth outcomes with bounded per-event influence, neutral-decay behavior, and calibration receipts under `state/sensory/analysis/source_reliability/`; regression coverage in `tests/client-memory-tools/dynamic_source_reliability_graph.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/dynamic_source_reliability_graph.{ts,js}` + `client/runtime/config/dynamic_source_reliability_graph_policy.json` to update per-source reliability scores from hypothesis truth outcomes with bounded per-event influence, neutral-decay behavior, and calibration receipts under `local/state/sensory/analysis/source_reliability/`; regression coverage in `tests/client-memory-tools/dynamic_source_reliability_graph.test.js`.",
       "dependencies": [
         "V3-RACE-078",
         "V3-RACE-081"
@@ -2800,7 +2800,7 @@
       "status": "done",
       "title": "Rust hotspot inventory + milestone calculator",
       "problem": "Migration sequencing needs deterministic impact ranking and explicit line-to-target math to avoid low-yield sprint churn.",
-      "acceptance": "Added inventory runtime and policy (`client/runtime/systems/ops/rust_hotpath_inventory.ts`, `client/runtime/config/rust_hotpath_inventory_policy.json`) with artifact outputs (`state/ops/rust_hotpath_inventory/latest.json`, `history.jsonl`) and docs (`docs/client/RUST50_HOTPATH_INVENTORY.md`). Regression + sovereignty checks pass (`tests/client-memory-tools/rust_hotpath_inventory.test.js`, `tests/client-memory-tools/protheusctl_dispatch_security_gate.test.js`).",
+      "acceptance": "Added inventory runtime and policy (`client/runtime/systems/ops/rust_hotpath_inventory.ts`, `client/runtime/config/rust_hotpath_inventory_policy.json`) with artifact outputs (`local/state/ops/rust_hotpath_inventory/latest.json`, `history.jsonl`) and docs (`docs/client/RUST50_HOTPATH_INVENTORY.md`). Regression + sovereignty checks pass (`tests/client-memory-tools/rust_hotpath_inventory.test.js`, `tests/client-memory-tools/protheusctl_dispatch_security_gate.test.js`).",
       "dependencies": [],
       "impact_score": 18,
       "risk_score": 16,
@@ -2849,7 +2849,7 @@
       "status": "done",
       "title": "Daemon Soak Promotion Gate + Receipts (24-48h)",
       "problem": "Stage 3 daemon path is live, but fallback retirement should be evidence-gated by sustained stability under real load.",
-      "acceptance": "Added `soak-gate` lane to `client/runtime/systems/memory/rust_memory_transition_lane.ts` + policy wiring in `client/runtime/config/rust_memory_transition_policy.json` to evaluate 24-48h windows for p99 latency, pass rate, fallback-trigger count, and daemon restart count, with fail-closed strict mode and receipt persistence (`state/client/memory/rust_transition/soak_promotion_decisions.jsonl`); coverage added in `tests/client-memory-tools/rust_memory_transition_lane.test.js`.",
+      "acceptance": "Added `soak-gate` lane to `client/runtime/systems/memory/rust_memory_transition_lane.ts` + policy wiring in `client/runtime/config/rust_memory_transition_policy.json` to evaluate 24-48h windows for p99 latency, pass rate, fallback-trigger count, and daemon restart count, with fail-closed strict mode and receipt persistence (`local/state/client/memory/rust_transition/soak_promotion_decisions.jsonl`); coverage added in `tests/client-memory-tools/rust_memory_transition_lane.test.js`.",
       "dependencies": [
         "V3-RACE-023",
         "RM-122"
@@ -3038,7 +3038,7 @@
       "status": "done",
       "title": "Memory 100 Percent Rust Core + WASM Mobile Bindings",
       "problem": "Memory logic remains split across TS and Rust, limiting deterministic performance, battery control, and share growth toward 50 percent Rust by critical module weight.",
-      "acceptance": "Migrate memory core hot paths to Rust crate-first architecture with wasm32/iOS/Android targets, preserve thin TS wrapper only, and enforce call-level sovereignty + signed receipts. Verify via device-profile benchmark receipts (`recall <3ms`, memory call p95 `<5ms`, battery impact `<0.8%/24h`) and rollback by feature-flagging Rust memory lane to prior adapter profile. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/memory_hotpath.rs`, `state/ops/rust50_migration_program/artifacts/v6_rust50_001_memory_core.json`, `tests/client-memory-tools/rust50_migration_program.test.js`.",
+      "acceptance": "Migrate memory core hot paths to Rust crate-first architecture with wasm32/iOS/Android targets, preserve thin TS wrapper only, and enforce call-level sovereignty + signed receipts. Verify via device-profile benchmark receipts (`recall <3ms`, memory call p95 `<5ms`, battery impact `<0.8%/24h`) and rollback by feature-flagging Rust memory lane to prior adapter profile. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/systems/hybrid/rust/src/memory_hotpath.rs`, `local/state/ops/rust50_migration_program/artifacts/v6_rust50_001_memory_core.json`, `tests/client-memory-tools/rust50_migration_program.test.js`.",
       "dependencies": [
         "V5-RUST-HYB-002",
         "V5-RUST-PROD-004",
@@ -3057,7 +3057,7 @@
       "status": "done",
       "title": "Sprint-Mode Enforcer + Batch Audit Contract",
       "problem": "Repeated micro-prompt execution increases orchestration drift and weakens enforcement traceability for high-stakes migration sprints.",
-      "acceptance": "Implement sprint-mode contract requiring: enforcer preamble acknowledgment, single-batch ordered execution plan, immutable no-skip/no-premature-done rule, and end-of-sprint audit artifact summarizing completion, blockers, and proof references. Verify via sprint contract receipts and policy-gate tests; rollback by reverting to existing per-item lane execution flow with advisory-only sprint hints. Evidence: `client/runtime/systems/ops/rust50_sprint_contract.ts`, `client/runtime/config/rust50_sprint_contract_policy.json`, `tests/client-memory-tools/rust50_sprint_contract.test.js`, `state/ops/rust50_sprint_contract/latest.json`.",
+      "acceptance": "Implement sprint-mode contract requiring: enforcer preamble acknowledgment, single-batch ordered execution plan, immutable no-skip/no-premature-done rule, and end-of-sprint audit artifact summarizing completion, blockers, and proof references. Verify via sprint contract receipts and policy-gate tests; rollback by reverting to existing per-item lane execution flow with advisory-only sprint hints. Evidence: `client/runtime/systems/ops/rust50_sprint_contract.ts`, `client/runtime/config/rust50_sprint_contract_policy.json`, `tests/client-memory-tools/rust50_sprint_contract.test.js`, `local/state/ops/rust50_sprint_contract/latest.json`.",
       "dependencies": [
         "V6-RUST50-CONF-001",
         "V6-RUST50-007"
@@ -3230,7 +3230,7 @@
       "status": "done",
       "title": "Offline Statistical Lab Artifact Bridge (R/Python Optional)",
       "problem": "Advanced calibration/causal diagnostics benefit from offline tooling while runtime should remain deterministic and fast.",
-      "acceptance": "Added `client/runtime/systems/sensory/offline_statistical_lab_artifact_bridge.{ts,js}` + `client/runtime/config/offline_statistical_lab_artifact_bridge_policy.json` to ingest signed offline lab artifacts with required-field + trusted-key provenance checks and fail-closed behavior, persisting verified core/local/artifacts/receipts under `state/sensory/analysis/offline_lab_bridge/`; regression coverage in `tests/client-memory-tools/offline_statistical_lab_artifact_bridge.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/offline_statistical_lab_artifact_bridge.{ts,js}` + `client/runtime/config/offline_statistical_lab_artifact_bridge_policy.json` to ingest signed offline lab artifacts with required-field + trusted-key provenance checks and fail-closed behavior, persisting verified core/local/artifacts/receipts under `local/state/sensory/analysis/offline_lab_bridge/`; regression coverage in `tests/client-memory-tools/offline_statistical_lab_artifact_bridge.test.js`.",
       "dependencies": [
         "V3-RACE-086",
         "V3-RACE-096",
@@ -3468,7 +3468,7 @@
       "status": "done",
       "title": "Multi-Hop Objective Chain Mapper",
       "problem": "Signal-to-objective linkage is currently shallow, limiting explainability and prioritization quality.",
-      "acceptance": "Added `client/runtime/systems/sensory/multi_hop_objective_chain_mapper.{ts,js}` + `client/runtime/config/multi_hop_objective_chain_policy.json` to fuse cross-signal hypotheses and latent-intent edges into explainable four-hop paths (`eye -> topic -> implication -> objective`) with confidence-weighted ranking receipts under `state/sensory/analysis/objective_chain_mapper/`; regression coverage in `tests/client-memory-tools/multi_hop_objective_chain_mapper.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/multi_hop_objective_chain_mapper.{ts,js}` + `client/runtime/config/multi_hop_objective_chain_policy.json` to fuse cross-signal hypotheses and latent-intent edges into explainable four-hop paths (`eye -> topic -> implication -> objective`) with confidence-weighted ranking receipts under `local/state/sensory/analysis/objective_chain_mapper/`; regression coverage in `tests/client-memory-tools/multi_hop_objective_chain_mapper.test.js`.",
       "dependencies": [
         "V3-RACE-078",
         "V3-RACE-079",
@@ -3488,7 +3488,7 @@
       "status": "done",
       "title": "Analysis Quality SLO Contract",
       "problem": "Analysis quality must be measured directly, not inferred from execution-only outcomes.",
-      "acceptance": "Added `client/runtime/systems/sensory/analysis_quality_slo_contract.{ts,js}` + `client/runtime/config/analysis_quality_slo_contract_policy.json` to enforce analysis-specific SLO gates (`precision/recall/F1/Brier/abstain_rate`) independently from execution-green signals, with promotion fail-closed receipts under `state/sensory/analysis/quality_slo/`; regression coverage in `tests/client-memory-tools/analysis_quality_slo_contract.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/analysis_quality_slo_contract.{ts,js}` + `client/runtime/config/analysis_quality_slo_contract_policy.json` to enforce analysis-specific SLO gates (`precision/recall/F1/Brier/abstain_rate`) independently from execution-green signals, with promotion fail-closed receipts under `local/state/sensory/analysis/quality_slo/`; regression coverage in `tests/client-memory-tools/analysis_quality_slo_contract.test.js`.",
       "dependencies": [
         "V3-RACE-086",
         "V3-RACE-081"
@@ -3912,7 +3912,7 @@
       "status": "done",
       "title": "50 Percent Rust Critical-Weight Enforcement Gate",
       "problem": "Prior Rust plans target 15-25 percent; no hard governance gate currently enforces progression to 50 percent by critical module weight with anti-fake completion evidence.",
-      "acceptance": "Add enforced migration gate requiring: critical module-weight share `>=50%` Rust, per-lane committed code diff evidence, test/CI receipts, phone battery receipt bundle, and explicit `PAUSED` state when constraints cannot be met. Verify through governance audit receipts and automated anti-fake completion checks; rollback by downgrading enforcement to advisory mode with expiry and remediation plan. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/config/rust50_migration_program_policy.json`, `docs/client/RUST50_MIGRATION_IMPLEMENTATION.md`, `state/ops/rust50_migration_program/rust50_gate_state.json`, `tests/client-memory-tools/rust50_migration_program.test.js`.",
+      "acceptance": "Add enforced migration gate requiring: critical module-weight share `>=50%` Rust, per-lane committed code diff evidence, test/CI receipts, phone battery receipt bundle, and explicit `PAUSED` state when constraints cannot be met. Verify through governance audit receipts and automated anti-fake completion checks; rollback by downgrading enforcement to advisory mode with expiry and remediation plan. Evidence: `client/runtime/systems/ops/rust50_migration_program.ts`, `client/runtime/config/rust50_migration_program_policy.json`, `docs/client/RUST50_MIGRATION_IMPLEMENTATION.md`, `local/state/ops/rust50_migration_program/rust50_gate_state.json`, `tests/client-memory-tools/rust50_migration_program.test.js`.",
       "dependencies": [
         "V6-RUST50-001",
         "V6-RUST50-002",
@@ -4415,7 +4415,7 @@
       "status": "done",
       "title": "In-run workflow evolution lane (step-boundary mutation apply)",
       "problem": "Close the gap between generated adaptation and live execution adaptation",
-      "acceptance": "`client/runtime/systems/workflow/workflow_executor.ts` now applies bounded runtime mutations at step boundaries (`retry_tuning`, `guard_hardening`, `rollback_path`) under `client/runtime/config/workflow_executor_policy.json` caps, emits per-mutation receipts to `state/client/cognition/adaptive/workflows/executor/mutations/`, retries immediately after apply, and rolls back mutation patches on regression. Spine guard includes policy path. Coverage: `tests/client-memory-tools/workflow_executor.test.js`.",
+      "acceptance": "`client/runtime/systems/workflow/workflow_executor.ts` now applies bounded runtime mutations at step boundaries (`retry_tuning`, `guard_hardening`, `rollback_path`) under `client/runtime/config/workflow_executor_policy.json` caps, emits per-mutation receipts to `local/state/client/cognition/adaptive/workflows/executor/mutations/`, retries immediately after apply, and rolls back mutation patches on regression. Spine guard includes policy path. Coverage: `tests/client-memory-tools/workflow_executor.test.js`.",
       "dependencies": [],
       "impact_score": 18,
       "risk_score": 12,
@@ -4712,7 +4712,7 @@
       "status": "done",
       "title": "Socket Discovery/Loader Runtime (Registry + Version Pin + Hot-Swap)",
       "problem": "A socket ABI alone is insufficient without governed discovery and lifecycle controls that keep runtime behavior deterministic and fail-closed.",
-      "acceptance": "Implemented discover/activate lifecycle in `platform_socket_runtime` with deterministic socket selection from registry, fail-closed fallback to generic socket, signed lifecycle receipts, and persisted install/update/test state under `state/ops/platform_socket_runtime/installed.json` plus audit history in `state/ops/platform_socket_runtime/history.jsonl`. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-357 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-357; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected.",
+      "acceptance": "Implemented discover/activate lifecycle in `platform_socket_runtime` with deterministic socket selection from registry, fail-closed fallback to generic socket, signed lifecycle receipts, and persisted install/update/test state under `local/state/ops/platform_socket_runtime/installed.json` plus audit history in `local/state/ops/platform_socket_runtime/history.jsonl`. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-357 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-357; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected.",
       "dependencies": [
         "V3-RACE-356",
         "V3-RACE-210",
@@ -4813,7 +4813,7 @@
       "status": "done",
       "title": "Post-Quantum Hash + Signing Migration Lane",
       "problem": "Existing crypto governance includes migration tracks, but there was no dedicated lane that continuously inventories legacy hash/signature surface and enforces PQ migration contracts with soak planning.",
-      "acceptance": "Added `client/runtime/systems/security/post_quantum_migration_lane.ts` + `client/runtime/config/post_quantum_migration_policy.json` to run/verify/status migration state, scan critical surface for legacy vs PQ markers, update key/contract migration targets under policy-gated apply mode, emit deterministic state/latest/receipts/surface-manifest artifacts, and enforce 72-hour soak-plan contracts. Wired into merge/contract/foundation checks and added regression test `tests/client-memory-tools/post_quantum_migration_lane.test.js`.",
+      "acceptance": "Added `client/runtime/systems/security/post_quantum_migration_lane.ts` + `client/runtime/config/post_quantum_migration_policy.json` to run/verify/status migration state, scan critical surface for legacy vs PQ markers, update key/contract migration targets under policy-gated apply mode, emit deterministic local/state/latest/receipts/surface-manifest artifacts, and enforce 72-hour soak-plan contracts. Wired into merge/contract/foundation checks and added regression test `tests/client-memory-tools/post_quantum_migration_lane.test.js`.",
       "dependencies": [],
       "impact_score": 15,
       "risk_score": 12,
@@ -4843,7 +4843,7 @@
       "status": "done",
       "title": "Gold Eval Corpus + Blind Detector Scoring Lane",
       "problem": "Detector quality cannot compound reliably without stable objective measurement artifacts.",
-      "acceptance": "Added `client/runtime/systems/sensory/gold_eval_blind_scoring_lane.{ts,js}` + `client/runtime/config/gold_eval_blind_scoring_policy.json` to run deterministic blind-ordered scoring on labeled eval packs with precision/recall/F1/Brier outputs and promotion gate receipts under `state/sensory/analysis/gold_eval_blind/`; regression coverage in `tests/client-memory-tools/gold_eval_blind_scoring_lane.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/gold_eval_blind_scoring_lane.{ts,js}` + `client/runtime/config/gold_eval_blind_scoring_policy.json` to run deterministic blind-ordered scoring on labeled eval packs with precision/recall/F1/Brier outputs and promotion gate receipts under `local/state/sensory/analysis/gold_eval_blind/`; regression coverage in `tests/client-memory-tools/gold_eval_blind_scoring_lane.test.js`.",
       "dependencies": [
         "V3-RACE-081",
         "V3-RACE-082"
@@ -4861,7 +4861,7 @@
       "status": "done",
       "title": "Causal-vs-Correlational Signal Scorer",
       "problem": "Correlation-heavy ranking overstates weak hypotheses and misallocates execution bandwidth.",
-      "acceptance": "Added `client/runtime/systems/sensory/causal_vs_correlation_signal_scorer.{ts,js}` + `client/runtime/config/causal_vs_correlation_signal_scorer_policy.json` to combine chain confidence, replay uplift, and source reliability into causal scores, apply bounded penalties to correlation-only paths, and emit ranked receipts under `state/sensory/analysis/causal_signal_scorer/`; regression coverage in `tests/client-memory-tools/causal_vs_correlation_signal_scorer.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/causal_vs_correlation_signal_scorer.{ts,js}` + `client/runtime/config/causal_vs_correlation_signal_scorer_policy.json` to combine chain confidence, replay uplift, and source reliability into causal scores, apply bounded penalties to correlation-only paths, and emit ranked receipts under `local/state/sensory/analysis/causal_signal_scorer/`; regression coverage in `tests/client-memory-tools/causal_vs_correlation_signal_scorer.test.js`.",
       "dependencies": [
         "V3-RACE-082",
         "V3-RACE-084",
@@ -5115,7 +5115,7 @@
       "status": "done",
       "title": "Two-phase autonomous change execution with automatic rollback",
       "problem": "Prevent partial/bad self-changes from persisting",
-      "acceptance": "Added `improvement_controller.js start-validated` implementing deterministic `plan -> apply(commit-on-head) -> verify(core checks) -> commit(trial start)` flow; failed verify triggers optional auto-revert and writes contract receipts with root cause (`state/autonomy/improvements/phase_receipts/`) Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/bl_022_anchor.ts`.",
+      "acceptance": "Added `improvement_controller.js start-validated` implementing deterministic `plan -> apply(commit-on-head) -> verify(core checks) -> commit(trial start)` flow; failed verify triggers optional auto-revert and writes contract receipts with root cause (`local/state/autonomy/improvements/phase_receipts/`) Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/bl_022_anchor.ts`.",
       "dependencies": [],
       "impact_score": 12,
       "risk_score": 16,
@@ -5182,7 +5182,7 @@
       "status": "done",
       "title": "Distribution-Shift Decomposition Engine",
       "problem": "Aggregate drift scores hide root causes and slow effective remediation.",
-      "acceptance": "Added `client/runtime/systems/sensory/distribution_shift_decomposition_engine.{ts,js}` + `client/runtime/config/distribution_shift_decomposition_policy.json` to compute per-component distribution shift scores (source/topic/style/population), trigger threshold-based remediation actions, and emit receipted decomposition artifacts under `state/sensory/analysis/distribution_shift/`; regression coverage in `tests/client-memory-tools/distribution_shift_decomposition_engine.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/distribution_shift_decomposition_engine.{ts,js}` + `client/runtime/config/distribution_shift_decomposition_policy.json` to compute per-component distribution shift scores (source/topic/style/population), trigger threshold-based remediation actions, and emit receipted decomposition artifacts under `local/state/sensory/analysis/distribution_shift/`; regression coverage in `tests/client-memory-tools/distribution_shift_decomposition_engine.test.js`.",
       "dependencies": [
         "V3-RACE-080",
         "V3-RACE-089"
@@ -5200,7 +5200,7 @@
       "status": "done",
       "title": "Sensitivity/Privacy-Aware Signal Scoring Contract",
       "problem": "Analysis gains must not introduce governance/privacy regressions on sensitive data classes.",
-      "acceptance": "Added `client/runtime/systems/sensory/sensitivity_privacy_aware_scoring_contract.{ts,js}` + `client/runtime/config/sensitivity_privacy_scoring_policy.json` to enforce sensitive-class handling contracts (approval-required, score restriction, field masking, fail-closed blocking) with audit receipts under `state/sensory/analysis/privacy_scoring/`; regression coverage in `tests/client-memory-tools/sensitivity_privacy_aware_scoring_contract.test.js`. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-103 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-103; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected.",
+      "acceptance": "Added `client/runtime/systems/sensory/sensitivity_privacy_aware_scoring_contract.{ts,js}` + `client/runtime/config/sensitivity_privacy_scoring_policy.json` to enforce sensitive-class handling contracts (approval-required, score restriction, field masking, fail-closed blocking) with audit receipts under `local/state/sensory/analysis/privacy_scoring/`; regression coverage in `tests/client-memory-tools/sensitivity_privacy_aware_scoring_contract.test.js`. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-103 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-103; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected.",
       "dependencies": [
         "V3-RACE-033",
         "V3-RACE-044",
@@ -5855,7 +5855,7 @@
       "status": "done",
       "title": "Feature/Data Versioning Reproducibility Contract",
       "problem": "Detector decisions must be exactly replayable to support safe evolution and audits.",
-      "acceptance": "Added `client/runtime/systems/sensory/feature_data_reproducibility_contract.{ts,js}` + `client/runtime/config/feature_data_reproducibility_contract_policy.json` to pin feature schema/data hashes, detector version, and decision hashes per snapshot and verify replay equivalence with deterministic receipts under `state/sensory/analysis/reproducibility/`; regression coverage in `tests/client-memory-tools/feature_data_reproducibility_contract.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/feature_data_reproducibility_contract.{ts,js}` + `client/runtime/config/feature_data_reproducibility_contract_policy.json` to pin feature schema/data hashes, detector version, and decision hashes per snapshot and verify replay equivalence with deterministic receipts under `local/state/sensory/analysis/reproducibility/`; regression coverage in `tests/client-memory-tools/feature_data_reproducibility_contract.test.js`.",
       "dependencies": [
         "V3-RACE-003",
         "V3-RACE-086",
@@ -6245,7 +6245,7 @@
       "status": "done",
       "title": "Adversarial Hypothesis Challenger Lane",
       "problem": "Unchallenged high-confidence signals can be wrong and produce confident misallocation.",
-      "acceptance": "Added `client/runtime/systems/sensory/adversarial_hypothesis_challenger.{ts,js}` + `client/runtime/config/adversarial_hypothesis_challenger_policy.json` to generate disconfirmation claims for high-priority hypotheses, verify challenger outcomes (`win`/`unresolved`/`loss`), and block promotion when unresolved or winning challengers remain; receipted outputs persist under `state/sensory/analysis/adversarial_challenger/` with regression coverage in `tests/client-memory-tools/adversarial_hypothesis_challenger.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/adversarial_hypothesis_challenger.{ts,js}` + `client/runtime/config/adversarial_hypothesis_challenger_policy.json` to generate disconfirmation claims for high-priority hypotheses, verify challenger outcomes (`win`/`unresolved`/`loss`), and block promotion when unresolved or winning challengers remain; receipted outputs persist under `local/state/sensory/analysis/adversarial_challenger/` with regression coverage in `tests/client-memory-tools/adversarial_hypothesis_challenger.test.js`.",
       "dependencies": [
         "V3-RACE-081",
         "V3-RACE-042"
@@ -6552,7 +6552,7 @@
       "status": "done",
       "title": "Regime Organ (task/environment regime sensing + morph trigger)",
       "problem": "Enable sports-car adaptation by detecting current regime and rewiring priorities/topology safely",
-      "acceptance": "Implemented in `client/runtime/systems/fractal/regime_organ.ts` (+ runtime mirror `client/runtime/systems/fractal/regime_organ.ts`) with regime scoring from queue/runs/simulation/trit/budget signals, hysteresis + dwell + cooldown state in `state/autonomy/fractal/regime/state.json`, proposal-only bounded morph actions, identity-anchor filtering, non-regression simulation gating before promotion, daily receipts in `state/autonomy/fractal/regime/YYYY-MM-DD.jsonl`, and spine telemetry stage (`spine_fractal_regime_organ`). Coverage: `tests/client-memory-tools/fractal_regime_organ.test.js`. Spec reference: `tmp/grok_fractal_organs_2026-02-25.md`",
+      "acceptance": "Implemented in `client/runtime/systems/fractal/regime_organ.ts` (+ runtime mirror `client/runtime/systems/fractal/regime_organ.ts`) with regime scoring from queue/runs/simulation/trit/budget signals, hysteresis + dwell + cooldown state in `local/state/autonomy/fractal/regime/state.json`, proposal-only bounded morph actions, identity-anchor filtering, non-regression simulation gating before promotion, daily receipts in `local/state/autonomy/fractal/regime/YYYY-MM-DD.jsonl`, and spine telemetry stage (`spine_fractal_regime_organ`). Coverage: `tests/client-memory-tools/fractal_regime_organ.test.js`. Spec reference: `tmp/grok_fractal_organs_2026-02-25.md`",
       "dependencies": [],
       "impact_score": 12,
       "risk_score": 12,
@@ -6703,7 +6703,7 @@
       "status": "done",
       "title": "Novelty/Saturation Prioritization Engine",
       "problem": "Over-covered topics consume bandwidth while low-frequency novel signals are under-prioritized.",
-      "acceptance": "Added `client/runtime/systems/sensory/novelty_saturation_prioritization_engine.{ts,js}` + `client/runtime/config/novelty_saturation_prioritization_policy.json` to score topics against historical frequency baselines, compute novelty/saturation/anomaly signals, and emit prioritized outputs/receipts under `state/sensory/analysis/novelty_saturation/`; regression coverage in `tests/client-memory-tools/novelty_saturation_prioritization_engine.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/novelty_saturation_prioritization_engine.{ts,js}` + `client/runtime/config/novelty_saturation_prioritization_policy.json` to score topics against historical frequency baselines, compute novelty/saturation/anomaly signals, and emit prioritized outputs/receipts under `local/state/sensory/analysis/novelty_saturation/`; regression coverage in `tests/client-memory-tools/novelty_saturation_prioritization_engine.test.js`.",
       "dependencies": [
         "V3-RACE-080",
         "V3-RACE-091"
@@ -6721,7 +6721,7 @@
       "status": "done",
       "title": "Causal Validation Gate for High-Impact Analysis Claims",
       "problem": "Correlational signals can drive wrong policy changes without causal validation discipline.",
-      "acceptance": "Added `client/runtime/systems/sensory/causal_validation_gate_high_impact.{ts,js}` + `client/runtime/config/causal_validation_gate_policy.json` to score high-impact claims for causal confidence from replay/intervention evidence and fail closed when policy thresholds are not met, with receipts under `state/sensory/analysis/causal_validation_gate/`; regression coverage in `tests/client-memory-tools/causal_validation_gate_high_impact.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/causal_validation_gate_high_impact.{ts,js}` + `client/runtime/config/causal_validation_gate_policy.json` to score high-impact claims for causal confidence from replay/intervention evidence and fail closed when policy thresholds are not met, with receipts under `local/state/sensory/analysis/causal_validation_gate/`; regression coverage in `tests/client-memory-tools/causal_validation_gate_high_impact.test.js`.",
       "dependencies": [
         "V3-RACE-082",
         "V3-RACE-090"
@@ -6909,7 +6909,7 @@
       "status": "done",
       "title": "Mobile Lifecycle Resilience & Power Envelope Contract (Doze/Kill Recovery)",
       "problem": "Mobile unattended operation fails without explicit lifecycle handling for background suspension, thermal spikes, and battery constraints.",
-      "acceptance": "Shipped lifecycle lane + policy thresholds for battery/thermal/doze/background-kill/wake-lock, with recovery command path and deterministic state/receipt artifacts for 24h/72h survivability checks.",
+      "acceptance": "Shipped lifecycle lane + policy thresholds for battery/thermal/doze/background-kill/wake-lock, with recovery command path and deterministic local/state/receipt artifacts for 24h/72h survivability checks.",
       "dependencies": [
         "V3-RACE-148",
         "V3-RACE-183",
@@ -7099,7 +7099,7 @@
       "status": "done",
       "title": "N-API Build Surface Compatibility Contract (`build:memory`/postinstall expectations)",
       "problem": "External recipes assume direct N-API build flow; current runtime is daemon-first with staged in-process lane.",
-      "acceptance": "Added `client/runtime/systems/memory/napi_build_surface_compat.{ts,js}` + `client/runtime/config/napi_build_surface_compat_policy.json`, canonical scripts (`build:memory`, `postinstall:memory`, `memory:napi-build:status`), and generated matrix artifacts (`docs/client/MEMORY_BUILD_SURFACE.md`, `state/client/memory/napi_build_surface_compat/build_matrix.json`) while keeping daemon-first production defaults; regression coverage in `tests/client-memory-tools/napi_build_surface_compat.test.js`. Verify via npm run -s lane:v3-race-conf-005:run and npm run -s test:lane:v3-race-conf-005; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/memory/napi_build_surface_compat.ts`.",
+      "acceptance": "Added `client/runtime/systems/memory/napi_build_surface_compat.{ts,js}` + `client/runtime/config/napi_build_surface_compat_policy.json`, canonical scripts (`build:memory`, `postinstall:memory`, `memory:napi-build:status`), and generated matrix artifacts (`docs/client/MEMORY_BUILD_SURFACE.md`, `local/state/client/memory/napi_build_surface_compat/build_matrix.json`) while keeping daemon-first production defaults; regression coverage in `tests/client-memory-tools/napi_build_surface_compat.test.js`. Verify via npm run -s lane:v3-race-conf-005:run and npm run -s test:lane:v3-race-conf-005; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/memory/napi_build_surface_compat.ts`.",
       "dependencies": [
         "V3-RACE-028",
         "V3-DOC-004"
@@ -7408,7 +7408,7 @@
       "status": "done",
       "title": "Counterfactual Signal Replay Harness",
       "problem": "Detector changes need historical context to avoid overfitting current traffic conditions.",
-      "acceptance": "Added `client/runtime/systems/sensory/counterfactual_signal_replay.{ts,js}` + `client/runtime/config/counterfactual_signal_replay_policy.json` to replay historical windows (default 180-day offset), compute precision/recall uplift deltas, and emit promotion-block signals on negative uplift; receipted outputs persist under `state/sensory/analysis/counterfactual_replay/` with regression coverage in `tests/client-memory-tools/counterfactual_signal_replay.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/counterfactual_signal_replay.{ts,js}` + `client/runtime/config/counterfactual_signal_replay_policy.json` to replay historical windows (default 180-day offset), compute precision/recall uplift deltas, and emit promotion-block signals on negative uplift; receipted outputs persist under `local/state/sensory/analysis/counterfactual_replay/` with regression coverage in `tests/client-memory-tools/counterfactual_signal_replay.test.js`.",
       "dependencies": [
         "V3-RACE-003",
         "V3-RACE-017",
@@ -7427,7 +7427,7 @@
       "status": "done",
       "title": "Champion/Challenger Detector Promotion Pipeline",
       "problem": "Analysis changes need safe comparative rollout to prevent silent degradation.",
-      "acceptance": "Added `client/runtime/systems/sensory/champion_challenger_detector_promotion.{ts,js}` + `client/runtime/config/champion_challenger_detector_policy.json` to run parallel champion/challenger scoring on the same gold rows, compute uplift/regression deltas (`precision/recall/F1/Brier`), and fail promotion on policy violations with receipted outputs under `state/sensory/analysis/champion_challenger/`; regression coverage in `tests/client-memory-tools/champion_challenger_detector_promotion.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/champion_challenger_detector_promotion.{ts,js}` + `client/runtime/config/champion_challenger_detector_policy.json` to run parallel champion/challenger scoring on the same gold rows, compute uplift/regression deltas (`precision/recall/F1/Brier`), and fail promotion on policy violations with receipted outputs under `local/state/sensory/analysis/champion_challenger/`; regression coverage in `tests/client-memory-tools/champion_challenger_detector_promotion.test.js`.",
       "dependencies": [
         "V3-RACE-086",
         "V3-RACE-062"
@@ -7445,7 +7445,7 @@
       "status": "done",
       "title": "Visual Dynamic Signature Engine (Identity Render Contract)",
       "problem": "Identity artifacts are textual/ledger-heavy; there is no canonical evolving visual signature contract for instances.",
-      "acceptance": "Added deterministic signature generator (`client/runtime/systems/identity/visual_signature_engine.{ts,js}` with optional Rust helper path) and policy contracts; user-specific rendered signature state/history persists in with adaptive style-tuning metadata in `client/cognition/adaptive/identity/signature/`; rendering algorithms, schemas, and verification logic stay in `client/runtime/systems/identity/` + `client/runtime/config/`; CLI/UI surfaces consume signed render manifests. Verify via npm run -s lane:v3-race-134:run and npm run -s test:lane:v3-race-134; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/identity/visual_signature_engine.ts`, `client/runtime/systems/identity`, `config`, `client/runtime/systems/ops/data_scope_boundary_check.ts`.",
+      "acceptance": "Added deterministic signature generator (`client/runtime/systems/identity/visual_signature_engine.{ts,js}` with optional Rust helper path) and policy contracts; user-specific rendered signature local/state/history persists in with adaptive style-tuning metadata in `client/cognition/adaptive/identity/signature/`; rendering algorithms, schemas, and verification logic stay in `client/runtime/systems/identity/` + `client/runtime/config/`; CLI/UI surfaces consume signed render manifests. Verify via npm run -s lane:v3-race-134:run and npm run -s test:lane:v3-race-134; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/identity/visual_signature_engine.ts`, `client/runtime/systems/identity`, `config`, `client/runtime/systems/ops/data_scope_boundary_check.ts`.",
       "dependencies": [
         "V3-RACE-008",
         "V3-RACE-030",
@@ -7979,7 +7979,7 @@
       "status": "done",
       "title": "Latent Intent Inference Graph",
       "problem": "First-order tagging misses implied needs, causing under-actuation on high-opportunity weak signals.",
-      "acceptance": "Added `client/runtime/systems/sensory/latent_intent_inference_graph.{ts,js}` + `client/runtime/config/latent_intent_inference_policy.json` to emit `implied_need` edges with evidence spans/confidence from cross-signal hypotheses, enforce false-positive-ceiling validator contracts, and persist receipted outputs under `state/sensory/analysis/latent_intent/`; regression coverage in `tests/client-memory-tools/latent_intent_inference_graph.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/latent_intent_inference_graph.{ts,js}` + `client/runtime/config/latent_intent_inference_policy.json` to emit `implied_need` edges with evidence spans/confidence from cross-signal hypotheses, enforce false-positive-ceiling validator contracts, and persist receipted outputs under `local/state/sensory/analysis/latent_intent/`; regression coverage in `tests/client-memory-tools/latent_intent_inference_graph.test.js`.",
       "dependencies": [
         "V3-RACE-078",
         "V3-RACE-009"
@@ -7997,7 +7997,7 @@
       "status": "done",
       "title": "Detector Rollback & Migration Safety Contract",
       "problem": "Safe detector evolution requires fast rollback with evidence, not manual patchwork under pressure.",
-      "acceptance": "Added `client/runtime/systems/sensory/detector_rollback_migration_safety_contract.{ts,js}` + `client/runtime/config/detector_rollback_migration_safety_policy.json` to snapshot detector bundles, enforce schema-compatibility and replay-parity checks, and perform one-command rollback with auditable history/receipts under `state/sensory/analysis/detector_rollback/`; regression coverage in `tests/client-memory-tools/detector_rollback_migration_safety_contract.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/detector_rollback_migration_safety_contract.{ts,js}` + `client/runtime/config/detector_rollback_migration_safety_policy.json` to snapshot detector bundles, enforce schema-compatibility and replay-parity checks, and perform one-command rollback with auditable history/receipts under `local/state/sensory/analysis/detector_rollback/`; regression coverage in `tests/client-memory-tools/detector_rollback_migration_safety_contract.test.js`.",
       "dependencies": [
         "V3-RACE-087",
         "V3-RACE-098"
@@ -8259,7 +8259,7 @@
       "status": "done",
       "title": "Mobile Adapter Layer (WASM + Tauri iOS/Android Background Service)",
       "problem": "Phone 24x7 objective lacks one production adapter layer exposing all Rust crates through deterministic background-safe APIs and build surfaces.",
-      "acceptance": "Build Rust mobile adapter layer with one-command WASM/Tauri build, background service integration (iOS/Android), and unified `protheus-mobile` binary interface for crate surfaces. Verify via mobile build matrix + background service receipts with total background battery `<5%/24h`; rollback by disabling mobile adapter lane and reverting to existing device bridges. Evidence: `client/runtime/systems/hybrid/mobile/protheus_mobile_adapter.ts`, `client/runtime/config/protheus_mobile_adapter_policy.json`, `state/hybrid/mobile_adapter/state.json`, `state/ops/rust50_migration_program/artifacts/v6_rust50_006_mobile_adapter.json`.",
+      "acceptance": "Build Rust mobile adapter layer with one-command WASM/Tauri build, background service integration (iOS/Android), and unified `protheus-mobile` binary interface for crate surfaces. Verify via mobile build matrix + background service receipts with total background battery `<5%/24h`; rollback by disabling mobile adapter lane and reverting to existing device bridges. Evidence: `client/runtime/systems/hybrid/mobile/protheus_mobile_adapter.ts`, `client/runtime/config/protheus_mobile_adapter_policy.json`, `local/state/hybrid/mobile_adapter/state.json`, `local/state/ops/rust50_migration_program/artifacts/v6_rust50_006_mobile_adapter.json`.",
       "dependencies": [
         "V5-RUST-HYB-009",
         "V6-RUST50-001",
@@ -8311,7 +8311,7 @@
       "status": "done",
       "title": "Strategic alignment oracle (weekly)",
       "problem": "Keep unattended autonomy optimizing for T1 outcomes instead of infrastructure churn",
-      "acceptance": "`client/runtime/systems/autonomy/alignment_oracle.ts` writes weekly `alignment_score` artifacts (`state/autonomy/alignment_oracle/`), links to proposal/receipt evidence, emits deduped `autonomy_human_escalation` rows on low-streak escalation, and is executed by spine via `SPINE_ALIGNMENT_ORACLE_ENABLED`",
+      "acceptance": "`client/runtime/systems/autonomy/alignment_oracle.ts` writes weekly `alignment_score` artifacts (`local/state/autonomy/alignment_oracle/`), links to proposal/receipt evidence, emits deduped `autonomy_human_escalation` rows on low-streak escalation, and is executed by spine via `SPINE_ALIGNMENT_ORACLE_ENABLED`",
       "dependencies": [],
       "impact_score": 9,
       "risk_score": 12,
@@ -8371,7 +8371,7 @@
       "status": "done",
       "title": "Identity Organ (alignment anchor over fractal branches)",
       "problem": "Preserve directive/value coherence across aggressive adaptation and recursive branching",
-      "acceptance": "Implemented in `client/runtime/systems/identity/identity_anchor.ts` (plus `client/runtime/config/identity_anchor_policy.json`) with branch-level objective/value coherence checks over workflow grafts and morph plans, receipt emission under `state/autonomy/identity_anchor/`, workflow promotion blocking on identity violations, morph-action filtering, and spine telemetry stage (`spine_identity_anchor`). Spec reference: `tmp/grok_fractal_organs_2026-02-25.md`",
+      "acceptance": "Implemented in `client/runtime/systems/identity/identity_anchor.ts` (plus `client/runtime/config/identity_anchor_policy.json`) with branch-level objective/value coherence checks over workflow grafts and morph plans, receipt emission under `local/state/autonomy/identity_anchor/`, workflow promotion blocking on identity violations, morph-action filtering, and spine telemetry stage (`spine_identity_anchor`). Spec reference: `tmp/grok_fractal_organs_2026-02-25.md`",
       "dependencies": [],
       "impact_score": 9,
       "risk_score": 12,
@@ -8510,7 +8510,7 @@
       "status": "done",
       "title": "Detector Error Taxonomy + Guarded Auto-Retuning",
       "problem": "Manual threshold tuning does not scale with detector complexity and drift.",
-      "acceptance": "Added `client/runtime/systems/sensory/detector_error_taxonomy_autotune.{ts,js}` + `client/runtime/config/detector_error_taxonomy_autotune_policy.json` to classify FP/FN error buckets, propose bounded threshold retunes, and enforce rollback-on-regression safeguards with receipts under `state/sensory/analysis/detector_autotune/`; regression coverage in `tests/client-memory-tools/detector_error_taxonomy_autotune.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/detector_error_taxonomy_autotune.{ts,js}` + `client/runtime/config/detector_error_taxonomy_autotune_policy.json` to classify FP/FN error buckets, propose bounded threshold retunes, and enforce rollback-on-regression safeguards with receipts under `local/state/sensory/analysis/detector_autotune/`; regression coverage in `tests/client-memory-tools/detector_error_taxonomy_autotune.test.js`.",
       "dependencies": [
         "V3-RACE-086",
         "V3-RACE-087",
@@ -8813,7 +8813,7 @@
       "status": "done",
       "title": "Offline R Analytics Runner + Research Organ Best-Fit Integration",
       "problem": "Optional offline R analytics can improve calibration decisions when bridged through verified artifacts, while runtime remains deterministic with TS fallback paths.",
-      "acceptance": "Added `client/runtime/systems/research/offline_r_analytics_runner.{ts,js}` + `client/runtime/config/offline_r_analytics_runner_policy.json` (with optional script `research/r/offline_research_analytics.R`) to emit signed artifacts into `state/sensory/offline_lab/artifacts/` and auto-run `offline_statistical_lab_artifact_bridge`; integrated `client/runtime/systems/research/research_organ.ts` + `client/runtime/config/research_organ_policy.json` with analytics-bridge fit criteria (`sample_size`, `brier_improvement`, `causal_precision_lift`) and bounded confidence uplift with fail-safe fallback behavior; regression test coverage in `tests/client-memory-tools/offline_r_analytics_runner.test.js` and `tests/client-memory-tools/research_organ.test.js`.",
+      "acceptance": "Added `client/runtime/systems/research/offline_r_analytics_runner.{ts,js}` + `client/runtime/config/offline_r_analytics_runner_policy.json` (with optional script `research/r/offline_research_analytics.R`) to emit signed artifacts into `local/state/sensory/offline_lab/artifacts/` and auto-run `offline_statistical_lab_artifact_bridge`; integrated `client/runtime/systems/research/research_organ.ts` + `client/runtime/config/research_organ_policy.json` with analytics-bridge fit criteria (`sample_size`, `brier_improvement`, `causal_precision_lift`) and bounded confidence uplift with fail-safe fallback behavior; regression test coverage in `tests/client-memory-tools/offline_r_analytics_runner.test.js` and `tests/client-memory-tools/research_organ.test.js`.",
       "dependencies": [
         "V3-RACE-102",
         "V3-RACE-096",
@@ -8881,7 +8881,7 @@
       "status": "done",
       "title": "Timed Lease Decay + Deterministic Lockout",
       "problem": "Stolen copies function normally for a policy-defined period, then gradually lose capabilities in a predictable way",
-      "acceptance": "Implemented policy-defined stealth lease windows (timed lease stealth window hours) that defer staged hit escalation, followed by deterministic ramp (tease -> challenge -> degrade -> lockout) with cooldown lockout timers and session state persistence in `state/security/venom_containment/*`. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_venom_004_anchor.ts`.",
+      "acceptance": "Implemented policy-defined stealth lease windows (timed lease stealth window hours) that defer staged hit escalation, followed by deterministic ramp (tease -> challenge -> degrade -> lockout) with cooldown lockout timers and session state persistence in `local/state/security/venom_containment/*`. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v3_venom_004_anchor.ts`.",
       "dependencies": [],
       "impact_score": 9,
       "risk_score": 12,
@@ -9011,7 +9011,7 @@
       "status": "done",
       "title": "Pre-Commit Persona Safety Lens Gate",
       "problem": "Commits could bypass fast local risk screening for security/sovereignty regressions before CI, increasing review load and rollback churn.",
-      "acceptance": "Added deterministic pre-commit gate `client/runtime/systems/personas/pre_commit_lens_gate.ts` (wrapper: `.js`) and wired `.githooks/pre-commit` to run it after staged format/lint. Gate writes receipts under `state/personas/pre_commit_lens_gate/` and fail-closes on high-risk staged diff patterns unless explicitly overridden. Verified by `node tests/client-memory-tools/pre_commit_lens_gate.test.js`. Rollback by removing hook invocation and script lane.",
+      "acceptance": "Added deterministic pre-commit gate `client/runtime/systems/personas/pre_commit_lens_gate.ts` (wrapper: `.js`) and wired `.githooks/pre-commit` to run it after staged format/lint. Gate writes receipts under `local/state/personas/pre_commit_lens_gate/` and fail-closes on high-risk staged diff patterns unless explicitly overridden. Verified by `node tests/client-memory-tools/pre_commit_lens_gate.test.js`. Rollback by removing hook invocation and script lane.",
       "dependencies": [
         "V3-FCH-002",
         "V3-RACE-060"
@@ -9122,7 +9122,7 @@
       "status": "done",
       "title": "Collective Reasoning Primitive",
       "problem": "Explicit trust/accountability protocol for multi-agent coordination under uncertainty.",
-      "acceptance": "Delivered `client/runtime/systems/assimilation/collective_reasoning_primitive.ts` + policy `client/runtime/config/collective_reasoning_primitive_policy.json`; quorum/trust-weighted consensus + delegation profiles + trust ledger updates, emitted weaver collective profile stream (`state/autonomy/weaver/collective_reasoning_profiles.jsonl`), and validated by `tests/client-memory-tools/collective_reasoning_primitive.test.js` + assimilation integration tests.",
+      "acceptance": "Delivered `client/runtime/systems/assimilation/collective_reasoning_primitive.ts` + policy `client/runtime/config/collective_reasoning_primitive_policy.json`; quorum/trust-weighted consensus + delegation profiles + trust ledger updates, emitted weaver collective profile stream (`local/state/autonomy/weaver/collective_reasoning_profiles.jsonl`), and validated by `tests/client-memory-tools/collective_reasoning_primitive.test.js` + assimilation integration tests.",
       "dependencies": [],
       "impact_score": 12,
       "risk_score": 8,
@@ -9283,7 +9283,7 @@
       "wave": "V3",
       "status": "done",
       "title": "Role-Based Crew Spawn Orchestrator (Shared Namespace Governance)",
-      "problem": "Multi-agent role execution is higher leverage when template-driven and governed by explicit shared-state/clearance boundaries.",
+      "problem": "Multi-agent role execution is higher leverage when template-driven and governed by explicit shared-local/state/clearance boundaries.",
       "acceptance": "Implement `client/runtime/systems/spawn/role_based_crew_orchestrator.{ts,js}` + policy `client/runtime/config/role_based_crew_policy.json`; user-specific crew templates and collaboration preferences remain under `client/memory/crews/` with adaptive role-performance scoring in `client/cognition/adaptive/crews/`; permanent role orchestration, shared-namespace contracts, and clearance gates stay in `client/runtime/systems/spawn/` + `client/runtime/config/` with per-role audit receipts. Verify via node client/runtime/systems/ops/backlog_lane_batch_delivery.ts run --id=V3-RACE-173 --apply=1 --strict=1 and node tests/client-memory-tools/backlog_lane_batch_delivery.test.js --id=V3-RACE-173; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected.",
       "dependencies": [
         "V3-RACE-145",
@@ -9642,7 +9642,7 @@
       "status": "done",
       "title": "Abstain/Uncertainty Output Contract",
       "problem": "Forced low-confidence decisions increase false positives and downstream churn.",
-      "acceptance": "Added `client/runtime/systems/sensory/abstain_uncertainty_contract.{ts,js}` + `client/runtime/config/abstain_uncertainty_contract_policy.json` to emit abstain reason codes for weak-evidence hypotheses, route abstained cases to review queue, and track abstain-resolution outcomes in receipted artifacts under `state/sensory/analysis/abstain_uncertainty/`; regression coverage in `tests/client-memory-tools/abstain_uncertainty_contract.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/abstain_uncertainty_contract.{ts,js}` + `client/runtime/config/abstain_uncertainty_contract_policy.json` to emit abstain reason codes for weak-evidence hypotheses, route abstained cases to review queue, and track abstain-resolution outcomes in receipted artifacts under `local/state/sensory/analysis/abstain_uncertainty/`; regression coverage in `tests/client-memory-tools/abstain_uncertainty_contract.test.js`.",
       "dependencies": [
         "V3-RACE-081",
         "V3-RACE-069"
@@ -9660,7 +9660,7 @@
       "status": "done",
       "title": "Value-of-Information Collection Planner",
       "problem": "Detection budget should prioritize uncertainty reduction, not raw volume.",
-      "acceptance": "Added `client/runtime/systems/sensory/value_of_information_collection_planner.{ts,js}` + `client/runtime/config/value_of_information_collection_planner_policy.json` to rank collection actions by expected information gain from uncertainty and objective-impact signals, including predicted uncertainty-reduction receipts under `state/sensory/analysis/value_information_planner/`; regression coverage in `tests/client-memory-tools/value_of_information_collection_planner.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/value_of_information_collection_planner.{ts,js}` + `client/runtime/config/value_of_information_collection_planner_policy.json` to rank collection actions by expected information gain from uncertainty and objective-impact signals, including predicted uncertainty-reduction receipts under `local/state/sensory/analysis/value_information_planner/`; regression coverage in `tests/client-memory-tools/value_of_information_collection_planner.test.js`.",
       "dependencies": [
         "V3-RACE-080",
         "V3-RACE-081",
@@ -9679,7 +9679,7 @@
       "status": "done",
       "title": "Ensemble Disagreement Escalation Lane",
       "problem": "Single-analyzer certainty can mask blind spots on ambiguous/high-risk signals.",
-      "acceptance": "Added `client/runtime/systems/sensory/ensemble_disagreement_escalation_lane.{ts,js}` + `client/runtime/config/ensemble_disagreement_escalation_policy.json` to compute ensemble divergence metrics (stddev/range), apply risk-tier thresholds, and route high-divergence cases to adjudication with receipts under `state/sensory/analysis/ensemble_disagreement/`; regression coverage in `tests/client-memory-tools/ensemble_disagreement_escalation_lane.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/ensemble_disagreement_escalation_lane.{ts,js}` + `client/runtime/config/ensemble_disagreement_escalation_policy.json` to compute ensemble divergence metrics (stddev/range), apply risk-tier thresholds, and route high-divergence cases to adjudication with receipts under `local/state/sensory/analysis/ensemble_disagreement/`; regression coverage in `tests/client-memory-tools/ensemble_disagreement_escalation_lane.test.js`.",
       "dependencies": [
         "V3-RACE-083",
         "V3-RACE-087"
@@ -9697,7 +9697,7 @@
       "status": "done",
       "title": "Ground-Truth Governance & Label Adjudication Lane",
       "problem": "Label noise and weak adjudication can silently cap detector quality and destabilize promotion decisions.",
-      "acceptance": "Added `client/runtime/systems/sensory/ground_truth_label_adjudication_lane.{ts,js}` + `client/runtime/config/ground_truth_label_adjudication_policy.json` to compute reviewer agreement/confidence, adjudicate labels into accepted vs quarantined sets, and emit governance receipts while writing promotion/quarantine corpora under `state/sensory/labels/`; regression coverage in `tests/client-memory-tools/ground_truth_label_adjudication_lane.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/ground_truth_label_adjudication_lane.{ts,js}` + `client/runtime/config/ground_truth_label_adjudication_policy.json` to compute reviewer agreement/confidence, adjudicate labels into accepted vs quarantined sets, and emit governance receipts while writing promotion/quarantine corpora under `local/state/sensory/labels/`; regression coverage in `tests/client-memory-tools/ground_truth_label_adjudication_lane.test.js`.",
       "dependencies": [
         "V3-RACE-086"
       ],
@@ -9997,7 +9997,7 @@
       "status": "done",
       "title": "Habits path migration prep (abstraction + compatibility)",
       "problem": "Direct `client/cognition/habits/` relocation would break active runtime contracts, policies, and command surfaces.",
-      "acceptance": "`relocatable_path_contract` now emits deterministic habits path rewrite inventory (`state/ops/relocatable_path_contract/path_rewrite_inventory.json`) with absolute-include support and rewrite-contract checks, preserving compatibility wrappers and pass behavior (`tests/client-memory-tools/relocatable_path_contract.test.js`, `tests/client-memory-tools/legacy_path_alias_adapters.test.js`). Evidence: `client/runtime/systems/ops/relocatable_path_contract.ts`, `client/runtime/systems/ops/event_sourced_control_plane.ts`, `client/runtime/systems/state/event_stream.ts`, `client/runtime/systems/ops/trace_habit_autogenesis.ts`.",
+      "acceptance": "`relocatable_path_contract` now emits deterministic habits path rewrite inventory (`local/state/ops/relocatable_path_contract/path_rewrite_inventory.json`) with absolute-include support and rewrite-contract checks, preserving compatibility wrappers and pass behavior (`tests/client-memory-tools/relocatable_path_contract.test.js`, `tests/client-memory-tools/legacy_path_alias_adapters.test.js`). Evidence: `client/runtime/systems/ops/relocatable_path_contract.ts`, `client/runtime/systems/ops/event_sourced_control_plane.ts`, `client/runtime/systems/local/state/event_stream.ts`, `client/runtime/systems/ops/trace_habit_autogenesis.ts`.",
       "dependencies": [],
       "impact_score": 9,
       "risk_score": 4,
@@ -10080,7 +10080,7 @@
       "status": "done",
       "title": "Outcome calibration by proposal type (post BL-027 companion)",
       "problem": "Track pass-rate by proposal type and tune admission thresholds using per-type shipped/no-change outcomes",
-      "acceptance": "`client/runtime/systems/autonomy/proposal_type_outcome_calibrator.ts` now emits bounded per-type threshold offsets (strategy policy proposal type threshold offsets) plus per-type audit reasoning, writes calibration receipts on offset changes (`state/client/cognition/adaptive/strategy/receipts.jsonl`), and proposal admission/gating consume offsets via shared outcome-fitness policy helpers",
+      "acceptance": "`client/runtime/systems/autonomy/proposal_type_outcome_calibrator.ts` now emits bounded per-type threshold offsets (strategy policy proposal type threshold offsets) plus per-type audit reasoning, writes calibration receipts on offset changes (`local/state/client/cognition/adaptive/strategy/receipts.jsonl`), and proposal admission/gating consume offsets via shared outcome-fitness policy helpers",
       "dependencies": [],
       "impact_score": 6,
       "risk_score": 12,
@@ -10310,7 +10310,7 @@
       "status": "done",
       "title": "Hot-Path Performance Multiplier Program (5-20x Guarded Targets)",
       "problem": "Performance claims need enforceable floor contracts and regressions must block promotion to preserve credibility.",
-      "acceptance": "Add benchmark target matrix for state/security/actuation hot paths with minimum multiplier thresholds, fail closed on regression, publish reproducible performance receipts, and include rollback-safe threshold profile downgrade when noisy hardware classes are detected. Verify via npm run -s lane:v3-race-221:run and npm run -s test:lane:v3-race-221; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/backlog_queue_executor.ts`.",
+      "acceptance": "Add benchmark target matrix for local/state/security/actuation hot paths with minimum multiplier thresholds, fail closed on regression, publish reproducible performance receipts, and include rollback-safe threshold profile downgrade when noisy hardware classes are detected. Verify via npm run -s lane:v3-race-221:run and npm run -s test:lane:v3-race-221; receipt must be present in state artifacts. Rollback via git revert of completion commit or canonical status reset to queued if regression is detected. Evidence: `client/runtime/systems/ops/backlog_queue_executor.ts`.",
       "dependencies": [
         "V3-RACE-174",
         "V3-RACE-186",
@@ -10696,7 +10696,7 @@
       "status": "done",
       "title": "Mirror Organ (active self-observation and self-critique)",
       "problem": "Upgrade read-only observer into a controlled self-improvement loop",
-      "acceptance": "Implemented via `client/runtime/systems/autonomy/mirror_organ.ts` + wrapper, with proposal-only outputs, confidence scoring, replayable evidence (`replay --proposal-id`), spine stage (`spine_mirror_organ`), continuum self-improvement integration, and suggestion-lane ingestion from `state/autonomy/mirror_organ/suggestions/`. Coverage: `tests/client-memory-tools/mirror_organ.test.js`, `tests/client-memory-tools/suggestion_lane.test.js`, `tests/client-memory-tools/continuum_core.test.js`.",
+      "acceptance": "Implemented via `client/runtime/systems/autonomy/mirror_organ.ts` + wrapper, with proposal-only outputs, confidence scoring, replayable evidence (`replay --proposal-id`), spine stage (`spine_mirror_organ`), continuum self-improvement integration, and suggestion-lane ingestion from `local/state/autonomy/mirror_organ/suggestions/`. Coverage: `tests/client-memory-tools/mirror_organ.test.js`, `tests/client-memory-tools/suggestion_lane.test.js`, `tests/client-memory-tools/continuum_core.test.js`.",
       "dependencies": [],
       "impact_score": 9,
       "risk_score": 8,
@@ -10771,7 +10771,7 @@
       "status": "done",
       "title": "Adaptive Ensemble Routing Primitive",
       "problem": "Context-aware switching between aligned and complementary specialist lanes improves outcomes.",
-      "acceptance": "Delivered `client/runtime/systems/assimilation/adaptive_ensemble_routing_primitive.ts` + policy `client/runtime/config/adaptive_ensemble_routing_primitive_policy.json`; context-aware aligned/complementary specialist routing with weaver stream emission (`state/autonomy/weaver/adaptive_ensemble_profiles.jsonl`) and assimilation integration (`adaptive_ensemble_routing` lane), validated by `tests/client-memory-tools/adaptive_ensemble_routing_primitive.test.js` + assimilation integration tests.",
+      "acceptance": "Delivered `client/runtime/systems/assimilation/adaptive_ensemble_routing_primitive.ts` + policy `client/runtime/config/adaptive_ensemble_routing_primitive_policy.json`; context-aware aligned/complementary specialist routing with weaver stream emission (`local/state/autonomy/weaver/adaptive_ensemble_profiles.jsonl`) and assimilation integration (`adaptive_ensemble_routing` lane), validated by `tests/client-memory-tools/adaptive_ensemble_routing_primitive.test.js` + assimilation integration tests.",
       "dependencies": [],
       "impact_score": 9,
       "risk_score": 8,
@@ -10857,7 +10857,7 @@
       "status": "done",
       "title": "Multimodal Signal Adapter Plane (Non-Text Features)",
       "problem": "Important activity signal exists outside text and is currently weakly integrated into inference.",
-      "acceptance": "Added `client/runtime/systems/sensory/multimodal_signal_adapter_plane.{ts,js}` + `client/runtime/config/multimodal_signal_adapter_policy.json` to normalize repo/image/market non-text features into one bounded-influence adapter stream (`state/sensory/analysis/multimodal_adapter/`) with strict source requirements and audit receipts; regression coverage in `tests/client-memory-tools/multimodal_signal_adapter_plane.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/multimodal_signal_adapter_plane.{ts,js}` + `client/runtime/config/multimodal_signal_adapter_policy.json` to normalize repo/image/market non-text features into one bounded-influence adapter stream (`local/state/sensory/analysis/multimodal_adapter/`) with strict source requirements and audit receipts; regression coverage in `tests/client-memory-tools/multimodal_signal_adapter_plane.test.js`.",
       "dependencies": [
         "V3-RACE-007",
         "V3-RACE-041",
@@ -10876,7 +10876,7 @@
       "status": "done",
       "title": "Active-Learning Uncertainty Queue",
       "problem": "Ambiguous/high-disagreement cases are the highest-leverage training signal and should be prioritized.",
-      "acceptance": "Added `client/runtime/systems/sensory/active_learning_uncertainty_queue.{ts,js}` + `client/runtime/config/active_learning_uncertainty_queue_policy.json` to auto-queue abstain/disagreement cases into prioritized review lanes and track accepted-label feedback intake with receipted outputs under `state/sensory/analysis/active_learning/`; regression coverage in `tests/client-memory-tools/active_learning_uncertainty_queue.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/active_learning_uncertainty_queue.{ts,js}` + `client/runtime/config/active_learning_uncertainty_queue_policy.json` to auto-queue abstain/disagreement cases into prioritized review lanes and track accepted-label feedback intake with receipted outputs under `local/state/sensory/analysis/active_learning/`; regression coverage in `tests/client-memory-tools/active_learning_uncertainty_queue.test.js`.",
       "dependencies": [
         "V3-RACE-088",
         "V3-RACE-094",
@@ -10895,7 +10895,7 @@
       "status": "done",
       "title": "Cross-Objective Interference Guard for Analysis Changes",
       "problem": "Improving one objective can unintentionally degrade others without explicit non-regression controls.",
-      "acceptance": "Added `client/runtime/systems/sensory/cross_objective_interference_guard.{ts,js}` + `client/runtime/config/cross_objective_interference_guard_policy.json` to evaluate multi-objective before/after deltas against per-objective interference budgets and fail promotion when any objective exceeds allowed regression, with guard receipts under `state/sensory/analysis/objective_interference_guard/`; regression coverage in `tests/client-memory-tools/cross_objective_interference_guard.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/cross_objective_interference_guard.{ts,js}` + `client/runtime/config/cross_objective_interference_guard_policy.json` to evaluate multi-objective before/after deltas against per-objective interference budgets and fail promotion when any objective exceeds allowed regression, with guard receipts under `local/state/sensory/analysis/objective_interference_guard/`; regression coverage in `tests/client-memory-tools/cross_objective_interference_guard.test.js`.",
       "dependencies": [
         "V3-RACE-084",
         "V3-RACE-096",
@@ -10932,7 +10932,7 @@
       "status": "done",
       "title": "Script Surface Reduction Wave II",
       "problem": "Even with registry governance, oversized script catalogs reduce discoverability and operational efficiency.",
-      "acceptance": "Delivered `client/runtime/systems/ops/script_surface_reduction_wave2.{ts,js}` + policy (`client/runtime/config/script_surface_reduction_wave2_policy.json`), executed apply lane to retire 213 non-critical `:status` aliases (script count `798 -> 585`), preserved critical/referenced surface, and published migration receipts + command-map diff (`state/ops/script_surface_reduction_wave2/*`, `docs/client/ops/SCRIPT_SURFACE_REDUCTION_WAVE2.md`).",
+      "acceptance": "Delivered `client/runtime/systems/ops/script_surface_reduction_wave2.{ts,js}` + policy (`client/runtime/config/script_surface_reduction_wave2_policy.json`), executed apply lane to retire 213 non-critical `:status` aliases (script count `798 -> 585`), preserved critical/referenced surface, and published migration receipts + command-map diff (`local/state/ops/script_surface_reduction_wave2/*`, `docs/client/ops/SCRIPT_SURFACE_REDUCTION_WAVE2.md`).",
       "dependencies": [
         "V3-RACE-115",
         "V3-RACE-123"
@@ -11319,7 +11319,7 @@
       "status": "done",
       "title": "Loop/persona A/B trial evaluator with promotion receipts",
       "problem": "Variant iteration lacked a dedicated Rust-native evaluator for promote/hold decisions with deterministic receipts.",
-      "acceptance": "`core/layer0/ops/src/ab_lane_eval.rs` adds `protheus-ops ab-lane-eval status|run` with weighted score evaluation, winner selection, and receipts persisted in `state/ops/ab_lane_eval`.",
+      "acceptance": "`core/layer0/ops/src/ab_lane_eval.rs` adds `protheus-ops ab-lane-eval status|run` with weighted score evaluation, winner selection, and receipts persisted in `local/state/ops/ab_lane_eval`.",
       "dependencies": [
         "V2-027",
         "V6-F100-001"
@@ -12055,7 +12055,7 @@
       "status": "done",
       "title": "Hypothesis Lifecycle Ledger",
       "problem": "Detector learning is weak without explicit end-to-end hypothesis outcome memory.",
-      "acceptance": "Added `client/runtime/systems/sensory/hypothesis_lifecycle_ledger.{ts,js}` + `client/runtime/config/hypothesis_lifecycle_ledger_policy.json` to persist hypothesis state transitions (`proposed/tested/accepted/rejected`) with challenger/outcome linkage into a durable ledger and lifecycle state artifacts under `state/sensory/analysis/hypothesis_lifecycle/`; regression coverage in `tests/client-memory-tools/hypothesis_lifecycle_ledger.test.js`.",
+      "acceptance": "Added `client/runtime/systems/sensory/hypothesis_lifecycle_ledger.{ts,js}` + `client/runtime/config/hypothesis_lifecycle_ledger_policy.json` to persist hypothesis state transitions (`proposed/tested/accepted/rejected`) with challenger/outcome linkage into a durable ledger and lifecycle state artifacts under `local/state/sensory/analysis/hypothesis_lifecycle/`; regression coverage in `tests/client-memory-tools/hypothesis_lifecycle_ledger.test.js`.",
       "dependencies": [
         "V3-RACE-083",
         "V3-RACE-084"
@@ -12252,7 +12252,7 @@
       "status": "done",
       "title": "Network egress choke point for autonomous actions",
       "problem": "Reduce exfiltration/abuse blast radius by forcing all outbound actions through a policy gate",
-      "acceptance": "Added `client/runtime/lib/egress_gateway.ts` + `client/runtime/systems/security/egress_gateway.ts` with `client/runtime/config/egress_gateway_policy.json`; sensory collectors/focus and Moltbook API/guard route outbound HTTP through gateway with allowlists, rate caps, and decision audits in `state/security/egress_audit.jsonl`",
+      "acceptance": "Added `client/runtime/lib/egress_gateway.ts` + `client/runtime/systems/security/egress_gateway.ts` with `client/runtime/config/egress_gateway_policy.json`; sensory collectors/focus and Moltbook API/guard route outbound HTTP through gateway with allowlists, rate caps, and decision audits in `local/state/security/egress_audit.jsonl`",
       "dependencies": [],
       "impact_score": 6,
       "risk_score": 8,
@@ -13066,7 +13066,7 @@
       "status": "done",
       "title": "Unified global budget governor across reflex/autonomy/focus/dream/spawn",
       "problem": "Prevent resource contention and runaway loops under concurrent adaptive workloads",
-      "acceptance": "Spawn token budgeting now shares global `system_budget` state/events path by default, autonomy reads same global state dir, focus controller enforces per-run budget gating + writes allow/degrade/deny decisions, and all contention decisions are auditable in centralized budget events Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/bl_023_anchor.ts`.",
+      "acceptance": "Spawn token budgeting now shares global `system_budget` local/state/events path by default, autonomy reads same global state dir, focus controller enforces per-run budget gating + writes allow/degrade/deny decisions, and all contention decisions are auditable in centralized budget events Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/bl_023_anchor.ts`.",
       "dependencies": [],
       "impact_score": 3,
       "risk_score": 8,
@@ -13081,7 +13081,7 @@
       "status": "done",
       "title": "Secret broker isolation + scoped credential handles",
       "problem": "Prevent high-capability models from directly reading raw secrets from disk during autonomous changes",
-      "acceptance": "Added `client/runtime/lib/secret_broker.ts` + `client/runtime/systems/security/secret_broker.ts`; autonomous Moltbook flows issue/resolve time-scoped handles; credential reads centralized in broker and audited to `state/security/secret_broker_audit.jsonl`",
+      "acceptance": "Added `client/runtime/lib/secret_broker.ts` + `client/runtime/systems/security/secret_broker.ts`; autonomous Moltbook flows issue/resolve time-scoped handles; credential reads centralized in broker and audited to `local/state/security/secret_broker_audit.jsonl`",
       "dependencies": [],
       "impact_score": 3,
       "risk_score": 8,
@@ -14340,7 +14340,7 @@
       "status": "done",
       "title": "Epigenetic regulation tags",
       "problem": "Add reversible fast adaptation without direct code mutation",
-      "acceptance": "`organism_cycle` updates TTL-bound trit tags and now emits cycle verification checks + per-run rollback plans (`state/autonomy/fractal/rollback_plans/YYYY-MM-DD.json`) to restore epigenetic/archetype state deterministically. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v2_033_anchor.ts`.",
+      "acceptance": "`organism_cycle` updates TTL-bound trit tags and now emits cycle verification checks + per-run rollback plans (`local/state/autonomy/fractal/rollback_plans/YYYY-MM-DD.json`) to restore epigenetic/archetype state deterministically. Evidence: `client/runtime/systems/ops/backlog_runtime_anchors/v2_033_anchor.ts`.",
       "dependencies": [],
       "impact_score": 3,
       "risk_score": 8,
@@ -14421,7 +14421,7 @@
       "status": "done",
       "title": "Pinnacle Tech Integration Engine (Research + Governed Proposal Lane)",
       "problem": "Frontier-technology scouting is currently ad hoc and not codified as an explicit recurring research/proposal substrate.",
-      "acceptance": "Added `client/runtime/systems/research/pinnacle_tech_integration_engine.{ts,js}` + policy `client/runtime/config/pinnacle_tech_integration_policy.json` to continuously scan CRDT/ZK/FHE/DID/IPFS/WASM/intent/time-lock classes and emit governed integration proposals only; non-user canonical research cataclient/logs/proposals remain in `client/runtime/systems/research/` + `state/research/`; optional user adoption preferences persist under + `client/cognition/adaptive/research/preferences/`. Evidence: `client/runtime/systems/research/pinnacle_tech_integration_engine.ts`, `client/runtime/systems/research`, `client/runtime/systems/ops/data_scope_boundary_check.ts`.",
+      "acceptance": "Added `client/runtime/systems/research/pinnacle_tech_integration_engine.{ts,js}` + policy `client/runtime/config/pinnacle_tech_integration_policy.json` to continuously scan CRDT/ZK/FHE/DID/IPFS/WASM/intent/time-lock classes and emit governed integration proposals only; non-user canonical research cataclient/logs/proposals remain in `client/runtime/systems/research/` + `local/state/research/`; optional user adoption preferences persist under + `client/cognition/adaptive/research/preferences/`. Evidence: `client/runtime/systems/research/pinnacle_tech_integration_engine.ts`, `client/runtime/systems/research`, `client/runtime/systems/ops/data_scope_boundary_check.ts`.",
       "dependencies": [
         "V3-018",
         "V3-RACE-106",
@@ -15210,9 +15210,9 @@
       "class": "hardening",
       "wave": "V3",
       "status": "done",
-      "title": "Legacy Path Alias Adapters (`client/runtime/systems/state/event_stream.ts`, `client/runtime/systems/autogenesis/*`)",
+      "title": "Legacy Path Alias Adapters (`client/runtime/systems/local/state/event_stream.ts`, `client/runtime/systems/autogenesis/*`)",
       "problem": "External prompts/tools may target legacy paths; absent adapters create false-negative \"missing implementation\" reports despite canonical coverage.",
-      "acceptance": "Added thin compatibility wrappers at `client/runtime/systems/state/event_stream.{ts,js}` and forwarding to canonical ops lanes via `client/runtime/systems/compat/legacy_alias_adapter.{ts,js}` with deprecation receipts in `state/ops/legacy_path_alias_adapters/*`; parity + receipt coverage landed in `tests/client-memory-tools/legacy_path_alias_adapters.test.js`. Evidence: `client/runtime/systems/state/event_stream.ts`, `client/runtime/systems/compat/legacy_alias_adapter.ts`, `client/runtime/config/requirement_conformance_matrix.json`.",
+      "acceptance": "Added thin compatibility wrappers at `client/runtime/systems/local/state/event_stream.{ts,js}` and forwarding to canonical ops lanes via `client/runtime/systems/compat/legacy_alias_adapter.{ts,js}` with deprecation receipts in `local/state/ops/legacy_path_alias_adapters/*`; parity + receipt coverage landed in `tests/client-memory-tools/legacy_path_alias_adapters.test.js`. Evidence: `client/runtime/systems/local/state/event_stream.ts`, `client/runtime/systems/compat/legacy_alias_adapter.ts`, `client/runtime/config/requirement_conformance_matrix.json`.",
       "dependencies": [
         "V3-RACE-017",
         "V3-RACE-018"
@@ -15958,7 +15958,7 @@
       "status": "done",
       "title": "Prompt/result cache with TTL + invalidation policy",
       "problem": "Reduce repeated LLM spend on near-identical requests while preserving correctness",
-      "acceptance": "`client/runtime/systems/routing/llm_gateway.ts` now stores prompt/result cache entries with TTL + LRU pruning in `state/routing/prompt_result_cache`, supports source fingerprint + bust key invalidation hooks, and emits cache-hit/miss telemetry in gateway audit logs",
+      "acceptance": "`client/runtime/systems/routing/llm_gateway.ts` now stores prompt/result cache entries with TTL + LRU pruning in `local/state/routing/prompt_result_cache`, supports source fingerprint + bust key invalidation hooks, and emits cache-hit/miss telemetry in gateway audit logs",
       "dependencies": [],
       "impact_score": 3,
       "risk_score": 4,
@@ -16138,7 +16138,7 @@
       "status": "done",
       "title": "Observer/Mirror read-only narration layer",
       "problem": "Add externalized introspection so operators get deterministic situational summaries instead of raw log spelunking",
-      "acceptance": "`client/runtime/systems/autonomy/observer_mirror.ts` emits daily mood/statement/recommendation snapshots under `state/autonomy/observer_mirror/` and spine runs it as `spine_observer_mirror`",
+      "acceptance": "`client/runtime/systems/autonomy/observer_mirror.ts` emits daily mood/statement/recommendation snapshots under `local/state/autonomy/observer_mirror/` and spine runs it as `spine_observer_mirror`",
       "dependencies": [],
       "impact_score": 3,
       "risk_score": 4,
@@ -16198,7 +16198,7 @@
       "status": "done",
       "title": "Independent repair-plane watchdog (out-of-band verifier)",
       "problem": "Reduce single-controller compromise risk and detect doctor tampering/gaming attempts early",
-      "acceptance": "Added independent watcher `client/runtime/systems/ops/autotest_doctor_watchdog.ts` with history/state/attestation checks and block-file quarantine lane wired into doctor apply-mode; coverage in `tests/client-memory-tools/autotest_doctor_watchdog.test.js`",
+      "acceptance": "Added independent watcher `client/runtime/systems/ops/autotest_doctor_watchdog.ts` with history/local/state/attestation checks and block-file quarantine lane wired into doctor apply-mode; coverage in `tests/client-memory-tools/autotest_doctor_watchdog.test.js`",
       "dependencies": [],
       "impact_score": 3,
       "risk_score": 4,
@@ -16759,7 +16759,7 @@
       "status": "done",
       "title": "Nursery promotion hardening (lineage + cooldown + evidence floor)",
       "problem": "Prevent fragile or untraceable specialist checkpoint promotion",
-      "acceptance": "`client/runtime/systems/nursery/specialist_training.ts` now enforces eval/data minimums, optional drift/regression caps, checkpoint lineage, cooldown windows, and promotion manifests in `state/nursery/training/promotions/`",
+      "acceptance": "`client/runtime/systems/nursery/specialist_training.ts` now enforces eval/data minimums, optional drift/regression caps, checkpoint lineage, cooldown windows, and promotion manifests in `local/state/nursery/training/promotions/`",
       "dependencies": [],
       "impact_score": 0,
       "risk_score": 4,
@@ -16896,7 +16896,7 @@
       "status": "done",
       "title": "Broken-piece lab pipeline (rollback bundles -> dormant study queue -> safe reimplementation proposals)",
       "problem": "Convert rolled-back failures into structured learning artifacts without unsafe auto-patching",
-      "acceptance": "Doctor now enqueues rollback bundles into deterministic lab queue (`state/ops/autotest_doctor/broken_lab_queue.jsonl`), and `client/runtime/systems/ops/broken_piece_lab.ts` clusters signatures + exports deterministic JSON/Markdown reimplementation proposals; coverage in `tests/client-memory-tools/broken_piece_lab.test.js`",
+      "acceptance": "Doctor now enqueues rollback bundles into deterministic lab queue (`local/state/ops/autotest_doctor/broken_lab_queue.jsonl`), and `client/runtime/systems/ops/broken_piece_lab.ts` clusters signatures + exports deterministic JSON/Markdown reimplementation proposals; coverage in `tests/client-memory-tools/broken_piece_lab.test.js`",
       "dependencies": [],
       "impact_score": 3,
       "risk_score": 0,
@@ -16977,7 +16977,7 @@
       "wave": "V6",
       "status": "done",
       "title": "Operator Surface Consistency Program (UX/Tone/State Model)",
-      "problem": "UX and operator surfaces are strong but not yet governed by one consistent state/tone/interaction contract across all commands/panels.",
+      "problem": "UX and operator surfaces are strong but not yet governed by one consistent local/state/tone/interaction contract across all commands/panels.",
       "acceptance": "Define and enforce surface consistency contract (command shape, status vocabulary, tone profile, state labels, error taxonomy) with snapshot tests across `protheus`, `protheusctl`, `protheus-top`, and reasoning surfaces; require rollback-safe compatibility snapshots for each surface update wave.",
       "dependencies": [
         "V6-F100-009",
@@ -18408,13 +18408,13 @@
         "client/runtime/systems/ops/rust50_migration_program.ts",
         "client/runtime/systems/hybrid/rust/src/security_vault.rs",
         "client/runtime/systems/hybrid/rust/src/econ_crypto.rs",
-        "state/ops/rust50_migration_program/artifacts/v6_rust50_004_security_vault_core.json"
+        "local/state/ops/rust50_migration_program/artifacts/v6_rust50_004_security_vault_core.json"
       ],
       "evidence_found": [
         "client/runtime/systems/ops/rust50_migration_program.ts",
         "client/runtime/systems/hybrid/rust/src/security_vault.rs",
         "client/runtime/systems/hybrid/rust/src/econ_crypto.rs",
-        "state/ops/rust50_migration_program/artifacts/v6_rust50_004_security_vault_core.json"
+        "local/state/ops/rust50_migration_program/artifacts/v6_rust50_004_security_vault_core.json"
       ],
       "evidence_missing": [],
       "dependencies": [
@@ -18463,7 +18463,7 @@
       "evidence_refs": [
         "client/runtime/systems/ops/platform_oracle_hostprofile.{ts,js}",
         "client/runtime/config/platform_oracle_hostprofile_policy.json",
-        "state/ops/platform_oracle_hostprofile/",
+        "local/state/ops/platform_oracle_hostprofile/",
         "tests/client-memory-tools/platform_adaptation_stack.test.js",
         "client/runtime/systems/ops/platform_oracle_hostprofile.ts"
       ],
@@ -18474,7 +18474,7 @@
         "client/runtime/systems/ops/platform_oracle_hostprofile.ts"
       ],
       "evidence_missing": [
-        "state/ops/platform_oracle_hostprofile/"
+        "local/state/ops/platform_oracle_hostprofile/"
       ],
       "dependencies": [
         "V3-RACE-034",
@@ -18785,13 +18785,13 @@
       "evidence_refs": [
         "client/runtime/systems/ops/rust50_migration_program.ts",
         "client/runtime/systems/hybrid/rust/src/execution_replay.rs",
-        "state/ops/rust50_migration_program/artifacts/v6_rust50_002_execution_core.json",
+        "local/state/ops/rust50_migration_program/artifacts/v6_rust50_002_execution_core.json",
         "tests/client-memory-tools/rust50_migration_program.test.js"
       ],
       "evidence_found": [
         "client/runtime/systems/ops/rust50_migration_program.ts",
         "client/runtime/systems/hybrid/rust/src/execution_replay.rs",
-        "state/ops/rust50_migration_program/artifacts/v6_rust50_002_execution_core.json",
+        "local/state/ops/rust50_migration_program/artifacts/v6_rust50_002_execution_core.json",
         "tests/client-memory-tools/rust50_migration_program.test.js"
       ],
       "evidence_missing": [],
@@ -18935,12 +18935,12 @@
       "evidence_refs": [
         "crates/",
         "client/runtime/systems/",
-        "state/ops/rust50_mega_sprint1_batch/latest.json"
+        "local/state/ops/rust50_mega_sprint1_batch/latest.json"
       ],
       "evidence_found": [
         "crates/",
         "client/runtime/systems/",
-        "state/ops/rust50_mega_sprint1_batch/latest.json"
+        "local/state/ops/rust50_mega_sprint1_batch/latest.json"
       ],
       "evidence_missing": [],
       "dependencies": [
@@ -19344,7 +19344,7 @@
         "client/runtime/systems/ops/rust50_conf001_execution_cutover.ts",
         "client/runtime/config/rust50_conf001_execution_cutover_policy.json",
         "tests/client-memory-tools/rust50_conf001_execution_cutover.test.js",
-        "state/ops/rust50_conf001/latest.json"
+        "local/state/ops/rust50_conf001/latest.json"
       ],
       "evidence_found": [
         "core/layer2/execution/",
@@ -19352,7 +19352,7 @@
         "client/runtime/systems/ops/rust50_conf001_execution_cutover.ts",
         "client/runtime/config/rust50_conf001_execution_cutover_policy.json",
         "tests/client-memory-tools/rust50_conf001_execution_cutover.test.js",
-        "state/ops/rust50_conf001/latest.json"
+        "local/state/ops/rust50_conf001/latest.json"
       ],
       "evidence_missing": [],
       "dependencies": [
@@ -19407,11 +19407,11 @@
       "reviewed": true,
       "review_result": "pass",
       "evidence_refs": [
-        "state/security/skin_protection/stasis_state.json",
+        "local/state/security/skin_protection/stasis_state.json",
         "client/runtime/systems/ops/backlog_runtime_anchors/v3_skin_002_anchor.ts"
       ],
       "evidence_found": [
-        "state/security/skin_protection/stasis_state.json",
+        "local/state/security/skin_protection/stasis_state.json",
         "client/runtime/systems/ops/backlog_runtime_anchors/v3_skin_002_anchor.ts"
       ],
       "evidence_missing": [],
@@ -19430,13 +19430,13 @@
         "client/runtime/systems/ops/rust50_migration_program.ts",
         "client/runtime/systems/hybrid/rust/src/red_chaos.rs",
         "client/runtime/systems/hybrid/rust/src/telemetry_emit.rs",
-        "state/ops/rust50_migration_program/artifacts/v6_rust50_005_chaos_observability_core.json"
+        "local/state/ops/rust50_migration_program/artifacts/v6_rust50_005_chaos_observability_core.json"
       ],
       "evidence_found": [
         "client/runtime/systems/ops/rust50_migration_program.ts",
         "client/runtime/systems/hybrid/rust/src/red_chaos.rs",
         "client/runtime/systems/hybrid/rust/src/telemetry_emit.rs",
-        "state/ops/rust50_migration_program/artifacts/v6_rust50_005_chaos_observability_core.json"
+        "local/state/ops/rust50_migration_program/artifacts/v6_rust50_005_chaos_observability_core.json"
       ],
       "evidence_missing": [],
       "dependencies": [
@@ -19545,13 +19545,13 @@
       "evidence_refs": [
         "client/runtime/systems/ops/rust50_migration_program.ts",
         "client/runtime/systems/hybrid/rust/src/crdt_merge.rs",
-        "state/ops/rust50_migration_program/artifacts/v6_rust50_003_crdt_core.json",
+        "local/state/ops/rust50_migration_program/artifacts/v6_rust50_003_crdt_core.json",
         "tests/client-memory-tools/rust50_migration_program.test.js"
       ],
       "evidence_found": [
         "client/runtime/systems/ops/rust50_migration_program.ts",
         "client/runtime/systems/hybrid/rust/src/crdt_merge.rs",
-        "state/ops/rust50_migration_program/artifacts/v6_rust50_003_crdt_core.json",
+        "local/state/ops/rust50_migration_program/artifacts/v6_rust50_003_crdt_core.json",
         "tests/client-memory-tools/rust50_migration_program.test.js"
       ],
       "evidence_missing": [],
@@ -19575,14 +19575,14 @@
         "client/runtime/systems/",
         "client/runtime/systems/ops/rust50_sprint1_batch.ts",
         "client/runtime/config/rust50_sprint1_batch_policy.json",
-        "state/ops/rust50_sprint1_batch/latest.json"
+        "local/state/ops/rust50_sprint1_batch/latest.json"
       ],
       "evidence_found": [
         "crates/",
         "client/runtime/systems/",
         "client/runtime/systems/ops/rust50_sprint1_batch.ts",
         "client/runtime/config/rust50_sprint1_batch_policy.json",
-        "state/ops/rust50_sprint1_batch/latest.json"
+        "local/state/ops/rust50_sprint1_batch/latest.json"
       ],
       "evidence_missing": [],
       "dependencies": [
@@ -20187,7 +20187,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/dynamic_source_reliability_graph.{ts,js}",
         "client/runtime/config/dynamic_source_reliability_graph_policy.json",
-        "state/sensory/analysis/source_reliability/",
+        "local/state/sensory/analysis/source_reliability/",
         "tests/client-memory-tools/dynamic_source_reliability_graph.test.js"
       ],
       "evidence_found": [
@@ -20196,7 +20196,7 @@
         "tests/client-memory-tools/dynamic_source_reliability_graph.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/source_reliability/"
+        "local/state/sensory/analysis/source_reliability/"
       ],
       "dependencies": [
         "V3-RACE-078",
@@ -20398,7 +20398,7 @@
       "evidence_refs": [
         "client/runtime/systems/ops/rust_hotpath_inventory.ts",
         "client/runtime/config/rust_hotpath_inventory_policy.json",
-        "state/ops/rust_hotpath_inventory/latest.json",
+        "local/state/ops/rust_hotpath_inventory/latest.json",
         "docs/client/RUST50_HOTPATH_INVENTORY.md",
         "tests/client-memory-tools/rust_hotpath_inventory.test.js",
         "tests/client-memory-tools/protheusctl_dispatch_security_gate.test.js"
@@ -20406,7 +20406,7 @@
       "evidence_found": [
         "client/runtime/systems/ops/rust_hotpath_inventory.ts",
         "client/runtime/config/rust_hotpath_inventory_policy.json",
-        "state/ops/rust_hotpath_inventory/latest.json",
+        "local/state/ops/rust_hotpath_inventory/latest.json",
         "docs/client/RUST50_HOTPATH_INVENTORY.md",
         "tests/client-memory-tools/rust_hotpath_inventory.test.js",
         "tests/client-memory-tools/protheusctl_dispatch_security_gate.test.js"
@@ -20476,13 +20476,13 @@
       "evidence_refs": [
         "client/runtime/systems/memory/rust_memory_transition_lane.ts",
         "client/runtime/config/rust_memory_transition_policy.json",
-        "state/client/memory/rust_transition/soak_promotion_decisions.jsonl",
+        "local/state/client/memory/rust_transition/soak_promotion_decisions.jsonl",
         "tests/client-memory-tools/rust_memory_transition_lane.test.js"
       ],
       "evidence_found": [
         "client/runtime/systems/memory/rust_memory_transition_lane.ts",
         "client/runtime/config/rust_memory_transition_policy.json",
-        "state/client/memory/rust_transition/soak_promotion_decisions.jsonl",
+        "local/state/client/memory/rust_transition/soak_promotion_decisions.jsonl",
         "tests/client-memory-tools/rust_memory_transition_lane.test.js"
       ],
       "evidence_missing": [],
@@ -20718,13 +20718,13 @@
       "evidence_refs": [
         "client/runtime/systems/ops/rust50_migration_program.ts",
         "client/runtime/systems/hybrid/rust/src/memory_hotpath.rs",
-        "state/ops/rust50_migration_program/artifacts/v6_rust50_001_memory_core.json",
+        "local/state/ops/rust50_migration_program/artifacts/v6_rust50_001_memory_core.json",
         "tests/client-memory-tools/rust50_migration_program.test.js"
       ],
       "evidence_found": [
         "client/runtime/systems/ops/rust50_migration_program.ts",
         "client/runtime/systems/hybrid/rust/src/memory_hotpath.rs",
-        "state/ops/rust50_migration_program/artifacts/v6_rust50_001_memory_core.json",
+        "local/state/ops/rust50_migration_program/artifacts/v6_rust50_001_memory_core.json",
         "tests/client-memory-tools/rust50_migration_program.test.js"
       ],
       "evidence_missing": [],
@@ -20747,13 +20747,13 @@
         "client/runtime/systems/ops/rust50_sprint_contract.ts",
         "client/runtime/config/rust50_sprint_contract_policy.json",
         "tests/client-memory-tools/rust50_sprint_contract.test.js",
-        "state/ops/rust50_sprint_contract/latest.json"
+        "local/state/ops/rust50_sprint_contract/latest.json"
       ],
       "evidence_found": [
         "client/runtime/systems/ops/rust50_sprint_contract.ts",
         "client/runtime/config/rust50_sprint_contract_policy.json",
         "tests/client-memory-tools/rust50_sprint_contract.test.js",
-        "state/ops/rust50_sprint_contract/latest.json"
+        "local/state/ops/rust50_sprint_contract/latest.json"
       ],
       "evidence_missing": [],
       "dependencies": [
@@ -21032,7 +21032,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/offline_statistical_lab_artifact_bridge.{ts,js}",
         "client/runtime/config/offline_statistical_lab_artifact_bridge_policy.json",
-        "state/sensory/analysis/offline_lab_bridge/",
+        "local/state/sensory/analysis/offline_lab_bridge/",
         "tests/client-memory-tools/offline_statistical_lab_artifact_bridge.test.js"
       ],
       "evidence_found": [
@@ -21041,7 +21041,7 @@
         "tests/client-memory-tools/offline_statistical_lab_artifact_bridge.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/offline_lab_bridge/"
+        "local/state/sensory/analysis/offline_lab_bridge/"
       ],
       "dependencies": [
         "V3-RACE-086",
@@ -21319,7 +21319,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/multi_hop_objective_chain_mapper.{ts,js}",
         "client/runtime/config/multi_hop_objective_chain_policy.json",
-        "state/sensory/analysis/objective_chain_mapper/",
+        "local/state/sensory/analysis/objective_chain_mapper/",
         "tests/client-memory-tools/multi_hop_objective_chain_mapper.test.js"
       ],
       "evidence_found": [
@@ -21328,7 +21328,7 @@
         "tests/client-memory-tools/multi_hop_objective_chain_mapper.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/objective_chain_mapper/"
+        "local/state/sensory/analysis/objective_chain_mapper/"
       ],
       "dependencies": [
         "V3-RACE-078",
@@ -21349,7 +21349,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/analysis_quality_slo_contract.{ts,js}",
         "client/runtime/config/analysis_quality_slo_contract_policy.json",
-        "state/sensory/analysis/quality_slo/",
+        "local/state/sensory/analysis/quality_slo/",
         "tests/client-memory-tools/analysis_quality_slo_contract.test.js"
       ],
       "evidence_found": [
@@ -21358,7 +21358,7 @@
         "tests/client-memory-tools/analysis_quality_slo_contract.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/quality_slo/"
+        "local/state/sensory/analysis/quality_slo/"
       ],
       "dependencies": [
         "V3-RACE-086",
@@ -21863,14 +21863,14 @@
         "client/runtime/systems/ops/rust50_migration_program.ts",
         "client/runtime/config/rust50_migration_program_policy.json",
         "docs/client/RUST50_MIGRATION_IMPLEMENTATION.md",
-        "state/ops/rust50_migration_program/rust50_gate_state.json",
+        "local/state/ops/rust50_migration_program/rust50_gate_state.json",
         "tests/client-memory-tools/rust50_migration_program.test.js"
       ],
       "evidence_found": [
         "client/runtime/systems/ops/rust50_migration_program.ts",
         "client/runtime/config/rust50_migration_program_policy.json",
         "docs/client/RUST50_MIGRATION_IMPLEMENTATION.md",
-        "state/ops/rust50_migration_program/rust50_gate_state.json",
+        "local/state/ops/rust50_migration_program/rust50_gate_state.json",
         "tests/client-memory-tools/rust50_migration_program.test.js"
       ],
       "evidence_missing": [],
@@ -22728,13 +22728,13 @@
       "evidence_refs": [
         "client/runtime/systems/workflow/workflow_executor.ts",
         "client/runtime/config/workflow_executor_policy.json",
-        "state/client/cognition/adaptive/workflows/executor/mutations/",
+        "local/state/client/cognition/adaptive/workflows/executor/mutations/",
         "tests/client-memory-tools/workflow_executor.test.js"
       ],
       "evidence_found": [
         "client/runtime/systems/workflow/workflow_executor.ts",
         "client/runtime/config/workflow_executor_policy.json",
-        "state/client/cognition/adaptive/workflows/executor/mutations/",
+        "local/state/client/cognition/adaptive/workflows/executor/mutations/",
         "tests/client-memory-tools/workflow_executor.test.js"
       ],
       "evidence_missing": [],
@@ -23124,13 +23124,13 @@
       "reviewed": true,
       "review_result": "warn",
       "evidence_refs": [
-        "state/ops/platform_socket_runtime/installed.json",
-        "state/ops/platform_socket_runtime/history.jsonl"
+        "local/state/ops/platform_socket_runtime/installed.json",
+        "local/state/ops/platform_socket_runtime/history.jsonl"
       ],
       "evidence_found": [],
       "evidence_missing": [
-        "state/ops/platform_socket_runtime/installed.json",
-        "state/ops/platform_socket_runtime/history.jsonl"
+        "local/state/ops/platform_socket_runtime/installed.json",
+        "local/state/ops/platform_socket_runtime/history.jsonl"
       ],
       "dependencies": [
         "V3-RACE-356",
@@ -23285,7 +23285,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/gold_eval_blind_scoring_lane.{ts,js}",
         "client/runtime/config/gold_eval_blind_scoring_policy.json",
-        "state/sensory/analysis/gold_eval_blind/",
+        "local/state/sensory/analysis/gold_eval_blind/",
         "tests/client-memory-tools/gold_eval_blind_scoring_lane.test.js"
       ],
       "evidence_found": [
@@ -23294,7 +23294,7 @@
         "tests/client-memory-tools/gold_eval_blind_scoring_lane.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/gold_eval_blind/"
+        "local/state/sensory/analysis/gold_eval_blind/"
       ],
       "dependencies": [
         "V3-RACE-081",
@@ -23313,7 +23313,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/causal_vs_correlation_signal_scorer.{ts,js}",
         "client/runtime/config/causal_vs_correlation_signal_scorer_policy.json",
-        "state/sensory/analysis/causal_signal_scorer/",
+        "local/state/sensory/analysis/causal_signal_scorer/",
         "tests/client-memory-tools/causal_vs_correlation_signal_scorer.test.js"
       ],
       "evidence_found": [
@@ -23322,7 +23322,7 @@
         "tests/client-memory-tools/causal_vs_correlation_signal_scorer.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/causal_signal_scorer/"
+        "local/state/sensory/analysis/causal_signal_scorer/"
       ],
       "dependencies": [
         "V3-RACE-082",
@@ -23603,14 +23603,14 @@
       "reviewed": true,
       "review_result": "pass",
       "evidence_refs": [
-        "state/autonomy/improvements/phase_receipts/",
+        "local/state/autonomy/improvements/phase_receipts/",
         "client/runtime/systems/ops/backlog_runtime_anchors/bl_022_anchor.ts"
       ],
       "evidence_found": [
         "client/runtime/systems/ops/backlog_runtime_anchors/bl_022_anchor.ts"
       ],
       "evidence_missing": [
-        "state/autonomy/improvements/phase_receipts/"
+        "local/state/autonomy/improvements/phase_receipts/"
       ],
       "dependencies": []
     },
@@ -23693,7 +23693,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/distribution_shift_decomposition_engine.{ts,js}",
         "client/runtime/config/distribution_shift_decomposition_policy.json",
-        "state/sensory/analysis/distribution_shift/",
+        "local/state/sensory/analysis/distribution_shift/",
         "tests/client-memory-tools/distribution_shift_decomposition_engine.test.js"
       ],
       "evidence_found": [
@@ -23702,7 +23702,7 @@
         "tests/client-memory-tools/distribution_shift_decomposition_engine.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/distribution_shift/"
+        "local/state/sensory/analysis/distribution_shift/"
       ],
       "dependencies": [
         "V3-RACE-080",
@@ -23721,7 +23721,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/sensitivity_privacy_aware_scoring_contract.{ts,js}",
         "client/runtime/config/sensitivity_privacy_scoring_policy.json",
-        "state/sensory/analysis/privacy_scoring/",
+        "local/state/sensory/analysis/privacy_scoring/",
         "tests/client-memory-tools/sensitivity_privacy_aware_scoring_contract.test.js"
       ],
       "evidence_found": [
@@ -23730,7 +23730,7 @@
         "tests/client-memory-tools/sensitivity_privacy_aware_scoring_contract.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/privacy_scoring/"
+        "local/state/sensory/analysis/privacy_scoring/"
       ],
       "dependencies": [
         "V3-RACE-033",
@@ -24469,7 +24469,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/feature_data_reproducibility_contract.{ts,js}",
         "client/runtime/config/feature_data_reproducibility_contract_policy.json",
-        "state/sensory/analysis/reproducibility/",
+        "local/state/sensory/analysis/reproducibility/",
         "tests/client-memory-tools/feature_data_reproducibility_contract.test.js"
       ],
       "evidence_found": [
@@ -24478,7 +24478,7 @@
         "tests/client-memory-tools/feature_data_reproducibility_contract.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/reproducibility/"
+        "local/state/sensory/analysis/reproducibility/"
       ],
       "dependencies": [
         "V3-RACE-003",
@@ -24903,7 +24903,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/adversarial_hypothesis_challenger.{ts,js}",
         "client/runtime/config/adversarial_hypothesis_challenger_policy.json",
-        "state/sensory/analysis/adversarial_challenger/",
+        "local/state/sensory/analysis/adversarial_challenger/",
         "tests/client-memory-tools/adversarial_hypothesis_challenger.test.js"
       ],
       "evidence_found": [
@@ -24912,7 +24912,7 @@
         "tests/client-memory-tools/adversarial_hypothesis_challenger.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/adversarial_challenger/"
+        "local/state/sensory/analysis/adversarial_challenger/"
       ],
       "dependencies": [
         "V3-RACE-081",
@@ -25262,20 +25262,20 @@
       "evidence_refs": [
         "client/runtime/systems/fractal/regime_organ.ts",
         "client/runtime/systems/fractal/regime_organ.ts",
-        "state/autonomy/fractal/regime/state.json",
-        "state/autonomy/fractal/regime/YYYY-MM-DD.jsonl",
+        "local/state/autonomy/fractal/regime/state.json",
+        "local/state/autonomy/fractal/regime/YYYY-MM-DD.jsonl",
         "tests/client-memory-tools/fractal_regime_organ.test.js",
         "tmp/grok_fractal_organs_2026-02-25.md"
       ],
       "evidence_found": [
         "client/runtime/systems/fractal/regime_organ.ts",
         "client/runtime/systems/fractal/regime_organ.ts",
-        "state/autonomy/fractal/regime/state.json",
+        "local/state/autonomy/fractal/regime/state.json",
         "tests/client-memory-tools/fractal_regime_organ.test.js",
         "tmp/grok_fractal_organs_2026-02-25.md"
       ],
       "evidence_missing": [
-        "state/autonomy/fractal/regime/YYYY-MM-DD.jsonl"
+        "local/state/autonomy/fractal/regime/YYYY-MM-DD.jsonl"
       ],
       "dependencies": []
     },
@@ -25451,7 +25451,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/novelty_saturation_prioritization_engine.{ts,js}",
         "client/runtime/config/novelty_saturation_prioritization_policy.json",
-        "state/sensory/analysis/novelty_saturation/",
+        "local/state/sensory/analysis/novelty_saturation/",
         "tests/client-memory-tools/novelty_saturation_prioritization_engine.test.js"
       ],
       "evidence_found": [
@@ -25460,7 +25460,7 @@
         "tests/client-memory-tools/novelty_saturation_prioritization_engine.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/novelty_saturation/"
+        "local/state/sensory/analysis/novelty_saturation/"
       ],
       "dependencies": [
         "V3-RACE-080",
@@ -25479,7 +25479,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/causal_validation_gate_high_impact.{ts,js}",
         "client/runtime/config/causal_validation_gate_policy.json",
-        "state/sensory/analysis/causal_validation_gate/",
+        "local/state/sensory/analysis/causal_validation_gate/",
         "tests/client-memory-tools/causal_validation_gate_high_impact.test.js"
       ],
       "evidence_found": [
@@ -25488,7 +25488,7 @@
         "tests/client-memory-tools/causal_validation_gate_high_impact.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/causal_validation_gate/"
+        "local/state/sensory/analysis/causal_validation_gate/"
       ],
       "dependencies": [
         "V3-RACE-082",
@@ -25971,7 +25971,7 @@
         "client/runtime/systems/memory/napi_build_surface_compat.{ts,js}",
         "client/runtime/config/napi_build_surface_compat_policy.json",
         "docs/client/MEMORY_BUILD_SURFACE.md",
-        "state/client/memory/napi_build_surface_compat/build_matrix.json",
+        "local/state/client/memory/napi_build_surface_compat/build_matrix.json",
         "tests/client-memory-tools/napi_build_surface_compat.test.js",
         "client/runtime/systems/memory/napi_build_surface_compat.ts"
       ],
@@ -25979,7 +25979,7 @@
         "client/runtime/systems/memory/napi_build_surface_compat.{ts,js}",
         "client/runtime/config/napi_build_surface_compat_policy.json",
         "docs/client/MEMORY_BUILD_SURFACE.md",
-        "state/client/memory/napi_build_surface_compat/build_matrix.json",
+        "local/state/client/memory/napi_build_surface_compat/build_matrix.json",
         "tests/client-memory-tools/napi_build_surface_compat.test.js",
         "client/runtime/systems/memory/napi_build_surface_compat.ts"
       ],
@@ -26343,7 +26343,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/counterfactual_signal_replay.{ts,js}",
         "client/runtime/config/counterfactual_signal_replay_policy.json",
-        "state/sensory/analysis/counterfactual_replay/",
+        "local/state/sensory/analysis/counterfactual_replay/",
         "tests/client-memory-tools/counterfactual_signal_replay.test.js"
       ],
       "evidence_found": [
@@ -26352,7 +26352,7 @@
         "tests/client-memory-tools/counterfactual_signal_replay.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/counterfactual_replay/"
+        "local/state/sensory/analysis/counterfactual_replay/"
       ],
       "dependencies": [
         "V3-RACE-003",
@@ -26372,7 +26372,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/champion_challenger_detector_promotion.{ts,js}",
         "client/runtime/config/champion_challenger_detector_policy.json",
-        "state/sensory/analysis/champion_challenger/",
+        "local/state/sensory/analysis/champion_challenger/",
         "tests/client-memory-tools/champion_challenger_detector_promotion.test.js"
       ],
       "evidence_found": [
@@ -26381,7 +26381,7 @@
         "tests/client-memory-tools/champion_challenger_detector_promotion.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/champion_challenger/"
+        "local/state/sensory/analysis/champion_challenger/"
       ],
       "dependencies": [
         "V3-RACE-086",
@@ -27018,7 +27018,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/latent_intent_inference_graph.{ts,js}",
         "client/runtime/config/latent_intent_inference_policy.json",
-        "state/sensory/analysis/latent_intent/",
+        "local/state/sensory/analysis/latent_intent/",
         "tests/client-memory-tools/latent_intent_inference_graph.test.js"
       ],
       "evidence_found": [
@@ -27027,7 +27027,7 @@
         "tests/client-memory-tools/latent_intent_inference_graph.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/latent_intent/"
+        "local/state/sensory/analysis/latent_intent/"
       ],
       "dependencies": [
         "V3-RACE-078",
@@ -27046,7 +27046,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/detector_rollback_migration_safety_contract.{ts,js}",
         "client/runtime/config/detector_rollback_migration_safety_policy.json",
-        "state/sensory/analysis/detector_rollback/",
+        "local/state/sensory/analysis/detector_rollback/",
         "tests/client-memory-tools/detector_rollback_migration_safety_contract.test.js"
       ],
       "evidence_found": [
@@ -27055,7 +27055,7 @@
         "tests/client-memory-tools/detector_rollback_migration_safety_contract.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/detector_rollback/"
+        "local/state/sensory/analysis/detector_rollback/"
       ],
       "dependencies": [
         "V3-RACE-087",
@@ -27343,14 +27343,14 @@
       "evidence_refs": [
         "client/runtime/systems/hybrid/mobile/protheus_mobile_adapter.ts",
         "client/runtime/config/protheus_mobile_adapter_policy.json",
-        "state/hybrid/mobile_adapter/state.json",
-        "state/ops/rust50_migration_program/artifacts/v6_rust50_006_mobile_adapter.json"
+        "local/state/hybrid/mobile_adapter/state.json",
+        "local/state/ops/rust50_migration_program/artifacts/v6_rust50_006_mobile_adapter.json"
       ],
       "evidence_found": [
         "client/runtime/systems/hybrid/mobile/protheus_mobile_adapter.ts",
         "client/runtime/config/protheus_mobile_adapter_policy.json",
-        "state/hybrid/mobile_adapter/state.json",
-        "state/ops/rust50_migration_program/artifacts/v6_rust50_006_mobile_adapter.json"
+        "local/state/hybrid/mobile_adapter/state.json",
+        "local/state/ops/rust50_migration_program/artifacts/v6_rust50_006_mobile_adapter.json"
       ],
       "evidence_missing": [],
       "dependencies": [
@@ -27409,11 +27409,11 @@
       "review_result": "pass",
       "evidence_refs": [
         "client/runtime/systems/autonomy/alignment_oracle.ts",
-        "state/autonomy/alignment_oracle/"
+        "local/state/autonomy/alignment_oracle/"
       ],
       "evidence_found": [
         "client/runtime/systems/autonomy/alignment_oracle.ts",
-        "state/autonomy/alignment_oracle/"
+        "local/state/autonomy/alignment_oracle/"
       ],
       "evidence_missing": [],
       "dependencies": []
@@ -27500,13 +27500,13 @@
       "evidence_refs": [
         "client/runtime/systems/identity/identity_anchor.ts",
         "client/runtime/config/identity_anchor_policy.json",
-        "state/autonomy/identity_anchor/",
+        "local/state/autonomy/identity_anchor/",
         "tmp/grok_fractal_organs_2026-02-25.md"
       ],
       "evidence_found": [
         "client/runtime/systems/identity/identity_anchor.ts",
         "client/runtime/config/identity_anchor_policy.json",
-        "state/autonomy/identity_anchor/",
+        "local/state/autonomy/identity_anchor/",
         "tmp/grok_fractal_organs_2026-02-25.md"
       ],
       "evidence_missing": [],
@@ -27665,7 +27665,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/detector_error_taxonomy_autotune.{ts,js}",
         "client/runtime/config/detector_error_taxonomy_autotune_policy.json",
-        "state/sensory/analysis/detector_autotune/",
+        "local/state/sensory/analysis/detector_autotune/",
         "tests/client-memory-tools/detector_error_taxonomy_autotune.test.js"
       ],
       "evidence_found": [
@@ -27674,7 +27674,7 @@
         "tests/client-memory-tools/detector_error_taxonomy_autotune.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/detector_autotune/"
+        "local/state/sensory/analysis/detector_autotune/"
       ],
       "dependencies": [
         "V3-RACE-086",
@@ -28020,7 +28020,7 @@
       "evidence_refs": [
         "client/runtime/systems/research/offline_r_analytics_runner.{ts,js}",
         "client/runtime/config/offline_r_analytics_runner_policy.json",
-        "state/sensory/offline_lab/artifacts/",
+        "local/state/sensory/offline_lab/artifacts/",
         "client/runtime/systems/research/research_organ.ts",
         "client/runtime/config/research_organ_policy.json",
         "tests/client-memory-tools/offline_r_analytics_runner.test.js",
@@ -28035,7 +28035,7 @@
         "tests/client-memory-tools/research_organ.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/offline_lab/artifacts/"
+        "local/state/sensory/offline_lab/artifacts/"
       ],
       "dependencies": [
         "V3-RACE-102",
@@ -28107,11 +28107,11 @@
       "reviewed": true,
       "review_result": "pass",
       "evidence_refs": [
-        "state/security/venom_containment/*",
+        "local/state/security/venom_containment/*",
         "client/runtime/systems/ops/backlog_runtime_anchors/v3_venom_004_anchor.ts"
       ],
       "evidence_found": [
-        "state/security/venom_containment/*",
+        "local/state/security/venom_containment/*",
         "client/runtime/systems/ops/backlog_runtime_anchors/v3_venom_004_anchor.ts"
       ],
       "evidence_missing": [],
@@ -28245,13 +28245,13 @@
       "review_result": "pass",
       "evidence_refs": [
         "client/runtime/systems/personas/pre_commit_lens_gate.ts",
-        "state/personas/pre_commit_lens_gate/"
+        "local/state/personas/pre_commit_lens_gate/"
       ],
       "evidence_found": [
         "client/runtime/systems/personas/pre_commit_lens_gate.ts"
       ],
       "evidence_missing": [
-        "state/personas/pre_commit_lens_gate/"
+        "local/state/personas/pre_commit_lens_gate/"
       ],
       "dependencies": [
         "V3-FCH-002",
@@ -28387,13 +28387,13 @@
       "evidence_refs": [
         "client/runtime/systems/assimilation/collective_reasoning_primitive.ts",
         "client/runtime/config/collective_reasoning_primitive_policy.json",
-        "state/autonomy/weaver/collective_reasoning_profiles.jsonl",
+        "local/state/autonomy/weaver/collective_reasoning_profiles.jsonl",
         "tests/client-memory-tools/collective_reasoning_primitive.test.js"
       ],
       "evidence_found": [
         "client/runtime/systems/assimilation/collective_reasoning_primitive.ts",
         "client/runtime/config/collective_reasoning_primitive_policy.json",
-        "state/autonomy/weaver/collective_reasoning_profiles.jsonl",
+        "local/state/autonomy/weaver/collective_reasoning_profiles.jsonl",
         "tests/client-memory-tools/collective_reasoning_primitive.test.js"
       ],
       "evidence_missing": [],
@@ -29010,7 +29010,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/abstain_uncertainty_contract.{ts,js}",
         "client/runtime/config/abstain_uncertainty_contract_policy.json",
-        "state/sensory/analysis/abstain_uncertainty/",
+        "local/state/sensory/analysis/abstain_uncertainty/",
         "tests/client-memory-tools/abstain_uncertainty_contract.test.js"
       ],
       "evidence_found": [
@@ -29019,7 +29019,7 @@
         "tests/client-memory-tools/abstain_uncertainty_contract.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/abstain_uncertainty/"
+        "local/state/sensory/analysis/abstain_uncertainty/"
       ],
       "dependencies": [
         "V3-RACE-081",
@@ -29038,7 +29038,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/value_of_information_collection_planner.{ts,js}",
         "client/runtime/config/value_of_information_collection_planner_policy.json",
-        "state/sensory/analysis/value_information_planner/",
+        "local/state/sensory/analysis/value_information_planner/",
         "tests/client-memory-tools/value_of_information_collection_planner.test.js"
       ],
       "evidence_found": [
@@ -29047,7 +29047,7 @@
         "tests/client-memory-tools/value_of_information_collection_planner.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/value_information_planner/"
+        "local/state/sensory/analysis/value_information_planner/"
       ],
       "dependencies": [
         "V3-RACE-080",
@@ -29067,7 +29067,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/ensemble_disagreement_escalation_lane.{ts,js}",
         "client/runtime/config/ensemble_disagreement_escalation_policy.json",
-        "state/sensory/analysis/ensemble_disagreement/",
+        "local/state/sensory/analysis/ensemble_disagreement/",
         "tests/client-memory-tools/ensemble_disagreement_escalation_lane.test.js"
       ],
       "evidence_found": [
@@ -29076,7 +29076,7 @@
         "tests/client-memory-tools/ensemble_disagreement_escalation_lane.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/ensemble_disagreement/"
+        "local/state/sensory/analysis/ensemble_disagreement/"
       ],
       "dependencies": [
         "V3-RACE-083",
@@ -29095,7 +29095,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/ground_truth_label_adjudication_lane.{ts,js}",
         "client/runtime/config/ground_truth_label_adjudication_policy.json",
-        "state/sensory/labels/",
+        "local/state/sensory/labels/",
         "tests/client-memory-tools/ground_truth_label_adjudication_lane.test.js"
       ],
       "evidence_found": [
@@ -29104,7 +29104,7 @@
         "tests/client-memory-tools/ground_truth_label_adjudication_lane.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/labels/"
+        "local/state/sensory/labels/"
       ],
       "dependencies": [
         "V3-RACE-086"
@@ -29447,21 +29447,21 @@
       "reviewed": true,
       "review_result": "pass",
       "evidence_refs": [
-        "state/ops/relocatable_path_contract/path_rewrite_inventory.json",
+        "local/state/ops/relocatable_path_contract/path_rewrite_inventory.json",
         "tests/client-memory-tools/relocatable_path_contract.test.js",
         "tests/client-memory-tools/legacy_path_alias_adapters.test.js",
         "client/runtime/systems/ops/relocatable_path_contract.ts",
         "client/runtime/systems/ops/event_sourced_control_plane.ts",
-        "client/runtime/systems/state/event_stream.ts",
+        "client/runtime/systems/local/state/event_stream.ts",
         "client/runtime/systems/ops/trace_habit_autogenesis.ts"
       ],
       "evidence_found": [
-        "state/ops/relocatable_path_contract/path_rewrite_inventory.json",
+        "local/state/ops/relocatable_path_contract/path_rewrite_inventory.json",
         "tests/client-memory-tools/relocatable_path_contract.test.js",
         "tests/client-memory-tools/legacy_path_alias_adapters.test.js",
         "client/runtime/systems/ops/relocatable_path_contract.ts",
         "client/runtime/systems/ops/event_sourced_control_plane.ts",
-        "client/runtime/systems/state/event_stream.ts",
+        "client/runtime/systems/local/state/event_stream.ts",
         "client/runtime/systems/ops/trace_habit_autogenesis.ts"
       ],
       "evidence_missing": [],
@@ -29554,11 +29554,11 @@
       "review_result": "pass",
       "evidence_refs": [
         "client/runtime/systems/autonomy/proposal_type_outcome_calibrator.ts",
-        "state/client/cognition/adaptive/strategy/receipts.jsonl"
+        "local/state/client/cognition/adaptive/strategy/receipts.jsonl"
       ],
       "evidence_found": [
         "client/runtime/systems/autonomy/proposal_type_outcome_calibrator.ts",
-        "state/client/cognition/adaptive/strategy/receipts.jsonl"
+        "local/state/client/cognition/adaptive/strategy/receipts.jsonl"
       ],
       "evidence_missing": [],
       "dependencies": []
@@ -30271,14 +30271,14 @@
       "review_result": "pass",
       "evidence_refs": [
         "client/runtime/systems/autonomy/mirror_organ.ts",
-        "state/autonomy/mirror_organ/suggestions/",
+        "local/state/autonomy/mirror_organ/suggestions/",
         "tests/client-memory-tools/mirror_organ.test.js",
         "tests/client-memory-tools/suggestion_lane.test.js",
         "tests/client-memory-tools/continuum_core.test.js"
       ],
       "evidence_found": [
         "client/runtime/systems/autonomy/mirror_organ.ts",
-        "state/autonomy/mirror_organ/suggestions/",
+        "local/state/autonomy/mirror_organ/suggestions/",
         "tests/client-memory-tools/mirror_organ.test.js",
         "tests/client-memory-tools/suggestion_lane.test.js",
         "tests/client-memory-tools/continuum_core.test.js"
@@ -30382,7 +30382,7 @@
       "evidence_refs": [
         "client/runtime/systems/assimilation/adaptive_ensemble_routing_primitive.ts",
         "client/runtime/config/adaptive_ensemble_routing_primitive_policy.json",
-        "state/autonomy/weaver/adaptive_ensemble_profiles.jsonl",
+        "local/state/autonomy/weaver/adaptive_ensemble_profiles.jsonl",
         "tests/client-memory-tools/adaptive_ensemble_routing_primitive.test.js"
       ],
       "evidence_found": [
@@ -30391,7 +30391,7 @@
         "tests/client-memory-tools/adaptive_ensemble_routing_primitive.test.js"
       ],
       "evidence_missing": [
-        "state/autonomy/weaver/adaptive_ensemble_profiles.jsonl"
+        "local/state/autonomy/weaver/adaptive_ensemble_profiles.jsonl"
       ],
       "dependencies": []
     },
@@ -30496,7 +30496,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/multimodal_signal_adapter_plane.{ts,js}",
         "client/runtime/config/multimodal_signal_adapter_policy.json",
-        "state/sensory/analysis/multimodal_adapter/",
+        "local/state/sensory/analysis/multimodal_adapter/",
         "tests/client-memory-tools/multimodal_signal_adapter_plane.test.js"
       ],
       "evidence_found": [
@@ -30505,7 +30505,7 @@
         "tests/client-memory-tools/multimodal_signal_adapter_plane.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/multimodal_adapter/"
+        "local/state/sensory/analysis/multimodal_adapter/"
       ],
       "dependencies": [
         "V3-RACE-007",
@@ -30525,7 +30525,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/active_learning_uncertainty_queue.{ts,js}",
         "client/runtime/config/active_learning_uncertainty_queue_policy.json",
-        "state/sensory/analysis/active_learning/",
+        "local/state/sensory/analysis/active_learning/",
         "tests/client-memory-tools/active_learning_uncertainty_queue.test.js"
       ],
       "evidence_found": [
@@ -30534,7 +30534,7 @@
         "tests/client-memory-tools/active_learning_uncertainty_queue.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/active_learning/"
+        "local/state/sensory/analysis/active_learning/"
       ],
       "dependencies": [
         "V3-RACE-088",
@@ -30554,7 +30554,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/cross_objective_interference_guard.{ts,js}",
         "client/runtime/config/cross_objective_interference_guard_policy.json",
-        "state/sensory/analysis/objective_interference_guard/",
+        "local/state/sensory/analysis/objective_interference_guard/",
         "tests/client-memory-tools/cross_objective_interference_guard.test.js"
       ],
       "evidence_found": [
@@ -30563,7 +30563,7 @@
         "tests/client-memory-tools/cross_objective_interference_guard.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/objective_interference_guard/"
+        "local/state/sensory/analysis/objective_interference_guard/"
       ],
       "dependencies": [
         "V3-RACE-084",
@@ -30604,13 +30604,13 @@
       "evidence_refs": [
         "client/runtime/systems/ops/script_surface_reduction_wave2.{ts,js}",
         "client/runtime/config/script_surface_reduction_wave2_policy.json",
-        "state/ops/script_surface_reduction_wave2/*",
+        "local/state/ops/script_surface_reduction_wave2/*",
         "docs/client/ops/SCRIPT_SURFACE_REDUCTION_WAVE2.md"
       ],
       "evidence_found": [
         "client/runtime/systems/ops/script_surface_reduction_wave2.{ts,js}",
         "client/runtime/config/script_surface_reduction_wave2_policy.json",
-        "state/ops/script_surface_reduction_wave2/*",
+        "local/state/ops/script_surface_reduction_wave2/*",
         "docs/client/ops/SCRIPT_SURFACE_REDUCTION_WAVE2.md"
       ],
       "evidence_missing": [],
@@ -31029,13 +31029,13 @@
       "review_result": "pass",
       "evidence_refs": [
         "core/layer0/ops/src/ab_lane_eval.rs",
-        "state/ops/ab_lane_eval"
+        "local/state/ops/ab_lane_eval"
       ],
       "evidence_found": [
         "core/layer0/ops/src/ab_lane_eval.rs"
       ],
       "evidence_missing": [
-        "state/ops/ab_lane_eval"
+        "local/state/ops/ab_lane_eval"
       ],
       "dependencies": [
         "V2-027",
@@ -31889,7 +31889,7 @@
       "evidence_refs": [
         "client/runtime/systems/sensory/hypothesis_lifecycle_ledger.{ts,js}",
         "client/runtime/config/hypothesis_lifecycle_ledger_policy.json",
-        "state/sensory/analysis/hypothesis_lifecycle/",
+        "local/state/sensory/analysis/hypothesis_lifecycle/",
         "tests/client-memory-tools/hypothesis_lifecycle_ledger.test.js"
       ],
       "evidence_found": [
@@ -31898,7 +31898,7 @@
         "tests/client-memory-tools/hypothesis_lifecycle_ledger.test.js"
       ],
       "evidence_missing": [
-        "state/sensory/analysis/hypothesis_lifecycle/"
+        "local/state/sensory/analysis/hypothesis_lifecycle/"
       ],
       "dependencies": [
         "V3-RACE-083",
@@ -32103,13 +32103,13 @@
         "client/runtime/lib/egress_gateway.ts",
         "client/runtime/systems/security/egress_gateway.ts",
         "client/runtime/config/egress_gateway_policy.json",
-        "state/security/egress_audit.jsonl"
+        "local/state/security/egress_audit.jsonl"
       ],
       "evidence_found": [
         "client/runtime/lib/egress_gateway.ts",
         "client/runtime/systems/security/egress_gateway.ts",
         "client/runtime/config/egress_gateway_policy.json",
-        "state/security/egress_audit.jsonl"
+        "local/state/security/egress_audit.jsonl"
       ],
       "evidence_missing": [],
       "dependencies": []
@@ -33066,12 +33066,12 @@
       "evidence_refs": [
         "client/runtime/lib/secret_broker.ts",
         "client/runtime/systems/security/secret_broker.ts",
-        "state/security/secret_broker_audit.jsonl"
+        "local/state/security/secret_broker_audit.jsonl"
       ],
       "evidence_found": [
         "client/runtime/lib/secret_broker.ts",
         "client/runtime/systems/security/secret_broker.ts",
-        "state/security/secret_broker_audit.jsonl"
+        "local/state/security/secret_broker_audit.jsonl"
       ],
       "evidence_missing": [],
       "dependencies": []
@@ -34513,14 +34513,14 @@
       "reviewed": true,
       "review_result": "pass",
       "evidence_refs": [
-        "state/autonomy/fractal/rollback_plans/YYYY-MM-DD.json",
+        "local/state/autonomy/fractal/rollback_plans/YYYY-MM-DD.json",
         "client/runtime/systems/ops/backlog_runtime_anchors/v2_033_anchor.ts"
       ],
       "evidence_found": [
         "client/runtime/systems/ops/backlog_runtime_anchors/v2_033_anchor.ts"
       ],
       "evidence_missing": [
-        "state/autonomy/fractal/rollback_plans/YYYY-MM-DD.json"
+        "local/state/autonomy/fractal/rollback_plans/YYYY-MM-DD.json"
       ],
       "dependencies": []
     },
@@ -34615,7 +34615,7 @@
         "client/runtime/systems/research/pinnacle_tech_integration_engine.{ts,js}",
         "client/runtime/config/pinnacle_tech_integration_policy.json",
         "client/runtime/systems/research/",
-        "state/research/",
+        "local/state/research/",
         "client/cognition/adaptive/research/preferences/",
         "client/runtime/systems/research/pinnacle_tech_integration_engine.ts",
         "client/runtime/systems/research",
@@ -34625,7 +34625,7 @@
         "client/runtime/systems/research/pinnacle_tech_integration_engine.{ts,js}",
         "client/runtime/config/pinnacle_tech_integration_policy.json",
         "client/runtime/systems/research/",
-        "state/research/",
+        "local/state/research/",
         "client/runtime/systems/research/pinnacle_tech_integration_engine.ts",
         "client/runtime/systems/research",
         "client/runtime/systems/ops/data_scope_boundary_check.ts"
@@ -35495,28 +35495,28 @@
       "wave": "V3",
       "status": "done",
       "reviewed_status": "reviewed",
-      "title": "Legacy Path Alias Adapters (`client/runtime/systems/state/event_stream.ts`, `client/runtime/systems/autogenesis/*`)",
+      "title": "Legacy Path Alias Adapters (`client/runtime/systems/local/state/event_stream.ts`, `client/runtime/systems/autogenesis/*`)",
       "reviewed": true,
       "review_result": "pass",
       "evidence_refs": [
-        "client/runtime/systems/state/event_stream.{ts,js}",
+        "client/runtime/systems/local/state/event_stream.{ts,js}",
         "client/runtime/systems/compat/legacy_alias_adapter.{ts,js}",
-        "state/ops/legacy_path_alias_adapters/*",
+        "local/state/ops/legacy_path_alias_adapters/*",
         "tests/client-memory-tools/legacy_path_alias_adapters.test.js",
-        "client/runtime/systems/state/event_stream.ts",
+        "client/runtime/systems/local/state/event_stream.ts",
         "client/runtime/systems/compat/legacy_alias_adapter.ts",
         "client/runtime/config/requirement_conformance_matrix.json"
       ],
       "evidence_found": [
-        "client/runtime/systems/state/event_stream.{ts,js}",
+        "client/runtime/systems/local/state/event_stream.{ts,js}",
         "client/runtime/systems/compat/legacy_alias_adapter.{ts,js}",
         "tests/client-memory-tools/legacy_path_alias_adapters.test.js",
-        "client/runtime/systems/state/event_stream.ts",
+        "client/runtime/systems/local/state/event_stream.ts",
         "client/runtime/systems/compat/legacy_alias_adapter.ts",
         "client/runtime/config/requirement_conformance_matrix.json"
       ],
       "evidence_missing": [
-        "state/ops/legacy_path_alias_adapters/*"
+        "local/state/ops/legacy_path_alias_adapters/*"
       ],
       "dependencies": [
         "V3-RACE-017",
@@ -36345,11 +36345,11 @@
       "review_result": "pass",
       "evidence_refs": [
         "client/runtime/systems/routing/llm_gateway.ts",
-        "state/routing/prompt_result_cache"
+        "local/state/routing/prompt_result_cache"
       ],
       "evidence_found": [
         "client/runtime/systems/routing/llm_gateway.ts",
-        "state/routing/prompt_result_cache"
+        "local/state/routing/prompt_result_cache"
       ],
       "evidence_missing": [],
       "dependencies": []
@@ -36547,11 +36547,11 @@
       "review_result": "pass",
       "evidence_refs": [
         "client/runtime/systems/autonomy/observer_mirror.ts",
-        "state/autonomy/observer_mirror/"
+        "local/state/autonomy/observer_mirror/"
       ],
       "evidence_found": [
         "client/runtime/systems/autonomy/observer_mirror.ts",
-        "state/autonomy/observer_mirror/"
+        "local/state/autonomy/observer_mirror/"
       ],
       "evidence_missing": [],
       "dependencies": []
@@ -37254,13 +37254,13 @@
       "review_result": "pass",
       "evidence_refs": [
         "client/runtime/systems/nursery/specialist_training.ts",
-        "state/nursery/training/promotions/"
+        "local/state/nursery/training/promotions/"
       ],
       "evidence_found": [
         "client/runtime/systems/nursery/specialist_training.ts"
       ],
       "evidence_missing": [
-        "state/nursery/training/promotions/"
+        "local/state/nursery/training/promotions/"
       ],
       "dependencies": []
     },
@@ -37430,7 +37430,7 @@
       "reviewed": true,
       "review_result": "pass",
       "evidence_refs": [
-        "state/ops/autotest_doctor/broken_lab_queue.jsonl",
+        "local/state/ops/autotest_doctor/broken_lab_queue.jsonl",
         "client/runtime/systems/ops/broken_piece_lab.ts",
         "tests/client-memory-tools/broken_piece_lab.test.js"
       ],
@@ -37439,7 +37439,7 @@
         "tests/client-memory-tools/broken_piece_lab.test.js"
       ],
       "evidence_missing": [
-        "state/ops/autotest_doctor/broken_lab_queue.jsonl"
+        "local/state/ops/autotest_doctor/broken_lab_queue.jsonl"
       ],
       "dependencies": []
     },

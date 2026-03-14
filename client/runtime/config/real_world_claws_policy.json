@@ -26,8 +26,8 @@
       "2fa",
       "one_time_code"
     ],
-    "checkpoints_path": "state/actuation/real_world_claws/checkpoints.jsonl",
-    "handoff_path": "state/actuation/real_world_claws/handoffs.jsonl"
+    "checkpoints_path": "local/state/actuation/real_world_claws/checkpoints.jsonl",
+    "handoff_path": "local/state/actuation/real_world_claws/handoffs.jsonl"
   },
   "max_steps_per_plan": 8
 }

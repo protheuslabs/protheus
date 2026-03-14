@@ -25,7 +25,7 @@
     "feature_flags_path": "client/runtime/config/feature_flags.json",
     "polish_spec_path": "docs/client/UI_PHASE1_TRADITIONAL_POLISH.md",
     "surface_matrix_path": "docs/client/UI_SURFACE_MATURITY_MATRIX.md",
-    "latest_path": "state/ops/ui_phase1_polish_consistency_pass/latest.json",
-    "history_path": "state/ops/ui_phase1_polish_consistency_pass/history.jsonl"
+    "latest_path": "local/state/ops/ui_phase1_polish_consistency_pass/latest.json",
+    "history_path": "local/state/ops/ui_phase1_polish_consistency_pass/history.jsonl"
   }
 }

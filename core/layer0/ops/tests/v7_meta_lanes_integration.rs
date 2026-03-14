@@ -399,8 +399,9 @@ fn v7_meta_016_to_018_external_packets_declare_required_hman_ids() {
 
     for (id, approvals) in expected {
         let manifest_path = workspace
-            .join("evidence")
+            .join("docs")
             .join("external")
+            .join("evidence")
             .join(id)
             .join("packet_manifest.json");
         let manifest = read_json(&manifest_path);

@@ -3,7 +3,7 @@
   "enabled": true,
   "shadow_only": true,
   "distill_min_steps": 3,
-  "output_root": "state/assimilation/distilled_skill_profiles",
-  "receipts_path": "state/assimilation/trajectory_skill_distiller/receipts.jsonl",
-  "latest_path": "state/assimilation/trajectory_skill_distiller/latest.json"
+  "output_root": "local/state/assimilation/distilled_skill_profiles",
+  "receipts_path": "local/state/assimilation/trajectory_skill_distiller/receipts.jsonl",
+  "latest_path": "local/state/assimilation/trajectory_skill_distiller/latest.json"
 }

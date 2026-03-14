@@ -20,7 +20,7 @@ const ROOT_PATH_PREFIXES = [
   'docs/client/',
   'client/memory/',
   'client/cognition/adaptive/',
-  'state/',
+  'local/state/',
   'client/runtime/lib/',
   'packages/',
   'platform/'
@@ -253,7 +253,7 @@ function buildReviewRows(rows, doneStatuses) {
       const hardMissing = missingRefs.filter((ref) => {
         const lower = ref.toLowerCase();
         if (
-          lower.startsWith('state/') ||
+          lower.startsWith('local/state/') ||
           lower.startsWith('client/cognition/adaptive/') ||
           lower.startsWith('client/memory/') ||
           lower.startsWith('tmp/')

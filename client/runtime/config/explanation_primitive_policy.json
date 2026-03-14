@@ -19,11 +19,11 @@
     "source": "explanation_primitive"
   },
   "paths": {
-    "canonical_events": "state/runtime/canonical_events",
-    "causal_graph_state": "state/client/memory/causal_temporal_graph/state.json",
-    "index_path": "state/primitives/explanation_primitive/index.json",
-    "latest_path": "state/primitives/explanation_primitive/latest.json",
-    "artifacts_dir": "state/primitives/explanation_primitive/artifacts",
-    "receipts_path": "state/primitives/explanation_primitive/receipts.jsonl"
+    "canonical_events": "local/state/runtime/canonical_events",
+    "causal_graph_state": "local/state/client/memory/causal_temporal_graph/state.json",
+    "index_path": "local/state/primitives/explanation_primitive/index.json",
+    "latest_path": "local/state/primitives/explanation_primitive/latest.json",
+    "artifacts_dir": "local/state/primitives/explanation_primitive/artifacts",
+    "receipts_path": "local/state/primitives/explanation_primitive/receipts.jsonl"
   }
 }

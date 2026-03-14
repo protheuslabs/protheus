@@ -120,14 +120,14 @@ fn parse_required_artifacts(root: &Path, raw: &Value) -> Vec<ArtifactRequirement
             ArtifactRequirement {
                 id: "protheus-ops".to_string(),
                 artifact_path: root.join("target/release/protheus-ops"),
-                sbom_path: root.join("state/release/provenance/sbom/protheus-ops.cdx.json"),
-                signature_path: root.join("state/release/provenance/signatures/protheus-ops.sig"),
+                sbom_path: root.join("local/state/release/provenance/sbom/protheus-ops.cdx.json"),
+                signature_path: root.join("local/state/release/provenance/signatures/protheus-ops.sig"),
             },
             ArtifactRequirement {
                 id: "conduit-daemon".to_string(),
                 artifact_path: root.join("target/release/conduit_daemon"),
-                sbom_path: root.join("state/release/provenance/sbom/conduit_daemon.cdx.json"),
-                signature_path: root.join("state/release/provenance/signatures/conduit_daemon.sig"),
+                sbom_path: root.join("local/state/release/provenance/sbom/conduit_daemon.cdx.json"),
+                signature_path: root.join("local/state/release/provenance/signatures/conduit_daemon.sig"),
             },
         ];
     };
@@ -155,12 +155,12 @@ fn parse_required_artifacts(root: &Path, raw: &Value) -> Vec<ArtifactRequirement
         let sbom_path = resolve_path(
             root,
             obj.get("sbom_path").and_then(Value::as_str),
-            "state/release/provenance/sbom/protheus-ops.cdx.json",
+            "local/state/release/provenance/sbom/protheus-ops.cdx.json",
         );
         let signature_path = resolve_path(
             root,
             obj.get("signature_path").and_then(Value::as_str),
-            "state/release/provenance/signatures/protheus-ops.sig",
+            "local/state/release/provenance/signatures/protheus-ops.sig",
         );
 
         out.push(ArtifactRequirement {
@@ -176,14 +176,14 @@ fn parse_required_artifacts(root: &Path, raw: &Value) -> Vec<ArtifactRequirement
             ArtifactRequirement {
                 id: "protheus-ops".to_string(),
                 artifact_path: root.join("target/release/protheus-ops"),
-                sbom_path: root.join("state/release/provenance/sbom/protheus-ops.cdx.json"),
-                signature_path: root.join("state/release/provenance/signatures/protheus-ops.sig"),
+                sbom_path: root.join("local/state/release/provenance/sbom/protheus-ops.cdx.json"),
+                signature_path: root.join("local/state/release/provenance/signatures/protheus-ops.sig"),
             },
             ArtifactRequirement {
                 id: "conduit-daemon".to_string(),
                 artifact_path: root.join("target/release/conduit_daemon"),
-                sbom_path: root.join("state/release/provenance/sbom/conduit_daemon.cdx.json"),
-                signature_path: root.join("state/release/provenance/signatures/conduit_daemon.sig"),
+                sbom_path: root.join("local/state/release/provenance/sbom/conduit_daemon.cdx.json"),
+                signature_path: root.join("local/state/release/provenance/signatures/conduit_daemon.sig"),
             },
         ]
     } else {
@@ -209,13 +209,13 @@ fn load_policy(root: &Path, policy_override: Option<&String>) -> Policy {
         bundle_path: resolve_path(
             root,
             raw.get("bundle_path").and_then(Value::as_str),
-            "state/release/provenance_bundle/latest.json",
+            "local/state/release/provenance_bundle/latest.json",
         ),
         vulnerability_summary_path: resolve_path(
             root,
             raw.get("vulnerability_summary_path")
                 .and_then(Value::as_str),
-            "state/release/provenance_bundle/dependency_vulnerability_summary.json",
+            "local/state/release/provenance_bundle/dependency_vulnerability_summary.json",
         ),
         rollback_policy_path: resolve_path(
             root,
@@ -245,14 +245,14 @@ fn load_policy(root: &Path, policy_override: Option<&String>) -> Policy {
             outputs
                 .and_then(|o| o.get("latest_path"))
                 .and_then(Value::as_str),
-            "state/ops/supply_chain_provenance_v2/latest.json",
+            "local/state/ops/supply_chain_provenance_v2/latest.json",
         ),
         history_path: resolve_path(
             root,
             outputs
                 .and_then(|o| o.get("history_path"))
                 .and_then(Value::as_str),
-            "state/ops/supply_chain_provenance_v2/history.jsonl",
+            "local/state/ops/supply_chain_provenance_v2/history.jsonl",
         ),
         policy_path,
     }
@@ -962,12 +962,12 @@ mod tests {
                     {
                         "id": "protheus-ops",
                         "artifact_path": "target/release/protheus-ops",
-                        "sbom_path": "state/release/provenance/sbom/protheus-ops.cdx.json",
-                        "signature_path": "state/release/provenance/signatures/protheus-ops.sig"
+                        "sbom_path": "local/state/release/provenance/sbom/protheus-ops.cdx.json",
+                        "signature_path": "local/state/release/provenance/signatures/protheus-ops.sig"
                     }
                 ],
-                "bundle_path": "state/release/provenance_bundle/latest.json",
-                "vulnerability_summary_path": "state/release/provenance_bundle/dependency_vulnerability_summary.json",
+                "bundle_path": "local/state/release/provenance_bundle/latest.json",
+                "vulnerability_summary_path": "local/state/release/provenance_bundle/dependency_vulnerability_summary.json",
                 "rollback_policy_path": "client/runtime/config/release_rollback_policy.json",
                 "vulnerability_sla": {
                     "max_critical": 0,
@@ -976,8 +976,8 @@ mod tests {
                     "max_report_age_hours": 48
                 },
                 "outputs": {
-                    "latest_path": "state/ops/supply_chain_provenance_v2/latest.json",
-                    "history_path": "state/ops/supply_chain_provenance_v2/history.jsonl"
+                    "latest_path": "local/state/ops/supply_chain_provenance_v2/latest.json",
+                    "history_path": "local/state/ops/supply_chain_provenance_v2/history.jsonl"
                 }
             })
             .to_string(),
@@ -988,14 +988,14 @@ mod tests {
         write_policy(root);
 
         let artifact_path = root.join("target/release/protheus-ops");
-        let sbom_path = root.join("state/release/provenance/sbom/protheus-ops.cdx.json");
-        let sig_path = root.join("state/release/provenance/signatures/protheus-ops.sig");
+        let sbom_path = root.join("local/state/release/provenance/sbom/protheus-ops.cdx.json");
+        let sig_path = root.join("local/state/release/provenance/signatures/protheus-ops.sig");
         write_text(&artifact_path, "artifact-bytes");
         write_text(&sbom_path, "{\"sbom\":true}");
         write_text(&sig_path, "sig-bytes");
 
         write_text(
-            &root.join("state/release/provenance_bundle/dependency_vulnerability_summary.json"),
+            &root.join("local/state/release/provenance_bundle/dependency_vulnerability_summary.json"),
             &json!({
                 "generated_at": now_iso(),
                 "counts": {
@@ -1027,9 +1027,9 @@ mod tests {
                     "id": "protheus-ops",
                     "artifact_path": "target/release/protheus-ops",
                     "artifact_sha256": file_sha256(&artifact_path).unwrap(),
-                    "sbom_path": "state/release/provenance/sbom/protheus-ops.cdx.json",
+                    "sbom_path": "local/state/release/provenance/sbom/protheus-ops.cdx.json",
                     "sbom_sha256": file_sha256(&sbom_path).unwrap(),
-                    "signature_path": "state/release/provenance/signatures/protheus-ops.sig",
+                    "signature_path": "local/state/release/provenance/signatures/protheus-ops.sig",
                     "signature_sha256": file_sha256(&sig_path).unwrap(),
                     "signature_verified": true
                 }
@@ -1040,7 +1040,7 @@ mod tests {
             }
         });
         write_text(
-            &root.join("state/release/provenance_bundle/latest.json"),
+            &root.join("local/state/release/provenance_bundle/latest.json"),
             &bundle.to_string(),
         );
     }
@@ -1055,7 +1055,7 @@ mod tests {
         assert_eq!(code, 0);
 
         let latest =
-            fs::read_to_string(root.join("state/ops/supply_chain_provenance_v2/latest.json"))
+            fs::read_to_string(root.join("local/state/ops/supply_chain_provenance_v2/latest.json"))
                 .expect("read latest");
         let payload: Value = serde_json::from_str(&latest).expect("decode latest");
         assert_eq!(payload.get("ok").and_then(Value::as_bool), Some(true));
@@ -1083,24 +1083,24 @@ mod tests {
         assert_eq!(code, 0);
 
         let latest =
-            fs::read_to_string(root.join("state/ops/supply_chain_provenance_v2/latest.json"))
+            fs::read_to_string(root.join("local/state/ops/supply_chain_provenance_v2/latest.json"))
                 .expect("read latest");
         let payload: Value = serde_json::from_str(&latest).expect("decode latest");
         assert_eq!(payload.get("ok").and_then(Value::as_bool), Some(true));
         assert!(
-            root.join("state/release/provenance_bundle/latest.json").exists(),
+            root.join("local/state/release/provenance_bundle/latest.json").exists(),
             "bundle should be generated"
         );
         assert!(
-            root.join("state/release/provenance/sbom/protheus-ops.cdx.json").exists(),
+            root.join("local/state/release/provenance/sbom/protheus-ops.cdx.json").exists(),
             "sbom should be generated"
         );
         assert!(
-            root.join("state/release/provenance/signatures/protheus-ops.sig").exists(),
+            root.join("local/state/release/provenance/signatures/protheus-ops.sig").exists(),
             "signature should be generated"
         );
         assert!(
-            root.join("state/release/provenance_bundle/dependency_vulnerability_summary.json")
+            root.join("local/state/release/provenance_bundle/dependency_vulnerability_summary.json")
                 .exists(),
             "vulnerability summary should be generated"
         );
@@ -1116,7 +1116,7 @@ mod tests {
         assert_eq!(code, 1);
 
         let latest =
-            fs::read_to_string(root.join("state/ops/supply_chain_provenance_v2/latest.json"))
+            fs::read_to_string(root.join("local/state/ops/supply_chain_provenance_v2/latest.json"))
                 .expect("read latest");
         let payload: Value = serde_json::from_str(&latest).expect("decode latest");
         assert_eq!(payload.get("ok").and_then(Value::as_bool), Some(false));

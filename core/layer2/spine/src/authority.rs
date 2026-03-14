@@ -201,17 +201,17 @@ pub fn run_background_hands_scheduler(root: &Path, args: &[String]) -> (i32, Val
     let events_path = resolve_path(
         root,
         paths.get("events_path"),
-        "state/spine/background_hands/events.jsonl",
+        "local/state/spine/background_hands/events.jsonl",
     );
     let latest_path = resolve_path(
         root,
         paths.get("latest_path"),
-        "state/spine/background_hands/latest.json",
+        "local/state/spine/background_hands/latest.json",
     );
     let receipts_path = resolve_path(
         root,
         paths.get("receipts_path"),
-        "state/spine/background_hands/receipts.jsonl",
+        "local/state/spine/background_hands/receipts.jsonl",
     );
 
     if command == "status" {
@@ -292,22 +292,22 @@ pub fn run_rsi_idle_hands_scheduler(root: &Path, args: &[String]) -> (i32, Value
     let events_path = resolve_path(
         root,
         paths.get("events_path"),
-        "state/spine/rsi_idle_hands_scheduler/events.jsonl",
+        "local/state/spine/rsi_idle_hands_scheduler/events.jsonl",
     );
     let latest_path = resolve_path(
         root,
         paths.get("latest_path"),
-        "state/spine/rsi_idle_hands_scheduler/latest.json",
+        "local/state/spine/rsi_idle_hands_scheduler/latest.json",
     );
     let receipts_path = resolve_path(
         root,
         paths.get("receipts_path"),
-        "state/spine/rsi_idle_hands_scheduler/receipts.jsonl",
+        "local/state/spine/rsi_idle_hands_scheduler/receipts.jsonl",
     );
     let state_path = resolve_path(
         root,
         paths.get("scheduler_state_path"),
-        "state/spine/rsi_idle_hands_scheduler/state.json",
+        "local/state/spine/rsi_idle_hands_scheduler/state.json",
     );
 
     let mut state = read_json(&state_path).unwrap_or_else(|| {

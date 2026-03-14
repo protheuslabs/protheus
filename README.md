@@ -179,7 +179,7 @@ protheus shadow list --json=1
 - Emotion toggle: `--emotion=on|off` (default `on`).
 - Surprise toggle: `--surprise=on|off` (default `off`) enables deterministic 20% anti-puppet deviation.
 - Structured output: `--schema=json` returns machine-readable recommendations (`recommendation`, `confidence`, `time_estimate`, `blockers`, `escalate_to`, `reasoning`).
-- Daily internal check-in: `protheus lens checkin --persona=jay_haslam --heartbeat=docs/workspace/HEARTBEAT.md`.
+- Daily internal check-in: `protheus lens checkin --persona=jay_haslam --heartbeat=local/workspace/assistant/HEARTBEAT.md`.
 - Meta-feedback loop: `protheus lens feedback ...` and `protheus lens feedback-summary` capture utility signals to tune persona weighting over time.
 
 ### Persona Orchestration Command
@@ -202,7 +202,7 @@ protheus shadow list --json=1
 
 - `protheus assimilate <path|url>` ingests a local file or allowlisted web page, runs research-organ probe + Core-5 persona review, and emits a Codex-ready sprint prompt.
 - Safety gates are fail-closed: blocked domains/private hosts are rejected, covenant violation signals stop execution, and `--apply` requires `--confirm-execution=1`.
-- Default mode is proposal-only with auditable receipts at `state/tools/assimilate/`.
+- Default mode is proposal-only with auditable receipts at `local/state/tools/assimilate/`.
 - Example: `protheus assimilate ./docs/client/cognitive_toolkit.md --dry-run=1`
 - Example: `protheus assimilate https://github.com/example/repo`
 - Programmatic use for loops/shadows:

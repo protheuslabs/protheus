@@ -51,7 +51,7 @@ Guard behavior:
 Outputs:
 
 - `core/local/artifacts/module_cohesion_audit_current.json`
-- `docs/workspace/MODULE_COHESION_AUDIT_CURRENT.md`
+- `local/workspace/reports/MODULE_COHESION_AUDIT_CURRENT.md`
 
 Policy config:
 

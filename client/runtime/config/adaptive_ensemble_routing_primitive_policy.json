@@ -14,9 +14,9 @@
     "emit_weaver_profile": true
   },
   "state": {
-    "latest_path": "state/assimilation/adaptive_ensemble_routing/latest.json",
-    "history_path": "state/assimilation/adaptive_ensemble_routing/history.jsonl",
-    "receipts_path": "state/assimilation/adaptive_ensemble_routing/receipts.jsonl",
-    "weaver_profiles_path": "state/autonomy/weaver/adaptive_ensemble_profiles.jsonl"
+    "latest_path": "local/state/assimilation/adaptive_ensemble_routing/latest.json",
+    "history_path": "local/state/assimilation/adaptive_ensemble_routing/history.jsonl",
+    "receipts_path": "local/state/assimilation/adaptive_ensemble_routing/receipts.jsonl",
+    "weaver_profiles_path": "local/state/autonomy/weaver/adaptive_ensemble_profiles.jsonl"
   }
 }

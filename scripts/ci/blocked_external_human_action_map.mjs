@@ -3,10 +3,10 @@ import fs from "fs";
 import path from "path";
 
 const ROOT = process.cwd();
-const SRS_REGRESSION_JSON = path.join(ROOT, "artifacts", "srs_full_regression_current.json");
+const SRS_REGRESSION_JSON = path.join(ROOT, "core", "local", "artifacts", "srs_full_regression_current.json");
 const HUMAN_ACTIONS_MD = path.join(ROOT, "docs", "client", "HUMAN_ONLY_ACTIONS.md");
-const OUT_JSON = path.join(ROOT, "artifacts", "blocked_external_human_action_map_current.json");
-const OUT_MD = path.join(ROOT, "docs", "workspace", "BLOCKED_EXTERNAL_HUMAN_ACTION_MAP.md");
+const OUT_JSON = path.join(ROOT, "core", "local", "artifacts", "blocked_external_human_action_map_current.json");
+const OUT_MD = path.join(ROOT, "local", "workspace", "reports", "BLOCKED_EXTERNAL_HUMAN_ACTION_MAP.md");
 
 function readJson(p) {
   return JSON.parse(fs.readFileSync(p, "utf8"));

@@ -15,7 +15,7 @@
   ],
   "required_terms": ["keyboard", "focus", "contrast", "command palette", "responsive"],
   "paths": {
-    "latest_path": "state/ops/ui_surface_maturity_pack/latest.json",
-    "history_path": "state/ops/ui_surface_maturity_pack/history.jsonl"
+    "latest_path": "local/state/ops/ui_surface_maturity_pack/latest.json",
+    "history_path": "local/state/ops/ui_surface_maturity_pack/history.jsonl"
   }
 }

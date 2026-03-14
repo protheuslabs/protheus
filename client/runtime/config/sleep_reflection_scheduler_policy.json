@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/reflections",
     "adaptive_index_path": "client/cognition/adaptive/reflections/index.json",
-    "events_path": "state/memory\/sleep_reflection/events.jsonl",
-    "latest_path": "state/memory\/sleep_reflection/latest.json",
-    "receipts_path": "state/memory\/sleep_reflection/receipts.jsonl"
+    "events_path": "local/state/memory\/sleep_reflection/events.jsonl",
+    "latest_path": "local/state/memory\/sleep_reflection/latest.json",
+    "receipts_path": "local/state/memory\/sleep_reflection/receipts.jsonl"
   }
 }

@@ -95,7 +95,7 @@
     ]
   },
   "paths": {
-    "latest_path": "state/ops/data_scope_boundary_check/latest.json",
-    "receipts_path": "state/ops/data_scope_boundary_check/receipts.jsonl"
+    "latest_path": "local/state/ops/data_scope_boundary_check/latest.json",
+    "receipts_path": "local/state/ops/data_scope_boundary_check/receipts.jsonl"
   }
 }

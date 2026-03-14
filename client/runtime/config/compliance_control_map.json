@@ -8,7 +8,7 @@
       "evidence_paths": [
         "client/runtime/config/sdlc_change_control_policy.json",
         ".github/workflows/sdlc-change-control.yml",
-        "state/ops/sdlc_change_control/latest.json"
+        "local/state/ops/sdlc_change_control/latest.json"
       ]
     },
     {
@@ -17,7 +17,7 @@
       "evidence_paths": [
         "client/runtime/config/supply_chain_provenance_v2_policy.json",
         ".github/workflows/release-security-artifacts.yml",
-        "state/ops/supply_chain_provenance_v2/latest.json"
+        "local/state/ops/supply_chain_provenance_v2/latest.json"
       ]
     },
     {
@@ -25,7 +25,7 @@
       "max_age_days": 3650,
       "evidence_paths": [
         "client/runtime/config/f100_reliability_certification_policy.json",
-        "state/ops/f100_reliability_certification/latest.json"
+        "local/state/ops/f100_reliability_certification/latest.json"
       ]
     }
   ]

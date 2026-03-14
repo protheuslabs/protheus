@@ -13,8 +13,8 @@
   ],
   "forbidden_history_rewrite_tokens": ["commit --amend", "push --force", "reset --hard"],
   "paths": {
-    "latest_path": "state/ops/public_repo_presentation_pass/latest.json",
-    "history_path": "state/ops/public_repo_presentation_pass/history.jsonl",
-    "verification_bundle_path": "state/ops/public_repo_presentation_pass/verification_bundle.json"
+    "latest_path": "local/state/ops/public_repo_presentation_pass/latest.json",
+    "history_path": "local/state/ops/public_repo_presentation_pass/history.jsonl",
+    "verification_bundle_path": "local/state/ops/public_repo_presentation_pass/verification_bundle.json"
   }
 }

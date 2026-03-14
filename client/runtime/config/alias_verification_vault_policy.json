@@ -18,10 +18,10 @@
     }
   },
   "state": {
-    "root": "state/security/alias_verification_vault",
-    "index_path": "state/security/alias_verification_vault/index.json",
-    "latest_path": "state/security/alias_verification_vault/latest.json",
-    "receipts_path": "state/security/alias_verification_vault/receipts.jsonl"
+    "root": "local/state/security/alias_verification_vault",
+    "index_path": "local/state/security/alias_verification_vault/index.json",
+    "latest_path": "local/state/security/alias_verification_vault/latest.json",
+    "receipts_path": "local/state/security/alias_verification_vault/receipts.jsonl"
   },
   "redaction": {
     "show_plaintext_codes_by_default": false

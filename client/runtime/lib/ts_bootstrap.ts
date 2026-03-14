@@ -58,7 +58,7 @@ function readRuntimeModeFromState(repoRoot) {
   try {
     const statePath = process.env.PROTHEUS_RUNTIME_MODE_STATE_PATH
       ? path.resolve(process.env.PROTHEUS_RUNTIME_MODE_STATE_PATH)
-      : path.join(repoRoot, 'state', 'ops', 'runtime_mode.json');
+      : path.join(repoRoot, 'local', 'state', 'ops', 'runtime_mode.json');
     if (!fs.existsSync(statePath)) return null;
     const payload = JSON.parse(fs.readFileSync(statePath, 'utf8'));
     const mode = String(payload && payload.mode || '').trim().toLowerCase();

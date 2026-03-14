@@ -4,13 +4,13 @@
   "strict_default": false,
   "local_execution_score_threshold": 0.45,
   "local_max_complexity": 0.5,
-  "embodiment_snapshot_path": "state/hardware/embodiment/latest.json",
+  "embodiment_snapshot_path": "local/state/hardware/embodiment/latest.json",
   "schedule_command": [
     "node",
     "client/runtime/systems/hardware/attested_assimilation_plane.ts",
     "schedule"
   ],
-  "latest_path": "state/hardware/opportunistic_offload/latest.json",
-  "queue_path": "state/hardware/opportunistic_offload/queue.jsonl",
-  "receipts_path": "state/hardware/opportunistic_offload/receipts.jsonl"
+  "latest_path": "local/state/hardware/opportunistic_offload/latest.json",
+  "queue_path": "local/state/hardware/opportunistic_offload/queue.jsonl",
+  "receipts_path": "local/state/hardware/opportunistic_offload/receipts.jsonl"
 }

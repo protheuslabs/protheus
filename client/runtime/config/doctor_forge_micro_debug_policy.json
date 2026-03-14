@@ -6,6 +6,6 @@
     "live"
   ],
   "max_risk_score": 0.35,
-  "receipts_path": "state/autonomy/doctor_forge_micro_debug/receipts.jsonl",
-  "latest_path": "state/autonomy/doctor_forge_micro_debug/latest.json"
+  "receipts_path": "local/state/autonomy/doctor_forge_micro_debug/receipts.jsonl",
+  "latest_path": "local/state/autonomy/doctor_forge_micro_debug/latest.json"
 }

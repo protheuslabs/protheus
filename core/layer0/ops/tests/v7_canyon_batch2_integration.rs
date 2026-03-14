@@ -134,7 +134,7 @@ fn v7_canyon_batch2_contracts_are_behavior_proven() {
     let _guard = test_env_lock();
     let tmp = temp_root("canyon_batch2");
     let root = tmp.path();
-    let canyon_state = root.join("state").join("canyon");
+    let canyon_state = root.join("local").join("state").join("canyon");
     std::env::set_var(ENV_KEY, &canyon_state);
 
     write_text(
@@ -352,7 +352,7 @@ fn v7_canyon_release_pipeline_allows_missing_optional_llvm_tools_and_size_trust_
     let _guard = test_env_lock();
     let tmp = temp_root("canyon_batch2_optional_tools");
     let root = tmp.path();
-    let canyon_state = root.join("state").join("canyon");
+    let canyon_state = root.join("local").join("state").join("canyon");
     std::env::set_var(ENV_KEY, &canyon_state);
 
     write_text(
@@ -431,7 +431,7 @@ fn v7_canyon_release_pipeline_reuses_real_release_artifact_when_minimal_profile_
     let _guard = test_env_lock();
     let tmp = temp_root("canyon_batch2_release_fallback");
     let root = tmp.path();
-    let canyon_state = root.join("state").join("canyon");
+    let canyon_state = root.join("local").join("state").join("canyon");
     std::env::set_var(ENV_KEY, &canyon_state);
 
     write_text(

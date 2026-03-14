@@ -48,13 +48,13 @@
     "containment_children_enabled": true
   },
   "paths": {
-    "state_root": "state/security/red_team/adaptive_defense",
-    "latest_path": "state/security/red_team/adaptive_defense/latest.json",
-    "history_path": "state/security/red_team/adaptive_defense/history.jsonl",
-    "tool_catalog_path": "state/security/red_team/adaptive_defense/tool_catalog.json",
-    "cost_profiles_path": "state/security/red_team/adaptive_defense/cost_profiles.json",
-    "exemptions_path": "state/security/red_team/adaptive_defense/exemptions.json",
-    "registry_audit_path": "state/security/red_team/adaptive_defense/exemption_audit.jsonl",
-    "venom_history_path": "state/security/venom_containment/history.jsonl"
+    "state_root": "local/state/security/red_team/adaptive_defense",
+    "latest_path": "local/state/security/red_team/adaptive_defense/latest.json",
+    "history_path": "local/state/security/red_team/adaptive_defense/history.jsonl",
+    "tool_catalog_path": "local/state/security/red_team/adaptive_defense/tool_catalog.json",
+    "cost_profiles_path": "local/state/security/red_team/adaptive_defense/cost_profiles.json",
+    "exemptions_path": "local/state/security/red_team/adaptive_defense/exemptions.json",
+    "registry_audit_path": "local/state/security/red_team/adaptive_defense/exemption_audit.jsonl",
+    "venom_history_path": "local/state/security/venom_containment/history.jsonl"
   }
 }

@@ -2,11 +2,11 @@
   "version": "1.0",
   "enabled": true,
   "recovery_policy_path": "client/runtime/config/autonomy_exception_recovery_policy.json",
-  "memory_path": "state/autonomy/exception_classifier/memory.json",
-  "telemetry_path": "state/autonomy/exception_classifier/telemetry.jsonl",
-  "escalation_path": "state/autonomy/human_escalation_queue.jsonl",
+  "memory_path": "local/state/autonomy/exception_classifier/memory.json",
+  "telemetry_path": "local/state/autonomy/exception_classifier/telemetry.jsonl",
+  "escalation_path": "local/state/autonomy/human_escalation_queue.jsonl",
   "outputs": {
-    "latest_path": "state/autonomy/exception_classifier/latest.json",
-    "history_path": "state/autonomy/exception_classifier/history.jsonl"
+    "latest_path": "local/state/autonomy/exception_classifier/latest.json",
+    "history_path": "local/state/autonomy/exception_classifier/history.jsonl"
   }
 }

@@ -69,7 +69,7 @@ fn v6_batch20_model_and_network_lanes_are_receipted() {
         ),
         0
     );
-    let model_latest = root.path().join("state/ops/model_router/latest.json");
+    let model_latest = root.path().join("local/state/ops/model_router/latest.json");
     let adapt = read_json(&model_latest);
     assert_eq!(
         adapt.get("type").and_then(Value::as_str),
@@ -178,7 +178,7 @@ fn v6_batch20_model_and_network_lanes_are_receipted() {
         ),
         0
     );
-    let network_latest = root.path().join("state/ops/p2p_gossip_seed/latest.json");
+    let network_latest = root.path().join("local/state/ops/p2p_gossip_seed/latest.json");
     let join = read_json(&network_latest);
     assert_eq!(
         join.get("type").and_then(Value::as_str),
@@ -311,7 +311,7 @@ fn v6_batch20_model_and_network_lanes_are_receipted() {
         ranking.get("receipt_hash").and_then(Value::as_str)
     );
 
-    let model_history = read_jsonl(&root.path().join("state/ops/model_router/history.jsonl"));
+    let model_history = read_jsonl(&root.path().join("local/state/ops/model_router/history.jsonl"));
     assert!(model_history.len() >= 4, "expected model router history entries");
     for row in &model_history {
         assert!(has_infring_receipt(row));
@@ -323,7 +323,7 @@ fn v6_batch20_model_and_network_lanes_are_receipted() {
         );
     }
 
-    let network_history = read_jsonl(&root.path().join("state/ops/p2p_gossip_seed/history.jsonl"));
+    let network_history = read_jsonl(&root.path().join("local/state/ops/p2p_gossip_seed/history.jsonl"));
     assert!(
         network_history.len() >= 6,
         "expected network history rows for join/compute/gossip/rss/ranking/dashboard"
@@ -380,7 +380,7 @@ fn v6_batch20_model_and_network_reject_strict_bypass() {
 #[test]
 fn v6_batch20_bitnet_backend_routing_and_telemetry_are_receipted() {
     let root = tempfile::tempdir().expect("tempdir");
-    let model_latest = root.path().join("state/ops/model_router/latest.json");
+    let model_latest = root.path().join("local/state/ops/model_router/latest.json");
 
     assert_eq!(
         model_router::run(

@@ -77,13 +77,13 @@ mod tests {
     fn put_and_get_are_versioned_and_deterministic() {
         let mut store = StorageEngine::default();
         let first = store
-            .put("state/kernel", "{\"ok\":true}", None, 1_762_100_000_000)
+            .put("local/state/kernel", "{\"ok\":true}", None, 1_762_100_000_000)
             .expect("first put");
         assert_eq!(first.version, 1);
 
         let second = store
             .put(
-                "state/kernel",
+                "local/state/kernel",
                 "{\"ok\":false}",
                 Some(first.version),
                 1_762_100_000_001,
@@ -91,7 +91,7 @@ mod tests {
             .expect("second put");
         assert_eq!(second.version, 2);
 
-        let loaded = store.get("state/kernel").expect("get latest");
+        let loaded = store.get("local/state/kernel").expect("get latest");
         assert_eq!(loaded.value, "{\"ok\":false}");
         assert_eq!(loaded.version, 2);
     }
@@ -104,9 +104,9 @@ mod tests {
             Err(StorageError::InvalidKey)
         );
 
-        let inserted = store.put("state/a", "x", None, 1).expect("insert");
+        let inserted = store.put("local/state/a", "x", None, 1).expect("insert");
         assert_eq!(
-            store.put("state/a", "y", Some(inserted.version + 2), 2),
+            store.put("local/state/a", "y", Some(inserted.version + 2), 2),
             Err(StorageError::VersionConflict)
         );
     }
@@ -116,10 +116,10 @@ mod tests {
         let mut store = StorageEngine::default();
         assert_eq!(store.delete("missing"), Err(StorageError::NotFound));
         store
-            .put("state/b", "payload", None, 1_762_100_000_010)
+            .put("local/state/b", "payload", None, 1_762_100_000_010)
             .expect("insert");
-        let deleted = store.delete("state/b").expect("delete");
-        assert_eq!(deleted.key, "state/b");
-        assert_eq!(store.get("state/b"), Err(StorageError::NotFound));
+        let deleted = store.delete("local/state/b").expect("delete");
+        assert_eq!(deleted.key, "local/state/b");
+        assert_eq!(store.get("local/state/b"), Err(StorageError::NotFound));
     }
 }

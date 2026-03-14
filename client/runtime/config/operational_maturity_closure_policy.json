@@ -2,8 +2,8 @@
   "version": "1.0",
   "enabled": true,
   "runbook_map_path": "client/runtime/config/autonomy_slo_runbook_map.json",
-  "state_path": "state/ops/operational_maturity_closure/latest.json",
-  "history_path": "state/ops/operational_maturity_closure/history.jsonl",
+  "state_path": "local/state/ops/operational_maturity_closure/latest.json",
+  "history_path": "local/state/ops/operational_maturity_closure/history.jsonl",
   "escalation": {
     "script": "client/runtime/systems/ops/alert_transport_health.ts",
     "args": [

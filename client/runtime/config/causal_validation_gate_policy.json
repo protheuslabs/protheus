@@ -10,9 +10,9 @@
     "source_reliability": 0.2
   },
   "paths": {
-    "claims_dir": "state/sensory/analysis/high_impact_claims",
-    "output_dir": "state/sensory/analysis/causal_validation_gate",
-    "latest_path": "state/sensory/analysis/causal_validation_gate/latest.json",
-    "receipts_path": "state/sensory/analysis/causal_validation_gate/receipts.jsonl"
+    "claims_dir": "local/state/sensory/analysis/high_impact_claims",
+    "output_dir": "local/state/sensory/analysis/causal_validation_gate",
+    "latest_path": "local/state/sensory/analysis/causal_validation_gate/latest.json",
+    "receipts_path": "local/state/sensory/analysis/causal_validation_gate/receipts.jsonl"
   }
 }

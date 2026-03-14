@@ -5,20 +5,20 @@
     "runtime_state": {
       "description": "External backup profile for high-value runtime state and receipts.",
       "includes": [
-        "state/autonomy",
-        "state/routing",
-        "state/actuation/receipts",
-        "state/sensory/proposals",
-        "state/sensory/anomalies",
-        "state/sensory/queue_log.jsonl",
-        "state/spine/runs",
-        "state/security/break_glass.jsonl",
-        "state/security/emergency_stop.json"
+        "local/state/autonomy",
+        "local/state/routing",
+        "local/state/actuation/receipts",
+        "local/state/sensory/proposals",
+        "local/state/sensory/anomalies",
+        "local/state/sensory/queue_log.jsonl",
+        "local/state/spine/runs",
+        "local/state/security/break_glass.jsonl",
+        "local/state/security/emergency_stop.json"
       ],
       "exclude_prefixes": [
-        "state/sensory/raw",
-        "state/sensory/eyes/raw",
-        "state/sensory/eyes/metrics"
+        "local/state/sensory/raw",
+        "local/state/sensory/eyes/raw",
+        "local/state/sensory/eyes/metrics"
       ],
       "exclude_suffixes": [
         ".tmp",

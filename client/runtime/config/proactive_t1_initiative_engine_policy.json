@@ -11,9 +11,9 @@
     "medium"
   ],
   "state": {
-    "state_path": "state/autonomy/proactive_t1_initiative_engine/state.json",
-    "queue_path": "state/autonomy/proactive_t1_initiative_engine/queue.jsonl",
-    "latest_path": "state/autonomy/proactive_t1_initiative_engine/latest.json",
-    "receipts_path": "state/autonomy/proactive_t1_initiative_engine/receipts.jsonl"
+    "state_path": "local/state/autonomy/proactive_t1_initiative_engine/state.json",
+    "queue_path": "local/state/autonomy/proactive_t1_initiative_engine/queue.jsonl",
+    "latest_path": "local/state/autonomy/proactive_t1_initiative_engine/latest.json",
+    "receipts_path": "local/state/autonomy/proactive_t1_initiative_engine/receipts.jsonl"
   }
 }

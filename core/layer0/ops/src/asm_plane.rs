@@ -672,19 +672,19 @@ fn run_trust_chain(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
         json!({
             "version": "v1",
             "kind": "trust_chain_integration",
-            "bundle_path": "state/release/provenance_bundle/latest.json",
+            "bundle_path": "local/state/release/provenance_bundle/latest.json",
             "required_signature_paths": [
-                "state/release/provenance/signatures/protheus-ops.sig",
-                "state/release/provenance/signatures/protheusd.sig"
+                "local/state/release/provenance/signatures/protheus-ops.sig",
+                "local/state/release/provenance/signatures/protheusd.sig"
             ],
-            "rekor_bundle_path": "state/release/provenance/rekor_entries.json",
+            "rekor_bundle_path": "local/state/release/provenance/rekor_entries.json",
             "require_rekor": true
         }),
     );
     let bundle_rel = policy
         .get("bundle_path")
         .and_then(Value::as_str)
-        .unwrap_or("state/release/provenance_bundle/latest.json");
+        .unwrap_or("local/state/release/provenance_bundle/latest.json");
     let bundle_path = root.join(bundle_rel);
     let bundle = read_json(&bundle_path).unwrap_or(Value::Null);
     let signatures = policy
@@ -700,7 +700,7 @@ fn run_trust_chain(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
     let rekor_rel = policy
         .get("rekor_bundle_path")
         .and_then(Value::as_str)
-        .unwrap_or("state/release/provenance/rekor_entries.json");
+        .unwrap_or("local/state/release/provenance/rekor_entries.json");
     let rekor_path = root.join(rekor_rel);
 
     let mut errors = Vec::<String>::new();

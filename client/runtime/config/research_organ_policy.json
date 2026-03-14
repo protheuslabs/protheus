@@ -23,7 +23,7 @@
   },
   "analytics_bridge": {
     "enabled": true,
-    "latest_path": "state/sensory/analysis/offline_lab_bridge/latest.json",
+    "latest_path": "local/state/sensory/analysis/offline_lab_bridge/latest.json",
     "max_artifact_age_hours": 72,
     "allowed_job_types": ["research_organ_calibration", "calibration_report"],
     "allowed_producers": ["offline_r_analytics_runner", "offline_r_lab"],

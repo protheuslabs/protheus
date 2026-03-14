@@ -71,8 +71,8 @@
   "runtime_ignore_path_contains": [
     "/local/workspaces/",
     "/security/anti_sabotage/snapshots/",
-    "/state/snapshots/",
-    "/state/tmp/"
+    "/local/state/snapshots/",
+    "/local/state/tmp/"
   ],
   "paths": {
     "latest_path": "client/runtime/local/state/ops/source_runtime_classifier/latest.json",

@@ -9,7 +9,7 @@
   ],
   "require_explanation_on_disagreement": true,
   "outputs": {
-    "latest_path": "state/autonomy/high_tier_mutation_quorum_gate/latest.json",
-    "history_path": "state/autonomy/high_tier_mutation_quorum_gate/history.jsonl"
+    "latest_path": "local/state/autonomy/high_tier_mutation_quorum_gate/latest.json",
+    "history_path": "local/state/autonomy/high_tier_mutation_quorum_gate/history.jsonl"
   }
 }

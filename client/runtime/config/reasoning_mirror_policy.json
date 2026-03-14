@@ -2,10 +2,10 @@
   "version": "1.0",
   "enabled": true,
   "paths": {
-    "hypothesis_latest_path": "state/science/hypothesis_forge/latest.json",
-    "loop_latest_path": "state/science/loop/latest.json",
-    "latest_path": "state/science/reasoning_mirror/latest.json",
-    "history_path": "state/science/reasoning_mirror/history.jsonl",
-    "ui_contract_path": "state/science/reasoning_mirror/ui_contract.json"
+    "hypothesis_latest_path": "local/state/science/hypothesis_forge/latest.json",
+    "loop_latest_path": "local/state/science/loop/latest.json",
+    "latest_path": "local/state/science/reasoning_mirror/latest.json",
+    "history_path": "local/state/science/reasoning_mirror/history.jsonl",
+    "ui_contract_path": "local/state/science/reasoning_mirror/ui_contract.json"
   }
 }

@@ -59,8 +59,8 @@
     ]
   },
   "paths": {
-    "latest_path": "state/ops/rust_authoritative_microkernel_acceleration/latest.json",
-    "receipts_path": "state/ops/rust_authoritative_microkernel_acceleration/receipts.jsonl",
-    "language_report_path": "state/ops/rust_authoritative_microkernel_acceleration/language_report.json"
+    "latest_path": "local/state/ops/rust_authoritative_microkernel_acceleration/latest.json",
+    "receipts_path": "local/state/ops/rust_authoritative_microkernel_acceleration/receipts.jsonl",
+    "language_report_path": "local/state/ops/rust_authoritative_microkernel_acceleration/language_report.json"
   }
 }

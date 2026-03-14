@@ -64,25 +64,25 @@
   "adaptive_integration": {
     "enabled": true,
     "runtime_bias_weight": 1.0,
-    "cost_profiles_path": "state/security/red_team/adaptive_defense/cost_profiles.json"
+    "cost_profiles_path": "local/state/security/red_team/adaptive_defense/cost_profiles.json"
   },
   "forensics": {
     "enabled": true,
     "include_watermark": true,
     "master_conduit_mirror": true,
-    "evidence_dir": "state/security/venom_containment/evidence",
-    "events_path": "state/security/venom_containment/forensic_events.jsonl"
+    "evidence_dir": "local/state/security/venom_containment/evidence",
+    "events_path": "local/state/security/venom_containment/forensic_events.jsonl"
   },
   "paths": {
-    "state_root": "state/security/venom_containment",
-    "sessions_path": "state/security/venom_containment/sessions.json",
-    "latest_path": "state/security/venom_containment/latest.json",
-    "history_path": "state/security/venom_containment/history.jsonl",
-    "profiles_path": "state/security/venom_containment/profiles.json",
-    "startup_attestation_path": "state/security/startup_attestation.json",
-    "soul_token_guard_path": "state/security/soul_token_guard.json",
-    "lease_state_path": "state/security/capability_leases.json",
-    "master_queue_path": "state/workflow/learning_conduit/master_training_queue.jsonl"
+    "state_root": "local/state/security/venom_containment",
+    "sessions_path": "local/state/security/venom_containment/sessions.json",
+    "latest_path": "local/state/security/venom_containment/latest.json",
+    "history_path": "local/state/security/venom_containment/history.jsonl",
+    "profiles_path": "local/state/security/venom_containment/profiles.json",
+    "startup_attestation_path": "local/state/security/startup_attestation.json",
+    "soul_token_guard_path": "local/state/security/soul_token_guard.json",
+    "lease_state_path": "local/state/security/capability_leases.json",
+    "master_queue_path": "local/state/workflow/learning_conduit/master_training_queue.jsonl"
   },
   "decoy": {
     "low": {

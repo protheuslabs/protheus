@@ -29,7 +29,7 @@
     "command": "cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- enterprise-hardening run --strict=1"
   },
   "outputs": {
-    "latest_path": "state/ops/adr_enforcement/latest.json",
-    "history_path": "state/ops/adr_enforcement/history.jsonl"
+    "latest_path": "local/state/ops/adr_enforcement/latest.json",
+    "history_path": "local/state/ops/adr_enforcement/history.jsonl"
   }
 }

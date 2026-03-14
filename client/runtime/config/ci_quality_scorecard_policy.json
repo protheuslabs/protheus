@@ -9,8 +9,8 @@
   },
   "history_window": 50,
   "paths": {
-    "history_path": "state/ops/ci_quality_scorecard/history.jsonl",
-    "latest_path": "state/ops/ci_quality_scorecard/latest.json",
-    "baseline_state_path": "state/ops/ci_baseline_streak.json"
+    "history_path": "local/state/ops/ci_quality_scorecard/history.jsonl",
+    "latest_path": "local/state/ops/ci_quality_scorecard/latest.json",
+    "baseline_state_path": "local/state/ops/ci_baseline_streak.json"
   }
 }

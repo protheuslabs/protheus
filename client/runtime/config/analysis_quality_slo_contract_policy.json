@@ -9,11 +9,11 @@
     "max_abstain_rate": 0.45
   },
   "paths": {
-    "gold_eval_dir": "state/sensory/analysis/gold_eval_blind",
-    "abstain_dir": "state/sensory/analysis/abstain_uncertainty",
-    "execution_slo_latest": "state/ops/execution_slo/latest.json",
-    "output_dir": "state/sensory/analysis/quality_slo",
-    "latest_path": "state/sensory/analysis/quality_slo/latest.json",
-    "receipts_path": "state/sensory/analysis/quality_slo/receipts.jsonl"
+    "gold_eval_dir": "local/state/sensory/analysis/gold_eval_blind",
+    "abstain_dir": "local/state/sensory/analysis/abstain_uncertainty",
+    "execution_slo_latest": "local/state/ops/execution_slo/latest.json",
+    "output_dir": "local/state/sensory/analysis/quality_slo",
+    "latest_path": "local/state/sensory/analysis/quality_slo/latest.json",
+    "receipts_path": "local/state/sensory/analysis/quality_slo/receipts.jsonl"
   }
 }

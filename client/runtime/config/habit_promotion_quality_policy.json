@@ -8,7 +8,7 @@
     "min_adoption_rate": 0.6
   },
   "outputs": {
-    "latest_path": "state/client/cognition/habits/habit_promotion_quality/latest.json",
-    "history_path": "state/client/cognition/habits/habit_promotion_quality/history.jsonl"
+    "latest_path": "local/state/client/cognition/habits/habit_promotion_quality/latest.json",
+    "history_path": "local/state/client/cognition/habits/habit_promotion_quality/history.jsonl"
   }
 }

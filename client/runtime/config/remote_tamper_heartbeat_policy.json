@@ -13,14 +13,14 @@
   "identity_drift_allowed": false,
   "secrets": {
     "signing_key_env": "PROTHEUS_HEARTBEAT_SIGNING_KEY",
-    "signing_key_path": "state/security/remote_tamper_heartbeat/signing_key.txt"
+    "signing_key_path": "local/state/security/remote_tamper_heartbeat/signing_key.txt"
   },
   "paths": {
-    "state_path": "state/security/remote_tamper_heartbeat/state.json",
-    "latest_path": "state/security/remote_tamper_heartbeat/latest.json",
-    "outbox_path": "state/security/remote_tamper_heartbeat/outbox.jsonl",
-    "notifications_path": "state/security/remote_tamper_heartbeat/notifications.jsonl",
-    "quarantine_path": "state/security/remote_tamper_heartbeat/quarantine.json",
-    "evidence_dir": "state/security/remote_tamper_heartbeat/evidence"
+    "state_path": "local/state/security/remote_tamper_heartbeat/state.json",
+    "latest_path": "local/state/security/remote_tamper_heartbeat/latest.json",
+    "outbox_path": "local/state/security/remote_tamper_heartbeat/outbox.jsonl",
+    "notifications_path": "local/state/security/remote_tamper_heartbeat/notifications.jsonl",
+    "quarantine_path": "local/state/security/remote_tamper_heartbeat/quarantine.json",
+    "evidence_dir": "local/state/security/remote_tamper_heartbeat/evidence"
   }
 }

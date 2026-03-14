@@ -63,13 +63,13 @@ function contractForRow(row, generatedAt, sourceTag) {
     execution_contract: {
       runtime: 'core/layer2/ops:srs_contract_runtime',
       deterministic_receipt_required: true,
-      mutable_state_path: `state/ops/srs_contract_runtime/${id}/latest.json`,
-      history_path: 'state/ops/srs_contract_runtime/history.jsonl',
+      mutable_state_path: `local/state/ops/srs_contract_runtime/${id}/latest.json`,
+      history_path: 'local/state/ops/srs_contract_runtime/history.jsonl',
     },
     deliverables: [
       { type: 'contract', path: `planes/contracts/srs/${id}.json` },
-      { type: 'state_receipt', path: `state/ops/srs_contract_runtime/${id}/latest.json` },
-      { type: 'execution_history', path: 'state/ops/srs_contract_runtime/history.jsonl' },
+      { type: 'state_receipt', path: `local/state/ops/srs_contract_runtime/${id}/latest.json` },
+      { type: 'execution_history', path: 'local/state/ops/srs_contract_runtime/history.jsonl' },
     ],
     validation: {
       lane_command: `protheus-ops srs-contract-runtime run --id=${id}`,

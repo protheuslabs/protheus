@@ -21,9 +21,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/security/hardware_root_of_trust_attestation_mesh/state.json",
-    "latest_path": "state/security/hardware_root_of_trust_attestation_mesh/latest.json",
-    "receipts_path": "state/security/hardware_root_of_trust_attestation_mesh/receipts.jsonl",
-    "history_path": "state/security/hardware_root_of_trust_attestation_mesh/history.jsonl"
+    "state_path": "local/state/security/hardware_root_of_trust_attestation_mesh/state.json",
+    "latest_path": "local/state/security/hardware_root_of_trust_attestation_mesh/latest.json",
+    "receipts_path": "local/state/security/hardware_root_of_trust_attestation_mesh/receipts.jsonl",
+    "history_path": "local/state/security/hardware_root_of_trust_attestation_mesh/history.jsonl"
   }
 }

@@ -39,7 +39,7 @@ This directory stores internal operator lenses used for planning, audits, and de
 - Use `--max-context-tokens=<n>` (default `2000`) and `--context-budget-mode=trim|reject` to enforce bootstrap-vs-dynamic context budgeting before every lens call.
 - Use `protheus lens update-stream <persona>` to simulate stream sync and append correspondence updates.
 - Use `protheus lens feed <persona> "<snippet>"` (or `protheus persona feed ...`) to push master-feed insights to a persona.
-- Use `protheus lens checkin --persona=jay_haslam --heartbeat=docs/workspace/HEARTBEAT.md` for daily drift/alignment logging.
+- Use `protheus lens checkin --persona=jay_haslam --heartbeat=local/workspace/assistant/HEARTBEAT.md` for daily drift/alignment logging.
 - Use `protheus lens feedback --surprising=0|1 --changed-decision=0|1 --useful=<persona>` after sessions to tune persona utility.
 - Use `protheus lens feedback-summary [--window=<n>]` to monitor usefulness and decision-impact rates.
 - Use `protheus lens trigger <pre-sprint|drift-alert|weekly-checkin> ...` to run codified trigger workflows.
@@ -51,7 +51,7 @@ This directory stores internal operator lenses used for planning, audits, and de
 ## Internal Usage Guide
 
 - Daily check-in:
-  - Run `protheus lens checkin --persona=jay_haslam --heartbeat=docs/workspace/HEARTBEAT.md`.
+  - Run `protheus lens checkin --persona=jay_haslam --heartbeat=local/workspace/assistant/HEARTBEAT.md`.
   - Review recommendation + signals.
   - Confirm correspondence log updated.
 - Red-team a decision:

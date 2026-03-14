@@ -14,7 +14,7 @@
   "data_scope_doc_path": "docs/client/DATA_SCOPE_BOUNDARIES.md",
   "require_data_scope_reference": ".internal/",
   "paths": {
-    "latest_path": "state/ops/root_scaffolding_rationalization/latest.json",
-    "history_path": "state/ops/root_scaffolding_rationalization/history.jsonl"
+    "latest_path": "local/state/ops/root_scaffolding_rationalization/latest.json",
+    "history_path": "local/state/ops/root_scaffolding_rationalization/history.jsonl"
   }
 }

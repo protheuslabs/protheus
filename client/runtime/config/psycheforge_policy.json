@@ -34,14 +34,14 @@
     "default_key": ""
   },
   "paths": {
-    "profiles_path": "state/security/psycheforge/profiles.json",
-    "latest_path": "state/security/psycheforge/latest.json",
-    "receipts_path": "state/security/psycheforge/receipts.jsonl",
-    "shadow_queue_path": "state/security/psycheforge/shadow_queue.json",
-    "promotion_path": "state/security/psycheforge/promotions.jsonl",
-    "guard_hint_path": "state/security/guard/psycheforge_hint.json",
-    "redteam_hint_path": "state/redteam/psycheforge_hint.json",
-    "venom_hint_path": "state/security/venom/psycheforge_hint.json",
-    "fractal_hint_path": "state/fractal/psycheforge_hint.json"
+    "profiles_path": "local/state/security/psycheforge/profiles.json",
+    "latest_path": "local/state/security/psycheforge/latest.json",
+    "receipts_path": "local/state/security/psycheforge/receipts.jsonl",
+    "shadow_queue_path": "local/state/security/psycheforge/shadow_queue.json",
+    "promotion_path": "local/state/security/psycheforge/promotions.jsonl",
+    "guard_hint_path": "local/state/security/guard/psycheforge_hint.json",
+    "redteam_hint_path": "local/state/redteam/psycheforge_hint.json",
+    "venom_hint_path": "local/state/security/venom/psycheforge_hint.json",
+    "fractal_hint_path": "local/state/fractal/psycheforge_hint.json"
   }
 }

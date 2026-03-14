@@ -41,8 +41,8 @@
   "battery_max_pct_24h": 5,
   "rust_share_min_pct": 50,
   "outputs": {
-    "latest_path": "state/ops/rust50_mega_sprint1_batch/latest.json",
-    "history_path": "state/ops/rust50_mega_sprint1_batch/history.jsonl",
-    "artifacts_dir": "state/ops/rust50_mega_sprint1_batch/artifacts"
+    "latest_path": "local/state/ops/rust50_mega_sprint1_batch/latest.json",
+    "history_path": "local/state/ops/rust50_mega_sprint1_batch/history.jsonl",
+    "artifacts_dir": "local/state/ops/rust50_mega_sprint1_batch/artifacts"
   }
 }

@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "enabled": true,
-  "state_path": "state/security/llm_test_opacity/state.json",
-  "incident_log_path": "state/security/llm_test_opacity/incidents.jsonl",
+  "state_path": "local/state/security/llm_test_opacity/state.json",
+  "incident_log_path": "local/state/security/llm_test_opacity/incidents.jsonl",
   "block_response": {
     "stderr": "test_opacity_blocked",
     "error": "test_opacity_blocked"

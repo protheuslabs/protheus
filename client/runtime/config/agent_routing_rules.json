@@ -101,7 +101,7 @@
     },
     "eyes_signal_policy": {
       "enabled": true,
-      "registry_path": "state/sensory/eyes/registry.json",
+      "registry_path": "local/state/sensory/eyes/registry.json",
       "ttl_ms": 120000,
       "min_non_stub_eyes": 2,
       "degraded_error_rate": 0.45,
@@ -117,7 +117,7 @@
     },
     "prompt_cache_policy": {
       "enabled": true,
-      "index_path": "state/routing/prompt_cache_index.json",
+      "index_path": "local/state/routing/prompt_cache_index.json",
       "window_minutes": 180,
       "min_hits": 2,
       "max_entries": 900,
@@ -182,7 +182,7 @@
     },
     "router_budget_policy": {
       "enabled": true,
-      "state_dir": "state/autonomy/daily_budget",
+      "state_dir": "local/state/autonomy/daily_budget",
       "soft_ratio": 0.75,
       "hard_ratio": 0.92,
       "cloud_penalty_soft": 4,

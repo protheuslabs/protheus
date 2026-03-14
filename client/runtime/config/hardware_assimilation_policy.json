@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "constitution_path": "docs/workspace/AGENT-CONSTITUTION.md",
-  "state_path": "state/hardware/assimilation_plane/state.json",
-  "audit_path": "state/hardware/assimilation_plane/audit.jsonl",
+  "state_path": "local/state/hardware/assimilation_plane/state.json",
+  "audit_path": "local/state/hardware/assimilation_plane/audit.jsonl",
   "required_attestation_secret_env": "HARDWARE_ASSIMILATION_SECRET",
   "idle_dormant_sec": 300,
   "max_nodes": 256,

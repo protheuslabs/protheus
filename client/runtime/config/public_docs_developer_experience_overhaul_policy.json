@@ -30,8 +30,8 @@
   },
   "paths": {
     "feature_flags_path": "client/runtime/config/feature_flags.json",
-    "latest_path": "state/ops/public_docs_developer_experience_overhaul/latest.json",
-    "history_path": "state/ops/public_docs_developer_experience_overhaul/history.jsonl",
-    "snapshot_root": "state/ops/public_docs_developer_experience_overhaul/snapshots"
+    "latest_path": "local/state/ops/public_docs_developer_experience_overhaul/latest.json",
+    "history_path": "local/state/ops/public_docs_developer_experience_overhaul/history.jsonl",
+    "snapshot_root": "local/state/ops/public_docs_developer_experience_overhaul/snapshots"
   }
 }

@@ -9,7 +9,7 @@
     "cute on the outside"
   ],
   "paths": {
-    "latest_path": "state/ops/legal_language_contract/latest.json",
-    "receipts_path": "state/ops/legal_language_contract/receipts.jsonl"
+    "latest_path": "local/state/ops/legal_language_contract/latest.json",
+    "receipts_path": "local/state/ops/legal_language_contract/receipts.jsonl"
   }
 }

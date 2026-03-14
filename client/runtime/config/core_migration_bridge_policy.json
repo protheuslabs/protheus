@@ -42,27 +42,27 @@
     },
     {
       "id": "scientific_receipts",
-      "source": "state/science",
-      "target": "state/science",
+      "source": "local/state/science",
+      "target": "local/state/science",
       "required": false
     },
     {
       "id": "scientific_mode_v4_receipts",
-      "source": "state/science/scientific_mode_v4",
-      "target": "state/science/scientific_mode_v4",
+      "source": "local/state/science/scientific_mode_v4",
+      "target": "local/state/science/scientific_mode_v4",
       "required": false
     },
     {
       "id": "research_receipts",
-      "source": "state/research",
-      "target": "state/research",
+      "source": "local/state/research",
+      "target": "local/state/research",
       "required": false
     }
   ],
   "paths": {
-    "latest_path": "state/migration/core_bridge/latest.json",
-    "receipts_path": "state/migration/core_bridge/receipts.jsonl",
-    "checkpoints_root": "state/migration/core_bridge/checkpoints",
-    "registry_path": "state/migration/core_bridge/registry.json"
+    "latest_path": "local/state/migration/core_bridge/latest.json",
+    "receipts_path": "local/state/migration/core_bridge/receipts.jsonl",
+    "checkpoints_root": "local/state/migration/core_bridge/checkpoints",
+    "registry_path": "local/state/migration/core_bridge/registry.json"
   }
 }

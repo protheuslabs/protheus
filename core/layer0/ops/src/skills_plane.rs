@@ -830,8 +830,8 @@ fn run_dashboard(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value
         .get("dashboard_run_window")
         .and_then(Value::as_u64)
         .unwrap_or(1000) as usize;
-    let cognition_latest_path = root.join("state/ops/assimilation_controller/latest.json");
-    let cognition_history_path = root.join("state/ops/assimilation_controller/history.jsonl");
+    let cognition_latest_path = root.join("local/state/ops/assimilation_controller/latest.json");
+    let cognition_history_path = root.join("local/state/ops/assimilation_controller/history.jsonl");
     let cognition_latest = read_json(&cognition_latest_path).unwrap_or(Value::Null);
     let cognition_history_events = fs::read_to_string(&cognition_history_path)
         .ok()
@@ -1866,7 +1866,7 @@ mod tests {
     #[test]
     fn dashboard_includes_cognition_ledger_view_and_claim() {
         let root = tempfile::tempdir().expect("tempdir");
-        let cognition_dir = root.path().join("state/ops/assimilation_controller");
+        let cognition_dir = root.path().join("local/state/ops/assimilation_controller");
         fs::create_dir_all(&cognition_dir).expect("mkdir cognition dir");
         fs::write(
             cognition_dir.join("latest.json"),

@@ -13,7 +13,7 @@
     ]
   },
   "outputs": {
-    "latest_path": "state/reflex/micro_routine_layer/latest.json",
-    "history_path": "state/reflex/micro_routine_layer/history.jsonl"
+    "latest_path": "local/state/reflex/micro_routine_layer/latest.json",
+    "history_path": "local/state/reflex/micro_routine_layer/history.jsonl"
   }
 }

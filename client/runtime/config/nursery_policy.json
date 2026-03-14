@@ -4,7 +4,7 @@
   "auto_run_on_spine_init": true,
   "strict_missing_required_models": false,
   "root_dir": "~/.openclaw/nursery",
-  "fallback_repo_root_dir": "state/nursery/containment",
+  "fallback_repo_root_dir": "local/state/nursery/containment",
   "pull_timeout_ms": 60000,
   "directories": {
     "seeds": "seeds",

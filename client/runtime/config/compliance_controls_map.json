@@ -19,13 +19,13 @@
       "evidence": [
         {
           "type": "jsonl_min_rows",
-          "path": "state/security/policy_root_decisions.jsonl",
+          "path": "local/state/security/policy_root_decisions.jsonl",
           "min_rows": 1,
           "require_file": true
         },
         {
           "type": "jsonl_min_rows",
-          "path": "state/security/integrity_violations.jsonl",
+          "path": "local/state/security/integrity_violations.jsonl",
           "min_rows": 0
         },
         {
@@ -46,7 +46,7 @@
       "evidence": [
         {
           "type": "jsonl_min_rows",
-          "path": "state/ops/compliance/history.jsonl",
+          "path": "local/state/ops/compliance/history.jsonl",
           "min_rows": 0
         },
         {
@@ -55,7 +55,7 @@
         },
         {
           "type": "json_key_exists",
-          "path": "state/ops/ci_baseline_streak.json",
+          "path": "local/state/ops/ci_baseline_streak.json",
           "key": "consecutive_daily_green_runs"
         }
       ]
@@ -81,7 +81,7 @@
         },
         {
           "type": "jsonl_min_rows",
-          "path": "state/ops/dr_gameday_receipts.jsonl",
+          "path": "local/state/ops/dr_gameday_receipts.jsonl",
           "min_rows": 0
         }
       ]
@@ -129,7 +129,7 @@
         },
         {
           "type": "json_key_exists",
-          "path": "state/ops/ci_baseline_streak.json",
+          "path": "local/state/ops/ci_baseline_streak.json",
           "key": "consecutive_daily_green_runs"
         }
       ]
@@ -154,7 +154,7 @@
         },
         {
           "type": "jsonl_min_rows",
-          "path": "state/ops/offsite_restore_drill_receipts.jsonl",
+          "path": "local/state/ops/offsite_restore_drill_receipts.jsonl",
           "min_rows": 0
         }
       ]
@@ -178,7 +178,7 @@
         },
         {
           "type": "jsonl_min_rows",
-          "path": "state/security/policy_root_decisions.jsonl",
+          "path": "local/state/security/policy_root_decisions.jsonl",
           "min_rows": 1,
           "require_file": true
         }
@@ -203,7 +203,7 @@
         },
         {
           "type": "jsonl_min_rows",
-          "path": "state/ops/compliance_posture/history.jsonl",
+          "path": "local/state/ops/compliance_posture/history.jsonl",
           "min_rows": 0
         }
       ]
@@ -228,7 +228,7 @@
         },
         {
           "type": "jsonl_min_rows",
-          "path": "state/ops/compliance/history.jsonl",
+          "path": "local/state/ops/compliance/history.jsonl",
           "min_rows": 0
         }
       ]
@@ -253,7 +253,7 @@
         },
         {
           "type": "jsonl_min_rows",
-          "path": "state/security/black_box_ledger.jsonl",
+          "path": "local/state/security/black_box_ledger.jsonl",
           "min_rows": 0
         }
       ]

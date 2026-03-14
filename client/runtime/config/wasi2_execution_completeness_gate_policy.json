@@ -22,9 +22,9 @@
   ],
   "owner_id": "wasi2_gate",
   "paths": {
-    "state_path": "state/ops/wasi2_execution_completeness_gate/state.json",
-    "latest_path": "state/ops/wasi2_execution_completeness_gate/latest.json",
-    "receipts_path": "state/ops/wasi2_execution_completeness_gate/receipts.jsonl",
-    "history_path": "state/ops/wasi2_execution_completeness_gate/history.jsonl"
+    "state_path": "local/state/ops/wasi2_execution_completeness_gate/state.json",
+    "latest_path": "local/state/ops/wasi2_execution_completeness_gate/latest.json",
+    "receipts_path": "local/state/ops/wasi2_execution_completeness_gate/receipts.jsonl",
+    "history_path": "local/state/ops/wasi2_execution_completeness_gate/history.jsonl"
   }
 }

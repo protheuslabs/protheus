@@ -33,8 +33,8 @@
     ]
   },
   "outputs": {
-    "latest_path": "state/ops/rust50_conf001/latest.json",
-    "history_path": "state/ops/rust50_conf001/history.jsonl",
-    "artifacts_dir": "state/ops/rust50_conf001/artifacts"
+    "latest_path": "local/state/ops/rust50_conf001/latest.json",
+    "history_path": "local/state/ops/rust50_conf001/history.jsonl",
+    "artifacts_dir": "local/state/ops/rust50_conf001/artifacts"
   }
 }

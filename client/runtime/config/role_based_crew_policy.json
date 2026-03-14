@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/crews",
     "adaptive_index_path": "client/cognition/adaptive/crews/index.json",
-    "events_path": "state/spawn\/role_based_crew/events.jsonl",
-    "latest_path": "state/spawn\/role_based_crew/latest.json",
-    "receipts_path": "state/spawn\/role_based_crew/receipts.jsonl"
+    "events_path": "local/state/spawn\/role_based_crew/events.jsonl",
+    "latest_path": "local/state/spawn\/role_based_crew/latest.json",
+    "receipts_path": "local/state/spawn\/role_based_crew/receipts.jsonl"
   }
 }

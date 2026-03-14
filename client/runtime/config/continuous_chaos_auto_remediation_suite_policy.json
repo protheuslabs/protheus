@@ -21,9 +21,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/ops/continuous_chaos_auto_remediation_suite/state.json",
-    "latest_path": "state/ops/continuous_chaos_auto_remediation_suite/latest.json",
-    "receipts_path": "state/ops/continuous_chaos_auto_remediation_suite/receipts.jsonl",
-    "history_path": "state/ops/continuous_chaos_auto_remediation_suite/history.jsonl"
+    "state_path": "local/state/ops/continuous_chaos_auto_remediation_suite/state.json",
+    "latest_path": "local/state/ops/continuous_chaos_auto_remediation_suite/latest.json",
+    "receipts_path": "local/state/ops/continuous_chaos_auto_remediation_suite/receipts.jsonl",
+    "history_path": "local/state/ops/continuous_chaos_auto_remediation_suite/history.jsonl"
   }
 }

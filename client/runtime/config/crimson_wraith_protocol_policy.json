@@ -21,9 +21,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/security/crimson_wraith_protocol/state.json",
-    "latest_path": "state/security/crimson_wraith_protocol/latest.json",
-    "receipts_path": "state/security/crimson_wraith_protocol/receipts.jsonl",
-    "history_path": "state/security/crimson_wraith_protocol/history.jsonl"
+    "state_path": "local/state/security/crimson_wraith_protocol/state.json",
+    "latest_path": "local/state/security/crimson_wraith_protocol/latest.json",
+    "receipts_path": "local/state/security/crimson_wraith_protocol/receipts.jsonl",
+    "history_path": "local/state/security/crimson_wraith_protocol/history.jsonl"
   }
 }

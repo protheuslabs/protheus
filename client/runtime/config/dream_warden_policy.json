@@ -16,18 +16,18 @@
     "max_patch_candidates": 6
   },
   "signals": {
-    "collective_shadow_latest_path": "state/autonomy/collective_shadow/latest.json",
-    "observer_mirror_latest_path": "state/autonomy/observer_mirror/latest.json",
-    "red_team_latest_path": "state/security/red_team/latest.json",
-    "symbiosis_latest_path": "state/symbiosis/coherence/latest.json",
-    "gated_self_improvement_state_path": "state/autonomy/gated_self_improvement/state.json"
+    "collective_shadow_latest_path": "local/state/autonomy/collective_shadow/latest.json",
+    "observer_mirror_latest_path": "local/state/autonomy/observer_mirror/latest.json",
+    "red_team_latest_path": "local/state/security/red_team/latest.json",
+    "symbiosis_latest_path": "local/state/symbiosis/coherence/latest.json",
+    "gated_self_improvement_state_path": "local/state/autonomy/gated_self_improvement/state.json"
   },
   "outputs": {
-    "latest_path": "state/security/dream_warden/latest.json",
-    "history_path": "state/security/dream_warden/history.jsonl",
-    "receipts_path": "state/security/dream_warden/receipts.jsonl",
-    "patch_proposals_path": "state/security/dream_warden/patch_proposals.jsonl",
-    "ide_events_path": "state/security/dream_warden/ide_events.jsonl"
+    "latest_path": "local/state/security/dream_warden/latest.json",
+    "history_path": "local/state/security/dream_warden/history.jsonl",
+    "receipts_path": "local/state/security/dream_warden/receipts.jsonl",
+    "patch_proposals_path": "local/state/security/dream_warden/patch_proposals.jsonl",
+    "ide_events_path": "local/state/security/dream_warden/ide_events.jsonl"
   }
 }
 

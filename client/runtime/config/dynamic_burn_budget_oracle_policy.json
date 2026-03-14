@@ -146,12 +146,12 @@
     }
   },
   "state": {
-    "state_path": "state/ops/dynamic_burn_budget_oracle/state.json",
-    "latest_path": "state/ops/dynamic_burn_budget_oracle/latest.json",
-    "history_path": "state/ops/dynamic_burn_budget_oracle/history.jsonl",
-    "receipts_path": "state/ops/dynamic_burn_budget_oracle/receipts.jsonl",
-    "weaver_hint_path": "state/autonomy/weaver/budget_oracle_hints.jsonl",
-    "routing_hint_path": "state/routing/budget_oracle_hints.jsonl",
-    "regime_latest_path": "state/autonomy/fractal/regime/latest.json"
+    "state_path": "local/state/ops/dynamic_burn_budget_oracle/state.json",
+    "latest_path": "local/state/ops/dynamic_burn_budget_oracle/latest.json",
+    "history_path": "local/state/ops/dynamic_burn_budget_oracle/history.jsonl",
+    "receipts_path": "local/state/ops/dynamic_burn_budget_oracle/receipts.jsonl",
+    "weaver_hint_path": "local/state/autonomy/weaver/budget_oracle_hints.jsonl",
+    "routing_hint_path": "local/state/routing/budget_oracle_hints.jsonl",
+    "regime_latest_path": "local/state/autonomy/fractal/regime/latest.json"
   }
 }

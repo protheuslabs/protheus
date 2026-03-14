@@ -6,7 +6,7 @@
   "required_milestones": ["Day 0", "Day 7", "Day 30"],
   "required_terms": ["prerequisites", "safety gates", "success criteria", "bootstrap", "ci", "escalation"],
   "paths": {
-    "latest_path": "state/ops/enterprise_onboarding_pack/latest.json",
-    "history_path": "state/ops/enterprise_onboarding_pack/history.jsonl"
+    "latest_path": "local/state/ops/enterprise_onboarding_pack/latest.json",
+    "history_path": "local/state/ops/enterprise_onboarding_pack/history.jsonl"
   }
 }

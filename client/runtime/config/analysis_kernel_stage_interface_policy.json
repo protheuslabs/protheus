@@ -21,9 +21,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/sensory/analysis_kernel_stage_interface/state.json",
-    "latest_path": "state/sensory/analysis_kernel_stage_interface/latest.json",
-    "receipts_path": "state/sensory/analysis_kernel_stage_interface/receipts.jsonl",
-    "history_path": "state/sensory/analysis_kernel_stage_interface/history.jsonl"
+    "state_path": "local/state/sensory/analysis_kernel_stage_interface/state.json",
+    "latest_path": "local/state/sensory/analysis_kernel_stage_interface/latest.json",
+    "receipts_path": "local/state/sensory/analysis_kernel_stage_interface/receipts.jsonl",
+    "history_path": "local/state/sensory/analysis_kernel_stage_interface/history.jsonl"
   }
 }

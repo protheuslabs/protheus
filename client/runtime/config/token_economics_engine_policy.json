@@ -8,9 +8,9 @@
   "base_throttle_ratio": 0.85,
   "min_critical_lane_share": 0.2,
   "paths": {
-    "workflow_history": "state/client/cognition/adaptive/workflows/executor/history.jsonl",
-    "state": "state/ops/token_economics_engine.json",
-    "history": "state/ops/token_economics_engine_history.jsonl"
+    "workflow_history": "local/state/client/cognition/adaptive/workflows/executor/history.jsonl",
+    "state": "local/state/ops/token_economics_engine.json",
+    "history": "local/state/ops/token_economics_engine_history.jsonl"
   }
 }
 

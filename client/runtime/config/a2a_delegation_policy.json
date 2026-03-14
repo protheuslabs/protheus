@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/federation/a2a",
     "adaptive_index_path": "client/cognition/adaptive/federation/a2a/index.json",
-    "events_path": "state/federation\/a2a_delegation/events.jsonl",
-    "latest_path": "state/federation\/a2a_delegation/latest.json",
-    "receipts_path": "state/federation\/a2a_delegation/receipts.jsonl"
+    "events_path": "local/state/federation\/a2a_delegation/events.jsonl",
+    "latest_path": "local/state/federation\/a2a_delegation/latest.json",
+    "receipts_path": "local/state/federation\/a2a_delegation/receipts.jsonl"
   }
 }

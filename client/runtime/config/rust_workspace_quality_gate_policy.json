@@ -44,7 +44,7 @@
     ]
   },
   "paths": {
-    "latest_path": "state/ops/rust_workspace_quality_gate/latest.json",
-    "receipts_path": "state/ops/rust_workspace_quality_gate/receipts.jsonl"
+    "latest_path": "local/state/ops/rust_workspace_quality_gate/latest.json",
+    "receipts_path": "local/state/ops/rust_workspace_quality_gate/receipts.jsonl"
   }
 }

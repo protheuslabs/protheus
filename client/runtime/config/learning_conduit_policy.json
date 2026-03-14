@@ -6,9 +6,9 @@
   "trainability_strict": true,
   "require_explicit_consent": true,
   "queue_paths": {
-    "pending_queue": "state/nursery/training/workflow_learning_queue.jsonl",
-    "canary_queue": "state/nursery/training/workflow_learning_canary.jsonl",
-    "master_queue": "state/nursery/training/continuum_queue.jsonl"
+    "pending_queue": "local/state/nursery/training/workflow_learning_queue.jsonl",
+    "canary_queue": "local/state/nursery/training/workflow_learning_canary.jsonl",
+    "master_queue": "local/state/nursery/training/continuum_queue.jsonl"
   },
   "canary": {
     "required": true,
@@ -24,9 +24,9 @@
     "default_transmit": true,
     "shadow_only": true,
     "require_redaction": true,
-    "queue_path": "state/nursery/training/master_llm_ingest_queue.jsonl",
-    "receipts_path": "state/workflow/learning_conduit/master_transmit_receipts.jsonl",
-    "opt_out_registry_path": "state/workflow/learning_conduit/instance_opt_out_registry.json",
+    "queue_path": "local/state/nursery/training/master_llm_ingest_queue.jsonl",
+    "receipts_path": "local/state/workflow/learning_conduit/master_transmit_receipts.jsonl",
+    "opt_out_registry_path": "local/state/workflow/learning_conduit/instance_opt_out_registry.json",
     "instance_id_env_keys": [
       "PROTHEUS_INSTANCE_ID",
       "INSTANCE_ID",
@@ -36,8 +36,8 @@
   "federation": {
     "mode": "hereditary_master_reviewed",
     "peer_to_peer_network_effect": false,
-    "hereditary_update_queue_path": "state/brain/hereditary_advancement_queue.jsonl",
-    "master_review_queue_path": "state/brain/master_review_advancement_queue.jsonl"
+    "hereditary_update_queue_path": "local/state/brain/hereditary_advancement_queue.jsonl",
+    "master_review_queue_path": "local/state/brain/master_review_advancement_queue.jsonl"
   },
   "defaults": {
     "owner_id": "workflow_operator",

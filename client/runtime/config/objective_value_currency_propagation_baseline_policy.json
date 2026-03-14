@@ -14,7 +14,7 @@
     }
   },
   "outputs": {
-    "latest_path": "state/autonomy/objective_value_currency_propagation_baseline/latest.json",
-    "history_path": "state/autonomy/objective_value_currency_propagation_baseline/history.jsonl"
+    "latest_path": "local/state/autonomy/objective_value_currency_propagation_baseline/latest.json",
+    "history_path": "local/state/autonomy/objective_value_currency_propagation_baseline/history.jsonl"
   }
 }

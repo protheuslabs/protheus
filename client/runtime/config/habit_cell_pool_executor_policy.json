@@ -21,8 +21,8 @@
     "payload_json_default": "{}"
   },
   "outputs": {
-    "state_path": "state/client/cognition/habits/habit_cell_pool_executor/state.json",
-    "latest_path": "state/client/cognition/habits/habit_cell_pool_executor/latest.json",
-    "history_path": "state/client/cognition/habits/habit_cell_pool_executor/history.jsonl"
+    "state_path": "local/state/client/cognition/habits/habit_cell_pool_executor/state.json",
+    "latest_path": "local/state/client/cognition/habits/habit_cell_pool_executor/latest.json",
+    "history_path": "local/state/client/cognition/habits/habit_cell_pool_executor/history.jsonl"
   }
 }

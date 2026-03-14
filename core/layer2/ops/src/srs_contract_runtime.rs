@@ -7,7 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 const CONTRACT_ROOT: &str = "planes/contracts/srs";
-const STATE_ROOT: &str = "state/ops/srs_contract_runtime";
+const STATE_ROOT: &str = "local/state/ops/srs_contract_runtime";
 const HISTORY_FILE: &str = "history.jsonl";
 
 fn contract_path(root: &Path, id: &str) -> PathBuf {

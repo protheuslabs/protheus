@@ -5,11 +5,11 @@
   "min_agreement_ratio": 0.67,
   "min_avg_confidence": 0.55,
   "paths": {
-    "raw_labels_dir": "state/sensory/labels/raw",
-    "adjudicated_dir": "state/sensory/labels/adjudicated",
-    "promotion_corpus_dir": "state/sensory/labels/promotion_corpus",
-    "quarantine_dir": "state/sensory/labels/quarantine",
-    "latest_path": "state/sensory/labels/adjudicated/latest.json",
-    "receipts_path": "state/sensory/labels/adjudicated/receipts.jsonl"
+    "raw_labels_dir": "local/state/sensory/labels/raw",
+    "adjudicated_dir": "local/state/sensory/labels/adjudicated",
+    "promotion_corpus_dir": "local/state/sensory/labels/promotion_corpus",
+    "quarantine_dir": "local/state/sensory/labels/quarantine",
+    "latest_path": "local/state/sensory/labels/adjudicated/latest.json",
+    "receipts_path": "local/state/sensory/labels/adjudicated/receipts.jsonl"
   }
 }

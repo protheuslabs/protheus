@@ -23,7 +23,7 @@
     }
   },
   "outputs": {
-    "latest_path": "state/ops/identity_federation/latest.json",
-    "history_path": "state/ops/identity_federation/history.jsonl"
+    "latest_path": "local/state/ops/identity_federation/latest.json",
+    "history_path": "local/state/ops/identity_federation/history.jsonl"
   }
 }

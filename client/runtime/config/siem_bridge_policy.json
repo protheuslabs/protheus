@@ -4,10 +4,10 @@
   "strict_default": false,
   "default_format": "otlp",
   "input_paths": [
-    "state/security/integrity_status.json",
-    "state/security/log_redaction_guard/latest.json",
-    "state/ops/alert_transport_health.json",
-    "state/ops/execution_reliability_slo.json"
+    "local/state/security/integrity_status.json",
+    "local/state/security/log_redaction_guard/latest.json",
+    "local/state/ops/alert_transport_health.json",
+    "local/state/ops/execution_reliability_slo.json"
   ],
   "correlation_rules": {
     "auth_anomaly": {
@@ -26,9 +26,9 @@
       "min_hits": 1
     }
   },
-  "latest_export_path": "state/observability/siem_bridge/latest_export.json",
-  "export_history_path": "state/observability/siem_bridge/export_history.jsonl",
-  "latest_correlation_path": "state/observability/siem_bridge/latest_correlation.json",
-  "alert_roundtrip_path": "state/observability/siem_bridge/alert_roundtrip.json",
-  "receipts_path": "state/observability/siem_bridge/receipts.jsonl"
+  "latest_export_path": "local/state/observability/siem_bridge/latest_export.json",
+  "export_history_path": "local/state/observability/siem_bridge/export_history.jsonl",
+  "latest_correlation_path": "local/state/observability/siem_bridge/latest_correlation.json",
+  "alert_roundtrip_path": "local/state/observability/siem_bridge/alert_roundtrip.json",
+  "receipts_path": "local/state/observability/siem_bridge/receipts.jsonl"
 }

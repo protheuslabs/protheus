@@ -3,12 +3,12 @@
   "enabled": true,
   "readonly": true,
   "inputs": [
-    "state/autonomy",
-    "state/sensory",
-    "state/routing"
+    "local/state/autonomy",
+    "local/state/sensory",
+    "local/state/routing"
   ],
   "outputs": {
-    "latest_path": "state/autonomy/recursive_introspection_baseline_readonly/latest.json",
-    "history_path": "state/autonomy/recursive_introspection_baseline_readonly/history.jsonl"
+    "latest_path": "local/state/autonomy/recursive_introspection_baseline_readonly/latest.json",
+    "history_path": "local/state/autonomy/recursive_introspection_baseline_readonly/history.jsonl"
   }
 }

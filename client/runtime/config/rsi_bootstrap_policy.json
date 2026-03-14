@@ -25,13 +25,13 @@
     "min_dopamine_score": 1
   },
   "paths": {
-    "state_path": "state/client/cognition/adaptive/rsi/state.json",
-    "latest_path": "state/client/cognition/adaptive/rsi/latest.json",
-    "receipts_path": "state/client/cognition/adaptive/rsi/receipts.jsonl",
-    "chain_path": "state/client/cognition/adaptive/rsi/chain.jsonl",
-    "merkle_path": "state/client/cognition/adaptive/rsi/merkle.json",
-    "approvals_path": "state/client/cognition/adaptive/rsi/approvals.json",
-    "step_artifacts_dir": "state/client/cognition/adaptive/rsi/steps"
+    "state_path": "local/state/client/cognition/adaptive/rsi/state.json",
+    "latest_path": "local/state/client/cognition/adaptive/rsi/latest.json",
+    "receipts_path": "local/state/client/cognition/adaptive/rsi/receipts.jsonl",
+    "chain_path": "local/state/client/cognition/adaptive/rsi/chain.jsonl",
+    "merkle_path": "local/state/client/cognition/adaptive/rsi/merkle.json",
+    "approvals_path": "local/state/client/cognition/adaptive/rsi/approvals.json",
+    "step_artifacts_dir": "local/state/client/cognition/adaptive/rsi/steps"
   },
   "scripts": {
     "event_stream": "client/runtime/systems/ops/event_sourced_control_plane.ts",

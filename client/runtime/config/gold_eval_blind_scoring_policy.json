@@ -12,9 +12,9 @@
     "max_brier": 0.28
   },
   "paths": {
-    "eval_pack_dir": "state/sensory/eval/gold",
-    "output_dir": "state/sensory/analysis/gold_eval_blind",
-    "latest_path": "state/sensory/analysis/gold_eval_blind/latest.json",
-    "receipts_path": "state/sensory/analysis/gold_eval_blind/receipts.jsonl"
+    "eval_pack_dir": "local/state/sensory/eval/gold",
+    "output_dir": "local/state/sensory/analysis/gold_eval_blind",
+    "latest_path": "local/state/sensory/analysis/gold_eval_blind/latest.json",
+    "receipts_path": "local/state/sensory/analysis/gold_eval_blind/receipts.jsonl"
   }
 }

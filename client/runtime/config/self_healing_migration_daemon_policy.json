@@ -18,11 +18,11 @@
     "consent_token_prefix": "MIGR-CONSENT-"
   },
   "integration": {
-    "self_audit_suggestions_path": "state/self_audit/illusion_integrity_suggestions.jsonl"
+    "self_audit_suggestions_path": "local/state/self_audit/illusion_integrity_suggestions.jsonl"
   },
   "paths": {
-    "latest_path": "state/migration/self_healing/latest.json",
-    "receipts_path": "state/migration/self_healing/receipts.jsonl",
-    "suggestions_path": "state/migration/self_healing/suggestions.jsonl"
+    "latest_path": "local/state/migration/self_healing/latest.json",
+    "receipts_path": "local/state/migration/self_healing/receipts.jsonl",
+    "suggestions_path": "local/state/migration/self_healing/suggestions.jsonl"
   }
 }

@@ -11,9 +11,9 @@
     "doctor"
   ],
   "paths": {
-    "admissions_path": "state/helix/admissions.jsonl",
-    "latest_path": "state/helix/admission_latest.json",
-    "manifest_path": "state/helix/manifest.json"
+    "admissions_path": "local/state/helix/admissions.jsonl",
+    "latest_path": "local/state/helix/admission_latest.json",
+    "manifest_path": "local/state/helix/manifest.json"
   },
   "helix": {
     "policy_path": "client/runtime/config/helix_policy.json",

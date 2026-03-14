@@ -14,10 +14,10 @@
   "paths": {
     "memory_dir": "client/memory/client/cognition/skills/mcp",
     "adaptive_index_path": "client/cognition/adaptive/client/cognition/skills/mcp/index.json",
-    "events_path": "state/client/cognition/skills/mcp_gateway/events.jsonl",
-    "latest_path": "state/client/cognition/skills/mcp_gateway/latest.json",
-    "receipts_path": "state/client/cognition/skills/mcp_gateway/receipts.jsonl",
+    "events_path": "local/state/client/cognition/skills/mcp_gateway/events.jsonl",
+    "latest_path": "local/state/client/cognition/skills/mcp_gateway/latest.json",
+    "receipts_path": "local/state/client/cognition/skills/mcp_gateway/receipts.jsonl",
     "registry_path": "client/cognition/skills/mcp/registry.json",
-    "installs_path": "state/client/cognition/skills/mcp_gateway/installs.json"
+    "installs_path": "local/state/client/cognition/skills/mcp_gateway/installs.json"
   }
 }

@@ -12,11 +12,11 @@
     "blocked"
   ],
   "paths": {
-    "trace_path": "state/observability/thought_action_trace.jsonl",
-    "postmortem_dir": "state/ops/postmortems",
-    "queue_path": "state/ops/trace_habit_autogenesis/queue.json",
-    "latest_path": "state/ops/trace_habit_autogenesis/latest.json",
-    "receipts_path": "state/ops/trace_habit_autogenesis/receipts.jsonl",
-    "reports_dir": "state/ops/trace_habit_autogenesis/reports"
+    "trace_path": "local/state/observability/thought_action_trace.jsonl",
+    "postmortem_dir": "local/state/ops/postmortems",
+    "queue_path": "local/state/ops/trace_habit_autogenesis/queue.json",
+    "latest_path": "local/state/ops/trace_habit_autogenesis/latest.json",
+    "receipts_path": "local/state/ops/trace_habit_autogenesis/receipts.jsonl",
+    "reports_dir": "local/state/ops/trace_habit_autogenesis/reports"
   }
 }

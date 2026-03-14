@@ -23,9 +23,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/honor/legion_honor_codex/state.json",
-    "latest_path": "state/honor/legion_honor_codex/latest.json",
-    "receipts_path": "state/honor/legion_honor_codex/receipts.jsonl",
-    "history_path": "state/honor/legion_honor_codex/history.jsonl"
+    "state_path": "local/state/honor/legion_honor_codex/state.json",
+    "latest_path": "local/state/honor/legion_honor_codex/latest.json",
+    "receipts_path": "local/state/honor/legion_honor_codex/receipts.jsonl",
+    "history_path": "local/state/honor/legion_honor_codex/history.jsonl"
   }
 }

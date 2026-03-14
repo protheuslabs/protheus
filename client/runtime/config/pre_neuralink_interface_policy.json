@@ -45,13 +45,13 @@
       "bci",
       "neural_link"
     ],
-    "path": "state/symbiosis/pre_neuralink_interface/handoff_contract.json"
+    "path": "local/state/symbiosis/pre_neuralink_interface/handoff_contract.json"
   },
   "paths": {
-    "state": "state/symbiosis/pre_neuralink_interface/state.json",
-    "latest": "state/symbiosis/pre_neuralink_interface/latest.json",
-    "signals": "state/symbiosis/pre_neuralink_interface/signals.jsonl",
-    "routes": "state/symbiosis/pre_neuralink_interface/routes.jsonl",
-    "receipts": "state/symbiosis/pre_neuralink_interface/receipts.jsonl"
+    "state": "local/state/symbiosis/pre_neuralink_interface/state.json",
+    "latest": "local/state/symbiosis/pre_neuralink_interface/latest.json",
+    "signals": "local/state/symbiosis/pre_neuralink_interface/signals.jsonl",
+    "routes": "local/state/symbiosis/pre_neuralink_interface/routes.jsonl",
+    "receipts": "local/state/symbiosis/pre_neuralink_interface/receipts.jsonl"
   }
 }

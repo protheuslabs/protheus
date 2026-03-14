@@ -35,7 +35,7 @@
   "helix_attestation": {
     "enabled": true,
     "mode": "shadow_advisory",
-    "latest_path": "state/helix/latest.json",
+    "latest_path": "local/state/helix/latest.json",
     "max_staleness_sec": 900
   }
 }

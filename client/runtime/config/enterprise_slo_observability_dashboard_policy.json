@@ -21,9 +21,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/observability/enterprise_slo_observability_dashboard/state.json",
-    "latest_path": "state/observability/enterprise_slo_observability_dashboard/latest.json",
-    "receipts_path": "state/observability/enterprise_slo_observability_dashboard/receipts.jsonl",
-    "history_path": "state/observability/enterprise_slo_observability_dashboard/history.jsonl"
+    "state_path": "local/state/observability/enterprise_slo_observability_dashboard/state.json",
+    "latest_path": "local/state/observability/enterprise_slo_observability_dashboard/latest.json",
+    "receipts_path": "local/state/observability/enterprise_slo_observability_dashboard/receipts.jsonl",
+    "history_path": "local/state/observability/enterprise_slo_observability_dashboard/history.jsonl"
   }
 }

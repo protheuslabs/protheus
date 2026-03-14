@@ -6,9 +6,9 @@
   "max_delay_hours": 2160,
   "require_cryptographic_delegation": true,
   "paths": {
-    "latest_path": "state/continuity/succession_continuity_planning/latest.json",
-    "receipts_path": "state/continuity/succession_continuity_planning/receipts.jsonl",
-    "state_path": "state/continuity/succession_continuity_planning/state.json",
-    "audit_path": "state/continuity/succession_continuity_planning/audit.jsonl"
+    "latest_path": "local/state/continuity/succession_continuity_planning/latest.json",
+    "receipts_path": "local/state/continuity/succession_continuity_planning/receipts.jsonl",
+    "state_path": "local/state/continuity/succession_continuity_planning/state.json",
+    "audit_path": "local/state/continuity/succession_continuity_planning/audit.jsonl"
   }
 }

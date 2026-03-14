@@ -12,7 +12,7 @@
     {
       "id": "runtime_state",
       "mode": "ignored",
-      "paths": ["state/**", "tmp/**", "client/runtime/local/logs/**"]
+      "paths": ["local/state/**", "tmp/**", "client/runtime/local/logs/**"]
     },
     {
       "id": "skills_local",
@@ -21,7 +21,7 @@
     }
   ],
   "required_ignore_patterns": [
-    "state/**",
+    "local/state/**",
     "tmp/",
     "client/runtime/local/logs/tool_raw/"
   ],

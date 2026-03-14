@@ -55,10 +55,10 @@
     }
   ],
   "paths": {
-    "latest_path": "state/ops/rust_hybrid_migration_program/latest.json",
-    "receipts_path": "state/ops/rust_hybrid_migration_program/receipts.jsonl",
-    "history_path": "state/ops/rust_hybrid_migration_program/history.jsonl",
-    "state_dir": "state/ops/rust_hybrid_migration_program/items",
-    "artifact_dir": "state/ops/rust_hybrid_migration_program/artifacts"
+    "latest_path": "local/state/ops/rust_hybrid_migration_program/latest.json",
+    "receipts_path": "local/state/ops/rust_hybrid_migration_program/receipts.jsonl",
+    "history_path": "local/state/ops/rust_hybrid_migration_program/history.jsonl",
+    "state_dir": "local/state/ops/rust_hybrid_migration_program/items",
+    "artifact_dir": "local/state/ops/rust_hybrid_migration_program/artifacts"
   }
 }

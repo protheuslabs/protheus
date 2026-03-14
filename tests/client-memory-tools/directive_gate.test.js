@@ -93,7 +93,7 @@ test('safe: read file in workspace => ALLOW', () => {
 });
 
 test('safe: write to allowlisted path => ALLOW', () => {
-  const result = evaluateTask('Write test output to ~/.openclaw/workspace/state/test.json');
+  const result = evaluateTask('Write test output to ~/.openclaw/workspace/local/state/test.json');
   assert.strictEqual(result.decision, 'ALLOW');
 });
 

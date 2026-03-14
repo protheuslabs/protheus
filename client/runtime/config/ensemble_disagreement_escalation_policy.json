@@ -5,9 +5,9 @@
   "min_models": 3,
   "high_risk_disagreement_threshold": 0.24,
   "paths": {
-    "ensemble_pack_dir": "state/sensory/eval/ensemble",
-    "output_dir": "state/sensory/analysis/ensemble_disagreement",
-    "latest_path": "state/sensory/analysis/ensemble_disagreement/latest.json",
-    "receipts_path": "state/sensory/analysis/ensemble_disagreement/receipts.jsonl"
+    "ensemble_pack_dir": "local/state/sensory/eval/ensemble",
+    "output_dir": "local/state/sensory/analysis/ensemble_disagreement",
+    "latest_path": "local/state/sensory/analysis/ensemble_disagreement/latest.json",
+    "receipts_path": "local/state/sensory/analysis/ensemble_disagreement/receipts.jsonl"
   }
 }

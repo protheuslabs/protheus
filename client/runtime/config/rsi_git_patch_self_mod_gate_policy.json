@@ -21,8 +21,8 @@
   "paths": {
     "memory_dir": "client/memory/security/rsi_git_patch_self_mod_gate",
     "adaptive_index_path": "client/cognition/adaptive/security/rsi_git_patch_self_mod_gate/index.json",
-    "events_path": "state/security/rsi_git_patch_self_mod_gate/events.jsonl",
-    "latest_path": "state/security/rsi_git_patch_self_mod_gate/latest.json",
-    "receipts_path": "state/security/rsi_git_patch_self_mod_gate/receipts.jsonl"
+    "events_path": "local/state/security/rsi_git_patch_self_mod_gate/events.jsonl",
+    "latest_path": "local/state/security/rsi_git_patch_self_mod_gate/latest.json",
+    "receipts_path": "local/state/security/rsi_git_patch_self_mod_gate/receipts.jsonl"
   }
 }

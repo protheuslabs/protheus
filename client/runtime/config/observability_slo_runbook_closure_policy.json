@@ -6,7 +6,7 @@
     "runbook_path": "docs/client/OPERATOR_RUNBOOK.md"
   },
   "outputs": {
-    "latest_path": "state/ops/observability_slo_runbook_closure/latest.json",
-    "history_path": "state/ops/observability_slo_runbook_closure/history.jsonl"
+    "latest_path": "local/state/ops/observability_slo_runbook_closure/latest.json",
+    "history_path": "local/state/ops/observability_slo_runbook_closure/history.jsonl"
   }
 }

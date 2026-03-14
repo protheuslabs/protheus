@@ -8,7 +8,7 @@ const SRS_PATH = resolve('docs/workspace/SRS.md');
 const PLAN_PATH = resolve('core/local/artifacts/blocked_external_unblock_plan_current.json');
 const EVIDENCE_PATH = resolve('core/local/artifacts/blocked_external_evidence_status_current.json');
 const OUT_JSON = resolve('core/local/artifacts/blocked_external_packet_gate_current.json');
-const OUT_MD = resolve('docs/workspace/BLOCKED_EXTERNAL_PACKET_GATE_CURRENT.md');
+const OUT_MD = resolve('local/workspace/reports/BLOCKED_EXTERNAL_PACKET_GATE_CURRENT.md');
 
 function parseSrsStatuses(markdown) {
   const map = new Map();

@@ -2,6 +2,6 @@
   "version": "1.0",
   "enabled": true,
   "simplicity_policy_path": "client/runtime/config/simplicity_budget_policy.json",
-  "latest_path": "state/ops/simplicity_offset_backfill/latest.json",
-  "receipts_path": "state/ops/simplicity_offset_backfill/receipts.jsonl"
+  "latest_path": "local/state/ops/simplicity_offset_backfill/latest.json",
+  "receipts_path": "local/state/ops/simplicity_offset_backfill/receipts.jsonl"
 }

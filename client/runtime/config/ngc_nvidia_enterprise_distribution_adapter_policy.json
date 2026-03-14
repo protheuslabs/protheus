@@ -12,9 +12,9 @@
     "support-lts"
   ],
   "paths": {
-    "manifest_path": "state/ops/ngc_nvidia_enterprise_distribution_adapter/manifest.json",
-    "channel_state_path": "state/ops/ngc_nvidia_enterprise_distribution_adapter/channel_state.json",
-    "latest_path": "state/ops/ngc_nvidia_enterprise_distribution_adapter/latest.json",
-    "history_path": "state/ops/ngc_nvidia_enterprise_distribution_adapter/history.jsonl"
+    "manifest_path": "local/state/ops/ngc_nvidia_enterprise_distribution_adapter/manifest.json",
+    "channel_state_path": "local/state/ops/ngc_nvidia_enterprise_distribution_adapter/channel_state.json",
+    "latest_path": "local/state/ops/ngc_nvidia_enterprise_distribution_adapter/latest.json",
+    "history_path": "local/state/ops/ngc_nvidia_enterprise_distribution_adapter/history.jsonl"
   }
 }

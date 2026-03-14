@@ -9,7 +9,7 @@
     "rollback_quality": 0.20
   },
   "outputs": {
-    "latest_path": "state/autonomy/execution_worthiness_gate/latest.json",
-    "history_path": "state/autonomy/execution_worthiness_gate/history.jsonl"
+    "latest_path": "local/state/autonomy/execution_worthiness_gate/latest.json",
+    "history_path": "local/state/autonomy/execution_worthiness_gate/history.jsonl"
   }
 }

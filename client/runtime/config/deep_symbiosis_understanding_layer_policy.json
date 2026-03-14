@@ -14,8 +14,8 @@
     "proactive_delta": 0.7
   },
   "state": {
-    "state_path": "state/symbiosis/deep_understanding/state.json",
-    "latest_path": "state/symbiosis/deep_understanding/latest.json",
-    "receipts_path": "state/symbiosis/deep_understanding/receipts.jsonl"
+    "state_path": "local/state/symbiosis/deep_understanding/state.json",
+    "latest_path": "local/state/symbiosis/deep_understanding/latest.json",
+    "receipts_path": "local/state/symbiosis/deep_understanding/receipts.jsonl"
   }
 }

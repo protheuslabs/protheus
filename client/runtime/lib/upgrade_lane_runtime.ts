@@ -57,9 +57,9 @@ function normalizePolicy(opts: AnyObj, policyPath: string, rawPolicy: AnyObj) {
   const defaultPaths = {
     memory_dir: 'memory/ops/lanes',
     adaptive_index_path: 'adaptive/ops/lanes/index.json',
-    events_path: 'state/ops/lanes/events.jsonl',
-    latest_path: 'state/ops/lanes/latest.json',
-    receipts_path: 'state/ops/lanes/receipts.jsonl'
+    events_path: 'local/state/ops/lanes/events.jsonl',
+    latest_path: 'local/state/ops/lanes/latest.json',
+    receipts_path: 'local/state/ops/lanes/receipts.jsonl'
   };
   const resolvedPaths: AnyObj = {};
   const pathKeys = new Set<string>([

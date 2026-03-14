@@ -9,8 +9,8 @@
   "execution_contract": {
     "runtime": "core/layer2/ops:srs_contract_runtime",
     "deterministic_receipt_required": true,
-    "mutable_state_path": "state/ops/srs_contract_runtime/V3-RACE-200/latest.json",
-    "history_path": "state/ops/srs_contract_runtime/history.jsonl"
+    "mutable_state_path": "local/state/ops/srs_contract_runtime/V3-RACE-200/latest.json",
+    "history_path": "local/state/ops/srs_contract_runtime/history.jsonl"
   },
   "deliverables": [
     {
@@ -19,11 +19,11 @@
     },
     {
       "type": "state_receipt",
-      "path": "state/ops/srs_contract_runtime/V3-RACE-200/latest.json"
+      "path": "local/state/ops/srs_contract_runtime/V3-RACE-200/latest.json"
     },
     {
       "type": "execution_history",
-      "path": "state/ops/srs_contract_runtime/history.jsonl"
+      "path": "local/state/ops/srs_contract_runtime/history.jsonl"
     }
   ],
   "validation": {

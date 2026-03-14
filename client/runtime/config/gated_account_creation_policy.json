@@ -20,8 +20,8 @@
     "mock_mode": false
   },
   "state": {
-    "state_path": "state/workflow/gated_account_creation/state.json",
-    "latest_path": "state/workflow/gated_account_creation/latest.json",
-    "receipts_path": "state/workflow/gated_account_creation/receipts.jsonl"
+    "state_path": "local/state/workflow/gated_account_creation/state.json",
+    "latest_path": "local/state/workflow/gated_account_creation/latest.json",
+    "receipts_path": "local/state/workflow/gated_account_creation/receipts.jsonl"
   }
 }

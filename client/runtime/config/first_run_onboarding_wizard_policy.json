@@ -38,8 +38,8 @@
     "disable_hint": "set PROTHEUS_ONBOARDING_DISABLE=1"
   },
   "paths": {
-    "latest_path": "state/ops/first_run_onboarding_wizard/latest.json",
-    "history_path": "state/ops/first_run_onboarding_wizard/history.jsonl",
-    "receipts_path": "state/ops/first_run_onboarding_wizard/receipts.jsonl"
+    "latest_path": "local/state/ops/first_run_onboarding_wizard/latest.json",
+    "history_path": "local/state/ops/first_run_onboarding_wizard/history.jsonl",
+    "receipts_path": "local/state/ops/first_run_onboarding_wizard/receipts.jsonl"
   }
 }

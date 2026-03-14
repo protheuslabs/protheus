@@ -11,15 +11,15 @@
   "rsi_policy_path": "client/runtime/config/rsi_bootstrap_policy.json",
   "rust_cutover_script": "client/runtime/systems/ops/rust_control_plane_cutover.ts",
   "profile_compat_script": "client/runtime/systems/ops/profile_compatibility_gate.ts",
-  "snapshot_path": "state/ops/hybrid_interface_stability_contract/snapshot.json",
+  "snapshot_path": "local/state/ops/hybrid_interface_stability_contract/snapshot.json",
   "auto_rollback_on_drift": true,
   "refresh_snapshot_on_apply": true,
   "paths": {
     "memory_dir": "client/memory/ops/hybrid_interface_stability_contract",
     "adaptive_index_path": "client/cognition/adaptive/ops/hybrid_interface_stability_contract/index.json",
-    "events_path": "state/ops/hybrid_interface_stability_contract/events.jsonl",
-    "latest_path": "state/ops/hybrid_interface_stability_contract/latest.json",
-    "receipts_path": "state/ops/hybrid_interface_stability_contract/receipts.jsonl",
-    "hybrid_state_path": "state/ops/hybrid_interface_stability_contract/state.json"
+    "events_path": "local/state/ops/hybrid_interface_stability_contract/events.jsonl",
+    "latest_path": "local/state/ops/hybrid_interface_stability_contract/latest.json",
+    "receipts_path": "local/state/ops/hybrid_interface_stability_contract/receipts.jsonl",
+    "hybrid_state_path": "local/state/ops/hybrid_interface_stability_contract/state.json"
   }
 }

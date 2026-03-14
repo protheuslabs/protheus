@@ -10,8 +10,8 @@
     "diagnostics"
   ],
   "outputs": {
-    "state_path": "state/routing/model_variant_profile/state.json",
-    "latest_path": "state/routing/model_variant_profile/latest.json",
-    "history_path": "state/routing/model_variant_profile/history.jsonl"
+    "state_path": "local/state/routing/model_variant_profile/state.json",
+    "latest_path": "local/state/routing/model_variant_profile/latest.json",
+    "history_path": "local/state/routing/model_variant_profile/history.jsonl"
   }
 }

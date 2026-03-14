@@ -25,8 +25,8 @@
     "require_signed_exception_owner": true
   },
   "outputs": {
-    "latest_path": "state/security/review_program/latest.json",
-    "history_path": "state/security/review_program/history.jsonl",
-    "exceptions_path": "state/security/review_program/exceptions.jsonl"
+    "latest_path": "local/state/security/review_program/latest.json",
+    "history_path": "local/state/security/review_program/history.jsonl",
+    "exceptions_path": "local/state/security/review_program/exceptions.jsonl"
   }
 }

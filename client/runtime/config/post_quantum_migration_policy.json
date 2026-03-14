@@ -31,10 +31,10 @@
   "paths": {
     "key_lifecycle_policy_path": "client/runtime/config/key_lifecycle_policy.json",
     "crypto_agility_contract_path": "client/runtime/config/crypto_agility_contract.json",
-    "state_path": "state/security/post_quantum_migration/state.json",
-    "latest_path": "state/security/post_quantum_migration/latest.json",
-    "receipts_path": "state/security/post_quantum_migration/receipts.jsonl",
-    "surface_manifest_path": "state/security/post_quantum_migration/surface_manifest.json"
+    "state_path": "local/state/security/post_quantum_migration/state.json",
+    "latest_path": "local/state/security/post_quantum_migration/latest.json",
+    "receipts_path": "local/state/security/post_quantum_migration/receipts.jsonl",
+    "surface_manifest_path": "local/state/security/post_quantum_migration/surface_manifest.json"
   },
   "critical_paths": [
     "client/runtime/systems/security",

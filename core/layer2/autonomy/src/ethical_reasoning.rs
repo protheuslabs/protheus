@@ -59,13 +59,13 @@ fn default_policy(root: &Path) -> EthicalPolicy {
         max_prior_delta_per_run: 0.03,
         weaver_latest_path: resolve_runtime_path(
             root,
-            Some("state/autonomy/weaver/latest.json"),
-            "state/autonomy/weaver/latest.json",
+            Some("local/state/autonomy/weaver/latest.json"),
+            "local/state/autonomy/weaver/latest.json",
         ),
         mirror_latest_path: resolve_runtime_path(
             root,
-            Some("state/autonomy/mirror_organ/latest.json"),
-            "state/autonomy/mirror_organ/latest.json",
+            Some("local/state/autonomy/mirror_organ/latest.json"),
+            "local/state/autonomy/mirror_organ/latest.json",
         ),
     }
 }
@@ -185,14 +185,14 @@ fn load_policy(root: &Path, explicit: Option<&Path>) -> EthicalPolicy {
             integration
                 .get("weaver_latest_path")
                 .and_then(Value::as_str),
-            "state/autonomy/weaver/latest.json",
+            "local/state/autonomy/weaver/latest.json",
         );
         policy.mirror_latest_path = resolve_runtime_path(
             root,
             integration
                 .get("mirror_latest_path")
                 .and_then(Value::as_str),
-            "state/autonomy/mirror_organ/latest.json",
+            "local/state/autonomy/mirror_organ/latest.json",
         );
     }
 
@@ -607,9 +607,9 @@ mod tests {
         let root = tmp.path();
 
         let policy_path = root.join("config/ethical_reasoning_policy.json");
-        let state_dir = root.join("state/autonomy/ethical_reasoning");
-        let weaver_path = root.join("state/autonomy/weaver/latest.json");
-        let mirror_path = root.join("state/autonomy/mirror_organ/latest.json");
+        let state_dir = root.join("local/state/autonomy/ethical_reasoning");
+        let weaver_path = root.join("local/state/autonomy/weaver/latest.json");
+        let mirror_path = root.join("local/state/autonomy/mirror_organ/latest.json");
 
         write_json_atomic(
             &policy_path,

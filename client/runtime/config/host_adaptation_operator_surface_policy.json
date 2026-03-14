@@ -3,9 +3,9 @@
   "schema_version": "1.0",
   "enabled": true,
   "first_run_auto_adapt": true,
-  "state_path": "state/ops/host_adaptation_operator_surface/latest.json",
-  "history_path": "state/ops/host_adaptation_operator_surface/history.jsonl",
-  "oracle_state_path": "state/ops/platform_oracle_hostprofile/latest.json",
-  "channel_state_path": "state/ops/platform_adaptation_channel_runtime/latest.json",
-  "matrix_state_path": "state/ops/platform_universal_abstraction_matrix/latest.json"
+  "state_path": "local/state/ops/host_adaptation_operator_surface/latest.json",
+  "history_path": "local/state/ops/host_adaptation_operator_surface/history.jsonl",
+  "oracle_state_path": "local/state/ops/platform_oracle_hostprofile/latest.json",
+  "channel_state_path": "local/state/ops/platform_adaptation_channel_runtime/latest.json",
+  "matrix_state_path": "local/state/ops/platform_universal_abstraction_matrix/latest.json"
 }

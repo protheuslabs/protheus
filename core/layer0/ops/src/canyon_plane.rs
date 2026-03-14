@@ -137,7 +137,7 @@ fn top1_benchmark_paths(root: &Path) -> Vec<PathBuf> {
             .join("ops")
             .join("top1_assurance")
             .join("benchmark_latest.json"),
-        root.join("state/ops/top1_assurance/benchmark_latest.json"),
+        root.join("local/state/ops/top1_assurance/benchmark_latest.json"),
         root.join(
             "docs/client/reports/runtime_snapshots/ops/proof_pack/top1_benchmark_snapshot.json",
         ),
@@ -371,6 +371,7 @@ fn efficiency_command(
     let cold_start_ms = start.elapsed().as_millis() as u64;
 
     let benchmark_idle = root
+        .join("local")
         .join("state")
         .join("ops")
         .join("top1_assurance")
@@ -1244,7 +1245,7 @@ fn ecosystem_command(
             .flags
             .get("target-dir")
             .map(PathBuf::from)
-            .unwrap_or_else(|| root.join("state").join("canyon_init_project"));
+            .unwrap_or_else(|| root.join("local").join("state").join("canyon_init_project"));
         let template = clean(
             parsed
                 .flags
@@ -1373,7 +1374,7 @@ fn ecosystem_command(
             .flags
             .get("target-dir")
             .map(PathBuf::from)
-            .unwrap_or_else(|| root.join("state").join("marketplace_install").join(&hand_id));
+            .unwrap_or_else(|| root.join("local").join("state").join("marketplace_install").join(&hand_id));
         fs::create_dir_all(&target).map_err(|err| format!("marketplace_install_dir_failed:{err}"))?;
         fs::write(
             target.join("PROTHEUS_HAND.json"),

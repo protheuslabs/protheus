@@ -3,14 +3,14 @@
   "enabled": true,
   "shadow_only": true,
   "paths": {
-    "latest_path": "state/ops/holo_overlay_compiler/latest.json",
-    "receipts_path": "state/ops/holo_overlay_compiler/receipts.jsonl",
-    "overlay_path": "state/ops/holo_overlays/latest.json",
-    "fusion_path": "state/fractal/symbiotic_fusion_chamber/latest.json",
-    "resonance_path": "state/fractal/resonance_field_gates/latest.json",
-    "inversion_path": "state/autonomy/inversion/latest.json",
-    "runtime_path": "state/ops/protheus_top/latest.json",
-    "router_path": "state/routing/model_router/latest.json",
-    "weaver_path": "state/weaver/latest.json"
+    "latest_path": "local/state/ops/holo_overlay_compiler/latest.json",
+    "receipts_path": "local/state/ops/holo_overlay_compiler/receipts.jsonl",
+    "overlay_path": "local/state/ops/holo_overlays/latest.json",
+    "fusion_path": "local/state/fractal/symbiotic_fusion_chamber/latest.json",
+    "resonance_path": "local/state/fractal/resonance_field_gates/latest.json",
+    "inversion_path": "local/state/autonomy/inversion/latest.json",
+    "runtime_path": "local/state/ops/protheus_top/latest.json",
+    "router_path": "local/state/routing/model_router/latest.json",
+    "weaver_path": "local/state/weaver/latest.json"
   }
 }

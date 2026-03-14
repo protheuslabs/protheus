@@ -16,7 +16,7 @@
     { "id": "V3-RACE-159", "module_path": "client/runtime/systems/economy/model_access_tier_governance.ts", "policy_path": "client/runtime/config/model_access_tier_policy.json", "user_paths": ["client/memory/economy/model_access", "client/cognition/adaptive/economy/model_access"] }
   ],
   "paths": {
-    "latest_path": "state/ops/collective_intelligence_contract_check/latest.json",
-    "receipts_path": "state/ops/collective_intelligence_contract_check/receipts.jsonl"
+    "latest_path": "local/state/ops/collective_intelligence_contract_check/latest.json",
+    "receipts_path": "local/state/ops/collective_intelligence_contract_check/receipts.jsonl"
   }
 }

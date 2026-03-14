@@ -21,9 +21,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/security/mirrorreaper_tier4_resource_inversion/state.json",
-    "latest_path": "state/security/mirrorreaper_tier4_resource_inversion/latest.json",
-    "receipts_path": "state/security/mirrorreaper_tier4_resource_inversion/receipts.jsonl",
-    "history_path": "state/security/mirrorreaper_tier4_resource_inversion/history.jsonl"
+    "state_path": "local/state/security/mirrorreaper_tier4_resource_inversion/state.json",
+    "latest_path": "local/state/security/mirrorreaper_tier4_resource_inversion/latest.json",
+    "receipts_path": "local/state/security/mirrorreaper_tier4_resource_inversion/receipts.jsonl",
+    "history_path": "local/state/security/mirrorreaper_tier4_resource_inversion/history.jsonl"
   }
 }

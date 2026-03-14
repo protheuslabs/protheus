@@ -3,7 +3,7 @@
   "enabled": true,
   "escrow_required_threshold_usd": 100,
   "max_fee_rate": 0.05,
-  "receipts_path": "state/finance/agent_settlement_extension/receipts.jsonl",
-  "ledger_path": "state/finance/agent_settlement_extension/ledger.json",
-  "latest_path": "state/finance/agent_settlement_extension/latest.json"
+  "receipts_path": "local/state/finance/agent_settlement_extension/receipts.jsonl",
+  "ledger_path": "local/state/finance/agent_settlement_extension/ledger.json",
+  "latest_path": "local/state/finance/agent_settlement_extension/latest.json"
 }

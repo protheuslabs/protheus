@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/training/contracts",
     "adaptive_index_path": "client/cognition/adaptive/training/contracts/index.json",
-    "events_path": "state/training\/contribution_contracts/events.jsonl",
-    "latest_path": "state/training\/contribution_contracts/latest.json",
-    "receipts_path": "state/training\/contribution_contracts/receipts.jsonl"
+    "events_path": "local/state/training\/contribution_contracts/events.jsonl",
+    "latest_path": "local/state/training\/contribution_contracts/latest.json",
+    "receipts_path": "local/state/training\/contribution_contracts/receipts.jsonl"
   }
 }

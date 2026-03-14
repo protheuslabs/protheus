@@ -30,7 +30,7 @@
     "kernel_live_key_forbidden": true,
     "secret_template_id": "wallet_dna_root_v1",
     "bootstrap_template_path": "client/runtime/config/bootstrap_wallet_proposal_template.json",
-    "genome_ledger_path": "state/brain/genome_ledger.jsonl",
+    "genome_ledger_path": "local/state/brain/genome_ledger.jsonl",
     "sovereign_root_tithe": {
       "enabled": true,
       "tithe_bps": 1000,

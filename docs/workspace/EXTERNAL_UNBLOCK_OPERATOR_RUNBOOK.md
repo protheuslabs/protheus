@@ -11,8 +11,8 @@ npm run -s ops:blocked-external:top10
 ```
 
 Outputs:
-- `docs/workspace/BLOCKED_EXTERNAL_UNBLOCK_PLAN.md`
-- `docs/workspace/BLOCKED_EXTERNAL_TOP10.md`
+- `local/workspace/reports/BLOCKED_EXTERNAL_UNBLOCK_PLAN.md`
+- `local/workspace/reports/BLOCKED_EXTERNAL_TOP10.md`
 
 ## 2) Prepare packet scaffolds (idempotent)
 

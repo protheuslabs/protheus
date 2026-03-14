@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "constitution_path": "docs/workspace/AGENT-CONSTITUTION.md",
-  "state_dir": "state/security/constitution_guardian",
+  "state_dir": "local/state/security/constitution_guardian",
   "veto_window_days": 14,
   "min_approval_note_chars": 12,
   "require_dual_approval": true,

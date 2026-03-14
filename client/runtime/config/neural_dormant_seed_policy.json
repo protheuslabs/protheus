@@ -20,7 +20,7 @@
   "paths": {
     "research_spec": "research/neural_dormant_seed/README.md",
     "governance_checklist": "research/neural_dormant_seed/governance_checklist.md",
-    "state": "state/symbiosis/neural_dormant_seed/latest.json",
-    "history": "state/symbiosis/neural_dormant_seed/history.jsonl"
+    "state": "local/state/symbiosis/neural_dormant_seed/latest.json",
+    "history": "local/state/symbiosis/neural_dormant_seed/history.jsonl"
   }
 }

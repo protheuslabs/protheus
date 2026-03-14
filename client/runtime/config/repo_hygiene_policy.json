@@ -4,7 +4,7 @@
     "client/runtime/local/memory/_snapshots/",
     "client/runtime/local/logs/tool_raw/",
     "tmp/",
-    "state/",
+    "local/state/",
     "client/runtime/local/logs/habits/"
   ],
   "blocked_globs": [
@@ -12,7 +12,7 @@
     "tests/client-memory-tools/temp_*/*",
     "client/cognition/habits/scripts/*.bak.*",
     "client/runtime/config/moltbook/credentials.json",
-    "state/security/secret_broker_key.txt",
+    "local/state/security/secret_broker_key.txt",
     "**/credentials.json",
     "**/token.json",
     "**/*.pem",
@@ -21,8 +21,8 @@
     "**/*.key"
   ],
   "allow_prefixes": [
-    "state/security/break_glass.jsonl",
-    "state/spine/runs/"
+    "local/state/security/break_glass.jsonl",
+    "local/state/spine/runs/"
   ],
   "allow_globs": [],
   "allow_new_js_twins": [],

@@ -581,11 +581,11 @@
         "predicted_yield_warn": 0.68
       },
       "paths": {
-        "regime_latest_path": "state/autonomy/fractal/regime/latest.json",
-        "mirror_latest_path": "state/autonomy/mirror_organ/latest.json",
-        "simulation_dir": "state/autonomy/simulations",
-        "red_team_runs_dir": "state/security/red_team/runs",
-        "drift_governor_path": "state/autonomy/drift_target_governor_state.json"
+        "regime_latest_path": "local/state/autonomy/fractal/regime/latest.json",
+        "mirror_latest_path": "local/state/autonomy/mirror_organ/latest.json",
+        "simulation_dir": "local/state/autonomy/simulations",
+        "red_team_runs_dir": "local/state/security/red_team/runs",
+        "drift_governor_path": "local/state/autonomy/drift_target_governor_state.json"
       }
     },
     "tree_search": {
@@ -659,9 +659,9 @@
       "max_payload_len": 480
     },
     "paths": {
-      "parity_confidence_path": "state/autonomy/inversion/parity_confidence.json",
-      "receipts_path": "state/autonomy/inversion/lens_gate_receipts.jsonl",
-      "feed_push_receipts_path": "state/autonomy/inversion/lens_gate_feed_push_receipts.jsonl",
+      "parity_confidence_path": "local/state/autonomy/inversion/parity_confidence.json",
+      "receipts_path": "local/state/autonomy/inversion/lens_gate_receipts.jsonl",
+      "feed_push_receipts_path": "local/state/autonomy/inversion/lens_gate_feed_push_receipts.jsonl",
       "persona_feed_root": "personas"
     }
   },

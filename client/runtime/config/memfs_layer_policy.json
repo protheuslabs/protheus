@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/fs",
     "adaptive_index_path": "client/cognition/adaptive/client/memory/fs/index.json",
-    "events_path": "state/memory\/memfs/events.jsonl",
-    "latest_path": "state/memory\/memfs/latest.json",
-    "receipts_path": "state/memory\/memfs/receipts.jsonl"
+    "events_path": "local/state/memory\/memfs/events.jsonl",
+    "latest_path": "local/state/memory\/memfs/latest.json",
+    "receipts_path": "local/state/memory\/memfs/receipts.jsonl"
   }
 }

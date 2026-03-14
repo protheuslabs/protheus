@@ -19,8 +19,8 @@
   "paths": {
     "memory_contracts_dir": "client/memory/contracts",
     "adaptive_index_path": "client/cognition/adaptive/contracts/index.json",
-    "latest_path": "state/contracts/soul_contracts/latest.json",
-    "history_path": "state/contracts/soul_contracts/history.jsonl",
-    "receipts_path": "state/contracts/soul_contracts/receipts.jsonl"
+    "latest_path": "local/state/contracts/soul_contracts/latest.json",
+    "history_path": "local/state/contracts/soul_contracts/history.jsonl",
+    "receipts_path": "local/state/contracts/soul_contracts/receipts.jsonl"
   }
 }

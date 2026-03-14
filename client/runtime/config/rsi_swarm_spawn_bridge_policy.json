@@ -15,9 +15,9 @@
   "paths": {
     "memory_dir": "client/memory/spawn/rsi_swarm_spawn_bridge",
     "adaptive_index_path": "client/cognition/adaptive/spawn/rsi_swarm_spawn_bridge/index.json",
-    "events_path": "state/spawn/rsi_swarm_spawn_bridge/events.jsonl",
-    "latest_path": "state/spawn/rsi_swarm_spawn_bridge/latest.json",
-    "receipts_path": "state/spawn/rsi_swarm_spawn_bridge/receipts.jsonl",
-    "bridge_state_path": "state/spawn/rsi_swarm_spawn_bridge/state.json"
+    "events_path": "local/state/spawn/rsi_swarm_spawn_bridge/events.jsonl",
+    "latest_path": "local/state/spawn/rsi_swarm_spawn_bridge/latest.json",
+    "receipts_path": "local/state/spawn/rsi_swarm_spawn_bridge/receipts.jsonl",
+    "bridge_state_path": "local/state/spawn/rsi_swarm_spawn_bridge/state.json"
   }
 }

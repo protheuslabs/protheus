@@ -20,9 +20,9 @@
     "common_dump": "generic_json"
   },
   "paths": {
-    "latest_path": "state/migration/importers/latest.json",
-    "receipts_path": "state/migration/importers/receipts.jsonl",
-    "reports_root": "state/migration/importers/reports",
-    "mapped_root": "state/migration/importers/mapped"
+    "latest_path": "local/state/migration/importers/latest.json",
+    "receipts_path": "local/state/migration/importers/receipts.jsonl",
+    "reports_root": "local/state/migration/importers/reports",
+    "mapped_root": "local/state/migration/importers/mapped"
   }
 }

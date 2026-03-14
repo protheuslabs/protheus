@@ -21,9 +21,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/ops/legal_regulatory_autodiff_governance_router/state.json",
-    "latest_path": "state/ops/legal_regulatory_autodiff_governance_router/latest.json",
-    "receipts_path": "state/ops/legal_regulatory_autodiff_governance_router/receipts.jsonl",
-    "history_path": "state/ops/legal_regulatory_autodiff_governance_router/history.jsonl"
+    "state_path": "local/state/ops/legal_regulatory_autodiff_governance_router/state.json",
+    "latest_path": "local/state/ops/legal_regulatory_autodiff_governance_router/latest.json",
+    "receipts_path": "local/state/ops/legal_regulatory_autodiff_governance_router/receipts.jsonl",
+    "history_path": "local/state/ops/legal_regulatory_autodiff_governance_router/history.jsonl"
   }
 }

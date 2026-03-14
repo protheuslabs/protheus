@@ -10,7 +10,7 @@
     "default_severity": "info"
   },
   "paths": {
-    "latest_path": "state/tools/shadow_tool_bridge/latest.json",
-    "history_path": "state/tools/shadow_tool_bridge/history.jsonl"
+    "latest_path": "local/state/tools/shadow_tool_bridge/latest.json",
+    "history_path": "local/state/tools/shadow_tool_bridge/history.jsonl"
   }
 }

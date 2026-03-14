@@ -257,21 +257,21 @@ fn load_policy(root: &Path, policy_override: Option<&String>) -> Policy {
             paths_obj
                 .and_then(|o| o.get("state_path"))
                 .and_then(Value::as_str),
-            "state/ops/backlog_registry/state.json",
+            "local/state/ops/backlog_registry/state.json",
         ),
         latest_path: path_from_policy(
             root,
             paths_obj
                 .and_then(|o| o.get("latest_path"))
                 .and_then(Value::as_str),
-            "state/ops/backlog_registry/latest.json",
+            "local/state/ops/backlog_registry/latest.json",
         ),
         receipts_path: path_from_policy(
             root,
             paths_obj
                 .and_then(|o| o.get("receipts_path"))
                 .and_then(Value::as_str),
-            "state/ops/backlog_registry/receipts.jsonl",
+            "local/state/ops/backlog_registry/receipts.jsonl",
         ),
     };
 

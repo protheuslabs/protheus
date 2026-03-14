@@ -72,7 +72,7 @@ fn stage_fixture_root() -> TempDir {
 }
 
 fn assimilation_latest_path(root: &Path) -> PathBuf {
-    root.join("state")
+    root.join("local").join("state")
         .join("ops")
         .join("assimilation_controller")
         .join("latest.json")

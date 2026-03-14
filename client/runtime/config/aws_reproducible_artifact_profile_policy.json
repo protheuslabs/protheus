@@ -10,9 +10,9 @@
   },
   "require_bottlerocket_profile": true,
   "paths": {
-    "manifest_path": "state/ops/aws_reproducible_artifact_profile/manifest.json",
-    "channel_state_path": "state/ops/aws_reproducible_artifact_profile/channel_state.json",
-    "latest_path": "state/ops/aws_reproducible_artifact_profile/latest.json",
-    "history_path": "state/ops/aws_reproducible_artifact_profile/history.jsonl"
+    "manifest_path": "local/state/ops/aws_reproducible_artifact_profile/manifest.json",
+    "channel_state_path": "local/state/ops/aws_reproducible_artifact_profile/channel_state.json",
+    "latest_path": "local/state/ops/aws_reproducible_artifact_profile/latest.json",
+    "history_path": "local/state/ops/aws_reproducible_artifact_profile/history.jsonl"
   }
 }

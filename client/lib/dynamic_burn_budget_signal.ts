@@ -9,7 +9,7 @@ type AnyObj = Record<string, any>;
 const REPO_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_BURN_ORACLE_LATEST_PATH = process.env.DYNAMIC_BURN_BUDGET_ORACLE_LATEST_PATH
   ? path.resolve(process.env.DYNAMIC_BURN_BUDGET_ORACLE_LATEST_PATH)
-  : path.join(REPO_ROOT, 'state', 'ops', 'dynamic_burn_budget_oracle', 'latest.json');
+  : path.join(REPO_ROOT, 'local', 'state', 'ops', 'dynamic_burn_budget_oracle', 'latest.json');
 
 function cleanText(v: unknown, maxLen = 240) {
   return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, maxLen);

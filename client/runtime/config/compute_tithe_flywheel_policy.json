@@ -16,18 +16,18 @@
     { "min_gpu_hours": 10000, "discount_rate": 0.7 }
   ],
   "paths": {
-    "contributions_path": "state/economy/contributions.json",
-    "donor_state_path": "state/economy/donor_state.json",
-    "latest_path": "state/economy/latest.json",
-    "receipts_path": "state/economy/receipts.jsonl",
-    "ledger_path": "state/economy/tithe_ledger.jsonl",
-    "event_stream_path": "state/ops/event_sourced_control_plane/events.jsonl",
-    "soul_marker_path": "state/soul/gpu_patrons.json",
-    "guard_hint_path": "state/security/guard/effective_tithe.json",
-    "fractal_hint_path": "state/fractal/donor_priority_hints.json",
-    "routing_hint_path": "state/routing/donor_priority_hints.json",
-    "model_hint_path": "state/routing/model_donor_priority_hints.json",
-    "risk_hint_path": "state/routing/risk_donor_priority_hints.json",
-    "chain_receipts_path": "state/blockchain/tithe_bridge_receipts.jsonl"
+    "contributions_path": "local/state/economy/contributions.json",
+    "donor_state_path": "local/state/economy/donor_state.json",
+    "latest_path": "local/state/economy/latest.json",
+    "receipts_path": "local/state/economy/receipts.jsonl",
+    "ledger_path": "local/state/economy/tithe_ledger.jsonl",
+    "event_stream_path": "local/state/ops/event_sourced_control_plane/events.jsonl",
+    "soul_marker_path": "local/state/soul/gpu_patrons.json",
+    "guard_hint_path": "local/state/security/guard/effective_tithe.json",
+    "fractal_hint_path": "local/state/fractal/donor_priority_hints.json",
+    "routing_hint_path": "local/state/routing/donor_priority_hints.json",
+    "model_hint_path": "local/state/routing/model_donor_priority_hints.json",
+    "risk_hint_path": "local/state/routing/risk_donor_priority_hints.json",
+    "chain_receipts_path": "local/state/blockchain/tithe_bridge_receipts.jsonl"
   }
 }

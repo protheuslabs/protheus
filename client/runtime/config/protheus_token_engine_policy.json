@@ -10,10 +10,10 @@
   "paths": {
     "memory_preferences_dir": "client/memory/economy/preferences",
     "adaptive_index_path": "client/cognition/adaptive/economy/preferences/index.json",
-    "balances_path": "state/economy/protheus_token_balances.json",
-    "ledger_path": "state/economy/protheus_token_ledger.jsonl",
-    "bridge_receipts_path": "state/blockchain/protheus_token_bridge.jsonl",
-    "latest_path": "state/economy/protheus_token_engine/latest.json",
-    "receipts_path": "state/economy/protheus_token_engine/receipts.jsonl"
+    "balances_path": "local/state/economy/protheus_token_balances.json",
+    "ledger_path": "local/state/economy/protheus_token_ledger.jsonl",
+    "bridge_receipts_path": "local/state/blockchain/protheus_token_bridge.jsonl",
+    "latest_path": "local/state/economy/protheus_token_engine/latest.json",
+    "receipts_path": "local/state/economy/protheus_token_engine/receipts.jsonl"
   }
 }

@@ -7,9 +7,9 @@
   "require_veto_window_elapsed": true,
   "max_actions_per_plan": 25,
   "sources": {
-    "organ_atrophy_latest_path": "state/autonomy/organs/atrophy/latest.json",
-    "weaver_pathway_state_path": "state/autonomy/weaver/pathway_state.json",
-    "assimilation_ledger_path": "state/assimilation/ledger.json"
+    "organ_atrophy_latest_path": "local/state/autonomy/organs/atrophy/latest.json",
+    "weaver_pathway_state_path": "local/state/autonomy/weaver/pathway_state.json",
+    "assimilation_ledger_path": "local/state/assimilation/ledger.json"
   },
   "limits": {
     "max_organ_candidates": 10,

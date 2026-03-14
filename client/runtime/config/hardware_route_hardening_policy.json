@@ -22,5 +22,5 @@
       "max_context_tokens": 32768
     }
   },
-  "state_path": "state/ops/hardware_route_hardening/latest.json"
+  "state_path": "local/state/ops/hardware_route_hardening/latest.json"
 }

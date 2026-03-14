@@ -386,7 +386,7 @@ mod tests {
                     "compute_budget_ms": 600
                 }
             },
-            "state_path": "state/ops/shadow_budget_governance/usage.json"
+            "state_path": "local/state/ops/shadow_budget_governance/usage.json"
         });
         fs::write(
             &policy_path,
@@ -432,7 +432,7 @@ mod tests {
         let exit = run(root, &args);
         assert_eq!(exit, 0);
 
-        let state_path = root.join("state/ops/shadow_budget_governance/usage.json");
+        let state_path = root.join("local/state/ops/shadow_budget_governance/usage.json");
         let state_raw = fs::read_to_string(&state_path).expect("state");
         let state: UsageState = serde_json::from_str(&state_raw).expect("decode");
         let usage = state.shadows.get("research_shadow").expect("shadow usage");

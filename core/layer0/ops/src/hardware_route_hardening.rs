@@ -286,7 +286,7 @@ mod tests {
                     "max_context_tokens": 1000
                 }
             },
-            "state_path": "state/ops/hardware_route_hardening/latest.json"
+            "state_path": "local/state/ops/hardware_route_hardening/latest.json"
         });
         let path = root.join("policy.json");
         fs::write(
@@ -333,7 +333,7 @@ mod tests {
         let exit = run(root, &args);
         assert_eq!(exit, 0);
 
-        let state_path = root.join("state/ops/hardware_route_hardening/latest.json");
+        let state_path = root.join("local/state/ops/hardware_route_hardening/latest.json");
         let raw = fs::read_to_string(state_path).expect("state");
         let out: Value = serde_json::from_str(&raw).expect("json");
         assert_eq!(
@@ -364,7 +364,7 @@ mod tests {
         let exit = run(root, &args);
         assert_eq!(exit, 0);
 
-        let state_path = root.join("state/ops/hardware_route_hardening/latest.json");
+        let state_path = root.join("local/state/ops/hardware_route_hardening/latest.json");
         let raw = fs::read_to_string(state_path).expect("state");
         let out: Value = serde_json::from_str(&raw).expect("json");
         let reasons = out

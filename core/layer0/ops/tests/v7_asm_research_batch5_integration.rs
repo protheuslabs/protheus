@@ -362,6 +362,7 @@ fn v7_asm_006_abac_lane_runs_via_security_plane_and_writes_flight_chain() {
     let latest_path = root
         .join("client")
         .join("runtime")
+        .join("local")
         .join("state")
         .join("security")
         .join("abac_policy_plane_latest.json");
@@ -379,6 +380,7 @@ fn v7_asm_006_abac_lane_runs_via_security_plane_and_writes_flight_chain() {
     let flight_path = root
         .join("client")
         .join("runtime")
+        .join("local")
         .join("state")
         .join("security")
         .join("abac_flight_recorder.jsonl");

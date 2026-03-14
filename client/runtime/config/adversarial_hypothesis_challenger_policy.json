@@ -6,9 +6,9 @@
   "min_support_events": 6,
   "unresolved_probability_floor": 0.78,
   "paths": {
-    "hypotheses_dir": "state/sensory/cross_signal/hypotheses",
-    "output_dir": "state/sensory/analysis/adversarial_challenger",
-    "latest_path": "state/sensory/analysis/adversarial_challenger/latest.json",
-    "receipts_path": "state/sensory/analysis/adversarial_challenger/receipts.jsonl"
+    "hypotheses_dir": "local/state/sensory/cross_signal/hypotheses",
+    "output_dir": "local/state/sensory/analysis/adversarial_challenger",
+    "latest_path": "local/state/sensory/analysis/adversarial_challenger/latest.json",
+    "receipts_path": "local/state/sensory/analysis/adversarial_challenger/receipts.jsonl"
   }
 }

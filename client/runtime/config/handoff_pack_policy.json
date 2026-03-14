@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "pack_dir": "state/ops/handoff_pack",
-  "receipts_path": "state/ops/handoff_simulation_receipts.jsonl",
+  "pack_dir": "local/state/ops/handoff_pack",
+  "receipts_path": "local/state/ops/handoff_simulation_receipts.jsonl",
   "sla_target_minutes": 45,
   "required_docs": [
     "docs/client/ARCHITECTURE_OWNERSHIP.md",

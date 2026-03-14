@@ -21,14 +21,14 @@
   },
   "bridge": {
     "enabled": true,
-    "incoming_dir": "state/sensory/offline_lab/artifacts",
+    "incoming_dir": "local/state/sensory/offline_lab/artifacts",
     "policy_path": "client/runtime/config/offline_statistical_lab_artifact_bridge_policy.json",
     "auto_run_bridge": true,
     "require_bridge_success": false
   },
   "paths": {
-    "output_dir": "state/research/offline_r_analytics_runner",
-    "latest_path": "state/research/offline_r_analytics_runner/latest.json",
-    "receipts_path": "state/research/offline_r_analytics_runner/receipts.jsonl"
+    "output_dir": "local/state/research/offline_r_analytics_runner",
+    "latest_path": "local/state/research/offline_r_analytics_runner/latest.json",
+    "receipts_path": "local/state/research/offline_r_analytics_runner/receipts.jsonl"
   }
 }

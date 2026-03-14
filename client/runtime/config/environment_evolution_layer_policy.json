@@ -14,9 +14,9 @@
     "min_samples_for_stability": 6
   },
   "state": {
-    "state_path": "state/assimilation/environment_evolution/state.json",
-    "latest_path": "state/assimilation/environment_evolution/latest.json",
-    "receipts_path": "state/assimilation/environment_evolution/receipts.jsonl",
-    "doctor_queue_path": "state/ops/autotest_doctor/environment_feedback_queue.jsonl"
+    "state_path": "local/state/assimilation/environment_evolution/state.json",
+    "latest_path": "local/state/assimilation/environment_evolution/latest.json",
+    "receipts_path": "local/state/assimilation/environment_evolution/receipts.jsonl",
+    "doctor_queue_path": "local/state/ops/autotest_doctor/environment_feedback_queue.jsonl"
   }
 }

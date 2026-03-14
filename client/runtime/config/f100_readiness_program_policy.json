@@ -3,21 +3,21 @@
   "schema_version": "1.0",
   "strict_default": true,
   "outputs": {
-    "state_root": "state/ops/f100_readiness_program",
-    "latest_path": "state/ops/f100_readiness_program/latest.json",
-    "history_path": "state/ops/f100_readiness_program/history.jsonl"
+    "state_root": "local/state/ops/f100_readiness_program",
+    "latest_path": "local/state/ops/f100_readiness_program/latest.json",
+    "history_path": "local/state/ops/f100_readiness_program/history.jsonl"
   },
   "lanes": {
     "V6-F100-004": {
       "control_map_path": "client/runtime/config/compliance_control_map.json",
-      "bundle_path": "state/ops/compliance_evidence_bundle/latest.json"
+      "bundle_path": "local/state/ops/compliance_evidence_bundle/latest.json"
     },
     "V6-F100-005": {
       "profile_path": "client/runtime/config/one_million_performance_profile.json"
     },
     "V6-F100-006": {
       "contract_path": "client/runtime/config/multi_tenant_isolation_contract.json",
-      "adversarial_path": "state/security/multi_tenant_isolation_adversarial/latest.json"
+      "adversarial_path": "local/state/security/multi_tenant_isolation_adversarial/latest.json"
     },
     "V6-F100-007": {
       "registry_path": "client/runtime/config/api_cli_contract_registry.json",
@@ -25,7 +25,7 @@
     },
     "V6-F100-008": {
       "incident_policy_path": "client/runtime/config/oncall_incident_policy.json",
-      "gameday_path": "state/ops/oncall_gameday/latest.json",
+      "gameday_path": "local/state/ops/oncall_gameday/latest.json",
       "target_mtta_minutes": 5,
       "target_mttr_minutes": 30,
       "required_docs": [
@@ -35,7 +35,7 @@
     },
     "V6-F100-009": {
       "bootstrap_script": "scripts/onboarding/protheus_onboarding_bootstrap.sh",
-      "metrics_path": "state/ops/onboarding_portal/success_metrics.json",
+      "metrics_path": "local/state/ops/onboarding_portal/success_metrics.json",
       "track_docs": [
         "docs/client/onboarding/operator.md",
         "docs/client/onboarding/backend.md",
@@ -55,7 +55,7 @@
       "required_artifact_paths": [
         "client/runtime/config/f100_reliability_certification_policy.json",
         "client/runtime/config/supply_chain_provenance_v2_policy.json",
-        "state/ops/f100_reliability_certification/latest.json"
+        "local/state/ops/f100_reliability_certification/latest.json"
       ]
     },
     "V6-F100-011": {
@@ -63,8 +63,8 @@
       "surface_policy_path": "client/runtime/config/operator_surface_consistency_policy.json"
     },
     "V6-F100-012": {
-      "scorecard_path": "state/ops/executive_readiness_scorecard/latest.json",
-      "history_path": "state/ops/executive_readiness_scorecard/history.jsonl"
+      "scorecard_path": "local/state/ops/executive_readiness_scorecard/latest.json",
+      "history_path": "local/state/ops/executive_readiness_scorecard/history.jsonl"
     },
     "V6-F100-035": {
       "roots": ["crates"],

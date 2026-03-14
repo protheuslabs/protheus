@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/runtime/actors",
     "adaptive_index_path": "client/cognition/adaptive/runtime/actors/index.json",
-    "events_path": "state/runtime\/actor_substrate/events.jsonl",
-    "latest_path": "state/runtime\/actor_substrate/latest.json",
-    "receipts_path": "state/runtime\/actor_substrate/receipts.jsonl"
+    "events_path": "local/state/runtime\/actor_substrate/events.jsonl",
+    "latest_path": "local/state/runtime\/actor_substrate/latest.json",
+    "receipts_path": "local/state/runtime\/actor_substrate/receipts.jsonl"
   }
 }

@@ -3,10 +3,10 @@
   "enabled": true,
   "max_schema_version_jump": 1,
   "paths": {
-    "active_bundle_path": "state/sensory/detector_bundle/current.json",
-    "replay_fixture_path": "state/sensory/detector_bundle/replay_fixture.json",
-    "snapshot_dir": "state/sensory/analysis/detector_rollback/snapshots",
-    "history_path": "state/sensory/analysis/detector_rollback/history.jsonl",
-    "latest_path": "state/sensory/analysis/detector_rollback/latest.json"
+    "active_bundle_path": "local/state/sensory/detector_bundle/current.json",
+    "replay_fixture_path": "local/state/sensory/detector_bundle/replay_fixture.json",
+    "snapshot_dir": "local/state/sensory/analysis/detector_rollback/snapshots",
+    "history_path": "local/state/sensory/analysis/detector_rollback/history.jsonl",
+    "latest_path": "local/state/sensory/analysis/detector_rollback/latest.json"
   }
 }

@@ -11,9 +11,9 @@
   ],
   "max_open_missions_per_operator": 3,
   "paths": {
-    "state_path": "state/red_legion/command_center/state.json",
-    "latest_path": "state/red_legion/command_center/latest.json",
-    "receipts_path": "state/red_legion/command_center/receipts.jsonl",
-    "history_path": "state/red_legion/command_center/history.jsonl"
+    "state_path": "local/state/red_legion/command_center/state.json",
+    "latest_path": "local/state/red_legion/command_center/latest.json",
+    "receipts_path": "local/state/red_legion/command_center/receipts.jsonl",
+    "history_path": "local/state/red_legion/command_center/history.jsonl"
   }
 }

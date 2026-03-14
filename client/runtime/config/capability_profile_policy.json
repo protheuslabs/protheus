@@ -4,10 +4,10 @@
   "strict_validation": true,
   "schema_path": "client/runtime/config/capability_profile_schema.json",
   "state": {
-    "root": "state/assimilation/capability_profiles",
-    "profiles_dir": "state/assimilation/capability_profiles/profiles",
-    "receipts_path": "state/assimilation/capability_profiles/receipts.jsonl",
-    "latest_path": "state/assimilation/capability_profiles/latest.json"
+    "root": "local/state/assimilation/capability_profiles",
+    "profiles_dir": "local/state/assimilation/capability_profiles/profiles",
+    "receipts_path": "local/state/assimilation/capability_profiles/receipts.jsonl",
+    "latest_path": "local/state/assimilation/capability_profiles/latest.json"
   },
   "onboarding": {
     "profile_only_path_enabled": true,

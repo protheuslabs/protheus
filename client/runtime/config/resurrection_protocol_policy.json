@@ -8,18 +8,18 @@
   "max_shards": 16,
   "allow_missing_sources": true,
   "sources": [
-    { "path": "state/continuity/vault/latest.json", "required": false },
-    { "path": "state/continuity/vault/index.json", "required": false },
-    { "path": "state/security/soul_token_guard.json", "required": false },
+    { "path": "local/state/continuity/vault/latest.json", "required": false },
+    { "path": "local/state/continuity/vault/index.json", "required": false },
+    { "path": "local/state/security/soul_token_guard.json", "required": false },
     { "path": "client/runtime/config/soul_token_guard_policy.json", "required": true },
     { "path": "client/runtime/config/session_continuity_vault_policy.json", "required": true },
     { "path": "client/runtime/config/helix_policy.json", "required": true },
     { "path": "codex.helix", "required": false }
   ],
   "state": {
-    "index_path": "state/continuity/resurrection/index.json",
-    "bundles_dir": "state/continuity/resurrection/bundles",
-    "recovery_dir": "state/continuity/resurrection/recovery",
-    "receipts_path": "state/continuity/resurrection/receipts.jsonl"
+    "index_path": "local/state/continuity/resurrection/index.json",
+    "bundles_dir": "local/state/continuity/resurrection/bundles",
+    "recovery_dir": "local/state/continuity/resurrection/recovery",
+    "receipts_path": "local/state/continuity/resurrection/receipts.jsonl"
   }
 }

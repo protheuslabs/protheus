@@ -693,22 +693,22 @@ fn load_policy(root: &Path) -> MemoryAmbientPolicy {
         latest_path: normalize_path(
             root,
             memory.and_then(|v| v.get("latest_path")),
-            "state/client/memory/ambient/latest.json",
+            "local/state/client/memory/ambient/latest.json",
         ),
         receipts_path: normalize_path(
             root,
             memory.and_then(|v| v.get("receipts_path")),
-            "state/client/memory/ambient/receipts.jsonl",
+            "local/state/client/memory/ambient/receipts.jsonl",
         ),
         status_path: normalize_path(
             root,
             state.and_then(|v| v.get("status_path")),
-            "state/ops/mech_suit_mode/latest.json",
+            "local/state/ops/mech_suit_mode/latest.json",
         ),
         history_path: normalize_path(
             root,
             state.and_then(|v| v.get("history_path")),
-            "state/ops/mech_suit_mode/history.jsonl",
+            "local/state/ops/mech_suit_mode/history.jsonl",
         ),
         policy_path,
     }

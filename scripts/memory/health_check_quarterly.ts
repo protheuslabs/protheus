@@ -190,7 +190,7 @@ console.log('BACKUP THIS AGENT:');
 console.log();
 console.log('Required snapshots:');
 console.log('  ☐ ~/.openclaw/workspace/memory/ (nodes + indices)');
-console.log('  ☐ ~/.openclaw/workspace/state/memory/ (snapshots + rebuild cache)');
+console.log('  ☐ ~/.openclaw/workspace/local/state/memory/ (snapshots + rebuild cache)');
 console.log('  ☐ ~/.openclaw/workspace/client/cognition/skills/ (if custom)');
 console.log('  ☐ ~/.openclaw/workspace/client/runtime/config/ (model_adapters.json + credentials)');
 console.log('  ☐ Cron list: openclaw cron list → save to file');
@@ -200,7 +200,7 @@ console.log('  tar -czf protheus-backup-$(date +%Y%m%d).tar.gz \\\
 ');
 console.log('    ~/.openclaw/workspace/memory/ \\\
 ');
-console.log('    ~/.openclaw/workspace/state/memory/ \\\
+console.log('    ~/.openclaw/workspace/local/state/memory/ \\\
 ');
 console.log('    ~/.openclaw/workspace/client/runtime/config/');
 console.log();

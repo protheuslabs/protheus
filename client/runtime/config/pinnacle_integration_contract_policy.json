@@ -52,7 +52,7 @@
     }
   ],
   "paths": {
-    "latest_path": "state/ops/pinnacle_integration_contract_check/latest.json",
-    "receipts_path": "state/ops/pinnacle_integration_contract_check/receipts.jsonl"
+    "latest_path": "local/state/ops/pinnacle_integration_contract_check/latest.json",
+    "receipts_path": "local/state/ops/pinnacle_integration_contract_check/receipts.jsonl"
   }
 }

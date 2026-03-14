@@ -5,8 +5,8 @@
   "min_participants": 2,
   "max_recent_contributions": 200,
   "paths": {
-    "latest_path": "state/ops/cross_instance_federated_learning/latest.json",
-    "receipts_path": "state/ops/cross_instance_federated_learning/receipts.jsonl",
-    "state_path": "state/ops/cross_instance_federated_learning/state.json"
+    "latest_path": "local/state/ops/cross_instance_federated_learning/latest.json",
+    "receipts_path": "local/state/ops/cross_instance_federated_learning/receipts.jsonl",
+    "state_path": "local/state/ops/cross_instance_federated_learning/state.json"
   }
 }

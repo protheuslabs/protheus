@@ -5,7 +5,7 @@
     "canary_pass_rate_min": 0.60
   },
   "outputs": {
-    "latest_path": "state/ops/release_gate_canary_rollback_enforcer/latest.json",
-    "history_path": "state/ops/release_gate_canary_rollback_enforcer/history.jsonl"
+    "latest_path": "local/state/ops/release_gate_canary_rollback_enforcer/latest.json",
+    "history_path": "local/state/ops/release_gate_canary_rollback_enforcer/history.jsonl"
   }
 }

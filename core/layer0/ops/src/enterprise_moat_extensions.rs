@@ -1014,7 +1014,7 @@ pub(super) fn run_assistant_mode(
         "outputs": {
             "docs": "README.md",
             "tests": "cargo test --manifest-path core/layer0/ops/Cargo.toml",
-            "compliance": "state/ops/enterprise_hardening"
+            "compliance": "local/state/ops/enterprise_hardening"
         }
     });
     write_json(&guide_path, &guide)?;

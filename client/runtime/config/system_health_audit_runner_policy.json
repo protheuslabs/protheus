@@ -3,7 +3,7 @@
   "enabled": true,
   "check_timeout_ms": 300000,
   "report_dir": "research/system_health_audits",
-  "latest_path": "state/ops/system_health_audit/latest.json",
-  "receipts_path": "state/ops/system_health_audit/receipts.jsonl",
+  "latest_path": "local/state/ops/system_health_audit/latest.json",
+  "receipts_path": "local/state/ops/system_health_audit/receipts.jsonl",
   "full_mode_runs_test_ci": false
 }

@@ -70,7 +70,7 @@ fn v7_moat_and_genesis_lanes_are_behavior_proven() {
         .duration_since(UNIX_EPOCH)
         .expect("clock")
         .as_nanos();
-    let state_root = root.join("state").join(format!("run_{nonce}"));
+    let state_root = root.join("local").join("state").join(format!("run_{nonce}"));
     std::env::set_var("PROTHEUS_CORE_STATE_ROOT", &state_root);
     std::env::set_var("DIRECTIVE_KERNEL_SIGNING_KEY", "test-sign-key");
 
@@ -257,7 +257,7 @@ fn v7_genesis_truth_gate_and_thin_wrapper_fail_closed_when_unsafe() {
     let tmp = temp_root("moat_genesis_fail_closed");
     let root = tmp.path();
 
-    let state_root = root.join("state");
+    let state_root = root.join("local").join("state");
     std::env::set_var("PROTHEUS_CORE_STATE_ROOT", &state_root);
 
     // Truth gate must fail in strict mode when required gates are absent.

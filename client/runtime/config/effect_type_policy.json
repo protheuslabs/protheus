@@ -49,5 +49,5 @@
   "max_transition_shadow": 0.85,
   "max_total_shadow_per_workflow": 8,
   "emit_audit": true,
-  "audit_path": "state/runtime/effect_type/decisions.jsonl"
+  "audit_path": "local/state/runtime/effect_type/decisions.jsonl"
 }

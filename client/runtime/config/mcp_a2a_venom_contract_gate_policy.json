@@ -47,8 +47,8 @@
   "paths": {
     "memory_dir": "client/memory/security/mcp_a2a_venom_contract_gate",
     "adaptive_index_path": "client/cognition/adaptive/security/mcp_a2a_venom_contract_gate/index.json",
-    "events_path": "state/security/mcp_a2a_venom_contract_gate/events.jsonl",
-    "latest_path": "state/security/mcp_a2a_venom_contract_gate/latest.json",
-    "receipts_path": "state/security/mcp_a2a_venom_contract_gate/receipts.jsonl"
+    "events_path": "local/state/security/mcp_a2a_venom_contract_gate/events.jsonl",
+    "latest_path": "local/state/security/mcp_a2a_venom_contract_gate/latest.json",
+    "receipts_path": "local/state/security/mcp_a2a_venom_contract_gate/receipts.jsonl"
   }
 }

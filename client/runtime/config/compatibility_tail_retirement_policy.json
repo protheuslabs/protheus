@@ -10,7 +10,7 @@
     "ts_bootstrap').bootstrap(__filename, module);"
   ],
   "paths": {
-    "latest_path": "state/ops/compatibility_tail_retirement/latest.json",
-    "receipts_path": "state/ops/compatibility_tail_retirement/receipts.jsonl"
+    "latest_path": "local/state/ops/compatibility_tail_retirement/latest.json",
+    "receipts_path": "local/state/ops/compatibility_tail_retirement/receipts.jsonl"
   }
 }

@@ -61,7 +61,7 @@ fn runtime_config_path(repo_root: &Path, file_name: &str) -> PathBuf {
 }
 
 fn runtime_state_root(repo_root: &Path) -> PathBuf {
-    runtime_root(repo_root).join("state")
+    runtime_root(repo_root).join("local").join("state")
 }
 
 fn ensure_parent(path: &Path) -> Result<(), String> {
@@ -1485,8 +1485,8 @@ fn goal_preservation_default_policy() -> Value {
             "signal_policy_path": "client/runtime/config/symbiosis_coherence_policy.json"
         },
         "output": {
-            "state_path": "state/security/goal_preservation/latest.json",
-            "receipts_path": "state/security/goal_preservation/receipts.jsonl"
+            "state_path": "local/state/security/goal_preservation/latest.json",
+            "receipts_path": "local/state/security/goal_preservation/receipts.jsonl"
         }
     })
 }
@@ -1653,21 +1653,21 @@ fn evaluate_symbiosis_gate(repo_root: &Path, policy: &Value) -> Value {
     let identity_latest = read_json_or(
         &resolve(
             "identity_latest_path",
-            "client/runtime/state/autonomy/identity_anchor/latest.json",
+            "client/runtime/local/state/autonomy/identity_anchor/latest.json",
         ),
         json!({}),
     );
     let pre_neural_state = read_json_or(
         &resolve(
             "pre_neuralink_state_path",
-            "client/runtime/state/symbiosis/pre_neuralink_interface/state.json",
+            "client/runtime/local/state/symbiosis/pre_neuralink_interface/state.json",
         ),
         json!({}),
     );
     let observer_latest = read_json_or(
         &resolve(
             "observer_mirror_latest_path",
-            "client/runtime/state/autonomy/observer_mirror/latest.json",
+            "client/runtime/local/state/autonomy/observer_mirror/latest.json",
         ),
         json!({}),
     );
@@ -1749,7 +1749,7 @@ pub fn run_goal_preservation_kernel(repo_root: &Path, argv: &[String]) -> (Value
             .get("output")
             .and_then(|v| v.get("state_path"))
             .and_then(Value::as_str)
-            .unwrap_or("state/security/goal_preservation/latest.json");
+            .unwrap_or("local/state/security/goal_preservation/latest.json");
         let p = PathBuf::from(raw);
         if p.is_absolute() {
             p
@@ -1762,7 +1762,7 @@ pub fn run_goal_preservation_kernel(repo_root: &Path, argv: &[String]) -> (Value
             .get("output")
             .and_then(|v| v.get("receipts_path"))
             .and_then(Value::as_str)
-            .unwrap_or("state/security/goal_preservation/receipts.jsonl");
+            .unwrap_or("local/state/security/goal_preservation/receipts.jsonl");
         let p = PathBuf::from(raw);
         if p.is_absolute() {
             p
@@ -1990,18 +1990,18 @@ fn dream_warden_default_policy() -> Value {
             "max_patch_candidates": 6
         },
         "signals": {
-            "collective_shadow_latest_path": "state/autonomy/collective_shadow/latest.json",
-            "observer_mirror_latest_path": "state/autonomy/observer_mirror/latest.json",
-            "red_team_latest_path": "state/security/red_team/latest.json",
-            "symbiosis_latest_path": "state/symbiosis/coherence/latest.json",
-            "gated_self_improvement_state_path": "state/autonomy/gated_self_improvement/state.json"
+            "collective_shadow_latest_path": "local/state/autonomy/collective_shadow/latest.json",
+            "observer_mirror_latest_path": "local/state/autonomy/observer_mirror/latest.json",
+            "red_team_latest_path": "local/state/security/red_team/latest.json",
+            "symbiosis_latest_path": "local/state/symbiosis/coherence/latest.json",
+            "gated_self_improvement_state_path": "local/state/autonomy/gated_self_improvement/state.json"
         },
         "outputs": {
-            "latest_path": "state/security/dream_warden/latest.json",
-            "history_path": "state/security/dream_warden/history.jsonl",
-            "receipts_path": "state/security/dream_warden/receipts.jsonl",
-            "patch_proposals_path": "state/security/dream_warden/patch_proposals.jsonl",
-            "ide_events_path": "state/security/dream_warden/ide_events.jsonl"
+            "latest_path": "local/state/security/dream_warden/latest.json",
+            "history_path": "local/state/security/dream_warden/history.jsonl",
+            "receipts_path": "local/state/security/dream_warden/receipts.jsonl",
+            "patch_proposals_path": "local/state/security/dream_warden/patch_proposals.jsonl",
+            "ide_events_path": "local/state/security/dream_warden/ide_events.jsonl"
         }
     })
 }
@@ -3880,6 +3880,7 @@ mod abac_policy_plane_tests {
             .path()
             .join("client")
             .join("runtime")
+            .join("local")
             .join("state")
             .join("security")
             .join("abac_flight_recorder.jsonl");
@@ -3963,6 +3964,7 @@ mod abac_policy_plane_tests {
             .path()
             .join("client")
             .join("runtime")
+            .join("local")
             .join("state")
             .join("security")
             .join("abac_flight_recorder.jsonl");

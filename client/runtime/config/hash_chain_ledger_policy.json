@@ -6,8 +6,8 @@
     "require_apply_flag": true
   },
   "paths": {
-    "chain_path": "state/audit/hash_chain_ledger/chain.jsonl",
-    "latest_path": "state/audit/hash_chain_ledger/latest.json",
-    "receipts_path": "state/audit/hash_chain_ledger/receipts.jsonl"
+    "chain_path": "local/state/audit/hash_chain_ledger/chain.jsonl",
+    "latest_path": "local/state/audit/hash_chain_ledger/latest.json",
+    "receipts_path": "local/state/audit/hash_chain_ledger/receipts.jsonl"
   }
 }

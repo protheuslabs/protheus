@@ -43,7 +43,7 @@
     "client/runtime/systems/security/skill_quarantine.ts"
   ],
   "outputs": {
-    "latest_path": "state/security/skill_install_path_enforcer/latest.json",
-    "history_path": "state/security/skill_install_path_enforcer/history.jsonl"
+    "latest_path": "local/state/security/skill_install_path_enforcer/latest.json",
+    "history_path": "local/state/security/skill_install_path_enforcer/history.jsonl"
   }
 }

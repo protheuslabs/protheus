@@ -89,18 +89,18 @@ fn default_policy(root: &Path) -> DebatePolicy {
         roles,
         latest_path: resolve_runtime_path(
             root,
-            Some("state/autonomy/multi_agent_debate/latest.json"),
-            "state/autonomy/multi_agent_debate/latest.json",
+            Some("local/state/autonomy/multi_agent_debate/latest.json"),
+            "local/state/autonomy/multi_agent_debate/latest.json",
         ),
         history_path: resolve_runtime_path(
             root,
-            Some("state/autonomy/multi_agent_debate/history.jsonl"),
-            "state/autonomy/multi_agent_debate/history.jsonl",
+            Some("local/state/autonomy/multi_agent_debate/history.jsonl"),
+            "local/state/autonomy/multi_agent_debate/history.jsonl",
         ),
         receipts_path: resolve_runtime_path(
             root,
-            Some("state/autonomy/multi_agent_debate/receipts.jsonl"),
-            "state/autonomy/multi_agent_debate/receipts.jsonl",
+            Some("local/state/autonomy/multi_agent_debate/receipts.jsonl"),
+            "local/state/autonomy/multi_agent_debate/receipts.jsonl",
         ),
     }
 }
@@ -273,17 +273,17 @@ fn load_policy(root: &Path, explicit: Option<&Path>) -> DebatePolicy {
         policy.latest_path = resolve_runtime_path(
             root,
             outputs.get("latest_path").and_then(Value::as_str),
-            "state/autonomy/multi_agent_debate/latest.json",
+            "local/state/autonomy/multi_agent_debate/latest.json",
         );
         policy.history_path = resolve_runtime_path(
             root,
             outputs.get("history_path").and_then(Value::as_str),
-            "state/autonomy/multi_agent_debate/history.jsonl",
+            "local/state/autonomy/multi_agent_debate/history.jsonl",
         );
         policy.receipts_path = resolve_runtime_path(
             root,
             outputs.get("receipts_path").and_then(Value::as_str),
-            "state/autonomy/multi_agent_debate/receipts.jsonl",
+            "local/state/autonomy/multi_agent_debate/receipts.jsonl",
         );
     }
 
@@ -777,9 +777,9 @@ mod tests {
         let dir = tempdir().expect("tmp");
         let root = dir.path();
         let policy_path = root.join("policy.json");
-        let latest = root.join("state/latest.json");
-        let history = root.join("state/history.jsonl");
-        let receipts = root.join("state/receipts.jsonl");
+        let latest = root.join("local/state/latest.json");
+        let history = root.join("local/state/history.jsonl");
+        let receipts = root.join("local/state/receipts.jsonl");
 
         let policy = json!({
             "enabled": true,

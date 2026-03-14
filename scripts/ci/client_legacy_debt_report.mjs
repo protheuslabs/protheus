@@ -111,7 +111,7 @@ function isRuntimeWrapper(file) {
 function classify(file) {
   if (file.startsWith('client/cli/apps/')) return 'move_to_apps';
   if (file.includes('/tests/')) return 'move_to_tests';
-  if (file.startsWith('client/runtime/state/')) return 'tracked_state_debt';
+  if (file.startsWith('client/runtime/local/state/')) return 'tracked_state_debt';
   if (file.startsWith('client/runtime/tmp/')) return 'tmp_generated_debt';
   if (file.startsWith('client/runtime/patches/')) return 'platform_patch_surface';
   if (file.startsWith('client/install.') || file.startsWith('client/runtime/deploy/') || file.startsWith('client/cli/bin/') || file.startsWith('packages/protheus-npm/') || file.startsWith('client/cli/tools/')) return 'installer_or_dev_shell';

@@ -79,7 +79,7 @@ fn v7_f100_and_moat_batch2_contracts_are_behavior_proven() {
     let _guard = test_env_lock();
     let tmp = temp_root("f100_moat_batch2");
     let root = tmp.path();
-    let state_root = root.join("state");
+    let state_root = root.join("local").join("state");
     std::env::set_var("PROTHEUS_CORE_STATE_ROOT", &state_root);
 
     write_text(
@@ -95,12 +95,12 @@ fn v7_f100_and_moat_batch2_contracts_are_behavior_proven() {
     );
     write_text(
         root,
-        "state/ops/top1_assurance/latest.json",
+        "local/state/ops/top1_assurance/latest.json",
         r#"{"ok":true,"proven_ratio":0.5}"#,
     );
     write_text(
         root,
-        "state/ops/f100_reliability_certification/latest.json",
+        "local/state/ops/f100_reliability_certification/latest.json",
         r#"{"ok":true,"tier":"gold"}"#,
     );
 

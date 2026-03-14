@@ -56,9 +56,9 @@
   "paths": {
     "memory_dir": "client/memory/client/cognition/adaptive/rsi_bootstrap_canonicalization",
     "adaptive_index_path": "client/cognition/adaptive/rsi/bootstrap_canonicalization/index.json",
-    "events_path": "state/client/cognition/adaptive/rsi_bootstrap_canonicalization/events.jsonl",
-    "latest_path": "state/client/cognition/adaptive/rsi_bootstrap_canonicalization/latest.json",
-    "receipts_path": "state/client/cognition/adaptive/rsi_bootstrap_canonicalization/receipts.jsonl",
-    "verification_state_path": "state/client/cognition/adaptive/rsi_bootstrap_canonicalization/state.json"
+    "events_path": "local/state/client/cognition/adaptive/rsi_bootstrap_canonicalization/events.jsonl",
+    "latest_path": "local/state/client/cognition/adaptive/rsi_bootstrap_canonicalization/latest.json",
+    "receipts_path": "local/state/client/cognition/adaptive/rsi_bootstrap_canonicalization/receipts.jsonl",
+    "verification_state_path": "local/state/client/cognition/adaptive/rsi_bootstrap_canonicalization/state.json"
   }
 }

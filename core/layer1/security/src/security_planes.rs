@@ -67,8 +67,8 @@ fn resolve_runtime_or_state(repo_root: &Path, raw: &str) -> PathBuf {
         return candidate;
     }
     let rel = normalize_rel(trimmed);
-    if rel.starts_with("state/") {
-        let stripped = rel.trim_start_matches("state/").to_string();
+    if rel.starts_with("local/state/") {
+        let stripped = rel.trim_start_matches("local/state/").to_string();
         return local_state_root(repo_root).join(stripped);
     }
     runtime_root(repo_root).join(rel)
@@ -254,7 +254,7 @@ fn guard_zones() -> Vec<GuardZone> {
             label: "habits_reflexes",
         },
         GuardZone {
-            prefix: "state/",
+            prefix: "local/state/",
             min_clearance: 1,
             label: "state_data",
         },
@@ -545,12 +545,12 @@ impl Default for AntiSabotagePolicy {
                 ".yaml".to_string(),
                 ".yml".to_string(),
             ],
-            state_dir: "state/security/anti_sabotage".to_string(),
-            quarantine_dir: "state/security/anti_sabotage/quarantine".to_string(),
-            snapshots_dir: "state/security/anti_sabotage/snapshots".to_string(),
-            incident_log: "state/security/anti_sabotage/incidents.jsonl".to_string(),
-            state_file: "state/security/anti_sabotage/state.json".to_string(),
-            watcher_state_file: "state/security/anti_sabotage/watcher_state.json".to_string(),
+            state_dir: "local/state/security/anti_sabotage".to_string(),
+            quarantine_dir: "local/state/security/anti_sabotage/quarantine".to_string(),
+            snapshots_dir: "local/state/security/anti_sabotage/snapshots".to_string(),
+            incident_log: "local/state/security/anti_sabotage/incidents.jsonl".to_string(),
+            state_file: "local/state/security/anti_sabotage/state.json".to_string(),
+            watcher_state_file: "local/state/security/anti_sabotage/watcher_state.json".to_string(),
             watcher_interval_ms: 30_000,
             max_snapshots: 20,
             verify_strict_default: true,
@@ -999,7 +999,7 @@ impl Default for ConstitutionPolicy {
         Self {
             version: "1.0".to_string(),
             constitution_path: "docs/workspace/AGENT-CONSTITUTION.md".to_string(),
-            state_dir: "state/security/constitution_guardian".to_string(),
+            state_dir: "local/state/security/constitution_guardian".to_string(),
             veto_window_days: 14,
             min_approval_note_chars: 12,
             require_dual_approval: true,
@@ -1669,9 +1669,9 @@ struct RemoteEmergencyPurge {
 impl Default for RemoteEmergencyPaths {
     fn default() -> Self {
         Self {
-            state: "state/security/remote_emergency_halt_state.json".to_string(),
-            nonce_store: "state/security/remote_emergency_halt_nonces.json".to_string(),
-            audit: "state/security/remote_emergency_halt_audit.jsonl".to_string(),
+            state: "local/state/security/remote_emergency_halt_state.json".to_string(),
+            nonce_store: "local/state/security/remote_emergency_halt_nonces.json".to_string(),
+            audit: "local/state/security/remote_emergency_halt_audit.jsonl".to_string(),
         }
     }
 }
@@ -1683,10 +1683,10 @@ impl Default for RemoteEmergencyPurge {
             allow_live_purge: false,
             confirm_phrase: "I UNDERSTAND THIS PURGES SENSITIVE STATE".to_string(),
             sensitive_paths: vec![
-                "state/security/soul_token_guard.json".to_string(),
-                "state/security/release_attestations.jsonl".to_string(),
-                "state/security/capability_leases.json".to_string(),
-                "state/security/capability_leases.jsonl".to_string(),
+                "local/state/security/soul_token_guard.json".to_string(),
+                "local/state/security/release_attestations.jsonl".to_string(),
+                "local/state/security/capability_leases.json".to_string(),
+                "local/state/security/capability_leases.jsonl".to_string(),
             ],
         }
     }
@@ -2045,9 +2045,9 @@ impl Default for SoulTokenGuardPolicy {
             bind_to_fingerprint: true,
             default_attestation_valid_hours: 24 * 7,
             key_env: "SOUL_TOKEN_GUARD_KEY".to_string(),
-            token_state_path: "state/security/soul_token_guard.json".to_string(),
-            audit_path: "state/security/soul_token_guard_audit.jsonl".to_string(),
-            attestation_path: "state/security/release_attestations.jsonl".to_string(),
+            token_state_path: "local/state/security/soul_token_guard.json".to_string(),
+            audit_path: "local/state/security/soul_token_guard_audit.jsonl".to_string(),
+            attestation_path: "local/state/security/release_attestations.jsonl".to_string(),
         }
     }
 }

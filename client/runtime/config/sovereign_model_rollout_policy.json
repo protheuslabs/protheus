@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/training/rollout_preferences",
     "adaptive_index_path": "client/cognition/adaptive/training/rollout/index.json",
-    "events_path": "state/training\/sovereign_rollout/events.jsonl",
-    "latest_path": "state/training\/sovereign_rollout/latest.json",
-    "receipts_path": "state/training\/sovereign_rollout/receipts.jsonl"
+    "events_path": "local/state/training\/sovereign_rollout/events.jsonl",
+    "latest_path": "local/state/training\/sovereign_rollout/latest.json",
+    "receipts_path": "local/state/training\/sovereign_rollout/receipts.jsonl"
   }
 }

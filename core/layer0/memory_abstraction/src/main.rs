@@ -269,12 +269,12 @@ fn memory_view_policy(root: &Path) -> Value {
     let latest_path = resolve_path(
         root,
         paths.get("latest_path").and_then(|v| v.as_str()),
-        "state/client/memory/abstraction/memory_view_latest.json",
+        "local/state/client/memory/abstraction/memory_view_latest.json",
     );
     let receipts_path = resolve_path(
         root,
         paths.get("receipts_path").and_then(|v| v.as_str()),
-        "state/client/memory/abstraction/memory_view_receipts.jsonl",
+        "local/state/client/memory/abstraction/memory_view_receipts.jsonl",
     );
     json!({
       "enabled": raw.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true),
@@ -455,12 +455,12 @@ fn analytics_policy(root: &Path) -> Value {
       "enabled": raw.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true),
       "drift_warn_pct": raw.get("drift_warn_pct").and_then(|v| v.as_f64()).unwrap_or(1.0).max(0.0),
       "drift_fail_pct": raw.get("drift_fail_pct").and_then(|v| v.as_f64()).unwrap_or(2.0).max(0.0),
-      "latest_path": resolve_path(root, paths.get("latest_path").and_then(|v| v.as_str()), "state/client/memory/abstraction/analytics_latest.json"),
-      "history_path": resolve_path(root, paths.get("history_path").and_then(|v| v.as_str()), "state/client/memory/abstraction/analytics_history.jsonl"),
-      "baseline_path": resolve_path(root, paths.get("baseline_path").and_then(|v| v.as_str()), "state/client/memory/abstraction/analytics_baseline.json"),
-      "view_receipts_path": resolve_path(root, paths.get("view_receipts_path").and_then(|v| v.as_str()), "state/client/memory/abstraction/memory_view_receipts.jsonl"),
-      "harness_receipts_path": resolve_path(root, paths.get("harness_receipts_path").and_then(|v| v.as_str()), "state/client/memory/abstraction/test_harness_receipts.jsonl"),
-      "security_alerts_path": resolve_path(root, paths.get("security_alerts_path").and_then(|v| v.as_str()), "state/security/human_alerts.jsonl")
+      "latest_path": resolve_path(root, paths.get("latest_path").and_then(|v| v.as_str()), "local/state/client/memory/abstraction/analytics_latest.json"),
+      "history_path": resolve_path(root, paths.get("history_path").and_then(|v| v.as_str()), "local/state/client/memory/abstraction/analytics_history.jsonl"),
+      "baseline_path": resolve_path(root, paths.get("baseline_path").and_then(|v| v.as_str()), "local/state/client/memory/abstraction/analytics_baseline.json"),
+      "view_receipts_path": resolve_path(root, paths.get("view_receipts_path").and_then(|v| v.as_str()), "local/state/client/memory/abstraction/memory_view_receipts.jsonl"),
+      "harness_receipts_path": resolve_path(root, paths.get("harness_receipts_path").and_then(|v| v.as_str()), "local/state/client/memory/abstraction/test_harness_receipts.jsonl"),
+      "security_alerts_path": resolve_path(root, paths.get("security_alerts_path").and_then(|v| v.as_str()), "local/state/security/human_alerts.jsonl")
     })
 }
 
@@ -720,9 +720,9 @@ fn harness_policy(root: &Path) -> Value {
     json!({
       "enabled": raw.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true),
       "drift_fail_pct": raw.get("drift_fail_pct").and_then(|v| v.as_f64()).unwrap_or(2.0).max(0.0),
-      "latest_path": resolve_path(root, paths.get("latest_path").and_then(|v| v.as_str()), "state/client/memory/abstraction/test_harness_latest.json"),
-      "receipts_path": resolve_path(root, paths.get("receipts_path").and_then(|v| v.as_str()), "state/client/memory/abstraction/test_harness_receipts.jsonl"),
-      "baseline_path": resolve_path(root, paths.get("baseline_path").and_then(|v| v.as_str()), "state/client/memory/abstraction/test_harness_baseline.json")
+      "latest_path": resolve_path(root, paths.get("latest_path").and_then(|v| v.as_str()), "local/state/client/memory/abstraction/test_harness_latest.json"),
+      "receipts_path": resolve_path(root, paths.get("receipts_path").and_then(|v| v.as_str()), "local/state/client/memory/abstraction/test_harness_receipts.jsonl"),
+      "baseline_path": resolve_path(root, paths.get("baseline_path").and_then(|v| v.as_str()), "local/state/client/memory/abstraction/test_harness_baseline.json")
     })
 }
 

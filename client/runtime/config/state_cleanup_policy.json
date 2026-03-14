@@ -7,87 +7,87 @@
       "max_delete_per_run": 200,
       "rules": [
         {
-          "path": "state/autonomy/runs",
+          "path": "local/state/autonomy/runs",
           "max_age_hours": 336,
           "suffixes": [".jsonl"]
         },
         {
-          "path": "state/autonomy/experiments",
+          "path": "local/state/autonomy/experiments",
           "max_age_hours": 336,
           "suffixes": [".jsonl"]
         },
         {
-          "path": "state/autonomy/receipts",
+          "path": "local/state/autonomy/receipts",
           "max_age_hours": 336,
           "suffixes": [".jsonl"]
         },
         {
-          "path": "state/autonomy/daily_budget",
-          "max_age_hours": 336,
-          "suffixes": [".json"]
-        },
-        {
-          "path": "state/actuation/receipts",
-          "max_age_hours": 720,
-          "suffixes": [".jsonl"]
-        },
-        {
-          "path": "state/sensory/receipts",
-          "max_age_hours": 336,
-          "suffixes": [".jsonl"]
-        },
-        {
-          "path": "state/routing/model_health/host",
+          "path": "local/state/autonomy/daily_budget",
           "max_age_hours": 336,
           "suffixes": [".json"]
         },
         {
-          "path": "state/routing/deep_thinker_receipts",
+          "path": "local/state/actuation/receipts",
           "max_age_hours": 720,
           "suffixes": [".jsonl"]
         },
         {
-          "path": "state/routing/model_catalog_handoffs",
+          "path": "local/state/sensory/receipts",
+          "max_age_hours": 336,
+          "suffixes": [".jsonl"]
+        },
+        {
+          "path": "local/state/routing/model_health/host",
+          "max_age_hours": 336,
+          "suffixes": [".json"]
+        },
+        {
+          "path": "local/state/routing/deep_thinker_receipts",
+          "max_age_hours": 720,
+          "suffixes": [".jsonl"]
+        },
+        {
+          "path": "local/state/routing/model_catalog_handoffs",
           "max_age_hours": 720,
           "suffixes": [".json"]
         },
         {
-          "path": "state/routing/model_catalog_proposals",
+          "path": "local/state/routing/model_catalog_proposals",
           "max_age_hours": 720,
           "suffixes": [".json"]
         },
         {
-          "path": "state/routing/model_catalog_trials",
+          "path": "local/state/routing/model_catalog_trials",
           "max_age_hours": 720,
           "suffixes": [".json"]
         },
         {
-          "path": "state/routing/prompt_result_cache",
+          "path": "local/state/routing/prompt_result_cache",
           "max_age_hours": 168,
           "suffixes": [".json"]
         },
         {
-          "path": "state/client/cognition/adaptive/workflows/orchestron/adversarial",
+          "path": "local/state/client/cognition/adaptive/workflows/orchestron/adversarial",
           "max_age_hours": 168,
           "suffixes": [".json"]
         },
         {
-          "path": "state/client/cognition/adaptive/workflows/executor/runs",
+          "path": "local/state/client/cognition/adaptive/workflows/executor/runs",
           "max_age_hours": 336,
           "suffixes": [".json"]
         },
         {
-          "path": "state/client/cognition/adaptive/workflows/executor/step_receipts",
+          "path": "local/state/client/cognition/adaptive/workflows/executor/step_receipts",
           "max_age_hours": 168,
           "suffixes": [".jsonl"]
         },
         {
-          "path": "state/client/cognition/adaptive/workflows/executor/mutations",
+          "path": "local/state/client/cognition/adaptive/workflows/executor/mutations",
           "max_age_hours": 336,
           "suffixes": [".jsonl"]
         },
         {
-          "path": "state/client/cognition/adaptive/workflows/executor/history.jsonl",
+          "path": "local/state/client/cognition/adaptive/workflows/executor/history.jsonl",
           "max_age_hours": 720,
           "suffixes": [".jsonl"]
         }

@@ -26,13 +26,13 @@
     "differential_rehydrate_limit": 8
   },
   "paths": {
-    "state_path": "state/ops/settlement_program/state.json",
-    "latest_path": "state/ops/settlement_program/latest.json",
-    "receipts_path": "state/ops/settlement_program/receipts.jsonl",
-    "history_path": "state/ops/settlement_program/history.jsonl",
-    "image_dir": "state/ops/settlement_program/images",
-    "module_dir": "state/ops/settlement_program/modules",
-    "vault_dir": "state/ops/settlement_program/vault",
-    "top_panel_path": "state/ops/protheus_top/settled_panel.json"
+    "state_path": "local/state/ops/settlement_program/state.json",
+    "latest_path": "local/state/ops/settlement_program/latest.json",
+    "receipts_path": "local/state/ops/settlement_program/receipts.jsonl",
+    "history_path": "local/state/ops/settlement_program/history.jsonl",
+    "image_dir": "local/state/ops/settlement_program/images",
+    "module_dir": "local/state/ops/settlement_program/modules",
+    "vault_dir": "local/state/ops/settlement_program/vault",
+    "top_panel_path": "local/state/ops/protheus_top/settled_panel.json"
   }
 }

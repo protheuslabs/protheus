@@ -255,7 +255,7 @@ mod tests {
         let policy = json!({
             "schema_id": "offline_runtime_guard_policy",
             "schema_version": "1.0",
-            "offline_marker_files": ["state/network/OFFLINE_MODE"],
+            "offline_marker_files": ["local/state/network/OFFLINE_MODE"],
             "network_probe_targets": ["https://example.invalid"],
             "degraded_capabilities": {
                 "research_remote_fetch": false,
@@ -264,7 +264,7 @@ mod tests {
                 "local_memory_retrieval": true,
                 "local_model_inference": true
             },
-            "state_path": "state/ops/offline_runtime_guard/latest.json"
+            "state_path": "local/state/ops/offline_runtime_guard/latest.json"
         });
         let policy_path = root.join("policy.json");
         fs::write(
@@ -292,7 +292,7 @@ mod tests {
         let exit = run(root, &args);
         assert_eq!(exit, 0);
 
-        let state_path = root.join("state/ops/offline_runtime_guard/latest.json");
+        let state_path = root.join("local/state/ops/offline_runtime_guard/latest.json");
         let raw = fs::read_to_string(state_path).expect("state");
         let out: Value = serde_json::from_str(&raw).expect("json");
         assert_eq!(out.get("mode").and_then(Value::as_str), Some("online_full"));
@@ -311,7 +311,7 @@ mod tests {
         let exit = run(root, &args);
         assert_eq!(exit, 0);
 
-        let state_path = root.join("state/ops/offline_runtime_guard/latest.json");
+        let state_path = root.join("local/state/ops/offline_runtime_guard/latest.json");
         let raw = fs::read_to_string(state_path).expect("state");
         let out: Value = serde_json::from_str(&raw).expect("json");
         assert_eq!(
@@ -326,7 +326,7 @@ mod tests {
         let temp = tempdir().expect("tempdir");
         let root = temp.path();
         let policy = write_policy(root);
-        let marker = root.join("state/network/OFFLINE_MODE");
+        let marker = root.join("local/state/network/OFFLINE_MODE");
         fs::create_dir_all(marker.parent().expect("parent")).expect("mkdir");
         fs::write(&marker, "1\n").expect("marker");
 
@@ -338,7 +338,7 @@ mod tests {
         let exit = run(root, &args);
         assert_eq!(exit, 0);
 
-        let state_path = root.join("state/ops/offline_runtime_guard/latest.json");
+        let state_path = root.join("local/state/ops/offline_runtime_guard/latest.json");
         let raw = fs::read_to_string(state_path).expect("state");
         let out: Value = serde_json::from_str(&raw).expect("json");
         let reasons = out

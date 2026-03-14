@@ -51,11 +51,11 @@
     }
   ],
   "paths": {
-    "state_path": "state/ops/rust_control_plane_cutover/state.json",
-    "latest_path": "state/ops/rust_control_plane_cutover/latest.json",
-    "receipts_path": "state/ops/rust_control_plane_cutover/receipts.jsonl",
-    "parity_history_path": "state/ops/rust_control_plane_cutover/parity_history.jsonl",
-    "benchmark_history_path": "state/ops/rust_control_plane_cutover/benchmark_history.jsonl",
-    "deprecations_path": "state/ops/rust_control_plane_cutover/deprecations.json"
+    "state_path": "local/state/ops/rust_control_plane_cutover/state.json",
+    "latest_path": "local/state/ops/rust_control_plane_cutover/latest.json",
+    "receipts_path": "local/state/ops/rust_control_plane_cutover/receipts.jsonl",
+    "parity_history_path": "local/state/ops/rust_control_plane_cutover/parity_history.jsonl",
+    "benchmark_history_path": "local/state/ops/rust_control_plane_cutover/benchmark_history.jsonl",
+    "deprecations_path": "local/state/ops/rust_control_plane_cutover/deprecations.json"
   }
 }

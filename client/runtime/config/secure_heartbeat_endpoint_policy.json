@@ -19,11 +19,11 @@
     "max_requests_per_window": 180
   },
   "paths": {
-    "keys_path": "state/security/secure_heartbeat_endpoint/keys.json",
-    "state_path": "state/security/secure_heartbeat_endpoint/state.json",
-    "latest_path": "state/security/secure_heartbeat_endpoint/latest.json",
-    "audit_path": "state/security/secure_heartbeat_endpoint/audit.jsonl",
-    "alerts_path": "state/security/secure_heartbeat_endpoint/alerts.jsonl"
+    "keys_path": "local/state/security/secure_heartbeat_endpoint/keys.json",
+    "state_path": "local/state/security/secure_heartbeat_endpoint/state.json",
+    "latest_path": "local/state/security/secure_heartbeat_endpoint/latest.json",
+    "audit_path": "local/state/security/secure_heartbeat_endpoint/audit.jsonl",
+    "alerts_path": "local/state/security/secure_heartbeat_endpoint/alerts.jsonl"
   },
   "alerting": {
     "emit_security_alerts": true,

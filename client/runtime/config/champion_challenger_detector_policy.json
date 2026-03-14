@@ -9,9 +9,9 @@
     "max_brier_regression": 0.01
   },
   "paths": {
-    "eval_pack_dir": "state/sensory/eval/champion_challenger",
-    "output_dir": "state/sensory/analysis/champion_challenger",
-    "latest_path": "state/sensory/analysis/champion_challenger/latest.json",
-    "receipts_path": "state/sensory/analysis/champion_challenger/receipts.jsonl"
+    "eval_pack_dir": "local/state/sensory/eval/champion_challenger",
+    "output_dir": "local/state/sensory/analysis/champion_challenger",
+    "latest_path": "local/state/sensory/analysis/champion_challenger/latest.json",
+    "receipts_path": "local/state/sensory/analysis/champion_challenger/receipts.jsonl"
   }
 }

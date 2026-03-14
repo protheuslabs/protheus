@@ -9,15 +9,15 @@
   "execution_contract": {
     "runtime": "core/layer2/ops:srs_contract_runtime",
     "deterministic_receipt_required": true,
-    "mutable_state_path": "state/ops/srs_contract_runtime/V9-IMMORTAL-001.3/latest.json",
-    "history_path": "state/ops/srs_contract_runtime/history.jsonl"
+    "mutable_state_path": "local/state/ops/srs_contract_runtime/V9-IMMORTAL-001.3/latest.json",
+    "history_path": "local/state/ops/srs_contract_runtime/history.jsonl"
   },
   "deliverables": [
     { "type": "core_authority", "path": "core/layer0/ops/src/seed_protocol.rs" },
     { "type": "cli_route", "path": "core/layer0/ops/src/protheusctl_routes.rs" },
     { "type": "behavior_tests", "path": "core/layer0/ops/src/seed_protocol.rs" },
     { "type": "integration_tests", "path": "core/layer0/ops/tests/v9_seed_protocol_integration.rs" },
-    { "type": "state_receipt", "path": "state/ops/srs_contract_runtime/V9-IMMORTAL-001.3/latest.json" }
+    { "type": "state_receipt", "path": "local/state/ops/srs_contract_runtime/V9-IMMORTAL-001.3/latest.json" }
   ],
   "validation": {
     "lane_command": "cargo test --manifest-path core/layer0/ops/Cargo.toml v9_seed_protocol_integration -- --nocapture && cargo test --manifest-path core/layer0/ops/Cargo.toml seed_protocol -- --nocapture && cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- seed-protocol status",

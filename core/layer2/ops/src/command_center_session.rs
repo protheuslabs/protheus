@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const DEFAULT_STATE_PATH: &str = "state/ops/command_center/session_registry.json";
+const DEFAULT_STATE_PATH: &str = "local/state/ops/command_center/session_registry.json";
 const USAGE: &[&str] = &[
     "Usage:",
     "  protheus-ops command-center-session status [--session-id=<id>] [--state-path=<path>]",

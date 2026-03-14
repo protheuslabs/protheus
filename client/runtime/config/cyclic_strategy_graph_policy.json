@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/strategy/graphs",
     "adaptive_index_path": "client/cognition/adaptive/strategy/graphs/index.json",
-    "events_path": "state/strategy\/cyclic_graph/events.jsonl",
-    "latest_path": "state/strategy\/cyclic_graph/latest.json",
-    "receipts_path": "state/strategy\/cyclic_graph/receipts.jsonl"
+    "events_path": "local/state/strategy\/cyclic_graph/events.jsonl",
+    "latest_path": "local/state/strategy\/cyclic_graph/latest.json",
+    "receipts_path": "local/state/strategy\/cyclic_graph/receipts.jsonl"
   }
 }

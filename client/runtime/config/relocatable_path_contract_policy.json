@@ -31,7 +31,7 @@
     ],
     "allowlist": [
       "client/memory/",
-      "state/",
+      "local/state/",
       "docs/client/backlog_views/",
       "docs/workspace/SRS.md",
       "docs/workspace/UPGRADE_BACKLOG.md",

@@ -30,8 +30,8 @@
     }
   },
   "outputs": {
-    "latest_path": "state/autonomy/multi_agent_debate/latest.json",
-    "history_path": "state/autonomy/multi_agent_debate/history.jsonl",
-    "receipts_path": "state/autonomy/multi_agent_debate/receipts.jsonl"
+    "latest_path": "local/state/autonomy/multi_agent_debate/latest.json",
+    "history_path": "local/state/autonomy/multi_agent_debate/history.jsonl",
+    "receipts_path": "local/state/autonomy/multi_agent_debate/receipts.jsonl"
   }
 }

@@ -37,8 +37,8 @@
     "require_covenant_ok": true
   },
   "paths": {
-    "state_path": "state/adaptive/realtime_adaptation_loop/state.json",
-    "latest_path": "state/adaptive/realtime_adaptation_loop/latest.json",
-    "receipts_path": "state/adaptive/realtime_adaptation_loop/receipts.jsonl"
+    "state_path": "local/state/adaptive/realtime_adaptation_loop/state.json",
+    "latest_path": "local/state/adaptive/realtime_adaptation_loop/latest.json",
+    "receipts_path": "local/state/adaptive/realtime_adaptation_loop/receipts.jsonl"
   }
 }

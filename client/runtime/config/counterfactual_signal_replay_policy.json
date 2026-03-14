@@ -10,9 +10,9 @@
     "min_recall_uplift": 0.0
   },
   "paths": {
-    "hypotheses_dir": "state/sensory/cross_signal/hypotheses",
-    "output_dir": "state/sensory/analysis/counterfactual_replay",
-    "latest_path": "state/sensory/analysis/counterfactual_replay/latest.json",
-    "receipts_path": "state/sensory/analysis/counterfactual_replay/receipts.jsonl"
+    "hypotheses_dir": "local/state/sensory/cross_signal/hypotheses",
+    "output_dir": "local/state/sensory/analysis/counterfactual_replay",
+    "latest_path": "local/state/sensory/analysis/counterfactual_replay/latest.json",
+    "receipts_path": "local/state/sensory/analysis/counterfactual_replay/receipts.jsonl"
   }
 }

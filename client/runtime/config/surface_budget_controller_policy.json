@@ -5,10 +5,10 @@
   "apply_default": false,
   "min_transition_seconds": 60,
   "embodiment_policy_path": "client/runtime/config/embodiment_layer_policy.json",
-  "embodiment_snapshot_path": "state/hardware/embodiment/latest.json",
-  "runtime_state_path": "state/runtime/scheduler_mode/latest.json",
-  "state_path": "state/hardware/surface_budget/latest.json",
-  "receipts_path": "state/hardware/surface_budget/receipts.jsonl",
+  "embodiment_snapshot_path": "local/state/hardware/embodiment/latest.json",
+  "runtime_state_path": "local/state/runtime/scheduler_mode/latest.json",
+  "state_path": "local/state/hardware/surface_budget/latest.json",
+  "receipts_path": "local/state/hardware/surface_budget/receipts.jsonl",
   "tiers": [
     {
       "id": "critical",

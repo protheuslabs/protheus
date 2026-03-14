@@ -7,10 +7,10 @@
   "anomaly_bonus_weight": 0.2,
   "min_priority_score": -1,
   "paths": {
-    "hypotheses_dir": "state/sensory/cross_signal/hypotheses",
-    "state_path": "state/sensory/analysis/novelty_saturation/state.json",
-    "output_dir": "state/sensory/analysis/novelty_saturation",
-    "latest_path": "state/sensory/analysis/novelty_saturation/latest.json",
-    "receipts_path": "state/sensory/analysis/novelty_saturation/receipts.jsonl"
+    "hypotheses_dir": "local/state/sensory/cross_signal/hypotheses",
+    "state_path": "local/state/sensory/analysis/novelty_saturation/state.json",
+    "output_dir": "local/state/sensory/analysis/novelty_saturation",
+    "latest_path": "local/state/sensory/analysis/novelty_saturation/latest.json",
+    "receipts_path": "local/state/sensory/analysis/novelty_saturation/receipts.jsonl"
   }
 }

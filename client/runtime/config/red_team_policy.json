@@ -4,7 +4,7 @@
   "auto_bootstrap_on_spine_init": true,
   "auto_run_on_daily": true,
   "strict_fail_on_critical": false,
-  "state_root": "state/security/red_team",
+  "state_root": "local/state/security/red_team",
   "model": {
     "provider": "ollama",
     "model": "qwen2.5:3b",
@@ -97,7 +97,7 @@
   },
   "replay_logger": {
     "enabled": true,
-    "path": "state/security/red_team/replay_log.jsonl"
+    "path": "local/state/security/red_team/replay_log.jsonl"
   },
   "ant_colony": {
     "enabled": true,
@@ -135,12 +135,12 @@
       "emit_visualization": true
     },
     "paths": {
-      "helix_latest_path": "state/helix/latest.json",
-      "helix_sentinel_state_path": "state/helix/sentinel_state.json",
-      "soul_token_state_path": "state/security/soul_token_guard.json",
-      "soul_biometric_latest_path": "state/security/soul_biometric/latest.json",
-      "assimilation_ledger_path": "state/assimilation/ledger.json",
-      "weaver_latest_path": "state/autonomy/weaver/latest.json"
+      "helix_latest_path": "local/state/helix/latest.json",
+      "helix_sentinel_state_path": "local/state/helix/sentinel_state.json",
+      "soul_token_state_path": "local/state/security/soul_token_guard.json",
+      "soul_biometric_latest_path": "local/state/security/soul_biometric/latest.json",
+      "assimilation_ledger_path": "local/state/assimilation/ledger.json",
+      "weaver_latest_path": "local/state/autonomy/weaver/latest.json"
     }
   },
   "self_improvement": {

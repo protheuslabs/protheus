@@ -5,7 +5,7 @@
   "default_adapter_kind": "http_request",
   "allowed_adapter_kinds": [],
   "profile_roots": [
-    "state/assimilation/capability_profiles/profiles",
+    "local/state/assimilation/capability_profiles/profiles",
     "client/runtime/config/universal_execution_profiles"
   ],
   "source_type_adapter_map": {
@@ -56,8 +56,8 @@
       "one_time_code"
     ],
     "handoff_required_on_verification": true,
-    "checkpoints_path": "state/actuation/universal_execution_primitive/checkpoints.jsonl",
-    "handoff_path": "state/actuation/universal_execution_primitive/handoffs.jsonl"
+    "checkpoints_path": "local/state/actuation/universal_execution_primitive/checkpoints.jsonl",
+    "handoff_path": "local/state/actuation/universal_execution_primitive/handoffs.jsonl"
   },
   "computer_use_execution_verification": {
     "enabled": true,
@@ -84,7 +84,7 @@
       "verification_target",
       "expected_signal"
     ],
-    "receipts_path": "state/actuation/universal_execution_primitive/verification.jsonl"
+    "receipts_path": "local/state/actuation/universal_execution_primitive/verification.jsonl"
   },
   "computer_use_reliability_metrics": {
     "enabled": true,
@@ -109,7 +109,7 @@
       "webarena",
       "webarena_lite"
     ],
-    "metrics_path": "state/actuation/universal_execution_primitive/computer_use_metrics.json"
+    "metrics_path": "local/state/actuation/universal_execution_primitive/computer_use_metrics.json"
   },
-  "receipts_path": "state/actuation/universal_execution_primitive/receipts"
+  "receipts_path": "local/state/actuation/universal_execution_primitive/receipts"
 }

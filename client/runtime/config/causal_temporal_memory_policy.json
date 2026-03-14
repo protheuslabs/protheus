@@ -7,8 +7,8 @@
   "max_events": 20000,
   "default_query_depth": 4,
   "max_query_depth": 8,
-  "canonical_events_path": "state/runtime/canonical_events",
-  "state_path": "state/client/memory/causal_temporal_graph/state.json",
-  "latest_query_path": "state/client/memory/causal_temporal_graph/latest_query.json",
-  "receipts_path": "state/client/memory/causal_temporal_graph/receipts.jsonl"
+  "canonical_events_path": "local/state/runtime/canonical_events",
+  "state_path": "local/state/client/memory/causal_temporal_graph/state.json",
+  "latest_query_path": "local/state/client/memory/causal_temporal_graph/latest_query.json",
+  "receipts_path": "local/state/client/memory/causal_temporal_graph/receipts.jsonl"
 }

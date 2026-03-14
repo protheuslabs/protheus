@@ -108,17 +108,10 @@
     "core/local/",
     "client/local/",
     "core/local/artifacts/",
-    "state/",
+    "local/state/",
     "planes/",
     "proofs/",
     "core/layer1/memory_runtime/adaptive/",
-    "dist/",
-    "target/",
-    "target_l0ops_iso2/",
-    "target_l0ops_isolated/",
-    "target_l0ops_sweep/",
-    "target_ops_clean/",
-    "target_system_regression/",
     "node_modules/"
   ],
   "ignore_path_prefixes": [

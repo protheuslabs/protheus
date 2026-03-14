@@ -5,8 +5,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 const LANE_ID: &str = "ab_lane_eval";
-const STATE_DIR_REL: &str = "state/ops/ab_lane_eval";
-const NEURALAVB_DIR_REL: &str = "state/ops/ab_lane_eval/neuralavb";
+const STATE_DIR_REL: &str = "local/state/ops/ab_lane_eval";
+const NEURALAVB_DIR_REL: &str = "local/state/ops/ab_lane_eval/neuralavb";
 
 fn print_json_line(value: &Value) {
     println!(

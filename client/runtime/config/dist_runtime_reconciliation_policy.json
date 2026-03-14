@@ -14,7 +14,7 @@
   "incident": {
     "enabled": true,
     "severity": "high",
-    "state_path": "state/ops/dist_runtime_cutover/legacy_pairs_state.json",
-    "incidents_path": "state/ops/dist_runtime_cutover/legacy_pair_incidents.jsonl"
+    "state_path": "local/state/ops/dist_runtime_cutover/legacy_pairs_state.json",
+    "incidents_path": "local/state/ops/dist_runtime_cutover/legacy_pair_incidents.jsonl"
   }
 }

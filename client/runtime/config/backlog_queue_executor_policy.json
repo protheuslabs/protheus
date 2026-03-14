@@ -11,12 +11,12 @@
     "backlog_lane_batch_delivery",
     "backlog_queue_executor"
   ],
-  "state_root": "state/ops/backlog_queue_executor",
-  "latest_path": "state/ops/backlog_queue_executor/latest.json",
-  "history_path": "state/ops/backlog_queue_executor/history.jsonl",
+  "state_root": "local/state/ops/backlog_queue_executor",
+  "latest_path": "local/state/ops/backlog_queue_executor/latest.json",
+  "history_path": "local/state/ops/backlog_queue_executor/history.jsonl",
   "sqlite": {
     "enabled": true,
-    "db_path": "state/ops/backlog_queue_executor/queue.db",
+    "db_path": "local/state/ops/backlog_queue_executor/queue.db",
     "journal_mode": "WAL",
     "synchronous": "NORMAL",
     "busy_timeout_ms": 8000,

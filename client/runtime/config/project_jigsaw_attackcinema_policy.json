@@ -22,9 +22,9 @@
     }
   ],
   "paths": {
-    "state_path": "state/security/project_jigsaw_attackcinema_replay/state.json",
-    "latest_path": "state/security/project_jigsaw_attackcinema_replay/latest.json",
-    "receipts_path": "state/security/project_jigsaw_attackcinema_replay/receipts.jsonl",
-    "history_path": "state/security/project_jigsaw_attackcinema_replay/history.jsonl"
+    "state_path": "local/state/security/project_jigsaw_attackcinema_replay/state.json",
+    "latest_path": "local/state/security/project_jigsaw_attackcinema_replay/latest.json",
+    "receipts_path": "local/state/security/project_jigsaw_attackcinema_replay/receipts.jsonl",
+    "history_path": "local/state/security/project_jigsaw_attackcinema_replay/history.jsonl"
   }
 }

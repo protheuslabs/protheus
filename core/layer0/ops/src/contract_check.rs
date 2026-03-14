@@ -14,7 +14,7 @@ use walkdir::WalkDir;
 const CHECK_IDS_FLAG_PREFIX: &str = "--rust-contract-check-ids=";
 const GUARD_REGISTRY_REL: &str = "client/runtime/config/guard_check_registry.json";
 const CONTRACT_CHECK_SOURCE_REL: &str = "core/layer0/ops/src/contract_check.rs";
-const RUNTIME_MODE_STATE_REL: &str = "state/ops/runtime_mode.json";
+const RUNTIME_MODE_STATE_REL: &str = "local/state/ops/runtime_mode.json";
 const RUST_SOURCE_OF_TRUTH_POLICY_REL: &str =
     "client/runtime/config/rust_source_of_truth_policy.json";
 const PROBE_EYES_INTAKE_HELP_TOKENS: &[&str] =

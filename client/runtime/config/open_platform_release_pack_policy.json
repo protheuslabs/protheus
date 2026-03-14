@@ -26,14 +26,14 @@
     "receipt_summary_days": 7
   },
   "paths": {
-    "latest_path": "state/ops/open_platform_release_pack/latest.json",
-    "receipts_path": "state/ops/open_platform_release_pack/receipts.jsonl",
-    "state_path": "state/ops/open_platform_release_pack/state.json",
-    "release_pack_path": "state/ops/open_platform_release_pack/release_pack.json",
-    "checklist_path": "state/ops/open_platform_release_pack/checklist_evidence.json",
-    "badges_dir": "state/ops/open_platform_release_pack/badges",
-    "benchmark_latest_path": "state/ops/public_benchmarks/latest.json",
-    "drift_latest_path": "state/autonomy/simulations/latest.json",
-    "receipt_summary_latest_path": "state/ops/open_platform_release_pack/receipt_summary_latest.json"
+    "latest_path": "local/state/ops/open_platform_release_pack/latest.json",
+    "receipts_path": "local/state/ops/open_platform_release_pack/receipts.jsonl",
+    "state_path": "local/state/ops/open_platform_release_pack/state.json",
+    "release_pack_path": "local/state/ops/open_platform_release_pack/release_pack.json",
+    "checklist_path": "local/state/ops/open_platform_release_pack/checklist_evidence.json",
+    "badges_dir": "local/state/ops/open_platform_release_pack/badges",
+    "benchmark_latest_path": "local/state/ops/public_benchmarks/latest.json",
+    "drift_latest_path": "local/state/autonomy/simulations/latest.json",
+    "receipt_summary_latest_path": "local/state/ops/open_platform_release_pack/receipt_summary_latest.json"
   }
 }

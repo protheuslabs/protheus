@@ -4,10 +4,10 @@
   "default_delta_step": 0.05,
   "max_delta_abs": 0.25,
   "inputs": {
-    "weekly_rows_path": "state/autonomy/weekly_executed_outcomes/rows.json"
+    "weekly_rows_path": "local/state/autonomy/weekly_executed_outcomes/rows.json"
   },
   "outputs": {
-    "latest_path": "state/strategy/weekly_executed_outcomes_synthesis/latest.json",
-    "history_path": "state/strategy/weekly_executed_outcomes_synthesis/history.jsonl"
+    "latest_path": "local/state/strategy/weekly_executed_outcomes_synthesis/latest.json",
+    "history_path": "local/state/strategy/weekly_executed_outcomes_synthesis/history.jsonl"
   }
 }

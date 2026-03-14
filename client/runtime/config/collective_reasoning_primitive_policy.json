@@ -23,9 +23,9 @@
     ]
   },
   "state": {
-    "latest_path": "state/assimilation/collective_reasoning/latest.json",
-    "history_path": "state/assimilation/collective_reasoning/history.jsonl",
-    "trust_ledger_path": "state/assimilation/collective_reasoning/trust_ledger.json",
-    "receipts_path": "state/assimilation/collective_reasoning/receipts.jsonl"
+    "latest_path": "local/state/assimilation/collective_reasoning/latest.json",
+    "history_path": "local/state/assimilation/collective_reasoning/history.jsonl",
+    "trust_ledger_path": "local/state/assimilation/collective_reasoning/trust_ledger.json",
+    "receipts_path": "local/state/assimilation/collective_reasoning/receipts.jsonl"
   }
 }

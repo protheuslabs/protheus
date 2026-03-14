@@ -5,7 +5,7 @@
   "history_required_terms": ["append-only", "no force-push", "changelog"],
   "pr_template_required_terms": ["summary", "validation", "changelog"],
   "paths": {
-    "latest_path": "state/ops/history_cleanliness_program/latest.json",
-    "history_path": "state/ops/history_cleanliness_program/history.jsonl"
+    "latest_path": "local/state/ops/history_cleanliness_program/latest.json",
+    "history_path": "local/state/ops/history_cleanliness_program/history.jsonl"
   }
 }

@@ -14,8 +14,8 @@
   "paths": {
     "memory_dir": "client/memory/data/preferences",
     "adaptive_index_path": "client/cognition/adaptive/data/index.json",
-    "events_path": "state/data\/ai_multimodel/events.jsonl",
-    "latest_path": "state/data\/ai_multimodel/latest.json",
-    "receipts_path": "state/data\/ai_multimodel/receipts.jsonl"
+    "events_path": "local/state/data\/ai_multimodel/events.jsonl",
+    "latest_path": "local/state/data\/ai_multimodel/latest.json",
+    "receipts_path": "local/state/data\/ai_multimodel/receipts.jsonl"
   }
 }

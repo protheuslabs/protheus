@@ -13,9 +13,9 @@
   ],
   "require_explicit_approval": true,
   "paths": {
-    "input_dir": "state/sensory/analysis/scoring_input",
-    "output_dir": "state/sensory/analysis/privacy_scoring",
-    "latest_path": "state/sensory/analysis/privacy_scoring/latest.json",
-    "receipts_path": "state/sensory/analysis/privacy_scoring/receipts.jsonl"
+    "input_dir": "local/state/sensory/analysis/scoring_input",
+    "output_dir": "local/state/sensory/analysis/privacy_scoring",
+    "latest_path": "local/state/sensory/analysis/privacy_scoring/latest.json",
+    "receipts_path": "local/state/sensory/analysis/privacy_scoring/receipts.jsonl"
   }
 }

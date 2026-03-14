@@ -2,11 +2,11 @@
   "version": "1.0",
   "enabled": true,
   "templates_path": "client/runtime/config/account_creation_templates.json",
-  "output_profiles_root": "state/assimilation/capability_profiles/profiles",
+  "output_profiles_root": "local/state/assimilation/capability_profiles/profiles",
   "required_primitives": [
     "desktop_ui",
     "alias_verification_vault"
   ],
-  "receipts_path": "state/workflow/account_creation_profile_extension/receipts.jsonl",
-  "latest_path": "state/workflow/account_creation_profile_extension/latest.json"
+  "receipts_path": "local/state/workflow/account_creation_profile_extension/receipts.jsonl",
+  "latest_path": "local/state/workflow/account_creation_profile_extension/latest.json"
 }

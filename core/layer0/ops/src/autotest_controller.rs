@@ -438,9 +438,9 @@ fn runtime_paths(root: &Path) -> RuntimePaths {
         .map(PathBuf::from)
         .filter(|p| !p.as_os_str().is_empty())
         .map(|p| if p.is_absolute() { p } else { root.join(p) })
-        .unwrap_or_else(|| root.join("state/ops/autotest"));
+        .unwrap_or_else(|| root.join("local/state/ops/autotest"));
 
-    let default_pain_signals_path = root.join("state/autonomy/pain_signals.jsonl");
+    let default_pain_signals_path = root.join("local/state/autonomy/pain_signals.jsonl");
 
     RuntimePaths {
         policy_path: std::env::var("AUTOTEST_POLICY_PATH")
@@ -473,7 +473,7 @@ fn runtime_paths(root: &Path) -> RuntimePaths {
             .map(PathBuf::from)
             .filter(|p| !p.as_os_str().is_empty())
             .map(|p| if p.is_absolute() { p } else { root.join(p) })
-            .unwrap_or_else(|| root.join("state/spine/runs")),
+            .unwrap_or_else(|| root.join("local/state/spine/runs")),
         pain_signals_path: std::env::var("AUTOTEST_PAIN_SIGNALS_PATH")
             .ok()
             .map(PathBuf::from)
