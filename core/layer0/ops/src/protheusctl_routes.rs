@@ -733,6 +733,52 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
         "agent"
             if rest
                 .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("run"))
+                .unwrap_or(false) =>
+        {
+            let mut args = vec!["ephemeral-run".to_string()];
+            if let Some(goal) = rest.get(1) {
+                if !goal.starts_with("--") {
+                    args.push(format!("--goal={goal}"));
+                }
+            }
+            args.extend(
+                rest.iter()
+                    .skip(2)
+                    .filter(|v| !v.trim().eq_ignore_ascii_case("--ephemeral"))
+                    .cloned(),
+            );
+            Some(Route {
+                script_rel: "core://autonomy-controller".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "agent"
+            if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("status"))
+                .unwrap_or(false)
+                && rest
+                    .iter()
+                    .any(|v| v.trim().eq_ignore_ascii_case("--trunk")) =>
+        {
+            let mut args = vec!["trunk-status".to_string()];
+            args.extend(
+                rest.iter()
+                    .skip(1)
+                    .filter(|v| !v.trim().eq_ignore_ascii_case("--trunk"))
+                    .cloned(),
+            );
+            Some(Route {
+                script_rel: "core://autonomy-controller".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "agent"
+            if rest
+                .first()
                 .map(|v| v.trim().eq_ignore_ascii_case("reset"))
                 .unwrap_or(false) =>
         {
@@ -764,6 +810,28 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
             })
         }
         "economy" => {
+            if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("stake"))
+                .unwrap_or(false)
+                && rest.iter().any(|v| v.trim().starts_with("--market"))
+            {
+                let market = rest
+                    .iter()
+                    .find_map(|v| v.trim().split_once("--market=").map(|(_, m)| m.to_string()))
+                    .unwrap_or_else(|| "unknown".to_string());
+                return Some(Route {
+                    script_rel: "core://network-protocol".to_string(),
+                    args: vec![
+                        "stake".to_string(),
+                        "--action=stake".to_string(),
+                        "--agent=economy:operator".to_string(),
+                        "--amount=10".to_string(),
+                        format!("--reason=market:{market}"),
+                    ],
+                    forward_stdin: false,
+                });
+            }
             let args = if rest
                 .first()
                 .map(|v| v.trim().eq_ignore_ascii_case("upgrade"))
@@ -819,6 +887,8 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                     | "merkle-root"
                     | "emission"
                     | "zk-claim"
+                    | "oracle-query"
+                    | "truth-weight"
                     | "dashboard"
             ) {
                 let args = if rest.is_empty() {
@@ -1181,6 +1251,12 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                 "control" | "session-control" => vec!["session-control".to_string()],
                 "automate" => vec!["automate".to_string()],
                 "privacy" | "privacy-guard" => vec!["privacy-guard".to_string()],
+                "snapshot" => vec!["snapshot".to_string()],
+                "screenshot" => vec!["screenshot".to_string()],
+                "action-policy" => vec!["action-policy".to_string()],
+                "auth-save" => vec!["auth-save".to_string()],
+                "auth-login" => vec!["auth-login".to_string()],
+                "native" => vec!["native".to_string()],
                 "status" => vec!["status".to_string()],
                 _ => vec!["session-start".to_string()],
             };
@@ -1189,6 +1265,87 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
             }
             Some(Route {
                 script_rel: "core://vbrowser-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "hand" | "hands" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "status".to_string());
+            let mut args = match sub.as_str() {
+                "new" => vec!["hand-new".to_string()],
+                "schedule" | "cycle" | "run" => vec!["hand-cycle".to_string()],
+                "status" => vec!["hand-status".to_string()],
+                "memory-page" | "memory" => vec!["hand-memory-page".to_string()],
+                "wasm-task" | "wasm" => vec!["hand-wasm-task".to_string()],
+                _ => vec!["hand-status".to_string()],
+            };
+            if !rest.is_empty() {
+                args.extend(rest.iter().skip(1).cloned());
+            }
+            Some(Route {
+                script_rel: "core://autonomy-controller".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "oracle" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "query".to_string());
+            let args = match sub.as_str() {
+                "query" => {
+                    let provider = rest
+                        .iter()
+                        .find_map(|v| {
+                            v.trim()
+                                .split_once("--provider=")
+                                .map(|(_, p)| p.to_string())
+                        })
+                        .or_else(|| {
+                            rest.iter()
+                                .skip(1)
+                                .find(|v| !v.trim().starts_with("--"))
+                                .cloned()
+                        })
+                        .unwrap_or_else(|| "polymarket".to_string());
+                    let event = rest
+                        .iter()
+                        .find_map(|v| v.trim().split_once("--event=").map(|(_, e)| e.to_string()))
+                        .or_else(|| {
+                            rest.iter()
+                                .skip(2)
+                                .find(|v| !v.trim().starts_with("--"))
+                                .cloned()
+                        })
+                        .unwrap_or_else(|| "default-event".to_string());
+                    vec![
+                        "oracle-query".to_string(),
+                        format!("--provider={provider}"),
+                        format!("--event={event}"),
+                    ]
+                }
+                _ => vec!["oracle-query".to_string()],
+            };
+            Some(Route {
+                script_rel: "core://network-protocol".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "truth"
+            if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("weight"))
+                .unwrap_or(false) =>
+        {
+            let mut args = vec!["truth-weight".to_string()];
+            args.extend(rest.iter().skip(1).cloned());
+            Some(Route {
+                script_rel: "core://network-protocol".to_string(),
                 args,
                 forward_stdin: false,
             })

@@ -199,6 +199,144 @@ fn v6_vbrowser_batch12_core_lanes_execute_with_receipts() {
     );
     assert_claim(&privacy_latest, "V6-VBROWSER-001.4");
 
+    let snapshot_exit = vbrowser_plane::run(
+        root,
+        &[
+            "snapshot".to_string(),
+            "--strict=1".to_string(),
+            "--session-id=batch12-vb".to_string(),
+            "--refs=1".to_string(),
+        ],
+    );
+    assert_eq!(snapshot_exit, 0);
+    let snapshot_latest = read_json(&latest_path(root));
+    assert_eq!(
+        snapshot_latest.get("type").and_then(Value::as_str),
+        Some("vbrowser_plane_snapshot")
+    );
+    assert_eq!(
+        snapshot_latest
+            .get("snapshot")
+            .and_then(|v| v.get("links"))
+            .and_then(Value::as_array)
+            .map(|rows| rows.len())
+            .unwrap_or(0)
+            > 0,
+        true
+    );
+    assert_claim(&snapshot_latest, "V6-VBROWSER-002.1");
+
+    let screenshot_exit = vbrowser_plane::run(
+        root,
+        &[
+            "screenshot".to_string(),
+            "--strict=1".to_string(),
+            "--session-id=batch12-vb".to_string(),
+            "--annotate=1".to_string(),
+        ],
+    );
+    assert_eq!(screenshot_exit, 0);
+    let screenshot_latest = read_json(&latest_path(root));
+    assert_eq!(
+        screenshot_latest.get("type").and_then(Value::as_str),
+        Some("vbrowser_plane_screenshot")
+    );
+    let svg_path = screenshot_latest
+        .get("artifact")
+        .and_then(|v| v.get("svg_path"))
+        .and_then(Value::as_str)
+        .expect("svg path");
+    assert!(Path::new(svg_path).exists(), "screenshot svg missing");
+    assert_claim(&screenshot_latest, "V6-VBROWSER-002.2");
+
+    let policy_fail_exit = vbrowser_plane::run(
+        root,
+        &[
+            "action-policy".to_string(),
+            "--strict=1".to_string(),
+            "--session-id=batch12-vb".to_string(),
+            "--action=submit".to_string(),
+            "--confirm=0".to_string(),
+        ],
+    );
+    assert_eq!(policy_fail_exit, 1);
+    let policy_fail_latest = read_json(&latest_path(root));
+    assert_eq!(
+        policy_fail_latest.get("error").and_then(Value::as_str),
+        Some("confirmation_required")
+    );
+
+    let policy_pass_exit = vbrowser_plane::run(
+        root,
+        &[
+            "action-policy".to_string(),
+            "--strict=1".to_string(),
+            "--session-id=batch12-vb".to_string(),
+            "--action=submit".to_string(),
+            "--confirm=1".to_string(),
+        ],
+    );
+    assert_eq!(policy_pass_exit, 0);
+    let policy_pass_latest = read_json(&latest_path(root));
+    assert_eq!(
+        policy_pass_latest.get("type").and_then(Value::as_str),
+        Some("vbrowser_plane_action_policy")
+    );
+    assert_claim(&policy_pass_latest, "V6-VBROWSER-002.3");
+
+    let auth_save_exit = vbrowser_plane::run(
+        root,
+        &[
+            "auth-save".to_string(),
+            "--strict=1".to_string(),
+            "--provider=github".to_string(),
+            "--profile=ops".to_string(),
+            "--username=alice".to_string(),
+            "--secret=token-123".to_string(),
+        ],
+    );
+    assert_eq!(auth_save_exit, 0);
+    let auth_save_latest = read_json(&latest_path(root));
+    assert_eq!(
+        auth_save_latest.get("type").and_then(Value::as_str),
+        Some("vbrowser_plane_auth_save")
+    );
+    assert_claim(&auth_save_latest, "V6-VBROWSER-002.4");
+
+    let auth_login_exit = vbrowser_plane::run(
+        root,
+        &[
+            "auth-login".to_string(),
+            "--strict=1".to_string(),
+            "--provider=github".to_string(),
+            "--profile=ops".to_string(),
+        ],
+    );
+    assert_eq!(auth_login_exit, 0);
+    let auth_login_latest = read_json(&latest_path(root));
+    assert_eq!(
+        auth_login_latest.get("type").and_then(Value::as_str),
+        Some("vbrowser_plane_auth_login")
+    );
+    assert_claim(&auth_login_latest, "V6-VBROWSER-002.4");
+
+    let native_exit = vbrowser_plane::run(
+        root,
+        &[
+            "native".to_string(),
+            "--strict=1".to_string(),
+            "--session-id=batch12-native".to_string(),
+            "--url=https://example.org/native".to_string(),
+        ],
+    );
+    assert_eq!(native_exit, 0);
+    let native_latest = read_json(&latest_path(root));
+    assert_eq!(
+        native_latest.get("type").and_then(Value::as_str),
+        Some("vbrowser_plane_native")
+    );
+    assert_claim(&native_latest, "V6-VBROWSER-002.5");
+
     let dashboard_exit = health_status::run(root, &["dashboard".to_string()]);
     assert_eq!(dashboard_exit, 0);
     let dashboard_latest = read_json(&health_latest_path(root));

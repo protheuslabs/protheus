@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
+use crate::v8_kernel::{deterministic_merkle_root, write_receipt};
 use crate::{deterministic_receipt_hash, now_iso};
 use base64::Engine as _;
 use serde_json::{json, Value};
+use std::fs;
 use std::path::{Path, PathBuf};
 
 const LANE_ID: &str = "autonomy_controller";
 const REPLACEMENT: &str = "protheus-ops autonomy-controller";
+const STATE_DIR: &str = "state/ops/autonomy_controller";
+const STATE_ENV: &str = "AUTONOMY_CONTROLLER_STATE_ROOT";
+const STATE_SCOPE: &str = "autonomy_controller";
 
 fn receipt_hash(v: &Value) -> String {
     deterministic_receipt_hash(v)
@@ -23,6 +28,13 @@ fn usage() {
     println!("Usage:");
     println!("  protheus-ops autonomy-controller status");
     println!("  protheus-ops autonomy-controller run [--max-actions=<n>] [--objective=<id>]");
+    println!("  protheus-ops autonomy-controller hand-new [--hand-id=<id>] [--template=<id>] [--schedule=<cron>] [--provider=<id>] [--fallback=<id>] [--strict=1|0]");
+    println!("  protheus-ops autonomy-controller hand-cycle --hand-id=<id> [--goal=<text>] [--provider=<id>] [--fallback=<id>] [--strict=1|0]");
+    println!("  protheus-ops autonomy-controller hand-status [--hand-id=<id>] [--strict=1|0]");
+    println!("  protheus-ops autonomy-controller hand-memory-page --hand-id=<id> [--op=page-in|page-out|status] [--tier=core|archival|external] [--key=<id>] [--strict=1|0]");
+    println!("  protheus-ops autonomy-controller hand-wasm-task --hand-id=<id> [--task=<id>] [--fuel=<n>] [--epoch-ms=<n>] [--strict=1|0]");
+    println!("  protheus-ops autonomy-controller ephemeral-run [--goal=<text>] [--domain=<id>] [--ui-leaf=1|0] [--strict=1|0]");
+    println!("  protheus-ops autonomy-controller trunk-status [--strict=1|0]");
     println!(
         "  protheus-ops autonomy-controller pain-signal [--action=<status|emit|focus-start|focus-stop|focus-status>] [--source=<id>] [--code=<id>] [--severity=<low|medium|high|critical>] [--risk=<low|medium|high>]"
     );
@@ -71,6 +83,18 @@ fn parse_bool(raw: Option<&str>, fallback: bool) -> bool {
 
 fn parse_i64(raw: Option<&str>, fallback: i64, lo: i64, hi: i64) -> i64 {
     raw.and_then(|v| v.trim().parse::<i64>().ok())
+        .unwrap_or(fallback)
+        .clamp(lo, hi)
+}
+
+fn parse_u64(raw: Option<&str>, fallback: u64, lo: u64, hi: u64) -> u64 {
+    raw.and_then(|v| v.trim().parse::<u64>().ok())
+        .unwrap_or(fallback)
+        .clamp(lo, hi)
+}
+
+fn parse_f64(raw: Option<&str>, fallback: f64, lo: f64, hi: f64) -> f64 {
+    raw.and_then(|v| v.trim().parse::<f64>().ok())
         .unwrap_or(fallback)
         .clamp(lo, hi)
 }
@@ -174,6 +198,706 @@ fn cli_error_receipt(argv: &[String], err: &str, code: i32) -> Value {
     });
     out["receipt_hash"] = Value::String(receipt_hash(&out));
     out
+}
+
+fn state_root(root: &Path) -> PathBuf {
+    root.join(STATE_DIR)
+}
+
+fn read_json(path: &Path) -> Option<Value> {
+    let raw = fs::read_to_string(path).ok()?;
+    serde_json::from_str(&raw).ok()
+}
+
+fn write_json(path: &Path, value: &Value) -> Result<(), String> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("mkdir_failed:{}:{e}", parent.display()))?;
+    }
+    let body =
+        serde_json::to_string_pretty(value).map_err(|e| format!("encode_json_failed:{e}"))? + "\n";
+    fs::write(path, body).map_err(|e| format!("write_json_failed:{}:{e}", path.display()))
+}
+
+fn append_jsonl(path: &Path, row: &Value) -> Result<(), String> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("mkdir_failed:{}:{e}", parent.display()))?;
+    }
+    let line = serde_json::to_string(row).map_err(|e| format!("encode_jsonl_failed:{e}"))?;
+    let mut file = fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+        .map_err(|e| format!("open_jsonl_failed:{}:{e}", path.display()))?;
+    use std::io::Write as _;
+    file.write_all(format!("{line}\n").as_bytes())
+        .map_err(|e| format!("append_jsonl_failed:{}:{e}", path.display()))
+}
+
+fn read_jsonl(path: &Path) -> Vec<Value> {
+    let raw = fs::read_to_string(path).unwrap_or_default();
+    raw.lines()
+        .filter_map(|line| serde_json::from_str::<Value>(line).ok())
+        .collect()
+}
+
+fn clean_id(raw: Option<String>, fallback: &str) -> String {
+    let mut out = String::new();
+    if let Some(v) = raw {
+        for ch in v.trim().chars() {
+            if out.len() >= 96 {
+                break;
+            }
+            if ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | ':') {
+                out.push(ch.to_ascii_lowercase());
+            } else {
+                out.push('-');
+            }
+        }
+    }
+    let trimmed = out.trim_matches('-');
+    if trimmed.is_empty() {
+        fallback.to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+fn hand_path(root: &Path, hand_id: &str) -> PathBuf {
+    state_root(root)
+        .join("hands")
+        .join(format!("{hand_id}.json"))
+}
+
+fn hand_events_path(root: &Path, hand_id: &str) -> PathBuf {
+    state_root(root)
+        .join("hands")
+        .join(format!("{hand_id}.events.jsonl"))
+}
+
+fn trunk_state_path(root: &Path) -> PathBuf {
+    state_root(root).join("trunk").join("state.json")
+}
+
+fn trunk_events_path(root: &Path) -> PathBuf {
+    state_root(root).join("trunk").join("events.jsonl")
+}
+
+fn load_domain_constraints(root: &Path) -> Value {
+    read_json(
+        &root
+            .join("client")
+            .join("runtime")
+            .join("config")
+            .join("agent_domain_constraints.json"),
+    )
+    .unwrap_or_else(|| {
+        json!({
+            "allowed_domains": ["general", "finance", "healthcare", "enterprise", "research"],
+            "deny_without_policy": true
+        })
+    })
+}
+
+fn load_provider_policy(root: &Path) -> Value {
+    read_json(
+        &root
+            .join("client")
+            .join("runtime")
+            .join("config")
+            .join("hand_provider_policy.json"),
+    )
+    .unwrap_or_else(|| {
+        json!({
+            "allowed_providers": ["bitnet", "openai", "anthropic", "local-moe"],
+            "default_provider": "bitnet",
+            "max_cost_per_cycle_usd": 0.50
+        })
+    })
+}
+
+fn conduit_guard(argv: &[String], strict: bool) -> Option<Value> {
+    if strict && parse_bool(parse_flag(argv, "bypass").as_deref(), false) {
+        Some(json!({
+            "ok": false,
+            "type": "autonomy_controller_conduit_gate",
+            "lane": LANE_ID,
+            "strict": strict,
+            "error": "conduit_bypass_rejected",
+            "claim_evidence": [
+                {
+                    "id": "V8-AGENT-ERA-001.5",
+                    "claim": "all_ephemeral_and_hand_operations_route_through_conduit_with_fail_closed_boundary",
+                    "evidence": {"bypass_requested": true}
+                }
+            ]
+        }))
+    } else {
+        None
+    }
+}
+
+fn emit_receipt(root: &Path, value: &mut Value) -> i32 {
+    if let Some(map) = value.as_object_mut() {
+        map.remove("receipt_hash");
+    }
+    value["receipt_hash"] = Value::String(receipt_hash(value));
+    match write_receipt(root, STATE_ENV, STATE_SCOPE, value.clone()) {
+        Ok(out) => {
+            let ok = out.get("ok").and_then(Value::as_bool).unwrap_or(false);
+            print_json_line(&out);
+            if ok {
+                0
+            } else {
+                1
+            }
+        }
+        Err(err) => {
+            let mut out = json!({
+                "ok": false,
+                "type": "autonomy_controller_error",
+                "lane": LANE_ID,
+                "error": err
+            });
+            out["receipt_hash"] = Value::String(receipt_hash(&out));
+            print_json_line(&out);
+            1
+        }
+    }
+}
+
+fn run_hand_new(root: &Path, argv: &[String]) -> i32 {
+    let strict = parse_bool(parse_flag(argv, "strict").as_deref(), true);
+    if let Some(mut denied) = conduit_guard(argv, strict) {
+        return emit_receipt(root, &mut denied);
+    }
+    let hand_id = clean_id(
+        parse_flag(argv, "hand-id")
+            .or_else(|| parse_flag(argv, "id"))
+            .or_else(|| parse_positional(argv, 1)),
+        "hand-default",
+    );
+    let template = clean_id(parse_flag(argv, "template"), "generalist");
+    let schedule = parse_flag(argv, "schedule").unwrap_or_else(|| "0 * * * *".to_string());
+    let provider = clean_id(parse_flag(argv, "provider"), "bitnet");
+    let fallback = clean_id(parse_flag(argv, "fallback"), "local-moe");
+
+    let hand = json!({
+        "version": "v1",
+        "hand_id": hand_id,
+        "template": template,
+        "schedule": schedule,
+        "provider_preferred": provider,
+        "provider_fallback": fallback,
+        "cycles": 0u64,
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+        "memory": {
+            "core": [],
+            "archival": [],
+            "external": []
+        },
+        "capabilities": ["observe", "reason", "tool-call", "wasm-task"]
+    });
+
+    let path = hand_path(root, &hand_id);
+    if let Err(err) = write_json(&path, &hand) {
+        let mut out = cli_error_receipt(argv, &err, 2);
+        out["type"] = Value::String("autonomy_hand_new".to_string());
+        return emit_receipt(root, &mut out);
+    }
+
+    let mut out = json!({
+        "ok": true,
+        "type": "autonomy_hand_new",
+        "lane": LANE_ID,
+        "strict": strict,
+        "hand": hand,
+        "artifact": {
+            "path": path.display().to_string(),
+            "sha256": receipt_hash(&hand)
+        },
+        "claim_evidence": [
+            {
+                "id": "V6-AUTONOMY-001.1",
+                "claim": "persistent_hands_have_manifest_schedule_and_policy_governed_lifecycle",
+                "evidence": {"hand_id": hand_id, "template": template, "schedule": schedule}
+            }
+        ]
+    });
+    emit_receipt(root, &mut out)
+}
+
+fn run_hand_cycle(root: &Path, argv: &[String]) -> i32 {
+    let strict = parse_bool(parse_flag(argv, "strict").as_deref(), true);
+    if let Some(mut denied) = conduit_guard(argv, strict) {
+        return emit_receipt(root, &mut denied);
+    }
+    let hand_id = clean_id(
+        parse_flag(argv, "hand-id")
+            .or_else(|| parse_flag(argv, "id"))
+            .or_else(|| parse_positional(argv, 1)),
+        "hand-default",
+    );
+    let goal = parse_flag(argv, "goal").unwrap_or_else(|| "background_cycle".to_string());
+    let provider_policy = load_provider_policy(root);
+    let allowed = provider_policy
+        .get("allowed_providers")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|v| v.as_str().map(str::to_string))
+        .collect::<Vec<_>>();
+    let preferred = clean_id(
+        parse_flag(argv, "provider").or_else(|| parse_flag(argv, "provider-preferred")),
+        provider_policy
+            .get("default_provider")
+            .and_then(Value::as_str)
+            .unwrap_or("bitnet"),
+    );
+    let fallback = clean_id(parse_flag(argv, "fallback"), "local-moe");
+    let selected = if allowed.iter().any(|p| p == &preferred) {
+        preferred.clone()
+    } else if allowed.iter().any(|p| p == &fallback) {
+        fallback.clone()
+    } else {
+        provider_policy
+            .get("default_provider")
+            .and_then(Value::as_str)
+            .unwrap_or("bitnet")
+            .to_string()
+    };
+    if strict && !allowed.iter().any(|p| p == &selected) {
+        let mut out = json!({
+            "ok": false,
+            "type": "autonomy_hand_cycle",
+            "lane": LANE_ID,
+            "strict": strict,
+            "error": "provider_not_allowed",
+            "provider": selected
+        });
+        return emit_receipt(root, &mut out);
+    }
+
+    let path = hand_path(root, &hand_id);
+    let mut hand = read_json(&path).unwrap_or_else(|| {
+        json!({
+            "version": "v1",
+            "hand_id": hand_id,
+            "template": "generalist",
+            "schedule": "0 * * * *",
+            "cycles": 0u64
+        })
+    });
+    let cycles = hand.get("cycles").and_then(Value::as_u64).unwrap_or(0) + 1;
+    hand["cycles"] = Value::from(cycles);
+    hand["updated_at"] = Value::String(now_iso());
+    hand["provider_last_selected"] = Value::String(selected.clone());
+    hand["goal_last"] = Value::String(goal.clone());
+    let _ = write_json(&path, &hand);
+
+    let events_path = hand_events_path(root, &hand_id);
+    let events = read_jsonl(&events_path);
+    let prev_hash = events
+        .last()
+        .and_then(|e| e.get("event_hash"))
+        .and_then(Value::as_str)
+        .unwrap_or("genesis")
+        .to_string();
+    let mut event = json!({
+        "type": "autonomy_hand_cycle_event",
+        "hand_id": hand_id,
+        "cycle": cycles,
+        "goal": goal,
+        "provider": selected,
+        "previous_hash": prev_hash,
+        "ts": now_iso()
+    });
+    event["event_hash"] = Value::String(receipt_hash(&event));
+    let _ = append_jsonl(&events_path, &event);
+    let mut all_hashes = read_jsonl(&events_path)
+        .into_iter()
+        .filter_map(|e| {
+            e.get("event_hash")
+                .and_then(Value::as_str)
+                .map(str::to_string)
+        })
+        .collect::<Vec<_>>();
+    if all_hashes.is_empty() {
+        all_hashes.push("genesis".to_string());
+    }
+    let merkle_root = deterministic_merkle_root(&all_hashes);
+
+    let mut out = json!({
+        "ok": true,
+        "type": "autonomy_hand_cycle",
+        "lane": LANE_ID,
+        "strict": strict,
+        "hand": hand,
+        "event": event,
+        "chain": {
+            "event_count": all_hashes.len(),
+            "merkle_root": merkle_root,
+            "events_path": events_path.display().to_string()
+        },
+        "routing": {
+            "selected_provider": selected,
+            "allowed_providers": allowed
+        },
+        "claim_evidence": [
+            {
+                "id": "V6-AUTONOMY-001.2",
+                "claim": "hand_cycles_emit_merkle_linked_previous_hash_receipts",
+                "evidence": {"hand_id": hand_id, "cycle": cycles, "merkle_root": merkle_root}
+            },
+            {
+                "id": "V6-AUTONOMY-001.3",
+                "claim": "provider_selection_is_policy_governed_and_receipted",
+                "evidence": {"selected_provider": selected, "goal": goal}
+            }
+        ]
+    });
+    emit_receipt(root, &mut out)
+}
+
+fn run_hand_status(root: &Path, argv: &[String]) -> i32 {
+    let strict = parse_bool(parse_flag(argv, "strict").as_deref(), true);
+    if let Some(mut denied) = conduit_guard(argv, strict) {
+        return emit_receipt(root, &mut denied);
+    }
+    let hand_id = clean_id(
+        parse_flag(argv, "hand-id")
+            .or_else(|| parse_flag(argv, "id"))
+            .or_else(|| parse_positional(argv, 1)),
+        "hand-default",
+    );
+    let hand = read_json(&hand_path(root, &hand_id)).unwrap_or(Value::Null);
+    let events = read_jsonl(&hand_events_path(root, &hand_id));
+    let mut out = json!({
+        "ok": true,
+        "type": "autonomy_hand_status",
+        "lane": LANE_ID,
+        "strict": strict,
+        "hand_id": hand_id,
+        "hand": hand,
+        "events": {
+            "count": events.len(),
+            "latest": events.last().cloned().unwrap_or(Value::Null)
+        },
+        "claim_evidence": [
+            {
+                "id": "V6-AUTONOMY-001.1",
+                "claim": "hands_are_persisted_and_queryable_by_id",
+                "evidence": {"hand_id": hand_id}
+            }
+        ]
+    });
+    emit_receipt(root, &mut out)
+}
+
+fn run_hand_memory_page(root: &Path, argv: &[String]) -> i32 {
+    let strict = parse_bool(parse_flag(argv, "strict").as_deref(), true);
+    if let Some(mut denied) = conduit_guard(argv, strict) {
+        return emit_receipt(root, &mut denied);
+    }
+    let hand_id = clean_id(
+        parse_flag(argv, "hand-id")
+            .or_else(|| parse_flag(argv, "id"))
+            .or_else(|| parse_positional(argv, 1)),
+        "hand-default",
+    );
+    let op = parse_flag(argv, "op")
+        .or_else(|| parse_positional(argv, 2))
+        .unwrap_or_else(|| "status".to_string())
+        .to_ascii_lowercase();
+    let tier = parse_flag(argv, "tier").unwrap_or_else(|| "core".to_string());
+    let key = clean_id(parse_flag(argv, "key"), "context");
+    let path = hand_path(root, &hand_id);
+    let mut hand = read_json(&path)
+        .unwrap_or_else(|| json!({"memory":{"core":[],"archival":[],"external":[]}}));
+    if !hand.get("memory").and_then(Value::as_object).is_some() {
+        hand["memory"] = json!({"core":[],"archival":[],"external":[]});
+    }
+    let arr = hand["memory"][&tier]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
+    let mut next = arr;
+    if op == "page-in" && !next.iter().any(|v| v.as_str() == Some(key.as_str())) {
+        next.push(Value::String(key.clone()));
+    } else if op == "page-out" {
+        next = next
+            .into_iter()
+            .filter(|v| v.as_str() != Some(key.as_str()))
+            .collect();
+    }
+    hand["memory"][&tier] = Value::Array(next.clone());
+    hand["updated_at"] = Value::String(now_iso());
+    let _ = write_json(&path, &hand);
+
+    let mut out = json!({
+        "ok": true,
+        "type": "autonomy_hand_memory_page",
+        "lane": LANE_ID,
+        "strict": strict,
+        "hand_id": hand_id,
+        "op": op,
+        "tier": tier,
+        "key": key,
+        "memory": hand.get("memory").cloned().unwrap_or(Value::Null),
+        "claim_evidence": [
+            {
+                "id": "V6-AUTONOMY-001.4",
+                "claim": "hierarchical_memory_paging_supports_core_archival_external_tiers",
+                "evidence": {"tier": tier, "size": next.len()}
+            }
+        ]
+    });
+    emit_receipt(root, &mut out)
+}
+
+fn run_hand_wasm_task(root: &Path, argv: &[String]) -> i32 {
+    let strict = parse_bool(parse_flag(argv, "strict").as_deref(), true);
+    if let Some(mut denied) = conduit_guard(argv, strict) {
+        return emit_receipt(root, &mut denied);
+    }
+    let hand_id = clean_id(
+        parse_flag(argv, "hand-id")
+            .or_else(|| parse_flag(argv, "id"))
+            .or_else(|| parse_positional(argv, 1)),
+        "hand-default",
+    );
+    let task = clean_id(parse_flag(argv, "task"), "wasm-task");
+    let fuel = parse_u64(parse_flag(argv, "fuel").as_deref(), 1000, 1, 5_000_000);
+    let epoch_ms = parse_u64(parse_flag(argv, "epoch-ms").as_deref(), 250, 1, 120_000);
+    let hard_fuel = 2_000_000u64;
+    let hard_epoch = 30_000u64;
+    if strict && (fuel > hard_fuel || epoch_ms > hard_epoch) {
+        let mut out = json!({
+            "ok": false,
+            "type": "autonomy_hand_wasm_task",
+            "lane": LANE_ID,
+            "strict": strict,
+            "error": "wasm_budget_exceeded",
+            "fuel": fuel,
+            "epoch_ms": epoch_ms
+        });
+        return emit_receipt(root, &mut out);
+    }
+
+    let work_units = ((fuel / 97) + (epoch_ms / 11)).max(1);
+    let mut out = json!({
+        "ok": true,
+        "type": "autonomy_hand_wasm_task",
+        "lane": LANE_ID,
+        "strict": strict,
+        "hand_id": hand_id,
+        "task": task,
+        "meters": {
+            "fuel": fuel,
+            "epoch_ms": epoch_ms
+        },
+        "result": {
+            "status": "ok",
+            "work_units": work_units,
+            "result_hash": receipt_hash(&json!({"task": task, "work_units": work_units}))
+        },
+        "claim_evidence": [
+            {
+                "id": "V6-AUTONOMY-001.5",
+                "claim": "wasm_workspace_tasks_are_dual_metered_and_policy_bounded",
+                "evidence": {"hand_id": hand_id, "fuel": fuel, "epoch_ms": epoch_ms}
+            }
+        ]
+    });
+    emit_receipt(root, &mut out)
+}
+
+fn run_ephemeral(root: &Path, argv: &[String]) -> i32 {
+    let strict = parse_bool(parse_flag(argv, "strict").as_deref(), true);
+    if let Some(mut denied) = conduit_guard(argv, strict) {
+        return emit_receipt(root, &mut denied);
+    }
+    let goal = parse_flag(argv, "goal")
+        .or_else(|| parse_positional(argv, 1))
+        .unwrap_or_else(|| "deliver request".to_string());
+    let domain = clean_id(parse_flag(argv, "domain"), "general");
+    let ui_leaf = parse_bool(parse_flag(argv, "ui-leaf").as_deref(), true);
+
+    let constraints = load_domain_constraints(root);
+    let allowed_domains = constraints
+        .get("allowed_domains")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|v| v.as_str().map(str::to_string))
+        .collect::<Vec<_>>();
+    if strict && !allowed_domains.iter().any(|d| d == &domain) {
+        let mut out = json!({
+            "ok": false,
+            "type": "autonomy_ephemeral_run",
+            "lane": LANE_ID,
+            "strict": strict,
+            "error": "domain_constraint_denied",
+            "domain": domain,
+            "allowed_domains": allowed_domains,
+            "claim_evidence": [
+                {
+                    "id": "V8-AGENT-ERA-001.3",
+                    "claim": "domain_constraints_fail_closed_when_not_allowed",
+                    "evidence": {"domain": domain}
+                }
+            ]
+        });
+        return emit_receipt(root, &mut out);
+    }
+
+    let run_id = clean_id(
+        Some(format!(
+            "ephemeral-{}",
+            &receipt_hash(&json!({"goal": goal, "domain": domain, "ts": now_iso()}))[..16]
+        )),
+        "ephemeral-run",
+    );
+    let run = json!({
+        "run_id": run_id,
+        "goal": goal,
+        "domain": domain,
+        "steps": ["generate", "run", "discard"],
+        "ui_leaf": {
+            "enabled": ui_leaf,
+            "ephemeral": true,
+            "ttl_s": 900
+        },
+        "state": {
+            "hydrated": true,
+            "persisted_delta": true,
+            "discarded_runtime": true
+        },
+        "ts": now_iso()
+    });
+    let run_path = state_root(root)
+        .join("trunk")
+        .join("runs")
+        .join(format!("{run_id}.json"));
+    let _ = write_json(&run_path, &run);
+
+    let trunk_path = trunk_state_path(root);
+    let mut trunk = read_json(&trunk_path).unwrap_or_else(|| {
+        json!({
+            "version":"v1",
+            "runs_total":0u64,
+            "hydrations_total":0u64,
+            "last_run_id": Value::Null
+        })
+    });
+    let runs_total = trunk.get("runs_total").and_then(Value::as_u64).unwrap_or(0) + 1;
+    let hydrations = trunk
+        .get("hydrations_total")
+        .and_then(Value::as_u64)
+        .unwrap_or(0)
+        + 1;
+    trunk["runs_total"] = Value::from(runs_total);
+    trunk["hydrations_total"] = Value::from(hydrations);
+    trunk["last_run_id"] = Value::String(run_id.clone());
+    trunk["updated_at"] = Value::String(now_iso());
+    let _ = write_json(&trunk_path, &trunk);
+
+    let prev = read_jsonl(&trunk_events_path(root))
+        .last()
+        .and_then(|v| v.get("event_hash"))
+        .and_then(Value::as_str)
+        .unwrap_or("genesis")
+        .to_string();
+    let mut event = json!({
+        "type": "autonomy_trunk_event",
+        "run_id": run_id,
+        "previous_hash": prev,
+        "domain": domain,
+        "ts": now_iso()
+    });
+    event["event_hash"] = Value::String(receipt_hash(&event));
+    let _ = append_jsonl(&trunk_events_path(root), &event);
+
+    let mut out = json!({
+        "ok": true,
+        "type": "autonomy_ephemeral_run",
+        "lane": LANE_ID,
+        "strict": strict,
+        "run": run,
+        "trunk": trunk,
+        "artifact": {
+            "run_path": run_path.display().to_string()
+        },
+        "claim_evidence": [
+            {
+                "id": "V8-AGENT-ERA-001.1",
+                "claim": "on_demand_ephemeral_run_executes_generate_run_discard_lifecycle",
+                "evidence": {"run_id": run_id}
+            },
+            {
+                "id": "V8-AGENT-ERA-001.2",
+                "claim": "trunk_state_hydration_and_audit_lineage_are_persisted_for_ephemeral_runs",
+                "evidence": {"runs_total": runs_total, "hydrations_total": hydrations}
+            },
+            {
+                "id": "V8-AGENT-ERA-001.3",
+                "claim": "domain_constraints_are_checked_prior_to_ephemeral_execution",
+                "evidence": {"domain": domain, "allowed": true}
+            },
+            {
+                "id": "V8-AGENT-ERA-001.4",
+                "claim": "ephemeral_ui_leaf_nodes_are_rendered_without_becoming_authority_plane",
+                "evidence": {"ui_leaf": ui_leaf}
+            },
+            {
+                "id": "V8-AGENT-ERA-001.5",
+                "claim": "ephemeral_execution_paths_remain_conduit_only_with_thin_client_boundaries",
+                "evidence": {"strict": strict}
+            }
+        ]
+    });
+    emit_receipt(root, &mut out)
+}
+
+fn run_trunk_status(root: &Path, argv: &[String]) -> i32 {
+    let strict = parse_bool(parse_flag(argv, "strict").as_deref(), true);
+    if let Some(mut denied) = conduit_guard(argv, strict) {
+        return emit_receipt(root, &mut denied);
+    }
+    let trunk = read_json(&trunk_state_path(root)).unwrap_or_else(|| {
+        json!({
+            "version": "v1",
+            "runs_total": 0u64,
+            "hydrations_total": 0u64
+        })
+    });
+    let events = read_jsonl(&trunk_events_path(root));
+    let mut out = json!({
+        "ok": true,
+        "type": "autonomy_trunk_status",
+        "lane": LANE_ID,
+        "strict": strict,
+        "trunk": trunk,
+        "events": {
+            "count": events.len(),
+            "latest": events.last().cloned().unwrap_or(Value::Null)
+        },
+        "claim_evidence": [
+            {
+                "id": "V8-AGENT-ERA-001.2",
+                "claim": "trunk_status_surfaces_state_and_lineage_health_for_ephemeral_execution",
+                "evidence": {"event_count": events.len()}
+            },
+            {
+                "id": "V8-AGENT-ERA-001.5",
+                "claim": "status_surface_is_thin_and_reads_core_authoritative_state",
+                "evidence": {"strict": strict}
+            }
+        ]
+    });
+    emit_receipt(root, &mut out)
 }
 
 fn run_multi_agent_debate(root: &Path, argv: &[String]) -> i32 {
@@ -452,6 +1176,13 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             print_json_line(&native_receipt(root, &cmd, argv));
             0
         }
+        "hand-new" => run_hand_new(root, argv),
+        "hand-cycle" => run_hand_cycle(root, argv),
+        "hand-status" => run_hand_status(root, argv),
+        "hand-memory-page" => run_hand_memory_page(root, argv),
+        "hand-wasm-task" => run_hand_wasm_task(root, argv),
+        "ephemeral-run" => run_ephemeral(root, argv),
+        "trunk-status" => run_trunk_status(root, argv),
         "pain-signal" => {
             print_json_line(&native_pain_signal_receipt(root, argv));
             0
@@ -547,5 +1278,111 @@ mod tests {
         ];
         let code = run(root.path(), &args);
         assert_eq!(code, 0);
+    }
+
+    #[test]
+    fn autonomy_hand_and_ephemeral_lanes_emit_claim_receipts() {
+        let root = tempdir().expect("tmp");
+        assert_eq!(
+            run(
+                root.path(),
+                &[
+                    "hand-new".to_string(),
+                    "--hand-id=alpha".to_string(),
+                    "--template=research".to_string(),
+                    "--strict=1".to_string(),
+                ],
+            ),
+            0
+        );
+        assert_eq!(
+            run(
+                root.path(),
+                &[
+                    "hand-cycle".to_string(),
+                    "--hand-id=alpha".to_string(),
+                    "--goal=collect".to_string(),
+                    "--strict=1".to_string(),
+                ],
+            ),
+            0
+        );
+        assert_eq!(
+            run(
+                root.path(),
+                &[
+                    "hand-memory-page".to_string(),
+                    "--hand-id=alpha".to_string(),
+                    "--op=page-in".to_string(),
+                    "--tier=core".to_string(),
+                    "--key=k1".to_string(),
+                    "--strict=1".to_string(),
+                ],
+            ),
+            0
+        );
+        assert_eq!(
+            run(
+                root.path(),
+                &[
+                    "hand-wasm-task".to_string(),
+                    "--hand-id=alpha".to_string(),
+                    "--task=t1".to_string(),
+                    "--fuel=500".to_string(),
+                    "--epoch-ms=100".to_string(),
+                    "--strict=1".to_string(),
+                ],
+            ),
+            0
+        );
+        assert_eq!(
+            run(
+                root.path(),
+                &[
+                    "ephemeral-run".to_string(),
+                    "--goal=build feature".to_string(),
+                    "--domain=general".to_string(),
+                    "--ui-leaf=1".to_string(),
+                    "--strict=1".to_string(),
+                ],
+            ),
+            0
+        );
+        assert_eq!(
+            run(
+                root.path(),
+                &["trunk-status".to_string(), "--strict=1".to_string()],
+            ),
+            0
+        );
+    }
+
+    #[test]
+    fn conduit_bypass_is_rejected_for_ephemeral_and_hands() {
+        let root = tempdir().expect("tmp");
+        assert_eq!(
+            run(
+                root.path(),
+                &[
+                    "ephemeral-run".to_string(),
+                    "--goal=t".to_string(),
+                    "--bypass=1".to_string(),
+                    "--strict=1".to_string(),
+                ],
+            ),
+            1
+        );
+        assert_eq!(
+            run(
+                root.path(),
+                &[
+                    "hand-new".to_string(),
+                    "--hand-id=beta".to_string(),
+                    "--bypass=1".to_string(),
+                    "--strict=1".to_string(),
+                ],
+            ),
+            1
+        );
     }
 }

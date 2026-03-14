@@ -96,6 +96,7 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
     allow(root, "allow:organism:sensory");
     allow(root, "allow:organism:narrative");
     allow(root, "allow:tokenomics");
+    allow(root, "allow:oracle");
 
     assert_eq!(
         organism_layer::run(
@@ -150,10 +151,7 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
         ),
         0
     );
-    assert_claim(
-        &latest("network_protocol", root),
-        "V8-NETWORK-002.5",
-    );
+    assert_claim(&latest("network_protocol", root), "V8-NETWORK-002.5");
 
     assert_eq!(
         network_protocol::run(
@@ -168,10 +166,7 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
         ),
         0
     );
-    assert_claim(
-        &latest("network_protocol", root),
-        "V8-NETWORK-002.1",
-    );
+    assert_claim(&latest("network_protocol", root), "V8-NETWORK-002.1");
 
     assert_eq!(
         network_protocol::run(
@@ -184,10 +179,7 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
         ),
         0
     );
-    assert_claim(
-        &latest("network_protocol", root),
-        "V8-NETWORK-002.2",
-    );
+    assert_claim(&latest("network_protocol", root), "V8-NETWORK-002.2");
 
     assert_eq!(
         network_protocol::run(
@@ -201,10 +193,7 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
         ),
         0
     );
-    assert_claim(
-        &latest("network_protocol", root),
-        "V8-NETWORK-002.3",
-    );
+    assert_claim(&latest("network_protocol", root), "V8-NETWORK-002.3");
 
     let commitment = "abcd1234";
     let public_input = "directive-compliant";
@@ -223,15 +212,70 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
         ),
         0
     );
-    assert_claim(
-        &latest("network_protocol", root),
-        "V8-NETWORK-002.4",
-    );
+    assert_claim(&latest("network_protocol", root), "V8-NETWORK-002.4");
 
     assert_eq!(network_protocol::run(root, &["dashboard".to_string()]), 0);
-    assert_claim(
-        &latest("network_protocol", root),
-        "V8-NETWORK-002.5",
+    assert_claim(&latest("network_protocol", root), "V8-NETWORK-002.5");
+
+    assert_eq!(
+        network_protocol::run(
+            root,
+            &[
+                "oracle-query".to_string(),
+                "--provider=polymarket".to_string(),
+                "--event=btc_above_100k_2026".to_string(),
+                "--strict=1".to_string(),
+            ],
+        ),
+        0
+    );
+    let oracle = latest("network_protocol", root);
+    assert_eq!(
+        oracle.get("type").and_then(Value::as_str),
+        Some("network_protocol_oracle_query")
+    );
+    assert_claim(&oracle, "V8-NETWORK-003.1");
+    assert_claim(&oracle, "V8-NETWORK-003.4");
+    let market_id = oracle
+        .pointer("/query/market_id")
+        .and_then(Value::as_str)
+        .expect("market_id")
+        .to_string();
+
+    assert_eq!(
+        network_protocol::run(
+            root,
+            &[
+                "truth-weight".to_string(),
+                format!("--market={market_id}"),
+                "--strict=1".to_string(),
+            ],
+        ),
+        0
+    );
+    let truth = latest("network_protocol", root);
+    assert_eq!(
+        truth.get("type").and_then(Value::as_str),
+        Some("network_protocol_truth_weight")
+    );
+    assert_claim(&truth, "V8-NETWORK-003.2");
+    assert_claim(&truth, "V8-NETWORK-003.3");
+    assert_claim(&truth, "V8-NETWORK-003.4");
+    assert_claim(&truth, "V8-NETWORK-003.5");
+    assert!(truth
+        .pointer("/weighting/hybrid_confidence")
+        .and_then(Value::as_f64)
+        .map(|v| (0.0..=1.0).contains(&v))
+        .unwrap_or(false));
+
+    assert_eq!(network_protocol::run(root, &["dashboard".to_string()]), 0);
+    let dashboard_with_oracle = latest("network_protocol", root);
+    assert_claim(&dashboard_with_oracle, "V8-NETWORK-003.5");
+    assert_eq!(
+        dashboard_with_oracle
+            .pointer("/network_organism_view/oracle")
+            .and_then(Value::as_bool),
+        Some(true)
     );
 
     write_json(
@@ -393,4 +437,37 @@ fn v8_batch25_organism_network_and_enterprise_contracts_are_behavior_proven() {
 
     std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
     std::env::remove_var("ORGANISM_CRYSTAL_SIGNING_KEY");
+}
+
+#[test]
+fn v8_batch25_oracle_lane_fails_closed_without_directive_allowance() {
+    let _guard = env_guard();
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let root = tmp.path();
+    std::env::set_var("DIRECTIVE_KERNEL_SIGNING_KEY", "batch25-signing-key");
+
+    assert_eq!(
+        network_protocol::run(
+            root,
+            &[
+                "oracle-query".to_string(),
+                "--provider=polymarket".to_string(),
+                "--event=test_event".to_string(),
+                "--strict=1".to_string(),
+            ],
+        ),
+        2
+    );
+    let denied = latest("network_protocol", root);
+    assert_eq!(
+        denied.get("type").and_then(Value::as_str),
+        Some("network_protocol_oracle_query")
+    );
+    assert_eq!(
+        denied.get("error").and_then(Value::as_str),
+        Some("directive_gate_denied")
+    );
+    assert_claim(&denied, "V8-NETWORK-003.4");
+
+    std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
 }

@@ -2971,6 +2971,105 @@ mod tests {
     }
 
     #[test]
+    fn core_shortcut_routes_browser_snapshot_to_vbrowser_plane() {
+        let route = resolve_core_shortcuts(
+            "browser",
+            &[
+                "snapshot".to_string(),
+                "--session-id=snap-1".to_string(),
+                "--refs=1".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://vbrowser-plane");
+        assert_eq!(
+            route.args,
+            vec!["snapshot", "--session-id=snap-1", "--refs=1"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_hand_new_to_autonomy_controller() {
+        let route = resolve_core_shortcuts(
+            "hand",
+            &[
+                "new".to_string(),
+                "--hand-id=alpha".to_string(),
+                "--template=researcher".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://autonomy-controller");
+        assert_eq!(
+            route.args,
+            vec!["hand-new", "--hand-id=alpha", "--template=researcher"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_oracle_to_network_protocol() {
+        let route = resolve_core_shortcuts(
+            "oracle",
+            &[
+                "query".to_string(),
+                "--provider=polymarket".to_string(),
+                "--event=btc".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://network-protocol");
+        assert_eq!(
+            route.args,
+            vec!["oracle-query", "--provider=polymarket", "--event=btc"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_truth_weight_to_network_protocol() {
+        let route = resolve_core_shortcuts(
+            "truth",
+            &["weight".to_string(), "--market=pm:btc-100k".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://network-protocol");
+        assert_eq!(route.args, vec!["truth-weight", "--market=pm:btc-100k"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_agent_ephemeral_to_autonomy_controller() {
+        let route = resolve_core_shortcuts(
+            "agent",
+            &[
+                "run".to_string(),
+                "--ephemeral".to_string(),
+                "--goal=triage".to_string(),
+                "--domain=research".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://autonomy-controller");
+        assert_eq!(
+            route.args,
+            vec!["ephemeral-run", "--goal=triage", "--domain=research"]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_agent_trunk_status_to_autonomy_controller() {
+        let route = resolve_core_shortcuts(
+            "agent",
+            &[
+                "status".to_string(),
+                "--trunk".to_string(),
+                "--strict=1".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://autonomy-controller");
+        assert_eq!(route.args, vec!["trunk-status", "--strict=1"]);
+    }
+
+    #[test]
     fn local_fail_closed_signal_blocks_dispatch() {
         let _guard = env_guard();
         std::env::set_var("PROTHEUS_CTL_SECURITY_GATE_DISABLED", "0");

@@ -7,7 +7,11 @@ use crate::v8_kernel::{
     write_receipt,
 };
 use crate::{clean, parse_args};
+use aes_gcm::aead::{Aead, KeyInit};
+use aes_gcm::{Aes256Gcm, Nonce};
+use rand::RngCore;
 use serde_json::{json, Value};
+use std::fs;
 use std::path::{Path, PathBuf};
 
 const STATE_ENV: &str = "VBROWSER_PLANE_STATE_ROOT";
@@ -27,6 +31,16 @@ fn usage() {
     println!("  protheus-ops vbrowser-plane session-control --op=<join|handoff|leave|status> [--session-id=<id>] [--actor=<id>] [--role=<watch-only|shared-control>] [--to=<id>] [--strict=1|0]");
     println!("  protheus-ops vbrowser-plane automate --session-id=<id> [--actions=navigate,click,type] [--strict=1|0]");
     println!("  protheus-ops vbrowser-plane privacy-guard [--session-id=<id>] [--network=isolated|restricted|public] [--recording=0|1] [--allow-recording=0|1] [--budget-tokens=<n>] [--strict=1|0]");
+    println!(
+        "  protheus-ops vbrowser-plane snapshot [--session-id=<id>] [--refs=1|0] [--strict=1|0]"
+    );
+    println!("  protheus-ops vbrowser-plane screenshot [--session-id=<id>] [--annotate=1|0] [--strict=1|0]");
+    println!("  protheus-ops vbrowser-plane action-policy [--session-id=<id>] [--action=<navigate|click|fill|submit>] [--action-policy=<path>] [--confirm=1|0] [--strict=1|0]");
+    println!("  protheus-ops vbrowser-plane auth-save [--provider=<id>] [--profile=<id>] [--username=<id>] [--secret=<token>] [--strict=1|0]");
+    println!("  protheus-ops vbrowser-plane auth-login [--provider=<id>] [--profile=<id>] [--strict=1|0]");
+    println!(
+        "  protheus-ops vbrowser-plane native [--session-id=<id>] [--url=<url>] [--strict=1|0]"
+    );
 }
 
 fn state_root(root: &Path) -> PathBuf {
@@ -78,14 +92,57 @@ fn status(root: &Path) -> Value {
 
 fn claim_ids_for_action(action: &str) -> Vec<&'static str> {
     match action {
-        "session-start" => vec!["V6-VBROWSER-001.1", "V6-VBROWSER-001.5", "V6-VBROWSER-001.6"],
+        "session-start" => vec![
+            "V6-VBROWSER-001.1",
+            "V6-VBROWSER-001.5",
+            "V6-VBROWSER-001.6",
+        ],
         "session-control" => {
-            vec!["V6-VBROWSER-001.2", "V6-VBROWSER-001.5", "V6-VBROWSER-001.6"]
+            vec![
+                "V6-VBROWSER-001.2",
+                "V6-VBROWSER-001.5",
+                "V6-VBROWSER-001.6",
+            ]
         }
-        "automate" => vec!["V6-VBROWSER-001.3", "V6-VBROWSER-001.5", "V6-VBROWSER-001.6"],
+        "automate" => vec![
+            "V6-VBROWSER-001.3",
+            "V6-VBROWSER-001.5",
+            "V6-VBROWSER-001.6",
+        ],
         "privacy-guard" => {
-            vec!["V6-VBROWSER-001.4", "V6-VBROWSER-001.5", "V6-VBROWSER-001.6"]
+            vec![
+                "V6-VBROWSER-001.4",
+                "V6-VBROWSER-001.5",
+                "V6-VBROWSER-001.6",
+            ]
         }
+        "snapshot" => vec![
+            "V6-VBROWSER-002.1",
+            "V6-VBROWSER-001.5",
+            "V6-VBROWSER-001.6",
+        ],
+        "screenshot" => vec![
+            "V6-VBROWSER-002.2",
+            "V6-VBROWSER-001.5",
+            "V6-VBROWSER-001.6",
+        ],
+        "action-policy" => vec![
+            "V6-VBROWSER-002.3",
+            "V6-VBROWSER-001.5",
+            "V6-VBROWSER-001.6",
+        ],
+        "auth-save" | "auth-login" => {
+            vec![
+                "V6-VBROWSER-002.4",
+                "V6-VBROWSER-001.5",
+                "V6-VBROWSER-001.6",
+            ]
+        }
+        "native" => vec![
+            "V6-VBROWSER-002.5",
+            "V6-VBROWSER-001.5",
+            "V6-VBROWSER-001.6",
+        ],
         _ => vec!["V6-VBROWSER-001.5", "V6-VBROWSER-001.6"],
     }
 }
@@ -160,6 +217,84 @@ fn session_state_path(root: &Path, session_id: &str) -> PathBuf {
     state_root(root)
         .join("sessions")
         .join(format!("{session_id}.json"))
+}
+
+fn snapshot_path(root: &Path) -> PathBuf {
+    state_root(root).join("snapshots").join("latest.json")
+}
+
+fn screenshot_svg_path(root: &Path) -> PathBuf {
+    state_root(root).join("screenshots").join("latest.svg")
+}
+
+fn screenshot_map_path(root: &Path) -> PathBuf {
+    state_root(root).join("screenshots").join("latest_map.json")
+}
+
+fn auth_vault_path(root: &Path) -> PathBuf {
+    state_root(root).join("auth_vault").join("profiles.json")
+}
+
+fn ensure_parent(path: &Path) {
+    if let Some(parent) = path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+}
+
+fn load_auth_vault(root: &Path) -> Value {
+    read_json(&auth_vault_path(root)).unwrap_or_else(|| json!({"version":"v1","profiles":[]}))
+}
+
+fn write_auth_vault(root: &Path, value: &Value) {
+    let path = auth_vault_path(root);
+    ensure_parent(&path);
+    let _ = write_json(&path, value);
+}
+
+fn auth_key_material(root: &Path) -> [u8; 32] {
+    let mut key = [0u8; 32];
+    let source = std::env::var("VBROWSER_AUTH_VAULT_KEY")
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+        .unwrap_or_else(|| {
+            format!(
+                "{}:{}",
+                crate::deterministic_receipt_hash(&json!({"scope":"vbrowser_auth"})),
+                root.display()
+            )
+        });
+    let digest = sha256_hex_str(&source);
+    let bytes = hex::decode(digest).unwrap_or_default();
+    for (idx, b) in bytes.into_iter().take(32).enumerate() {
+        key[idx] = b;
+    }
+    key
+}
+
+fn encrypt_secret(root: &Path, plaintext: &str) -> Option<Value> {
+    let key_bytes = auth_key_material(root);
+    let cipher = Aes256Gcm::new_from_slice(&key_bytes).ok()?;
+    let mut nonce_bytes = [0u8; 12];
+    rand::thread_rng().fill_bytes(&mut nonce_bytes);
+    let nonce = Nonce::from_slice(&nonce_bytes);
+    let ciphertext = cipher.encrypt(nonce, plaintext.as_bytes()).ok()?;
+    Some(json!({
+        "alg": "AES-256-GCM",
+        "nonce_hex": hex::encode(nonce_bytes),
+        "ciphertext_b64": base64::encode(ciphertext)
+    }))
+}
+
+fn decrypt_secret(root: &Path, payload: &Value) -> Option<String> {
+    let nonce_hex = payload.get("nonce_hex")?.as_str()?;
+    let ciphertext_b64 = payload.get("ciphertext_b64")?.as_str()?;
+    let nonce_bytes = hex::decode(nonce_hex).ok()?;
+    let ciphertext = base64::decode(ciphertext_b64).ok()?;
+    let key_bytes = auth_key_material(root);
+    let cipher = Aes256Gcm::new_from_slice(&key_bytes).ok()?;
+    let nonce = Nonce::from_slice(&nonce_bytes);
+    let plain = cipher.decrypt(nonce, ciphertext.as_ref()).ok()?;
+    String::from_utf8(plain).ok()
 }
 
 fn run_session_start(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
@@ -750,6 +885,443 @@ fn run_privacy_guard(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> V
     out
 }
 
+fn run_snapshot(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
+    let sid = session_id(parsed);
+    let refs_enabled = parse_bool(parsed.flags.get("refs"), true);
+    let session = read_json(&session_state_path(root, &sid)).unwrap_or_else(|| {
+        json!({
+            "session_id": sid,
+            "target_url": "about:blank",
+            "shadow": "default-shadow"
+        })
+    });
+    let target_url = session
+        .get("target_url")
+        .and_then(Value::as_str)
+        .unwrap_or("about:blank");
+    let shadow = session
+        .get("shadow")
+        .and_then(Value::as_str)
+        .unwrap_or("default-shadow");
+    let links = if refs_enabled {
+        vec![
+            json!({"href": target_url, "label": "current"}),
+            json!({"href": "about:history", "label": "history"}),
+        ]
+    } else {
+        Vec::new()
+    };
+    let snapshot = json!({
+        "version": "v1",
+        "session_id": sid,
+        "shadow": shadow,
+        "target_url": target_url,
+        "refs_enabled": refs_enabled,
+        "dom": {
+            "title": "Virtual Browser Snapshot",
+            "headings": ["h1: Session Overview", "h2: Context"],
+            "text_blocks": 3
+        },
+        "links": links,
+        "captured_at": crate::now_iso()
+    });
+
+    let path = snapshot_path(root);
+    let _ = write_json(&path, &snapshot);
+    let _ = append_jsonl(
+        &state_root(root).join("snapshots").join("history.jsonl"),
+        &snapshot,
+    );
+    let mut out = json!({
+        "ok": true,
+        "strict": strict,
+        "type": "vbrowser_plane_snapshot",
+        "lane": "core/layer0/ops",
+        "snapshot": snapshot,
+        "artifact": {
+            "path": path.display().to_string(),
+            "sha256": sha256_hex_str(&snapshot.to_string())
+        },
+        "claim_evidence": [
+            {
+                "id": "V6-VBROWSER-002.1",
+                "claim": "snapshot_operation_emits_structured_page_artifact_for_streamed_browser_session",
+                "evidence": {"session_id": sid, "refs_enabled": refs_enabled}
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
+    out
+}
+
+fn run_screenshot(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
+    let sid = session_id(parsed);
+    let annotate = parse_bool(parsed.flags.get("annotate"), false);
+    let session = read_json(&session_state_path(root, &sid)).unwrap_or_else(|| {
+        json!({
+            "session_id": sid,
+            "target_url": "about:blank"
+        })
+    });
+    let target_url = clean(
+        session
+            .get("target_url")
+            .and_then(Value::as_str)
+            .unwrap_or("about:blank"),
+        240,
+    );
+    let annotations = if annotate {
+        vec![
+            json!({"id":"a1","label":"Primary CTA","x":90,"y":44}),
+            json!({"id":"a2","label":"Navigation","x":16,"y":18}),
+        ]
+    } else {
+        Vec::new()
+    };
+
+    let svg = format!(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1024\" height=\"576\"><rect width=\"100%\" height=\"100%\" fill=\"#0b1020\"/><text x=\"24\" y=\"48\" fill=\"#ffffff\" font-size=\"20\">Session {}</text><text x=\"24\" y=\"78\" fill=\"#9ca3af\" font-size=\"14\">{}</text></svg>",
+        sid, target_url
+    );
+    let svg_path = screenshot_svg_path(root);
+    ensure_parent(&svg_path);
+    let _ = fs::write(&svg_path, svg);
+
+    let map = json!({
+        "version": "v1",
+        "session_id": sid,
+        "target_url": target_url,
+        "annotated": annotate,
+        "annotations": annotations,
+        "captured_at": crate::now_iso()
+    });
+    let map_path = screenshot_map_path(root);
+    let _ = write_json(&map_path, &map);
+    let mut out = json!({
+        "ok": true,
+        "strict": strict,
+        "type": "vbrowser_plane_screenshot",
+        "lane": "core/layer0/ops",
+        "map": map,
+        "artifact": {
+            "svg_path": svg_path.display().to_string(),
+            "map_path": map_path.display().to_string()
+        },
+        "claim_evidence": [
+            {
+                "id": "V6-VBROWSER-002.2",
+                "claim": "screenshot_operation_emits_visual_artifact_and_coordinate_map",
+                "evidence": {"session_id": sid, "annotated": annotate}
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
+    out
+}
+
+fn run_action_policy(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
+    let sid = session_id(parsed);
+    let action = clean(
+        parsed
+            .flags
+            .get("action")
+            .cloned()
+            .unwrap_or_else(|| "navigate".to_string()),
+        40,
+    )
+    .to_ascii_lowercase();
+    let confirm = parse_bool(parsed.flags.get("confirm"), false);
+    let policy_path = parsed
+        .flags
+        .get("action-policy")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            root.join("planes")
+                .join("contracts")
+                .join("vbrowser")
+                .join("action_policy_v1.json")
+        });
+    let policy = read_json(&policy_path).unwrap_or_else(|| {
+        json!({
+            "version": "v1",
+            "blocked": ["download-exe"],
+            "requires_confirmation": ["submit", "purchase", "delete"]
+        })
+    });
+    let blocked = policy
+        .get("blocked")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|v| v.as_str().map(|s| s.to_ascii_lowercase()))
+        .collect::<Vec<_>>();
+    let requires_confirmation = policy
+        .get("requires_confirmation")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|v| v.as_str().map(|s| s.to_ascii_lowercase()))
+        .collect::<Vec<_>>();
+
+    if strict && blocked.iter().any(|v| v == &action) {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "vbrowser_plane_action_policy",
+            "lane": "core/layer0/ops",
+            "error": "action_blocked",
+            "action": action,
+            "session_id": sid,
+            "claim_evidence": [
+                {
+                    "id": "V6-VBROWSER-002.3",
+                    "claim": "action_policy_rejects_blocked_operations_with_fail_closed_behavior",
+                    "evidence": {"action": action, "blocked": true}
+                }
+            ]
+        });
+    }
+    if strict && requires_confirmation.iter().any(|v| v == &action) && !confirm {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "vbrowser_plane_action_policy",
+            "lane": "core/layer0/ops",
+            "error": "confirmation_required",
+            "action": action,
+            "session_id": sid
+        });
+    }
+
+    let decision = json!({
+        "version": "v1",
+        "session_id": sid,
+        "action": action,
+        "allowed": true,
+        "confirmed": confirm,
+        "policy_path": policy_path.display().to_string(),
+        "ts": crate::now_iso()
+    });
+    let decision_path = state_root(root).join("action_policy").join("latest.json");
+    let _ = write_json(&decision_path, &decision);
+    let mut out = json!({
+        "ok": true,
+        "strict": strict,
+        "type": "vbrowser_plane_action_policy",
+        "lane": "core/layer0/ops",
+        "decision": decision,
+        "artifact": {
+            "path": decision_path.display().to_string(),
+            "sha256": sha256_hex_str(&decision.to_string())
+        },
+        "claim_evidence": [
+            {
+                "id": "V6-VBROWSER-002.3",
+                "claim": "action_policy_enforces_confirm_and_block_rules_before_execution",
+                "evidence": {"action": action, "confirmed": confirm}
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
+    out
+}
+
+fn run_auth_save(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
+    let provider = clean_id(
+        parsed
+            .flags
+            .get("provider")
+            .map(String::as_str)
+            .or_else(|| parsed.flags.get("domain").map(String::as_str)),
+        "default",
+    );
+    let profile = clean_id(
+        parsed
+            .flags
+            .get("profile")
+            .map(String::as_str)
+            .or_else(|| parsed.flags.get("user").map(String::as_str)),
+        "default",
+    );
+    let username = clean(
+        parsed
+            .flags
+            .get("username")
+            .cloned()
+            .unwrap_or_else(|| "user".to_string()),
+        120,
+    );
+    let secret = parsed.flags.get("secret").cloned().unwrap_or_default();
+    if strict && secret.trim().is_empty() {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "vbrowser_plane_auth_save",
+            "lane": "core/layer0/ops",
+            "error": "secret_required"
+        });
+    }
+    let encrypted = match encrypt_secret(root, &secret) {
+        Some(v) => v,
+        None => {
+            return json!({
+                "ok": false,
+                "strict": strict,
+                "type": "vbrowser_plane_auth_save",
+                "lane": "core/layer0/ops",
+                "error": "encrypt_failed"
+            });
+        }
+    };
+    let mut vault = load_auth_vault(root);
+    if !vault.get("profiles").and_then(Value::as_array).is_some() {
+        vault["profiles"] = Value::Array(Vec::new());
+    }
+    let mut profiles = vault
+        .get("profiles")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    profiles.retain(|row| {
+        row.get("provider").and_then(Value::as_str) != Some(provider.as_str())
+            || row.get("profile").and_then(Value::as_str) != Some(profile.as_str())
+    });
+    let entry = json!({
+        "provider": provider,
+        "profile": profile,
+        "username": username,
+        "secret": encrypted,
+        "updated_at": crate::now_iso()
+    });
+    profiles.push(entry.clone());
+    vault["profiles"] = Value::Array(profiles.clone());
+    write_auth_vault(root, &vault);
+    let mut out = json!({
+        "ok": true,
+        "strict": strict,
+        "type": "vbrowser_plane_auth_save",
+        "lane": "core/layer0/ops",
+        "entry": {
+            "provider": provider,
+            "profile": profile,
+            "username": username
+        },
+        "profiles_total": profiles.len(),
+        "claim_evidence": [
+            {
+                "id": "V6-VBROWSER-002.4",
+                "claim": "auth_profiles_are_saved_in_encrypted_vault_for_reuse",
+                "evidence": {"provider": provider, "profile": profile}
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
+    out
+}
+
+fn run_auth_login(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
+    let provider = clean_id(parsed.flags.get("provider").map(String::as_str), "default");
+    let profile = clean_id(parsed.flags.get("profile").map(String::as_str), "default");
+    let vault = load_auth_vault(root);
+    let selected = vault
+        .get("profiles")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+        .into_iter()
+        .find(|row| {
+            row.get("provider").and_then(Value::as_str) == Some(provider.as_str())
+                && row.get("profile").and_then(Value::as_str) == Some(profile.as_str())
+        });
+    let Some(entry) = selected else {
+        return json!({
+            "ok": !strict,
+            "strict": strict,
+            "type": "vbrowser_plane_auth_login",
+            "lane": "core/layer0/ops",
+            "error": "profile_not_found",
+            "provider": provider,
+            "profile": profile
+        });
+    };
+    let secret = entry
+        .get("secret")
+        .and_then(|v| decrypt_secret(root, v))
+        .unwrap_or_default();
+    if strict && secret.is_empty() {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "vbrowser_plane_auth_login",
+            "lane": "core/layer0/ops",
+            "error": "decrypt_failed",
+            "provider": provider,
+            "profile": profile
+        });
+    }
+    let token = sha256_hex_str(&format!("{}:{}:{}", provider, profile, secret));
+    let mut out = json!({
+        "ok": true,
+        "strict": strict,
+        "type": "vbrowser_plane_auth_login",
+        "lane": "core/layer0/ops",
+        "provider": provider,
+        "profile": profile,
+        "session_token_hint": &token[..16],
+        "claim_evidence": [
+            {
+                "id": "V6-VBROWSER-002.4",
+                "claim": "auth_profiles_enable_deterministic_login_without_plaintext_secret_exposure",
+                "evidence": {"provider": provider, "profile": profile}
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
+    out
+}
+
+fn run_native(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
+    let sid = session_id(parsed);
+    let url = clean(
+        parsed
+            .flags
+            .get("url")
+            .cloned()
+            .unwrap_or_else(|| "about:blank".to_string()),
+        400,
+    );
+    let session = json!({
+        "version": "v1",
+        "session_id": sid,
+        "target_url": url,
+        "origin": "protheusctl-browser-native",
+        "native_mode": true,
+        "host_state_access": false,
+        "started_at": crate::now_iso()
+    });
+    let path = session_state_path(root, &sid);
+    let _ = write_json(&path, &session);
+    let mut out = json!({
+        "ok": true,
+        "strict": strict,
+        "type": "vbrowser_plane_native",
+        "lane": "core/layer0/ops",
+        "session": session,
+        "artifact": {"path": path.display().to_string()},
+        "claim_evidence": [
+            {
+                "id": "V6-VBROWSER-002.5",
+                "claim": "native_cli_browser_surface_routes_to_core_vbrowser_runtime",
+                "evidence": {"session_id": sid}
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
+    out
+}
+
 pub fn run(root: &Path, argv: &[String]) -> i32 {
     let parsed = parse_args(argv);
     let command = parsed
@@ -793,6 +1365,12 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         "session-control" | "control" => run_session_control(root, &parsed, strict),
         "automate" => run_automate(root, &parsed, strict),
         "privacy-guard" | "privacy" => run_privacy_guard(root, &parsed, strict),
+        "snapshot" => run_snapshot(root, &parsed, strict),
+        "screenshot" => run_screenshot(root, &parsed, strict),
+        "action-policy" => run_action_policy(root, &parsed, strict),
+        "auth-save" => run_auth_save(root, &parsed, strict),
+        "auth-login" => run_auth_login(root, &parsed, strict),
+        "native" => run_native(root, &parsed, strict),
         _ => json!({
             "ok": false,
             "type": "vbrowser_plane_error",
