@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "type": "legacy_alias_guard_report",
+  "strict": true,
+  "scanned_files": 117,
+  "allowlist": {
+    "allow_run_legacy_alias": [
+      "client/runtime/systems/compat/legacy_alias_adapter.ts"
+    ],
+    "allow_legacy_retired_lane": []
+  },
+  "violation_count": 0,
+  "violations": []
+}
