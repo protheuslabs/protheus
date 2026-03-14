@@ -2,7 +2,8 @@
 // Layer ownership: core/layer0/ops::research_batch6 (authoritative)
 
 use crate::v8_kernel::{
-    append_jsonl, parse_u64, read_json, scoped_state_root, sha256_hex_str, write_json,
+    append_jsonl, build_conduit_enforcement, conduit_bypass_requested, parse_u64, read_json,
+    scoped_state_root, sha256_hex_str, write_json,
 };
 use crate::{clean, deterministic_receipt_hash, now_iso, ParsedArgs};
 use serde_json::{json, Map, Value};
@@ -23,9 +24,70 @@ pub const CONSOLE_CONTRACT_PATH: &str = "planes/contracts/research/crawl_console
 pub const TEMPLATE_GOVERNANCE_CONTRACT_PATH: &str =
     "planes/contracts/research/template_governance_contract_v1.json";
 pub const TEMPLATE_MANIFEST_PATH: &str = "planes/contracts/research/template_pack_manifest_v1.json";
+const WIT_WORLD_REGISTRY_PATH: &str = "planes/contracts/wit/world_registry_v1.json";
+const WIT_WORLD_BINDING: &str = "infring.metakernel.v1";
 
 fn state_root(root: &Path) -> PathBuf {
     scoped_state_root(root, STATE_ENV, STATE_SCOPE)
+}
+
+fn normalize_claim_evidence(rows: Vec<Value>) -> Vec<Value> {
+    rows.into_iter()
+        .map(|row| {
+            let mut obj = row.as_object().cloned().unwrap_or_default();
+            if obj
+                .get("id")
+                .and_then(Value::as_str)
+                .map(|v| v.trim().is_empty())
+                .unwrap_or(true)
+            {
+                obj.insert("id".to_string(), Value::String("V6-RESEARCH-PLANE".to_string()));
+            }
+            if obj
+                .get("claim")
+                .and_then(Value::as_str)
+                .map(|v| v.trim().is_empty())
+                .unwrap_or(true)
+            {
+                obj.insert(
+                    "claim".to_string(),
+                    Value::String("research_plane_deterministic_receipt_emission".to_string()),
+                );
+            }
+            if !obj.get("evidence").map(Value::is_object).unwrap_or(false) {
+                obj.insert("evidence".to_string(), json!({}));
+            }
+            Value::Object(obj)
+        })
+        .collect::<Vec<_>>()
+}
+
+fn finalize_receipt(mut out: Value) -> Value {
+    if !out.is_object() {
+        out = json!({
+            "ok": false,
+            "type": "research_plane_error",
+            "errors": ["invalid_receipt_shape"]
+        });
+    }
+    if out.get("lane").is_none() {
+        out["lane"] = Value::String("core/layer0/ops".to_string());
+    }
+    if out.get("strict").is_none() {
+        out["strict"] = Value::Bool(true);
+    }
+    out["world_binding"] = json!({
+        "registry_path": WIT_WORLD_REGISTRY_PATH,
+        "world": WIT_WORLD_BINDING
+    });
+    let claims = out
+        .get("claim_evidence")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    out["claim_evidence"] = Value::Array(normalize_claim_evidence(claims));
+    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+    out
 }
 
 fn read_json_or(root: &Path, rel_or_abs: &str, fallback: Value) -> Value {
@@ -108,48 +170,27 @@ fn pattern_match(action: &str, pattern: &str) -> bool {
     a == p || a.contains(&p)
 }
 
-fn guess_bool(raw: Option<&str>, fallback: bool) -> bool {
-    raw.map(|v| {
-        matches!(
-            v.trim().to_ascii_lowercase().as_str(),
-            "1" | "true" | "yes" | "on"
-        )
-    })
-    .unwrap_or(fallback)
-}
-
 fn conduit_enforcement(root: &Path, parsed: &ParsedArgs, strict: bool, action: &str) -> Value {
-    let bypass_requested = guess_bool(parsed.flags.get("bypass").map(String::as_str), false)
-        || guess_bool(parsed.flags.get("direct").map(String::as_str), false)
-        || guess_bool(
-            parsed.flags.get("unsafe-client-route").map(String::as_str),
-            false,
-        )
-        || guess_bool(parsed.flags.get("client-bypass").map(String::as_str), false);
-    let ok = !bypass_requested;
-    let mut out = json!({
-        "ok": if strict { ok } else { true },
-        "type": "research_conduit_enforcement",
-        "ts": now_iso(),
-        "action": clean(action, 160),
-        "required_path": "core/layer0/ops/research_plane",
-        "bypass_requested": bypass_requested,
-        "errors": if ok { Value::Array(Vec::new()) } else { json!(["conduit_bypass_rejected"]) },
-        "claim_evidence": [
-            {
-                "id": "V6-RESEARCH-002.6",
-                "claim": "research_template_and_crawler_controls_are_conduit_routed_with_fail_closed_bypass_rejection",
-                "evidence": {
-                    "required_path": "core/layer0/ops/research_plane",
-                    "bypass_requested": bypass_requested
-                }
+    let bypass_requested = conduit_bypass_requested(&parsed.flags);
+    let out = build_conduit_enforcement(
+        root,
+        STATE_ENV,
+        STATE_SCOPE,
+        strict,
+        action,
+        "research_conduit_enforcement",
+        "core/layer0/ops/research_plane",
+        bypass_requested,
+        vec![json!({
+            "id": "V6-RESEARCH-002.6",
+            "claim": "research_template_and_crawler_controls_are_conduit_routed_with_fail_closed_bypass_rejection",
+            "evidence": {
+                "required_path": "core/layer0/ops/research_plane",
+                "bypass_requested": bypass_requested
             }
-        ]
-    });
-    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
-    let history_path = state_root(root).join("conduit").join("history.jsonl");
-    let _ = append_jsonl(&history_path, &out);
-    out
+        })],
+    );
+    finalize_receipt(out)
 }
 
 pub fn safety_gate_receipt(
@@ -232,7 +273,7 @@ pub fn safety_gate_receipt(
         let _ = write_json(&counters_path, &counters);
     }
 
-    let mut out = json!({
+    let out = finalize_receipt(json!({
         "ok": if strict { ok } else { true },
         "type": "research_safety_gate",
         "ts": now_iso(),
@@ -254,8 +295,7 @@ pub fn safety_gate_receipt(
                 }
             }
         ]
-    });
-    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+    }));
     let history_path = state_root(root).join("safety").join("history.jsonl");
     let _ = append_jsonl(&history_path, &out);
     out
@@ -375,12 +415,12 @@ pub fn run_mcp_extract(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value 
     }
 
     if !errors.is_empty() {
-        return json!({
+        return finalize_receipt(json!({
             "ok": false,
             "strict": strict,
             "type": "research_plane_mcp_extract",
             "errors": errors
-        });
+        }));
     }
 
     let title = parse_title(&payload);
@@ -413,7 +453,7 @@ pub fn run_mcp_extract(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value 
         "links": links,
         "entities": entities
     });
-    let mut out = json!({
+    let out = finalize_receipt(json!({
         "ok": true,
         "strict": strict,
         "type": "research_plane_mcp_extract",
@@ -433,8 +473,7 @@ pub fn run_mcp_extract(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value 
                 "evidence": {"source_hash": sha256_hex_str(&payload)}
             }
         ]
-    });
-    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+    }));
     out
 }
 
@@ -490,12 +529,12 @@ pub fn run_spider(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
         match parse_json_flag_or_path(root, parsed, "graph-json", "graph-path", json!({})) {
             Ok(v) => v,
             Err(err) => {
-                return json!({
+                return finalize_receipt(json!({
                     "ok": false,
                     "strict": strict,
                     "type": "research_plane_rule_spider",
                     "errors": [err]
-                });
+                }));
             }
         };
     let graph = parse_graph(graph_json);
@@ -547,12 +586,12 @@ pub fn run_spider(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
         errors.push("missing_graph_fixture".to_string());
     }
     if !errors.is_empty() {
-        return json!({
+        return finalize_receipt(json!({
             "ok": false,
             "strict": strict,
             "type": "research_plane_rule_spider",
             "errors": errors
-        });
+        }));
     }
 
     let mut queue = VecDeque::<(String, u64)>::new();
@@ -609,7 +648,7 @@ pub fn run_spider(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
         }
     }
 
-    let mut out = json!({
+    let out = finalize_receipt(json!({
         "ok": true,
         "strict": strict,
         "type": "research_plane_rule_spider",
@@ -625,8 +664,7 @@ pub fn run_spider(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
                 "evidence": {"visited_count": visited.len()}
             }
         ]
-    });
-    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+    }));
     out
 }
 
@@ -694,12 +732,12 @@ pub fn run_middleware(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
         json!([])
     });
     if !errors.is_empty() {
-        return json!({
+        return finalize_receipt(json!({
             "ok": false,
             "strict": strict,
             "type": "research_plane_middleware",
             "errors": errors
-        });
+        }));
     }
     let mut lifecycle = Vec::<Value>::new();
     for row in stack.as_array().cloned().unwrap_or_default() {
@@ -757,7 +795,7 @@ pub fn run_middleware(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
         }));
     }
 
-    let mut out = json!({
+    let out = finalize_receipt(json!({
         "ok": true,
         "strict": strict,
         "type": "research_plane_middleware",
@@ -772,8 +810,7 @@ pub fn run_middleware(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
                 "evidence": {"hooks": lifecycle.len()}
             }
         ]
-    });
-    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+    }));
     out
 }
 
@@ -864,12 +901,12 @@ pub fn run_pipeline(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
         items = json!([]);
     }
     if !errors.is_empty() {
-        return json!({
+        return finalize_receipt(json!({
             "ok": false,
             "strict": strict,
             "type": "research_plane_item_pipeline",
             "errors": errors
-        });
+        }));
     }
 
     let mut stage_receipts = Vec::<Value>::new();
@@ -963,7 +1000,7 @@ pub fn run_pipeline(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
     };
     let _ = fs::write(&export_path, format!("{export_body}\n"));
 
-    let mut out = json!({
+    let out = finalize_receipt(json!({
         "ok": true,
         "strict": strict,
         "type": "research_plane_item_pipeline",
@@ -982,8 +1019,7 @@ pub fn run_pipeline(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
                 "evidence": {"stages": stage_receipts.len()}
             }
         ]
-    });
-    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+    }));
     out
 }
 
@@ -1046,12 +1082,12 @@ pub fn run_signals(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
         errors.push("signal_payloads_must_be_arrays".to_string());
     }
     if !errors.is_empty() {
-        return json!({
+        return finalize_receipt(json!({
             "ok": false,
             "strict": strict,
             "type": "research_plane_signal_bus",
             "errors": errors
-        });
+        }));
     }
 
     let supported = contract
@@ -1100,7 +1136,7 @@ pub fn run_signals(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
         }));
     }
 
-    let mut out = json!({
+    let out = finalize_receipt(json!({
         "ok": true,
         "strict": strict,
         "type": "research_plane_signal_bus",
@@ -1113,8 +1149,7 @@ pub fn run_signals(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
                 "evidence": {"events": events.as_array().map(|v| v.len()).unwrap_or(0)}
             }
         ]
-    });
-    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+    }));
     out
 }
 
@@ -1157,12 +1192,12 @@ pub fn run_console(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
         .map(|v| v.to_ascii_lowercase())
         .collect::<Vec<_>>();
     if !allowed_ops.iter().any(|v| v == &op) {
-        return json!({
+        return finalize_receipt(json!({
             "ok": false,
             "strict": strict,
             "type": "research_plane_console",
             "errors": ["console_op_not_allowed"]
-        });
+        }));
     }
 
     let console_state_path = state_root(root).join("console").join("state.json");
@@ -1175,7 +1210,7 @@ pub fn run_console(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
         })
     });
     if !auth_ok {
-        return json!({
+        return finalize_receipt(json!({
             "ok": false,
             "strict": strict,
             "type": "research_plane_console",
@@ -1189,7 +1224,7 @@ pub fn run_console(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
                     "evidence": {"op": op}
                 }
             ]
-        });
+        }));
     }
 
     if op == "pause" {
@@ -1212,7 +1247,7 @@ pub fn run_console(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
     state["updated_at"] = Value::String(now_iso());
     let _ = write_json(&console_state_path, &state);
 
-    let mut out = json!({
+    let out = finalize_receipt(json!({
         "ok": true,
         "strict": strict,
         "type": "research_plane_console",
@@ -1231,21 +1266,20 @@ pub fn run_console(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
                 "evidence": {"op": op}
             }
         ]
-    });
-    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+    }));
     out
 }
 
 pub fn run_template_governance(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
     let conduit = conduit_enforcement(root, parsed, strict, "template_governance");
     if strict && !conduit.get("ok").and_then(Value::as_bool).unwrap_or(false) {
-        return json!({
+        return finalize_receipt(json!({
             "ok": false,
             "strict": strict,
             "type": "research_plane_template_governance",
             "errors": ["conduit_bypass_rejected"],
             "conduit_enforcement": conduit
-        });
+        }));
     }
 
     let contract = read_json_or(
@@ -1399,7 +1433,7 @@ pub fn run_template_governance(root: &Path, parsed: &ParsedArgs, strict: bool) -
     }
 
     let ok = errors.is_empty();
-    let mut out = json!({
+    let out = finalize_receipt(json!({
         "ok": if strict { ok } else { true },
         "strict": strict,
         "type": "research_plane_template_governance",
@@ -1419,8 +1453,7 @@ pub fn run_template_governance(root: &Path, parsed: &ParsedArgs, strict: bool) -
                 }
             }
         ]
-    });
-    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+    }));
     out
 }
 

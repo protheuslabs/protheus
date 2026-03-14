@@ -21,6 +21,39 @@ fn has_claim(receipt: &Value, claim_id: &str) -> bool {
         .any(|row| row.get("id").and_then(Value::as_str) == Some(claim_id))
 }
 
+fn has_infring_receipt(receipt: &Value) -> bool {
+    let has_ts = receipt.get("ts").and_then(Value::as_str).is_some()
+        || receipt.get("ts_epoch_ms").and_then(Value::as_u64).is_some();
+    receipt.get("ok").and_then(Value::as_bool).is_some()
+        && receipt
+            .get("receipt_hash")
+            .and_then(Value::as_str)
+            .map(|v| !v.trim().is_empty())
+            .unwrap_or(false)
+        && receipt
+            .get("type")
+            .and_then(Value::as_str)
+            .map(|v| !v.trim().is_empty())
+            .unwrap_or(false)
+        && receipt
+            .get("lane")
+            .and_then(Value::as_str)
+            .map(|v| !v.trim().is_empty())
+            .unwrap_or(false)
+        && has_ts
+}
+
+fn read_jsonl(path: &Path) -> Vec<Value> {
+    fs::read_to_string(path)
+        .ok()
+        .map(|raw| {
+            raw.lines()
+                .filter_map(|line| serde_json::from_str::<Value>(line).ok())
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default()
+}
+
 #[test]
 fn v6_batch20_model_and_network_lanes_are_receipted() {
     let root = tempfile::tempdir().expect("tempdir");
@@ -42,6 +75,7 @@ fn v6_batch20_model_and_network_lanes_are_receipted() {
         adapt.get("type").and_then(Value::as_str),
         Some("model_router_adapt_repo")
     );
+    assert!(has_infring_receipt(&adapt));
     assert!(has_claim(&adapt, "V6-MODEL-003.3"));
     assert!(adapt
         .pointer("/adaptation_plan/plan_digest")
@@ -64,6 +98,12 @@ fn v6_batch20_model_and_network_lanes_are_receipted() {
     assert_eq!(
         reset.get("type").and_then(Value::as_str),
         Some("model_router_agent_reset")
+    );
+    assert!(has_infring_receipt(&reset));
+    assert_eq!(
+        reset.pointer("/state_preservation/previous_receipt_hash")
+            .and_then(Value::as_str),
+        adapt.get("receipt_hash").and_then(Value::as_str)
     );
     assert!(has_claim(&reset, "V6-MODEL-003.4"));
     assert!(reset
@@ -88,6 +128,7 @@ fn v6_batch20_model_and_network_lanes_are_receipted() {
         optimize.get("type").and_then(Value::as_str),
         Some("model_router_optimize_cheap")
     );
+    assert!(has_infring_receipt(&optimize));
     assert!(has_claim(&optimize, "V6-MODEL-003.5"));
     assert!(optimize
         .pointer("/plan/profile_digest")
@@ -112,6 +153,7 @@ fn v6_batch20_model_and_network_lanes_are_receipted() {
         night.get("type").and_then(Value::as_str),
         Some("model_router_night_schedule")
     );
+    assert!(has_infring_receipt(&night));
     assert!(has_claim(&night, "V6-MODEL-003.6"));
     assert!(night
         .pointer("/schedule/window_hours")
@@ -142,6 +184,7 @@ fn v6_batch20_model_and_network_lanes_are_receipted() {
         join.get("type").and_then(Value::as_str),
         Some("p2p_gossip_seed_join")
     );
+    assert!(has_infring_receipt(&join));
     assert!(has_claim(&join, "V6-NETWORK-004.2"));
     assert!(has_claim(&join, "V6-NETWORK-004.6"));
 
@@ -163,6 +206,7 @@ fn v6_batch20_model_and_network_lanes_are_receipted() {
         compute.get("type").and_then(Value::as_str),
         Some("p2p_gossip_seed_compute_proof")
     );
+    assert!(has_infring_receipt(&compute));
     assert!(has_claim(&compute, "V6-NETWORK-004.1"));
     assert!(has_claim(&compute, "V6-NETWORK-004.2"));
     assert!(has_claim(&compute, "V6-NETWORK-004.6"));
@@ -188,6 +232,7 @@ fn v6_batch20_model_and_network_lanes_are_receipted() {
         gossip.get("type").and_then(Value::as_str),
         Some("p2p_gossip_seed_breakthrough")
     );
+    assert!(has_infring_receipt(&gossip));
     assert!(has_claim(&gossip, "V6-NETWORK-004.3"));
     assert!(gossip
         .get("gossip_id")
@@ -211,6 +256,7 @@ fn v6_batch20_model_and_network_lanes_are_receipted() {
         rss.get("type").and_then(Value::as_str),
         Some("p2p_gossip_seed_idle_rss")
     );
+    assert!(has_infring_receipt(&rss));
     assert!(has_claim(&rss, "V6-NETWORK-004.4"));
     assert!(rss
         .get("comment_id")
@@ -234,6 +280,7 @@ fn v6_batch20_model_and_network_lanes_are_receipted() {
         ranking.get("type").and_then(Value::as_str),
         Some("p2p_gossip_seed_ranking_evolve")
     );
+    assert!(has_infring_receipt(&ranking));
     assert!(has_claim(&ranking, "V6-NETWORK-004.5"));
     assert!(ranking
         .get("ranking_state_path")
@@ -250,12 +297,54 @@ fn v6_batch20_model_and_network_lanes_are_receipted() {
         dashboard.get("type").and_then(Value::as_str),
         Some("p2p_gossip_seed_dashboard")
     );
+    assert!(has_infring_receipt(&dashboard));
     assert!(has_claim(&dashboard, "V6-NETWORK-004.2"));
     assert!(has_claim(&dashboard, "V6-NETWORK-004.6"));
     assert!(dashboard
         .get("contribution_ledger")
         .and_then(Value::as_object)
         .is_some());
+    assert_eq!(
+        dashboard
+            .pointer("/latest_event/receipt_hash")
+            .and_then(Value::as_str),
+        ranking.get("receipt_hash").and_then(Value::as_str)
+    );
+
+    let model_history = read_jsonl(&root.path().join("state/ops/model_router/history.jsonl"));
+    assert!(model_history.len() >= 4, "expected model router history entries");
+    for row in &model_history {
+        assert!(has_infring_receipt(row));
+    }
+    for pair in model_history.windows(2) {
+        assert_ne!(
+            pair[0].get("receipt_hash").and_then(Value::as_str),
+            pair[1].get("receipt_hash").and_then(Value::as_str)
+        );
+    }
+
+    let network_history = read_jsonl(&root.path().join("state/ops/p2p_gossip_seed/history.jsonl"));
+    assert!(
+        network_history.len() >= 6,
+        "expected network history rows for join/compute/gossip/rss/ranking/dashboard"
+    );
+    for row in &network_history {
+        assert!(has_infring_receipt(row));
+        assert!(
+            row.get("claim_evidence")
+                .and_then(Value::as_array)
+                .map(|rows| !rows.is_empty())
+                .unwrap_or(false),
+            "network rows must emit claim evidence"
+        );
+    }
+    assert_eq!(
+        network_history
+            .get(network_history.len().saturating_sub(2))
+            .and_then(|row| row.get("receipt_hash"))
+            .and_then(Value::as_str),
+        ranking.get("receipt_hash").and_then(Value::as_str)
+    );
 }
 
 #[test]

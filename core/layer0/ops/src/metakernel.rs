@@ -24,6 +24,7 @@ const DEGRADATION_CONTRACT_PATH: &str = "planes/contracts/degradation_contracts_
 const EXECUTION_PROFILE_MATRIX_PATH: &str = "planes/contracts/execution_profile_matrix_v1.json";
 const VARIANT_PROFILE_DIR: &str = "planes/contracts/variant_profiles";
 const MPU_COMPARTMENT_PROFILE_PATH: &str = "planes/contracts/mpu_compartment_profile_v1.json";
+const TOP1_SURFACE_REGISTRY_PATH: &str = "proofs/layer0/core_formal_coverage_map.json";
 const CONDUIT_SCHEMA_PATH: &str = "planes/contracts/conduit_envelope.schema.json";
 const TLA_BOUNDARY_PATH: &str = "planes/spec/tla/three_plane_boundary.tla";
 const DEP_BOUNDARY_MANIFEST: &str = "client/runtime/config/dependency_boundary_manifest.json";
@@ -1876,6 +1877,7 @@ fn run_variant_profiles(root: &Path, strict: bool) -> Value {
 fn run_mpu_compartments(root: &Path, strict: bool) -> Value {
     let payload = read_json(&root.join(MPU_COMPARTMENT_PROFILE_PATH)).unwrap_or(Value::Null);
     let mut errors = Vec::new();
+    let mut warnings = Vec::new();
 
     if payload
         .get("version")
@@ -1904,6 +1906,11 @@ fn run_mpu_compartments(root: &Path, strict: bool) -> Value {
     }
 
     let mut ids = BTreeSet::new();
+    let required_compartments: BTreeSet<String> = ["rtos_kernel", "conduit_io", "receipt_log"]
+        .iter()
+        .map(|v| v.to_string())
+        .collect();
+    let mut attenuation_hooks = Vec::new();
     let mut compartment_rows = Vec::new();
     for row in compartments {
         let id = row
@@ -1964,13 +1971,36 @@ fn run_mpu_compartments(root: &Path, strict: bool) -> Value {
             );
         }
         compartment_rows.push(json!({
-            "id": id,
+            "id": id.clone(),
             "ok": row_errors.is_empty(),
             "read": read,
             "write": write,
             "execute": execute,
             "errors": row_errors
         }));
+        if !id.is_empty() {
+            let cpu_limit_pct = match id.as_str() {
+                "rtos_kernel" => 60,
+                "conduit_io" => 25,
+                "receipt_log" => 15,
+                _ => 20,
+            };
+            attenuation_hooks.push(json!({
+                "compartment_id": id,
+                "resource_limits": {
+                    "cpu_limit_pct": cpu_limit_pct,
+                    "memory_limit_bytes": row.get("region_size").and_then(Value::as_u64).unwrap_or(0),
+                    "io_priority": if row.get("access").and_then(|v| v.get("write")).and_then(Value::as_bool).unwrap_or(false) { "normal" } else { "low" }
+                },
+                "hook": "metakernel_capability_attenuation"
+            }));
+        }
+    }
+
+    for required in &required_compartments {
+        if !ids.contains(required) {
+            errors.push(format!("mpu_compartment_required_missing::{required}"));
+        }
     }
 
     let targets = payload
@@ -2015,14 +2045,48 @@ fn run_mpu_compartments(root: &Path, strict: bool) -> Value {
         }
     }
 
+    let top1_surface = "core/layer0/ops::metakernel";
+    let top1_registry = read_json(&root.join(TOP1_SURFACE_REGISTRY_PATH)).unwrap_or(Value::Null);
+    let top1_surface_present = top1_registry
+        .get("surfaces")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+        .iter()
+        .any(|row| row.get("id").and_then(Value::as_str) == Some(top1_surface));
+    if !top1_surface_present {
+        warnings.push("top1_surface_registry_missing::core/layer0/ops::metakernel".to_string());
+    }
+
+    let compartment_proof_links = required_compartments
+        .iter()
+        .map(|compartment| {
+            json!({
+                "compartment_id": compartment,
+                "proof_surface_id": top1_surface,
+                "registered": top1_surface_present,
+                "present_in_profile": ids.contains(compartment)
+            })
+        })
+        .collect::<Vec<_>>();
+
     let ok = errors.is_empty();
     json!({
         "ok": if strict { ok } else { true },
         "strict": strict,
         "contract_path": MPU_COMPARTMENT_PROFILE_PATH,
         "compartment_count": ids.len(),
+        "required_compartments": required_compartments.into_iter().collect::<Vec<_>>(),
         "compartments": compartment_rows,
-        "errors": errors
+        "capability_attenuation_hooks": attenuation_hooks,
+        "top1_surface_registry": {
+            "path": TOP1_SURFACE_REGISTRY_PATH,
+            "surface_id": top1_surface,
+            "surface_registered": top1_surface_present
+        },
+        "compartment_proof_links": compartment_proof_links,
+        "errors": errors,
+        "warnings": warnings
     })
 }
 

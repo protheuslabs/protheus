@@ -17,6 +17,18 @@ fn print_json_line(value: &Value) {
     );
 }
 
+fn finalize_model_router_receipt(out: &mut Value) {
+    let Some(map) = out.as_object_mut() else {
+        return;
+    };
+    if !map.contains_key("lane") {
+        map.insert("lane".to_string(), Value::String("core/layer0/ops".to_string()));
+    }
+    if !map.contains_key("strict") {
+        map.insert("strict".to_string(), Value::Bool(true));
+    }
+}
+
 fn flag_value(argv: &[String], key: &str) -> Option<String> {
     let pref = format!("--{key}=");
     let mut i = 0usize;
@@ -86,6 +98,7 @@ fn model_router_conduit_enforcement(args: &[String], command: &str, strict: bool
         "errors": if ok { Value::Array(Vec::new()) } else { json!(["conduit_bypass_rejected"]) },
         "claim_evidence": claim_rows
     });
+    finalize_model_router_receipt(&mut out);
     out["receipt_hash"] = Value::String(receipt_hash(&out));
     out
 }
@@ -246,6 +259,7 @@ fn optimize_cheapest_receipt(root: &Path, args: &[String]) -> Value {
             }
         ]
     });
+    finalize_model_router_receipt(&mut out);
     out["receipt_hash"] = Value::String(receipt_hash(&out));
     let (latest_path, history_path) = model_router_state_paths(root);
     write_json(&latest_path, &out);
@@ -304,6 +318,7 @@ fn reset_agent_receipt(root: &Path, args: &[String]) -> Value {
             }
         ]
     });
+    finalize_model_router_receipt(&mut out);
     out["receipt_hash"] = Value::String(receipt_hash(&out));
     write_json(&latest_path, &out);
     append_jsonl(&history_path, &out);
@@ -386,6 +401,7 @@ fn night_scheduler_receipt(root: &Path, args: &[String]) -> Value {
             }
         ]
     });
+    finalize_model_router_receipt(&mut out);
     out["receipt_hash"] = Value::String(receipt_hash(&out));
     let (latest_path, history_path) = model_router_state_paths(root);
     write_json(&latest_path, &out);
@@ -435,6 +451,7 @@ fn compact_context_receipt(root: &Path, args: &[String]) -> Value {
             }
         ]
     });
+    finalize_model_router_receipt(&mut out);
     out["receipt_hash"] = Value::String(receipt_hash(&out));
     let (latest_path, history_path) = model_router_state_paths(root);
     write_json(&latest_path, &out);
@@ -488,6 +505,7 @@ fn decompose_task_receipt(root: &Path, args: &[String]) -> Value {
             }
         ]
     });
+    finalize_model_router_receipt(&mut out);
     out["receipt_hash"] = Value::String(receipt_hash(&out));
     let (latest_path, history_path) = model_router_state_paths(root);
     write_json(&latest_path, &out);
@@ -554,6 +572,7 @@ fn adapt_repo_receipt(root: &Path, args: &[String]) -> Value {
             }
         ]
     });
+    finalize_model_router_receipt(&mut out);
     out["receipt_hash"] = Value::String(receipt_hash(&out));
     let (latest_path, history_path) = model_router_state_paths(root);
     write_json(&latest_path, &out);
@@ -596,6 +615,7 @@ pub fn run(root: &Path, args: &[String]) -> i32 {
                 "errors": ["conduit_bypass_rejected"],
                 "conduit_enforcement": conduit
             });
+            finalize_model_router_receipt(&mut out);
             out["receipt_hash"] = Value::String(receipt_hash(&out));
             print_json_line(&out);
             return 1;
@@ -651,6 +671,7 @@ pub fn run(root: &Path, args: &[String]) -> i32 {
             "error": "unknown_command",
             "exit_code": 2
         });
+        finalize_model_router_receipt(&mut out);
         out["receipt_hash"] = Value::String(receipt_hash(&out));
         print_json_line(&out);
         return 2;
@@ -726,6 +747,7 @@ pub fn run(root: &Path, args: &[String]) -> i32 {
             }
         }
     });
+    finalize_model_router_receipt(&mut out);
     out["receipt_hash"] = Value::String(receipt_hash(&out));
     print_json_line(&out);
     0

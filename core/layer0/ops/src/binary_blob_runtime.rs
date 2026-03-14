@@ -3,8 +3,8 @@
 
 use crate::directive_kernel;
 use crate::v8_kernel::{
-    keyed_digest_hex, parse_bool, parse_f64, print_json, read_json, scoped_state_root, sha256_file,
-    sha256_hex_str, write_json, write_receipt,
+    canonical_json_string, keyed_digest_hex, parse_bool, parse_f64, print_json, read_json,
+    scoped_state_root, sha256_file, sha256_hex_str, write_json, write_receipt,
 };
 use crate::{clean, now_iso, parse_args};
 use memmap2::MmapOptions;
@@ -54,7 +54,13 @@ fn default_prime_blob_vault() -> Value {
 }
 
 fn load_prime_blob_vault(root: &Path) -> Value {
-    read_json(&prime_blob_vault_path(root)).unwrap_or_else(default_prime_blob_vault)
+    let path = prime_blob_vault_path(root);
+    let raw = read_json(&path).unwrap_or_else(default_prime_blob_vault);
+    let normalized = normalize_prime_blob_vault(&raw);
+    if normalized != raw {
+        let _ = write_json(&path, &normalized);
+    }
+    normalized
 }
 
 fn store_prime_blob_vault(root: &Path, vault: &Value) -> Result<(), String> {
@@ -62,16 +68,20 @@ fn store_prime_blob_vault(root: &Path, vault: &Value) -> Result<(), String> {
 }
 
 fn blob_vault_secret() -> Option<String> {
-    std::env::var(BLOB_SIGNING_ENV)
-        .ok()
-        .map(|v| clean(v, 1024))
-        .filter(|v| !v.is_empty())
-        .or_else(|| {
-            std::env::var("DIRECTIVE_KERNEL_SIGNING_KEY")
-                .ok()
-                .map(|v| clean(v, 1024))
-                .filter(|v| !v.is_empty())
-        })
+    blob_vault_signing_keys().into_iter().next()
+}
+
+fn blob_vault_signing_keys() -> Vec<String> {
+    let mut keys = Vec::new();
+    for key in [BLOB_SIGNING_ENV, "DIRECTIVE_KERNEL_SIGNING_KEY"] {
+        if let Ok(value) = std::env::var(key) {
+            let cleaned = clean(value, 1024);
+            if !cleaned.is_empty() && !keys.iter().any(|row| row == &cleaned) {
+                keys.push(cleaned);
+            }
+        }
+    }
+    keys
 }
 
 fn blob_signature_payload(entry: &Value) -> Value {
@@ -90,14 +100,42 @@ fn blob_signature_payload(entry: &Value) -> Value {
     })
 }
 
+fn legacy_blob_signature_payload(entry: &Value) -> Value {
+    json!({
+        "entry_id": entry.get("entry_id").cloned().unwrap_or(Value::Null),
+        "module": entry.get("module").cloned().unwrap_or(Value::Null),
+        "blob_id": entry.get("blob_id").cloned().unwrap_or(Value::Null),
+        "source_hash": entry.get("source_hash").cloned().unwrap_or(Value::Null),
+        "blob_hash": entry.get("blob_hash").cloned().unwrap_or(Value::Null),
+        "policy_hash": entry.get("policy_hash").cloned().unwrap_or(Value::Null),
+        "mode": entry.get("mode").cloned().unwrap_or(Value::Null),
+        "ts": entry.get("ts").cloned().unwrap_or(Value::Null)
+    })
+}
+
+fn blob_signature_payload_variants(entry: &Value) -> Vec<Value> {
+    let current = blob_signature_payload(entry);
+    let legacy = legacy_blob_signature_payload(entry);
+    let mut canonical = canonical_blob_entry_for_hash(entry);
+    if let Some(obj) = canonical.as_object_mut() {
+        obj.remove("signature");
+    }
+    let mut variants = vec![current.clone()];
+    if legacy != current {
+        variants.push(legacy.clone());
+    }
+    if canonical != current && canonical != legacy {
+        variants.push(canonical);
+    }
+    variants
+}
+
 fn sign_blob_entry(entry: &Value) -> String {
     let payload = blob_signature_payload(entry);
+    let payload_canonical = canonical_json_string(&payload);
     let key = blob_vault_secret().unwrap_or_default();
     if key.is_empty() {
-        format!(
-            "unsigned:{}",
-            sha256_hex_str(&serde_json::to_string(&payload).unwrap_or_default())
-        )
+        format!("unsigned:{}", sha256_hex_str(&payload_canonical))
     } else {
         format!("sig:{}", keyed_digest_hex(&key, &payload))
     }
@@ -113,17 +151,22 @@ fn verify_blob_entry_signature(entry: &Value) -> bool {
     if sig.is_empty() {
         return false;
     }
-    let payload = blob_signature_payload(entry);
+    let payload_variants = blob_signature_payload_variants(entry);
     if let Some(raw) = sig.strip_prefix("unsigned:") {
-        return raw.eq_ignore_ascii_case(&sha256_hex_str(
-            &serde_json::to_string(&payload).unwrap_or_default(),
-        ));
+        return payload_variants.iter().any(|payload| {
+            raw.eq_ignore_ascii_case(&sha256_hex_str(&canonical_json_string(payload)))
+        });
     }
     if let Some(raw) = sig.strip_prefix("sig:") {
-        let Some(key) = blob_vault_secret() else {
+        let keys = blob_vault_signing_keys();
+        if keys.is_empty() {
             return false;
-        };
-        return raw.eq_ignore_ascii_case(&keyed_digest_hex(&key, &payload));
+        }
+        return keys.iter().any(|key| {
+            payload_variants
+                .iter()
+                .any(|payload| raw.eq_ignore_ascii_case(&keyed_digest_hex(key, payload)))
+        });
     }
     false
 }
@@ -137,9 +180,42 @@ fn canonical_blob_entry_for_hash(entry: &Value) -> Value {
 }
 
 fn recompute_blob_entry_hash(entry: &Value) -> String {
-    sha256_hex_str(
-        &serde_json::to_string(&canonical_blob_entry_for_hash(entry)).unwrap_or_default(),
-    )
+    sha256_hex_str(&canonical_json_string(&canonical_blob_entry_for_hash(entry)))
+}
+
+fn normalize_prime_blob_vault(vault: &Value) -> Value {
+    let mut normalized = if vault.is_object() {
+        vault.clone()
+    } else {
+        default_prime_blob_vault()
+    };
+    if !normalized.get("entries").map(Value::is_array).unwrap_or(false) {
+        normalized["entries"] = Value::Array(Vec::new());
+    }
+    if normalized.get("version").and_then(Value::as_str).is_none() {
+        normalized["version"] = Value::String("1.0".to_string());
+    }
+    if normalized.get("created_at").and_then(Value::as_str).is_none() {
+        normalized["created_at"] = Value::String(now_iso());
+    }
+    let chain_head_missing = normalized
+        .get("chain_head")
+        .and_then(Value::as_str)
+        .map(|v| v.trim().is_empty())
+        .unwrap_or(true);
+    if chain_head_missing {
+        let derived = normalized
+            .get("entries")
+            .and_then(Value::as_array)
+            .and_then(|rows| rows.last())
+            .and_then(|row| row.get("entry_hash"))
+            .and_then(Value::as_str)
+            .filter(|v| !v.trim().is_empty())
+            .unwrap_or("genesis")
+            .to_string();
+        normalized["chain_head"] = Value::String(derived);
+    }
+    normalized
 }
 
 fn validate_prime_blob_vault(vault: &Value) -> Value {
@@ -599,7 +675,17 @@ fn load_and_verify(root: &Path, module: &str) -> Result<Value, String> {
 }
 
 fn emit(root: &Path, payload: Value) -> i32 {
-    match write_receipt(root, STATE_ENV, STATE_SCOPE, payload) {
+    let mut normalized = payload;
+    if normalized.get("lane").is_none() {
+        normalized["lane"] = Value::String("core/layer0/ops".to_string());
+    }
+    if normalized.get("strict").is_none() {
+        normalized["strict"] = Value::Bool(true);
+    }
+    if normalized.get("schema").is_none() {
+        normalized["schema"] = Value::String("infring_layer1_security".to_string());
+    }
+    match write_receipt(root, STATE_ENV, STATE_SCOPE, normalized) {
         Ok(out) => {
             print_json(&out);
             if out.get("ok").and_then(Value::as_bool).unwrap_or(false) {

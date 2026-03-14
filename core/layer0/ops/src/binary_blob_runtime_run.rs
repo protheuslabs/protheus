@@ -117,6 +117,73 @@ fn compute_dashboard_metrics(
     })
 }
 
+fn enforce_vault_integrity_gate(
+    root: &Path,
+    command: &str,
+    compat_action: Option<&str>,
+) -> Result<Value, Value> {
+    let gate_action = "blob:vault_integrity";
+    let fallback_command_gate_action = format!("blob:{command}");
+    let command_gate_action = compat_action
+        .map(|v| v.to_string())
+        .unwrap_or(fallback_command_gate_action);
+    let wildcard_gate_action = "blob:*";
+    let gate_evaluation = directive_kernel::evaluate_action(root, gate_action);
+    let command_gate_evaluation = directive_kernel::evaluate_action(root, &command_gate_action);
+    let wildcard_gate_evaluation = directive_kernel::evaluate_action(root, wildcard_gate_action);
+    let gate_allowed = gate_evaluation
+        .get("allowed")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+        || command_gate_evaluation
+            .get("allowed")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+        || wildcard_gate_evaluation
+            .get("allowed")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+    let vault_integrity = validate_prime_blob_vault(&load_prime_blob_vault(root));
+    let vault_ok = vault_integrity
+        .get("ok")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    let gate = json!({
+        "ok": gate_allowed && vault_ok,
+        "gate_action": gate_action,
+        "gate_action_compat": command_gate_action,
+        "gate_action_wildcard": wildcard_gate_action,
+        "gate_evaluation": gate_evaluation,
+        "gate_evaluation_compat": command_gate_evaluation,
+        "gate_evaluation_wildcard": wildcard_gate_evaluation,
+        "vault_integrity": vault_integrity,
+        "command": command
+    });
+    if gate_allowed && vault_ok {
+        Ok(gate)
+    } else {
+        Err(json!({
+            "ok": false,
+            "type": "binary_blob_runtime_vault_integrity_gate",
+            "lane": "core/layer0/ops",
+            "error": if !gate_allowed { "directive_gate_denied" } else { "prime_blob_vault_chain_invalid" },
+            "gate_action": command_gate_action,
+            "gate_evaluation": command_gate_evaluation,
+            "command": command,
+            "vault_integrity_gate": gate,
+            "claim_evidence": [
+                {
+                    "id": "V8-BINARY-BLOB-001.1",
+                    "claim": "binary_blob_runtime_requires_vault_integrity_policy_gate_before_execution",
+                    "evidence": {
+                        "command": command
+                    }
+                }
+            ]
+        }))
+    }
+}
+
 pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
     let parsed = parse_args(argv);
     let command = parsed
@@ -240,6 +307,31 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
         );
     }
 
+    let requires_integrity_gate = matches!(
+        command.as_str(),
+        "migrate" | "settle" | "load" | "mutate" | "substrate-probe" | "debug-access"
+    );
+    let gate_compat_action = match command.as_str() {
+        "load" => Some(format!(
+            "blob:load:{}",
+            normalize_module(parsed.flags.get("module"))
+        )),
+        "settle" => Some(format!(
+            "blob:settle:{}",
+            normalize_module(parsed.flags.get("module"))
+        )),
+        "mutate" => Some("blob:mutate".to_string()),
+        _ => None,
+    };
+    let vault_integrity_gate = if requires_integrity_gate {
+        match enforce_vault_integrity_gate(root, &command, gate_compat_action.as_deref()) {
+            Ok(gate) => Some(gate),
+            Err(out) => return emit(root, out),
+        }
+    } else {
+        None
+    };
+
     if command == "migrate" {
         let gate_action = "blob:migrate";
         if !directive_kernel::action_allowed(root, gate_action) {
@@ -284,6 +376,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                 "lane": "core/layer0/ops",
                 "mode": clean(parsed.flags.get("mode").cloned().unwrap_or_else(|| "modular".to_string()), 24),
                 "commands": ["protheus blobs migrate", "protheus blobs status"],
+                "vault_integrity_gate": vault_integrity_gate.clone().unwrap_or(Value::Null),
                 "settled": settled,
                 "failures": failures,
                 "dashboard": dashboard,
@@ -341,6 +434,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "type": "binary_blob_runtime_settle",
                     "lane": "core/layer0/ops",
                     "detail": detail,
+                    "vault_integrity_gate": vault_integrity_gate.clone().unwrap_or(Value::Null),
                     "layer_map": ["0","1","2","3","client"],
                     "claim_evidence": [
                         {
@@ -366,6 +460,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "type": "binary_blob_runtime_settle",
                     "lane": "core/layer0/ops",
                     "module": module,
+                    "vault_integrity_gate": vault_integrity_gate.clone().unwrap_or(Value::Null),
                     "error": clean(err, 220)
                 }),
             ),
@@ -407,6 +502,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "type": "binary_blob_runtime_load",
                     "lane": "core/layer0/ops",
                     "detail": detail,
+                    "vault_integrity_gate": vault_integrity_gate.clone().unwrap_or(Value::Null),
                     "claim_evidence": [
                         {
                             "id": "V8-BINARY-BLOB-001.1",
@@ -423,6 +519,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                     "type": "binary_blob_runtime_load",
                     "lane": "core/layer0/ops",
                     "module": module,
+                    "vault_integrity_gate": vault_integrity_gate.clone().unwrap_or(Value::Null),
                     "error": clean(&err, 220),
                     "claim_evidence": [
                         {
@@ -503,6 +600,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                 "proposal": event.get("proposal").cloned().unwrap_or(Value::Null),
                 "module": event.get("module").cloned().unwrap_or(Value::Null),
                 "apply": apply,
+                "vault_integrity_gate": vault_integrity_gate.clone().unwrap_or(Value::Null),
                 "directive_allowed": directive_allowed,
                 "gate_evaluation": {
                     "base": gate_eval_base,
@@ -579,6 +677,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                 "type": "binary_blob_runtime_substrate_probe",
                 "lane": "core/layer0/ops",
                 "preferred": prefer,
+                "vault_integrity_gate": vault_integrity_gate.clone().unwrap_or(Value::Null),
                 "probe_order": probe_order,
                 "ternary_available": ternary_available,
                 "selected": selected,
@@ -639,6 +738,7 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                 "type": "binary_blob_runtime_debug_access",
                 "lane": "core/layer0/ops",
                 "module": module,
+                "vault_integrity_gate": vault_integrity_gate.clone().unwrap_or(Value::Null),
                 "tamper_signal": tamper,
                 "token_verify": token_verify,
                 "allowed": allowed,

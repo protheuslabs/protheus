@@ -4,7 +4,10 @@
 use crate::clean;
 use crate::{deterministic_receipt_hash, now_iso};
 use serde_json::{json, Value};
+use std::fs;
+use std::io::Write;
 use std::path::Path;
+use std::path::PathBuf;
 
 fn print_json(value: &Value) {
     println!(
@@ -27,6 +30,160 @@ fn compatibility_security_command(command: &str, argv: &[String]) -> (Value, i32
     });
     out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
     (out, 0)
+}
+
+fn state_dir(root: &Path) -> PathBuf {
+    root.join("core")
+        .join("local")
+        .join("state")
+        .join("ops")
+        .join("security_plane")
+}
+
+fn capability_event_path(root: &Path) -> PathBuf {
+    state_dir(root).join("capability_events.jsonl")
+}
+
+fn parse_flag(argv: &[String], key: &str) -> Option<String> {
+    let pref = format!("--{key}=");
+    let key_long = format!("--{key}");
+    let mut i = 0usize;
+    while i < argv.len() {
+        let token = argv[i].trim();
+        if let Some(value) = token.strip_prefix(&pref) {
+            return Some(value.to_string());
+        }
+        if token == key_long && i + 1 < argv.len() && !argv[i + 1].starts_with("--") {
+            return Some(argv[i + 1].clone());
+        }
+        i += 1;
+    }
+    None
+}
+
+fn parse_bool(raw: Option<String>, fallback: bool) -> bool {
+    raw.map(|v| {
+        matches!(
+            v.trim().to_ascii_lowercase().as_str(),
+            "1" | "true" | "yes" | "on"
+        )
+    })
+    .unwrap_or(fallback)
+}
+
+fn capability_action(command: &str, argv: &[String], payload: &Value) -> Option<String> {
+    if let Some(action) = payload.get("action").and_then(Value::as_str) {
+        let clean = action.trim().to_ascii_lowercase();
+        if clean == "grant" || clean == "revoke" {
+            return Some(clean);
+        }
+    }
+    if command == "capability-switchboard" || command == "capability_switchboard" {
+        if payload.get("type").and_then(Value::as_str) == Some("capability_switchboard_set") {
+            if let Some(enabled) = payload.get("enabled").and_then(Value::as_bool) {
+                return Some(if enabled { "grant" } else { "revoke" }.to_string());
+            }
+            if let Some(state) = parse_flag(argv, "state") {
+                let lowered = state.trim().to_ascii_lowercase();
+                return Some(if matches!(lowered.as_str(), "on" | "true" | "1") {
+                    "grant"
+                } else {
+                    "revoke"
+                }
+                .to_string());
+            }
+        }
+    }
+    None
+}
+
+fn append_capability_event(root: &Path, event: &Value) {
+    let path = capability_event_path(root);
+    if let Some(parent) = path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    if let Ok(line) = serde_json::to_string(event) {
+        let _ = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&path)
+            .and_then(|mut file| file.write_all(format!("{line}\n").as_bytes()));
+    }
+}
+
+fn wrap_capability_event(root: &Path, command: &str, argv: &[String], payload: Value) -> Value {
+    let strict = parse_bool(parse_flag(argv, "strict"), true);
+    let mut out = if payload.is_object() {
+        payload
+    } else {
+        json!({
+            "ok": false,
+            "type": "security_plane_wrap_error",
+            "payload": payload
+        })
+    };
+    if out.get("lane").is_none() {
+        out["lane"] = Value::String("core/layer1/security".to_string());
+    }
+    out["strict"] = Value::Bool(strict);
+    out["policy_engine"] = Value::String("infring_layer1_security".to_string());
+    out["authority"] = Value::String("rust_security_plane".to_string());
+    out["ts"] = out
+        .get("ts")
+        .cloned()
+        .unwrap_or_else(|| Value::String(now_iso()));
+
+    let action = capability_action(command, argv, &out);
+    let event = json!({
+        "kind": "infring_capability_event",
+        "command": clean(command, 120),
+        "action": action.clone().unwrap_or_else(|| "observe".to_string()),
+        "runtime_capability_change": action.is_some()
+    });
+    out["infring_capability_event"] = event.clone();
+    if let Some(action) = action {
+        out["grant_revoke_receipt"] = json!({
+            "action": action,
+            "ts": now_iso(),
+            "source": "security_plane_runtime"
+        });
+    }
+
+    let mut claim_rows = out
+        .get("claim_evidence")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    claim_rows.push(json!({
+        "id": "V8-DIRECTIVES-001.3",
+        "claim": "security_plane_operations_are_surfaced_as_infring_capability_events",
+        "evidence": {
+            "command": clean(command, 120),
+            "policy_engine": "infring_layer1_security"
+        }
+    }));
+    if out.get("grant_revoke_receipt").is_some() {
+        claim_rows.push(json!({
+            "id": "V7-ASSIMILATE-001.3",
+            "claim": "runtime_capability_changes_emit_grant_revoke_receipts",
+            "evidence": {
+                "command": clean(command, 120)
+            }
+        }));
+    }
+    out["claim_evidence"] = Value::Array(claim_rows);
+    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+
+    let log_row = json!({
+        "ts": now_iso(),
+        "type": "security_plane_capability_event",
+        "command": clean(command, 120),
+        "receipt_hash": out.get("receipt_hash").cloned().unwrap_or(Value::Null),
+        "event": event,
+        "grant_revoke_receipt": out.get("grant_revoke_receipt").cloned().unwrap_or(Value::Null)
+    });
+    append_capability_event(root, &log_row);
+    out
 }
 
 pub fn run(root: &Path, argv: &[String]) -> i32 {
@@ -314,7 +471,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             json!({
                 "ok": false,
                 "type": "security_plane_error",
-                "error": format!("unknown_command:{}", clean(cmd, 120)),
+                "error": format!("unknown_command:{}", clean(&cmd, 120)),
                 "usage": [
                     "protheus-ops security-plane guard [--files=<a,b,c>] [--strict=1|0]",
                     "protheus-ops security-plane anti-sabotage-shield <snapshot|verify|watch|status> [flags]",
@@ -374,6 +531,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         ),
     };
 
-    print_json(&payload);
+    let wrapped = wrap_capability_event(root, &cmd, rest, payload);
+    print_json(&wrapped);
     code
 }
