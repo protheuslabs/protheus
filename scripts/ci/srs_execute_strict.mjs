@@ -5,12 +5,12 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const ROOT = resolve('.');
-const OUT_JSON = resolve('artifacts/srs_execute_strict_current.json');
+const OUT_JSON = resolve('core/local/artifacts/srs_execute_strict_current.json');
 const OUT_MD = resolve('docs/workspace/SRS_EXECUTE_STRICT_CURRENT.md');
-const MAP_JSON = resolve('artifacts/srs_actionable_map_current.json');
+const MAP_JSON = resolve('core/local/artifacts/srs_actionable_map_current.json');
 const QUEUE_JSON = resolve('client/local/state/ops/backlog_queue_executor/latest.json');
-const FULL_JSON = resolve('artifacts/srs_full_regression_current.json');
-const TOP200_JSON = resolve('artifacts/srs_top200_regression_2026-03-10.json');
+const FULL_JSON = resolve('core/local/artifacts/srs_full_regression_current.json');
+const TOP200_JSON = resolve('core/local/artifacts/srs_top200_regression_2026-03-10.json');
 
 function parseArgs(argv) {
   const out = new Map();
@@ -198,10 +198,10 @@ function main() {
       },
       steps,
       artifacts: {
-        actionable_map_json: 'artifacts/srs_actionable_map_current.json',
+        actionable_map_json: 'core/local/artifacts/srs_actionable_map_current.json',
         queue_latest_json: 'client/local/state/ops/backlog_queue_executor/latest.json',
-        full_regression_json: 'artifacts/srs_full_regression_current.json',
-        top200_regression_json: 'artifacts/srs_top200_regression_2026-03-10.json',
+        full_regression_json: 'core/local/artifacts/srs_full_regression_current.json',
+        top200_regression_json: 'core/local/artifacts/srs_top200_regression_2026-03-10.json',
       },
     };
     writeArtifacts(payload);

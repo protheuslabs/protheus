@@ -9,7 +9,7 @@ const ROOT = process.cwd();
 function parseArgs(argv) {
   const out = {
     policy: 'client/runtime/config/client_target_contract_policy.json',
-    out: 'artifacts/client_surface_disposition_current.json',
+    out: 'core/local/artifacts/client_surface_disposition_current.json',
   };
   for (const arg of argv) {
     if (arg.startsWith('--policy=')) out.policy = arg.slice('--policy='.length);

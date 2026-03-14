@@ -21,7 +21,7 @@ function latestRoiArtifact() {
     .filter((name) => /^roi_top100_execution_\d{4}-\d{2}-\d{2}\.json$/.test(name))
     .sort();
   if (files.length === 0) {
-    fail('dod_policy_gate: missing artifacts/roi_top100_execution_*.json');
+    fail('dod_policy_gate: missing core/local/artifacts/roi_top100_execution_*.json');
   }
   return resolve(ARTIFACTS_DIR, files[files.length - 1]);
 }

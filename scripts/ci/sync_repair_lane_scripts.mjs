@@ -3,7 +3,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const DEFAULT_ACTIONABLE_MAP = 'artifacts/srs_actionable_map_current.json';
+const DEFAULT_ACTIONABLE_MAP = 'core/local/artifacts/srs_actionable_map_current.json';
 const PACKAGE_PATH = 'package.json';
 
 function readJson(path) {

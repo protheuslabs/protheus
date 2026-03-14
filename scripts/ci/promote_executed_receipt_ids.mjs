@@ -11,7 +11,7 @@ const TARGET_STATUS = (() => {
   if (!token) return 'done';
   return token.split('=').slice(1).join('=').trim() || 'done';
 })();
-const FULL_REGRESSION_PATH = 'artifacts/srs_full_regression_current.json';
+const FULL_REGRESSION_PATH = 'core/local/artifacts/srs_full_regression_current.json';
 const TARGETS = ['docs/workspace/SRS.md', 'docs/workspace/UPGRADE_BACKLOG.md'];
 const ALLOWED_TARGET_STATUS = new Set(['done', 'existing-coverage-validated']);
 

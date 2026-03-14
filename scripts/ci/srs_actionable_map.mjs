@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const SRS_PATH = 'docs/workspace/SRS.md';
-const OUT_JSON = 'artifacts/srs_actionable_map_current.json';
+const OUT_JSON = 'core/local/artifacts/srs_actionable_map_current.json';
 const OUT_MD = 'docs/workspace/SRS_ACTIONABLE_MAP_CURRENT.md';
 
 function read(path) {

@@ -3,9 +3,9 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const PLAN_JSON = 'artifacts/blocked_external_unblock_plan_current.json';
-const EVIDENCE_JSON = 'artifacts/blocked_external_evidence_status_current.json';
-const OUT_JSON = 'artifacts/blocked_external_top10_current.json';
+const PLAN_JSON = 'core/local/artifacts/blocked_external_unblock_plan_current.json';
+const EVIDENCE_JSON = 'core/local/artifacts/blocked_external_evidence_status_current.json';
+const OUT_JSON = 'core/local/artifacts/blocked_external_top10_current.json';
 const OUT_MD = 'docs/workspace/BLOCKED_EXTERNAL_TOP10.md';
 
 function read(path) {

@@ -6,7 +6,7 @@ import { dirname, resolve } from 'node:path';
 
 const ROOT = resolve('.');
 const BIN = resolve(ROOT, 'target/debug/protheus-ops');
-const OUT_JSON = 'artifacts/srs_contract_receipts_20260312.json';
+const OUT_JSON = 'core/local/artifacts/srs_contract_receipts_20260312.json';
 const OUT_MD = 'docs/workspace/SRS_CONTRACT_RECEIPTS_20260312.md';
 
 const checks = [

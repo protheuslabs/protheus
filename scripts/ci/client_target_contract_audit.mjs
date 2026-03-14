@@ -9,10 +9,10 @@ const ROOT = process.cwd();
 function parseArgs(argv) {
   const out = {
     policy: 'client/runtime/config/client_target_contract_policy.json',
-    scope: 'artifacts/client_scope_inventory_current.json',
-    disposition: 'artifacts/client_surface_disposition_current.json',
-    boundary: 'artifacts/client_layer_boundary_audit_current.json',
-    out: 'artifacts/client_target_contract_audit_current.json',
+    scope: 'core/local/artifacts/client_scope_inventory_current.json',
+    disposition: 'core/local/artifacts/client_surface_disposition_current.json',
+    boundary: 'core/local/artifacts/client_layer_boundary_audit_current.json',
+    out: 'core/local/artifacts/client_target_contract_audit_current.json',
     strict: false,
   };
   for (const arg of argv) {

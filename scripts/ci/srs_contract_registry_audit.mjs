@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const MANIFEST_PATH = 'planes/contracts/srs/manifest.json';
-const TODO_QUEUE = 'artifacts/todo_execution_full_current.json';
+const TODO_QUEUE = 'core/local/artifacts/todo_execution_full_current.json';
 
 function readJson(path) {
   return JSON.parse(readFileSync(resolve(path), 'utf8'));

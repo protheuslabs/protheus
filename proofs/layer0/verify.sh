@@ -18,7 +18,7 @@ fi
 
 "$LEAN_BIN" "$PROOF_FILE"
 
-ARTIFACT_PATH="$ROOT/artifacts/layer0_invariant_proof_pack.json"
+ARTIFACT_PATH="$ROOT/core/local/artifacts/layer0_invariant_proof_pack.json"
 mkdir -p "$(dirname "$ARTIFACT_PATH")"
 
 python3 - "$PROOF_FILE" "$ARTIFACT_PATH" <<'PY'

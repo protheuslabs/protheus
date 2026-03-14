@@ -30,7 +30,7 @@ Usage:
 
 Examples:
   scripts/metrics/tracked_loc_report.sh --ref=HEAD
-  scripts/metrics/tracked_loc_report.sh --ref=HEAD --base-ref=origin/main --out=artifacts/rust_share.json
+  scripts/metrics/tracked_loc_report.sh --ref=HEAD --base-ref=origin/main --out=core/local/artifacts/rust_share.json
 USAGE
       exit 0
       ;;

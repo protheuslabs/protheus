@@ -3,8 +3,8 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
-const EVIDENCE_JSON = 'artifacts/blocked_external_evidence_status_current.json';
-const OUT_JSON = 'artifacts/blocked_external_packet_audit_current.json';
+const EVIDENCE_JSON = 'core/local/artifacts/blocked_external_evidence_status_current.json';
+const OUT_JSON = 'core/local/artifacts/blocked_external_packet_audit_current.json';
 const OUT_MD = 'docs/workspace/BLOCKED_EXTERNAL_PACKET_AUDIT.md';
 
 function read(path) {

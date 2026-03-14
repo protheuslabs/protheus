@@ -3,7 +3,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const REGRESSION_PATH = process.argv[2] || 'artifacts/srs_full_regression_current.json';
+const REGRESSION_PATH = process.argv[2] || 'core/local/artifacts/srs_full_regression_current.json';
 const TARGETS = ['docs/workspace/SRS.md', 'docs/workspace/UPGRADE_BACKLOG.md'];
 
 function readJson(path) {

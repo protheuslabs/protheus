@@ -218,6 +218,10 @@ apps/*
 /client/local/
 /core/local/
 /client/tmp/
+
+# Local artifact outputs (generated evidence and CI/runtime receipts)
+/artifacts/
+/apps/lensmap/artifacts/
 /client/workspaces/
 /client/runtime/local/
 /client/runtime/state/

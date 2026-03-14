@@ -3,10 +3,10 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const EVIDENCE_JSON = 'artifacts/blocked_external_evidence_status_current.json';
+const EVIDENCE_JSON = 'core/local/artifacts/blocked_external_evidence_status_current.json';
 const SRS_PATH = 'docs/workspace/SRS.md';
 const BACKLOG_PATH = 'docs/workspace/UPGRADE_BACKLOG.md';
-const OUT_JSON = 'artifacts/blocked_external_reconcile_candidates_current.json';
+const OUT_JSON = 'core/local/artifacts/blocked_external_reconcile_candidates_current.json';
 const OUT_MD = 'docs/workspace/BLOCKED_EXTERNAL_RECONCILE_CANDIDATES.md';
 
 function read(path) {

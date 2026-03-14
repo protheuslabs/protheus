@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '../..');
-const OUT_JSON = path.join(ROOT, 'artifacts/blocked_external_packet_gate_current.json');
+const OUT_JSON = path.join(ROOT, 'core/local/artifacts/blocked_external_packet_gate_current.json');
 
 function run(cmd) {
   execSync(cmd, { cwd: ROOT, stdio: 'pipe', encoding: 'utf8' });

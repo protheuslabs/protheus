@@ -137,7 +137,7 @@ const coverage = {
 const payload = {
   ok: coverage.uniqueRows === coverage.uniqueMappedRows && coverage.rawRowsRepresented === coverage.rawTotalRows,
   type: "todo_audit_full",
-  source: "artifacts/srs_full_regression_current.json",
+  source: "core/local/artifacts/srs_full_regression_current.json",
   summary,
   coverage,
   rows: sorted

@@ -3,9 +3,9 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
-const DEFAULT_QUEUE_PATH = 'artifacts/todo_execution_full_current.json';
-const DEFAULT_REGRESSION_PATH = 'artifacts/srs_full_regression_current.json';
-const DEFAULT_IDS_OUT = 'artifacts/srs_contract_batch_ids_current.txt';
+const DEFAULT_QUEUE_PATH = 'core/local/artifacts/todo_execution_full_current.json';
+const DEFAULT_REGRESSION_PATH = 'core/local/artifacts/srs_full_regression_current.json';
+const DEFAULT_IDS_OUT = 'core/local/artifacts/srs_contract_batch_ids_current.txt';
 const TODO_BUCKETS = new Set(['execute_now', 'repair_lane', 'design_required', 'blocked_external']);
 const CONTRACT_DIR = 'planes/contracts/srs';
 const MANIFEST_PATH = `${CONTRACT_DIR}/manifest.json`;

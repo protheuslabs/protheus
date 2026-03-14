@@ -5,7 +5,7 @@ import { execSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const OUT_JSON = 'artifacts/churn_guard_current.json';
+const OUT_JSON = 'core/local/artifacts/churn_guard_current.json';
 const OUT_MD = 'docs/workspace/CHURN_GUARD_CURRENT.md';
 
 function parseArgs(argv) {

@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 
 const SRS_PATH = 'docs/workspace/SRS.md';
 const TODO_PATH = 'docs/workspace/TODO.md';
-const OUT_JSON = 'artifacts/srs_full_regression_current.json';
+const OUT_JSON = 'core/local/artifacts/srs_full_regression_current.json';
 const OUT_MD = 'docs/workspace/SRS_FULL_REGRESSION_CURRENT.md';
 
 function read(path) {
@@ -292,14 +292,14 @@ function main() {
       '!docs/workspace/TODO.md',
       '!docs/workspace/UPGRADE_BACKLOG.md',
       '!docs/workspace/SRS_*REGRESSION*.md',
-      '!artifacts/srs_*regression*.json',
+      '!core/local/artifacts/srs_*regression*.json',
     ],
   );
 
   const codeLikeEvidenceCounts = countHitsById(
     uniqueIds,
     ['core', 'client', 'apps', 'adapters', 'scripts', 'tests', '.github'],
-    ['!docs/workspace/SRS_*REGRESSION*.md', '!artifacts/srs_*regression*.json'],
+    ['!docs/workspace/SRS_*REGRESSION*.md', '!core/local/artifacts/srs_*regression*.json'],
   );
 
   const rows = srsRows.map((row, index) => {

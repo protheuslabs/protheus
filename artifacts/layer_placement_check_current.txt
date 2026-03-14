@@ -1,9 +1,0 @@
-{
-  "ok": true,
-  "type": "layer_placement_policy_check",
-  "policy": "client/runtime/config/layer_placement_policy.json",
-  "base_ref": "1d68ff326fa109f05ccdc89b72a34a99f2252324",
-  "changed_files": 55,
-  "violations_count": 0,
-  "violations": []
-}

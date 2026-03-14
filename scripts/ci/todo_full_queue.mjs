@@ -115,7 +115,7 @@ const summary = {
 const outPayload = {
   ok: true,
   type: "todo_full_queue",
-  source: "artifacts/srs_actionable_map_current.json",
+  source: "core/local/artifacts/srs_actionable_map_current.json",
   summary,
   rows: sorted
 };

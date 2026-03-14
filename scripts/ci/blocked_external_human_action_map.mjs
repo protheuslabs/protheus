@@ -96,7 +96,7 @@ function main() {
     ok: true,
     type: "blocked_external_human_action_map",
     source: {
-      srsRegression: "artifacts/srs_full_regression_current.json",
+      srsRegression: "core/local/artifacts/srs_full_regression_current.json",
       humanActions: "docs/client/HUMAN_ONLY_ACTIONS.md"
     },
     summary,

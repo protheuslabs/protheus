@@ -3,9 +3,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const OUT_JSON = 'artifacts/simplicity_drift_audit_current.json';
+const OUT_JSON = 'core/local/artifacts/simplicity_drift_audit_current.json';
 const OUT_MD = 'docs/workspace/SIMPLICITY_DRIFT_AUDIT_CURRENT.md';
-const CLIENT_TARGET_AUDIT = 'artifacts/client_target_contract_audit_current.json';
+const CLIENT_TARGET_AUDIT = 'core/local/artifacts/client_target_contract_audit_current.json';
 
 function parseArgs(argv) {
   return {

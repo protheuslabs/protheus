@@ -54,7 +54,7 @@ const summary = {
 const out = {
   ok: true,
   type: "srs_duplicate_id_audit",
-  source: "artifacts/srs_full_regression_current.json",
+  source: "core/local/artifacts/srs_full_regression_current.json",
   summary,
   duplicates
 };

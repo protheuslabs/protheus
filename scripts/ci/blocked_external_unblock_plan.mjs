@@ -4,9 +4,9 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
 const SRS_PATH = 'docs/workspace/SRS.md';
-const ACTIONABLE_PATH = 'artifacts/srs_actionable_map_current.json';
+const ACTIONABLE_PATH = 'core/local/artifacts/srs_actionable_map_current.json';
 const OUT_MD = 'docs/workspace/BLOCKED_EXTERNAL_UNBLOCK_PLAN.md';
-const OUT_JSON = 'artifacts/blocked_external_unblock_plan_current.json';
+const OUT_JSON = 'core/local/artifacts/blocked_external_unblock_plan_current.json';
 
 function read(path) {
   return readFileSync(resolve(path), 'utf8');

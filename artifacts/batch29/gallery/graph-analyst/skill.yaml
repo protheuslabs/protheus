@@ -1,5 +1,0 @@
-name: graph-analyst
-version: v1
-triggers:
-  - mention:graph-analyst
-entrypoint: scripts/run.sh
