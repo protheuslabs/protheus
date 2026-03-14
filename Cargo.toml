@@ -19,11 +19,18 @@ license = "SEE LICENSE IN LICENSE"
 msrv = "1.84.0"
 owner = "runtime-foundation"
 
+[workspace.metadata.dist]
+cargo-dist-version = "0.28.0"
+ci = []
+installers = ["shell", "powershell"]
+targets = ["x86_64-unknown-linux-musl"]
+pr-run-mode = "plan"
+
 [profile.release]
-lto = "fat"
-codegen-units = 1
+opt-level = "z"
 panic = "abort"
 strip = true
+lto = true
 
 [profile.release-minimal]
 inherits = "release"

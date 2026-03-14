@@ -11,10 +11,11 @@ $ApiUrl = if ($env:PROTHEUS_RELEASE_API_URL) { $env:PROTHEUS_RELEASE_API_URL } e
 $BaseUrl = if ($env:PROTHEUS_RELEASE_BASE_URL) { $env:PROTHEUS_RELEASE_BASE_URL } else { $DefaultBase }
 
 function Resolve-Arch {
-  switch ($env:PROCESSOR_ARCHITECTURE.ToLower()) {
+  $archRaw = if ($env:PROCESSOR_ARCHITECTURE) { $env:PROCESSOR_ARCHITECTURE } else { [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString() }
+  switch ($archRaw.ToLower()) {
     "amd64" { "x86_64" }
     "arm64" { "aarch64" }
-    default { throw "Unsupported architecture: $($env:PROCESSOR_ARCHITECTURE)" }
+    default { throw "Unsupported architecture: $archRaw" }
   }
 }
 
@@ -63,12 +64,30 @@ function Install-Binary($Version, $Triple, $Stem, $OutPath) {
     return $true
   }
 
+  if (Download-Asset $Version "$Stem.exe" $raw) {
+    Move-Item -Force $raw $OutPath
+    return $true
+  }
+
+  if (Download-Asset $Version "$Stem" $raw) {
+    Move-Item -Force $raw $OutPath
+    return $true
+  }
+
   return $false
 }
 
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 $arch = Resolve-Arch
-$triple = "$arch-pc-windows-msvc"
+$triple = if ($IsWindows) {
+  "$arch-pc-windows-msvc"
+} elseif ($IsLinux) {
+  "$arch-unknown-linux-gnu"
+} elseif ($IsMacOS) {
+  "$arch-apple-darwin"
+} else {
+  throw "Unsupported OS for installer"
+}
 $version = Resolve-Version
 
 Write-Host "[protheus install] version: $version"
@@ -76,15 +95,30 @@ Write-Host "[protheus install] platform: $triple"
 Write-Host "[protheus install] install dir: $InstallDir"
 
 $opsBin = Join-Path $InstallDir "protheus-ops.exe"
+$protheusdBin = Join-Path $InstallDir "protheusd.exe"
 $daemonBin = Join-Path $InstallDir "conduit_daemon.exe"
+$preferredDaemonTriple = if ($IsLinux -and $arch -eq "x86_64") { "x86_64-unknown-linux-musl" } else { $triple }
 
 if (-not (Install-Binary $version $triple "protheus-ops" $opsBin)) {
   throw "Failed to download protheus-ops for $triple ($version)"
 }
 
-$daemonInstalled = Install-Binary $version $triple "conduit_daemon" $daemonBin
-if (-not $daemonInstalled) {
-  Write-Host "[protheus install] conduit_daemon not found in release; skipping daemon binary"
+$daemonMode = "spine"
+if (Install-Binary $version $preferredDaemonTriple "protheusd" $protheusdBin) {
+  $daemonMode = "protheusd"
+  if ($preferredDaemonTriple -eq "x86_64-unknown-linux-musl") {
+    Write-Host "[protheus install] using static musl protheusd"
+  } else {
+    Write-Host "[protheus install] using protheusd"
+  }
+} elseif ($preferredDaemonTriple -ne $triple -and (Install-Binary $version $triple "protheusd" $protheusdBin)) {
+  $daemonMode = "protheusd"
+  Write-Host "[protheus install] using native protheusd fallback"
+} elseif (Install-Binary $version $triple "conduit_daemon" $daemonBin) {
+  $daemonMode = "conduit"
+  Write-Host "[protheus install] using conduit_daemon compatibility fallback"
+} else {
+  Write-Host "[protheus install] no dedicated daemon binary found; falling back to protheus-ops spine mode"
 }
 
 $protheusCmd = Join-Path $InstallDir "protheus.cmd"
@@ -94,7 +128,9 @@ $protheusctlCmd = Join-Path $InstallDir "protheusctl.cmd"
 Set-Content -Path $protheusctlCmd -Value "@echo off`r`n`"%~dp0protheus-ops.exe`" protheusctl %*"
 
 $protheusdCmd = Join-Path $InstallDir "protheusd.cmd"
-if ($daemonInstalled) {
+if ($daemonMode -eq "protheusd") {
+  Set-Content -Path $protheusdCmd -Value "@echo off`r`n`"%~dp0protheusd.exe`" %*"
+} elseif ($daemonMode -eq "conduit") {
   Set-Content -Path $protheusdCmd -Value "@echo off`r`n`"%~dp0conduit_daemon.exe`" %*"
 } else {
   Set-Content -Path $protheusdCmd -Value "@echo off`r`n`"%~dp0protheus-ops.exe`" spine %*"

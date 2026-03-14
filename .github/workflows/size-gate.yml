@@ -1,0 +1,41 @@
+name: Size Gate
+
+on:
+  pull_request:
+    branches: [main, rust50]
+  push:
+    branches: [main, rust50]
+  workflow_dispatch:
+
+jobs:
+  protheusd-size-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust (musl)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+
+      - name: Install musl linker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
+      - name: Build static protheusd
+        run: |
+          cargo build --release --target x86_64-unknown-linux-musl --bin protheusd
+
+      - name: Enforce <= 35 MB
+        run: |
+          BIN="target/x86_64-unknown-linux-musl/release/protheusd"
+          BYTES="$(stat --format=%s "$BIN")"
+          MAX=$((35 * 1024 * 1024))
+          echo "protheusd_bytes=$BYTES"
+          if [ "$BYTES" -gt "$MAX" ]; then
+            echo "::error::protheusd exceeds 35 MB gate ($BYTES bytes)"
+            exit 1
+          fi

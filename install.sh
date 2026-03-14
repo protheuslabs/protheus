@@ -112,6 +112,20 @@ install_binary() {
     return 0
   fi
 
+  if download_asset "$version_tag" "${stem_name}" "$tmpdir/$stem_name"; then
+    mv "$tmpdir/$stem_name" "$binary_out"
+    chmod 755 "$binary_out"
+    rm -rf "$tmpdir"
+    return 0
+  fi
+
+  if download_asset "$version_tag" "${stem_name}.bin" "$tmpdir/$stem_name"; then
+    mv "$tmpdir/$stem_name" "$binary_out"
+    chmod 755 "$binary_out"
+    rm -rf "$tmpdir"
+    return 0
+  fi
+
   if download_asset "$version_tag" "${stem_name}-${triple_id}.tar.gz" "$tmpdir/${stem_name}.tar.gz"; then
     tar -xzf "$tmpdir/${stem_name}.tar.gz" -C "$tmpdir"
     if [ -f "$tmpdir/$stem_name" ]; then
@@ -145,23 +159,46 @@ main() {
   echo "[protheus install] install dir: $INSTALL_DIR"
 
   ops_bin="$INSTALL_DIR/protheus-ops"
+  protheusd_bin="$INSTALL_DIR/protheusd-bin"
   daemon_bin="$INSTALL_DIR/conduit_daemon"
+  daemon_wrapper_body=""
+  prefer_musl_protheusd=0
+
+  if [ "$(norm_os)" = "linux" ] && [ "$(norm_arch)" = "x86_64" ]; then
+    prefer_musl_protheusd=1
+  fi
 
   if ! install_binary "$version" "$triple" "protheus-ops" "$ops_bin"; then
     echo "[protheus install] failed to fetch protheus-ops for $triple ($version)" >&2
     exit 1
   fi
 
-  if ! install_binary "$version" "$triple" "conduit_daemon" "$daemon_bin"; then
-    echo "[protheus install] conduit_daemon not found in release; skipping daemon binary"
-    daemon_bin=""
+  if [ "$prefer_musl_protheusd" = "1" ]; then
+    if install_binary "$version" "x86_64-unknown-linux-musl" "protheusd" "$protheusd_bin"; then
+      daemon_wrapper_body="exec \"$protheusd_bin\" \"\$@\""
+      echo "[protheus install] using static musl protheusd"
+    fi
+  fi
+
+  if [ -z "$daemon_wrapper_body" ] && install_binary "$version" "$triple" "protheusd" "$protheusd_bin"; then
+    daemon_wrapper_body="exec \"$protheusd_bin\" \"\$@\""
+    echo "[protheus install] using native protheusd"
+  fi
+
+  if [ -z "$daemon_wrapper_body" ] && install_binary "$version" "$triple" "conduit_daemon" "$daemon_bin"; then
+    daemon_wrapper_body="exec \"$daemon_bin\" \"\$@\""
+    echo "[protheus install] using conduit_daemon compatibility fallback"
+  else
+    if [ -z "$daemon_wrapper_body" ]; then
+      echo "[protheus install] no dedicated daemon binary found; falling back to protheus-ops spine mode"
+    fi
   fi
 
   write_wrapper "protheus" "exec \"$ops_bin\" protheusctl \"\$@\""
   write_wrapper "protheusctl" "exec \"$ops_bin\" protheusctl \"\$@\""
 
-  if [ -n "$daemon_bin" ]; then
-    write_wrapper "protheusd" "exec \"$daemon_bin\" \"\$@\""
+  if [ -n "$daemon_wrapper_body" ]; then
+    write_wrapper "protheusd" "$daemon_wrapper_body"
   else
     write_wrapper "protheusd" "exec \"$ops_bin\" spine \"\$@\""
   fi
