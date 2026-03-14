@@ -177,7 +177,9 @@ fn provenance_history_path(root: &Path) -> PathBuf {
 }
 
 fn provenance_latest_path(root: &Path) -> PathBuf {
-    state_root(root).join("provenance").join("latest_trace.json")
+    state_root(root)
+        .join("provenance")
+        .join("latest_trace.json")
 }
 
 fn parse_visibility_mode(raw: Option<String>) -> String {
@@ -1370,7 +1372,10 @@ fn run_acp_provenance(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> 
     }
 
     if op == "debug" {
-        let trace_id = clean(parsed.flags.get("trace-id").cloned().unwrap_or_default(), 120);
+        let trace_id = clean(
+            parsed.flags.get("trace-id").cloned().unwrap_or_default(),
+            120,
+        );
         let rows = std::fs::read_to_string(provenance_history_path(root))
             .ok()
             .map(|raw| {
@@ -1433,18 +1438,13 @@ fn run_acp_provenance(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> 
             .unwrap_or_else(|| "trace payload".to_string()),
         300,
     );
-    let visibility_mode = parse_visibility_mode(
-        parsed
-            .flags
-            .get("visibility-mode")
-            .cloned()
-            .or_else(|| {
-                config
-                    .get("visibility_mode")
-                    .and_then(Value::as_str)
-                    .map(|s| s.to_string())
-            }),
-    );
+    let visibility_mode =
+        parse_visibility_mode(parsed.flags.get("visibility-mode").cloned().or_else(|| {
+            config
+                .get("visibility_mode")
+                .and_then(Value::as_str)
+                .map(|s| s.to_string())
+        }));
     let require_source = contract
         .get("require_source_identity")
         .and_then(Value::as_bool)
@@ -1453,7 +1453,8 @@ fn run_acp_provenance(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> 
         .get("require_intent")
         .and_then(Value::as_bool)
         .unwrap_or(true);
-    if strict && ((require_source && source_agent.is_empty()) || (require_intent && intent.is_empty()))
+    if strict
+        && ((require_source && source_agent.is_empty()) || (require_intent && intent.is_empty()))
     {
         return json!({
             "ok": false,

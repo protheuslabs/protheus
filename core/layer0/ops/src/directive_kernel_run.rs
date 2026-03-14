@@ -55,20 +55,23 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         let vault = load_vault(root);
         let (signature_total, signature_valid) = signature_counts(&vault);
         let integrity = directive_vault_integrity(root);
-        return emit_receipt(root, json!({
-            "ok": integrity.get("ok").and_then(Value::as_bool).unwrap_or(false),
-            "type": "directive_kernel_status",
-            "lane": "core/layer0/ops",
-            "vault": vault,
-            "policy_hash": directive_vault_hash(root),
-            "signature_summary": {
-                "total_entries": signature_total,
-                "valid_entries": signature_valid,
-                "invalid_entries": signature_total.saturating_sub(signature_valid)
-            },
-            "integrity": integrity,
-            "latest": read_json(&latest_path(root))
-        }));
+        return emit_receipt(
+            root,
+            json!({
+                "ok": integrity.get("ok").and_then(Value::as_bool).unwrap_or(false),
+                "type": "directive_kernel_status",
+                "lane": "core/layer0/ops",
+                "vault": vault,
+                "policy_hash": directive_vault_hash(root),
+                "signature_summary": {
+                    "total_entries": signature_total,
+                    "valid_entries": signature_valid,
+                    "invalid_entries": signature_total.saturating_sub(signature_valid)
+                },
+                "integrity": integrity,
+                "latest": read_json(&latest_path(root))
+            }),
+        );
     }
 
     if status_dashboard {
@@ -628,14 +631,14 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             })
         });
         let signature_repair = if repair_signatures {
-            Some(repair_vault_signatures(root, apply, allow_unsigned).unwrap_or_else(
-                |err| {
+            Some(
+                repair_vault_signatures(root, apply, allow_unsigned).unwrap_or_else(|err| {
                     json!({
                         "error": clean(err, 220),
                         "apply": apply
                     })
-                },
-            ))
+                }),
+            )
         } else {
             None
         };

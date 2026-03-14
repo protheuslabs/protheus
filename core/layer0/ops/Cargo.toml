@@ -9,6 +9,11 @@ default-run = "personas_core"
 name = "protheus_ops_core"
 path = "src/lib.rs"
 
+[features]
+default = []
+minimal = []
+full-substrate = []
+
 [[bin]]
 name = "protheus-ops"
 path = "src/main.rs"

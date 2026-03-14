@@ -117,13 +117,7 @@ fn read_jsonl(path: &Path) -> Vec<Value> {
         .unwrap_or_default()
 }
 
-fn emit(
-    root: &Path,
-    _command: &str,
-    strict: bool,
-    payload: Value,
-    conduit: Option<&Value>,
-) -> i32 {
+fn emit(root: &Path, _command: &str, strict: bool, payload: Value, conduit: Option<&Value>) -> i32 {
     let out = attach_conduit(payload, conduit);
     let _ = write_json(&latest_path(root, ENV_KEY, LANE_ID), &out);
     let _ = append_jsonl(&history_path(root, ENV_KEY, LANE_ID), &out);
@@ -138,8 +132,15 @@ fn emit(
 }
 
 fn transaction_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 12)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        12,
+    )
+    .to_ascii_lowercase();
     if op == "status" {
         return Ok(json!({
             "ok": true,
@@ -160,7 +161,11 @@ fn transaction_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value,
         return Err("transaction_op_invalid".to_string());
     }
     let tx_id = clean(
-        parsed.flags.get("tx-id").map(String::as_str).unwrap_or("tx"),
+        parsed
+            .flags
+            .get("tx-id")
+            .map(String::as_str)
+            .unwrap_or("tx"),
         120,
     );
     let amount = parse_f64(parsed.flags.get("amount"), 0.0);
@@ -256,8 +261,15 @@ fn transaction_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value,
 }
 
 fn model_governance_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     let model_id = clean(
         parsed
             .flags
@@ -291,7 +303,10 @@ fn model_governance_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<V
             }]
         }));
     }
-    if !matches!(op.as_str(), "register" | "validate" | "backtest" | "promote") {
+    if !matches!(
+        op.as_str(),
+        "register" | "validate" | "backtest" | "promote"
+    ) {
         return Err("model_governance_op_invalid".to_string());
     }
     let mut row = state.get(&model_id).cloned().unwrap_or_else(|| {
@@ -319,7 +334,10 @@ fn model_governance_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<V
         row["backtest_evidence"] = evidence.clone();
         row["status"] = Value::String("backtested".to_string());
     } else if op == "promote" {
-        let validated = row.get("validated").and_then(Value::as_bool).unwrap_or(false);
+        let validated = row
+            .get("validated")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
         if !validated {
             return Err("model_promote_requires_validation".to_string());
         }
@@ -343,8 +361,15 @@ fn model_governance_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<V
 }
 
 fn aml_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     let mut state = read_object(&aml_state_path(root));
     let mut cases = state
         .remove("cases")
@@ -407,7 +432,14 @@ fn aml_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String>
             cases.push(case);
         }
     } else if op == "case" {
-        let case_id = clean(parsed.flags.get("case-id").map(String::as_str).unwrap_or(""), 120);
+        let case_id = clean(
+            parsed
+                .flags
+                .get("case-id")
+                .map(String::as_str)
+                .unwrap_or(""),
+            120,
+        );
         for row in &mut cases {
             if row.get("case_id").and_then(Value::as_str) == Some(case_id.as_str()) {
                 row["status"] = Value::String("filed".to_string());
@@ -435,8 +467,15 @@ fn aml_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String>
 }
 
 fn kyc_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     let customer = clean(
         parsed
             .flags
@@ -499,8 +538,15 @@ fn kyc_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String>
 }
 
 fn finance_eye_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     let mut state = read_object(&market_path(root));
     if op == "status" {
         return Ok(json!({
@@ -564,8 +610,15 @@ fn finance_eye_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value,
 }
 
 fn risk_warehouse_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     let mut state = read_object(&risk_path(root));
     if op == "status" {
         return Ok(json!({
@@ -636,8 +689,15 @@ fn risk_warehouse_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Val
 }
 
 fn custody_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     let mut state = read_object(&custody_path(root));
     if op == "status" {
         return Ok(json!({
@@ -677,13 +737,27 @@ fn custody_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Str
             120,
         );
         let amount = parse_f64(parsed.flags.get("amount"), 0.0);
-        let from_bal = state.get(&wallet).and_then(|v| v.get("balance")).and_then(Value::as_f64).unwrap_or(0.0);
+        let from_bal = state
+            .get(&wallet)
+            .and_then(|v| v.get("balance"))
+            .and_then(Value::as_f64)
+            .unwrap_or(0.0);
         if amount <= 0.0 || from_bal < amount {
             return Err("custody_insufficient_balance".to_string());
         }
-        let to_bal = state.get(&to_wallet).and_then(|v| v.get("balance")).and_then(Value::as_f64).unwrap_or(0.0);
-        state.insert(wallet.clone(), json!({"wallet": wallet, "balance": from_bal - amount, "updated_at": now_iso()}));
-        state.insert(to_wallet.clone(), json!({"wallet": to_wallet, "balance": to_bal + amount, "updated_at": now_iso()}));
+        let to_bal = state
+            .get(&to_wallet)
+            .and_then(|v| v.get("balance"))
+            .and_then(Value::as_f64)
+            .unwrap_or(0.0);
+        state.insert(
+            wallet.clone(),
+            json!({"wallet": wallet, "balance": from_bal - amount, "updated_at": now_iso()}),
+        );
+        state.insert(
+            to_wallet.clone(),
+            json!({"wallet": to_wallet, "balance": to_bal + amount, "updated_at": now_iso()}),
+        );
     } else if op == "attest" {
         let total = state
             .values()
@@ -712,8 +786,15 @@ fn custody_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Str
 }
 
 fn zero_trust_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     let mut state = read_object(&zero_trust_path(root));
     if op == "status" {
         return Ok(json!({
@@ -830,8 +911,15 @@ fn zero_trust_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, 
 }
 
 fn availability_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 20)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        20,
+    )
+    .to_ascii_lowercase();
     let mut state = read_object(&availability_path(root));
     let mut set_last_failover = false;
     if op == "chaos-test" {
@@ -847,7 +935,14 @@ fn availability_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value
                 .as_object_mut()
                 .ok_or_else(|| "availability_zones_invalid".to_string())?;
             if op == "register-zone" {
-                let zone = clean(parsed.flags.get("zone").map(String::as_str).unwrap_or("zone-a"), 80);
+                let zone = clean(
+                    parsed
+                        .flags
+                        .get("zone")
+                        .map(String::as_str)
+                        .unwrap_or("zone-a"),
+                    80,
+                );
                 let st = clean(
                     parsed
                         .flags
@@ -915,8 +1010,15 @@ fn availability_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value
 }
 
 fn regulatory_report_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     if op == "status" {
         return Ok(json!({
             "ok": true,

@@ -13,7 +13,12 @@ use std::process::Command;
 use std::time::Instant;
 use walkdir::WalkDir;
 
+#[cfg(feature = "minimal")]
+#[path = "../../alloc.rs"]
+mod layer0_alloc;
+
 pub mod ab_lane_eval;
+pub mod adaptive_intelligence;
 pub mod adaptive_runtime;
 pub mod agency_plane;
 pub mod app_plane;
@@ -32,6 +37,8 @@ pub mod backlog_runtime_anchor;
 pub mod benchmark_matrix;
 pub mod binary_blob_runtime;
 pub mod binary_vuln_plane;
+pub mod business_plane;
+pub mod canyon_plane;
 pub mod child_organ_runtime;
 pub mod collab_plane;
 pub mod company_plane;
@@ -47,12 +54,15 @@ pub mod eval_plane;
 pub mod execution_yield_recovery;
 pub mod f100_readiness_program;
 pub mod f100_reliability_certification;
+pub mod finance_plane;
 pub mod flow_plane;
 pub mod fluxlattice_program;
 pub mod foundation_contract_gate;
+pub mod government_plane;
 pub mod graph_toolkit;
 pub mod hardware_route_hardening;
 pub mod health_status;
+pub mod healthcare_plane;
 pub mod hermes_plane;
 pub mod identity_federation;
 pub mod importance;
@@ -67,6 +77,7 @@ pub mod metakernel;
 pub mod model_router;
 pub mod narrow_agent_parity_harness;
 pub mod network_protocol;
+pub mod nexus_plane;
 pub mod observability_plane;
 pub mod offline_runtime_guard;
 pub mod offsite_backup;
@@ -112,19 +123,18 @@ pub mod supply_chain_provenance_v2;
 pub mod top1_assurance;
 pub mod v8_kernel;
 pub mod vbrowser_plane;
-pub mod vertical_plane;
 pub mod venom_containment_layer;
+pub mod vertical_plane;
 pub mod workflow_controller;
 pub mod workflow_executor;
-pub mod business_plane;
-pub mod canyon_plane;
-pub mod finance_plane;
-pub mod government_plane;
-pub mod healthcare_plane;
-pub mod nexus_plane;
 
 #[cfg(kani)]
 mod top1_kani_proofs;
+
+#[cfg(feature = "minimal")]
+#[global_allocator]
+static LAYER0_MINIMAL_ALLOCATOR: layer0_alloc::Layer0CountingAllocator =
+    layer0_alloc::Layer0CountingAllocator;
 
 #[derive(Debug, Clone)]
 pub struct ParsedArgs {

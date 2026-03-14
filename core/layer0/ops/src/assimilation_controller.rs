@@ -12,7 +12,8 @@ const VARIANT_PROFILE_DIR: &str = "planes/contracts/variant_profiles";
 const MPU_PROFILE_PATH: &str = "planes/contracts/mpu_compartment_profile_v1.json";
 const WASM_DUAL_METER_POLICY_PATH: &str = "planes/contracts/wasm_dual_meter_policy_v1.json";
 const HAND_MANIFEST_PATH: &str = "planes/contracts/hands/HAND.toml";
-const SCHEDULED_HANDS_CONTRACT_PATH: &str = "planes/contracts/hands/scheduled_hands_contract_v1.json";
+const SCHEDULED_HANDS_CONTRACT_PATH: &str =
+    "planes/contracts/hands/scheduled_hands_contract_v1.json";
 
 fn receipt_hash(v: &Value) -> String {
     deterministic_receipt_hash(v)
@@ -1193,11 +1194,15 @@ fn scheduled_hands_state_path(root: &Path) -> std::path::PathBuf {
 }
 
 fn scheduled_hands_history_path(root: &Path) -> std::path::PathBuf {
-    state_root(root).join("scheduled_hands").join("history.jsonl")
+    state_root(root)
+        .join("scheduled_hands")
+        .join("history.jsonl")
 }
 
 fn scheduled_hands_earnings_path(root: &Path) -> std::path::PathBuf {
-    state_root(root).join("scheduled_hands").join("earnings.jsonl")
+    state_root(root)
+        .join("scheduled_hands")
+        .join("earnings.jsonl")
 }
 
 fn run_scheduled_hands_receipt(root: &Path, argv: &[String], strict: bool) -> Value {
@@ -1371,7 +1376,8 @@ fn run_scheduled_hands_receipt(root: &Path, argv: &[String], strict: bool) -> Va
             let earnings_token = token_per_iteration * (iterations as f64);
             let trace_id = format!(
                 "trace_{}",
-                &receipt_hash(&json!({"task": task, "iterations": iterations, "ts": now_iso()}))[..16]
+                &receipt_hash(&json!({"task": task, "iterations": iterations, "ts": now_iso()}))
+                    [..16]
             );
             run_payload = json!({
                 "task": task,
@@ -1400,7 +1406,8 @@ fn run_scheduled_hands_receipt(root: &Path, argv: &[String], strict: bool) -> Va
                 .cloned()
                 .unwrap_or(Value::Null);
             state["cross_refs_total"] = Value::Number(
-                state.get("cross_refs_total")
+                state
+                    .get("cross_refs_total")
                     .and_then(Value::as_u64)
                     .unwrap_or(0)
                     .saturating_add(cross_ref_count)
@@ -1660,7 +1667,11 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             let out = run_scheduled_hands_receipt(root, argv, strict);
             let ok = out.get("ok").and_then(Value::as_bool).unwrap_or(false);
             print_json_line(&out);
-            if ok { 0 } else { 1 }
+            if ok {
+                0
+            } else {
+                1
+            }
         }
         _ => {
             usage();

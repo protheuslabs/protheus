@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Layer ownership: core/layer0/ops::vertical_plane (authoritative)
 use crate::v8_kernel::{
-    append_jsonl, attach_conduit, build_conduit_enforcement, conduit_bypass_requested, history_path,
-    latest_path, parse_bool, print_json, read_json, scoped_state_root, sha256_hex_str, write_json,
+    append_jsonl, attach_conduit, build_conduit_enforcement, conduit_bypass_requested,
+    history_path, latest_path, parse_bool, print_json, read_json, scoped_state_root,
+    sha256_hex_str, write_json,
 };
 use crate::{clean, now_iso, parse_args};
 use serde_json::{json, Map, Value};
@@ -343,13 +344,7 @@ fn status_command(root: &Path) -> Value {
     })
 }
 
-fn emit(
-    root: &Path,
-    _command: &str,
-    strict: bool,
-    payload: Value,
-    conduit: Option<&Value>,
-) -> i32 {
+fn emit(root: &Path, _command: &str, strict: bool, payload: Value, conduit: Option<&Value>) -> i32 {
     let out = attach_conduit(payload, conduit);
     let _ = write_json(&latest_path(root, ENV_KEY, LANE_ID), &out);
     let _ = append_jsonl(&history_path(root, ENV_KEY, LANE_ID), &out);

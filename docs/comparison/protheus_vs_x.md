@@ -1,6 +1,6 @@
 # Protheus vs X (CI Generated)
 
-Generated at: `2026-03-13T09:32:39.727Z`
+Generated at: `2026-03-14T07:24:37.357Z`
 Source benchmark: `docs/client/reports/runtime_snapshots/ops/proof_pack/top1_benchmark_snapshot.json`
 Source snapshot: `client/runtime/config/competitive_benchmark_snapshot_2026_02.json`
 

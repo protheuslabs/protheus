@@ -952,26 +952,22 @@ fn next(root: &Path, flags: &BTreeMap<String, String>, auto_ack: bool) -> i32 {
         300_000,
     );
     let wait_started_ms = Utc::now().timestamp_millis();
-    let mut active_rows = Vec::new();
-    let mut expired_pruned = 0usize;
-    loop {
+    let (active_rows, expired_pruned) = loop {
         let (rows, pruned) = load_active_queue(&contract);
-        active_rows = rows;
-        expired_pruned = pruned;
-        if wait_ms == 0 || !active_rows.is_empty() {
-            break;
+        if wait_ms == 0 || !rows.is_empty() {
+            break (rows, pruned);
         }
         let elapsed_ms = Utc::now()
             .timestamp_millis()
             .saturating_sub(wait_started_ms)
             .max(0) as u64;
         if elapsed_ms >= wait_ms {
-            break;
+            break (rows, pruned);
         }
         let remaining = wait_ms.saturating_sub(elapsed_ms);
         let sleep_ms = remaining.clamp(25, 250);
         thread::sleep(Duration::from_millis(sleep_ms));
-    }
+    };
     let waited_ms = Utc::now()
         .timestamp_millis()
         .saturating_sub(wait_started_ms)

@@ -12,6 +12,8 @@ use std::path::Path;
 const LANE_ID: &str = "benchmark_matrix";
 const DEFAULT_SNAPSHOT_REL: &str =
     "client/runtime/config/competitive_benchmark_snapshot_2026_02.json";
+const TOP1_BENCHMARK_SNAPSHOT_REL: &str =
+    "docs/client/reports/runtime_snapshots/ops/proof_pack/top1_benchmark_snapshot.json";
 const STATE_LATEST_REL: &str = "state/ops/competitive_benchmark_matrix/latest.json";
 const STATE_HISTORY_REL: &str = "state/ops/competitive_benchmark_matrix/history.jsonl";
 const MIN_BAR_WIDTH: usize = 10;
@@ -195,6 +197,14 @@ fn extract_runtime_metrics(runtime_json: &Value) -> Option<(f64, f64, f64)> {
     Some((cold_start_ms, idle_memory_mb, install_size_mb))
 }
 
+fn extract_top1_snapshot_metrics(snapshot_json: &Value) -> Option<(f64, f64, f64)> {
+    let metrics = snapshot_json.get("metrics")?;
+    let cold_start_ms = get_f64(metrics, "cold_start_ms")?;
+    let idle_memory_mb = get_f64(metrics, "idle_rss_mb")?;
+    let install_size_mb = get_f64(metrics, "install_size_mb")?;
+    Some((cold_start_ms, idle_memory_mb, install_size_mb))
+}
+
 fn runtime_metrics(
     root: &Path,
     refresh_runtime: bool,
@@ -228,22 +238,49 @@ fn runtime_metrics(
         runtime_json = status_runtime_efficiency_floor(root, &parsed).json;
     }
 
-    let (cold_start_ms, idle_memory_mb, install_size_mb) =
+    if let Some((cold_start_ms, idle_memory_mb, install_size_mb)) =
         extract_runtime_metrics(&runtime_json)
-            .ok_or_else(|| "runtime_efficiency_missing_metrics".to_string())?;
+    {
+        let source_meta = json!({
+            "mode": source,
+            "refresh_requested": refresh_runtime,
+            "fallback_reason": fallback_reason
+        });
+        return Ok((
+            cold_start_ms,
+            idle_memory_mb,
+            install_size_mb,
+            runtime_json,
+            source_meta,
+        ));
+    }
 
-    let source_meta = json!({
-        "mode": source,
-        "refresh_requested": refresh_runtime,
-        "fallback_reason": fallback_reason
-    });
-    Ok((
-        cold_start_ms,
-        idle_memory_mb,
-        install_size_mb,
-        runtime_json,
-        source_meta,
-    ))
+    let top1_snapshot_path = root.join(TOP1_BENCHMARK_SNAPSHOT_REL);
+    if let Ok(top1_snapshot) = read_json(&top1_snapshot_path) {
+        if let Some((cold_start_ms, idle_memory_mb, install_size_mb)) =
+            extract_top1_snapshot_metrics(&top1_snapshot)
+        {
+            let source_meta = json!({
+                "mode": "top1_benchmark_snapshot",
+                "refresh_requested": refresh_runtime,
+                "fallback_reason": if fallback_reason.is_null() {
+                    Value::String("runtime_efficiency_missing_metrics".to_string())
+                } else {
+                    fallback_reason
+                },
+                "snapshot_path": TOP1_BENCHMARK_SNAPSHOT_REL
+            });
+            return Ok((
+                cold_start_ms,
+                idle_memory_mb,
+                install_size_mb,
+                top1_snapshot,
+                source_meta,
+            ));
+        }
+    }
+
+    Err("runtime_efficiency_missing_metrics".to_string())
 }
 
 fn measure_openclaw(
@@ -574,6 +611,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::tempdir;
 
     #[test]
     fn bar_fill_inverts_when_lower_is_better() {
@@ -617,6 +655,62 @@ mod tests {
         assert_eq!(
             openclaw.get("measured").and_then(Value::as_bool),
             Some(true)
+        );
+    }
+
+    #[test]
+    fn extract_top1_snapshot_metrics_reads_runtime_snapshot_shape() {
+        let snapshot = json!({
+            "metrics": {
+                "cold_start_ms": 74.5,
+                "idle_rss_mb": 22.1,
+                "install_size_mb": 126.4
+            }
+        });
+
+        assert_eq!(
+            extract_top1_snapshot_metrics(&snapshot),
+            Some((74.5, 22.1, 126.4))
+        );
+    }
+
+    #[test]
+    fn runtime_metrics_falls_back_to_top1_snapshot_when_runtime_floor_state_is_missing() {
+        let root = tempdir().expect("tempdir");
+        let benchmark_snapshot = root.path().join(TOP1_BENCHMARK_SNAPSHOT_REL);
+        if let Some(parent) = benchmark_snapshot.parent() {
+            fs::create_dir_all(parent).expect("create benchmark dir");
+        }
+        fs::write(
+            &benchmark_snapshot,
+            serde_json::to_string_pretty(&json!({
+                "metrics": {
+                    "cold_start_ms": 61.2,
+                    "idle_rss_mb": 19.8,
+                    "install_size_mb": 111.4
+                }
+            }))
+            .expect("encode snapshot"),
+        )
+        .expect("write snapshot");
+
+        let (cold_start_ms, idle_rss_mb, install_size_mb, runtime_json, source_meta) =
+            runtime_metrics(root.path(), false).expect("runtime metrics");
+
+        assert_eq!(
+            (cold_start_ms, idle_rss_mb, install_size_mb),
+            (61.2, 19.8, 111.4)
+        );
+        assert_eq!(
+            source_meta.get("mode").and_then(Value::as_str),
+            Some("top1_benchmark_snapshot")
+        );
+        assert_eq!(
+            runtime_json
+                .get("metrics")
+                .and_then(|v| v.get("cold_start_ms"))
+                .and_then(Value::as_f64),
+            Some(61.2)
         );
     }
 }

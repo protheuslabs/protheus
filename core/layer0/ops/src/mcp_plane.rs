@@ -2,9 +2,9 @@
 // Layer ownership: core/layer0/ops::mcp_plane (authoritative)
 
 use crate::v8_kernel::{
-    append_jsonl, attach_conduit, build_conduit_enforcement, canonical_json_string,
-    conduit_bypass_requested, load_json_or, parse_bool, parse_u64, read_json, scoped_state_root,
-    sha256_hex_str, write_json, write_receipt,
+    append_jsonl, attach_conduit, build_plane_conduit_enforcement, canonical_json_string,
+    conduit_bypass_requested, emit_plane_receipt, load_json_or, parse_bool, parse_u64,
+    plane_status, print_json, read_json, scoped_state_root, sha256_hex_str, write_json,
 };
 use crate::{clean, now_iso, parse_args};
 use serde_json::{json, Map, Value};
@@ -40,37 +40,8 @@ fn state_root(root: &Path) -> PathBuf {
     scoped_state_root(root, STATE_ENV, STATE_SCOPE)
 }
 
-fn latest_path(root: &Path) -> PathBuf {
-    state_root(root).join("latest.json")
-}
-
-fn print_payload(payload: &Value) {
-    println!(
-        "{}",
-        serde_json::to_string_pretty(payload)
-            .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"encode_failed\"}".to_string())
-    );
-}
-
 fn emit(root: &Path, payload: Value) -> i32 {
-    match write_receipt(root, STATE_ENV, STATE_SCOPE, payload) {
-        Ok(out) => {
-            print_payload(&out);
-            if out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
-                0
-            } else {
-                1
-            }
-        }
-        Err(err) => {
-            print_payload(&json!({
-                "ok": false,
-                "type": "mcp_plane_error",
-                "error": clean(err, 240)
-            }));
-            1
-        }
-    }
+    emit_plane_receipt(root, STATE_ENV, STATE_SCOPE, "mcp_plane_error", payload)
 }
 
 fn parse_csv_flag(parsed: &crate::ParsedArgs, key: &str, max_len: usize) -> Vec<String> {
@@ -136,7 +107,7 @@ fn conduit_enforcement(
     action: &str,
 ) -> Value {
     let bypass_requested = conduit_bypass_requested(&parsed.flags);
-    build_conduit_enforcement(
+    build_plane_conduit_enforcement(
         root,
         STATE_ENV,
         STATE_SCOPE,
@@ -145,25 +116,13 @@ fn conduit_enforcement(
         "mcp_conduit_enforcement",
         "core/layer0/ops/mcp_plane",
         bypass_requested,
-        vec![json!({
-            "id": "V6-MCP-001.6",
-            "claim": "all_mcp_client_server_actions_are_conduit_only_with_fail_closed_bypass_rejection",
-            "evidence": {
-                "action": clean(action, 120),
-                "bypass_requested": bypass_requested
-            }
-        })],
+        "all_mcp_client_server_actions_are_conduit_only_with_fail_closed_bypass_rejection",
+        &["V6-MCP-001.6"],
     )
 }
 
 fn status(root: &Path) -> Value {
-    json!({
-        "ok": true,
-        "type": "mcp_plane_status",
-        "lane": "core/layer0/ops",
-        "latest_path": latest_path(root).display().to_string(),
-        "latest": read_json(&latest_path(root))
-    })
+    plane_status(root, STATE_ENV, STATE_SCOPE, "mcp_plane_status")
 }
 
 fn run_capability_matrix(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
@@ -1219,7 +1178,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         }),
     };
     if command == "status" {
-        print_payload(&payload);
+        print_json(&payload);
         return 0;
     }
     emit(root, attach_conduit(payload, conduit.as_ref()))

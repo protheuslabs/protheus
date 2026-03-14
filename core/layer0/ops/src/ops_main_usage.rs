@@ -84,6 +84,7 @@ pub(super) fn print_usage() {
     println!("  protheus-ops state-kernel <command> [flags]");
     println!("  protheus-ops shadow-budget-governance <evaluate|status> [flags]");
     println!("  protheus-ops adaptive-runtime <tick|status> [flags]");
+    println!("  protheus-ops adaptive-intelligence <status|propose|shadow-train|prioritize|graduate> [flags]");
     println!("  protheus-ops offline-runtime-guard <evaluate|status> [flags]");
     println!("  protheus-ops hardware-route-hardening <evaluate|status> [flags]");
     println!("  protheus-ops autonomy-controller <command> [flags]");

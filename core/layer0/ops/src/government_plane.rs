@@ -33,15 +33,11 @@ fn usage() {
     println!(
         "  protheus-ops government-plane coop --op=<register-site|replicate|failover|status> [--site=<id>] [--state=<ACTIVE|STANDBY|COLD|FAILED>] [--target-site=<id>] [--strict=1|0]"
     );
-    println!(
-        "  protheus-ops government-plane proofs --op=<verify|status> [--strict=1|0]"
-    );
+    println!("  protheus-ops government-plane proofs --op=<verify|status> [--strict=1|0]");
     println!(
         "  protheus-ops government-plane interoperability --op=<validate|status> [--profile-json=<json>] [--strict=1|0]"
     );
-    println!(
-        "  protheus-ops government-plane ato-pack --op=<generate|status> [--strict=1|0]"
-    );
+    println!("  protheus-ops government-plane ato-pack --op=<generate|status> [--strict=1|0]");
 }
 
 fn lane_root(root: &Path) -> PathBuf {
@@ -98,13 +94,7 @@ fn level_rank(level: &str) -> i32 {
     }
 }
 
-fn emit(
-    root: &Path,
-    _command: &str,
-    strict: bool,
-    payload: Value,
-    conduit: Option<&Value>,
-) -> i32 {
+fn emit(root: &Path, _command: &str, strict: bool, payload: Value, conduit: Option<&Value>) -> i32 {
     let out = attach_conduit(payload, conduit);
     let _ = write_json(&latest_path(root, ENV_KEY, LANE_ID), &out);
     let _ = append_jsonl(&history_path(root, ENV_KEY, LANE_ID), &out);
@@ -119,8 +109,15 @@ fn emit(
 }
 
 fn attestation_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     if op == "status" {
         return Ok(json!({
             "ok": true,
@@ -144,7 +141,11 @@ fn attestation_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value,
         .unwrap_or_else(|| "tpm-sim".to_string());
     let device_id = clean(device_input, 120);
     let nonce = clean(
-        parsed.flags.get("nonce").map(String::as_str).unwrap_or("attest"),
+        parsed
+            .flags
+            .get("nonce")
+            .map(String::as_str)
+            .unwrap_or("attest"),
         120,
     );
     let hardware_secret = std::env::var("PROTHEUS_HSM_RECEIPT_KEY")
@@ -214,8 +215,15 @@ fn attestation_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value,
 }
 
 fn classification_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 20)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        20,
+    )
+    .to_ascii_lowercase();
     let principal = clean(
         parsed
             .flags
@@ -291,12 +299,20 @@ fn classification_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Val
     }
     if op == "transfer" {
         let from = clean(
-            parsed.flags.get("from").map(String::as_str).unwrap_or("secret"),
+            parsed
+                .flags
+                .get("from")
+                .map(String::as_str)
+                .unwrap_or("secret"),
             32,
         )
         .to_ascii_lowercase();
         let to = clean(
-            parsed.flags.get("to").map(String::as_str).unwrap_or("unclassified"),
+            parsed
+                .flags
+                .get("to")
+                .map(String::as_str)
+                .unwrap_or("unclassified"),
             32,
         )
         .to_ascii_lowercase();
@@ -319,7 +335,14 @@ fn classification_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Val
             }]
         }));
     }
-    let id = clean(parsed.flags.get("id").map(String::as_str).unwrap_or("object"), 140);
+    let id = clean(
+        parsed
+            .flags
+            .get("id")
+            .map(String::as_str)
+            .unwrap_or("object"),
+        140,
+    );
     let object_path = classification_root(root)
         .join(level.clone())
         .join(format!("{}.json", id));
@@ -378,7 +401,14 @@ fn nonrepudiation_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Val
             .unwrap_or("CN=operator,O=Org,OU=Unit"),
         240,
     );
-    let action = clean(parsed.flags.get("action").map(String::as_str).unwrap_or("unknown"), 160);
+    let action = clean(
+        parsed
+            .flags
+            .get("action")
+            .map(String::as_str)
+            .unwrap_or("unknown"),
+        160,
+    );
     let auth_signature = clean(
         parsed
             .flags
@@ -422,10 +452,21 @@ fn nonrepudiation_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Val
 }
 
 fn diode_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let from = clean(parsed.flags.get("from").map(String::as_str).unwrap_or("secret"), 32)
-        .to_ascii_lowercase();
+    let from = clean(
+        parsed
+            .flags
+            .get("from")
+            .map(String::as_str)
+            .unwrap_or("secret"),
+        32,
+    )
+    .to_ascii_lowercase();
     let to = clean(
-        parsed.flags.get("to").map(String::as_str).unwrap_or("unclassified"),
+        parsed
+            .flags
+            .get("to")
+            .map(String::as_str)
+            .unwrap_or("unclassified"),
         32,
     )
     .to_ascii_lowercase();
@@ -457,14 +498,25 @@ fn diode_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Strin
 }
 
 fn soc_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     let mut state = read_json(&soc_state_path(root))
         .and_then(|v| v.as_object().cloned())
         .unwrap_or_default();
     if op == "connect" {
         let endpoint = clean(
-            parsed.flags.get("endpoint").map(String::as_str).unwrap_or("siem.local"),
+            parsed
+                .flags
+                .get("endpoint")
+                .map(String::as_str)
+                .unwrap_or("siem.local"),
             240,
         );
         state.insert("endpoint".to_string(), Value::String(endpoint.clone()));
@@ -530,8 +582,15 @@ fn soc_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String>
 }
 
 fn coop_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 20)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        20,
+    )
+    .to_ascii_lowercase();
     let mut state = read_json(&coop_state_path(root))
         .and_then(|v| v.as_object().cloned())
         .unwrap_or_else(|| {
@@ -547,7 +606,14 @@ fn coop_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String
             .as_object_mut()
             .ok_or_else(|| "coop_sites_invalid".to_string())?;
         if op == "register-site" {
-            let site = clean(parsed.flags.get("site").map(String::as_str).unwrap_or("site-a"), 80);
+            let site = clean(
+                parsed
+                    .flags
+                    .get("site")
+                    .map(String::as_str)
+                    .unwrap_or("site-a"),
+                80,
+            );
             let site_state = clean(
                 parsed
                     .flags
@@ -559,8 +625,9 @@ fn coop_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String
             .to_ascii_uppercase();
             sites.insert(site, json!({"state": site_state, "updated_at": now_iso()}));
         } else if op == "replicate" {
-            replication_merkle =
-                Some(sha256_hex_str(&canonical_json_string(&Value::Object(sites.clone()))));
+            replication_merkle = Some(sha256_hex_str(&canonical_json_string(&Value::Object(
+                sites.clone(),
+            ))));
         } else if op == "failover" {
             let target = clean(
                 parsed
@@ -622,8 +689,15 @@ fn coop_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String
 }
 
 fn proofs_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     if op == "status" {
         return Ok(json!({
             "ok": true,
@@ -689,8 +763,15 @@ fn proofs_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Stri
 }
 
 fn interoperability_command(parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     if op == "status" {
         return Ok(json!({
             "ok": true,
@@ -748,8 +829,15 @@ fn interoperability_command(parsed: &crate::ParsedArgs) -> Result<Value, String>
 }
 
 fn ato_pack_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     let docs_dir = root.join("docs/government");
     let required = [
         "SYSTEM_SECURITY_PLAN.md",
@@ -768,7 +856,8 @@ fn ato_pack_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, St
                     "# {name}\n\nGenerated by government-plane ATO pack.\n\n- Generated: {}\n- Scope: FedRAMP/CMMC/CC\n",
                     now_iso()
                 );
-                fs::write(&path, body).map_err(|e| format!("ato_doc_write_failed:{}:{e}", path.display()))?;
+                fs::write(&path, body)
+                    .map_err(|e| format!("ato_doc_write_failed:{}:{e}", path.display()))?;
             }
         }
     } else if op != "status" {

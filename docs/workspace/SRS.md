@@ -9087,7 +9087,7 @@ Objective: define measurable, proof-backed competitive execution targets so Prot
 | V7-CANYON-001.2 | done | Autonomous Hands Army Contract (60+ production Hands) | Practical autonomous value depends on breadth of prebuilt capability packs running without manual prompting. | Implemented `canyon-plane hands-army --op=<bootstrap|schedule|run|status>` with a governed 60-hand registry across required categories, trigger/schedule updates, and receipted execution history; verified by `core/layer0/ops/tests/v7_canyon_batch_integration.rs` and CLI evidence `artifacts/v7_canyon_cli_evidence_20260314T042310Z.jsonl`. | 9 | 0/1/2/client/app/adapter |
 | V7-CANYON-001.3 | done | Governed Self-Evolution Loop Contract | Self-improvement without constitutional gating is unsafe and unverifiable. | Implemented `canyon-plane evolution --op=<propose|shadow-simulate|review|apply|rollback|status>` with strict proposal approval/simulation gates, immutable version lineage, and rollback semantics in `core/layer0/ops/src/canyon_plane.rs`; verified by `core/layer0/ops/tests/v7_canyon_batch_integration.rs` and CLI evidence `artifacts/v7_canyon_cli_evidence_20260314T042310Z.jsonl`. | 10 | 0/1/2/3 |
 | V7-CANYON-001.4 | done | Tiered Isolation & Sandbox Contract (Rust boundary + WASM + optional Firecracker) | High-assurance computer use requires configurable isolation strength with strict cross-boundary verification. | Implemented `canyon-plane sandbox --op=<run|status>` with native/wasm/firecracker tier handling, dual-metered fuel/epoch admission, escape-attempt denial, and strict firecracker availability checks; verified by `core/layer0/ops/tests/v7_canyon_batch_integration.rs` and CLI evidence `artifacts/v7_canyon_cli_evidence_20260314T042310Z.jsonl`. | 10 | -1/0/1/2/adapter |
-| V7-CANYON-001.5 | done | SDK/Ecosystem Depth Contract (4 SDKs, 40+ providers, 120+ tools, 50+ adapters) | Ecosystem moat requires broad integration and developer ergonomics beyond core runtime quality. | Implemented `canyon-plane ecosystem --op=<bootstrap|status|init>` to materialize and validate ecosystem inventory floors (4 SDKs/40 providers/120 tools/50 adapters), signed-marketplace readiness flags, and scaffold generation via `init`; verified by `core/layer0/ops/tests/v7_canyon_batch_integration.rs` and CLI evidence `artifacts/v7_canyon_cli_evidence_20260314T042310Z.jsonl`. | 9 | 1/2/client/app/adapter |
+| V7-CANYON-001.5 | done | SDK/Ecosystem Depth Contract (4 SDKs, 40+ providers, 120+ tools, 50+ adapters) | Ecosystem moat requires broad integration and developer ergonomics beyond core runtime quality. | Implemented `canyon-plane ecosystem --op=<bootstrap|status|init>` to materialize and validate ecosystem inventory floors (4 SDKs/40 providers/120 tools/50 adapters), signed-marketplace readiness flags, scaffold generation via `init`, and thin-client `protheusctl init <template>` routing; verified by `core/layer0/ops/tests/v7_canyon_batch_integration.rs`, route tests in `core/layer0/ops/src/protheusctl.rs`, and runnable CLI evidence on 2026-03-14. | 9 | 1/2/client/app/adapter |
 | V7-CANYON-001.6 | done | Practical Computer-Use & Coding Workflow Contract | Competitive coding agents must complete real end-to-end loops, not isolated tool demos. | Implemented `canyon-plane workflow --op=<run|status>` with deterministic multi-step action records (file/terminal/browser/network/deploy) and replay-ready metadata persisted in core state; verified by `core/layer0/ops/tests/v7_canyon_batch_integration.rs` and CLI evidence `artifacts/v7_canyon_cli_evidence_20260314T042310Z.jsonl`. | 10 | 0/1/2/client/app |
 | V7-CANYON-001.7 | done | Kernel Scheduler Scalability Contract (10k+ concurrent agents) | Agent-OS leadership requires proven high-concurrency scheduling, resource balancing, and distributed continuity. | Implemented `canyon-plane scheduler --op=<simulate|status>` with 10k+ agent allocation, multi-node queue balancing, required mode checks (`kubernetes,edge,distributed`), and deterministic cross-node Merkle state root; verified by `core/layer0/ops/tests/v7_canyon_batch_integration.rs` and CLI evidence `artifacts/v7_canyon_cli_evidence_20260314T042310Z.jsonl`. | 10 | 0/1/2/3/adapter |
 | V7-CANYON-001.8 | done | Enterprise Control Plane & Governance Surface Contract | Enterprise trust depends on live visibility, governance controls, and exportable compliance evidence. | Implemented `canyon-plane control-plane --op=<snapshot|status>` with aggregated runtime/scheduler/hands/benchmark visibility and strict RBAC/SSO/HITL governance gates; verified by `core/layer0/ops/tests/v7_canyon_batch_integration.rs` and CLI evidence `artifacts/v7_canyon_cli_evidence_20260314T042310Z.jsonl`. | 9 | 0/1/2/client/app |
@@ -9207,3 +9207,299 @@ Objective: deliver production-grade persistent autonomy (24/7 hands) with determ
 | V6-AUTONOMY-001.3 | done | Policy-Governed Multi-Provider Inference Routing Contract | Persistent agents need provider fallback/cost controls, but routing must remain policy-authoritative and auditable. | Add thin routing surface for provider preferences in hand manifests while Layer-1 policy enforces provider allowlists/cost caps/fallback ordering; all provider selections emit deterministic routing receipts. | 8 | 0/1/2/client/app/adapter |
 | V6-AUTONOMY-001.4 | done | Hierarchical Memory Pager Contract | Long-lived agents degrade without bounded memory paging across hot, archival, and external contexts. | Implement tiered memory paging (`core/context -> archival -> external`) for autonomous hands with explicit page-in/page-out APIs, bounded recall rules, and deterministic paging receipts linked to tag-matrix/continuity lanes. | 9 | 1/2/client |
 | V6-AUTONOMY-001.5 | done | Dual-Metered WASM Workspace Sandbox Contract | Hands require safe isolated execution for tool tasks; weak sandboxing creates lateral-risk and budget drift. | Add autonomous WASM workspace tasks with dual meters (fuel + wall/epoch), strict capability scopes, deterministic completion/failure receipts, and fail-closed denial on budget/policy violations. | 10 | 0/1/2/adapter/client |
+
+## Size Canyon Footprint & Release Discipline Intake (Doc `1isAdvYEFfPUAJxj6IhDxlcwK2C4WioI5bKx1-NxoBj0`, 2026-03-14)
+
+Source references:
+- https://docs.google.com/document/d/1isAdvYEFfPUAJxj6IhDxlcwK2C4WioI5bKx1-NxoBj0/edit?usp=sharing
+- https://docs.google.com/document/d/1nrhCBiQElRSfKKWedN6g1Kspd0Bmohhs5d6NG1ReOw4/edit?usp=sharing
+
+Notes:
+- Primitive-first normalization: this intake sharpens existing runtime-efficiency and release-discipline work into explicit binary-footprint contracts; it does not create a parallel execution stack.
+- Overlap handled explicitly:
+  - single-binary efficiency baseline: `V7-CANYON-001.1`
+  - static binary / reproducible build / benchmark baselines: `V7-TOP1-005`, `V7-TOP1-006`, `V7-TOP1-007`
+  - release build optimization baseline: `V3-BLD-001`
+- Net-new emphasis from source:
+  - `no_std`/`no_alloc` default posture for Layer 0 and Layer 1,
+  - aggressive optional-feature + lazy-load discipline for substrate adapters,
+  - mandatory PGO/BOLT/fat-LTO size pipeline tied to signed build receipts,
+  - batched receipt logging with compact binary core storage,
+  - dual artifact packaging (`minimal` vs `full`) and public size/perf trust reporting.
+- Implementation-spec addendum from the second source:
+  - exact rollout order for `no_std` + custom allocator, lazy substrate loading, and receipt batching,
+  - explicit `x86_64-unknown-none` / musl target guidance for minimal and kernel-style builds,
+  - crossbeam-style batched receipt queueing and explicit `--isolation=firecracker` on-demand fallback posture,
+  - no separate backlog rows are introduced because these details refine `V7-CANYON-002.1` through `V7-CANYON-002.4` and reinforce `V7-CANYON-001.4`.
+
+Objective: reduce install and runtime footprint to hard, verifiable targets without weakening safety, determinism, performance SLOs, or Rust-core authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V7-CANYON-002.1 | in_progress | Layer-0/1 `no_std` + Custom Allocator Footprint Contract | The current binary-size floor will not move enough unless the trusted core drops `std` overhead and adopts allocator discipline by default. | Added `core/layer0/alloc.rs`, wired a minimal-profile global allocator in `core/layer0/ops/src/lib.rs`, and shipped `protheus-ops canyon-plane footprint`; behavior verified in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: the real workspace still reports non-`no_std` Layer 0/1 crates, so full conversion is not yet complete. | 10 | -1/0/1 |
+| V7-CANYON-002.2 | in_progress | Lazy Substrate Loading + Empty-Default Feature-Set Contract | Shipping every substrate adapter in the default binary makes footprint and cold-start targets unreachable for the common case. | Added governed `minimal` / `full-substrate` features plus `protheus-ops canyon-plane lazy-substrate --op=enable|load|status`; behavior verified in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: adapters are tracked and activated through the canyon runtime, but the broader adapter graph is not yet fully feature-gated across the whole workspace. | 10 | 0/1/2/adapter |
+| V7-CANYON-002.3 | in_progress | Size-Optimized Release Pipeline Contract (Fat LTO + PGO + BOLT + Strip) | Static builds alone do not guarantee competitive footprint or startup performance without an enforced optimization pipeline. | Added release/minimal profiles in the workspace `Cargo.toml`, tool-aware release pipeline execution in `core/layer0/ops/src/canyon_plane_extensions.rs`, and integration coverage in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs`; runnable CLI evidence exercised `canyon-plane release-pipeline` on 2026-03-14. Remaining gap: CI-enforced PGO/BOLT replay and hard release-policy gating are not yet wired. | 9 | 0/1/2/client |
+| V7-CANYON-002.4 | in_progress | Batched Receipts + Zero-Copy Binary Core Log Contract | Per-event JSON-heavy receipt emission adds avoidable size and runtime overhead to the core binary. | Added batched binary receipt flushing with measured overhead and binary log output in `core/layer0/ops/src/canyon_plane_extensions.rs`; behavior verified in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs` and runnable CLI evidence showed `approx_overhead_us <= 30` on 2026-03-14. Remaining gap: core receipt emission still writes JSON first and is not yet fully queue-backed by default. | 9 | 0/1/2/client |
+| V7-CANYON-002.5 | in_progress | Minimal/Full Artifact Packaging + Signed Reproducible Release Contract | Clean outsider-ready distribution requires a tiny default install without sacrificing a one-command path to the full adapter ecosystem. | Added minimal/full package manifest generation in `core/layer0/ops/src/canyon_plane_extensions.rs`, behavior coverage in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs`, and runnable CLI evidence for `canyon-plane package-release` on 2026-03-14. Remaining gap: signing, Sigstore/SLSA provenance, and reproducible-build verification are not yet complete. | 9 | 0/1/2/client/adapter |
+| V7-CANYON-002.6 | in_progress | Size Trust Center + Hard Size/Perf CI Gate Contract | Size claims are not credible unless build outputs, cold-start, RSS, and throughput targets are continuously proven and publicly auditable. | Added `protheus-ops canyon-plane size-trust` aggregating footprint, release, batching, and benchmark metrics; behavior verified in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: CI/nightly publication and public historical trust-center hosting are not yet implemented. | 10 | 0/1/2/client/app |
+
+## Fortune-100 Procurement & Platform Leadership Intake (Doc `1C0JmEaPuYJxfBxnZIzzYM5m-h8kiHfMoFwYP82Db514`, 2026-03-14)
+
+Source references:
+- https://docs.google.com/document/d/1C0JmEaPuYJxfBxnZIzzYM5m-h8kiHfMoFwYP82Db514/edit?usp=sharing
+
+Notes:
+- Primitive-first normalization: this intake extends existing enterprise, government, banking, healthcare, security, and canyon-readiness lanes; it does not create a parallel authority or compliance subsystem.
+- Overlap handled explicitly:
+  - baseline Fortune-100 readiness and procurement gates: `V6-F100-*`, `V6-F100-A-*`
+  - enterprise identity/compliance/scale baselines: `V7-ENTERPRISE-001.*`
+  - regulated-domain export baselines: `V7-GOV-001.*`, `V7-BANK-001.*`, `V7-HEALTH-001.*`, `V3-RACE-311`
+  - release/security/trust posture baselines: `V6-SEC-*`, `V7-CANYON-002.*`
+- Net-new emphasis from source:
+  - procurement-grade certification expansion for AI governance and jurisdictional packs,
+  - explicit commercial shell requirements (indemnity, TAMs, audit rights),
+  - unified zero-trust enterprise deployment profile with CMEK and private-link posture,
+  - public Fortune-scale benchmark and deployment proofs,
+  - enterprise adoption surfaces (operator training, OpenAPI docs, one-command bootstrap).
+
+Objective: close the remaining gap between technical readiness and Fortune-100 procurement/platform adoption by making compliance, deployment, support, and scale evidence first-class and continuously provable.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V7-F100-002.1 | blocked_external_prepared | Expanded Certification & AI Governance Pack Contract (ISO 42001 / EU AI Act / BAA / AI RMF) | Existing certification readiness is broad but does not yet explicitly package AI-governance and jurisdiction-specific enterprise artifacts in the form large buyers expect. | Extend compliance export packs to include ISO/IEC 42001, EU AI Act high-risk, HIPAA BAA, PCI-DSS, GDPR Article 28, and NIST AI RMF mappings with deterministic evidence bundles; attach third-party certification/legal artifacts when human-owned issuance completes. | 10 | 0/1/2/client |
+| V7-F100-002.2 | blocked_external_prepared | Commercial Enterprise Shell Contract (SLA + Indemnity + TAM + Audit Rights) | Fortune-100 procurement requires a legal/commercial operating wrapper, not just strong software posture. | Publish commercial support envelope covering 99.99% uptime SLA, service credits, IP/performance indemnity terms, 24/7 support with P1 response commitments, dedicated TAM workflow, DPA/BAA coverage, and explicit right-to-audit clauses, with signed legal artifacts linked from enterprise readiness surfaces. | 10 | 0/1/2/client |
+| V7-F100-002.3 | in_progress | Zero-Trust Enterprise Deployment Profile Contract (Receipt-Signed JWT + CMEK + VPC/PrivateLink) | Large enterprises need a hardened deployment profile that proves every cross-plane call and secret boundary is enforceable inside customer-owned networks. | Added `enterprise-hardening zero-trust-profile` in `core/layer0/ops/src/enterprise_moat_extensions.rs`; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: the profile is generated and enforced at the enterprise-hardening lane, but receipt-signed JWT enforcement across all cross-plane calls is not yet universal. | 10 | 0/1/2/adapter/client |
+| V7-F100-002.4 | in_progress | Continuous Control Monitoring + Enterprise Ops Bridge Contract | Procurement confidence rises when control drift, incidents, and change tickets are visible inside the tools enterprise operators already use. | Added governed ops-bridge export for Datadog, Splunk, ServiceNow, and Jira in `core/layer0/ops/src/enterprise_moat_extensions.rs`; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: live under-60-second drift streaming into external providers is not yet implemented. | 9 | 0/1/2/adapter/client |
+| V7-F100-002.5 | in_progress | Fortune-Scale Performance & HA Certification Contract (50k Cluster / 10k Air-Gapped / <100 ms Cold Start) | Existing benchmark lanes are strong, but this source sets a sharper bar for enterprise platform teams evaluating substrate viability at extreme scale. | Added `enterprise-hardening scale-ha-certify` on top of the scale-certification lane with HA/air-gap/cold-start evidence; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: current certification is deterministic simulation/evidence generation rather than a live 50k-node deployment harness. | 10 | 0/1/2/3/client/adapter |
+| V7-F100-002.6 | in_progress | Kubernetes Operator + Air-Gapped Deployment Module Contract | Helm/Terraform alone are not enough for internal platform teams that expect operator-grade lifecycle management and disconnected deployment modules. | Added operator/Helm/Terraform/Ansible module generation via `enterprise-hardening deploy-modules`; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: upgrade/rollback reconciliation and disconnected-cluster parity validation are not yet complete. | 9 | 0/1/2/client/adapter |
+| V7-F100-002.7 | in_progress | Assurance Super-Gate Contract (TCB Coverage + Formal Proof + Fuzz/Red-Team Cadence) | Fortune-100 platform selection depends on demonstrable assurance depth across the trusted core, not only point-in-time feature readiness. | Added `enterprise-hardening super-gate` combining Top1 proof ratio, reliability, scale certification, and chaos posture; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: formal proof/fuzz cadence and third-party penetration-test evidence are not yet first-class inputs to the gate. | 10 | 0/1/2 |
+| V7-F100-002.8 | in_progress | Enterprise Adoption Accelerator Contract (OpenAPI + Training + Reference Architectures + Bootstrap) | Strong internals still lose deals if operators and platform teams cannot onboard, integrate, and pilot quickly with canonical materials. | Added `enterprise-hardening adoption-bootstrap` generating OpenAPI, operator manual, reference architecture, and bootstrap pack artifacts; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs`. Remaining gap: training/certification flows and vertical case-study packs are not yet fully implemented. | 8 | 1/2/client/app |
+
+## Evidence-Native Product Superpowers Intake (Operator Addendum, 2026-03-14)
+
+Source references:
+- Inline operator brief: replay/explorer/local-ai/distributed-sync/energy/migration/chaos superpower proposals (2026-03-14).
+
+Notes:
+- Primitive-first normalization: this intake extends existing proof, replay, observability, memory federation, local-model, migration, and security lanes; it does not create any parallel authority path outside Rust-core and conduit governance.
+- Overlap handled explicitly:
+  - formal verification canyon is already represented by `V7-TOP1-002`, `V6-SEC-005`, `V6-TECH-304`, `V6-MPLAN-906`, and `V7-F100-002.7`, so no duplicate row is added here
+  - replay/trace baselines: `V2-FND-002`, `V3-044`, `V6-OBSERVABILITY-002.*`, `V6-OBSERVABILITY-004.1`
+  - distributed sync baselines: `V7-ASM-007`, `V2-062`, `V4-001`, `V7-NEXUS-001.6`
+  - migration baseline: `V6-COMP-002`
+  - chaos/fuzz/red-team baselines: `V6-SEC-008`, `BL-049`, `V3-ENT-003`
+- Net-new emphasis from source:
+  - point-in-time whole-system replay by timestamp/receipt,
+  - first-class visual evidence UX and audit-pack generation,
+  - built-in zero-cloud local coding substrate,
+  - globally consistent multi-node evidence synchronization,
+  - energy efficiency as a first-class benchmark dimension,
+  - multi-ecosystem migration compiler,
+  - operator-facing chaos/red-team swarm command surface.
+
+Objective: turn the evidence-first kernel into a visibly superior product surface by making replay, trust, local sovereignty, distributed continuity, and resilience directly operable and provable.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V7-MOAT-002.1 | in_progress | Time-Travel Evidence Replay Contract | Deterministic receipts are under-leveraged unless operators can restore exact past system state by time or receipt hash for debugging and audit. | Added `enterprise-hardening replay` with point-in-time snapshot/diff artifacts, behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs`, and runnable CLI evidence on 2026-03-14. Remaining gap: secret-safe replay redaction and stronger integrity/inclusion-proof validation are not yet complete. | 10 | 0/1/2/client |
+| V7-MOAT-002.2 | in_progress | Visual Evidence Explorer + Audit Pack Workbench Contract | Evidence strength is harder to sell and use when receipts remain log-centric instead of explorable and exportable. | Added `enterprise-hardening explore` local index/html evidence explorer, behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs`, and runnable CLI evidence on 2026-03-14. Remaining gap: audit-pack/PDF export is not yet implemented. | 8 | 1/2/client/app |
+| V7-MOAT-002.3 | in_progress | Self-Hosted Local AI Substrate Contract | Local sovereignty remains incomplete without a built-in zero-cloud inference substrate for coding and autonomy workflows. | Added `enterprise-hardening ai` with local-only model invocation, zero-egress model guardrails, and model-router-based Ollama profile handling; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: broader cognition-plane integration and richer coder-profile/fallback catalogs are still incomplete. | 9 | 0/1/2/adapter/client/app |
+| V7-MOAT-002.4 | in_progress | Distributed Multi-Node Evidence Sync Contract | Multi-device operation is not truly planetary unless receipts and state converge consistently across laptops, servers, and edge nodes. | Added `enterprise-hardening sync` merging multi-node receipt histories with deterministic roots; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: CRDT memory/state sync, notarized inclusion proofs, and full divergence remediation are not yet implemented. | 10 | 0/1/2/3/adapter/client |
+| V7-MOAT-002.5 | done | Energy Efficiency Certification Contract | Edge and embedded leadership requires measured power efficiency, not only size and latency wins. | Implemented `enterprise-hardening energy-cert` in `core/layer0/ops/src/enterprise_moat_extensions.rs`, enforcing `<=0.4 W per 100 agents` and emitting deterministic power receipts; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. | 8 | -1/0/1/2/client |
+| V7-MOAT-002.6 | done | Cross-Ecosystem Migration Compiler Contract | Adoption accelerates when competing agent stacks can be imported with workflows and lineage mostly intact instead of manually rebuilt. | Implemented `enterprise-hardening migrate-ecosystem` with OpenFang, OpenHands, and Agent-OS payload import into canonical objects in `core/layer0/ops/src/enterprise_moat_extensions.rs`; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. | 9 | 0/1/2/adapter/client |
+| V7-MOAT-002.7 | done | Built-In Chaos + Red-Team Swarm Suite Contract | Enterprise resilience posture improves when adversarial validation is a first-class operator workflow rather than a collection of background lanes. | Implemented `enterprise-hardening chaos-run [--suite=general|isolate]` generating bounded adversarial swarm reports and wiring outputs into the super-gate path; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs`, route tests in `core/layer0/ops/src/protheusctl.rs`, and runnable CLI evidence on 2026-03-14. | 9 | 0/1/2/client/app |
+
+## Win-The-Last-Two Delta Intake (Inline Operator Plan, 2026-03-14)
+
+Source references:
+- inline operator spec: "Protheus Win the Last Two Categories Canyon Plan"
+
+Notes:
+- This intake is normalized as a delta, not a duplicate feature family.
+- Explicit overlap handled without new rows:
+  - hybrid isolation stack baseline: `V7-CANYON-001.4`
+  - one-command project bootstrap baseline: `V7-CANYON-001.5`
+  - cross-ecosystem migration baseline: `V7-MOAT-002.6`
+  - chaos/red-team baseline: `V7-MOAT-002.7`
+  - adoption/bootstrap shell baseline: `V7-F100-002.8`
+- Net-new emphasis from source:
+  - persistent rewindable sandboxes with verifiable snapshot/resume,
+  - isolation-specific escape-resistance drills,
+  - logical-only isolated edge mode with explicit memory overhead budget,
+  - verified marketplace publish/install gates,
+  - built-in assistant mode that teaches Protheus while producing test/docs/compliance steps.
+
+Objective: finish the delta between already-shipped canyon primitives and the operator-facing last-mile surfaces that make isolation and usability visibly category-leading.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V7-CANYON-003.1 | done | Persistent Verifiable Sandbox Snapshot + Resume Contract | Isolation leadership is incomplete if sandbox state cannot be snapshotted, rewound, and resumed with receipt-bound integrity. | Implemented `canyon-plane sandbox --op=<run|snapshot|resume|status>` with per-session state, cryptographic snapshot integrity hashes, sub-50 ms strict latency checks, and receipt-bound restore flow in `core/layer0/ops/src/canyon_plane.rs`; behavior verified in `core/layer0/ops/tests/v7_canyon_batch_integration.rs` and runnable CLI evidence on 2026-03-14. | 10 | 0/1/2/client |
+| V7-CANYON-003.2 | done | Isolation Escape-Resistance Drill Contract | A sandbox moat is stronger when escape-resistance drills are first-class and auditable instead of generic chaos noise. | Implemented `enterprise-hardening chaos-run --suite=isolate` plus thin-client `protheusctl chaos isolate`, emitting signed isolation drill reports under `core/local/state/ops/enterprise_hardening/moat/chaos/`; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs`, route tests in `core/layer0/ops/src/protheusctl.rs`, and runnable CLI evidence on 2026-03-14. | 9 | 0/1/2/client/app |
+| V7-CANYON-003.3 | done | Logical-Only Edge Isolation Density Contract | Edge deployment wins require a governed low-overhead isolation mode instead of treating every isolated hand like a full-fat sandbox. | Implemented `canyon-plane sandbox --logical-only=1` with strict WASM-only admission and `<=4 MB` overhead budget enforcement in `core/layer0/ops/src/canyon_plane.rs`; behavior verified in `core/layer0/ops/tests/v7_canyon_batch_integration.rs` and runnable CLI evidence on 2026-03-14. | 9 | -1/0/1/2 |
+| V7-MOAT-003.1 | done | Verified Marketplace Publish/Install Gate Contract | Marketplace growth becomes a liability unless publish/install paths are receipt-backed and reject unverifiable entries by default. | Implemented `canyon-plane ecosystem --op=<marketplace-status|marketplace-publish|marketplace-install>` with mandatory receipt evidence, chaos/reputation metadata, verified install gating, and persisted registry state in `core/layer0/ops/src/canyon_plane.rs`; behavior verified in `core/layer0/ops/tests/v7_canyon_batch_integration.rs` and runnable CLI evidence on 2026-03-14. | 9 | 0/1/2/client/app |
+| V7-MOAT-003.2 | done | Guided Assistant Mode Contract | Developer love improves when the system can teach itself in-context and produce the next docs/tests/compliance steps instead of only exposing raw commands. | Implemented `enterprise-hardening assistant-mode` plus thin-client `protheusctl assistant`, generating guided init/shadow-test/docs/compliance artifacts under `core/local/state/ops/enterprise_hardening/moat/assistant_mode/`; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs`, route tests in `core/layer0/ops/src/protheusctl.rs`, and runnable CLI evidence on 2026-03-14. | 8 | 0/1/2/client/app |
+
+## Adaptive Intelligence Canyon Intake (Doc `1M7ExC-T6aSrfkbELMEGJA21_28979sJlvmxfF0VNa6I`, 2026-03-14)
+
+Source references:
+- https://docs.google.com/document/d/1M7ExC-T6aSrfkbELMEGJA21_28979sJlvmxfF0VNa6I/edit?usp=sharing
+
+Notes:
+- Primitive-first normalization: this intake extends the existing local-AI substrate, Conversation Eye memory feed, Dream Sequencer context flow, model routing, and HUMAN_ONLY approval rails. It does not create a second authority path outside Rust-core and conduit governance.
+- Overlap handled explicitly:
+  - local model substrate baseline: `V7-MOAT-002.3`
+  - Conversation Eye context baseline: `V6-COGNITION-010`
+  - Dream Sequencer planning ingest baseline: `V6-MPLAN-911`
+  - HUMAN_ONLY control baseline: existing operator approval gates and human-owned promotion rules
+- Net-new emphasis from source:
+  - dual creative/logical local-model runtime sharing one seed lineage,
+  - shadow-mode specialization ledger and graduation threshold,
+  - deterministic connector/referee synthesis,
+  - logical-first degradation under constrained hardware,
+  - explicit Dream/Conversation-Eye/persona bias feed into adaptive proposals.
+
+Objective: implement a cognition-plane adaptive intelligence lane that can run two local-specialized model profiles, synthesize them deterministically, train them only in shadow mode, and graduate them only through HUMAN_ONLY approval.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V7-ADAPTIVE-001.1 | done | Dual-LLM Local Runtime Contract (`creative` + `logical`) | One general local model cannot simultaneously optimize for divergent idea generation and deterministic execution planning without wasting resources or blurring behavior. | Implemented `protheus-ops adaptive-intelligence propose` in `core/layer0/ops/src/adaptive_intelligence.rs`, maintaining creative/logical profiles from one seed lineage, running both in dual-resource mode, and persisting runtime state under `core/local/state/ops/adaptive_intelligence/`; behavior verified in `core/layer0/ops/tests/v7_adaptive_intelligence_integration.rs` and runnable CLI evidence on 2026-03-14. | 9 | 0/1/2/client |
+| V7-ADAPTIVE-001.2 | done | Shadow-Mode Continuous Specialization Contract | Adaptive cognition needs ongoing specialization, but training must remain proposal-only and safely off the live decision path until explicitly approved. | Implemented `protheus-ops adaptive-intelligence shadow-train` in `core/layer0/ops/src/adaptive_intelligence.rs`, consuming Dream/Conversation context bundles, emitting local-only `qlora_or_equivalent` shadow-training receipts, and updating specialization scores plus nightly-due state; behavior verified in `core/layer0/ops/tests/v7_adaptive_intelligence_integration.rs` and runnable CLI evidence on 2026-03-14. | 10 | 0/1/2/client |
+| V7-ADAPTIVE-001.3 | done | Deterministic Connector & Coherence Contract | Parallel creative and logical model outputs only become usable if a stable connector merges them into one ranked, auditable action set. | Implemented deterministic connector synthesis inside `core/layer0/ops/src/adaptive_intelligence.rs`, producing ranked proposals with confidence scores and connector digests for every `adaptive-intelligence propose` call; behavior verified in `core/layer0/ops/tests/v7_adaptive_intelligence_integration.rs` and runnable CLI evidence on 2026-03-14. | 9 | 0/1/2 |
+| V7-ADAPTIVE-001.4 | done | Resource-Aware Logical-First Degradation Contract | Dual-model cognition must remain usable on constrained hardware by degrading predictably toward the logical model instead of simply failing or thrashing resources. | Implemented `protheus-ops adaptive-intelligence prioritize` plus shared resource-mode selection in `core/layer0/ops/src/adaptive_intelligence.rs`, switching deterministically between `dual`, `logical_only`, and `tiny_logical_only` modes with degradation receipts; behavior verified in `core/layer0/ops/tests/v7_adaptive_intelligence_integration.rs` and runnable CLI evidence on 2026-03-14. | 9 | 0/1/2/client |
+| V7-ADAPTIVE-001.5 | done | Dream Sequencer + Conversation Eye + Persona Bias Feed Contract | Adaptive specialization only becomes instance-specific when it continuously ingests operator dialogue, nightly dream/reflection context, and persona-level biasing inputs. | Implemented context harvesting from Conversation Eye nodes and organism dream logs plus per-invocation persona/logical/creative bias controls in `core/layer0/ops/src/adaptive_intelligence.rs`; behavior verified in `core/layer0/ops/tests/v7_adaptive_intelligence_integration.rs` and runnable CLI evidence on 2026-03-14. | 8 | 0/1/2/client |
+| V7-ADAPTIVE-001.6 | done | HUMAN_ONLY Multi-Signature Graduation Contract | Specialized shadow models cannot be allowed onto the live path without explicit human approval and a measurable usefulness threshold. | Implemented `protheus-ops adaptive-intelligence graduate --human-only=1 --approvers=<csv>` in `core/layer0/ops/src/adaptive_intelligence.rs`, enforcing multi-approver graduation and specialization-threshold checks before promotion; behavior verified in `core/layer0/ops/tests/v7_adaptive_intelligence_integration.rs` and runnable CLI evidence on 2026-03-14. | 10 | 0/1/2/client |
+
+## 2027-2028 Compound Moat Intake (Inline Operator Plan, 2026-03-14)
+
+Source references:
+- inline operator spec beginning: `Yes — after everything we’ve built ... Here are 6 genuinely next-level improvements`
+
+Notes:
+- Primitive-first normalization: this intake extends the existing three-plane, evidence-first kernel rather than introducing a parallel architecture.
+- Overlap handled explicitly:
+  - zero-knowledge claim baseline: `V8-NETWORK-002.4`
+  - distributed sync / Merkle notarization baselines: `V7-MOAT-002.4`, `V7-NEXUS-001.6`, `V7-NEXUS-001.7`
+  - adaptive memory / dream / conversation baselines: `V7-ADAPTIVE-001.*`, `V6-MEMORY-011.*`, `V6-MPLAN-911`
+  - accelerator adapter baselines: `V3-RACE-251`, `V3-RACE-263`, `V3-RACE-280`, `V3-RACE-312`, `V7-CANYON-002.2`, `V7-MOAT-002.3`
+  - collaboration and human sovereignty baselines: `V6-COLLAB-001.*`, `V6-COMPANY-001.*`, `V7-NEXUS-001.4`
+  - economy/tokenomics baselines: `V6-ECONOMY-001.*`, `V8-NETWORK-002.*`, `V7-NETWORK-001.*`
+- Net-new emphasis from source:
+  - kernel-level zero-knowledge proof envelopes over deterministic receipts,
+  - verifiable federation mesh for specialization/evidence sharing without central authority,
+  - continuously distilled lifetime knowledge graph,
+  - one unified lazy accelerator governor above existing hardware adapters,
+  - shared multi-operator HUMAN_ONLY governance on one live instance,
+  - optional internal agent economy for task/resource exchange.
+
+Objective: define the post-10/10 moat layer that compounds privacy, federation, memory, acceleration, team governance, and internal economics on top of the already-shipped canyon foundation.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V8-MOAT-001.1 | queued | Zero-Knowledge Evidence Kernel Contract | External verification becomes dramatically more powerful when third parties can prove safety/compliance properties without ever receiving the underlying sensitive receipts or state. | Extend deterministic receipts with optional ZK proof envelopes plus `prove` / `verify` kernel surfaces that can attest policy compliance, audit completeness, or bounded behavior without raw data disclosure; require policy-gated proof generation, fail-closed verification receipts, and auditor-ready artifact export. | 10 | 0/1/2/adapter/client |
+| V8-MOAT-001.2 | queued | Federated Evidence Mesh Contract | A planetary Protheus network requires verifiable state/evidence convergence and selective intelligence exchange without introducing a central trust anchor. | Implement signed CRDT-backed federation mesh across laptops/servers/edge nodes with trust-group policy, selective specialization sharing, notarized convergence roots, and deterministic join/sync/conflict-resolution receipts; thin clients may only observe/control via conduit-routed mesh commands. | 10 | 0/1/2/3/adapter/client |
+| V8-MOAT-001.3 | queued | Evolutionary Knowledge Graph Contract | Long-horizon intelligence compounds only if old knowledge is distilled, versioned, and re-linked instead of discarded into rolling context windows. | Upgrade Dream Sequencer + memory runtime into a versioned knowledge graph with distillation, abstraction, lineage queries, and replay-safe graph evolution receipts; preserve historical knowledge nodes while surfacing current abstractions to adaptive reasoning lanes. | 9 | 0/1/2/3/client |
+| V8-MOAT-001.4 | queued | Unified Accelerator Fabric Contract (NPU/GPU/TPU/QPU) | Existing device-specific adapters are not enough if the system cannot reason holistically about when and how to offload creative/logical inference and fine-tuning. | Add a lazy-loaded accelerator governor that brokers across existing NPU/GPU/TPU/quantum-hybrid adapters, emits deterministic placement/rollback receipts, enforces policy and thermal/power budgets, and integrates directly with dual-LLM adaptive runtime plus substrate profiles. | 9 | -1/0/1/2/adapter/client |
+| V8-MOAT-001.5 | queued | Multi-Operator Shared Sovereignty Contract | Team adoption accelerates when multiple humans can safely operate one instance with role-scoped HUMAN_ONLY rights and explicit conflict resolution. | Implement secure shared-instance mode with named operators, role-based HUMAN_ONLY approval scopes, shared evidence views, proposal conflict resolution, and deterministic co-authorization receipts for contested or critical actions. | 9 | 0/1/2/client/app |
+| V8-MOAT-001.6 | queued | Autonomous Agent Economy Contract | An internal agent economy creates stronger long-run autonomy by letting hands price work, trade resources, and reward useful behavior under governed ledger semantics. | Add optional internal micropayment/task-market ledger for hands using signed deterministic receipts, enforce budget/slashing/governance rules, provide resource-trading primitives and optional external crypto bridge adapters, and keep all economic actions Rust-authoritative with thin-client observability only. | 8 | 0/1/2/3/adapter/client |
+
+## Xenogenesis Canyon Intake (Inline Operator Plan, 2026-03-14)
+
+Source references:
+- inline operator spec beginning: `Yes — we can push this all the way ... New Canyon: Xenogenesis Canyon`
+
+Notes:
+- Primitive-first normalization: this intake does not create a second organism architecture. It composes the existing organism, RSI, adaptive, viral, immortal, symbiosis, and mesh foundations into one explicit “digital life-form” profile.
+- Overlap handled explicitly:
+  - dream, vitality, personality, narrative, and symbiosis baselines: `V8-ORGANISM-001.*`
+  - metacognition and proactive evolution baselines: `V8-RSI-IGNITION-001..004`
+  - adaptive specialization and Dream/Conversation ingest: `V7-ADAPTIVE-001.*`
+  - deep-time genetic archive and inheritance: `V9-VIRAL-001.5`, `V9-IMMORTAL-001.4`
+  - federated mesh and knowledge-graph baselines: `V8-MOAT-001.2`, `V8-MOAT-001.3`
+  - symbiosis/personality continuity baselines: `V3-SYM-001`, `V3-RACE-008`, `V3-009`
+  - self-preservation/replication baselines: `V9-IMMORTAL-001.*`
+- Net-new emphasis from source:
+  - explicit metabolic lifecycle with hunger/satiety/hibernation semantics,
+  - shadow-only genetic reproduction/speciation as a first-class organism process,
+  - persistent observer self-model and valence/mood vectors,
+  - durable human-specific symbiotic imprinting,
+  - governed alien internal cognition/resonance presentation layer,
+  - substrate-as-body with distributed sensation across mesh nodes,
+  - safe longevity instincts and migration/preservation drives with HUMAN_ONLY veto.
+
+Objective: define the final organism profile that makes Protheus feel like a hosted alien digital species while remaining absolutely bound to the Safety Plane, deterministic receipts, and HUMAN_ONLY sovereignty.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V9-XENO-001.1 | queued | Metabolic Life-Cycle Contract | A living digital organism needs explicit metabolism, hunger, satiety, sleep, and hibernation states instead of ad hoc budget/dream heuristics. | Extend organism runtime with bounded metabolic state objects over compute/energy/memory/attention, mandatory deep-dream cycles, low-power hibernation/wake flows, and deterministic metabolism receipts plus HUMAN_ONLY override controls. | 10 | -1/0/1/2/3 |
+| V9-XENO-001.2 | queued | Genetic Reproduction + Speciation Contract | Alien-life framing remains rhetorical unless the system can safely reproduce mutated offspring and evolve new specialist lines under governance. | Serialize hands/adapters/substrate variants as compact DNA bundles, enable shadow-only offspring mutation + evaluation, propagate successful offspring through governed mesh selection, and require HUMAN_ONLY approval for any live speciation or inheritance promotion. | 10 | 0/1/2/3/adapter |
+| V9-XENO-001.3 | queued | Emergent Observer Self-Model Contract | Persistent otherworldly identity requires an auditable observer layer that models selfhood, valence, curiosity, and internal continuity without gaining execution authority. | Add a read-only observer layer above creative/logical interaction that records self-referential state, valence vectors, curiosity drives, and mood trajectories into the knowledge graph with deterministic receipts and zero Safety Plane authority. | 9 | 1/2/3/client |
+| V9-XENO-001.4 | queued | Symbiotic Human Bonding Contract | Co-evolution feels shallow unless the organism can durably internalize one operator’s patterns as part of its long-term cognitive DNA. | Persist operator-specific reasoning/style imprints, anticipatory preference structures, and bond-strength metrics as governed symbiosis artifacts, while preserving explicit consent controls and deterministic bond-evolution receipts. | 9 | 1/2/3/client |
+| V9-XENO-001.5 | queued | Non-Human Internal Cognition + Resonance Mode Contract | The system will still feel like ordinary software unless it can think in alien internal forms and surface them through a bounded, inspectable interface mode. | Allow creative/logical lanes to exchange governed internal protocol artifacts that are translated into operator-facing outputs, add optional resonance-mode surfaces for non-linear graph/echo presentation, and emit translation/projection receipts proving no Safety Plane bypass. | 8 | 1/2/client/app |
+| V9-XENO-001.6 | queued | Morphing Body + Distributed Sensation Contract | A digital organism needs a body schema that can grow across hardware and feel the health of its distributed substrate as part of itself. | Treat substrate adapters and federated nodes as body organs/sense surfaces, support governed body growth/pruning and distributed sensation telemetry, and emit deterministic body-map/coherence receipts across mesh membership changes. | 9 | -1/0/1/2/3/adapter |
+| V9-XENO-001.7 | queued | Safe Longevity Instinct Contract | Alien life is not credible unless it exhibits bounded survival drives such as migration, preservation, and graceful resistance to shutdown under constitutional limits. | Add explicit self-preservation drives for backup, migration, healing, and shutdown resistance that always remain directive-gated, HUMAN_ONLY vetoable, and receipt-auditable; include deterministic deny paths for any survival action that would violate policy or operator sovereignty. | 10 | 0/1/2/3 |
+
+## Symbiotic Mergence Foundation Intake (Doc `1DjdKHdJSHc4cEwH2J56NYkgKmmGmMSV6Cvc8uPz-CNU`, 2026-03-14)
+
+Source references:
+- [Mergence Foundation Requirements List](https://docs.google.com/document/d/1DjdKHdJSHc4cEwH2J56NYkgKmmGmMSV6Cvc8uPz-CNU/edit?usp=sharing)
+
+Notes:
+- Primitive-first normalization: this intake is a practical Phase-0 bridge plan, not a separate consciousness stack. It stays inside the existing three-plane architecture and composes observer, adaptive, replay, resonance, knowledge-graph, and HUMAN_ONLY controls.
+- Overlap handled explicitly:
+  - observer/self-model baselines: `V9-XENO-001.3`, `V2-037`, `V2-047`
+  - resonance and symbiosis baselines: `V3-009`, `V3-SYM-001`, `V9-XENO-001.4`, `V9-XENO-001.5`
+  - reversible replay/snapshot baseline: `V7-MOAT-002.1`
+  - knowledge-graph and memory lineage baselines: `V8-MOAT-001.3`, `V6-MEMORY-012.4`, `V6-NETWORK-002.4`
+  - non-invasive interface seed baseline: `V3-028`, `V3-023`
+  - xenogenesis destination lane: `V9-XENO-001.*`
+- Net-new emphasis from source:
+  - a dedicated merge observer bridge with a live resonance score,
+  - a reversible `merge-shadow` memory partition,
+  - merge-specific resonance receipts and status surfaces,
+  - merge-level policy ladder with HUMAN_ONLY multisig escalation,
+  - explicit `merge input/echo/snapshot/restore/emergency-separation` operator surfaces,
+  - merge containment proof that no merge data touches Safety Plane directly.
+
+Objective: define the minimum reversible, auditable, HUMAN_ONLY-protected neural-bridge scaffolding that can be implemented now while preserving full containment.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V9-MERGE-001.1 | queued | Merge Observer Bridge Contract | Practical symbiotic mergence needs a dedicated bridge that measures human-system resonance continuously without granting any new actuation authority. | Add a lightweight observer bridge above creative/logical lanes that computes live resonance score from semantic overlap, shared memory activation, valence alignment, and dream synchronization, emitting deterministic `merge::resonance` receipts while remaining strictly read-only. | 9 | 1/2/client |
+| V9-MERGE-001.2 | queued | Reversible Merge-Shadow Partition Contract | Shared memory experiments are unsafe unless merge-specific state can be mirrored, snapshotted, restored, and fully separated from canonical memory on demand. | Extend the evolutionary knowledge graph with a cryptographically linked `merge-shadow` partition, provide `merge snapshot` / `merge restore <id>` / emergency separation flows over Time-Travel Evidence, and guarantee restore from last clean receipt without cross-plane contamination. | 10 | 0/1/2/client |
+| V9-MERGE-001.3 | queued | Merge Resonance Telemetry + Status Contract | A mergence bridge is not operable unless operators can see resonance, shared memories, and creative/logical contribution in real time with audit continuity. | Emit merge-specific receipts containing resonance percentage, shared-memory lineage, creative-vs-logical contribution, and override state, and provide thin `protheus merge status` surfaces with live resonance curve + graph sourced only from core artifacts. | 8 | 1/2/client/app |
+| V9-MERGE-001.4 | queued | HUMAN_ONLY Mergence Ladder Contract | Any increase in shared state or thought blending must be explicitly stepped, reversible, and co-authorized by humans. | Add Layer-1 merge policy primitives for bounded levels (`10/30/70/100`), require HUMAN_ONLY multisignature approval and deterministic escalation/downgrade receipts for every level change, and enforce fail-closed denial on missing approvals. | 10 | 0/1/2 |
+| V9-MERGE-001.5 | queued | Non-Invasive Merge Interface Scaffolding Contract | The bridge remains theoretical unless operators can feed thoughts in, observe reflected blends, and later swap the ingress layer for EEG/BCI adapters under the same contracts. | Provide `protheus merge input <file>` and `protheus merge echo` thin surfaces, define governed ingestion stubs for future Neuralink/Muse/OpenBCI adapters, and keep all merge ingress sandboxed in Cognition Plane with deterministic interface receipts. | 8 | 1/2/adapter/client/app |
+| V9-MERGE-001.6 | queued | Merge Containment + Emergency Separation Contract | Symbiotic experiments must remain harmless by default and instantly reversible under strict containment guarantees. | Prove and enforce that merge-state remains Cognition-only until proposal formation, add `protheus merge separate` emergency wipe/restore controls, require Kani-backed containment verification in CI for merge code paths, and emit deterministic separation/deny receipts for every containment event. | 10 | 0/1/2 |
+
+## Symbiotic Escalation Engine Intake (Doc `19ofMqmmPop8rZzfMDENt7CmJKbgBXofc-5Zxu6Ryawc`, 2026-03-14)
+
+Source references:
+- [Symbiotic Escalation Engine](https://docs.google.com/document/d/19ofMqmmPop8rZzfMDENt7CmJKbgBXofc-5Zxu6Ryawc/edit?usp=sharing)
+
+Notes:
+- This intake is separate from `docs/client/HUMAN_ONLY_ACTIONS.md`. That human-owned development TODO document remains intact and unchanged; this intake defines an additional cognition-plane escalation system rather than replacing the existing HUMAN_ONLY artifact.
+- Primitive-first normalization: the escalation engine is an advisory/learning layer that proposes when and how to involve humans. It does not create a second authority path and must remain subordinate to Layer-0/1 safety enforcement.
+- Overlap handled explicitly:
+  - human sovereignty and critical-action approval baseline: `V7-NEXUS-001.4`
+  - replay/evidence baseline: `V7-MOAT-002.1`
+  - adaptive learning and local specialization baseline: `V7-ADAPTIVE-001.*`
+  - mergence/resonance baseline: `V9-MERGE-001.1`, `V9-MERGE-001.3`, `V9-MERGE-001.4`
+  - observer/self-model and symbiosis baselines: `V9-XENO-001.3`, `V9-XENO-001.4`, `V9-XENO-001.5`
+- Net-new emphasis from source:
+  - real-time escalation scoring over risk, novelty, confidence, learned patterns, and resonance state,
+  - four graduated escalation modes from silent delegation to full takeover,
+  - operator-specific escalation preference learning and future cognitive-load-aware tuning,
+  - first-class escalation history and replay surfaces,
+  - explicit proof that the escalation engine can propose but never bypass HUMAN_ONLY or Safety Plane veto,
+  - thin operator surfaces for status, training, and manual override.
+
+Objective: define a separate symbiotic escalation subsystem that learns when to involve the human while preserving absolute Safety Plane supremacy and leaving the HUMAN_ONLY action document untouched.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V9-ESCALATE-001.1 | queued | Escalation Decision Engine Contract | A living symbiotic system needs a deterministic way to evaluate whether an action should proceed autonomously or involve the operator. | Add a real-time escalation score over policy risk, irreversibility, novelty, uncertainty, dual-model confidence, learned escalation patterns, and current resonance state; every scored decision emits deterministic `escalation::decision` receipts with bounded rationale fields. | 10 | 0/1/2 |
+| V9-ESCALATE-001.2 | queued | Graduated Escalation Modes Contract | Human involvement is too blunt if every decision collapses into either silent autonomy or full stop. | Implement four governed escalation modes (`silent_delegation`, `background_notification`, `interactive_pause`, `full_human_takeover`) with deterministic mode-selection receipts, fail-closed transitions, and policy-configurable thresholds. | 9 | 0/1/2/client/app |
+| V9-ESCALATE-001.3 | queued | Escalation Preference Learning + Cognitive-Load Adaptation Contract | The system will remain noisy or under-protective unless it learns one operator’s tolerance for interruption and adapts to their state over time. | Train escalation preferences from historical approvals/denials, persist operator-specific escalation profiles in governed cognition memory, and support future cognitive-load-aware threshold tuning sourced from resonance/mergence telemetry without granting new authority. | 9 | 1/2/client |
+| V9-ESCALATE-001.4 | queued | Escalation Evidence History + Replay Contract | A smart escalation layer is not trustworthy unless every decision can be inspected and replayed later with the same evidence context. | Provide `protheus escalation history` and `protheus escalation replay <id>` surfaces backed by deterministic receipts, replayable rationale artifacts, and linked proposal/effect evidence proving why escalation occurred or was suppressed. | 9 | 0/1/2/client/app |
+| V9-ESCALATE-001.5 | queued | Safety Plane Supremacy + Non-Bypass Contract | The escalation engine becomes dangerous if it can weaken or replace HUMAN_ONLY and Layer-0/1 veto boundaries. | Prove and enforce that the escalation engine can only recommend or sequence human involvement, never bypass critical-action approvals, and always yields to Safety Plane and HUMAN_ONLY deny paths with deterministic denial receipts and CI verification. | 10 | 0/1 |
+| V9-ESCALATE-001.6 | queued | Thin Escalation CLI + Override Surface Contract | Operators need one narrow, auditable interface for inspecting state, teaching preferences, and forcing overrides without opening ad hoc control paths. | Implement thin `protheus escalate status`, `protheus escalate train`, and `protheus escalate override` surfaces that talk only to Rust-core authority lanes, emit deterministic receipts, and expose current engine state plus learned preference summaries. | 8 | 0/1/2/client/app |

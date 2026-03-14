@@ -2482,6 +2482,114 @@ mod tests {
     }
 
     #[test]
+    fn core_shortcut_routes_init_to_canyon_ecosystem_init() {
+        let route = resolve_core_shortcuts(
+            "init",
+            &["starter-web".to_string(), "--target-dir=/tmp/demo".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://canyon-plane");
+        assert_eq!(
+            route.args,
+            vec![
+                "ecosystem",
+                "--op=init",
+                "--template=starter-web",
+                "--target-dir=/tmp/demo"
+            ]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_marketplace_publish_to_canyon_ecosystem() {
+        let route = resolve_core_shortcuts(
+            "marketplace",
+            &[
+                "publish".to_string(),
+                "--hand-id=starter".to_string(),
+                "--receipt-file=/tmp/r.json".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://canyon-plane");
+        assert_eq!(
+            route.args,
+            vec![
+                "ecosystem",
+                "--op=marketplace-publish",
+                "--hand-id=starter",
+                "--receipt-file=/tmp/r.json"
+            ]
+        );
+    }
+
+    #[test]
+    fn core_shortcut_routes_replay_to_enterprise_hardening() {
+        let route = resolve_core_shortcuts("replay", &["--receipt-hash=abc123".to_string()])
+            .expect("route");
+        assert_eq!(route.script_rel, "core://enterprise-hardening");
+        assert_eq!(route.args, vec!["replay", "--receipt-hash=abc123"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_ai_to_enterprise_hardening() {
+        let route = resolve_core_shortcuts("ai", &["--model=ollama/llama3.2:latest".to_string()])
+            .expect("route");
+        assert_eq!(route.script_rel, "core://enterprise-hardening");
+        assert_eq!(route.args, vec!["ai", "--model=ollama/llama3.2:latest"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_chaos_to_enterprise_hardening() {
+        let route =
+            resolve_core_shortcuts("chaos", &["run".to_string(), "--agents=16".to_string()])
+                .expect("route");
+        assert_eq!(route.script_rel, "core://enterprise-hardening");
+        assert_eq!(route.args, vec!["chaos-run", "--agents=16"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_chaos_isolate_to_enterprise_hardening() {
+        let route = resolve_core_shortcuts(
+            "chaos",
+            &["isolate".to_string(), "--agents=4".to_string()],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://enterprise-hardening");
+        assert_eq!(route.args, vec!["chaos-run", "--suite=isolate", "--agents=4"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_assistant_to_enterprise_hardening() {
+        let route =
+            resolve_core_shortcuts("assistant", &["--topic=onboarding".to_string()])
+                .expect("route");
+        assert_eq!(route.script_rel, "core://enterprise-hardening");
+        assert_eq!(route.args, vec!["assistant-mode", "--topic=onboarding"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_adaptive_default_to_adaptive_lane_status() {
+        let route = resolve_core_shortcuts("adaptive", &[]).expect("route");
+        assert_eq!(route.script_rel, "core://adaptive-intelligence");
+        assert_eq!(route.args, vec!["status"]);
+    }
+
+    #[test]
+    fn core_shortcut_routes_adaptive_propose_to_adaptive_lane() {
+        let route = resolve_core_shortcuts(
+            "adaptive-intelligence",
+            &[
+                "propose".to_string(),
+                "--prompt=refactor scheduler".to_string(),
+            ],
+        )
+        .expect("route");
+        assert_eq!(route.script_rel, "core://adaptive-intelligence");
+        assert_eq!(route.args, vec!["propose", "--prompt=refactor scheduler"]);
+    }
+
+    #[test]
     fn core_shortcut_routes_gov_alias_to_government_plane() {
         let route = resolve_core_shortcuts("gov", &["classification".to_string()]).expect("route");
         assert_eq!(route.script_rel, "core://government-plane");
@@ -2863,11 +2971,7 @@ mod tests {
         assert_eq!(route.script_rel, "core://observability-plane");
         assert_eq!(
             route.args,
-            vec![
-                "acp-provenance",
-                "--op=enable",
-                "--visibility-mode=meta"
-            ]
+            vec!["acp-provenance", "--op=enable", "--visibility-mode=meta"]
         );
     }
 

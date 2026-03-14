@@ -2677,7 +2677,7 @@ fn directive_child_id(
         .map(|(_, b)| b.to_string())
         .unwrap_or_else(|| "parent".to_string());
     let stem = normalize_token(base, 120);
-    let mut candidate = format!("T{}_{}_{}_auto", tier, stem, kind);
+    let candidate = format!("T{}_{}_{}_auto", tier, stem, kind);
     if !existing.contains(&candidate) {
         return candidate;
     }

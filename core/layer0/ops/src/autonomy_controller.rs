@@ -93,12 +93,6 @@ fn parse_u64(raw: Option<&str>, fallback: u64, lo: u64, hi: u64) -> u64 {
         .clamp(lo, hi)
 }
 
-fn parse_f64(raw: Option<&str>, fallback: f64, lo: f64, hi: f64) -> f64 {
-    raw.and_then(|v| v.trim().parse::<f64>().ok())
-        .unwrap_or(fallback)
-        .clamp(lo, hi)
-}
-
 fn parse_payload_json(argv: &[String]) -> Result<Value, String> {
     if let Some(raw) = parse_flag(argv, "input-json") {
         return serde_json::from_str::<Value>(&raw)

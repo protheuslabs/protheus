@@ -488,14 +488,22 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
             .cloned()
             .unwrap_or_default();
         let current_balance = balance_of(&balances, &agent);
-        put_balance(&mut ledger, &agent, (current_balance + reward - slash).max(0.0));
+        put_balance(
+            &mut ledger,
+            &agent,
+            (current_balance + reward - slash).max(0.0),
+        );
         let staked = ledger
             .get("staked")
             .and_then(Value::as_object)
             .cloned()
             .unwrap_or_default();
         let current_stake = balance_of(&staked, &agent);
-        put_stake(&mut ledger, &agent, (current_stake + stake - slash).max(0.0));
+        put_stake(
+            &mut ledger,
+            &agent,
+            (current_stake + stake - slash).max(0.0),
+        );
         let contribution_event = json!({
             "type": "useful_intelligence_contribution",
             "ts": now_iso(),
@@ -507,7 +515,12 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
             "slash": slash
         });
         let _ = append_jsonl(&contribution_history_path(root), &contribution_event);
-        match commit_ledger(root, ledger, "useful_contribution", contribution_event.clone()) {
+        match commit_ledger(
+            root,
+            ledger,
+            "useful_contribution",
+            contribution_event.clone(),
+        ) {
             Ok(updated) => emit(
                 root,
                 json!({
@@ -615,7 +628,10 @@ pub(super) fn run(root: &Path, argv: &[String]) -> i32 {
                 "previous_hash": row.get("previous_hash").cloned().unwrap_or(Value::Null)
             });
             let expected = sha256_hex_str(&seed.to_string());
-            let observed = row.get("event_hash").and_then(Value::as_str).unwrap_or_default();
+            let observed = row
+                .get("event_hash")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
             if expected != observed {
                 verify_errors.push(format!("consensus_event_hash_mismatch_at:{idx}"));
             }

@@ -685,7 +685,11 @@ fn collect_structured_chain_entries(vault: &Value) -> Result<Vec<Value>, String>
     Ok(ordered)
 }
 
-fn repair_vault_signatures(root: &Path, apply: bool, allow_unsigned: bool) -> Result<Value, String> {
+fn repair_vault_signatures(
+    root: &Path,
+    apply: bool,
+    allow_unsigned: bool,
+) -> Result<Value, String> {
     let key_present = signing_key_present();
     if !key_present && !allow_unsigned {
         return Err("missing_signing_key".to_string());
@@ -693,11 +697,7 @@ fn repair_vault_signatures(root: &Path, apply: bool, allow_unsigned: bool) -> Re
 
     let mut vault = load_vault(root);
     let ordered = collect_structured_chain_entries(&vault)?;
-    let mode = if key_present {
-        "keyed"
-    } else {
-        "unsigned"
-    };
+    let mode = if key_present { "keyed" } else { "unsigned" };
 
     if !apply {
         return Ok(json!({

@@ -179,11 +179,6 @@ fn parse_i64(raw: Option<&str>, fallback: i64) -> i64 {
         .unwrap_or(fallback)
 }
 
-fn parse_f64(raw: Option<&str>, fallback: f64) -> f64 {
-    raw.and_then(|v| v.trim().parse::<f64>().ok())
-        .unwrap_or(fallback)
-}
-
 fn ensure_parent(path: &Path) -> Result<(), String> {
     let Some(parent) = path.parent() else {
         return Ok(());

@@ -124,13 +124,7 @@ fn csv_set(raw: Option<&String>) -> BTreeSet<String> {
     .unwrap_or_default()
 }
 
-fn emit(
-    root: &Path,
-    _command: &str,
-    strict: bool,
-    payload: Value,
-    conduit: Option<&Value>,
-) -> i32 {
+fn emit(root: &Path, _command: &str, strict: bool, payload: Value, conduit: Option<&Value>) -> i32 {
     let out = attach_conduit(payload, conduit);
     let _ = write_json(&latest_path(root, ENV_KEY, LANE_ID), &out);
     let _ = append_jsonl(&history_path(root, ENV_KEY, LANE_ID), &out);
@@ -145,8 +139,15 @@ fn emit(
 }
 
 fn patient_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     let mut state = read_object(&patients_path(root));
     if op == "status" {
         return Ok(json!({
@@ -175,7 +176,11 @@ fn patient_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Str
         120,
     );
     let mrn = clean(
-        parsed.flags.get("mrn").map(String::as_str).unwrap_or("MRN0000"),
+        parsed
+            .flags
+            .get("mrn")
+            .map(String::as_str)
+            .unwrap_or("MRN0000"),
         80,
     );
     let consent = parse_json_or_empty(parsed.flags.get("consent-json"));
@@ -206,8 +211,15 @@ fn patient_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Str
 }
 
 fn phi_audit_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     if op == "status" {
         let logs = read_jsonl(&phi_log_path(root));
         return Ok(json!({
@@ -228,8 +240,22 @@ fn phi_audit_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, S
     if op != "access" {
         return Err("phi_audit_op_invalid".to_string());
     }
-    let user = clean(parsed.flags.get("user").map(String::as_str).unwrap_or("clinician"), 120);
-    let npi = clean(parsed.flags.get("npi").map(String::as_str).unwrap_or("0000000000"), 32);
+    let user = clean(
+        parsed
+            .flags
+            .get("user")
+            .map(String::as_str)
+            .unwrap_or("clinician"),
+        120,
+    );
+    let npi = clean(
+        parsed
+            .flags
+            .get("npi")
+            .map(String::as_str)
+            .unwrap_or("0000000000"),
+        32,
+    );
     let patient_id = clean(
         parsed
             .flags
@@ -278,8 +304,15 @@ fn phi_audit_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, S
 }
 
 fn cds_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     let mut state = read_object(&cds_path(root));
     if op == "status" {
         return Ok(json!({
@@ -346,8 +379,15 @@ fn cds_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String>
 }
 
 fn devices_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     if op == "status" {
         let logs = read_jsonl(&devices_path(root));
         return Ok(json!({
@@ -412,8 +452,15 @@ fn devices_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Str
 }
 
 fn documentation_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     if op == "status" {
         return Ok(json!({
             "ok": true,
@@ -462,8 +509,15 @@ fn documentation_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Valu
 }
 
 fn alerts_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     let mut state = read_object(&alerts_path(root));
     let mut alerts = state
         .remove("alerts")
@@ -494,7 +548,14 @@ fn alerts_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Stri
             16,
         )
         .to_ascii_lowercase();
-        let key = clean(parsed.flags.get("key").map(String::as_str).unwrap_or("alert"), 120);
+        let key = clean(
+            parsed
+                .flags
+                .get("key")
+                .map(String::as_str)
+                .unwrap_or("alert"),
+            120,
+        );
         let duplicate = alerts.iter().any(|row| {
             row.get("key").and_then(Value::as_str) == Some(key.as_str())
                 && row.get("status").and_then(Value::as_str) == Some("open")
@@ -503,7 +564,10 @@ fn alerts_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Stri
             alerts.push(json!({"id": sha256_hex_str(&format!("{}:{}:{}", tier, key, now_iso())), "tier": tier, "key": key, "status": "open", "ts": now_iso()}));
         }
     } else if op == "ack" {
-        let id = clean(parsed.flags.get("id").map(String::as_str).unwrap_or(""), 120);
+        let id = clean(
+            parsed.flags.get("id").map(String::as_str).unwrap_or(""),
+            120,
+        );
         for row in &mut alerts {
             if row.get("id").and_then(Value::as_str) == Some(id.as_str()) {
                 row["status"] = Value::String("ack".to_string());
@@ -531,8 +595,15 @@ fn alerts_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Stri
 }
 
 fn coordination_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     if op == "status" {
         let rows = read_jsonl(&coordination_path(root));
         return Ok(json!({
@@ -578,8 +649,15 @@ fn coordination_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value
 }
 
 fn trials_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     let mut state = read_object(&trials_path(root));
     if op == "status" {
         return Ok(json!({
@@ -647,8 +725,15 @@ fn trials_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Stri
 }
 
 fn imaging_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 20)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        20,
+    )
+    .to_ascii_lowercase();
     if op == "status" {
         return Ok(json!({
             "ok": true,
@@ -676,7 +761,11 @@ fn imaging_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Str
         120,
     );
     let finding = clean(
-        parsed.flags.get("finding").map(String::as_str).unwrap_or("none"),
+        parsed
+            .flags
+            .get("finding")
+            .map(String::as_str)
+            .unwrap_or("none"),
         240,
     );
     let row = json!({
@@ -703,8 +792,15 @@ fn imaging_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Str
 }
 
 fn emergency_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 20)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        20,
+    )
+    .to_ascii_lowercase();
     if op == "status" {
         return Ok(json!({
             "ok": true,
@@ -723,7 +819,14 @@ fn emergency_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, S
     if op != "break-glass" && op != "break_glass" {
         return Err("emergency_op_invalid".to_string());
     }
-    let user = clean(parsed.flags.get("user").map(String::as_str).unwrap_or("ed-physician"), 120);
+    let user = clean(
+        parsed
+            .flags
+            .get("user")
+            .map(String::as_str)
+            .unwrap_or("ed-physician"),
+        120,
+    );
     let patient_id = clean(
         parsed
             .flags

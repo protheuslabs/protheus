@@ -2,9 +2,9 @@
 // Layer ownership: core/layer0/ops::eval_plane (authoritative)
 
 use crate::v8_kernel::{
-    append_jsonl, attach_conduit, build_conduit_enforcement, conduit_bypass_requested,
-    load_json_or, parse_bool, parse_f64, parse_u64, read_json, scoped_state_root, sha256_hex_str,
-    write_json, write_receipt,
+    append_jsonl, attach_conduit, build_plane_conduit_enforcement, conduit_bypass_requested,
+    emit_plane_receipt, load_json_or, parse_bool, parse_f64, parse_u64, print_json, read_json,
+    scoped_state_root, sha256_hex_str, write_json,
 };
 use crate::{clean, parse_args};
 use serde_json::{json, Value};
@@ -61,36 +61,13 @@ fn rl_latest_path(root: &Path) -> PathBuf {
 }
 
 fn rl_history_path(root: &Path) -> PathBuf {
-    state_root(root).join("rl").join("openclaw_v2_history.jsonl")
-}
-
-fn print_payload(payload: &Value) {
-    println!(
-        "{}",
-        serde_json::to_string_pretty(payload)
-            .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"encode_failed\"}".to_string())
-    );
+    state_root(root)
+        .join("rl")
+        .join("openclaw_v2_history.jsonl")
 }
 
 fn emit(root: &Path, payload: Value) -> i32 {
-    match write_receipt(root, STATE_ENV, STATE_SCOPE, payload) {
-        Ok(out) => {
-            print_payload(&out);
-            if out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
-                0
-            } else {
-                1
-            }
-        }
-        Err(err) => {
-            print_payload(&json!({
-                "ok": false,
-                "type": "eval_plane_error",
-                "error": clean(err, 240)
-            }));
-            1
-        }
-    }
+    emit_plane_receipt(root, STATE_ENV, STATE_SCOPE, "eval_plane_error", payload)
 }
 
 fn parse_json_flag(raw: Option<&String>) -> Option<Value> {
@@ -132,20 +109,8 @@ fn conduit_enforcement(
     action: &str,
 ) -> Value {
     let bypass_requested = conduit_bypass_requested(&parsed.flags);
-    let claim_rows = claim_ids_for_action(action)
-        .iter()
-        .map(|id| {
-            json!({
-                "id": id,
-                "claim": "eval_runtime_routes_through_layer0_conduit_with_fail_closed_denials",
-                "evidence": {
-                    "action": clean(action, 120),
-                    "bypass_requested": bypass_requested
-                }
-            })
-        })
-        .collect::<Vec<_>>();
-    build_conduit_enforcement(
+    let claim_ids = claim_ids_for_action(action);
+    build_plane_conduit_enforcement(
         root,
         STATE_ENV,
         STATE_SCOPE,
@@ -154,7 +119,8 @@ fn conduit_enforcement(
         "eval_plane_conduit_enforcement",
         "core/layer0/ops/eval_plane",
         bypass_requested,
-        claim_rows,
+        "eval_runtime_routes_through_layer0_conduit_with_fail_closed_denials",
+        &claim_ids,
     )
 }
 
@@ -829,7 +795,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
     }
     let payload = dispatch(root, &parsed, strict);
     if action == "status" {
-        print_payload(&payload);
+        print_json(&payload);
         return 0;
     }
     emit(root, attach_conduit(payload, conduit.as_ref()))

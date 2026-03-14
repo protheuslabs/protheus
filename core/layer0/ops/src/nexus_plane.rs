@@ -16,9 +16,7 @@ const ENV_KEY: &str = "PROTHEUS_NEXUS_PLANE_STATE_ROOT";
 
 fn usage() {
     println!("Usage:");
-    println!(
-        "  protheus-ops nexus-plane package-domain --domain=<id> [--strict=1|0]"
-    );
+    println!("  protheus-ops nexus-plane package-domain --domain=<id> [--strict=1|0]");
     println!(
         "  protheus-ops nexus-plane bridge --from-domain=<id> --to-domain=<id> [--payload-json=<json>] [--legal-contract-id=<id>] [--sanitize=1|0] [--strict=1|0]"
     );
@@ -31,9 +29,7 @@ fn usage() {
     println!(
         "  protheus-ops nexus-plane receipt-v2 --op=<validate|status> [--receipt-json=<json>] [--strict=1|0]"
     );
-    println!(
-        "  protheus-ops nexus-plane merkle-forest --op=<build|status> [--strict=1|0]"
-    );
+    println!("  protheus-ops nexus-plane merkle-forest --op=<build|status> [--strict=1|0]");
     println!(
         "  protheus-ops nexus-plane compliance-ledger --op=<append|query|status> [--entry-json=<json>] [--chain-id=<id>] [--strict=1|0]"
     );
@@ -87,13 +83,7 @@ fn read_jsonl(path: &Path) -> Vec<Value> {
         .unwrap_or_default()
 }
 
-fn emit(
-    root: &Path,
-    _command: &str,
-    strict: bool,
-    payload: Value,
-    conduit: Option<&Value>,
-) -> i32 {
+fn emit(root: &Path, _command: &str, strict: bool, payload: Value, conduit: Option<&Value>) -> i32 {
     let out = attach_conduit(payload, conduit);
     let _ = write_json(&latest_path(root, ENV_KEY, LANE_ID), &out);
     let _ = append_jsonl(&history_path(root, ENV_KEY, LANE_ID), &out);
@@ -124,7 +114,8 @@ fn package_domain_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Val
         "certification",
         "bridges",
     ] {
-        fs::create_dir_all(base.join(part)).map_err(|e| format!("domain_package_mkdir_failed:{e}"))?;
+        fs::create_dir_all(base.join(part))
+            .map_err(|e| format!("domain_package_mkdir_failed:{e}"))?;
     }
     let manifest = json!({
         "domain": domain,
@@ -203,8 +194,15 @@ fn bridge_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Stri
 }
 
 fn insurance_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     if op == "status" {
         let rows = read_jsonl(&insurance_path(root));
         return Ok(json!({
@@ -261,8 +259,15 @@ fn insurance_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, S
 }
 
 fn human_boundary_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     if op == "status" {
         let rows = read_jsonl(&human_path(root));
         return Ok(json!({
@@ -282,9 +287,30 @@ fn human_boundary_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Val
     if op != "authorize" {
         return Err("human_boundary_op_invalid".to_string());
     }
-    let action = clean(parsed.flags.get("action").map(String::as_str).unwrap_or("critical"), 160);
-    let sig_a = clean(parsed.flags.get("human-a").map(String::as_str).unwrap_or(""), 256);
-    let sig_b = clean(parsed.flags.get("human-b").map(String::as_str).unwrap_or(""), 256);
+    let action = clean(
+        parsed
+            .flags
+            .get("action")
+            .map(String::as_str)
+            .unwrap_or("critical"),
+        160,
+    );
+    let sig_a = clean(
+        parsed
+            .flags
+            .get("human-a")
+            .map(String::as_str)
+            .unwrap_or(""),
+        256,
+    );
+    let sig_b = clean(
+        parsed
+            .flags
+            .get("human-b")
+            .map(String::as_str)
+            .unwrap_or(""),
+        256,
+    );
     let ok = !sig_a.is_empty() && !sig_b.is_empty() && sig_a != sig_b;
     let row = json!({
         "ts": now_iso(),
@@ -310,8 +336,15 @@ fn human_boundary_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Val
 }
 
 fn receipt_v2_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     if op == "status" {
         return Ok(json!({
             "ok": true,
@@ -331,7 +364,13 @@ fn receipt_v2_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, 
         return Err("receipt_v2_op_invalid".to_string());
     }
     let receipt = parse_json_or_empty(parsed.flags.get("receipt-json"));
-    let required = ["domain", "classifications", "authorization", "compliance", "insurance"];
+    let required = [
+        "domain",
+        "classifications",
+        "authorization",
+        "compliance",
+        "insurance",
+    ];
     let missing = required
         .iter()
         .filter(|k| receipt.get(**k).is_none())
@@ -361,8 +400,15 @@ fn receipt_v2_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, 
 }
 
 fn merkle_forest_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     if op == "status" {
         return Ok(json!({
             "ok": true,
@@ -381,12 +427,24 @@ fn merkle_forest_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Valu
     if op != "build" {
         return Err("merkle_forest_op_invalid".to_string());
     }
-    let domains = ["business", "government", "finance", "healthcare", "vertical", "nexus"];
+    let domains = [
+        "business",
+        "government",
+        "finance",
+        "healthcare",
+        "vertical",
+        "nexus",
+    ];
     let mut leaves = Vec::<String>::new();
     let mut domain_roots = BTreeMap::<String, String>::new();
     for domain in domains {
-        let latest = read_json(&crate::core_state_root(root).join("ops").join(format!("{domain}_plane")).join("latest.json"))
-            .unwrap_or_else(|| json!({"domain": domain, "state": "missing"}));
+        let latest = read_json(
+            &crate::core_state_root(root)
+                .join("ops")
+                .join(format!("{domain}_plane"))
+                .join("latest.json"),
+        )
+        .unwrap_or_else(|| json!({"domain": domain, "state": "missing"}));
         let hash = sha256_hex_str(&canonical_json_string(&latest));
         leaves.push(hash.clone());
         domain_roots.insert(domain.to_string(), hash);
@@ -417,8 +475,15 @@ fn merkle_forest_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Valu
 }
 
 fn compliance_ledger_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
-    let op = clean(parsed.flags.get("op").map(String::as_str).unwrap_or("status"), 16)
-        .to_ascii_lowercase();
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
+        16,
+    )
+    .to_ascii_lowercase();
     if op == "status" {
         let rows = read_jsonl(&compliance_path(root));
         return Ok(json!({

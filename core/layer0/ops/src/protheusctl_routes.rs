@@ -101,6 +101,42 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
             },
             forward_stdin: false,
         }),
+        "init" => {
+            let mut args = vec!["ecosystem".to_string(), "--op=init".to_string()];
+            if let Some(template) = rest.first() {
+                if !template.starts_with("--") {
+                    args.push(format!("--template={}", template.trim()));
+                    args.extend(rest.iter().skip(1).cloned());
+                } else {
+                    args.extend(rest.iter().cloned());
+                }
+            }
+            Some(Route {
+                script_rel: "core://canyon-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
+        "marketplace" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "status".to_string());
+            let op = match sub.as_str() {
+                "publish" => "marketplace-publish",
+                "install" => "marketplace-install",
+                _ => "marketplace-status",
+            };
+            let mut args = vec!["ecosystem".to_string(), format!("--op={op}")];
+            if !rest.is_empty() {
+                args.extend(rest.iter().skip(1).cloned());
+            }
+            Some(Route {
+                script_rel: "core://canyon-plane".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
         "government" | "gov" => Some(Route {
             script_rel: "core://government-plane".to_string(),
             args: if rest.is_empty() {
@@ -146,6 +182,30 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
             },
             forward_stdin: false,
         }),
+        "adaptive" | "adaptive-intelligence" => {
+            let sub = rest
+                .first()
+                .map(|v| v.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "status".to_string());
+            let normalized = match sub.as_str() {
+                "shadow_train" => "shadow-train",
+                "status" | "propose" | "shadow-train" | "prioritize" | "graduate" => sub.as_str(),
+                _ => "status",
+            };
+            let mut args = vec![normalized.to_string()];
+            if !rest.is_empty() {
+                if normalized == sub {
+                    args.extend(rest.iter().skip(1).cloned());
+                } else {
+                    args.extend(rest.iter().cloned());
+                }
+            }
+            Some(Route {
+                script_rel: "core://adaptive-intelligence".to_string(),
+                args,
+                forward_stdin: false,
+            })
+        }
         "eval" => {
             let sub = rest
                 .first()
@@ -1128,6 +1188,30 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                 "launch-sim" | "launch" => std::iter::once("moat-launch-sim".to_string())
                     .chain(rest.iter().skip(1).cloned())
                     .collect::<Vec<_>>(),
+                "replay" => std::iter::once("replay".to_string())
+                    .chain(rest.iter().skip(1).cloned())
+                    .collect::<Vec<_>>(),
+                "explore" => std::iter::once("explore".to_string())
+                    .chain(rest.iter().skip(1).cloned())
+                    .collect::<Vec<_>>(),
+                "ai" => std::iter::once("ai".to_string())
+                    .chain(rest.iter().skip(1).cloned())
+                    .collect::<Vec<_>>(),
+                "sync" => std::iter::once("sync".to_string())
+                    .chain(rest.iter().skip(1).cloned())
+                    .collect::<Vec<_>>(),
+                "energy-cert" | "energy" => std::iter::once("energy-cert".to_string())
+                    .chain(rest.iter().skip(1).cloned())
+                    .collect::<Vec<_>>(),
+                "migrate" => std::iter::once("migrate-ecosystem".to_string())
+                    .chain(rest.iter().skip(1).cloned())
+                    .collect::<Vec<_>>(),
+                "chaos" => std::iter::once("chaos-run".to_string())
+                    .chain(rest.iter().skip(1).cloned())
+                    .collect::<Vec<_>>(),
+                "assistant" => std::iter::once("assistant-mode".to_string())
+                    .chain(rest.iter().skip(1).cloned())
+                    .collect::<Vec<_>>(),
                 _ => std::iter::once("moat-contrast".to_string())
                     .chain(rest.iter().skip(1).cloned())
                     .collect::<Vec<_>>(),
@@ -1138,6 +1222,52 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                 forward_stdin: false,
             })
         }
+        "replay" => Some(Route {
+            script_rel: "core://enterprise-hardening".to_string(),
+            args: std::iter::once("replay".to_string())
+                .chain(rest.iter().cloned())
+                .collect(),
+            forward_stdin: false,
+        }),
+        "explore" => Some(Route {
+            script_rel: "core://enterprise-hardening".to_string(),
+            args: std::iter::once("explore".to_string())
+                .chain(rest.iter().cloned())
+                .collect(),
+            forward_stdin: false,
+        }),
+        "ai" => Some(Route {
+            script_rel: "core://enterprise-hardening".to_string(),
+            args: std::iter::once("ai".to_string())
+                .chain(rest.iter().cloned())
+                .collect(),
+            forward_stdin: false,
+        }),
+        "chaos" => Some(Route {
+            script_rel: "core://enterprise-hardening".to_string(),
+            args: if rest
+                .first()
+                .map(|v| v.trim().eq_ignore_ascii_case("isolate"))
+                .unwrap_or(false)
+            {
+                std::iter::once("chaos-run".to_string())
+                    .chain(std::iter::once("--suite=isolate".to_string()))
+                    .chain(rest.iter().skip(1).cloned())
+                    .collect()
+            } else {
+                std::iter::once("chaos-run".to_string())
+                    .chain(rest.iter().skip(1).cloned())
+                    .collect()
+            },
+            forward_stdin: false,
+        }),
+        "assistant" => Some(Route {
+            script_rel: "core://enterprise-hardening".to_string(),
+            args: std::iter::once("assistant-mode".to_string())
+                .chain(rest.iter().cloned())
+                .collect(),
+            forward_stdin: false,
+        }),
         "genesis" => {
             let args = match rest
                 .first()
@@ -1159,9 +1289,11 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                 "bootstrap" => std::iter::once("genesis-bootstrap".to_string())
                     .chain(rest.iter().skip(1).cloned())
                     .collect::<Vec<_>>(),
-                "installer-sim" | "installer" => std::iter::once("genesis-installer-sim".to_string())
-                    .chain(rest.iter().skip(1).cloned())
-                    .collect::<Vec<_>>(),
+                "installer-sim" | "installer" => {
+                    std::iter::once("genesis-installer-sim".to_string())
+                        .chain(rest.iter().skip(1).cloned())
+                        .collect::<Vec<_>>()
+                }
                 _ => std::iter::once("genesis-truth-gate".to_string())
                     .chain(rest.iter().skip(1).cloned())
                     .collect::<Vec<_>>(),
@@ -2033,7 +2165,7 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                 .first()
                 .map(|v| v.trim().to_ascii_lowercase())
                 .unwrap_or_else(|| "status".to_string());
-            let mut args = if first == "daemon" || first == "mobile-daemon" {
+            let args = if first == "daemon" || first == "mobile-daemon" {
                 let op = rest
                     .get(1)
                     .map(|v| v.trim().to_ascii_lowercase())

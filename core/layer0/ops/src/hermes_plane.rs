@@ -2,9 +2,10 @@
 // Layer ownership: core/layer0/ops::hermes_plane (authoritative)
 
 use crate::v8_kernel::{
-    append_jsonl, attach_conduit, build_conduit_enforcement, canonical_json_string,
-    conduit_bypass_requested, load_json_or, parse_bool, parse_u64, read_json, scoped_state_root,
-    sha256_hex_str, write_json, write_receipt,
+    append_jsonl, attach_conduit, build_plane_conduit_enforcement, canonical_json_string,
+    conduit_bypass_requested, emit_plane_receipt, load_json_or, parse_bool, parse_u64,
+    plane_status, print_json, read_json, scoped_state_root, sha256_hex_str, split_csv_clean,
+    write_json,
 };
 use crate::{clean, parse_args};
 use serde_json::{json, Value};
@@ -38,47 +39,12 @@ fn state_root(root: &Path) -> PathBuf {
     scoped_state_root(root, STATE_ENV, STATE_SCOPE)
 }
 
-fn latest_path(root: &Path) -> PathBuf {
-    state_root(root).join("latest.json")
-}
-
-fn print_payload(payload: &Value) {
-    println!(
-        "{}",
-        serde_json::to_string_pretty(payload)
-            .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"encode_failed\"}".to_string())
-    );
-}
-
 fn emit(root: &Path, payload: Value) -> i32 {
-    match write_receipt(root, STATE_ENV, STATE_SCOPE, payload) {
-        Ok(out) => {
-            print_payload(&out);
-            if out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
-                0
-            } else {
-                1
-            }
-        }
-        Err(err) => {
-            print_payload(&json!({
-                "ok": false,
-                "type": "hermes_plane_error",
-                "error": clean(err, 240)
-            }));
-            1
-        }
-    }
+    emit_plane_receipt(root, STATE_ENV, STATE_SCOPE, "hermes_plane_error", payload)
 }
 
 fn status(root: &Path) -> Value {
-    json!({
-        "ok": true,
-        "type": "hermes_plane_status",
-        "lane": "core/layer0/ops",
-        "latest_path": latest_path(root).display().to_string(),
-        "latest": read_json(&latest_path(root))
-    })
+    plane_status(root, STATE_ENV, STATE_SCOPE, "hermes_plane_status")
 }
 
 fn claim_ids_for_action(action: &str) -> Vec<&'static str> {
@@ -99,20 +65,7 @@ fn conduit_enforcement(
 ) -> Value {
     let bypass_requested = conduit_bypass_requested(&parsed.flags);
     let claim_ids = claim_ids_for_action(action);
-    let claim_rows = claim_ids
-        .iter()
-        .map(|id| {
-            json!({
-                "id": id,
-                "claim": "hermes_surface_is_conduit_routed_with_fail_closed_receipts",
-                "evidence": {
-                    "action": clean(action, 120),
-                    "bypass_requested": bypass_requested
-                }
-            })
-        })
-        .collect::<Vec<_>>();
-    build_conduit_enforcement(
+    build_plane_conduit_enforcement(
         root,
         STATE_ENV,
         STATE_SCOPE,
@@ -121,7 +74,8 @@ fn conduit_enforcement(
         "hermes_conduit_enforcement",
         "core/layer0/ops/hermes_plane",
         bypass_requested,
-        claim_rows,
+        "hermes_surface_is_conduit_routed_with_fail_closed_receipts",
+        &claim_ids,
     )
 }
 
@@ -532,13 +486,6 @@ fn run_continuity(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Valu
     }
 }
 
-fn split_csv(raw: &str) -> Vec<String> {
-    raw.split(',')
-        .map(|row| clean(row, 80))
-        .filter(|row| !row.is_empty())
-        .collect()
-}
-
 fn run_delegate(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
     let contract = load_json_or(
         root,
@@ -611,7 +558,7 @@ fn run_delegate(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value 
     let roles = parsed
         .flags
         .get("roles")
-        .map(|raw| split_csv(raw))
+        .map(|raw| split_csv_clean(raw, 80))
         .filter(|rows| !rows.is_empty())
         .unwrap_or_else(|| {
             contract
@@ -968,7 +915,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         }),
     };
     if command == "status" {
-        print_payload(&payload);
+        print_json(&payload);
         return 0;
     }
     emit(root, attach_conduit(payload, conduit.as_ref()))

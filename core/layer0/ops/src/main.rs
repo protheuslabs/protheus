@@ -510,6 +510,11 @@ fn main() {
             let exit = protheus_ops_core::adaptive_runtime::run(&cwd, &rest);
             std::process::exit(exit);
         }
+        "adaptive-intelligence" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::adaptive_intelligence::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
         "offline-runtime-guard" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::offline_runtime_guard::run(&cwd, &rest);

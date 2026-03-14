@@ -78,6 +78,22 @@ pub fn print_json(value: &Value) {
     );
 }
 
+pub trait ReceiptJsonExt {
+    fn with_receipt_hash(self) -> Value;
+    fn set_receipt_hash(&mut self);
+}
+
+impl ReceiptJsonExt for Value {
+    fn with_receipt_hash(mut self) -> Value {
+        self.set_receipt_hash();
+        self
+    }
+
+    fn set_receipt_hash(&mut self) {
+        self["receipt_hash"] = Value::String(deterministic_receipt_hash(self));
+    }
+}
+
 pub fn parse_bool(raw: Option<&String>, fallback: bool) -> bool {
     match raw.map(|v| v.trim().to_ascii_lowercase()) {
         Some(v) if matches!(v.as_str(), "1" | "true" | "yes" | "on") => true,
@@ -172,6 +188,27 @@ pub fn conduit_bypass_requested(flags: &HashMap<String, String>) -> bool {
         || parse_bool(flags.get("client-bypass"), false)
 }
 
+pub fn conduit_claim_rows(
+    action: &str,
+    bypass_requested: bool,
+    claim: &str,
+    claim_ids: &[&str],
+) -> Vec<Value> {
+    claim_ids
+        .iter()
+        .map(|id| {
+            json!({
+                "id": id,
+                "claim": clean(claim, 240),
+                "evidence": {
+                    "action": clean(action, 120),
+                    "bypass_requested": bypass_requested
+                }
+            })
+        })
+        .collect()
+}
+
 pub fn build_conduit_enforcement(
     root: &Path,
     env_key: &str,
@@ -193,9 +230,39 @@ pub fn build_conduit_enforcement(
         "errors": if ok { Value::Array(Vec::new()) } else { json!(["conduit_bypass_rejected"]) },
         "claim_evidence": claim_evidence
     });
-    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
-    let _ = append_jsonl(&scoped_state_root(root, env_key, scope).join("conduit").join("history.jsonl"), &out);
+    out.set_receipt_hash();
+    let _ = append_jsonl(
+        &scoped_state_root(root, env_key, scope)
+            .join("conduit")
+            .join("history.jsonl"),
+        &out,
+    );
     out
+}
+
+pub fn build_plane_conduit_enforcement(
+    root: &Path,
+    env_key: &str,
+    scope: &str,
+    strict: bool,
+    action: &str,
+    receipt_type: &str,
+    required_path: &str,
+    bypass_requested: bool,
+    claim: &str,
+    claim_ids: &[&str],
+) -> Value {
+    build_conduit_enforcement(
+        root,
+        env_key,
+        scope,
+        strict,
+        action,
+        receipt_type,
+        required_path,
+        bypass_requested,
+        conduit_claim_rows(action, bypass_requested, claim, claim_ids),
+    )
 }
 
 pub fn attach_conduit(mut payload: Value, conduit: Option<&Value>) -> Value {
@@ -213,7 +280,7 @@ pub fn attach_conduit(mut payload: Value, conduit: Option<&Value>) -> Value {
             payload["claim_evidence"] = Value::Array(claims);
         }
     }
-    payload["receipt_hash"] = Value::String(deterministic_receipt_hash(&payload));
+    payload.set_receipt_hash();
     payload
 }
 
@@ -327,8 +394,97 @@ pub fn write_receipt(
     let latest = latest_path(root, env_key, scope);
     let history = history_path(root, env_key, scope);
     payload["ts"] = Value::String(now_iso());
-    payload["receipt_hash"] = Value::String(deterministic_receipt_hash(&payload));
+    payload.set_receipt_hash();
     write_json(&latest, &payload)?;
     append_jsonl(&history, &payload)?;
     Ok(payload)
+}
+
+pub fn emit_plane_receipt(
+    root: &Path,
+    env_key: &str,
+    scope: &str,
+    error_type: &str,
+    payload: Value,
+) -> i32 {
+    match write_receipt(root, env_key, scope, payload) {
+        Ok(out) => {
+            print_json(&out);
+            if out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
+                0
+            } else {
+                1
+            }
+        }
+        Err(err) => {
+            print_json(&json!({
+                "ok": false,
+                "type": clean(error_type, 120),
+                "error": clean(err, 240)
+            }));
+            1
+        }
+    }
+}
+
+pub fn plane_status(root: &Path, env_key: &str, scope: &str, status_type: &str) -> Value {
+    json!({
+        "ok": true,
+        "type": clean(status_type, 120),
+        "lane": "core/layer0/ops",
+        "latest_path": latest_path(root, env_key, scope).display().to_string(),
+        "latest": read_json(&latest_path(root, env_key, scope))
+    })
+}
+
+pub fn split_csv_clean(raw: &str, max_len: usize) -> Vec<String> {
+    raw.split(',')
+        .map(|row| clean(row, max_len))
+        .filter(|row| !row.is_empty())
+        .collect()
+}
+
+pub fn parse_csv_flag(flags: &HashMap<String, String>, key: &str, max_len: usize) -> Vec<String> {
+    flags
+        .get(key)
+        .map(|v| split_csv_clean(v, max_len))
+        .unwrap_or_default()
+}
+
+pub fn parse_csv_or_file(
+    root: &Path,
+    flags: &HashMap<String, String>,
+    csv_key: &str,
+    file_key: &str,
+    max_len: usize,
+) -> Vec<String> {
+    let mut values = parse_csv_flag(flags, csv_key, max_len);
+    let Some(rel_or_abs) = flags.get(file_key) else {
+        return values;
+    };
+    let path = if Path::new(rel_or_abs).is_absolute() {
+        PathBuf::from(rel_or_abs)
+    } else {
+        root.join(rel_or_abs)
+    };
+    let Ok(raw) = fs::read_to_string(path) else {
+        return values;
+    };
+    if raw.trim_start().starts_with('[') {
+        if let Ok(parsed_json) = serde_json::from_str::<Value>(&raw) {
+            if let Some(rows) = parsed_json.as_array() {
+                for row in rows {
+                    if let Some(text) = row.as_str() {
+                        let cleaned = clean(text, max_len);
+                        if !cleaned.is_empty() {
+                            values.push(cleaned);
+                        }
+                    }
+                }
+            }
+        }
+        return values;
+    }
+    values.extend(split_csv_clean(&raw.replace('\n', ","), max_len));
+    values
 }

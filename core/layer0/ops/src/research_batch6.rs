@@ -41,7 +41,10 @@ fn normalize_claim_evidence(rows: Vec<Value>) -> Vec<Value> {
                 .map(|v| v.trim().is_empty())
                 .unwrap_or(true)
             {
-                obj.insert("id".to_string(), Value::String("V6-RESEARCH-PLANE".to_string()));
+                obj.insert(
+                    "id".to_string(),
+                    Value::String("V6-RESEARCH-PLANE".to_string()),
+                );
             }
             if obj
                 .get("claim")

@@ -2,9 +2,9 @@
 // Layer ownership: core/layer0/ops::business_plane (authoritative)
 use crate::v8_kernel::{
     append_jsonl, attach_conduit, build_conduit_enforcement, canonical_json_string,
-    conduit_bypass_requested, deterministic_merkle_root, history_path, latest_path, next_chain_hash,
-    parse_bool, parse_i64, parse_u64, print_json, read_json, scoped_state_root, sha256_hex_str,
-    write_json,
+    conduit_bypass_requested, deterministic_merkle_root, history_path, latest_path,
+    next_chain_hash, parse_bool, parse_i64, parse_u64, print_json, read_json, scoped_state_root,
+    sha256_hex_str, write_json,
 };
 use crate::{clean, now_iso, parse_args};
 use serde_json::{json, Map, Value};
@@ -147,17 +147,14 @@ fn append_archive(root: &Path, row: &Value) -> Result<(), String> {
         })
         .collect::<Vec<_>>();
     let mut anchors = read_object(&archive_anchor_path(root));
-    anchors.insert(day.clone(), Value::String(deterministic_merkle_root(&day_receipts)));
+    anchors.insert(
+        day.clone(),
+        Value::String(deterministic_merkle_root(&day_receipts)),
+    );
     write_json(&archive_anchor_path(root), &Value::Object(anchors))
 }
 
-fn emit(
-    root: &Path,
-    command: &str,
-    strict: bool,
-    payload: Value,
-    conduit: Option<&Value>,
-) -> i32 {
+fn emit(root: &Path, command: &str, strict: bool, payload: Value, conduit: Option<&Value>) -> i32 {
     let out = attach_conduit(payload, conduit);
     let _ = write_json(&latest_path(root, ENV_KEY, LANE_ID), &out);
     let _ = append_jsonl(&history_path(root, ENV_KEY, LANE_ID), &out);
@@ -288,7 +285,11 @@ fn taxonomy_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, St
 
 fn persona_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
     let op = clean(
-        parsed.flags.get("op").map(String::as_str).unwrap_or("status"),
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
         16,
     )
     .to_ascii_lowercase();
@@ -396,7 +397,11 @@ fn load_chain(root: &Path) -> Map<String, Value> {
 
 fn continuity_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
     let op = clean(
-        parsed.flags.get("op").map(String::as_str).unwrap_or("status"),
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
         20,
     )
     .to_ascii_lowercase();
@@ -430,7 +435,11 @@ fn continuity_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, 
 
     if op == "handoff" {
         let to = clean(
-            parsed.flags.get("to").map(String::as_str).unwrap_or("stakeholder"),
+            parsed
+                .flags
+                .get("to")
+                .map(String::as_str)
+                .unwrap_or("stakeholder"),
             120,
         );
         let task = clean(
@@ -527,7 +536,8 @@ fn continuity_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, 
             }]
         }));
     }
-    let checkpoint = read_json(&checkpoint_file).ok_or_else(|| "checkpoint_not_found".to_string())?;
+    let checkpoint =
+        read_json(&checkpoint_file).ok_or_else(|| "checkpoint_not_found".to_string())?;
     write_json(
         &continuity_state_path(root),
         &json!({
@@ -555,7 +565,11 @@ fn continuity_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, 
 
 fn alerts_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
     let op = clean(
-        parsed.flags.get("op").map(String::as_str).unwrap_or("status"),
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
         16,
     )
     .to_ascii_lowercase();
@@ -621,7 +635,10 @@ fn alerts_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Stri
             "ts": now_iso()
         }));
     } else if op == "ack" {
-        let id = clean(parsed.flags.get("id").map(String::as_str).unwrap_or(""), 128);
+        let id = clean(
+            parsed.flags.get("id").map(String::as_str).unwrap_or(""),
+            128,
+        );
         for row in &mut alerts {
             if row.get("id").and_then(Value::as_str) == Some(id.as_str()) {
                 row["status"] = Value::String("ack".to_string());
@@ -650,7 +667,11 @@ fn alerts_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Stri
 
 fn switchboard_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
     let op = clean(
-        parsed.flags.get("op").map(String::as_str).unwrap_or("status"),
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
         16,
     )
     .to_ascii_lowercase();
@@ -795,9 +816,7 @@ fn continuity_audit_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<V
         .iter()
         .filter(|row| {
             business_scope == "ALL"
-                || row
-                    .get("business_context")
-                    .and_then(Value::as_str)
+                || row.get("business_context").and_then(Value::as_str)
                     == Some(business_scope.as_str())
         })
         .count();
@@ -823,7 +842,10 @@ fn continuity_audit_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<V
 }
 
 fn parse_date_range(range: &str) -> (Option<String>, Option<String>) {
-    let parts = range.split(':').map(|s| s.trim().to_string()).collect::<Vec<_>>();
+    let parts = range
+        .split(':')
+        .map(|s| s.trim().to_string())
+        .collect::<Vec<_>>();
     if parts.len() != 2 {
         return (None, None);
     }
@@ -842,7 +864,11 @@ fn parse_date_range(range: &str) -> (Option<String>, Option<String>) {
 
 fn archive_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, String> {
     let op = clean(
-        parsed.flags.get("op").map(String::as_str).unwrap_or("status"),
+        parsed
+            .flags
+            .get("op")
+            .map(String::as_str)
+            .unwrap_or("status"),
         16,
     )
     .to_ascii_lowercase();
@@ -885,9 +911,7 @@ fn archive_command(root: &Path, parsed: &crate::ParsedArgs) -> Result<Value, Str
         .iter()
         .filter(|row| {
             if business_scope != "ALL"
-                && row
-                    .get("business_context")
-                    .and_then(Value::as_str)
+                && row.get("business_context").and_then(Value::as_str)
                     != Some(business_scope.as_str())
             {
                 return false;

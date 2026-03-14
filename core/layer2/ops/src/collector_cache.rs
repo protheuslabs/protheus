@@ -95,7 +95,6 @@ fn cmd_load(root: &Path, argv: &[String]) -> Value {
     let max_age = max_age_hours(argv);
     let payload = read_json(&path);
     let mut cache = Value::Null;
-    let mut ok = true;
     if let Some(raw) = payload {
         let items_ok = raw.get("items").and_then(Value::as_array).is_some();
         let ts_ms = raw
@@ -110,7 +109,7 @@ fn cmd_load(root: &Path, argv: &[String]) -> Value {
             cache = json!({"ts": raw.get("ts").cloned().unwrap_or(Value::Null), "age_ms": age_ms, "items": raw.get("items").cloned().unwrap_or_else(|| json!([]))});
         }
     }
-    let mut out = json!({"ok":ok,"type":"collector_cache_load","authority":"core/layer1/storage","collector_id":id,"cache":cache});
+    let mut out = json!({"ok":true,"type":"collector_cache_load","authority":"core/layer1/storage","collector_id":id,"cache":cache});
     out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
     out
 }

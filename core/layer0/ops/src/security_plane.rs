@@ -85,12 +85,14 @@ fn capability_action(command: &str, argv: &[String], payload: &Value) -> Option<
             }
             if let Some(state) = parse_flag(argv, "state") {
                 let lowered = state.trim().to_ascii_lowercase();
-                return Some(if matches!(lowered.as_str(), "on" | "true" | "1") {
-                    "grant"
-                } else {
-                    "revoke"
-                }
-                .to_string());
+                return Some(
+                    if matches!(lowered.as_str(), "on" | "true" | "1") {
+                        "grant"
+                    } else {
+                        "revoke"
+                    }
+                    .to_string(),
+                );
             }
         }
     }

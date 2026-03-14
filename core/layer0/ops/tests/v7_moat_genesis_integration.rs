@@ -2,6 +2,7 @@ use protheus_ops_core::enterprise_hardening;
 use serde_json::Value;
 use std::fs;
 use std::path::Path;
+use std::sync::{Mutex, MutexGuard, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn temp_root(prefix: &str) -> tempfile::TempDir {
@@ -9,6 +10,11 @@ fn temp_root(prefix: &str) -> tempfile::TempDir {
         .prefix(&format!("protheus_{prefix}_"))
         .tempdir()
         .expect("tempdir")
+}
+
+fn test_env_lock() -> MutexGuard<'static, ()> {
+    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    LOCK.get_or_init(|| Mutex::new(())).lock().expect("lock")
 }
 
 fn core_state_root(root: &Path) -> std::path::PathBuf {
@@ -56,6 +62,7 @@ fn assert_claim(payload: &Value, id: &str) {
 
 #[test]
 fn v7_moat_and_genesis_lanes_are_behavior_proven() {
+    let _guard = test_env_lock();
     let tmp = temp_root("moat_genesis");
     let root = tmp.path();
 
@@ -246,6 +253,7 @@ fn v7_moat_and_genesis_lanes_are_behavior_proven() {
 
 #[test]
 fn v7_genesis_truth_gate_and_thin_wrapper_fail_closed_when_unsafe() {
+    let _guard = test_env_lock();
     let tmp = temp_root("moat_genesis_fail_closed");
     let root = tmp.path();
 

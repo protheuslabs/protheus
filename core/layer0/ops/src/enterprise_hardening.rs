@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
+#[path = "enterprise_moat_extensions.rs"]
+mod enterprise_moat_extensions;
+
 use crate::{deterministic_receipt_hash, now_iso, parse_args};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -12,7 +15,8 @@ const DEFAULT_ACCESS_POLICY_REL: &str = "client/runtime/config/enterprise_access
 const DEFAULT_ABAC_POLICY_REL: &str = "client/runtime/config/abac_policy_plane.json";
 const DEFAULT_SIEM_POLICY_REL: &str = "client/runtime/config/siem_bridge_policy.json";
 const DEFAULT_SCALE_POLICY_REL: &str = "client/runtime/config/scale_readiness_program_policy.json";
-const DEFAULT_BEDROCK_POLICY_REL: &str = "planes/contracts/enterprise/bedrock_proxy_contract_v1.json";
+const DEFAULT_BEDROCK_POLICY_REL: &str =
+    "planes/contracts/enterprise/bedrock_proxy_contract_v1.json";
 const DEFAULT_THIN_WRAPPER_SCAN_ROOT_REL: &str = "client/runtime/systems";
 const DEFAULT_DOC_FREEZE_TAG: &str = "genesis-candidate";
 const DEFAULT_INSTALLER_PROFILE: &str = "standard";
@@ -68,6 +72,40 @@ fn usage() {
     );
     println!(
         "  protheus-ops enterprise-hardening genesis-installer-sim [--strict=1|0] [--profile=<standard|airgap|enterprise>]"
+    );
+    println!(
+        "  protheus-ops enterprise-hardening zero-trust-profile [--issuer=<url>] [--cmek-key=<kms://...>] [--private-link=<id>] [--egress=deny|restricted] [--strict=1|0]"
+    );
+    println!("  protheus-ops enterprise-hardening ops-bridge [--providers=a,b] [--strict=1|0]");
+    println!(
+        "  protheus-ops enterprise-hardening scale-ha-certify [--regions=<n>] [--airgap-agents=<n>] [--cold-start-ms=<n>] [--strict=1|0]"
+    );
+    println!(
+        "  protheus-ops enterprise-hardening deploy-modules [--profile=<enterprise|airgap>] [--strict=1|0]"
+    );
+    println!("  protheus-ops enterprise-hardening super-gate [--strict=1|0]");
+    println!(
+        "  protheus-ops enterprise-hardening adoption-bootstrap [--profile=<id>] [--strict=1|0]"
+    );
+    println!(
+        "  protheus-ops enterprise-hardening replay [--at=<rfc3339> | --receipt-hash=<hash>] [--strict=1|0]"
+    );
+    println!("  protheus-ops enterprise-hardening explore [--strict=1|0]");
+    println!(
+        "  protheus-ops enterprise-hardening ai [--model=<ollama/...>] [--prompt=<text>] [--local-only=1|0] [--strict=1|0]"
+    );
+    println!("  protheus-ops enterprise-hardening sync [--peer-roots=a,b] [--strict=1|0]");
+    println!(
+        "  protheus-ops enterprise-hardening energy-cert [--agents=<n>] [--idle-watts=<n>] [--task-watts=<n>] [--strict=1|0]"
+    );
+    println!(
+        "  protheus-ops enterprise-hardening migrate-ecosystem [--from=openfang|openhands|agent-os] --payload-file=<path> [--strict=1|0]"
+    );
+    println!(
+        "  protheus-ops enterprise-hardening chaos-run [--agents=<n>] [--suite=general|isolate] [--attacks=a,b] [--strict=1|0]"
+    );
+    println!(
+        "  protheus-ops enterprise-hardening assistant-mode [--topic=<id>] [--hand=<id>] [--workspace=<path>] [--strict=1|0]"
     );
     println!("  protheus-ops enterprise-hardening dashboard");
 }
@@ -179,9 +217,11 @@ fn collect_files_with_extension(
     if !dir.exists() {
         return Ok(());
     }
-    let entries = fs::read_dir(dir).map_err(|err| format!("read_dir_failed:{}:{err}", dir.display()))?;
+    let entries =
+        fs::read_dir(dir).map_err(|err| format!("read_dir_failed:{}:{err}", dir.display()))?;
     for entry in entries {
-        let entry = entry.map_err(|err| format!("read_dir_entry_failed:{}:{err}", dir.display()))?;
+        let entry =
+            entry.map_err(|err| format!("read_dir_entry_failed:{}:{err}", dir.display()))?;
         let path = entry.path();
         if path.is_dir() {
             collect_files_with_extension(&path, extension, out)?;
@@ -925,8 +965,12 @@ fn run_scale_certification(
         fs::create_dir_all(parent)
             .map_err(|err| format!("create_dir_failed:{}:{err}", parent.display()))?;
     }
-    fs::write(&whitepaper_path, whitepaper_body)
-        .map_err(|err| format!("write_whitepaper_failed:{}:{err}", whitepaper_path.display()))?;
+    fs::write(&whitepaper_path, whitepaper_body).map_err(|err| {
+        format!(
+            "write_whitepaper_failed:{}:{err}",
+            whitepaper_path.display()
+        )
+    })?;
 
     Ok(with_receipt_hash(json!({
         "ok": !strict || ok,
@@ -1020,7 +1064,12 @@ fn run_enable_bedrock(
     let region = flags
         .get("region")
         .cloned()
-        .or_else(|| policy.get("region").and_then(Value::as_str).map(|v| v.to_string()))
+        .or_else(|| {
+            policy
+                .get("region")
+                .and_then(Value::as_str)
+                .map(|v| v.to_string())
+        })
         .unwrap_or_else(|| "us-west-2".to_string());
     let vpc = flags
         .get("vpc")
@@ -1189,7 +1238,12 @@ fn run_moat_license(
     for primitive in &primitives {
         if let Some(src) = source_for(primitive) {
             let entry = manifest_entry(root, src);
-            if strict && !entry.get("exists").and_then(Value::as_bool).unwrap_or(false) {
+            if strict
+                && !entry
+                    .get("exists")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(false)
+            {
                 errors.push(format!("primitive_source_missing:{primitive}"));
             }
             packages.push(json!({
@@ -1269,7 +1323,10 @@ fn run_moat_contrast(
         .get("narrative")
         .map(|v| v.trim().to_string())
         .filter(|v| !v.is_empty())
-        .unwrap_or_else(|| "Security posture emphasizes fail-closed conduit authority and deterministic receipts.".to_string());
+        .unwrap_or_else(|| {
+            "Security posture emphasizes fail-closed conduit authority and deterministic receipts."
+                .to_string()
+        });
     let enterprise_history_rows = fs::read_to_string(enterprise_history_path(root))
         .ok()
         .map(|body| body.lines().count())
@@ -1371,8 +1428,14 @@ fn run_moat_contrast(
          - Binary blob integrity ok: {}\n\
          - Top1 proven ratio: {proven_ratio:.3}\n\n\
          ## Narrative\n{narrative}\n",
-        directive_integrity.get("ok").and_then(Value::as_bool).unwrap_or(false),
-        blob_integrity.get("ok").and_then(Value::as_bool).unwrap_or(false),
+        directive_integrity
+            .get("ok")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
+        blob_integrity
+            .get("ok")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
     );
     if let Some(parent) = md_path.parent() {
         fs::create_dir_all(parent)
@@ -1703,8 +1766,12 @@ fn run_genesis_doc_freeze(
         fs::create_dir_all(parent)
             .map_err(|err| format!("create_dir_failed:{}:{err}", parent.display()))?;
     }
-    fs::write(&whitepaper_path, whitepaper)
-        .map_err(|err| format!("write_whitepaper_failed:{}:{err}", whitepaper_path.display()))?;
+    fs::write(&whitepaper_path, whitepaper).map_err(|err| {
+        format!(
+            "write_whitepaper_failed:{}:{err}",
+            whitepaper_path.display()
+        )
+    })?;
     let mut errors = Vec::<String>::new();
     if strict && missing > 0 {
         errors.push("genesis_doc_freeze_missing_required_docs".to_string());
@@ -2013,6 +2080,32 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         "genesis-doc-freeze" => run_genesis_doc_freeze(root, strict, &parsed.flags),
         "genesis-bootstrap" => run_genesis_bootstrap(root, strict, &parsed.flags),
         "genesis-installer-sim" => run_genesis_installer_sim(root, strict, &parsed.flags),
+        "zero-trust-profile" => {
+            enterprise_moat_extensions::run_zero_trust_profile(root, strict, &parsed.flags)
+        }
+        "ops-bridge" => enterprise_moat_extensions::run_ops_bridge(root, strict, &parsed.flags),
+        "scale-ha-certify" => {
+            enterprise_moat_extensions::run_scale_ha_certify(root, strict, &parsed.flags)
+        }
+        "deploy-modules" => {
+            enterprise_moat_extensions::run_deploy_modules(root, strict, &parsed.flags)
+        }
+        "super-gate" => enterprise_moat_extensions::run_super_gate(root, strict),
+        "adoption-bootstrap" => {
+            enterprise_moat_extensions::run_adoption_bootstrap(root, strict, &parsed.flags)
+        }
+        "replay" => enterprise_moat_extensions::run_replay(root, strict, &parsed.flags),
+        "explore" => enterprise_moat_extensions::run_explore(root, strict),
+        "ai" => enterprise_moat_extensions::run_ai(root, strict, &parsed.flags),
+        "sync" => enterprise_moat_extensions::run_sync(root, strict, &parsed.flags),
+        "energy-cert" => enterprise_moat_extensions::run_energy_cert(root, strict, &parsed.flags),
+        "migrate-ecosystem" => {
+            enterprise_moat_extensions::run_migrate_ecosystem(root, strict, &parsed.flags)
+        }
+        "chaos-run" => enterprise_moat_extensions::run_chaos(root, strict, &parsed.flags),
+        "assistant-mode" | "assistant_mode" => {
+            enterprise_moat_extensions::run_assistant_mode(root, strict, &parsed.flags)
+        }
         "dashboard" => Ok(run_dashboard(root)),
         _ => {
             usage();

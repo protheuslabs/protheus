@@ -2,9 +2,9 @@
 // Layer ownership: core/layer0/ops::skills_plane (authoritative)
 
 use crate::v8_kernel::{
-    append_jsonl, attach_conduit, build_conduit_enforcement, canonical_json_string,
-    conduit_bypass_requested, load_json_or, parse_bool, parse_u64, read_json, scoped_state_root,
-    sha256_hex_str, write_json, write_receipt,
+    append_jsonl, attach_conduit, build_plane_conduit_enforcement, canonical_json_string,
+    conduit_bypass_requested, emit_plane_receipt, load_json_or, parse_bool, parse_u64,
+    plane_status, print_json, read_json, scoped_state_root, sha256_hex_str, write_json,
 };
 use crate::{clean, parse_args};
 use serde_json::{json, Map, Value};
@@ -48,37 +48,8 @@ fn state_root(root: &Path) -> PathBuf {
     scoped_state_root(root, STATE_ENV, STATE_SCOPE)
 }
 
-fn latest_path(root: &Path) -> PathBuf {
-    state_root(root).join("latest.json")
-}
-
-fn print_payload(payload: &Value) {
-    println!(
-        "{}",
-        serde_json::to_string_pretty(payload)
-            .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"encode_failed\"}".to_string())
-    );
-}
-
 fn emit(root: &Path, payload: Value) -> i32 {
-    match write_receipt(root, STATE_ENV, STATE_SCOPE, payload) {
-        Ok(out) => {
-            print_payload(&out);
-            if out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
-                0
-            } else {
-                1
-            }
-        }
-        Err(err) => {
-            print_payload(&json!({
-                "ok": false,
-                "type": "skills_plane_error",
-                "error": clean(err, 240)
-            }));
-            1
-        }
-    }
+    emit_plane_receipt(root, STATE_ENV, STATE_SCOPE, "skills_plane_error", payload)
 }
 
 fn slugify(raw: &str) -> String {
@@ -109,7 +80,7 @@ fn conduit_enforcement(
     action: &str,
 ) -> Value {
     let bypass_requested = conduit_bypass_requested(&parsed.flags);
-    build_conduit_enforcement(
+    build_plane_conduit_enforcement(
         root,
         STATE_ENV,
         STATE_SCOPE,
@@ -118,25 +89,13 @@ fn conduit_enforcement(
         "skills_conduit_enforcement",
         "core/layer0/ops/skills_plane",
         bypass_requested,
-        vec![json!({
-            "id": "V6-SKILLS-001.4",
-            "claim": "skill_install_run_share_actions_route_through_layer0_conduit_with_deterministic_audit_receipts",
-            "evidence": {
-                "action": clean(action, 120),
-                "bypass_requested": bypass_requested
-            }
-        })],
+        "skill_install_run_share_actions_route_through_layer0_conduit_with_deterministic_audit_receipts",
+        &["V6-SKILLS-001.4"],
     )
 }
 
 fn status(root: &Path) -> Value {
-    json!({
-        "ok": true,
-        "type": "skills_plane_status",
-        "lane": "core/layer0/ops",
-        "latest_path": latest_path(root).display().to_string(),
-        "latest": read_json(&latest_path(root))
-    })
+    plane_status(root, STATE_ENV, STATE_SCOPE, "skills_plane_status")
 }
 
 fn load_jsonl(path: &Path) -> Vec<Value> {
@@ -1850,7 +1809,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         }),
     };
     if command == "status" && !status_dashboard {
-        print_payload(&payload);
+        print_json(&payload);
         return 0;
     }
     emit(root, attach_conduit(payload, conduit.as_ref()))

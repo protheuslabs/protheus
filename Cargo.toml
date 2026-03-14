@@ -18,3 +18,14 @@ license = "SEE LICENSE IN LICENSE"
 [workspace.metadata.protheus]
 msrv = "1.84.0"
 owner = "runtime-foundation"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.release-minimal]
+inherits = "release"
+opt-level = "z"
+debug = false

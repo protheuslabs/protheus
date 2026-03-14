@@ -2,9 +2,9 @@
 // Layer ownership: core/layer0/ops::substrate_plane (authoritative)
 
 use crate::v8_kernel::{
-    append_jsonl, attach_conduit, build_conduit_enforcement, conduit_bypass_requested,
-    load_json_or, parse_bool, parse_u64, read_json, scoped_state_root, sha256_hex_str, write_json,
-    write_receipt,
+    append_jsonl, attach_conduit, build_plane_conduit_enforcement, conduit_bypass_requested,
+    emit_plane_receipt, load_json_or, parse_bool, parse_f64, parse_u64, plane_status, print_json,
+    read_json, scoped_state_root, sha256_hex_str, split_csv_clean, write_json,
 };
 use crate::{clean, parse_args};
 use exotic_wrapper::{default_degradation, wrap_exotic_signal, ExoticDomain, ExoticEnvelope};
@@ -71,52 +71,18 @@ fn state_root(root: &Path) -> PathBuf {
     scoped_state_root(root, STATE_ENV, STATE_SCOPE)
 }
 
-fn latest_path(root: &Path) -> PathBuf {
-    state_root(root).join("latest.json")
-}
-
-fn print_payload(payload: &Value) {
-    println!(
-        "{}",
-        serde_json::to_string_pretty(payload)
-            .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"encode_failed\"}".to_string())
-    );
-}
-
 fn emit(root: &Path, payload: Value) -> i32 {
-    match write_receipt(root, STATE_ENV, STATE_SCOPE, payload) {
-        Ok(out) => {
-            print_payload(&out);
-            if out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
-                0
-            } else {
-                1
-            }
-        }
-        Err(err) => {
-            print_payload(&json!({
-                "ok": false,
-                "type": "substrate_plane_error",
-                "error": clean(err, 240)
-            }));
-            1
-        }
-    }
+    emit_plane_receipt(
+        root,
+        STATE_ENV,
+        STATE_SCOPE,
+        "substrate_plane_error",
+        payload,
+    )
 }
 
 fn status(root: &Path) -> Value {
-    json!({
-        "ok": true,
-        "type": "substrate_plane_status",
-        "lane": "core/layer0/ops",
-        "latest_path": latest_path(root).display().to_string(),
-        "latest": read_json(&latest_path(root))
-    })
-}
-
-fn parse_f64(raw: Option<&String>, fallback: f64) -> f64 {
-    raw.and_then(|v| v.trim().parse::<f64>().ok())
-        .unwrap_or(fallback)
+    plane_status(root, STATE_ENV, STATE_SCOPE, "substrate_plane_status")
 }
 
 fn claim_ids_for_action(action: &str) -> Vec<&'static str> {
@@ -142,20 +108,8 @@ fn conduit_enforcement(
     action: &str,
 ) -> Value {
     let bypass_requested = conduit_bypass_requested(&parsed.flags);
-    let claim_rows = claim_ids_for_action(action)
-        .iter()
-        .map(|id| {
-            json!({
-                "id": id,
-                "claim": "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
-                "evidence": {
-                    "action": clean(action, 120),
-                    "bypass_requested": bypass_requested
-                }
-            })
-        })
-        .collect::<Vec<_>>();
-    build_conduit_enforcement(
+    let claim_ids = claim_ids_for_action(action);
+    build_plane_conduit_enforcement(
         root,
         STATE_ENV,
         STATE_SCOPE,
@@ -164,7 +118,8 @@ fn conduit_enforcement(
         "substrate_conduit_enforcement",
         "core/layer0/ops/substrate_plane",
         bypass_requested,
-        claim_rows,
+        "substrate_operations_route_through_layer0_conduit_with_fail_closed_policy",
+        &claim_ids,
     )
 }
 
@@ -242,13 +197,6 @@ fn decode_signal_u64(hex: &str, offset: usize) -> u64 {
         return 0;
     }
     u64::from_str_radix(&hex[start..end], 16).unwrap_or(0)
-}
-
-fn split_csv(raw: &str) -> Vec<String> {
-    raw.split(',')
-        .map(|row| clean(row, 120))
-        .filter(|row| !row.is_empty())
-        .collect()
 }
 
 fn run_csi_capture(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
@@ -1489,26 +1437,29 @@ fn run_bio_adapter_template(root: &Path, parsed: &crate::ParsedArgs, strict: boo
     {
         errors.push("substrate_bio_adapter_template_contract_kind_invalid".to_string());
     }
-    let spike_channels = split_csv(
+    let spike_channels = split_csv_clean(
         parsed
             .flags
             .get("spike-channels")
             .map(String::as_str)
             .unwrap_or("spike_rate_hz,burst_index"),
+        120,
     );
-    let stimulation_channels = split_csv(
+    let stimulation_channels = split_csv_clean(
         parsed
             .flags
             .get("stimulation-channels")
             .map(String::as_str)
             .unwrap_or("stim_current_ua,stim_pulse_width_us"),
+        120,
     );
-    let telemetry_fields = split_csv(
+    let telemetry_fields = split_csv_clean(
         parsed
             .flags
             .get("health-telemetry")
             .map(String::as_str)
             .unwrap_or("latency_ms,power_mw,artifact_rate"),
+        120,
     );
     if strict && spike_channels.is_empty() {
         errors.push("substrate_bio_adapter_template_spike_channels_required".to_string());
@@ -1959,7 +1910,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         }),
     };
     if command == "status" {
-        print_payload(&payload);
+        print_json(&payload);
         return 0;
     }
     emit(root, attach_conduit(payload, conduit.as_ref()))

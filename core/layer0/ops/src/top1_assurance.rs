@@ -6,7 +6,7 @@ use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{Duration, Instant};
 
@@ -212,6 +212,153 @@ fn run_command_owned(bin: &str, args: &[String]) -> Value {
             "spawn_error": err.to_string()
         }),
     }
+}
+
+fn run_command_program(bin: &Path, args: &[String]) -> Value {
+    let started = Instant::now();
+    let out = Command::new(bin).args(args).output();
+    match out {
+        Ok(run) => {
+            let stdout = String::from_utf8_lossy(&run.stdout)
+                .trim()
+                .chars()
+                .take(600)
+                .collect::<String>();
+            let stderr = String::from_utf8_lossy(&run.stderr)
+                .trim()
+                .chars()
+                .take(600)
+                .collect::<String>();
+            json!({
+                "ok": run.status.success(),
+                "status": run.status.code().unwrap_or(1),
+                "elapsed_ms": started.elapsed().as_millis(),
+                "stdout": stdout,
+                "stderr": stderr
+            })
+        }
+        Err(err) => json!({
+            "ok": false,
+            "status": 1,
+            "elapsed_ms": started.elapsed().as_millis(),
+            "spawn_error": err.to_string()
+        }),
+    }
+}
+
+fn home_dir() -> Option<PathBuf> {
+    std::env::var_os("HOME")
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+}
+
+fn push_toolchain_candidate(
+    rows: &mut Vec<(PathBuf, Vec<String>, &'static str)>,
+    program: PathBuf,
+    args: Vec<String>,
+    source: &'static str,
+) {
+    if rows.iter().any(|(existing_program, existing_args, _)| {
+        existing_program == &program && existing_args == &args
+    }) {
+        return;
+    }
+    rows.push((program, args, source));
+}
+
+fn toolchain_candidates(id: &str) -> Vec<(PathBuf, Vec<String>, &'static str)> {
+    let mut rows = Vec::<(PathBuf, Vec<String>, &'static str)>::new();
+    match id {
+        "kani_toolchain" => {
+            push_toolchain_candidate(
+                &mut rows,
+                PathBuf::from("cargo"),
+                vec!["kani".to_string(), "--version".to_string()],
+                "path:cargo",
+            );
+            push_toolchain_candidate(
+                &mut rows,
+                PathBuf::from("cargo-kani"),
+                vec!["--version".to_string()],
+                "path:cargo-kani",
+            );
+            if let Some(home) = home_dir() {
+                push_toolchain_candidate(
+                    &mut rows,
+                    home.join(".cargo/bin/cargo"),
+                    vec!["kani".to_string(), "--version".to_string()],
+                    "home:.cargo/bin/cargo",
+                );
+                push_toolchain_candidate(
+                    &mut rows,
+                    home.join(".cargo/bin/cargo-kani"),
+                    vec!["--version".to_string()],
+                    "home:.cargo/bin/cargo-kani",
+                );
+            }
+        }
+        "prusti_toolchain" => {
+            push_toolchain_candidate(
+                &mut rows,
+                PathBuf::from("prusti-rustc"),
+                vec!["--version".to_string()],
+                "path:prusti-rustc",
+            );
+            if let Some(home) = home_dir() {
+                push_toolchain_candidate(
+                    &mut rows,
+                    home.join(".cargo/bin/prusti-rustc"),
+                    vec!["--version".to_string()],
+                    "home:.cargo/bin/prusti-rustc",
+                );
+            }
+        }
+        "lean_toolchain" => {
+            push_toolchain_candidate(
+                &mut rows,
+                PathBuf::from("lean"),
+                vec!["--version".to_string()],
+                "path:lean",
+            );
+            if let Some(home) = home_dir() {
+                push_toolchain_candidate(
+                    &mut rows,
+                    home.join(".elan/bin/lean"),
+                    vec!["--version".to_string()],
+                    "home:.elan/bin/lean",
+                );
+            }
+        }
+        _ => {}
+    }
+    rows
+}
+
+fn run_toolchain_check(id: &str) -> Value {
+    let mut attempts = Vec::<Value>::new();
+    for (program, args, source) in toolchain_candidates(id) {
+        let run = run_command_program(&program, &args);
+        let ok = run.get("ok").and_then(Value::as_bool).unwrap_or(false);
+        attempts.push(json!({
+            "program": program.display().to_string(),
+            "args": args,
+            "source": source,
+            "run": run
+        }));
+        if ok {
+            return json!({
+                "ok": true,
+                "resolved_bin": program.display().to_string(),
+                "resolution_source": source,
+                "attempts": attempts
+            });
+        }
+    }
+    json!({
+        "ok": false,
+        "resolved_bin": Value::Null,
+        "attempts": attempts
+    })
 }
 
 fn default_policy() -> Top1Policy {
@@ -668,14 +815,18 @@ fn run_proof_coverage(
             (
                 "kani_toolchain",
                 true,
-                run_command("cargo", &["kani", "--version"]),
+                run_toolchain_check("kani_toolchain"),
             ),
             (
                 "prusti_toolchain",
                 false,
-                run_command("prusti-rustc", &["--version"]),
+                run_toolchain_check("prusti_toolchain"),
             ),
-            ("lean_toolchain", false, run_command("lean", &["--version"])),
+            (
+                "lean_toolchain",
+                false,
+                run_toolchain_check("lean_toolchain"),
+            ),
         ]
     } else {
         Vec::new()
@@ -1329,6 +1480,12 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::{Mutex, MutexGuard, OnceLock};
+
+    fn env_lock() -> MutexGuard<'static, ()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(())).lock().expect("lock")
+    }
 
     #[test]
     fn microbench_reports_positive_rate() {
@@ -1356,5 +1513,62 @@ mod tests {
         );
         assert!(md.contains("# Protheus vs X (CI Generated)"));
         assert!(md.contains("| Protheus |"));
+    }
+
+    #[test]
+    fn toolchain_check_discovers_home_scoped_binaries() {
+        let _guard = env_lock();
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let home = tmp.path();
+        let empty_path = home.join("path-empty");
+        fs::create_dir_all(&empty_path).expect("mkdir path");
+
+        let lean = home.join(".elan/bin/lean");
+        let cargo_kani = home.join(".cargo/bin/cargo-kani");
+        fs::create_dir_all(lean.parent().expect("lean parent")).expect("mkdir lean");
+        fs::create_dir_all(cargo_kani.parent().expect("kani parent")).expect("mkdir kani");
+        fs::write(&lean, "#!/bin/sh\necho 'Lean 4.0.0'\n").expect("write lean");
+        fs::write(&cargo_kani, "#!/bin/sh\necho 'cargo-kani 0.56.0'\n").expect("write kani");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            for path in [&lean, &cargo_kani] {
+                let mut perms = fs::metadata(path).expect("metadata").permissions();
+                perms.set_mode(0o755);
+                fs::set_permissions(path, perms).expect("chmod");
+            }
+        }
+
+        let old_home = std::env::var_os("HOME");
+        let old_path = std::env::var_os("PATH");
+        std::env::set_var("HOME", home);
+        std::env::set_var("PATH", &empty_path);
+
+        let lean_check = run_toolchain_check("lean_toolchain");
+        let kani_check = run_toolchain_check("kani_toolchain");
+
+        if let Some(value) = old_home {
+            std::env::set_var("HOME", value);
+        } else {
+            std::env::remove_var("HOME");
+        }
+        if let Some(value) = old_path {
+            std::env::set_var("PATH", value);
+        } else {
+            std::env::remove_var("PATH");
+        }
+
+        assert_eq!(lean_check.get("ok").and_then(Value::as_bool), Some(true));
+        assert!(lean_check
+            .get("resolved_bin")
+            .and_then(Value::as_str)
+            .map(|v| v.ends_with(".elan/bin/lean"))
+            .unwrap_or(false));
+        assert_eq!(kani_check.get("ok").and_then(Value::as_bool), Some(true));
+        assert!(kani_check
+            .get("resolved_bin")
+            .and_then(Value::as_str)
+            .map(|v| v.ends_with(".cargo/bin/cargo-kani"))
+            .unwrap_or(false));
     }
 }

@@ -22,7 +22,10 @@ fn finalize_model_router_receipt(out: &mut Value) {
         return;
     };
     if !map.contains_key("lane") {
-        map.insert("lane".to_string(), Value::String("core/layer0/ops".to_string()));
+        map.insert(
+            "lane".to_string(),
+            Value::String("core/layer0/ops".to_string()),
+        );
     }
     if !map.contains_key("strict") {
         map.insert("strict".to_string(), Value::Bool(true));
@@ -688,7 +691,8 @@ fn bitnet_auto_route_receipt(root: &Path, args: &[String]) -> Value {
     let battery_pct = f64_flag(args, "battery-pct", 100.0, 0.0, 100.0);
     let offline = parse_bool_flag(flag_value(args, "offline"), false);
     let edge = parse_bool_flag(flag_value(args, "edge"), true);
-    let bitnet_model = flag_value(args, "bitnet-model").unwrap_or_else(|| "bitnet/m2-edge".to_string());
+    let bitnet_model =
+        flag_value(args, "bitnet-model").unwrap_or_else(|| "bitnet/m2-edge".to_string());
     let fallback_model =
         flag_value(args, "fallback-model").unwrap_or_else(|| "ollama/llama3.2:latest".to_string());
     let reason = if offline {
@@ -808,7 +812,8 @@ fn bitnet_telemetry_receipt(root: &Path, args: &[String]) -> Value {
     let energy_j = f64_flag(args, "energy-j", 5.0, 0.0, 100_000.0);
     let baseline_energy_j = f64_flag(args, "baseline-energy-j", 10.0, 0.001, 100_000.0);
     let memory_mb = f64_flag(args, "memory-mb", 512.0, 1.0, 1_000_000.0);
-    let hardware_class = flag_value(args, "hardware-class").unwrap_or_else(|| "arm64-edge".to_string());
+    let hardware_class =
+        flag_value(args, "hardware-class").unwrap_or_else(|| "arm64-edge".to_string());
     let energy_delta_pct = ((baseline_energy_j - energy_j) / baseline_energy_j.max(0.001)) * 100.0;
     let telemetry = json!({
         "version": "v1",

@@ -1736,7 +1736,7 @@ pub fn run_startup_attestation(repo_root: &Path, argv: &[String]) -> (Value, i32
             let mut ok = true;
             let mut reason = "verified".to_string();
             let mut drift = Value::Null;
-            let mut expires_at = state.get("expires_at").cloned().unwrap_or(Value::Null);
+            let expires_at = state.get("expires_at").cloned().unwrap_or(Value::Null);
 
             if !state.is_object()
                 || state.get("type").and_then(Value::as_str) != Some("startup_attestation")

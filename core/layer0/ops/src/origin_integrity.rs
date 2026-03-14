@@ -3,6 +3,7 @@ use crate::{deterministic_receipt_hash, now_iso, parse_args};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -271,43 +272,330 @@ fn collect_safety_plane_state(root: &Path, policy: &OriginIntegrityPolicy) -> Va
 }
 
 fn run_dependency_boundary_check(root: &Path, policy: &OriginIntegrityPolicy) -> Value {
-    // Run the authoritative CI guard directly to avoid Node/TS loader ambiguity.
+    let policy_path = resolve_path(root, &policy.dependency_boundary_policy_path);
     let script = root.join("scripts/ci/dependency_boundary_guard.mjs");
-    if !script.exists() {
-        return json!({
-            "ok": false,
-            "error": "dependency_boundary_guard_missing",
-            "script": script.display().to_string()
-        });
+
+    if script.exists() {
+        let output = Command::new("node")
+            .arg(script.as_os_str())
+            .arg("check")
+            .arg("--strict=1")
+            .arg(format!("--policy={}", policy_path.display()))
+            .current_dir(root)
+            .output();
+
+        if let Ok(out) = output {
+            let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+            let stderr = String::from_utf8_lossy(&out.stderr).trim().to_string();
+            let payload = parse_last_json(&stdout).unwrap_or_else(|| json!({}));
+            let ok =
+                out.status.success() && payload.get("ok").and_then(Value::as_bool) == Some(true);
+            return json!({
+                "ok": ok,
+                "status": out.status.code(),
+                "policy_path": normalize_rel(&policy_path.to_string_lossy()),
+                "payload": payload,
+                "stderr": if stderr.is_empty() { Value::Null } else { Value::String(stderr) },
+                "engine": "node"
+            });
+        }
     }
 
-    let policy_path = resolve_path(root, &policy.dependency_boundary_policy_path);
-    let output = Command::new("node")
-        .arg(script.as_os_str())
-        .arg("check")
-        .arg("--strict=1")
-        .arg(format!("--policy={}", policy_path.display()))
-        .current_dir(root)
-        .output();
-
-    let Ok(out) = output else {
-        return json!({
+    match run_dependency_boundary_check_native(root, &policy_path) {
+        Ok(payload) => json!({
+            "ok": payload.get("ok").and_then(Value::as_bool) == Some(true),
+            "status": Value::Null,
+            "policy_path": normalize_rel(&policy_path.to_string_lossy()),
+            "payload": payload,
+            "stderr": Value::Null,
+            "engine": "native"
+        }),
+        Err(err) => json!({
             "ok": false,
-            "error": "dependency_boundary_guard_spawn_failed"
-        });
-    };
+            "error": "dependency_boundary_guard_spawn_failed",
+            "detail": err,
+            "policy_path": normalize_rel(&policy_path.to_string_lossy()),
+            "engine": "native"
+        }),
+    }
+}
 
-    let stdout = String::from_utf8_lossy(&out.stdout).to_string();
-    let stderr = String::from_utf8_lossy(&out.stderr).trim().to_string();
-    let payload = parse_last_json(&stdout).unwrap_or_else(|| json!({}));
-    let ok = out.status.success() && payload.get("ok").and_then(Value::as_bool) == Some(true);
-    json!({
+fn json_string_vec(value: Option<&Value>) -> Vec<String> {
+    value
+        .and_then(Value::as_array)
+        .map(|rows| {
+            rows.iter()
+                .filter_map(Value::as_str)
+                .map(normalize_rel)
+                .filter(|row| !row.is_empty())
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn json_string_map(value: Option<&Value>) -> BTreeMap<String, Vec<String>> {
+    value
+        .and_then(Value::as_object)
+        .map(|rows| {
+            rows.iter()
+                .map(|(key, entry)| (key.trim().to_string(), json_string_vec(Some(entry))))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn list_boundary_files(
+    root: &Path,
+    include_dirs: &[String],
+    include_ext: &BTreeSet<String>,
+    exclude_contains: &[String],
+) -> Result<Vec<PathBuf>, String> {
+    let mut out = Vec::<PathBuf>::new();
+    let mut stack = include_dirs
+        .iter()
+        .map(|dir| resolve_path(root, dir))
+        .filter(|dir| dir.exists())
+        .collect::<Vec<_>>();
+
+    while let Some(cur) = stack.pop() {
+        let entries = fs::read_dir(&cur).map_err(|err| {
+            format!(
+                "dependency_boundary_read_dir_failed:{}:{err}",
+                cur.display()
+            )
+        })?;
+        for entry in entries {
+            let entry = entry.map_err(|err| {
+                format!(
+                    "dependency_boundary_read_dir_entry_failed:{}:{err}",
+                    cur.display()
+                )
+            })?;
+            let path = entry.path();
+            let rel = normalize_rel(&path.strip_prefix(root).unwrap_or(&path).to_string_lossy());
+            if exclude_contains.iter().any(|token| rel.contains(token)) {
+                continue;
+            }
+            let file_type = entry.file_type().map_err(|err| {
+                format!(
+                    "dependency_boundary_file_type_failed:{}:{err}",
+                    path.display()
+                )
+            })?;
+            if file_type.is_dir() {
+                stack.push(path);
+                continue;
+            }
+            if !file_type.is_file() {
+                continue;
+            }
+            let ext = path
+                .extension()
+                .map(|v| format!(".{}", v.to_string_lossy().to_ascii_lowercase()))
+                .unwrap_or_default();
+            if include_ext.contains(&ext) {
+                out.push(path);
+            }
+        }
+    }
+
+    out.sort();
+    Ok(out)
+}
+
+fn detect_layer(rel_path: &str, layers: &BTreeMap<String, Vec<String>>) -> Option<String> {
+    for (layer, roots) in layers {
+        for root in roots {
+            let normalized = normalize_rel(root).trim_end_matches('/').to_string();
+            if rel_path == normalized || rel_path.starts_with(&format!("{normalized}/")) {
+                return Some(layer.clone());
+            }
+        }
+    }
+    None
+}
+
+fn resolve_local_spec(from_file: &Path, spec: &str) -> Option<PathBuf> {
+    let base = from_file
+        .parent()
+        .unwrap_or_else(|| Path::new(""))
+        .join(spec);
+    let candidates = [
+        base.clone(),
+        PathBuf::from(format!("{}.ts", base.display())),
+        PathBuf::from(format!("{}.js", base.display())),
+        PathBuf::from(format!("{}.mjs", base.display())),
+        base.join("index.ts"),
+        base.join("index.js"),
+        base.join("index.mjs"),
+    ];
+    candidates.into_iter().find(|candidate| candidate.is_file())
+}
+
+fn parse_import_specs(source: &str) -> Vec<String> {
+    let mut specs = Vec::<String>::new();
+    for (needle, quote) in [
+        ("from '", '\''),
+        ("from \"", '"'),
+        ("import('", '\''),
+        ("import(\"", '"'),
+        ("require('", '\''),
+        ("require(\"", '"'),
+    ] {
+        let mut offset = 0usize;
+        while let Some(idx) = source[offset..].find(needle) {
+            let start = offset + idx + needle.len();
+            let Some(end_rel) = source[start..].find(quote) else {
+                break;
+            };
+            let spec = source[start..start + end_rel].trim();
+            if !spec.is_empty() {
+                specs.push(spec.to_string());
+            }
+            offset = start + end_rel + 1;
+        }
+    }
+    specs
+}
+
+fn run_dependency_boundary_check_native(root: &Path, policy_path: &Path) -> Result<Value, String> {
+    let policy = read_json(policy_path)?;
+    let scan = policy.get("scan").cloned().unwrap_or_else(|| json!({}));
+    let include_dirs = json_string_vec(scan.get("include_dirs"));
+    let include_ext = json_string_vec(scan.get("include_ext"))
+        .into_iter()
+        .map(|v| v.to_ascii_lowercase())
+        .collect::<BTreeSet<_>>();
+    let exclude_contains = json_string_vec(scan.get("exclude_contains"));
+    let layers = json_string_map(policy.get("layers"));
+    let allow_imports = json_string_map(policy.get("allow_imports"));
+    let enforce_layers = json_string_vec(policy.get("enforce_layers"))
+        .into_iter()
+        .collect::<BTreeSet<_>>();
+
+    let conduit = policy
+        .get("conduit_boundary")
+        .cloned()
+        .unwrap_or_else(|| json!({}));
+    let conduit_dirs = json_string_vec(conduit.get("include_dirs"));
+    let conduit_ext = json_string_vec(conduit.get("include_ext"))
+        .into_iter()
+        .map(|v| v.to_ascii_lowercase())
+        .collect::<BTreeSet<_>>();
+    let conduit_excludes = json_string_vec(conduit.get("exclude_contains"));
+    let conduit_allow = json_string_vec(conduit.get("allowlisted_files"))
+        .into_iter()
+        .collect::<BTreeSet<_>>();
+    let forbidden_patterns = json_string_vec(conduit.get("forbidden_patterns"));
+
+    let files = list_boundary_files(root, &include_dirs, &include_ext, &exclude_contains)?;
+    let conduit_roots = conduit_dirs
+        .iter()
+        .map(|v| normalize_rel(v).trim_end_matches('/').to_string())
+        .collect::<Vec<_>>();
+
+    let mut layer_violations = Vec::<Value>::new();
+    let mut conduit_violations = Vec::<Value>::new();
+    let mut missing_local_imports = Vec::<Value>::new();
+
+    for file_path in &files {
+        let rel_path = normalize_rel(
+            &file_path
+                .strip_prefix(root)
+                .unwrap_or(file_path)
+                .to_string_lossy(),
+        );
+        let source = fs::read_to_string(file_path).map_err(|err| {
+            format!(
+                "dependency_boundary_read_source_failed:{}:{err}",
+                file_path.display()
+            )
+        })?;
+        let source_layer = detect_layer(&rel_path, &layers);
+
+        for spec in parse_import_specs(&source) {
+            if !spec.starts_with('.') {
+                continue;
+            }
+            let Some(resolved) = resolve_local_spec(file_path, &spec) else {
+                missing_local_imports.push(json!({
+                    "file": rel_path,
+                    "spec": spec
+                }));
+                continue;
+            };
+            let target_rel = normalize_rel(
+                &resolved
+                    .strip_prefix(root)
+                    .unwrap_or(&resolved)
+                    .to_string_lossy(),
+            );
+            let target_layer = detect_layer(&target_rel, &layers);
+            let Some(source_layer) = source_layer.clone() else {
+                continue;
+            };
+            let Some(target_layer) = target_layer else {
+                continue;
+            };
+            if !enforce_layers.contains(&source_layer) {
+                continue;
+            }
+            let allowed = allow_imports
+                .get(&source_layer)
+                .cloned()
+                .unwrap_or_default()
+                .into_iter()
+                .collect::<BTreeSet<_>>();
+            if !allowed.contains(&target_layer) {
+                layer_violations.push(json!({
+                    "file": rel_path,
+                    "source_layer": source_layer,
+                    "spec": spec,
+                    "resolved": target_rel,
+                    "target_layer": target_layer
+                }));
+            }
+        }
+
+        let ext = file_path
+            .extension()
+            .map(|v| format!(".{}", v.to_string_lossy().to_ascii_lowercase()))
+            .unwrap_or_default();
+        let in_conduit_scope = conduit_roots
+            .iter()
+            .any(|root| rel_path == *root || rel_path.starts_with(&format!("{root}/")))
+            && conduit_ext.contains(&ext)
+            && !conduit_excludes
+                .iter()
+                .any(|token| rel_path.contains(token));
+
+        if !in_conduit_scope || conduit_allow.contains(&rel_path) {
+            continue;
+        }
+        for token in &forbidden_patterns {
+            if !token.is_empty() && source.contains(token) {
+                conduit_violations.push(json!({
+                    "file": rel_path,
+                    "forbidden_pattern": token
+                }));
+            }
+        }
+    }
+
+    let ok = layer_violations.is_empty()
+        && conduit_violations.is_empty()
+        && missing_local_imports.is_empty();
+
+    Ok(json!({
         "ok": ok,
-        "status": out.status.code(),
-        "policy_path": normalize_rel(&policy_path.to_string_lossy()),
-        "payload": payload,
-        "stderr": if stderr.is_empty() { Value::Null } else { Value::String(stderr) }
-    })
+        "type": "dependency_boundary_guard",
+        "ts": now_iso(),
+        "strict": true,
+        "scanned_files": files.len(),
+        "layer_violations": layer_violations,
+        "conduit_violations": conduit_violations,
+        "missing_local_imports": missing_local_imports
+    }))
 }
 
 fn bool_from_path(value: &Value, path: &[&str]) -> bool {
@@ -718,6 +1006,18 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::tempdir;
+
+    fn write_json_fixture(path: &Path, value: &Value) {
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).expect("create parent");
+        }
+        fs::write(
+            path,
+            serde_json::to_string_pretty(value).expect("encode fixture"),
+        )
+        .expect("write fixture");
+    }
 
     #[test]
     fn safety_plane_hash_is_stable_for_same_input() {
@@ -734,5 +1034,117 @@ mod tests {
             .expect("json payload");
         assert_eq!(payload.get("ok").and_then(Value::as_bool), Some(true));
         assert_eq!(payload.get("x").and_then(Value::as_i64), Some(1));
+    }
+
+    #[test]
+    fn native_dependency_boundary_check_detects_allowed_relative_imports() {
+        let root = tempdir().expect("tempdir");
+        let policy_path = root
+            .path()
+            .join("client/runtime/config/dependency_boundary_manifest.json");
+        write_json_fixture(
+            &policy_path,
+            &json!({
+                "layers": {
+                    "core": ["client/runtime/lib"],
+                    "systems": ["client/runtime/systems"]
+                },
+                "allow_imports": {
+                    "systems": ["core", "systems"]
+                },
+                "enforce_layers": ["systems"],
+                "scan": {
+                    "include_dirs": ["client/runtime/lib", "client/runtime/systems"],
+                    "include_ext": [".ts"],
+                    "exclude_contains": []
+                },
+                "conduit_boundary": {
+                    "include_dirs": ["client/runtime/systems"],
+                    "include_ext": [".ts"],
+                    "exclude_contains": [],
+                    "allowlisted_files": [],
+                    "forbidden_patterns": ["spawnSync('cargo'"]
+                }
+            }),
+        );
+        let helper = root.path().join("client/runtime/lib/helper.ts");
+        let system = root.path().join("client/runtime/systems/agent.ts");
+        fs::create_dir_all(helper.parent().expect("helper parent")).expect("helper parent");
+        fs::create_dir_all(system.parent().expect("system parent")).expect("system parent");
+        fs::write(&helper, "export const helper = 1;\n").expect("write helper");
+        fs::write(
+            &system,
+            "import { helper } from '../lib/helper';\nexport { helper };\n",
+        )
+        .expect("write system");
+
+        let payload =
+            run_dependency_boundary_check_native(root.path(), &policy_path).expect("native check");
+        assert_eq!(payload.get("ok").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            payload.get("scanned_files").and_then(Value::as_u64),
+            Some(2)
+        );
+    }
+
+    #[test]
+    fn run_dependency_boundary_check_falls_back_to_native_when_script_is_missing() {
+        let root = tempdir().expect("tempdir");
+        let manifest_path = root
+            .path()
+            .join("client/runtime/config/dependency_boundary_manifest.json");
+        write_json_fixture(
+            &manifest_path,
+            &json!({
+                "layers": {
+                    "core": ["client/runtime/lib"],
+                    "systems": ["client/runtime/systems"]
+                },
+                "allow_imports": {
+                    "systems": ["core", "systems"]
+                },
+                "enforce_layers": ["systems"],
+                "scan": {
+                    "include_dirs": ["client/runtime/lib", "client/runtime/systems"],
+                    "include_ext": [".ts"],
+                    "exclude_contains": []
+                },
+                "conduit_boundary": {
+                    "include_dirs": ["client/runtime/systems"],
+                    "include_ext": [".ts"],
+                    "exclude_contains": [],
+                    "allowlisted_files": [],
+                    "forbidden_patterns": []
+                }
+            }),
+        );
+        let helper = root.path().join("client/runtime/lib/helper.ts");
+        let system = root.path().join("client/runtime/systems/agent.ts");
+        fs::create_dir_all(helper.parent().expect("helper parent")).expect("helper parent");
+        fs::create_dir_all(system.parent().expect("system parent")).expect("system parent");
+        fs::write(&helper, "export const helper = 1;\n").expect("write helper");
+        fs::write(
+            &system,
+            "import { helper } from '../lib/helper';\nexport { helper };\n",
+        )
+        .expect("write system");
+
+        let policy = OriginIntegrityPolicy {
+            dependency_boundary_policy_path: manifest_path.display().to_string(),
+            ..OriginIntegrityPolicy::default()
+        };
+        let payload = run_dependency_boundary_check(root.path(), &policy);
+        assert_eq!(payload.get("ok").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            payload.get("engine").and_then(Value::as_str),
+            Some("native")
+        );
+        assert_eq!(
+            payload
+                .get("payload")
+                .and_then(|v| v.get("scanned_files"))
+                .and_then(Value::as_u64),
+            Some(2)
+        );
     }
 }
