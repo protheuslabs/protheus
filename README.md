@@ -9,6 +9,7 @@
 [![Architecture](https://img.shields.io/badge/architecture-three--plane%20metakernel-0A7A5E)](planes/README.md)
 ![Coverage](docs/client/badges/coverage.svg)
 ![Dependabot](https://img.shields.io/badge/dependabot-enabled-025E8C?logo=dependabot)
+[![ORCID](https://img.shields.io/badge/ORCID-0009--0002--0617--7360-A6CE39?logo=orcid&logoColor=white)](https://orcid.org/0009-0002-0617-7360)
 
 Protheus is an evidence-first Rust kernel for autonomous operations, workflow execution, and policy-governed system evolution.
 This repository is maintained under the Protheus Labs operating model.
