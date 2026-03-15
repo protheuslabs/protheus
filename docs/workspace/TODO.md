@@ -1,6 +1,6 @@
 # TODO (Maintenance + Policy + SRS Execution Order)
 
-Updated: 2026-03-12 09:10 America/Denver
+Updated: 2026-03-15 12:30 America/Denver
 
 ## Ordering policy
 - Priority first (`P0` > `P1` > `P2` > `P3`)
@@ -196,6 +196,20 @@ Updated: 2026-03-12 09:10 America/Denver
 - `docs/client/reports/hardware/esp32_tiny_max_status_<date>.png` and `docs/client/reports/hardware/rp2040_tiny_max_status_<date>.png` exist with matching serial logs and deterministic receipt bundle.
 - `local/workspace/reports/MCU_PROOF_PREFLIGHT.md` shows `ok=true`.
 - README hardware-proof section is updated from `blocked` to `verified`.
+
+24. `P1-ORCH-001` Implement REQ-38 Agent Orchestration Hardening (coordinator, scratchpad, checkpointing). `STATUS: QUEUED`
+- Linked SRS:
+- `REQ-38-001` through `REQ-38-008` in `docs/client/requirements/REQ-38-agent-orchestration-hardening.md`.
+- Dependencies:
+- REQ-12 (Swarm Engine Router) for message routing primitives.
+- REQ-15 (Sandboxed Sub-Agent Execution) for scoped sub-agent spawning.
+- REQ-36 (Smart Memory) for shared state patterns.
+- Exit criteria:
+- Coordinator agent implementation in `client/cognition/orchestration/coordinator.ts` with partitioning, deduplication, and severity merging.
+- Shared scratchpad in `client/cognition/orchestration/scratchpad.ts` with read/write and cleanup.
+- Checkpointing in `client/cognition/orchestration/checkpoint.ts` with 10-item/2-min intervals and timeout recovery.
+- All tests passing: `tests/client/cognition/coordinator.*.test.js`, `scratchpad.*.test.js`, `checkpoint.*.test.js`.
+- Integration test: Full multi-agent audit with 6 parallel agents completes without overlap and produces unified report.
 
 ## Executed in this pass
 - Added `tests/tooling/scripts/ci/srs_actionable_map.mjs` to produce canonical remaining-work mapping and executability buckets.
