@@ -20,6 +20,17 @@ function findRepoRoot(startDir) {
 
 const ROOT = findRepoRoot(__dirname);
 
+function loadTsModule(tsPath) {
+  const { bootstrap } = require(path.join(ROOT, 'client', 'runtime', 'lib', 'ts_bootstrap.ts'));
+  const Module = require('module');
+  const entry = new Module(tsPath, module.parent || module);
+  entry.id = '.';
+  entry.filename = tsPath;
+  entry.paths = Module._nodeModulePaths(path.dirname(tsPath));
+  bootstrap(tsPath, entry);
+  return entry.exports;
+}
+
 function loadConduitClient() {
   const jsCandidates = [
     path.join(ROOT, 'client', 'runtime', 'systems', 'conduit', 'conduit-client.js'),
@@ -30,6 +41,22 @@ function loadConduitClient() {
       return require(candidate);
     }
   }
+
+  const tsCandidates = [
+    path.join(ROOT, 'client', 'runtime', 'systems', 'conduit', 'conduit-client.ts'),
+    path.join(ROOT, 'systems', 'conduit', 'conduit-client.ts')
+  ];
+  for (const candidate of tsCandidates) {
+    if (!fs.existsSync(candidate)) continue;
+    try {
+      return loadTsModule(candidate);
+    } catch (err) {
+      process.stderr.write(
+        `conduit_client_ts_load_failed:${candidate}:${String(err && err.message ? err.message : err)}\n`
+      );
+    }
+  }
+
   throw new Error('conduit_client_missing');
 }
 

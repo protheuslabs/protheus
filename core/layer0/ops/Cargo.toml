@@ -63,6 +63,8 @@ protheus-ops-core-v1 = { path = "../../layer2/ops" }
 protheus-spine-core-v1 = { path = "../../layer2/spine" }
 exotic_wrapper = { path = "../../layer_minus_one/exotic_wrapper" }
 mimalloc = { version = "0.1", default-features = false, optional = true }
+crossbeam-channel = "0.5"
+parking_lot = "0.12"
 
 [dev-dependencies]
 tempfile = "3.13"

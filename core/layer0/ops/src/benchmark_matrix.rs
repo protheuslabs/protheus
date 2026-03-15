@@ -4,10 +4,13 @@ use crate::{
     status_runtime_efficiency_floor,
 };
 use serde_json::{json, Map, Value};
+use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use std::fs;
+use std::hint::black_box;
 use std::io::Write;
 use std::path::Path;
+use std::time::{Duration, Instant};
 use walkdir::WalkDir;
 
 const LANE_ID: &str = "benchmark_matrix";
@@ -253,6 +256,27 @@ fn local_full_install_probe_mb(root: &Path) -> Option<f64> {
     }
 }
 
+fn live_tasks_per_sec(sample_ms: u64) -> f64 {
+    const WORK_FACTOR: u32 = 16;
+    let target = Duration::from_millis(sample_ms.max(100));
+    let started = Instant::now();
+    let mut tasks = 0u64;
+    while started.elapsed() < target {
+        for idx in 0..WORK_FACTOR {
+            let payload = format!("task-{tasks}-work-{idx}");
+            let digest = Sha256::digest(payload.as_bytes());
+            black_box(digest);
+        }
+        tasks = tasks.saturating_add(1);
+    }
+    let secs = started.elapsed().as_secs_f64();
+    if secs <= 0.0 {
+        0.0
+    } else {
+        ((tasks as f64 / secs) * 100.0).round() / 100.0
+    }
+}
+
 fn runtime_metrics(
     root: &Path,
     refresh_runtime: bool,
@@ -347,16 +371,18 @@ fn measure_openclaw(
     root: &Path,
     refresh_runtime: bool,
 ) -> Result<(Map<String, Value>, Value), String> {
-    let (cold_start_ms, idle_memory_mb, install_size_mb, runtime_json, runtime_source) =
+    let (cold_start_ms, idle_memory_mb, install_size_mb, mut runtime_json, mut runtime_source) =
         runtime_metrics(root, refresh_runtime)?;
     let security_systems = count_guard_checks(root)?;
     let channel_adapters = count_channel_adapters(root)?;
     let llm_providers = count_llm_providers(root)?;
+    let tasks_per_sec = live_tasks_per_sec(800);
 
     let mut measured = Map::<String, Value>::new();
     measured.insert("cold_start_ms".to_string(), json!(cold_start_ms));
     measured.insert("idle_memory_mb".to_string(), json!(idle_memory_mb));
     measured.insert("install_size_mb".to_string(), json!(install_size_mb));
+    measured.insert("tasks_per_sec".to_string(), json!(tasks_per_sec));
     measured.insert("security_systems".to_string(), json!(security_systems));
     measured.insert("channel_adapters".to_string(), json!(channel_adapters));
     measured.insert("llm_providers".to_string(), json!(llm_providers));
@@ -365,6 +391,25 @@ fn measure_openclaw(
         "data_source".to_string(),
         Value::String("runtime_efficiency_floor + policy counters".to_string()),
     );
+    measured.insert(
+        "throughput_source".to_string(),
+        Value::String("live_hash_workload_v1".to_string()),
+    );
+
+    if let Some(metrics) = runtime_json
+        .get_mut("metrics")
+        .and_then(Value::as_object_mut)
+    {
+        metrics.insert("tasks_per_sec".to_string(), json!(tasks_per_sec));
+    }
+    if let Some(meta) = runtime_source.as_object_mut() {
+        meta.insert(
+            "tasks_source".to_string(),
+            Value::String("live_hash_workload_v1".to_string()),
+        );
+        meta.insert("tasks_sample_ms".to_string(), json!(800));
+        meta.insert("tasks_work_factor".to_string(), json!(16));
+    }
     measured.insert("runtime_metric_source".to_string(), runtime_source);
 
     Ok((measured, runtime_json))

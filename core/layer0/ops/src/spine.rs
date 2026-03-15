@@ -3,6 +3,7 @@
 use crate::{deterministic_receipt_hash, now_iso};
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
+use parking_lot::Mutex;
 use protheus_spine_core_v1::{
     run_background_hands_scheduler, run_evidence_run_plan, run_rsi_idle_hands_scheduler,
 };
@@ -12,6 +13,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::OnceLock;
 
 #[derive(Debug, Clone)]
 struct CliArgs {
@@ -71,6 +73,11 @@ fn stable_hash(seed: &str, len: usize) -> String {
 
 fn receipt_hash(v: &Value) -> String {
     deterministic_receipt_hash(v)
+}
+
+fn receipt_ledger_io_lock() -> &'static Mutex<()> {
+    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    LOCK.get_or_init(|| Mutex::new(()))
 }
 
 fn to_base36(mut n: u64) -> String {
@@ -791,17 +798,20 @@ impl LedgerWriter {
         let dir = spine_runs_dir(&self.root);
         ensure_dir(&dir);
         let file = dir.join(format!("{}.jsonl", self.date));
-        if let Ok(payload) = serde_json::to_string(&evt) {
-            let _ = fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(file)
-                .and_then(|mut f| {
-                    std::io::Write::write_all(&mut f, format!("{payload}\n").as_bytes())
-                });
+        {
+            // Hot path lock: keep ledger append and latest marker write serialized with low-overhead mutex.
+            let _guard = receipt_ledger_io_lock().lock();
+            if let Ok(payload) = serde_json::to_string(&evt) {
+                let _ = fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(file)
+                    .and_then(|mut f| {
+                        std::io::Write::write_all(&mut f, format!("{payload}\n").as_bytes())
+                    });
+            }
+            write_json_atomic(&dir.join("latest.json"), &evt);
         }
-
-        write_json_atomic(&dir.join("latest.json"), &evt);
     }
 }
 
@@ -1675,8 +1685,12 @@ mod tests {
             attention_escalate_levels: vec!["critical".to_string()],
             ambient_stance: true,
             dopamine_threshold_breach_only: true,
-            status_path: root.path().join("local/state/ops/mech_suit_mode/latest.json"),
-            history_path: root.path().join("local/state/ops/mech_suit_mode/history.jsonl"),
+            status_path: root
+                .path()
+                .join("local/state/ops/mech_suit_mode/latest.json"),
+            history_path: root
+                .path()
+                .join("local/state/ops/mech_suit_mode/history.jsonl"),
             policy_path: root
                 .path()
                 .join("client/runtime/config/mech_suit_mode_policy.json"),

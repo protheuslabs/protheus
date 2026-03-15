@@ -9,7 +9,6 @@ use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::thread;
 use std::time::Duration;
 
 #[derive(Debug, Clone)]
@@ -966,7 +965,8 @@ fn next(root: &Path, flags: &BTreeMap<String, String>, auto_ack: bool) -> i32 {
         }
         let remaining = wait_ms.saturating_sub(elapsed_ms);
         let sleep_ms = remaining.clamp(25, 250);
-        thread::sleep(Duration::from_millis(sleep_ms));
+        let wait_tick = crossbeam_channel::after(Duration::from_millis(sleep_ms));
+        let _ = wait_tick.recv();
     };
     let waited_ms = Utc::now()
         .timestamp_millis()
