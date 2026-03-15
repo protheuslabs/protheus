@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            node scripts/ci/layer_placement_check.mjs --base-ref=origin/${{ github.base_ref }}
+            node tests/tooling/scripts/ci/layer_placement_check.mjs --base-ref=origin/${{ github.base_ref }}
           else
-            node scripts/ci/layer_placement_check.mjs --base-ref=HEAD~1
+            node tests/tooling/scripts/ci/layer_placement_check.mjs --base-ref=HEAD~1
           fi

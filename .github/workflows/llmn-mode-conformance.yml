@@ -16,5 +16,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install npm dependencies
+        run: npm ci --include=dev
       - name: Run LLMN conformance smoke
         run: node tests/client-memory-tools/llmn_mode_conformance.test.js

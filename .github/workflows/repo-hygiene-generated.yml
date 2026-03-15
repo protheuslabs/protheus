@@ -12,10 +12,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - name: Verify generated artifacts are not staged
+          node-version: '22'
+      - name: Install npm dependencies
+        run: npm ci --include=dev
+      - name: Verify generated artifacts are not staged (legacy wrapper)
         run: |
-          node client/runtime/systems/ops/repo_hygiene_generated_guard.js check --strict=1
-      - name: Verify runtime state compat links and tracked-state hygiene
+          node tests/client-memory-tools/repo_hygiene_generated_guard.test.js
+      - name: Verify runtime hygiene lane (legacy wrapper)
         run: |
-          node client/lib/ts_entrypoint.js client/runtime/systems/ops/runtime_state_surface_guard.ts check --strict=1
+          node tests/client-memory-tools/repo_hygiene_guard.test.js

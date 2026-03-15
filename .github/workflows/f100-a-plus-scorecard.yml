@@ -21,8 +21,11 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Generate A+ readiness scorecard (non-blocking)
-        run: node client/runtime/systems/ops/f100_a_plus_readiness_gate.js run --strict=0 --write=1
+      - name: Install npm dependencies
+        run: npm ci --include=dev
+
+      - name: Generate A+ readiness scorecard (non-blocking legacy wrapper)
+        run: node tests/client-memory-tools/f100_a_plus_readiness_gate.test.js
 
       - name: Upload A+ readiness artifacts
         if: always()
@@ -31,4 +34,4 @@ jobs:
           name: f100-a-plus-readiness
           path: |
             docs/client/ops/F100_A_PLUS_READINESS_STATUS.md
-            state/ops/f100_a_plus_readiness_gate/latest.json
+            local/state/ops/f100_a_plus_readiness_gate/latest.json

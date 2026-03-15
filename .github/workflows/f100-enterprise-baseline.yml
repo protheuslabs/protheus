@@ -20,8 +20,11 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Verify baseline contract
-        run: node client/runtime/systems/ops/f100_enterprise_baseline_gate.js run --strict=1 --write=0
+      - name: Install npm dependencies
+        run: npm ci --include=dev
+
+      - name: Verify baseline contract (legacy wrapper)
+        run: node tests/client-memory-tools/f100_enterprise_baseline_gate.test.js
 
       - name: Upload baseline status
         if: always()
@@ -29,4 +32,4 @@ jobs:
         with:
           name: f100-enterprise-baseline
           path: |
-            state/ops/f100_enterprise_baseline_gate/latest.json
+            local/state/ops/f100_enterprise_baseline_gate/latest.json

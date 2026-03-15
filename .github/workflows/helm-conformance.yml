@@ -28,7 +28,7 @@ jobs:
           helm template protheus ./client/runtime/deploy/helm/protheus > /tmp/protheus-manifest.yaml
           test -s /tmp/protheus-manifest.yaml
           grep -q "kind: Deployment" /tmp/protheus-manifest.yaml
-          grep -q "helm.sh/hook: test" /tmp/protheus-manifest.yaml
+          grep -Eq "helm\\.sh/hook\"?: test" /tmp/protheus-manifest.yaml
           grep -q "PROTHEUS_SSO_ENABLED" /tmp/protheus-manifest.yaml
           grep -q "PROTHEUS_SECRETS_VAULT_ENABLED" /tmp/protheus-manifest.yaml
           grep -q "PROTHEUS_NVIDIA_ENABLED" /tmp/protheus-manifest.yaml
