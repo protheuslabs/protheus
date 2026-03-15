@@ -30,7 +30,7 @@ pr-run-mode = "plan"
 opt-level = "z"
 panic = "abort"
 strip = true
-lto = true
+lto = "thin"
 codegen-units = 1
 
 [profile.release-minimal]

@@ -29,13 +29,14 @@ jobs:
         run: |
           cargo build --release --target x86_64-unknown-linux-musl --bin protheusd
 
-      - name: Enforce <= 35 MB
+      - name: Enforce 0.5 MB - 5 MB
         run: |
           BIN="target/x86_64-unknown-linux-musl/release/protheusd"
           BYTES="$(stat --format=%s "$BIN")"
-          MAX=$((35 * 1024 * 1024))
+          MIN=$((512 * 1024))
+          MAX=$((5 * 1024 * 1024))
           echo "protheusd_bytes=$BYTES"
-          if [ "$BYTES" -gt "$MAX" ]; then
-            echo "::error::protheusd exceeds 35 MB gate ($BYTES bytes)"
+          if [ "$BYTES" -lt "$MIN" ] || [ "$BYTES" -gt "$MAX" ]; then
+            echo "::error::protheusd outside 0.5 MB - 5 MB gate ($BYTES bytes)"
             exit 1
           fi

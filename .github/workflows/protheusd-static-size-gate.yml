@@ -17,6 +17,8 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
 
       - name: Install musl toolchain
         run: |
@@ -26,15 +28,63 @@ jobs:
 
       - name: Build static protheusd
         run: |
+          set -euo pipefail
           cargo build --release --target x86_64-unknown-linux-musl --manifest-path core/layer0/ops/Cargo.toml --bin protheusd
           strip target/x86_64-unknown-linux-musl/release/protheusd || true
           ls -lh target/x86_64-unknown-linux-musl/release/protheusd
           file target/x86_64-unknown-linux-musl/release/protheusd
 
-      - name: Enforce static size gate
+      - name: Enforce static size gate (0.5 MB - 5 MB)
         run: |
+          set -euo pipefail
+          BIN="target/x86_64-unknown-linux-musl/release/protheusd"
+          SIZE_BYTES="$(wc -c < "$BIN" | tr -d ' ')"
+          SIZE_MB="$(awk -v b="$SIZE_BYTES" 'BEGIN { printf "%.2f", b/(1024*1024) }')"
+          MIN_BYTES=$((512 * 1024))
+          MAX_BYTES=$((5 * 1024 * 1024))
+          if [ "$SIZE_BYTES" -lt "$MIN_BYTES" ] || [ "$SIZE_BYTES" -gt "$MAX_BYTES" ]; then
+            echo "::error::protheusd static musl binary is ${SIZE_MB} MB, outside the 0.5 MB - 5 MB CI gate."
+            exit 1
+          fi
           cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- \
             top1-assurance size-gate --strict=1
+          echo "protheusd static binary: ${SIZE_MB} MB (musl)"
+
+      - name: Verify reproducible static rebuild
+        run: |
+          set -euo pipefail
+          BIN="target/x86_64-unknown-linux-musl/release/protheusd"
+          mkdir -p core/local/state/ops/top1_assurance
+          cp "$BIN" /tmp/protheusd.repro.1
+          SHA1="$(sha256sum /tmp/protheusd.repro.1 | awk '{print $1}')"
+          cargo clean -p protheus-ops-core || true
+          cargo build --release --target x86_64-unknown-linux-musl --manifest-path core/layer0/ops/Cargo.toml --bin protheusd
+          strip "$BIN" || true
+          cp "$BIN" /tmp/protheusd.repro.2
+          SHA2="$(sha256sum /tmp/protheusd.repro.2 | awk '{print $1}')"
+          if [ "$SHA1" != "$SHA2" ]; then
+            echo "::error::reproducible build check failed (sha mismatch)"
+            echo "build_1_sha=$SHA1"
+            echo "build_2_sha=$SHA2"
+            exit 1
+          fi
+          cat > core/local/state/ops/top1_assurance/reproducible_build_latest.json <<JSON
+          {
+            "schema_id": "top1_reproducible_static_build",
+            "schema_version": "1.0",
+            "target": "x86_64-unknown-linux-musl",
+            "binary_path": "target/x86_64-unknown-linux-musl/release/protheusd",
+            "build_1_sha256": "$SHA1",
+            "build_2_sha256": "$SHA2",
+            "reproducible_match": true
+          }
+          JSON
+
+      - name: Run strict TOP1 benchmark harness
+        run: |
+          set -euo pipefail
+          cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- \
+            top1-assurance benchmark-thresholds --strict=1 --refresh=1 --sample-ms=800
 
       - name: Upload size-gate artifacts
         if: always()
@@ -45,4 +95,6 @@ jobs:
             target/x86_64-unknown-linux-musl/release/protheusd
             core/local/state/ops/top1_assurance/latest.json
             core/local/state/ops/top1_assurance/history.jsonl
+            core/local/state/ops/top1_assurance/reproducible_build_latest.json
+            core/local/state/ops/top1_assurance/benchmark_latest.json
           if-no-files-found: warn
