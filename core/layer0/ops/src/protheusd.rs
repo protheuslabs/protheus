@@ -7,7 +7,10 @@ use protheus_ops_core::{
 };
 use serde_json::{json, Value};
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+
+#[cfg(feature = "embedded-minimal-core")]
+type PlaneRunner = fn(&Path, &[String]) -> i32;
 
 fn print_json(value: &Value) {
     println!(
@@ -28,6 +31,8 @@ fn usage() {
     println!("  protheusd tick [--strict=1|0]");
     println!("  protheusd diagnostics [--strict=1|0]");
     println!("  protheusd efficiency-status");
+    #[cfg(feature = "embedded-minimal-core")]
+    println!("  protheusd embedded-core-status");
 }
 
 fn cli_error(error: &str, command: &str) -> Value {
@@ -37,6 +42,63 @@ fn cli_error(error: &str, command: &str) -> Value {
         "command": command,
         "error": error,
         "ts": now_iso()
+    });
+    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
+    out
+}
+
+#[cfg(feature = "embedded-minimal-core")]
+fn embedded_minimal_core_planes() -> [(&'static str, &'static str, PlaneRunner); 5] {
+    [
+        (
+            "layer0-directives",
+            "directive_kernel",
+            protheus_ops_core::directive_kernel::run,
+        ),
+        (
+            "layer0-attention",
+            "attention_queue",
+            protheus_ops_core::attention_queue::run,
+        ),
+        (
+            "layer0-receipts",
+            "metakernel",
+            protheus_ops_core::metakernel::run,
+        ),
+        (
+            "layer0-min-memory",
+            "memory_plane",
+            protheus_ops_core::memory_plane::run,
+        ),
+        (
+            "layer-1-substrate-detector",
+            "substrate_plane",
+            protheus_ops_core::substrate_plane::run,
+        ),
+    ]
+}
+
+#[cfg(feature = "embedded-minimal-core")]
+fn embedded_minimal_core_status() -> Value {
+    let planes = embedded_minimal_core_planes();
+    let lane_entries: Vec<Value> = planes
+        .iter()
+        .map(|(feature, lane, runner)| {
+            json!({
+                "feature": feature,
+                "lane": lane,
+                "runner_ptr": format!("{:p}", *runner as *const ())
+            })
+        })
+        .collect();
+    let runner_ptr_fingerprint = deterministic_receipt_hash(&json!(lane_entries));
+    let mut out = json!({
+        "ok": true,
+        "type": "protheusd_embedded_minimal_core_status",
+        "ts": now_iso(),
+        "embedded_feature": "embedded-minimal-core",
+        "planes_embedded": lane_entries,
+        "runner_ptr_fingerprint": runner_ptr_fingerprint,
     });
     out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
     out
@@ -65,6 +127,11 @@ fn main() {
             let parsed = protheus_ops_core::parse_args(&[]);
             let out = status_runtime_efficiency_floor(&cwd, &parsed).json;
             print_json(&out);
+            std::process::exit(0);
+        }
+        #[cfg(feature = "embedded-minimal-core")]
+        "embedded-core-status" => {
+            print_json(&embedded_minimal_core_status());
             std::process::exit(0);
         }
         _ => {

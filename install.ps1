@@ -107,7 +107,7 @@ $daemonMode = "spine"
 if (Install-Binary $version $preferredDaemonTriple "protheusd" $protheusdBin) {
   $daemonMode = "protheusd"
   if ($preferredDaemonTriple -eq "x86_64-unknown-linux-musl") {
-    Write-Host "[protheus install] using static musl protheusd"
+    Write-Host "[protheus install] using static musl protheusd (embedded-minimal-core)"
   } else {
     Write-Host "[protheus install] using protheusd"
   }

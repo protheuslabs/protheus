@@ -176,7 +176,7 @@ main() {
   if [ "$prefer_musl_protheusd" = "1" ]; then
     if install_binary "$version" "x86_64-unknown-linux-musl" "protheusd" "$protheusd_bin"; then
       daemon_wrapper_body="exec \"$protheusd_bin\" \"\$@\""
-      echo "[protheus install] using static musl protheusd"
+      echo "[protheus install] using static musl protheusd (embedded-minimal-core)"
     fi
   fi
 

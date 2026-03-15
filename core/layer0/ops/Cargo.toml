@@ -10,7 +10,19 @@ name = "protheus_ops_core"
 path = "src/lib.rs"
 
 [features]
-default = []
+default = ["embedded-minimal-core"]
+embedded-minimal-core = [
+    "layer0-directives",
+    "layer0-attention",
+    "layer0-receipts",
+    "layer0-min-memory",
+    "layer-1-substrate-detector",
+]
+layer0-directives = []
+layer0-attention = []
+layer0-receipts = []
+layer0-min-memory = []
+layer-1-substrate-detector = []
 minimal = []
 full-substrate = []
 

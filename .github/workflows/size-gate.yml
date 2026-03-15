@@ -27,16 +27,16 @@ jobs:
 
       - name: Build static protheusd
         run: |
-          cargo build --release --target x86_64-unknown-linux-musl --bin protheusd
+          cargo build --release --target x86_64-unknown-linux-musl --bin protheusd --features embedded-minimal-core
 
-      - name: Enforce 0.5 MB - 5 MB
+      - name: Enforce 0.5 MB - 2.4 MB
         run: |
           BIN="target/x86_64-unknown-linux-musl/release/protheusd"
           BYTES="$(stat --format=%s "$BIN")"
           MIN=$((512 * 1024))
-          MAX=$((5 * 1024 * 1024))
+          MAX=$((2516582))
           echo "protheusd_bytes=$BYTES"
           if [ "$BYTES" -lt "$MIN" ] || [ "$BYTES" -gt "$MAX" ]; then
-            echo "::error::protheusd outside 0.5 MB - 5 MB gate ($BYTES bytes)"
+            echo "::error::protheusd outside 0.5 MB - 2.4 MB gate ($BYTES bytes)"
             exit 1
           fi
