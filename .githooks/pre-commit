@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-npm run ops:format:check:staged
-npm run lint
-node client/systems/personas/pre_commit_lens_gate.js
+node tests/client-memory-tools/org_code_format_guard.test.js
+npm run -s ops:legacy-alias:guard

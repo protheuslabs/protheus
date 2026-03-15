@@ -1,32 +1,13 @@
 #!/usr/bin/env node
 'use strict';
 
-const fs = require('node:fs');
 const path = require('node:path');
-const { validateFinding, normalizeFinding } = require('./schema_runtime.ts');
+const { parseArgs, invokeOrchestration } = require('./core_bridge.ts');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
 const DEFAULT_SCRATCHPAD_DIR = path.join(ROOT, 'local', 'workspace', 'scratchpad');
 const TASK_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/;
 const SCHEMA_VERSION = 'scratchpad/v1';
-
-function parseArgs(argv = []) {
-  const positional = [];
-  const flags = {};
-  for (const raw of Array.isArray(argv) ? argv : []) {
-    const token = String(raw || '').trim();
-    if (!token) continue;
-    if (token.startsWith('--')) {
-      const body = token.slice(2);
-      const eq = body.indexOf('=');
-      if (eq >= 0) flags[body.slice(0, eq)] = body.slice(eq + 1);
-      else flags[body] = '1';
-      continue;
-    }
-    positional.push(token);
-  }
-  return { positional, flags };
-}
 
 function taskIdFrom(parsed, fallback = '') {
   return String(
@@ -45,137 +26,143 @@ function assertTaskId(taskId) {
 
 function scratchpadPath(taskId, options = {}) {
   assertTaskId(taskId);
-  const rootDir = options.rootDir || DEFAULT_SCRATCHPAD_DIR;
+  const rootDir = options.rootDir || options.root_dir || DEFAULT_SCRATCHPAD_DIR;
   return path.join(rootDir, `${taskId}.json`);
 }
 
-function emptyScratchpad(taskId) {
-  const now = new Date().toISOString();
+function mapScratchpadStatus(out, taskId, options = {}) {
+  const fallbackPath = scratchpadPath(taskId, options);
+  const scratchpad = out && out.scratchpad && typeof out.scratchpad === 'object'
+    ? out.scratchpad
+    : {
+      schema_version: SCHEMA_VERSION,
+      task_id: taskId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      progress: { processed: 0, total: 0 },
+      findings: [],
+      checkpoints: [],
+    };
+
   return {
-    schema_version: SCHEMA_VERSION,
+    ok: Boolean(out && out.ok),
+    type: String(out && out.type ? out.type : 'orchestration_scratchpad_status'),
     task_id: taskId,
-    created_at: now,
-    updated_at: now,
-    progress: {
-      processed: 0,
-      total: 0
-    },
-    findings: [],
-    checkpoints: []
+    file_path: String(out && out.file_path ? out.file_path : fallbackPath),
+    filePath: String(out && out.file_path ? out.file_path : fallbackPath),
+    exists: Boolean(out && out.exists),
+    scratchpad,
+    reason_code: out && out.reason_code ? String(out.reason_code) : undefined,
   };
 }
 
 function loadScratchpad(taskId, options = {}) {
-  const filePath = scratchpadPath(taskId, options);
-  try {
-    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    return {
-      scratchpad: parsed,
-      filePath,
-      exists: true
-    };
-  } catch {
-    const fresh = emptyScratchpad(taskId);
-    return {
-      scratchpad: fresh,
-      filePath,
-      exists: false
-    };
-  }
+  assertTaskId(taskId);
+  const out = invokeOrchestration('scratchpad.status', {
+    task_id: taskId,
+    root_dir: options.rootDir || options.root_dir || undefined,
+  });
+  return mapScratchpadStatus(out, taskId, options);
 }
 
 function writeScratchpad(taskId, patch = {}, options = {}) {
-  const loaded = loadScratchpad(taskId, options);
-  const filePath = loaded.filePath;
-  const base = loaded.scratchpad;
-  const now = new Date().toISOString();
-
-  const next = Object.assign({}, base, patch, {
-    schema_version: SCHEMA_VERSION,
+  assertTaskId(taskId);
+  const out = invokeOrchestration('scratchpad.write', {
     task_id: taskId,
-    updated_at: now,
-    created_at: base.created_at || now
+    patch: patch && typeof patch === 'object' ? patch : {},
+    root_dir: options.rootDir || options.root_dir || undefined,
   });
-
-  if (!next.progress || typeof next.progress !== 'object') {
-    next.progress = { processed: 0, total: 0 };
+  if (!out || !out.ok) {
+    return {
+      ok: false,
+      type: 'orchestration_scratchpad_write',
+      reason_code: String(out && out.reason_code ? out.reason_code : 'orchestration_bridge_error'),
+      task_id: taskId,
+    };
   }
-  next.progress.processed = Number.isFinite(Number(next.progress.processed))
-    ? Number(next.progress.processed)
-    : 0;
-  next.progress.total = Number.isFinite(Number(next.progress.total))
-    ? Number(next.progress.total)
-    : 0;
-
-  if (!Array.isArray(next.findings)) next.findings = [];
-  if (!Array.isArray(next.checkpoints)) next.checkpoints = [];
-
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, `${JSON.stringify(next, null, 2)}\n`);
   return {
     ok: true,
     type: 'orchestration_scratchpad_write',
     task_id: taskId,
-    file_path: filePath,
-    scratchpad: next
+    file_path: out.file_path,
+    filePath: out.file_path,
+    scratchpad: out.scratchpad,
   };
 }
 
 function appendFinding(taskId, finding, options = {}) {
-  const normalized = normalizeFinding(finding);
-  const validation = validateFinding(normalized);
-  if (!validation.ok) {
+  assertTaskId(taskId);
+  const out = invokeOrchestration('scratchpad.append_finding', {
+    task_id: taskId,
+    finding: finding && typeof finding === 'object' ? finding : {},
+    root_dir: options.rootDir || options.root_dir || undefined,
+  });
+  if (!out || !out.ok) {
     return {
       ok: false,
       type: 'orchestration_scratchpad_append_finding',
-      reason_code: validation.reason_code,
-      task_id: taskId
+      reason_code: String(out && out.reason_code ? out.reason_code : 'orchestration_bridge_error'),
+      task_id: taskId,
     };
   }
-
-  const loaded = loadScratchpad(taskId, options);
-  const findings = Array.isArray(loaded.scratchpad.findings)
-    ? loaded.scratchpad.findings.slice()
-    : [];
-  findings.push(normalized);
-  const out = writeScratchpad(taskId, { findings }, options);
-  return Object.assign({}, out, {
+  return {
+    ok: true,
     type: 'orchestration_scratchpad_append_finding',
-    finding_count: findings.length
-  });
+    task_id: taskId,
+    file_path: out.file_path,
+    filePath: out.file_path,
+    scratchpad: out.scratchpad,
+    finding_count: Number.isFinite(Number(out.finding_count)) ? Number(out.finding_count) : 0,
+  };
 }
 
 function appendCheckpoint(taskId, checkpoint, options = {}) {
-  const loaded = loadScratchpad(taskId, options);
-  const rows = Array.isArray(loaded.scratchpad.checkpoints)
-    ? loaded.scratchpad.checkpoints.slice()
-    : [];
-  rows.push(
-    Object.assign(
-      {
-        created_at: new Date().toISOString()
-      },
-      checkpoint && typeof checkpoint === 'object' ? checkpoint : {}
-    )
-  );
-  const out = writeScratchpad(taskId, { checkpoints: rows }, options);
-  return Object.assign({}, out, {
-    type: 'orchestration_scratchpad_append_checkpoint',
-    checkpoint_count: rows.length
+  assertTaskId(taskId);
+  const out = invokeOrchestration('scratchpad.append_checkpoint', {
+    task_id: taskId,
+    checkpoint: checkpoint && typeof checkpoint === 'object' ? checkpoint : {},
+    root_dir: options.rootDir || options.root_dir || undefined,
   });
+  if (!out || !out.ok) {
+    return {
+      ok: false,
+      type: 'orchestration_scratchpad_append_checkpoint',
+      reason_code: String(out && out.reason_code ? out.reason_code : 'orchestration_bridge_error'),
+      task_id: taskId,
+    };
+  }
+  return {
+    ok: true,
+    type: 'orchestration_scratchpad_append_checkpoint',
+    task_id: taskId,
+    file_path: out.file_path,
+    filePath: out.file_path,
+    scratchpad: out.scratchpad,
+    checkpoint_count: Number.isFinite(Number(out.checkpoint_count)) ? Number(out.checkpoint_count) : 0,
+  };
 }
 
 function cleanupScratchpad(taskId, options = {}) {
-  const filePath = scratchpadPath(taskId, options);
-  try {
-    fs.unlinkSync(filePath);
-  } catch {}
+  assertTaskId(taskId);
+  const out = invokeOrchestration('scratchpad.cleanup', {
+    task_id: taskId,
+    root_dir: options.rootDir || options.root_dir || undefined,
+  });
+  if (!out || !out.ok) {
+    return {
+      ok: false,
+      type: 'orchestration_scratchpad_cleanup',
+      reason_code: String(out && out.reason_code ? out.reason_code : 'orchestration_bridge_error'),
+      task_id: taskId,
+    };
+  }
   return {
     ok: true,
     type: 'orchestration_scratchpad_cleanup',
     task_id: taskId,
-    file_path: filePath,
-    removed: !fs.existsSync(filePath)
+    file_path: out.file_path,
+    filePath: out.file_path,
+    removed: Boolean(out.removed),
   };
 }
 
@@ -187,15 +174,7 @@ function run(argv = process.argv.slice(2)) {
   try {
     if (command === 'status' || command === 'read') {
       assertTaskId(taskId);
-      const loaded = loadScratchpad(taskId);
-      return {
-        ok: true,
-        type: 'orchestration_scratchpad_status',
-        task_id: taskId,
-        file_path: loaded.filePath,
-        exists: loaded.exists,
-        scratchpad: loaded.scratchpad
-      };
+      return loadScratchpad(taskId);
     }
 
     if (command === 'write') {
@@ -208,7 +187,7 @@ function run(argv = process.argv.slice(2)) {
         return {
           ok: false,
           type: 'orchestration_scratchpad_write',
-          reason_code: 'invalid_payload_json'
+          reason_code: 'invalid_payload_json',
         };
       }
       return writeScratchpad(taskId, patch);
@@ -224,7 +203,7 @@ function run(argv = process.argv.slice(2)) {
         return {
           ok: false,
           type: 'orchestration_scratchpad_append_finding',
-          reason_code: 'invalid_finding_json'
+          reason_code: 'invalid_finding_json',
         };
       }
       return appendFinding(taskId, finding);
@@ -240,7 +219,7 @@ function run(argv = process.argv.slice(2)) {
         return {
           ok: false,
           type: 'orchestration_scratchpad_append_checkpoint',
-          reason_code: 'invalid_checkpoint_json'
+          reason_code: 'invalid_checkpoint_json',
         };
       }
       return appendCheckpoint(taskId, checkpoint);
@@ -255,13 +234,13 @@ function run(argv = process.argv.slice(2)) {
       ok: false,
       type: 'orchestration_scratchpad_command',
       reason_code: `unsupported_command:${command}`,
-      commands: ['status', 'read', 'write', 'append-finding', 'checkpoint', 'cleanup']
+      commands: ['status', 'read', 'write', 'append-finding', 'checkpoint', 'cleanup'],
     };
   } catch (error) {
     return {
       ok: false,
       type: 'orchestration_scratchpad_command',
-      reason_code: String(error && error.message ? error.message : error)
+      reason_code: String(error && error.message ? error.message : error),
     };
   }
 }
@@ -285,5 +264,5 @@ module.exports = {
   appendFinding,
   appendCheckpoint,
   cleanupScratchpad,
-  run
+  run,
 };

@@ -1,255 +1,122 @@
 #!/usr/bin/env node
 'use strict';
 
+const { parseArgs, parseJson, invokeOrchestration } = require('./core_bridge.ts');
+
 const SCOPE_ID_FALLBACK_PREFIX = 'scope';
 const SCOPE_ID_PATTERN = /^[a-z0-9][a-z0-9._:-]{1,95}$/;
 
-function parseArgs(argv = []) {
-  const positional = [];
-  const flags = {};
-  for (const raw of Array.isArray(argv) ? argv : []) {
-    const token = String(raw || '').trim();
-    if (!token) continue;
-    if (token.startsWith('--')) {
-      const body = token.slice(2);
-      const eq = body.indexOf('=');
-      if (eq >= 0) flags[body.slice(0, eq)] = body.slice(eq + 1);
-      else flags[body] = '1';
-      continue;
-    }
-    positional.push(token);
-  }
-  return { positional, flags };
-}
+function normalizeScope(scope, index = 0) {
+  const out = invokeOrchestration('scope.detect_overlaps', {
+    scopes: [scope && typeof scope === 'object' ? scope : {}],
+  });
 
-function parseJson(raw, fallback, errorCode) {
-  if (raw == null || String(raw).trim() === '') return { ok: true, value: fallback };
-  try {
-    return { ok: true, value: JSON.parse(String(raw)) };
-  } catch {
-    return { ok: false, reason_code: errorCode };
-  }
-}
-
-function normalizeList(input, { upper = false } = {}) {
-  const source = Array.isArray(input)
-    ? input
-    : typeof input === 'string'
-      ? input.split(',')
-      : [];
-  const out = [];
-  const seen = new Set();
-  for (const row of source) {
-    const normalized = String(row || '').trim();
-    if (!normalized) continue;
-    const value = upper ? normalized.toUpperCase() : normalized.replace(/\\/g, '/');
-    if (seen.has(value)) continue;
-    seen.add(value);
-    out.push(value);
-  }
-  return out;
-}
-
-function normalizePathPattern(raw) {
-  return String(raw || '').trim().replace(/\\/g, '/').replace(/^\.\//, '');
-}
-
-function pathPatternOverlaps(leftRaw, rightRaw) {
-  const left = normalizePathPattern(leftRaw);
-  const right = normalizePathPattern(rightRaw);
-  if (!left || !right) return false;
-  if (left === right) return true;
-
-  const leftPrefix = left.endsWith('*') ? left.slice(0, -1) : '';
-  const rightPrefix = right.endsWith('*') ? right.slice(0, -1) : '';
-
-  if (leftPrefix && right.startsWith(leftPrefix)) return true;
-  if (rightPrefix && left.startsWith(rightPrefix)) return true;
-  if (!leftPrefix && rightPrefix && left.startsWith(rightPrefix)) return true;
-  if (!rightPrefix && leftPrefix && right.startsWith(leftPrefix)) return true;
-  return false;
-}
-
-function findingMatchesPathScope(finding, pathScopes = []) {
-  if (!Array.isArray(pathScopes) || pathScopes.length === 0) return true;
-  const location = normalizePathPattern(finding && finding.location ? finding.location : '');
-  if (!location) return false;
-
-  for (const rawPattern of pathScopes) {
-    const pattern = normalizePathPattern(rawPattern);
-    if (!pattern) continue;
-    if (pattern.endsWith('*')) {
-      const prefix = pattern.slice(0, -1);
-      if (location.startsWith(prefix)) return true;
-      continue;
-    }
-    if (location === pattern || location.startsWith(`${pattern}:`) || location.startsWith(`${pattern}#`)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function findingMatchesSeriesScope(finding, seriesScopes = []) {
-  if (!Array.isArray(seriesScopes) || seriesScopes.length === 0) return true;
-  const itemId = String(finding && finding.item_id ? finding.item_id : '').trim().toUpperCase();
-  if (!itemId) return false;
-  return seriesScopes.some((series) => itemId.startsWith(String(series || '').toUpperCase()));
-}
-
-function normalizeScope(rawScope, index = 0) {
-  const scope = rawScope && typeof rawScope === 'object' && !Array.isArray(rawScope) ? rawScope : {};
-  const scopeIdRaw = String(scope.scope_id || scope.scopeId || `${SCOPE_ID_FALLBACK_PREFIX}-${index + 1}`)
-    .trim()
-    .toLowerCase();
-
-  const scopeId = SCOPE_ID_PATTERN.test(scopeIdRaw)
-    ? scopeIdRaw
-    : `${SCOPE_ID_FALLBACK_PREFIX}-${index + 1}`;
-
-  const series = normalizeList(scope.series, { upper: true });
-  const paths = normalizeList(scope.paths, { upper: false }).map(normalizePathPattern).filter(Boolean);
-
-  if (series.length === 0 && paths.length === 0) {
+  if (!out || !out.ok) {
     return {
       ok: false,
-      reason_code: 'scope_missing_series_and_paths',
-      scope_id: scopeId
+      reason_code: String(out && out.reason_code ? out.reason_code : 'scope_invalid'),
+      scope_id: String(
+        (scope && (scope.scope_id || scope.scopeId)) || `${SCOPE_ID_FALLBACK_PREFIX}-${index + 1}`
+      ).toLowerCase(),
+    };
+  }
+
+  const normalized = Array.isArray(out.normalized_scopes) ? out.normalized_scopes[0] : null;
+  if (!normalized || typeof normalized !== 'object') {
+    return {
+      ok: false,
+      reason_code: 'scope_invalid',
+      scope_id: String(
+        (scope && (scope.scope_id || scope.scopeId)) || `${SCOPE_ID_FALLBACK_PREFIX}-${index + 1}`
+      ).toLowerCase(),
     };
   }
 
   return {
     ok: true,
-    scope: {
-      scope_id: scopeId,
-      series,
-      paths
-    }
+    scope: normalized,
   };
 }
 
 function detectScopeOverlaps(scopes = []) {
-  const overlaps = [];
-  const normalized = [];
-
-  for (let index = 0; index < scopes.length; index += 1) {
-    const normalizedScope = normalizeScope(scopes[index], index);
-    if (!normalizedScope.ok) {
-      return {
-        ok: false,
-        reason_code: normalizedScope.reason_code,
-        scope_id: normalizedScope.scope_id,
-        overlaps: []
-      };
-    }
-    normalized.push(normalizedScope.scope);
+  const out = invokeOrchestration('scope.detect_overlaps', {
+    scopes: Array.isArray(scopes) ? scopes : [],
+  });
+  if (out && typeof out.ok === 'boolean') {
+    return {
+      ok: out.ok,
+      reason_code: String(out.reason_code || (out.ok ? 'scope_non_overlap_ok' : 'scope_overlap_detected')),
+      normalized_scopes: Array.isArray(out.normalized_scopes) ? out.normalized_scopes : [],
+      overlaps: Array.isArray(out.overlaps) ? out.overlaps : [],
+      scope_id: out.scope_id || null,
+    };
   }
-
-  for (let leftIndex = 0; leftIndex < normalized.length; leftIndex += 1) {
-    for (let rightIndex = leftIndex + 1; rightIndex < normalized.length; rightIndex += 1) {
-      const left = normalized[leftIndex];
-      const right = normalized[rightIndex];
-
-      const overlappingSeries = left.series.filter((token) => right.series.includes(token));
-      const overlappingPaths = [];
-
-      for (const leftPath of left.paths) {
-        for (const rightPath of right.paths) {
-          if (pathPatternOverlaps(leftPath, rightPath)) {
-            overlappingPaths.push({ left: leftPath, right: rightPath });
-          }
-        }
-      }
-
-      if (overlappingSeries.length > 0 || overlappingPaths.length > 0) {
-        overlaps.push({
-          left_scope_id: left.scope_id,
-          right_scope_id: right.scope_id,
-          overlapping_series: overlappingSeries,
-          overlapping_paths: overlappingPaths
-        });
-      }
-    }
-  }
-
   return {
-    ok: overlaps.length === 0,
-    reason_code: overlaps.length === 0 ? 'scope_non_overlap_ok' : 'scope_overlap_detected',
-    normalized_scopes: normalized,
-    overlaps
+    ok: false,
+    reason_code: 'orchestration_bridge_error',
+    normalized_scopes: [],
+    overlaps: [],
   };
 }
 
 function findingInScope(finding, scope) {
-  const scopeNormalized = normalizeScope(scope, 0);
-  if (!scopeNormalized.ok) {
+  const classified = classifyFindingsByScope([finding], scope, '');
+  if (!classified.ok) {
     return {
       ok: false,
-      reason_code: scopeNormalized.reason_code,
+      reason_code: classified.reason_code || 'scope_classification_failed',
       in_scope: false,
-      scope_id: scopeNormalized.scope_id
+      scope_id: scope && scope.scope_id ? scope.scope_id : null,
     };
   }
 
-  const normalizedScope = scopeNormalized.scope;
-  const matchesSeries = findingMatchesSeriesScope(finding, normalizedScope.series);
-  const matchesPaths = findingMatchesPathScope(finding, normalizedScope.paths);
-  const inScope = matchesSeries && matchesPaths;
+  if (classified.in_scope.length > 0) {
+    return {
+      ok: true,
+      reason_code: 'finding_in_scope',
+      in_scope: true,
+      scope_id: scope && scope.scope_id ? scope.scope_id : null,
+      matches_series: true,
+      matches_paths: true,
+    };
+  }
 
+  const violation = classified.violations[0] || {};
   return {
     ok: true,
-    reason_code: inScope ? 'finding_in_scope' : 'finding_out_of_scope',
-    in_scope: inScope,
-    scope_id: normalizedScope.scope_id,
-    matches_series: matchesSeries,
-    matches_paths: matchesPaths
+    reason_code: 'finding_out_of_scope',
+    in_scope: false,
+    scope_id: violation.scope_id || (scope && scope.scope_id ? scope.scope_id : null),
+    matches_series: Boolean(violation.matches_series),
+    matches_paths: Boolean(violation.matches_paths),
   };
 }
 
 function classifyFindingsByScope(findings = [], scope, agentId = '') {
-  const inScope = [];
-  const outOfScope = [];
-  const violations = [];
+  const out = invokeOrchestration('scope.classify_findings', {
+    findings: Array.isArray(findings) ? findings : [],
+    scope: scope && typeof scope === 'object' ? scope : {},
+    agent_id: String(agentId || '').trim(),
+  });
 
-  const normalizedAgentId = String(agentId || '').trim() || undefined;
-
-  for (const finding of Array.isArray(findings) ? findings : []) {
-    const verdict = findingInScope(finding, scope);
-    if (!verdict.ok) {
-      outOfScope.push(finding);
-      violations.push({
-        reason_code: verdict.reason_code,
-        item_id: finding && finding.item_id ? finding.item_id : null,
-        location: finding && finding.location ? finding.location : null,
-        agent_id: normalizedAgentId,
-        scope_id: verdict.scope_id || null
-      });
-      continue;
-    }
-
-    if (verdict.in_scope) {
-      inScope.push(finding);
-      continue;
-    }
-
-    outOfScope.push(finding);
-    violations.push({
-      reason_code: 'out_of_scope_finding',
-      item_id: finding && finding.item_id ? finding.item_id : null,
-      location: finding && finding.location ? finding.location : null,
-      agent_id: normalizedAgentId,
-      scope_id: verdict.scope_id,
-      matches_series: verdict.matches_series,
-      matches_paths: verdict.matches_paths
-    });
+  if (out && typeof out.ok === 'boolean') {
+    return {
+      ok: out.ok,
+      type: String(out.type || 'orchestration_scope_classification'),
+      in_scope: Array.isArray(out.in_scope) ? out.in_scope : [],
+      out_of_scope: Array.isArray(out.out_of_scope) ? out.out_of_scope : [],
+      violations: Array.isArray(out.violations) ? out.violations : [],
+      reason_code: out.reason_code ? String(out.reason_code) : undefined,
+    };
   }
 
   return {
-    ok: true,
+    ok: false,
     type: 'orchestration_scope_classification',
-    in_scope: inScope,
-    out_of_scope: outOfScope,
-    violations
+    reason_code: 'orchestration_bridge_error',
+    in_scope: [],
+    out_of_scope: [],
+    violations: [],
   };
 }
 
@@ -267,7 +134,7 @@ function run(argv = process.argv.slice(2)) {
       return {
         ok: false,
         type: 'orchestration_scope_validate',
-        reason_code: scopePayload.reason_code
+        reason_code: scopePayload.reason_code,
       };
     }
 
@@ -285,7 +152,7 @@ function run(argv = process.argv.slice(2)) {
       return {
         ok: false,
         type: 'orchestration_scope_classification',
-        reason_code: scopePayload.reason_code
+        reason_code: scopePayload.reason_code,
       };
     }
 
@@ -298,7 +165,7 @@ function run(argv = process.argv.slice(2)) {
       return {
         ok: false,
         type: 'orchestration_scope_classification',
-        reason_code: findingsPayload.reason_code
+        reason_code: findingsPayload.reason_code,
       };
     }
 
@@ -313,7 +180,7 @@ function run(argv = process.argv.slice(2)) {
     ok: false,
     type: 'orchestration_scope_command',
     reason_code: `unsupported_command:${command}`,
-    commands: ['validate', 'overlap', 'classify']
+    commands: ['validate', 'overlap', 'classify'],
   };
 }
 
@@ -330,5 +197,5 @@ module.exports = {
   detectScopeOverlaps,
   findingInScope,
   classifyFindingsByScope,
-  run
+  run,
 };

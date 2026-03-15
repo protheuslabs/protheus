@@ -1,39 +1,25 @@
 #!/usr/bin/env node
 'use strict';
 
-const {
-  ensureTaskGroup,
-  queryTaskGroup,
-  updateAgentStatus,
-  statusCounts,
-  TERMINAL_AGENT_STATUSES
-} = require('./taskgroup.ts');
+const { parseArgs, parseJson, invokeOrchestration } = require('./core_bridge.ts');
 
-function parseArgs(argv = []) {
-  const positional = [];
-  const flags = {};
-  for (const raw of Array.isArray(argv) ? argv : []) {
-    const token = String(raw || '').trim();
-    if (!token) continue;
-    if (token.startsWith('--')) {
-      const body = token.slice(2);
-      const eq = body.indexOf('=');
-      if (eq >= 0) flags[body.slice(0, eq)] = body.slice(eq + 1);
-      else flags[body] = '1';
-      continue;
-    }
-    positional.push(token);
+function statusCounts(group) {
+  const counts = {
+    pending: 0,
+    running: 0,
+    done: 0,
+    failed: 0,
+    timeout: 0,
+    total: 0,
+  };
+  const agents = Array.isArray(group && group.agents) ? group.agents : [];
+  for (const agent of agents) {
+    const status = String(agent && agent.status ? agent.status : 'pending').toLowerCase();
+    if (!(status in counts)) continue;
+    counts[status] += 1;
+    counts.total += 1;
   }
-  return { positional, flags };
-}
-
-function parseJson(raw, fallback, reasonCode) {
-  if (raw == null || String(raw).trim() === '') return { ok: true, value: fallback };
-  try {
-    return { ok: true, value: JSON.parse(String(raw)) };
-  } catch {
-    return { ok: false, reason_code: reasonCode };
-  }
+  return counts;
 }
 
 function partialCountFromGroup(group) {
@@ -53,7 +39,7 @@ function partialCountFromGroup(group) {
 }
 
 function completionSummary(taskGroup) {
-  const counts = statusCounts(taskGroup);
+  const counts = statusCounts(taskGroup || {});
   const terminalTotal = counts.done + counts.failed + counts.timeout;
   const complete = counts.total > 0 && terminalTotal === counts.total;
   return {
@@ -67,7 +53,7 @@ function completionSummary(taskGroup) {
     partial_count: partialCountFromGroup(taskGroup),
     total_count: counts.total,
     complete,
-    counts
+    counts,
   };
 }
 
@@ -82,92 +68,75 @@ function buildCompletionNotification(summary, taskGroup) {
     timeout_count: summary.timeout_count,
     partial_count: summary.partial_count,
     total_count: summary.total_count,
-    generated_at: new Date().toISOString()
+    generated_at: new Date().toISOString(),
   };
 }
 
 function ensureAndSummarize(taskGroupId, options = {}) {
-  const ensured = ensureTaskGroup({ task_group_id: taskGroupId }, options);
-  if (!ensured.ok) return ensured;
-  const summary = completionSummary(ensured.task_group);
+  const out = invokeOrchestration('completion.status', {
+    task_group_id: String(taskGroupId || '').trim().toLowerCase(),
+    root_dir: options.rootDir || options.root_dir || undefined,
+  });
+  if (!out || !out.ok) {
+    return {
+      ok: false,
+      type: 'orchestration_completion_summary',
+      reason_code: String(out && out.reason_code ? out.reason_code : 'orchestration_bridge_error'),
+    };
+  }
   return {
     ok: true,
     type: 'orchestration_completion_summary',
-    task_group: ensured.task_group,
-    summary,
-    notification: summary.complete ? buildCompletionNotification(summary, ensured.task_group) : null
+    task_group: out.task_group,
+    summary: out.summary,
+    notification: out.notification || null,
   };
 }
 
 function trackAgentCompletion(taskGroupId, update, options = {}) {
-  const normalized = update && typeof update === 'object' && !Array.isArray(update) ? update : {};
-  const agentId = String(normalized.agent_id || normalized.agentId || '').trim();
-  const status = String(normalized.status || '').trim().toLowerCase();
-  if (!agentId) {
+  const out = invokeOrchestration('completion.track', {
+    task_group_id: String(taskGroupId || '').trim().toLowerCase(),
+    update: update && typeof update === 'object' ? update : {},
+    root_dir: options.rootDir || options.root_dir || undefined,
+  });
+  if (!out || !out.ok) {
     return {
       ok: false,
       type: 'orchestration_completion_track',
-      reason_code: 'missing_agent_id'
+      reason_code: String(out && out.reason_code ? out.reason_code : 'orchestration_bridge_error'),
     };
   }
-  if (!TERMINAL_AGENT_STATUSES.has(status) && status !== 'pending' && status !== 'running') {
-    return {
-      ok: false,
-      type: 'orchestration_completion_track',
-      reason_code: `invalid_agent_status:${status || '<empty>'}`
-    };
-  }
-
-  const details = normalized.details && typeof normalized.details === 'object' && !Array.isArray(normalized.details)
-    ? normalized.details
-    : {};
-
-  const updated = updateAgentStatus(taskGroupId, agentId, status, details, options);
-  if (!updated.ok) return updated;
-
-  const summary = completionSummary(updated.task_group);
   return {
     ok: true,
     type: 'orchestration_completion_track',
-    task_group: updated.task_group,
-    summary,
-    notification: summary.complete ? buildCompletionNotification(summary, updated.task_group) : null
+    task_group: out.task_group,
+    summary: out.summary,
+    notification: out.notification || null,
   };
 }
 
 function trackBatchCompletion(taskGroupId, updates = [], options = {}) {
-  const source = Array.isArray(updates) ? updates : [];
-  const results = [];
-
-  for (const update of source) {
-    const tracked = trackAgentCompletion(taskGroupId, update, options);
-    if (!tracked.ok) {
-      return {
-        ok: false,
-        type: 'orchestration_completion_track_batch',
-        reason_code: tracked.reason_code || 'batch_update_failed',
-        failed_update: update
-      };
-    }
-    results.push({
-      agent_id: String(update && (update.agent_id || update.agentId) ? update.agent_id || update.agentId : '').trim(),
-      status: String(update && update.status ? update.status : '').trim().toLowerCase(),
-      summary: tracked.summary
-    });
+  const out = invokeOrchestration('completion.batch', {
+    task_group_id: String(taskGroupId || '').trim().toLowerCase(),
+    updates: Array.isArray(updates) ? updates : [],
+    root_dir: options.rootDir || options.root_dir || undefined,
+  });
+  if (!out || !out.ok) {
+    return {
+      ok: false,
+      type: 'orchestration_completion_track_batch',
+      reason_code: String(out && out.reason_code ? out.reason_code : 'orchestration_bridge_error'),
+      failed_update: out ? out.failed_update : null,
+    };
   }
-
-  const query = queryTaskGroup(taskGroupId, options);
-  if (!query.ok) return query;
-  const summary = completionSummary(query.task_group);
-
   return {
     ok: true,
     type: 'orchestration_completion_track_batch',
-    task_group: query.task_group,
-    summary,
-    updates_applied: results.length,
-    updates: results,
-    notification: summary.complete ? buildCompletionNotification(summary, query.task_group) : null
+    task_group: out.task_group,
+    summary: out.summary,
+    updates_applied: Number.isFinite(Number(out.updates_applied)) ? Number(out.updates_applied) : 0,
+    updates: Array.isArray(out.updates) ? out.updates : [],
+    notification: out.notification || null,
   };
 }
 
@@ -186,7 +155,7 @@ function run(argv = process.argv.slice(2)) {
     return {
       ok: false,
       type: 'orchestration_completion_command',
-      reason_code: 'missing_task_group_id'
+      reason_code: 'missing_task_group_id',
     };
   }
 
@@ -200,13 +169,13 @@ function run(argv = process.argv.slice(2)) {
       return {
         ok: false,
         type: 'orchestration_completion_track',
-        reason_code: detailsPayload.reason_code
+        reason_code: detailsPayload.reason_code,
       };
     }
     return trackAgentCompletion(taskGroupId, {
       agent_id: parsed.flags['agent-id'] || parsed.flags.agent_id || '',
       status: parsed.flags.status || '',
-      details: detailsPayload.value
+      details: detailsPayload.value,
     });
   }
 
@@ -216,7 +185,7 @@ function run(argv = process.argv.slice(2)) {
       return {
         ok: false,
         type: 'orchestration_completion_track_batch',
-        reason_code: updatesPayload.reason_code
+        reason_code: updatesPayload.reason_code,
       };
     }
     return trackBatchCompletion(taskGroupId, updatesPayload.value);
@@ -226,7 +195,7 @@ function run(argv = process.argv.slice(2)) {
     ok: false,
     type: 'orchestration_completion_command',
     reason_code: `unsupported_command:${command}`,
-    commands: ['status', 'track', 'batch']
+    commands: ['status', 'track', 'batch'],
   };
 }
 
@@ -242,5 +211,5 @@ module.exports = {
   ensureAndSummarize,
   trackAgentCompletion,
   trackBatchCompletion,
-  run
+  run,
 };

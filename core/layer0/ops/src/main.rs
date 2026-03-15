@@ -641,6 +641,11 @@ fn main() {
             let exit = protheus_ops_core::execution_yield_recovery::run(&cwd, &rest);
             std::process::exit(exit);
         }
+        "orchestration" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::orchestration::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
         "protheus-control-plane" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::protheus_control_plane::run(&cwd, &rest);

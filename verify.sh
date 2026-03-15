@@ -134,6 +134,7 @@ run_protheus_ops() {
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:v8:runtime-proof:gate
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:dod:gate
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s test:ops:srs-contract-runtime-evidence
+  run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:churn:guard
 )
 
 run_origin_integrity run --strict=1

@@ -3044,7 +3044,7 @@
       "wave": "done"
     },
     {
-      "acceptance": "Coordinator implementation partitions work, deduplicates findings (same item_id), merges severity ratings, and emits unified report; implemented in `client/cognition/orchestration/coordinator.ts` and validated by `tests/client/cognition/coordinator.test.js`.",
+      "acceptance": "Coordinator implementation partitions work, deduplicates findings (same item_id), merges severity ratings, and emits unified report; authority is `core/layer0/ops/src/orchestration.rs` with client wrapper `client/cognition/orchestration/coordinator.ts`; validated by `tests/client/cognition/coordinator.test.js` and `core/layer0/ops/tests/orchestration_domain_integration.rs`.",
       "class": "backlog",
       "dependencies": [],
       "id": "REQ-38-001",
@@ -3054,7 +3054,7 @@
       "wave": "REQ"
     },
     {
-      "acceptance": "Shared scratchpad at `local/workspace/scratchpad/{task_id}.json` supports read/write of progress, findings, checkpoints; schema versioned; cleaned up on completion; implemented in `client/cognition/orchestration/scratchpad.ts` and validated by `tests/client/cognition/scratchpad.test.js`.",
+      "acceptance": "Shared scratchpad at `local/workspace/scratchpad/{task_id}.json` supports read/write of progress, findings, checkpoints; schema versioned; cleaned up on completion; authority is `core/layer0/ops/src/orchestration.rs` with client wrapper `client/cognition/orchestration/scratchpad.ts`; validated by `tests/client/cognition/scratchpad.test.js` and `core/layer0/ops/tests/orchestration_domain_integration.rs`.",
       "class": "backlog",
       "dependencies": [],
       "id": "REQ-38-002",
@@ -3064,7 +3064,7 @@
       "wave": "REQ"
     },
     {
-      "acceptance": "Agents write checkpoint every 10 items or 2 minutes; on timeout, return partial results + checkpoint location; one automatic retry; implemented in `client/cognition/orchestration/checkpoint.ts` and validated by `tests/client/cognition/checkpoint.test.js`.",
+      "acceptance": "Agents write checkpoint every 10 items or 2 minutes; on timeout, return partial results + checkpoint location; one automatic retry; authority is `core/layer0/ops/src/orchestration.rs` with client wrapper `client/cognition/orchestration/checkpoint.ts`; validated by `tests/client/cognition/checkpoint.test.js`.",
       "class": "backlog",
       "dependencies": [],
       "id": "REQ-38-003",
@@ -3074,7 +3074,7 @@
       "wave": "REQ"
     },
     {
-      "acceptance": "Scope format supports `series:[]` and `paths:[]`; coordinator validates non-overlap before spawning; scope violations logged separately; validated by `tests/client/cognition/scope.*.test.js`.",
+      "acceptance": "Scope format supports `series:[]` and `paths:[]`; coordinator validates non-overlap before spawning; scope violations logged separately; authority is `core/layer0/ops/src/orchestration.rs` with client wrapper `client/cognition/orchestration/scope.ts`; validated by `tests/client/cognition/scope.*.test.js`.",
       "class": "backlog",
       "dependencies": [],
       "id": "REQ-38-004",
@@ -3084,7 +3084,7 @@
       "wave": "REQ"
     },
     {
-      "acceptance": "Schema defined in `client/cognition/orchestration/schemas/finding-v1.json` with required fields (audit_id, item_id, severity, status, location, evidence, timestamp); severity/status enums enforced via `client/cognition/orchestration/schema_runtime.ts`; validated by `tests/client/cognition/schema.test.js`.",
+      "acceptance": "Schema defined in `client/cognition/orchestration/schemas/finding-v1.json` with required fields (audit_id, item_id, severity, status, location, evidence, timestamp); severity/status enums enforced in core authority `core/layer0/ops/src/orchestration.rs` with client wrapper `client/cognition/orchestration/schema_runtime.ts`; validated by `tests/client/cognition/schema.test.js`.",
       "class": "backlog",
       "dependencies": [],
       "id": "REQ-38-005",
@@ -3094,7 +3094,7 @@
       "wave": "REQ"
     },
     {
-      "acceptance": "Task group ID assigned at spawn; system tracks agent status; auto-notify parent when all done/failed/timeout; include counts in notification; validated by `tests/client/cognition/completion.*.test.js`.",
+      "acceptance": "Task group ID assigned at spawn; system tracks agent status; auto-notify parent when all done/failed/timeout; include counts in notification; authority is `core/layer0/ops/src/orchestration.rs` with client wrappers `client/cognition/orchestration/completion.ts` and `client/cognition/orchestration/taskgroup.ts`; validated by `tests/client/cognition/completion.*.test.js`.",
       "class": "backlog",
       "dependencies": [],
       "id": "REQ-38-006",
@@ -3104,7 +3104,7 @@
       "wave": "REQ"
     },
     {
-      "acceptance": "Task group ID format `{task_type}-{timestamp}-{nonce}`; all subagents tagged; API supports group querying; metadata includes created_at, coordinator_session, agent_count, status; validated by `tests/client/cognition/taskgroup.*.test.js`.",
+      "acceptance": "Task group ID format `{task_type}-{timestamp}-{nonce}`; all subagents tagged; API supports group querying; metadata includes created_at, coordinator_session, agent_count, status; authority is `core/layer0/ops/src/orchestration.rs` with client wrapper `client/cognition/orchestration/taskgroup.ts`; validated by `tests/client/cognition/taskgroup.*.test.js`.",
       "class": "backlog",
       "dependencies": [],
       "id": "REQ-38-007",
@@ -3114,7 +3114,7 @@
       "wave": "REQ"
     },
     {
-      "acceptance": "API `sessions_history(sessionKey, includeTools=true)` returns partial results; fallback to checkpoint files; parent can decide retry/continue/abort; validated by `tests/client/cognition/partial.*.test.js`.",
+      "acceptance": "Session-history partial retrieval plus checkpoint fallback supports retry/continue/abort decisions; authority is `core/layer0/ops/src/orchestration.rs` with client wrapper `client/cognition/orchestration/partial.ts`; validated by `tests/client/cognition/partial.*.test.js`.",
       "class": "backlog",
       "dependencies": [],
       "id": "REQ-38-008",

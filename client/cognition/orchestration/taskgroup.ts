@@ -1,14 +1,12 @@
 #!/usr/bin/env node
 'use strict';
 
-const fs = require('node:fs');
 const path = require('node:path');
 const {
   parseArgs,
-  slug,
-  timestampToken,
-  nonceToken
-} = require('./cli_shared.ts');
+  parseJson,
+  invokeOrchestration,
+} = require('./core_bridge.ts');
 const { runTaskGroupCli } = require('./taskgroup_cli.ts');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
@@ -18,6 +16,34 @@ const GROUP_ID_PATTERN = /^[a-z0-9][a-z0-9._:-]{5,127}$/;
 const AGENT_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{1,127}$/;
 const ALLOWED_AGENT_STATUSES = new Set(['pending', 'running', 'done', 'failed', 'timeout']);
 const TERMINAL_AGENT_STATUSES = new Set(['done', 'failed', 'timeout']);
+
+function slug(raw, fallback = 'task', maxLen = 48) {
+  const normalized = String(raw || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, Math.max(4, Number(maxLen) || 48));
+  return normalized || fallback;
+}
+
+function timestampToken(nowMs = Date.now()) {
+  const d = new Date(nowMs);
+  const year = String(d.getUTCFullYear());
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const hour = String(d.getUTCHours()).padStart(2, '0');
+  const minute = String(d.getUTCMinutes()).padStart(2, '0');
+  const second = String(d.getUTCSeconds()).padStart(2, '0');
+  return `${year}${month}${day}${hour}${minute}${second}`;
+}
+
+function nonceToken(length = 6) {
+  const width = Math.max(4, Number(length) || 6);
+  return [...Array(width)]
+    .map(() => Math.floor(Math.random() * 16).toString(16))
+    .join('');
+}
 
 function generateTaskGroupId(taskType = 'task', options = {}) {
   const nowMs = Number.isFinite(Number(options.now_ms)) ? Number(options.now_ms) : Date.now();
@@ -31,59 +57,8 @@ function taskGroupPath(taskGroupId, options = {}) {
   if (!GROUP_ID_PATTERN.test(id)) {
     throw new Error(`invalid_task_group_id:${taskGroupId || '<empty>'}`);
   }
-  const rootDir = options.rootDir || DEFAULT_TASKGROUP_DIR;
+  const rootDir = options.rootDir || options.root_dir || DEFAULT_TASKGROUP_DIR;
   return path.join(rootDir, `${id}.json`);
-}
-
-function normalizeAgentId(raw, index = 0) {
-  const id = String(raw || '').trim() || `agent-${index + 1}`;
-  if (!AGENT_ID_PATTERN.test(id)) {
-    throw new Error(`invalid_agent_id:${id}`);
-  }
-  return id;
-}
-
-function normalizeAgents(inputAgents = [], fallbackCount = 1) {
-  const source = Array.isArray(inputAgents) ? inputAgents : [];
-  const out = [];
-  const seen = new Set();
-
-  for (let index = 0; index < source.length; index += 1) {
-    const row = source[index];
-    const agentId = normalizeAgentId(
-      row && typeof row === 'object' && !Array.isArray(row) ? row.agent_id || row.agentId : row,
-      index
-    );
-    if (seen.has(agentId)) continue;
-    seen.add(agentId);
-    const statusRaw = String(
-      row && typeof row === 'object' && !Array.isArray(row) ? row.status || 'pending' : 'pending'
-    ).toLowerCase();
-    const status = ALLOWED_AGENT_STATUSES.has(statusRaw) ? statusRaw : 'pending';
-    out.push({
-      agent_id: agentId,
-      status,
-      updated_at: new Date().toISOString(),
-      details: row && typeof row === 'object' && row.details && typeof row.details === 'object'
-        ? row.details
-        : {}
-    });
-  }
-
-  const desiredCount = Math.max(1, Number.isFinite(Number(fallbackCount)) ? Number(fallbackCount) : 1);
-  while (out.length < desiredCount) {
-    const nextId = normalizeAgentId(`agent-${out.length + 1}`, out.length);
-    if (seen.has(nextId)) continue;
-    seen.add(nextId);
-    out.push({
-      agent_id: nextId,
-      status: 'pending',
-      updated_at: new Date().toISOString(),
-      details: {}
-    });
-  }
-
-  return out;
 }
 
 function statusCounts(group) {
@@ -93,7 +68,7 @@ function statusCounts(group) {
     done: 0,
     failed: 0,
     timeout: 0,
-    total: 0
+    total: 0,
   };
   const agents = Array.isArray(group && group.agents) ? group.agents : [];
   for (const agent of agents) {
@@ -116,227 +91,132 @@ function deriveGroupStatus(group) {
   return 'running';
 }
 
-function defaultTaskGroup(taskGroupId, input = {}) {
-  const now = new Date().toISOString();
-  const agentCount = Math.max(1, Number.isFinite(Number(input.agent_count)) ? Number(input.agent_count) : 1);
-  const agents = normalizeAgents(input.agents, agentCount);
-  return {
-    schema_version: TASKGROUP_SCHEMA_VERSION,
-    task_group_id: taskGroupId,
-    task_type: slug(input.task_type || 'task', 'task'),
-    coordinator_session: String(input.coordinator_session || '').trim() || null,
-    created_at: now,
-    updated_at: now,
-    agent_count: agents.length,
-    status: 'pending',
-    agents,
-    history: []
+function normalizeTaskGroupResponse(out, fallbackType) {
+  if (!out || typeof out !== 'object') {
+    return {
+      ok: false,
+      type: fallbackType,
+      reason_code: 'orchestration_bridge_error',
+    };
+  }
+
+  const response = {
+    ok: Boolean(out.ok),
+    type: String(out.type || fallbackType),
+    reason_code: out.reason_code ? String(out.reason_code) : undefined,
   };
+
+  if (typeof out.created === 'boolean') response.created = out.created;
+  if (out.file_path) {
+    response.file_path = String(out.file_path);
+    response.filePath = String(out.file_path);
+  }
+  if (out.task_group && typeof out.task_group === 'object') response.task_group = out.task_group;
+  if (out.counts && typeof out.counts === 'object') response.counts = out.counts;
+  if (out.task_group_id) response.task_group_id = String(out.task_group_id);
+  if (out.agent_id) response.agent_id = String(out.agent_id);
+  if (out.status) response.status = String(out.status);
+  if (out.previous_status) response.previous_status = String(out.previous_status);
+
+  return response;
 }
 
 function loadTaskGroup(taskGroupId, options = {}) {
-  const filePath = taskGroupPath(taskGroupId, options);
-  try {
-    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      throw new Error('invalid_taskgroup_payload');
-    }
-    parsed.schema_version = TASKGROUP_SCHEMA_VERSION;
-    parsed.task_group_id = String(parsed.task_group_id || taskGroupId).trim().toLowerCase();
-    parsed.agents = normalizeAgents(parsed.agents, parsed.agent_count || 1);
-    parsed.agent_count = parsed.agents.length;
-    parsed.history = Array.isArray(parsed.history) ? parsed.history : [];
-    parsed.status = deriveGroupStatus(parsed);
+  const query = queryTaskGroup(taskGroupId, options);
+  if (query.ok) {
     return {
       ok: true,
       exists: true,
-      file_path: filePath,
-      task_group: parsed
-    };
-  } catch {
-    return {
-      ok: true,
-      exists: false,
-      file_path: filePath,
-      task_group: null
+      file_path: query.file_path,
+      filePath: query.file_path,
+      task_group: query.task_group,
     };
   }
+
+  return {
+    ok: true,
+    exists: false,
+    file_path: taskGroupPath(taskGroupId, options),
+    filePath: taskGroupPath(taskGroupId, options),
+    task_group: null,
+  };
 }
 
 function saveTaskGroup(taskGroup, options = {}) {
-  const group = taskGroup && typeof taskGroup === 'object' && !Array.isArray(taskGroup)
-    ? Object.assign({}, taskGroup)
-    : null;
-  if (!group) {
+  if (!taskGroup || typeof taskGroup !== 'object' || Array.isArray(taskGroup)) {
     return {
       ok: false,
       type: 'orchestration_taskgroup_save',
-      reason_code: 'invalid_taskgroup'
+      reason_code: 'invalid_taskgroup',
     };
   }
 
-  const taskGroupId = String(group.task_group_id || '').trim().toLowerCase();
-  let filePath;
-  try {
-    filePath = taskGroupPath(taskGroupId, options);
-  } catch (error) {
-    return {
-      ok: false,
-      type: 'orchestration_taskgroup_save',
-      reason_code: String(error && error.message ? error.message : error)
-    };
+  const ensured = ensureTaskGroup(taskGroup, options);
+  if (!ensured.ok) return ensured;
+
+  const taskGroupId = ensured.task_group && ensured.task_group.task_group_id
+    ? ensured.task_group.task_group_id
+    : taskGroup.task_group_id;
+
+  const updates = Array.isArray(taskGroup.agents) ? taskGroup.agents : [];
+  for (const agent of updates) {
+    const status = String(agent && agent.status ? agent.status : 'pending').toLowerCase();
+    if (!ALLOWED_AGENT_STATUSES.has(status)) continue;
+    const out = updateAgentStatus(
+      taskGroupId,
+      String(agent && agent.agent_id ? agent.agent_id : ''),
+      status,
+      agent && typeof agent.details === 'object' ? agent.details : {},
+      options,
+    );
+    if (!out.ok) return out;
   }
 
-  group.schema_version = TASKGROUP_SCHEMA_VERSION;
-  group.agents = normalizeAgents(group.agents, group.agent_count || 1);
-  group.agent_count = group.agents.length;
-  group.status = deriveGroupStatus(group);
-  group.updated_at = new Date().toISOString();
-  if (!group.created_at) group.created_at = group.updated_at;
-  if (!Array.isArray(group.history)) group.history = [];
-
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, `${JSON.stringify(group, null, 2)}\n`);
+  const queried = queryTaskGroup(taskGroupId, options);
+  if (!queried.ok) return queried;
 
   return {
     ok: true,
     type: 'orchestration_taskgroup_save',
-    file_path: filePath,
-    task_group: group,
-    counts: statusCounts(group)
+    file_path: queried.file_path,
+    filePath: queried.file_path,
+    task_group: queried.task_group,
+    counts: queried.counts,
   };
 }
 
 function ensureTaskGroup(input = {}, options = {}) {
-  const hasRequestedId = String(input.task_group_id || input.taskGroupId || '').trim();
-  const taskGroupId = hasRequestedId
-    ? String(input.task_group_id || input.taskGroupId).trim().toLowerCase()
-    : generateTaskGroupId(input.task_type || input.taskType || 'task', {
-      now_ms: input.now_ms,
-      nonce: input.nonce
-    });
-
-  const loaded = loadTaskGroup(taskGroupId, options);
-  if (!loaded.ok) return loaded;
-  if (loaded.exists) {
-    return {
-      ok: true,
-      type: 'orchestration_taskgroup_ensure',
-      created: false,
-      file_path: loaded.file_path,
-      task_group: loaded.task_group,
-      counts: statusCounts(loaded.task_group)
-    };
-  }
-
-  const created = defaultTaskGroup(taskGroupId, {
-    task_type: input.task_type || input.taskType || 'task',
-    coordinator_session: input.coordinator_session || input.coordinatorSession || '',
-    agent_count: input.agent_count || input.agentCount || 1,
-    agents: input.agents
+  const out = invokeOrchestration('taskgroup.ensure', {
+    ...(input && typeof input === 'object' ? input : {}),
+    root_dir: options.rootDir || options.root_dir || undefined,
   });
-  const saved = saveTaskGroup(created, options);
-  if (!saved.ok) return saved;
-
-  return {
-    ok: true,
-    type: 'orchestration_taskgroup_ensure',
-    created: true,
-    file_path: saved.file_path,
-    task_group: saved.task_group,
-    counts: saved.counts
-  };
+  return normalizeTaskGroupResponse(out, 'orchestration_taskgroup_ensure');
 }
 
 function updateAgentStatus(taskGroupId, agentId, status, details = {}, options = {}) {
-  const ensure = ensureTaskGroup({ task_group_id: taskGroupId }, options);
-  if (!ensure.ok) return ensure;
-
-  const normalizedAgentId = normalizeAgentId(agentId || 'agent-1');
-  const normalizedStatus = String(status || '').trim().toLowerCase();
-  if (!ALLOWED_AGENT_STATUSES.has(normalizedStatus)) {
-    return {
-      ok: false,
-      type: 'orchestration_taskgroup_update_status',
-      reason_code: `invalid_agent_status:${status || '<empty>'}`
-    };
-  }
-
-  const group = ensure.task_group;
-  const now = new Date().toISOString();
-
-  let target = group.agents.find((row) => row.agent_id === normalizedAgentId);
-  if (!target) {
-    target = {
-      agent_id: normalizedAgentId,
-      status: 'pending',
-      updated_at: now,
-      details: {}
-    };
-    group.agents.push(target);
-    group.agent_count = group.agents.length;
-  }
-
-  const previousStatus = target.status;
-  target.status = normalizedStatus;
-  target.updated_at = now;
-  target.details = details && typeof details === 'object' && !Array.isArray(details)
-    ? Object.assign({}, target.details || {}, details)
-    : Object.assign({}, target.details || {});
-
-  group.history = Array.isArray(group.history) ? group.history : [];
-  group.history.push({
-    event: 'agent_status_update',
-    at: now,
-    agent_id: normalizedAgentId,
-    previous_status: previousStatus,
-    status: normalizedStatus,
-    terminal: TERMINAL_AGENT_STATUSES.has(normalizedStatus),
-    details: target.details
+  const out = invokeOrchestration('taskgroup.update_status', {
+    task_group_id: String(taskGroupId || '').trim().toLowerCase(),
+    agent_id: String(agentId || '').trim(),
+    status: String(status || '').trim().toLowerCase(),
+    details: details && typeof details === 'object' && !Array.isArray(details) ? details : {},
+    root_dir: options.rootDir || options.root_dir || undefined,
   });
-
-  const saved = saveTaskGroup(group, options);
-  if (!saved.ok) return saved;
-
-  return {
-    ok: true,
-    type: 'orchestration_taskgroup_update_status',
-    task_group_id: saved.task_group.task_group_id,
-    agent_id: normalizedAgentId,
-    status: normalizedStatus,
-    previous_status: previousStatus,
-    file_path: saved.file_path,
-    task_group: saved.task_group,
-    counts: saved.counts
-  };
+  return normalizeTaskGroupResponse(out, 'orchestration_taskgroup_update_status');
 }
 
 function queryTaskGroup(taskGroupId, options = {}) {
-  const loaded = loadTaskGroup(taskGroupId, options);
-  if (!loaded.ok) return loaded;
-  if (!loaded.exists) {
-    return {
-      ok: false,
-      type: 'orchestration_taskgroup_query',
-      reason_code: 'task_group_not_found',
-      task_group_id: String(taskGroupId || '').trim().toLowerCase()
-    };
-  }
-
-  return {
-    ok: true,
-    type: 'orchestration_taskgroup_query',
-    file_path: loaded.file_path,
-    task_group: loaded.task_group,
-    counts: statusCounts(loaded.task_group)
-  };
+  const out = invokeOrchestration('taskgroup.query', {
+    task_group_id: String(taskGroupId || '').trim().toLowerCase(),
+    root_dir: options.rootDir || options.root_dir || undefined,
+  });
+  return normalizeTaskGroupResponse(out, 'orchestration_taskgroup_query');
 }
 
 function run(argv = process.argv.slice(2)) {
   return runTaskGroupCli(argv, {
     ensureTaskGroup,
     queryTaskGroup,
-    updateAgentStatus
+    updateAgentStatus,
   });
 }
 
@@ -351,9 +231,11 @@ module.exports = {
   DEFAULT_TASKGROUP_DIR,
   TASKGROUP_SCHEMA_VERSION,
   GROUP_ID_PATTERN,
+  AGENT_ID_PATTERN,
   ALLOWED_AGENT_STATUSES,
   TERMINAL_AGENT_STATUSES,
   parseArgs,
+  parseJson,
   generateTaskGroupId,
   taskGroupPath,
   statusCounts,
@@ -363,5 +245,5 @@ module.exports = {
   ensureTaskGroup,
   updateAgentStatus,
   queryTaskGroup,
-  run
+  run,
 };

@@ -86,6 +86,7 @@ pub mod nexus_plane;
 pub mod observability_plane;
 pub mod offline_runtime_guard;
 pub mod offsite_backup;
+pub mod orchestration;
 pub mod ops_lane_runtime;
 pub mod organ_atrophy_controller;
 pub mod organism_layer;

@@ -28,3 +28,5 @@ jobs:
       - name: Verify runtime hygiene lane (legacy wrapper)
         run: |
           node tests/client-memory-tools/repo_hygiene_guard.test.js
+      - name: Churn guard (strict)
+        run: npm run -s ops:churn:guard

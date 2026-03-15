@@ -205,12 +205,12 @@ Updated: 2026-03-15 12:30 America/Denver
 - REQ-15 (Sandboxed Sub-Agent Execution) for scoped sub-agent spawning.
 - REQ-36 (Smart Memory) for shared state patterns.
 - Exit criteria:
-- Coordinator agent implementation in `client/cognition/orchestration/coordinator.ts` with partitioning, deduplication, and severity merging.
-- Shared scratchpad in `client/cognition/orchestration/scratchpad.ts` with read/write and cleanup.
-- Checkpointing in `client/cognition/orchestration/checkpoint.ts` with 10-item/2-min intervals and timeout recovery.
-- Scope boundaries in `client/cognition/orchestration/scope.ts` with overlap detection and out-of-scope violation reporting.
-- Completion triggers in `client/cognition/orchestration/completion.ts` and task-group metadata persistence in `client/cognition/orchestration/taskgroup.ts`.
-- Partial-result retrieval in `client/cognition/orchestration/partial.ts` with session-history + checkpoint fallback.
+- Core orchestration authority is implemented in `core/layer0/ops/src/orchestration.rs` (partitioning, deduplication, severity merging, scratchpad/taskgroup/checkpoint/partial retrieval/state transitions); `client/cognition/orchestration/coordinator.ts` is a thin wrapper.
+- Shared scratchpad semantics at `local/workspace/scratchpad/{task_id}.json` are authoritative in `core/layer0/ops/src/orchestration.rs`; `client/cognition/orchestration/scratchpad.ts` is a thin wrapper.
+- Checkpointing (10-item/2-min interval + timeout recovery + retry gating) is authoritative in `core/layer0/ops/src/orchestration.rs`; `client/cognition/orchestration/checkpoint.ts` is a thin wrapper.
+- Scope boundaries and overlap/violation handling are authoritative in `core/layer0/ops/src/orchestration.rs`; `client/cognition/orchestration/scope.ts` is a thin wrapper.
+- Completion triggers and task-group metadata persistence are authoritative in `core/layer0/ops/src/orchestration.rs`; `client/cognition/orchestration/completion.ts` and `client/cognition/orchestration/taskgroup.ts` are thin wrappers.
+- Partial-result retrieval (session-history + checkpoint fallback + retry/continue/abort decisions) is authoritative in `core/layer0/ops/src/orchestration.rs`; `client/cognition/orchestration/partial.ts` is a thin wrapper.
 - All tests passing: `npm run -s test:cognition:orchestration`.
 - Integration test: full orchestration flow in `tests/client/cognition/coordinator.test.js` with scope + task-group completion assertions.
 

@@ -1,190 +1,100 @@
 #!/usr/bin/env node
 'use strict';
 
-const { loadScratchpad } = require('./scratchpad.ts');
-
-function parseArgs(argv = []) {
-  const positional = [];
-  const flags = {};
-  for (const raw of Array.isArray(argv) ? argv : []) {
-    const token = String(raw || '').trim();
-    if (!token) continue;
-    if (token.startsWith('--')) {
-      const body = token.slice(2);
-      const eq = body.indexOf('=');
-      if (eq >= 0) flags[body.slice(0, eq)] = body.slice(eq + 1);
-      else flags[body] = '1';
-      continue;
-    }
-    positional.push(token);
-  }
-  return { positional, flags };
-}
-
-function parseJson(raw, fallback, reasonCode) {
-  if (raw == null || String(raw).trim() === '') return { ok: true, value: fallback };
-  try {
-    return { ok: true, value: JSON.parse(String(raw)) };
-  } catch {
-    return { ok: false, reason_code: reasonCode };
-  }
-}
+const { parseArgs, parseJson, invokeOrchestration } = require('./core_bridge.ts');
 
 function normalizeDecision(rawDecision, hasPartialResults) {
+  const out = invokeOrchestration('partial.normalize_decision', {
+    decision: String(rawDecision || ''),
+    has_partial_results: Boolean(hasPartialResults),
+  });
+  if (out && out.ok && out.decision) {
+    return String(out.decision);
+  }
   const value = String(rawDecision || '').trim().toLowerCase();
   if (value === 'retry' || value === 'continue' || value === 'abort') return value;
   return hasPartialResults ? 'continue' : 'retry';
 }
 
-function extractPartialFromSessionEntry(entry) {
-  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null;
-
-  const candidates = [
-    entry.partial_results,
-    entry.partialResults,
-    entry.partial,
-    entry.findings,
-    entry.result && entry.result.partial_results,
-    entry.result && entry.result.findings,
-    entry.output && entry.output.partial_results,
-    entry.output && entry.output.findings,
-    entry.payload && entry.payload.partial_results,
-    entry.payload && entry.payload.findings
-  ];
-
-  for (const candidate of candidates) {
-    if (!Array.isArray(candidate) || candidate.length === 0) continue;
+function retrievePartialResults(input = {}) {
+  const out = invokeOrchestration('partial.fetch', {
+    ...(input && typeof input === 'object' ? input : {}),
+  });
+  if (!out || typeof out.ok !== 'boolean') {
     return {
-      partial_results: candidate,
-      items_completed: Number.isFinite(Number(entry.items_completed))
-        ? Number(entry.items_completed)
-        : Number.isFinite(Number(entry.processed_count))
-          ? Number(entry.processed_count)
-          : candidate.length,
-      checkpoint_path: entry.checkpoint_path || entry.checkpointPath || null,
-      source_session_id: entry.session_id || entry.sessionId || null
+      ok: false,
+      type: 'orchestration_partial_retrieval',
+      reason_code: 'orchestration_bridge_error',
     };
   }
+  return out;
+}
 
-  return null;
+function extractPartialFromSessionEntry(entry) {
+  const out = retrievePartialResults({
+    task_id: 'partial-extract-probe',
+    session_history: [entry],
+    decision: 'continue',
+  });
+  if (!out.ok || out.source !== 'session_history' || !Array.isArray(out.findings_sofar)) {
+    return null;
+  }
+  return {
+    partial_results: out.findings_sofar,
+    items_completed: Number.isFinite(Number(out.items_completed)) ? Number(out.items_completed) : out.findings_sofar.length,
+    checkpoint_path: out.checkpoint_path || null,
+    source_session_id: out.source_session_id || null,
+  };
 }
 
 function fromSessionHistory(history = []) {
-  const source = Array.isArray(history) ? history : [];
-  for (let index = source.length - 1; index >= 0; index -= 1) {
-    const extracted = extractPartialFromSessionEntry(source[index]);
-    if (extracted) {
-      return {
-        ok: true,
-        type: 'orchestration_partial_from_session_history',
-        source: 'session_history',
-        items_completed: extracted.items_completed,
-        findings_sofar: extracted.partial_results,
-        checkpoint_path: extracted.checkpoint_path,
-        source_session_id: extracted.source_session_id
-      };
-    }
+  const out = retrievePartialResults({
+    task_id: 'partial-session-history-probe',
+    session_history: Array.isArray(history) ? history : [],
+    decision: 'continue',
+  });
+  if (out.ok && out.source === 'session_history') {
+    return {
+      ok: true,
+      type: 'orchestration_partial_from_session_history',
+      source: 'session_history',
+      items_completed: out.items_completed,
+      findings_sofar: Array.isArray(out.findings_sofar) ? out.findings_sofar : [],
+      checkpoint_path: out.checkpoint_path || null,
+      source_session_id: out.source_session_id || null,
+    };
   }
   return {
     ok: false,
     type: 'orchestration_partial_from_session_history',
-    reason_code: 'session_history_no_partial_results'
+    reason_code: 'session_history_no_partial_results',
   };
 }
 
 function latestCheckpointFromScratchpad(taskId, options = {}) {
-  const loaded = loadScratchpad(taskId, options);
-  if (!loaded || !loaded.scratchpad || !Array.isArray(loaded.scratchpad.checkpoints)) {
+  const out = retrievePartialResults({
+    task_id: String(taskId || '').trim(),
+    session_history: [],
+    root_dir: options.rootDir || options.root_dir || undefined,
+  });
+  if (!out.ok || out.source !== 'checkpoint') {
     return {
       ok: false,
       type: 'orchestration_partial_checkpoint_fallback',
-      reason_code: 'scratchpad_missing',
-      task_id: taskId,
-      checkpoint_path: loaded ? loaded.filePath : null
+      reason_code: out && out.checkpoint_reason ? out.checkpoint_reason : 'checkpoint_no_partial_results',
+      task_id: String(taskId || '').trim(),
+      checkpoint_path: out && out.checkpoint_path ? out.checkpoint_path : null,
     };
   }
-
-  const checkpoints = loaded.scratchpad.checkpoints;
-  const latest = checkpoints.length ? checkpoints[checkpoints.length - 1] : null;
-  if (!latest || !Array.isArray(latest.partial_results) || latest.partial_results.length === 0) {
-    return {
-      ok: false,
-      type: 'orchestration_partial_checkpoint_fallback',
-      reason_code: 'checkpoint_no_partial_results',
-      task_id: taskId,
-      checkpoint_path: loaded.filePath
-    };
-  }
-
   return {
     ok: true,
     type: 'orchestration_partial_checkpoint_fallback',
     source: 'checkpoint',
-    task_id: taskId,
-    checkpoint_path: loaded.filePath,
-    items_completed: Number.isFinite(Number(latest.processed_count))
-      ? Number(latest.processed_count)
-      : latest.partial_results.length,
-    findings_sofar: latest.partial_results,
-    retry_allowed: Boolean(latest.retry_allowed)
-  };
-}
-
-function retrievePartialResults(input = {}) {
-  const taskId = String(input.task_id || input.taskId || '').trim();
-  if (!taskId) {
-    return {
-      ok: false,
-      type: 'orchestration_partial_retrieval',
-      reason_code: 'missing_task_id'
-    };
-  }
-
-  const sessionHistory = Array.isArray(input.session_history || input.sessionHistory)
-    ? input.session_history || input.sessionHistory
-    : [];
-
-  const fromSessions = fromSessionHistory(sessionHistory);
-  if (fromSessions.ok) {
-    const decision = normalizeDecision(input.decision, true);
-    return {
-      ok: true,
-      type: 'orchestration_partial_retrieval',
-      source: fromSessions.source,
-      task_id: taskId,
-      items_completed: fromSessions.items_completed,
-      findings_sofar: fromSessions.findings_sofar,
-      checkpoint_path: fromSessions.checkpoint_path,
-      source_session_id: fromSessions.source_session_id,
-      decision
-    };
-  }
-
-  const checkpointFallback = latestCheckpointFromScratchpad(taskId, {
-    rootDir: input.root_dir || input.rootDir
-  });
-  if (!checkpointFallback.ok) {
-    return {
-      ok: false,
-      type: 'orchestration_partial_retrieval',
-      reason_code: 'partial_results_unavailable',
-      task_id: taskId,
-      attempted_sources: ['session_history', 'checkpoint'],
-      checkpoint_reason: checkpointFallback.reason_code
-    };
-  }
-
-  const decision = normalizeDecision(input.decision, true);
-  return {
-    ok: true,
-    type: 'orchestration_partial_retrieval',
-    source: checkpointFallback.source,
-    task_id: taskId,
-    items_completed: checkpointFallback.items_completed,
-    findings_sofar: checkpointFallback.findings_sofar,
-    checkpoint_path: checkpointFallback.checkpoint_path,
-    retry_allowed: checkpointFallback.retry_allowed,
-    decision
+    task_id: String(taskId || '').trim(),
+    checkpoint_path: out.checkpoint_path,
+    items_completed: out.items_completed,
+    findings_sofar: Array.isArray(out.findings_sofar) ? out.findings_sofar : [],
+    retry_allowed: Boolean(out.retry_allowed),
   };
 }
 
@@ -196,7 +106,7 @@ function run(argv = process.argv.slice(2)) {
       ok: false,
       type: 'orchestration_partial_command',
       reason_code: `unsupported_command:${command}`,
-      commands: ['fetch', 'status']
+      commands: ['fetch', 'status'],
     };
   }
 
@@ -216,7 +126,7 @@ function run(argv = process.argv.slice(2)) {
     return {
       ok: false,
       type: 'orchestration_partial_retrieval',
-      reason_code: sessionPayload.reason_code
+      reason_code: sessionPayload.reason_code,
     };
   }
 
@@ -224,7 +134,7 @@ function run(argv = process.argv.slice(2)) {
     task_id: taskId,
     session_history: sessionPayload.value,
     decision: parsed.flags.decision || '',
-    root_dir: parsed.flags['root-dir'] || parsed.flags.root_dir || ''
+    root_dir: parsed.flags['root-dir'] || parsed.flags.root_dir || '',
   });
 }
 
@@ -240,5 +150,5 @@ module.exports = {
   fromSessionHistory,
   latestCheckpointFromScratchpad,
   retrievePartialResults,
-  run
+  run,
 };
