@@ -16,10 +16,10 @@ function assert(cond, msg) {
 }
 
 function main() {
-  run('node scripts/ci/srs_actionable_map.mjs');
-  run('node scripts/ci/blocked_external_unblock_plan.mjs');
-  run('node scripts/ci/blocked_external_evidence_status.mjs');
-  run('node scripts/ci/blocked_external_packet_gate.mjs');
+  run('node tests/tooling/scripts/ci/srs_actionable_map.mjs');
+  run('node tests/tooling/scripts/ci/blocked_external_unblock_plan.mjs');
+  run('node tests/tooling/scripts/ci/blocked_external_evidence_status.mjs');
+  run('node tests/tooling/scripts/ci/blocked_external_packet_gate.mjs');
 
   assert(fs.existsSync(OUT_JSON), `missing gate artifact: ${OUT_JSON}`);
   const payload = JSON.parse(fs.readFileSync(OUT_JSON, 'utf8'));

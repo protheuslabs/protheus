@@ -23,6 +23,6 @@ Checks:
 
 1. `slack_status` readiness from `client/runtime/systems/ops/reminder_data_bridge.ts`
 2. `moltcheck_status` readiness from `client/runtime/systems/ops/reminder_data_bridge.ts`
-3. `deployment_health` from `scripts/utils/health-check-deployment.sh`
+3. `deployment_health` from `tests/tooling/scripts/utils/health-check-deployment.sh`
 
 This report is published daily via `.github/workflows/heartbeat-kpi.yml`.

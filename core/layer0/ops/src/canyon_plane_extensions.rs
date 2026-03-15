@@ -44,20 +44,24 @@ fn shell_which(bin: &str) -> Option<String> {
         return None;
     }
     let value = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    if value.is_empty() { None } else { Some(value) }
+    if value.is_empty() {
+        None
+    } else {
+        Some(value)
+    }
 }
 
 fn xcrun_find(bin: &str) -> Option<String> {
-    let output = Command::new("xcrun")
-        .arg("--find")
-        .arg(bin)
-        .output()
-        .ok()?;
+    let output = Command::new("xcrun").arg("--find").arg(bin).output().ok()?;
     if !output.status.success() {
         return None;
     }
     let value = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    if value.is_empty() { None } else { Some(value) }
+    if value.is_empty() {
+        None
+    } else {
+        Some(value)
+    }
 }
 
 fn command_path(bin: &str, env_key: &str) -> String {
@@ -495,10 +499,13 @@ pub(super) fn release_pipeline_command(
             errors.push(format!("tool_missing:{label}"));
         }
     }
-    let missing_optional_tools = [("llvm-profdata", profdata_bin.as_str()), ("llvm-bolt", bolt_bin.as_str())]
-        .into_iter()
-        .filter_map(|(label, bin)| (!command_exists(bin)).then(|| label.to_string()))
-        .collect::<Vec<_>>();
+    let missing_optional_tools = [
+        ("llvm-profdata", profdata_bin.as_str()),
+        ("llvm-bolt", bolt_bin.as_str()),
+    ]
+    .into_iter()
+    .filter_map(|(label, bin)| (!command_exists(bin)).then(|| label.to_string()))
+    .collect::<Vec<_>>();
 
     let artifact = root
         .join("target")
@@ -515,17 +522,25 @@ pub(super) fn release_pipeline_command(
     let mut pgo_profile_merged = false;
     let mut bolt_optimized = false;
     let mut used_fallback_artifact = false;
-    if errors.is_empty() && likely_real_binary(&artifact) == false && likely_real_binary(&fallback_artifact) {
+    if errors.is_empty()
+        && likely_real_binary(&artifact) == false
+        && likely_real_binary(&fallback_artifact)
+    {
         if let Some(parent) = artifact.parent() {
-            fs::create_dir_all(parent)
-                .map_err(|err| format!("release_pipeline_artifact_dir_failed:{}:{err}", parent.display()))?;
+            fs::create_dir_all(parent).map_err(|err| {
+                format!(
+                    "release_pipeline_artifact_dir_failed:{}:{err}",
+                    parent.display()
+                )
+            })?;
         }
-        fs::copy(&fallback_artifact, &artifact)
-            .map_err(|err| format!(
+        fs::copy(&fallback_artifact, &artifact).map_err(|err| {
+            format!(
                 "release_pipeline_fallback_copy_failed:{}:{}:{err}",
                 fallback_artifact.display(),
                 artifact.display()
-            ))?;
+            )
+        })?;
         run_status = Some(true);
         used_fallback_artifact = true;
     } else if errors.is_empty() {
@@ -850,12 +865,20 @@ pub(super) fn size_trust_command(
     let cold_start_ms = efficiency
         .get("cold_start_ms")
         .and_then(Value::as_u64)
-        .or_else(|| top1_fallback.as_ref().map(|(cold_start_ms, _, _, _, _)| *cold_start_ms))
+        .or_else(|| {
+            top1_fallback
+                .as_ref()
+                .map(|(cold_start_ms, _, _, _, _)| *cold_start_ms)
+        })
         .unwrap_or(9999);
     let idle_rss_mb = efficiency
         .get("idle_memory_mb")
         .and_then(Value::as_f64)
-        .or_else(|| top1_fallback.as_ref().map(|(_, _, idle_rss_mb, _, _)| *idle_rss_mb))
+        .or_else(|| {
+            top1_fallback
+                .as_ref()
+                .map(|(_, _, idle_rss_mb, _, _)| *idle_rss_mb)
+        })
         .unwrap_or(9999.0);
     let tasks_per_sec = top1_fallback
         .as_ref()

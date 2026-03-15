@@ -18,7 +18,7 @@ function parseJson(raw) {
 }
 
 function main() {
-  const run = spawnSync(process.execPath, ['scripts/ci/srs_execute_strict.mjs', '--dry-run=1'], {
+  const run = spawnSync(process.execPath, ['tests/tooling/scripts/ci/srs_execute_strict.mjs', '--dry-run=1'], {
     cwd: ROOT,
     encoding: 'utf8',
   });

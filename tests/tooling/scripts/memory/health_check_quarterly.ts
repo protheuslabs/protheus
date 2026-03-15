@@ -142,9 +142,9 @@ console.log('──────────────────────�
 
 const criticalFiles = [
   '$WORKSPACE_ROOT/client/runtime/config/model_adapters.json',
-  '$WORKSPACE_ROOT/memory/MEMORY_INDEX.md',
-  '$WORKSPACE_ROOT/memory/TAGS_INDEX.md',
-  '$WORKSPACE_ROOT/memory/SNIPPET_INDEX.md',
+  '$WORKSPACE_ROOT/local/workspace/memory/MEMORY_INDEX.md',
+  '$WORKSPACE_ROOT/local/workspace/memory/TAGS_INDEX.md',
+  '$WORKSPACE_ROOT/local/workspace/memory/SNIPPET_INDEX.md',
   '$WORKSPACE_ROOT/tests/tooling/scripts/memory/lint_memory.ts',
   '$WORKSPACE_ROOT/tests/tooling/scripts/memory/rebuild_exclusive.ts'
 ];
@@ -198,7 +198,7 @@ console.log();
 console.log('Quick backup command:');
 console.log('  tar -czf protheus-backup-$(date +%Y%m%d).tar.gz \\\
 ');
-console.log('    $WORKSPACE_ROOT/memory/ \\\
+console.log('    $WORKSPACE_ROOT/local/workspace/memory/ \\\
 ');
 console.log('    $WORKSPACE_ROOT/local/state/memory/ \\\
 ');

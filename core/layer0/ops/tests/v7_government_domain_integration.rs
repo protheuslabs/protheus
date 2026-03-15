@@ -49,7 +49,11 @@ fn v7_gov_001_1_to_001_9_runtime_contracts_proven() {
     assert_eq!(attest_exit, 0);
     let verify_exit = government_plane::run(
         root_path,
-        &["attestation".to_string(), "--op=verify".to_string(), "--strict=1".to_string()],
+        &[
+            "attestation".to_string(),
+            "--op=verify".to_string(),
+            "--strict=1".to_string(),
+        ],
     );
     assert_eq!(verify_exit, 0);
     let attest_latest = read_json(&latest_path(root_path));
@@ -185,7 +189,11 @@ fn v7_gov_001_1_to_001_9_runtime_contracts_proven() {
 
     let proofs_exit = government_plane::run(
         root_path,
-        &["proofs".to_string(), "--op=verify".to_string(), "--strict=1".to_string()],
+        &[
+            "proofs".to_string(),
+            "--op=verify".to_string(),
+            "--strict=1".to_string(),
+        ],
     );
     assert_eq!(proofs_exit, 1, "proofs may fail in isolated temp root");
     let proofs_latest = read_json(&latest_path(root_path));
@@ -206,7 +214,11 @@ fn v7_gov_001_1_to_001_9_runtime_contracts_proven() {
 
     let ato_exit = government_plane::run(
         root_path,
-        &["ato-pack".to_string(), "--op=generate".to_string(), "--strict=1".to_string()],
+        &[
+            "ato-pack".to_string(),
+            "--op=generate".to_string(),
+            "--strict=1".to_string(),
+        ],
     );
     assert_eq!(ato_exit, 0);
     let ato_latest = read_json(&latest_path(root_path));

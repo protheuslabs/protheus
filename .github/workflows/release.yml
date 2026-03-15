@@ -30,6 +30,8 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
 
       - name: Install dependencies
         run: npm ci
@@ -53,13 +55,59 @@ jobs:
           echo "No conventional commit requiring a release."
           exit 0
 
+      - name: Setup Nix
+        if: steps.semver.outputs.release_ready == '1'
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Install cargo-dist and musl toolchain
+        if: steps.semver.outputs.release_ready == '1'
+        run: |
+          cargo install cargo-dist --locked --version 0.28.0
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
       - name: Build release binaries
         if: steps.semver.outputs.release_ready == '1'
         run: |
+          set -euo pipefail
           cargo build --release --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops
-          cargo build --release --manifest-path core/layer0/ops/Cargo.toml --bin protheusd
+          cargo build --release --target x86_64-unknown-linux-musl --manifest-path core/layer0/ops/Cargo.toml --bin protheusd
           cargo build --release -p conduit --bin conduit_daemon
+          strip target/x86_64-unknown-linux-musl/release/protheusd || true
+          nix --extra-experimental-features "nix-command flakes" shell nixpkgs#coreutils --command \
+            dist --version
+          mkdir -p client/runtime/local/state/release/artifacts
+          cp target/x86_64-unknown-linux-musl/release/protheusd \
+            client/runtime/local/state/release/artifacts/protheusd-x86_64-unknown-linux-musl
           npm pack --silent
+
+      - name: Enforce static protheusd size gate (35 MB)
+        if: steps.semver.outputs.release_ready == '1'
+        id: size_gate
+        run: |
+          set -euo pipefail
+          BIN="client/runtime/local/state/release/artifacts/protheusd-x86_64-unknown-linux-musl"
+          SIZE_BYTES="$(wc -c < "$BIN" | tr -d ' ')"
+          SIZE_MB="$(awk -v b="$SIZE_BYTES" 'BEGIN { printf "%.2f", b/(1024*1024) }')"
+          MAX_BYTES=$((35 * 1024 * 1024))
+          echo "protheusd_static_size_bytes=${SIZE_BYTES}" >> "$GITHUB_OUTPUT"
+          echo "protheusd_static_size_mb=${SIZE_MB}" >> "$GITHUB_OUTPUT"
+          if [ "$SIZE_BYTES" -gt "$MAX_BYTES" ]; then
+            echo "::error::protheusd static musl binary is ${SIZE_MB} MB, exceeds the 35 MB CI gate."
+            exit 1
+          fi
+          cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- \
+            top1-assurance size-gate --strict=1 \
+            --binary-path=client/runtime/local/state/release/artifacts/protheusd-x86_64-unknown-linux-musl \
+            --max-mb=35
+          echo "protheusd static binary: ${SIZE_MB} MB (musl)"
+
+      - name: Append static binary size to release notes
+        if: steps.semver.outputs.release_ready == '1'
+        run: |
+          printf '\nprotheusd static binary: %s MB (musl)\n' \
+            "${{ steps.size_gate.outputs.protheusd_static_size_mb }}" \
+            >> client/runtime/local/state/release/CHANGELOG.auto.md
 
       - name: Install Syft
         if: steps.semver.outputs.release_ready == '1'
@@ -73,7 +121,7 @@ jobs:
           mkdir -p client/runtime/local/state/release/sbom
           PKG=$(ls -1 *.tgz | head -n 1)
           syft file:target/release/protheus-ops -o spdx-json=client/runtime/local/state/release/sbom/protheus-ops.spdx.json
-          syft file:target/release/protheusd -o spdx-json=client/runtime/local/state/release/sbom/protheusd.spdx.json
+          syft file:client/runtime/local/state/release/artifacts/protheusd-x86_64-unknown-linux-musl -o spdx-json=client/runtime/local/state/release/sbom/protheusd.spdx.json
           syft file:target/release/conduit_daemon -o spdx-json=client/runtime/local/state/release/sbom/conduit_daemon.spdx.json
           syft file:${PKG} -o spdx-json=client/runtime/local/state/release/sbom/protheus-npm.spdx.json
 
@@ -90,7 +138,7 @@ jobs:
             openssl genrsa -out /tmp/release_private.pem 4096
           fi
           openssl rsa -in /tmp/release_private.pem -pubout -out client/runtime/local/state/release/signatures/release_public.pem
-          for f in target/release/protheus-ops target/release/protheusd target/release/conduit_daemon client/runtime/local/state/release/sbom/protheus-ops.spdx.json client/runtime/local/state/release/sbom/protheusd.spdx.json client/runtime/local/state/release/sbom/conduit_daemon.spdx.json client/runtime/local/state/release/sbom/protheus-npm.spdx.json; do
+          for f in target/release/protheus-ops client/runtime/local/state/release/artifacts/protheusd-x86_64-unknown-linux-musl target/release/conduit_daemon client/runtime/local/state/release/sbom/protheus-ops.spdx.json client/runtime/local/state/release/sbom/protheusd.spdx.json client/runtime/local/state/release/sbom/conduit_daemon.spdx.json client/runtime/local/state/release/sbom/protheus-npm.spdx.json; do
             base=$(basename "$f")
             openssl dgst -sha256 -sign /tmp/release_private.pem -out "client/runtime/local/state/release/signatures/${base}.sig" "$f"
           done
@@ -119,7 +167,7 @@ jobs:
           body_path: client/runtime/local/state/release/CHANGELOG.auto.md
           files: |
             target/release/protheus-ops
-            target/release/protheusd
+            client/runtime/local/state/release/artifacts/protheusd-x86_64-unknown-linux-musl
             target/release/conduit_daemon
             *.tgz
             client/runtime/local/state/release/sbom/protheus-ops.spdx.json
@@ -127,7 +175,7 @@ jobs:
             client/runtime/local/state/release/sbom/conduit_daemon.spdx.json
             client/runtime/local/state/release/sbom/protheus-npm.spdx.json
             client/runtime/local/state/release/signatures/protheus-ops.sig
-            client/runtime/local/state/release/signatures/protheusd.sig
+            client/runtime/local/state/release/signatures/protheusd-x86_64-unknown-linux-musl.sig
             client/runtime/local/state/release/signatures/conduit_daemon.sig
             client/runtime/local/state/release/signatures/protheus-ops.spdx.json.sig
             client/runtime/local/state/release/signatures/protheusd.spdx.json.sig

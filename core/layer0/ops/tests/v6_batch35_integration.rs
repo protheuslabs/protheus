@@ -278,13 +278,11 @@ fn v6_batch35_openclaw_v2_rl_upgrade_is_receipted_and_queryable() {
     assert_claim(&rl_latest, "V6-COCKPIT-017.13");
     assert_claim(&rl_latest, "V6-COCKPIT-017.14");
     assert_claim(&rl_latest, "V6-COCKPIT-017.15");
-    assert!(
-        rl_latest
-            .pointer("/rl_profile/runtime_class_matrix")
-            .and_then(Value::as_array)
-            .map(|rows| rows.len() >= 4)
-            .unwrap_or(false)
-    );
+    assert!(rl_latest
+        .pointer("/rl_profile/runtime_class_matrix")
+        .and_then(Value::as_array)
+        .map(|rows| rows.len() >= 4)
+        .unwrap_or(false));
 
     assert_eq!(
         eval_plane::run(root, &["rl-status".to_string(), "--strict=1".to_string()]),
@@ -296,13 +294,11 @@ fn v6_batch35_openclaw_v2_rl_upgrade_is_receipted_and_queryable() {
         Some("eval_plane_rl_status")
     );
     assert_claim(&status_latest, "V6-COCKPIT-017.15");
-    assert!(
-        status_latest
-            .get("history_rows")
-            .and_then(Value::as_u64)
-            .map(|rows| rows > 0)
-            .unwrap_or(false)
-    );
+    assert!(status_latest
+        .get("history_rows")
+        .and_then(Value::as_u64)
+        .map(|rows| rows > 0)
+        .unwrap_or(false));
 
     assert_eq!(
         eval_plane::run(

@@ -3,7 +3,7 @@
   "schema_version": "1.0",
   "adaptive_root": "adaptive",
   "memory_root": "memory",
-  "memory_tools_root": "scripts/memory",
+  "memory_tools_root": "tests/tooling/scripts/memory",
   "forbidden_eyes_collectors_root": "client/cognition/habits/scripts/eyes_collectors",
   "allowed_adaptive_source_roots": [
     "client/cognition/adaptive/sensory/eyes/collectors",

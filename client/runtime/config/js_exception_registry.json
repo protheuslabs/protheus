@@ -6,7 +6,7 @@
   ],
   "advisory_roots": [
     "client/cognition/habits/scripts",
-    "scripts/memory"
+    "tests/tooling/scripts/memory"
   ],
   "exceptions": [
     {

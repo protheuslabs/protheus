@@ -273,7 +273,7 @@ fn collect_safety_plane_state(root: &Path, policy: &OriginIntegrityPolicy) -> Va
 
 fn run_dependency_boundary_check(root: &Path, policy: &OriginIntegrityPolicy) -> Value {
     let policy_path = resolve_path(root, &policy.dependency_boundary_policy_path);
-    let script = root.join("scripts/ci/dependency_boundary_guard.mjs");
+    let script = root.join("tests/tooling/scripts/ci/dependency_boundary_guard.mjs");
 
     if script.exists() {
         let output = Command::new("node")

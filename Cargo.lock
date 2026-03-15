@@ -985,7 +985,9 @@ dependencies = [
  "persona_dispatch_security_gate",
  "protheus-autonomy-core-v1",
  "protheus-ops-core-v1",
+ "protheus-pure-workspace",
  "protheus-spine-core-v1",
+ "protheus-tiny-runtime",
  "rand",
  "serde",
  "serde_json",
@@ -1018,6 +1020,10 @@ dependencies = [
  "sha2",
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "protheus-pure-workspace"
+version = "0.1.0"
 
 [[package]]
 name = "protheus-red-legion-core-v1"
@@ -1092,6 +1098,10 @@ dependencies = [
  "serde_json",
  "sha2",
 ]
+
+[[package]]
+name = "protheus-tiny-runtime"
+version = "0.1.0"
 
 [[package]]
 name = "protheus-vault-core-v1"

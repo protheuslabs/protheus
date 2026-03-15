@@ -11,7 +11,7 @@ const fs = require('fs');
 const path = require('path');
 
 const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
-const memoryDir = path.join(WORKSPACE_ROOT, 'memory');
+const memoryDir = process.env.MEMORY_DIR || path.join(WORKSPACE_ROOT, 'local', 'workspace', 'memory');
 const whitelistRegex = /^\d{4}-\d{2}-\d{2}\.md$/;
 
 const args = process.argv.slice(2);

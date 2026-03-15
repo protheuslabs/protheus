@@ -102,7 +102,7 @@ Acceptance: conduit lane bridge launchers check `target/release/*` before debug/
 Acceptance: scheduled secret-rotation attestation job exists in `client/runtime/config/cron_jobs.json` and emits deterministic remediation output when stale.
 
 26. `REQ-06-026` Memory continuity index maintenance must be operationalized.
-Acceptance: `scripts/memory/rebuild_exclusive.ts` is part of the recurring operational schedule and produces refreshed index artifacts without archive leakage.
+Acceptance: `tests/tooling/scripts/memory/rebuild_exclusive.ts` is part of the recurring operational schedule and produces refreshed index artifacts without archive leakage.
 
 27. `REQ-06-027` SDLC risk-class governance must be fail-closed at merge time.
 Acceptance: `protheus-ops sdlc-change-control run --strict=1` rejects PRs that understate risk class or lack required RFC/ADR/approver/rollback evidence for `major`/`high-risk` changes.

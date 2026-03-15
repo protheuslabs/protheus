@@ -52,8 +52,8 @@ npm run -s ops:blocked-external:reconcile -- --apply=1
 ## 5) Validate and continue execution
 
 ```bash
-node scripts/ci/srs_actionable_map.mjs
-node scripts/ci/srs_full_regression.mjs
+node tests/tooling/scripts/ci/srs_actionable_map.mjs
+node tests/tooling/scripts/ci/srs_full_regression.mjs
 ./verify.sh
 ```
 

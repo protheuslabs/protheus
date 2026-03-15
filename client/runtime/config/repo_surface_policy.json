@@ -117,7 +117,8 @@
   ],
   "ignore_path_prefixes": [
     "client/runtime/local/",
-    "core/layer1/memory_runtime/adaptive/"
+    "core/layer1/memory_runtime/adaptive/",
+    "client/pure-workspace/"
   ],
   "ignore_exact_paths": [
     "install.ps1",

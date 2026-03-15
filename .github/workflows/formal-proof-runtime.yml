@@ -10,10 +10,13 @@ on:
 jobs:
   formal-proof-runtime:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -23,6 +26,11 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Install Kani verifier
+        run: |
+          cargo install --locked kani-verifier
+          cargo kani setup
 
       - name: Run formal proof runtime gate
         run: npm run -s ops:formal-proof:run

@@ -126,7 +126,11 @@ fn v7_bank_001_1_to_001_10_runtime_contracts_proven() {
 
     let risk_exit = finance_plane::run(
         root_path,
-        &["risk-warehouse".to_string(), "--op=aggregate".to_string(), "--strict=1".to_string()],
+        &[
+            "risk-warehouse".to_string(),
+            "--op=aggregate".to_string(),
+            "--strict=1".to_string(),
+        ],
     );
     assert_eq!(risk_exit, 0);
     let risk_latest = read_json(&latest_path(root_path));

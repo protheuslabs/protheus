@@ -15,7 +15,7 @@ const { spawnSync } = require('child_process');
   const repoRoot = path.resolve(__dirname, '../../../..');
   const outDir = path.join(tmp, 'out');
   const run = spawnSync('node', [
-    path.join(repoRoot, 'scripts/empty_fort_visuals.js'),
+    path.join(repoRoot, 'tests/tooling/scripts/empty_fort_visuals.js'),
     `--manifest=${manifestPath}`,
     `--out-dir=${outDir}`,
     '--release-tag=v0.test'

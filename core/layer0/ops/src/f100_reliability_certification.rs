@@ -910,8 +910,9 @@ mod tests {
         let (_payload, code) = run_cmd(&policy, true).expect("run cmd");
         assert_eq!(code, 1);
 
-        let latest = read_json(&root.join("local/state/ops/f100_reliability_certification/latest.json"))
-            .expect("latest should exist");
+        let latest =
+            read_json(&root.join("local/state/ops/f100_reliability_certification/latest.json"))
+                .expect("latest should exist");
         assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(false));
         assert!(latest
             .get("blocking_checks")
@@ -933,8 +934,9 @@ mod tests {
         let (_payload, code) = run_cmd(&policy, true).expect("run cmd");
         assert_eq!(code, 0);
 
-        let latest = read_json(&root.join("local/state/ops/f100_reliability_certification/latest.json"))
-            .expect("latest should exist");
+        let latest =
+            read_json(&root.join("local/state/ops/f100_reliability_certification/latest.json"))
+                .expect("latest should exist");
         assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(true));
         assert_eq!(
             latest

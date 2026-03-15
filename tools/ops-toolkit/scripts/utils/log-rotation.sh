@@ -19,7 +19,7 @@
 #   - gzip
 #
 # CRON EXAMPLE:
-#   0 2 * * * /opt/ops-toolkit/scripts/utils/log-rotation.sh --retention-days 30
+#   0 2 * * * /opt/ops-toolkit/tests/tooling/scripts/utils/log-rotation.sh --retention-days 30
 # =============================================================================
 
 set -euo pipefail

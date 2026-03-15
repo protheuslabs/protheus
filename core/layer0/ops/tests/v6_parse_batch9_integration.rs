@@ -276,14 +276,16 @@ fn v6_parse_batch9_rejects_bypass_when_strict() {
             Some("parse_plane_conduit_gate"),
             "action={action} should emit conduit gate payload"
         );
-        assert!(latest
-            .get("conduit_enforcement")
-            .and_then(|v| v.get("claim_evidence"))
-            .and_then(Value::as_array)
-            .map(|rows| rows
-                .iter()
-                .any(|row| row.get("id").and_then(Value::as_str) == Some("V6-PARSE-001.6")))
-            .unwrap_or(false),
-            "action={action} should tag V6-PARSE-001.6");
+        assert!(
+            latest
+                .get("conduit_enforcement")
+                .and_then(|v| v.get("claim_evidence"))
+                .and_then(Value::as_array)
+                .map(|rows| rows
+                    .iter()
+                    .any(|row| row.get("id").and_then(Value::as_str) == Some("V6-PARSE-001.6")))
+                .unwrap_or(false),
+            "action={action} should tag V6-PARSE-001.6"
+        );
     }
 }

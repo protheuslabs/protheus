@@ -13,7 +13,7 @@ Provide one externally auditable, reproducible evidence pack showing machine-che
 ## Reproducible Command
 
 ```bash
-node scripts/ci/formal_verification_expansion_report.mjs
+node tests/tooling/scripts/ci/formal_verification_expansion_report.mjs
 ```
 
 ## Evidence Artifacts

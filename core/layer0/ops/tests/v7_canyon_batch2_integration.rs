@@ -92,7 +92,13 @@ chmod +x "target/${TARGET}/${PROFILE}/${BIN}"
     dir
 }
 
-fn write_top1_benchmark(root: &Path, cold_start_ms: u64, idle_rss_mb: f64, install_size_mb: f64, tasks_per_sec: u64) {
+fn write_top1_benchmark(
+    root: &Path,
+    cold_start_ms: u64,
+    idle_rss_mb: f64,
+    install_size_mb: f64,
+    tasks_per_sec: u64,
+) {
     write_text(
         root,
         "core/local/state/ops/top1_assurance/benchmark_latest.json",
@@ -166,7 +172,11 @@ fn v7_canyon_batch2_contracts_are_behavior_proven() {
         "core/layer0/ops/Cargo.toml",
         "[package]\nname='protheus-ops-core'\n[features]\nminimal = []\n",
     );
-    write_text(root, "core/layer0/alloc.rs", "pub struct Layer0CountingAllocator;\n");
+    write_text(
+        root,
+        "core/layer0/alloc.rs",
+        "pub struct Layer0CountingAllocator;\n",
+    );
 
     let stub_bin = install_stub_binary(root);
     let toolbin = install_tool_stubs(root);
@@ -180,7 +190,10 @@ fn v7_canyon_batch2_contracts_are_behavior_proven() {
         0
     );
     let mut latest = read_json(&latest_path(&canyon_state));
-    assert_eq!(latest.get("type").and_then(Value::as_str), Some("canyon_plane_footprint"));
+    assert_eq!(
+        latest.get("type").and_then(Value::as_str),
+        Some("canyon_plane_footprint")
+    );
     assert_claim(&latest, "V7-CANYON-002.1");
 
     assert_eq!(
@@ -348,7 +361,8 @@ fn v7_canyon_batch2_contracts_are_behavior_proven() {
 }
 
 #[test]
-fn v7_canyon_release_pipeline_allows_missing_optional_llvm_tools_and_size_trust_uses_top1_fallback() {
+fn v7_canyon_release_pipeline_allows_missing_optional_llvm_tools_and_size_trust_uses_top1_fallback()
+{
     let _guard = test_env_lock();
     let tmp = temp_root("canyon_batch2_optional_tools");
     let root = tmp.path();
@@ -363,8 +377,14 @@ fn v7_canyon_release_pipeline_allows_missing_optional_llvm_tools_and_size_trust_
     let toolbin = install_tool_stubs(root);
     std::env::set_var("PROTHEUS_CARGO_BIN", toolbin.join("cargo"));
     std::env::set_var("PROTHEUS_STRIP_BIN", toolbin.join("strip"));
-    std::env::set_var("PROTHEUS_LLVM_PROFDATA_BIN", root.join("missing").join("llvm-profdata"));
-    std::env::set_var("PROTHEUS_LLVM_BOLT_BIN", root.join("missing").join("llvm-bolt"));
+    std::env::set_var(
+        "PROTHEUS_LLVM_PROFDATA_BIN",
+        root.join("missing").join("llvm-profdata"),
+    );
+    std::env::set_var(
+        "PROTHEUS_LLVM_BOLT_BIN",
+        root.join("missing").join("llvm-bolt"),
+    );
 
     write_top1_benchmark(root, 28, 9.5, 2.7, 18_500);
 
@@ -384,14 +404,12 @@ fn v7_canyon_release_pipeline_allows_missing_optional_llvm_tools_and_size_trust_
     );
     let latest = read_json(&latest_path(&canyon_state));
     assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(true));
-    assert!(
-        latest
-            .get("optimization")
-            .and_then(|v| v.get("missing_optional_tools"))
-            .and_then(Value::as_array)
-            .map(|rows| rows.iter().any(|row| row.as_str() == Some("llvm-profdata")))
-            .unwrap_or(false)
-    );
+    assert!(latest
+        .get("optimization")
+        .and_then(|v| v.get("missing_optional_tools"))
+        .and_then(Value::as_array)
+        .map(|rows| rows.iter().any(|row| row.as_str() == Some("llvm-profdata")))
+        .unwrap_or(false));
 
     assert_eq!(
         canyon_plane::run(

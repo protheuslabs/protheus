@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 const THIS_FILE = fileURLToPath(import.meta.url);
 const THIS_DIR = path.dirname(THIS_FILE);
 const WORKSPACE_ROOT = path.resolve(THIS_DIR, '..', '..', '..', '..');
-const GUARD_SCRIPT = path.resolve(WORKSPACE_ROOT, 'scripts/ci/formal_spec_guard.mjs');
+const GUARD_SCRIPT = path.resolve(WORKSPACE_ROOT, 'tests/tooling/scripts/ci/formal_spec_guard.mjs');
 
 export function run(argv = []) {
   const args = Array.isArray(argv) ? argv.map((v) => String(v)) : [];
@@ -22,7 +22,7 @@ export function run(argv = []) {
     process.exit(res.status);
   }
   if (res.error) throw res.error;
-  return { ok: true, delegated_to: 'scripts/ci/formal_spec_guard.mjs' };
+  return { ok: true, delegated_to: 'tests/tooling/scripts/ci/formal_spec_guard.mjs' };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === THIS_FILE) {

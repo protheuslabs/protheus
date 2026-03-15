@@ -685,13 +685,15 @@ mod tests {
                 "run".to_string(),
                 "--strict=1".to_string(),
                 "--pr-body-path=local/state/ops/sdlc_change_control/pr_body.md".to_string(),
-                "--changed-paths-path=local/state/ops/sdlc_change_control/changed_paths.txt".to_string(),
+                "--changed-paths-path=local/state/ops/sdlc_change_control/changed_paths.txt"
+                    .to_string(),
             ],
         );
         assert_eq!(code, 1);
 
         let latest =
-            fs::read_to_string(root.join("local/state/ops/sdlc_change_control/latest.json")).unwrap();
+            fs::read_to_string(root.join("local/state/ops/sdlc_change_control/latest.json"))
+                .unwrap();
         let payload: Value = serde_json::from_str(&latest).unwrap();
         assert_eq!(payload.get("ok").and_then(Value::as_bool), Some(false));
         assert!(payload
@@ -727,13 +729,15 @@ mod tests {
                 "run".to_string(),
                 "--strict=1".to_string(),
                 "--pr-body-path=local/state/ops/sdlc_change_control/pr_body.md".to_string(),
-                "--changed-paths-path=local/state/ops/sdlc_change_control/changed_paths.txt".to_string(),
+                "--changed-paths-path=local/state/ops/sdlc_change_control/changed_paths.txt"
+                    .to_string(),
             ],
         );
         assert_eq!(code, 0);
 
         let latest =
-            fs::read_to_string(root.join("local/state/ops/sdlc_change_control/latest.json")).unwrap();
+            fs::read_to_string(root.join("local/state/ops/sdlc_change_control/latest.json"))
+                .unwrap();
         let payload: Value = serde_json::from_str(&latest).unwrap();
         assert_eq!(payload.get("ok").and_then(Value::as_bool), Some(true));
         assert_eq!(

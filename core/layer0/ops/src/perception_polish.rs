@@ -152,8 +152,10 @@ pub fn default_policy(root: &Path) -> Policy {
             receipts_path: root.join("local/state/ops/perception_polish_program/receipts.jsonl"),
             history_path: root.join("local/state/ops/perception_polish_program/history.jsonl"),
             flags_path: root.join("client/runtime/config/feature_flags/perception_flags.json"),
-            observability_panel_path: root.join("local/state/ops/protheus_top/observability_panel.json"),
-            reasoning_footer_path: root.join("local/state/ops/protheus_top/reasoning_mirror_footer.txt"),
+            observability_panel_path: root
+                .join("local/state/ops/protheus_top/observability_panel.json"),
+            reasoning_footer_path: root
+                .join("local/state/ops/protheus_top/reasoning_mirror_footer.txt"),
             tone_policy_path: root.join("client/runtime/config/perception_tone_policy.json"),
             post_reveal_easter_egg_path: root
                 .join("docs/client/blog/the_fort_was_empty_easter_egg.md"),

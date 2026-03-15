@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Layer ownership: core/layer0/ops::vertical_plane (authoritative)
 use crate::v8_kernel::{
-    build_conduit_enforcement, conduit_bypass_requested, emit_attached_plane_receipt,
-    parse_bool, parse_json_or_empty, read_json, scoped_state_root, sha256_hex_str, write_json,
+    build_conduit_enforcement, conduit_bypass_requested, emit_attached_plane_receipt, parse_bool,
+    parse_json_or_empty, read_json, scoped_state_root, sha256_hex_str, write_json,
 };
 use crate::{clean, now_iso, parse_args};
 use serde_json::{json, Map, Value};

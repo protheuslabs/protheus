@@ -44,5 +44,5 @@ Orchestron emergent lanes (configured in `client/runtime/config/orchestron_polic
 - `runtime_evolution`: mutate active workflows under live failure/no-change pressure
 - `nursery.min_trit_alignment`: trit-aware pass gate
 - `telemetry.emit_birth_events`: emits stage events to `state/client/cognition/adaptive/workflows/orchestron/birth_events.jsonl`
-- Skill-first integration bridge: workflow steps include temporary `scripts/memory/skill_runner.ts` commands for collector/comms/publish lanes until native adapters are complete.
+- Skill-first integration bridge: workflow steps include temporary `tests/tooling/scripts/memory/skill_runner.ts` commands for collector/comms/publish lanes until native adapters are complete.
 - Adaptive value measurement: strategy `value_currency_policy` now feeds Orchestron candidate generation + nursery ranking (revenue, delivery, quality, etc.).

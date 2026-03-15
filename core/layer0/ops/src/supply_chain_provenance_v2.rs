@@ -121,13 +121,15 @@ fn parse_required_artifacts(root: &Path, raw: &Value) -> Vec<ArtifactRequirement
                 id: "protheus-ops".to_string(),
                 artifact_path: root.join("target/release/protheus-ops"),
                 sbom_path: root.join("local/state/release/provenance/sbom/protheus-ops.cdx.json"),
-                signature_path: root.join("local/state/release/provenance/signatures/protheus-ops.sig"),
+                signature_path: root
+                    .join("local/state/release/provenance/signatures/protheus-ops.sig"),
             },
             ArtifactRequirement {
                 id: "conduit-daemon".to_string(),
                 artifact_path: root.join("target/release/conduit_daemon"),
                 sbom_path: root.join("local/state/release/provenance/sbom/conduit_daemon.cdx.json"),
-                signature_path: root.join("local/state/release/provenance/signatures/conduit_daemon.sig"),
+                signature_path: root
+                    .join("local/state/release/provenance/signatures/conduit_daemon.sig"),
             },
         ];
     };
@@ -177,13 +179,15 @@ fn parse_required_artifacts(root: &Path, raw: &Value) -> Vec<ArtifactRequirement
                 id: "protheus-ops".to_string(),
                 artifact_path: root.join("target/release/protheus-ops"),
                 sbom_path: root.join("local/state/release/provenance/sbom/protheus-ops.cdx.json"),
-                signature_path: root.join("local/state/release/provenance/signatures/protheus-ops.sig"),
+                signature_path: root
+                    .join("local/state/release/provenance/signatures/protheus-ops.sig"),
             },
             ArtifactRequirement {
                 id: "conduit-daemon".to_string(),
                 artifact_path: root.join("target/release/conduit_daemon"),
                 sbom_path: root.join("local/state/release/provenance/sbom/conduit_daemon.cdx.json"),
-                signature_path: root.join("local/state/release/provenance/signatures/conduit_daemon.sig"),
+                signature_path: root
+                    .join("local/state/release/provenance/signatures/conduit_daemon.sig"),
             },
         ]
     } else {
@@ -688,7 +692,10 @@ fn prepare_cmd(
     let mut artifact_rows = Vec::<Value>::new();
     for req in &policy.required_artifacts {
         if !req.artifact_path.exists() {
-            errors.push(format!("artifact_missing:{}", normalize_rel(root, &req.artifact_path)));
+            errors.push(format!(
+                "artifact_missing:{}",
+                normalize_rel(root, &req.artifact_path)
+            ));
             continue;
         }
 
@@ -786,7 +793,10 @@ fn prepare_cmd(
 
     let validation = evaluate(root, policy, bundle_path, vuln_summary_path);
     let ok = errors.is_empty()
-        && validation.get("ok").and_then(Value::as_bool).unwrap_or(false);
+        && validation
+            .get("ok")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
     let mut payload = json!({
         "ok": if strict { ok } else { true },
         "type": "supply_chain_provenance_v2_prepare",
@@ -915,7 +925,11 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 code
             }
             Err(err) => {
-                print_json_line(&cli_error_receipt(argv, &format!("prepare_failed:{err}"), 1));
+                print_json_line(&cli_error_receipt(
+                    argv,
+                    &format!("prepare_failed:{err}"),
+                    1,
+                ));
                 1
             }
         },
@@ -995,7 +1009,9 @@ mod tests {
         write_text(&sig_path, "sig-bytes");
 
         write_text(
-            &root.join("local/state/release/provenance_bundle/dependency_vulnerability_summary.json"),
+            &root.join(
+                "local/state/release/provenance_bundle/dependency_vulnerability_summary.json",
+            ),
             &json!({
                 "generated_at": now_iso(),
                 "counts": {
@@ -1066,10 +1082,7 @@ mod tests {
         let temp = tempdir().expect("tempdir");
         let root = temp.path();
         write_policy(root);
-        write_text(
-            &root.join("target/release/protheus-ops"),
-            "artifact-bytes",
-        );
+        write_text(&root.join("target/release/protheus-ops"), "artifact-bytes");
 
         let code = run(
             root,
@@ -1088,20 +1101,25 @@ mod tests {
         let payload: Value = serde_json::from_str(&latest).expect("decode latest");
         assert_eq!(payload.get("ok").and_then(Value::as_bool), Some(true));
         assert!(
-            root.join("local/state/release/provenance_bundle/latest.json").exists(),
+            root.join("local/state/release/provenance_bundle/latest.json")
+                .exists(),
             "bundle should be generated"
         );
         assert!(
-            root.join("local/state/release/provenance/sbom/protheus-ops.cdx.json").exists(),
+            root.join("local/state/release/provenance/sbom/protheus-ops.cdx.json")
+                .exists(),
             "sbom should be generated"
         );
         assert!(
-            root.join("local/state/release/provenance/signatures/protheus-ops.sig").exists(),
+            root.join("local/state/release/provenance/signatures/protheus-ops.sig")
+                .exists(),
             "signature should be generated"
         );
         assert!(
-            root.join("local/state/release/provenance_bundle/dependency_vulnerability_summary.json")
-                .exists(),
+            root.join(
+                "local/state/release/provenance_bundle/dependency_vulnerability_summary.json"
+            )
+            .exists(),
             "vulnerability summary should be generated"
         );
     }

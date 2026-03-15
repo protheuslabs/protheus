@@ -45,7 +45,7 @@ cd ops-toolkit
 
 # Make scripts executable
 chmod +x incident-response/*.sh
-chmod +x scripts/utils/*.sh
+chmod +x tests/tooling/scripts/utils/*.sh
 
 # Verify installation
 ./incident-response/auto-rollback.sh --help
@@ -94,10 +94,10 @@ Operational utilities for day-to-day tasks:
 
 ```bash
 # Rotate logs for all services
-./scripts/utils/log-rotation.sh --retention-days 30
+./tests/tooling/scripts/utils/log-rotation.sh --retention-days 30
 
 # Rotate specific service logs with S3 upload
-./scripts/utils/log-rotation.sh --service payment-api --s3-upload
+./tests/tooling/scripts/utils/log-rotation.sh --service payment-api --s3-upload
 ```
 
 ## Contributing

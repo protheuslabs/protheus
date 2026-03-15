@@ -4,9 +4,10 @@ const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 
 const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
+const WORKSPACE_MEMORY_ROOT = path.join(WORKSPACE_ROOT, 'local', 'workspace', 'memory');
 const CLIENT_ROOT = path.join(WORKSPACE_ROOT, 'client');
 const STATE_ROOT = path.join(WORKSPACE_ROOT, 'state', 'memory');
-const memoryDir = path.resolve(process.env.MEMORY_DIR || path.join(WORKSPACE_ROOT, 'memory'));
+const memoryDir = path.resolve(process.env.MEMORY_DIR || WORKSPACE_MEMORY_ROOT);
 const SNAPSHOT_DIR = path.resolve(
   process.env.MEMORY_SNAPSHOT_DIR || path.join(STATE_ROOT, '_snapshots')
 );
@@ -29,6 +30,8 @@ const CONTROL_PLANE_NODES = ['project-registry', 'mode-restrictions', 'query-mod
 const SNIPPET_WINDOW = 8;
 const EXCLUDE_PATHS = ['node_modules', 'dist', 'build', '.git', '.next', 'out', 'coverage'];
 const INCLUDE_EXTENSIONS = ['.md', '.txt', '.js', '.ts', '.json', '.yaml', '.yml', '.sh', '.py', '.rb', '.go', '.rs', '.c', '.cpp', '.h', '.java', '.kt', '.swift', '.php', '.pl', '.r', '.scala', '.groovy', '.clj', '.erl', '.ex', '.exs', '.lua', '.vim', '.el', '.lisp', '.scm', '.hs', '.ml', '.sql', '.css', '.scss', '.less', '.html', '.xml', '.toml', '.ini', '.cfg', '.conf', '.dockerfile', '.tf', '.hcl'];
+
+fs.mkdirSync(memoryDir, { recursive: true });
 
 function sha1Text(content) {
   return crypto.createHash('sha1').update(String(content || '')).digest('hex');
@@ -761,6 +764,10 @@ fs.writeFileSync(path.join(memoryDir, 'TAGS_INDEX.md'), tagIndex);
 console.log('TAGS_INDEX.md rebuilt');
 
 function syncRootMemoryIndexCompat() {
+  if (process.env.MEMORY_ROOT_COMPAT_SYNC !== '1') {
+    console.log('Root MEMORY/TAGS compatibility indices skipped (set MEMORY_ROOT_COMPAT_SYNC=1 to enable)');
+    return;
+  }
   const mappings = [
     { from: path.join(memoryDir, 'MEMORY_INDEX.md'), to: path.join(WORKSPACE_ROOT, 'MEMORY_INDEX.md') },
     { from: path.join(memoryDir, 'TAGS_INDEX.md'), to: path.join(WORKSPACE_ROOT, 'TAGS_INDEX.md') }
@@ -775,7 +782,6 @@ function syncRootMemoryIndexCompat() {
 }
 
 syncRootMemoryIndexCompat();
-console.log('Root MEMORY/TAGS compatibility indices synced');
 
 const matrixScript = path.join(CLIENT_ROOT, 'runtime', 'systems', 'memory', 'memory_matrix.js');
 if (fs.existsSync(matrixScript)) {

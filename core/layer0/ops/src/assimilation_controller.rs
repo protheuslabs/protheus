@@ -204,7 +204,8 @@ fn conduit_enforcement(argv: &[String], command: &str, strict: bool) -> Value {
 }
 
 fn state_root(root: &Path) -> std::path::PathBuf {
-    root.join("local").join("state")
+    root.join("local")
+        .join("state")
         .join("ops")
         .join("assimilation_controller")
 }

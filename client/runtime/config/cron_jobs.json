@@ -27,7 +27,7 @@
       "schedule": { "expr": "0 10 * * 0", "tz": "America/Denver" },
       "sessionTarget": "isolated",
       "wakeMode": "now",
-      "payload": { "kind": "agentTurn", "message": "DECISION REVIEW: Read DECISIONS_INDEX.md. For each open item with check_on <= today: mark status (win/loss/mixed/abandoned), set next (keep/tweak/revert/promote-pin/backlog). If tweak/revert: write one-line policy update OR lesson SNIP. Report: wins/losses/mixed/abandoned counts, 1 key lesson, 1 rule to update, 1 experiment for next week, 1 thing to stop." },
+      "payload": { "kind": "agentTurn", "message": "DECISION REVIEW: Read local/workspace/memory/DECISIONS_INDEX.md. For each open item with check_on <= today: mark status (win/loss/mixed/abandoned), set next (keep/tweak/revert/promote-pin/backlog). If tweak/revert: write one-line policy update OR lesson SNIP. Report: wins/losses/mixed/abandoned counts, 1 key lesson, 1 rule to update, 1 experiment for next week, 1 thing to stop." },
       "delivery": { "mode": "announce", "channel": "main" },
       "enabled": true,
       "id": "10451ad1-3a70-455f-b706-14f386633fd6"
@@ -47,7 +47,7 @@
       "schedule": { "expr": "10 18 * * 0", "tz": "America/Denver" },
       "sessionTarget": "isolated",
       "wakeMode": "now",
-      "payload": { "kind": "agentTurn", "message": "cd $WORKSPACE_ROOT && node scripts/memory/rebuild_exclusive.ts. Enforce: A) Whitelist: only top-level client/memory/YYYY-MM-DD.md, ignore client/memory/_archive/**. B) Exclusive categories: Projects > Rules > Concepts > System > Unassigned. Report completion + counts." },
+      "payload": { "kind": "agentTurn", "message": "cd $WORKSPACE_ROOT && node tests/tooling/scripts/memory/rebuild_exclusive.ts. Enforce: A) Whitelist: only top-level local/workspace/memory/YYYY-MM-DD.md, ignore local/workspace/memory/_archive/**. B) Exclusive categories: Projects > Rules > Concepts > System > Unassigned. Report completion + counts." },
       "delivery": { "mode": "announce", "channel": "main" },
       "enabled": true,
       "id": "ca358383-ce8d-4b50-aecb-82efc3393142"
@@ -77,7 +77,7 @@
       "schedule": { "expr": "0 9 1 * *", "tz": "America/Denver" },
       "sessionTarget": "isolated",
       "wakeMode": "now",
-      "payload": { "kind": "agentTurn", "message": "cd $WORKSPACE_ROOT && node scripts/memory/health_check_quarterly.ts" },
+      "payload": { "kind": "agentTurn", "message": "cd $WORKSPACE_ROOT && node tests/tooling/scripts/memory/health_check_quarterly.ts" },
       "delivery": { "mode": "announce", "channel": "main" },
       "enabled": true,
       "id": "ec567010-8c1a-4f3f-b07e-ceeb98e37416"

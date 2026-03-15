@@ -499,7 +499,7 @@ fn lane_009_onboarding(root: &Path, policy: &Policy) -> Value {
     let bootstrap_script = resolve_path(
         root,
         lane_policy.get("bootstrap_script").and_then(Value::as_str),
-        "scripts/onboarding/protheus_onboarding_bootstrap.sh",
+        "tests/tooling/scripts/onboarding/protheus_onboarding_bootstrap.sh",
     );
     let metrics_path = resolve_path(
         root,

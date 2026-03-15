@@ -24,12 +24,56 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+
+      - name: Install musl toolchain
+        run: |
+          rustup target add x86_64-unknown-linux-musl
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
 
       - name: Build Rust release binaries
         run: |
+          set -euo pipefail
+          BIN="target/x86_64-unknown-linux-musl/release/protheusd"
           cargo build --release --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops
-          cargo build --release --manifest-path core/layer0/ops/Cargo.toml --bin protheusd
+          cargo build --release --target x86_64-unknown-linux-musl --manifest-path core/layer0/ops/Cargo.toml --bin protheusd
           cargo build --release -p conduit --bin conduit_daemon
+          strip "$BIN" || true
+          mkdir -p state/release/provenance/artifacts state/release/provenance_bundle
+          cp "$BIN" \
+            state/release/provenance/artifacts/protheusd-x86_64-unknown-linux-musl
+          SIZE_BYTES="$(wc -c < state/release/provenance/artifacts/protheusd-x86_64-unknown-linux-musl | tr -d ' ')"
+          SIZE_MB="$(awk -v b="$SIZE_BYTES" 'BEGIN { printf "%.2f", b/(1024*1024) }')"
+          MAX_BYTES=$((35 * 1024 * 1024))
+          if [ "$SIZE_BYTES" -gt "$MAX_BYTES" ]; then
+            echo "::error::protheusd static musl binary is ${SIZE_MB} MB, exceeds the 35 MB release gate."
+            exit 1
+          fi
+          SHA1="$(sha256sum "$BIN" | awk '{print $1}')"
+          cargo clean -p protheus-ops-core || true
+          cargo build --release --target x86_64-unknown-linux-musl --manifest-path core/layer0/ops/Cargo.toml --bin protheusd
+          strip "$BIN" || true
+          SHA2="$(sha256sum "$BIN" | awk '{print $1}')"
+          if [ "$SHA1" != "$SHA2" ]; then
+            echo "::error::reproducible build check failed for static protheusd (sha mismatch)."
+            echo "build_1_sha=$SHA1"
+            echo "build_2_sha=$SHA2"
+            exit 1
+          fi
+          cat > state/release/provenance_bundle/reproducible_build_equivalence.json <<JSON
+          {
+            "schema_id": "top1_reproducible_static_build",
+            "schema_version": "1.0",
+            "target": "x86_64-unknown-linux-musl",
+            "binary_path": "target/x86_64-unknown-linux-musl/release/protheusd",
+            "build_1_sha256": "$SHA1",
+            "build_2_sha256": "$SHA2",
+            "reproducible_match": true
+          }
+          JSON
+          printf '%s\n' "$SIZE_MB" > state/release/provenance_bundle/protheusd_static_size_mb.txt
 
       - name: Install Syft + cargo-audit
         run: |
@@ -41,7 +85,7 @@ jobs:
         run: |
           mkdir -p state/release/provenance/sbom state/release/provenance/signatures state/release/provenance/signing state/release/provenance_bundle
           syft file:target/release/protheus-ops -o cyclonedx-json=state/release/provenance/sbom/protheus-ops.cdx.json
-          syft file:target/release/protheusd -o cyclonedx-json=state/release/provenance/sbom/protheusd.cdx.json
+          syft file:state/release/provenance/artifacts/protheusd-x86_64-unknown-linux-musl -o cyclonedx-json=state/release/provenance/sbom/protheusd.cdx.json
           syft file:target/release/conduit_daemon -o cyclonedx-json=state/release/provenance/sbom/conduit_daemon.cdx.json
 
           sha256sum state/release/provenance/sbom/protheus-ops.cdx.json > state/release/provenance/sbom/protheus-ops.cdx.sha256
@@ -69,9 +113,9 @@ jobs:
             -signature state/release/provenance/signatures/protheus-ops.sig target/release/protheus-ops
 
           openssl dgst -sha256 -sign state/release/provenance/signing/release_private.pem \
-            -out state/release/provenance/signatures/protheusd.sig target/release/protheusd
+            -out state/release/provenance/signatures/protheusd.sig state/release/provenance/artifacts/protheusd-x86_64-unknown-linux-musl
           openssl dgst -sha256 -verify state/release/provenance/signing/release_public.pem \
-            -signature state/release/provenance/signatures/protheusd.sig target/release/protheusd
+            -signature state/release/provenance/signatures/protheusd.sig state/release/provenance/artifacts/protheusd-x86_64-unknown-linux-musl
 
           openssl dgst -sha256 -sign state/release/provenance/signing/release_private.pem \
             -out state/release/provenance/signatures/conduit_daemon.sig target/release/conduit_daemon
@@ -156,7 +200,7 @@ jobs:
             },
             {
               id: 'protheusd',
-              artifact_path: 'target/release/protheusd',
+              artifact_path: 'state/release/provenance/artifacts/protheusd-x86_64-unknown-linux-musl',
               sbom_path: 'state/release/provenance/sbom/protheusd.cdx.json',
               signature_path: 'state/release/provenance/signatures/protheusd.sig',
             },
@@ -181,6 +225,7 @@ jobs:
             generated_at: generatedAt,
             artifacts,
             vulnerability_summary_path: 'state/release/provenance_bundle/dependency_vulnerability_summary.json',
+            reproducibility_path: 'state/release/provenance_bundle/reproducible_build_equivalence.json',
             rollback: {
               last_known_good_tag: process.env.LAST_KNOWN_GOOD_TAG || 'v0.0.0',
               policy_path: 'client/runtime/config/release_rollback_policy.json',
@@ -196,7 +241,7 @@ jobs:
         with:
           subject-path: |
             target/release/protheus-ops
-            target/release/protheusd
+            state/release/provenance/artifacts/protheusd-x86_64-unknown-linux-musl
             target/release/conduit_daemon
 
       - name: Enforce supply-chain provenance v2 gate
@@ -209,6 +254,7 @@ jobs:
 
       - name: Render release notes
         run: |
+          STATIC_MB="$(cat state/release/provenance_bundle/protheusd_static_size_mb.txt)"
           cat > release-notes-${GITHUB_REF_NAME}.md <<'EOF'
           # Protheus ${GITHUB_REF_NAME}
 
@@ -222,11 +268,13 @@ jobs:
           See `docs/client/requirements/REQ-06-f100-operational-excellence.md` and
           `docs/client/requirements/REQ-07-security-credibility-verification.md`.
           EOF
+          printf '\nprotheusd static binary: %s MB (musl)\n' "$STATIC_MB" >> release-notes-${GITHUB_REF_NAME}.md
 
       - name: Upload release artifacts
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            state/release/provenance/artifacts/protheusd-x86_64-unknown-linux-musl
             state/release/provenance/sbom/protheus-ops.cdx.json
             state/release/provenance/sbom/protheus-ops.cdx.sha256
             state/release/provenance/sbom/protheusd.cdx.json
@@ -239,4 +287,5 @@ jobs:
             state/release/provenance/signing/release_public.pem
             state/release/provenance_bundle/dependency_vulnerability_summary.json
             state/release/provenance_bundle/latest.json
+            state/release/provenance_bundle/reproducible_build_equivalence.json
             release-notes-${{ github.ref_name }}.md

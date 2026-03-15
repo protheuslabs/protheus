@@ -7,7 +7,7 @@
     {
       "id": "source_of_truth",
       "mode": "tracked",
-      "paths": ["client/runtime/systems/**", "client/runtime/lib/**", "client/runtime/config/**", "docs/client/**", "scripts/memory/**"]
+      "paths": ["client/runtime/systems/**", "client/runtime/lib/**", "client/runtime/config/**", "docs/client/**", "tests/tooling/scripts/memory/**"]
     },
     {
       "id": "runtime_state",
@@ -26,7 +26,7 @@
     "client/runtime/local/logs/tool_raw/"
   ],
   "required_unignore_patterns": [
-    "!scripts/memory/**",
+    "!tests/tooling/scripts/memory/**",
     "!client/cognition/skills/mcp/*.ts",
     "!client/cognition/skills/mcp/*.js",
     "!client/cognition/skills/mcp/*.json"

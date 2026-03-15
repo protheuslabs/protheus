@@ -264,7 +264,10 @@ fn v7_f100_and_moat_batch2_contracts_are_behavior_proven() {
                 "migrate-ecosystem".to_string(),
                 "--strict=1".to_string(),
                 "--from=openfang".to_string(),
-                format!("--payload-file={}", root.join("fixtures/openfang.json").display()),
+                format!(
+                    "--payload-file={}",
+                    root.join("fixtures/openfang.json").display()
+                ),
             ],
         ),
         0
@@ -288,7 +291,10 @@ fn v7_f100_and_moat_batch2_contracts_are_behavior_proven() {
                 "migrate-ecosystem".to_string(),
                 "--strict=1".to_string(),
                 "--from=agent-os".to_string(),
-                format!("--payload-file={}", root.join("fixtures/agent_os.json").display()),
+                format!(
+                    "--payload-file={}",
+                    root.join("fixtures/agent_os.json").display()
+                ),
             ],
         ),
         0

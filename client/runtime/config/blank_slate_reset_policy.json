@@ -39,7 +39,7 @@
         "client/memory/README.md"
       ],
       "exclude_prefixes": [
-        "scripts/memory"
+        "tests/tooling/scripts/memory"
       ],
       "exclude_suffixes": [
         ".jsonl"

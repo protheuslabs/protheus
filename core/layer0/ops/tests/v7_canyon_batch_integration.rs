@@ -320,7 +320,10 @@ fn v7_canyon_contracts_are_behavior_proven() {
                 "ecosystem".to_string(),
                 "--op=marketplace-install".to_string(),
                 "--hand-id=starter-hand".to_string(),
-                format!("--target-dir={}", root.join("installed/starter-hand").display()),
+                format!(
+                    "--target-dir={}",
+                    root.join("installed/starter-hand").display()
+                ),
                 "--strict=1".to_string(),
             ]
         ),
@@ -469,7 +472,9 @@ fn v7_canyon_fail_closed_paths_reject_bypass_and_failed_benchmarks() {
         latest
             .get("errors")
             .and_then(Value::as_array)
-            .map(|rows| rows.iter().any(|row| row.as_str() == Some("sandbox_logical_only_requires_wasm"))),
+            .map(|rows| rows
+                .iter()
+                .any(|row| row.as_str() == Some("sandbox_logical_only_requires_wasm"))),
         Some(true)
     );
 
@@ -620,7 +625,11 @@ fn v7_canyon_benchmark_gate_prefers_real_binary_and_materializes_missing_enterpr
         "core/local/state/ops/enterprise_hardening/f100/scale_ha_certification.json",
         &serde_json::json!({"airgap_agents": 10000, "regions": 3}),
     );
-    write_json(root, "local/state/canyon/latest.json", &serde_json::json!({"ok": true}));
+    write_json(
+        root,
+        "local/state/canyon/latest.json",
+        &serde_json::json!({"ok": true}),
+    );
 
     assert_eq!(
         canyon_plane::run(
@@ -636,7 +645,11 @@ fn v7_canyon_benchmark_gate_prefers_real_binary_and_materializes_missing_enterpr
     );
 
     let latest = read_json(&latest_path(&canyon_state));
-    assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(true), "{latest}");
+    assert_eq!(
+        latest.get("ok").and_then(Value::as_bool),
+        Some(true),
+        "{latest}"
+    );
 
     let evidence = latest
         .get("claim_evidence")
@@ -666,14 +679,12 @@ fn v7_canyon_benchmark_gate_prefers_real_binary_and_materializes_missing_enterpr
             .map(|v| v.contains("enterprise_hardening/f100/adoption_bootstrap/bootstrap.json")),
         Some(true)
     );
-    assert!(
-        root.join("core/local/state/ops/enterprise_hardening/moat/explorer/index.json")
-            .exists()
-    );
-    assert!(
-        root.join("core/local/state/ops/enterprise_hardening/f100/adoption_bootstrap/bootstrap.json")
-            .exists()
-    );
+    assert!(root
+        .join("core/local/state/ops/enterprise_hardening/moat/explorer/index.json")
+        .exists());
+    assert!(root
+        .join("core/local/state/ops/enterprise_hardening/f100/adoption_bootstrap/bootstrap.json")
+        .exists());
 
     std::env::remove_var(ENV_KEY);
 }

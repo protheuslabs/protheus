@@ -28,7 +28,7 @@ function main() {
   const failures = [];
 
   try {
-    const okRun = runNode(['scripts/ci/srs_repair_lane_runner.mjs', '--id=V6-SOVEREIGN-002.1', '--dry-run=1']);
+    const okRun = runNode(['tests/tooling/scripts/ci/srs_repair_lane_runner.mjs', '--id=V6-SOVEREIGN-002.1', '--dry-run=1']);
     assert(okRun.status === 0, `dry-run expected exit 0, got ${okRun.status}`);
     const okPayload = parseJson(okRun.stdout);
     assert(okPayload && okPayload.ok === true, 'dry-run payload not ok=true');
@@ -40,7 +40,7 @@ function main() {
   }
 
   try {
-    const badRun = runNode(['scripts/ci/srs_repair_lane_runner.mjs', '--id=bad-id', '--dry-run=1']);
+    const badRun = runNode(['tests/tooling/scripts/ci/srs_repair_lane_runner.mjs', '--id=bad-id', '--dry-run=1']);
     assert(badRun.status === 1, `invalid-id expected exit 1, got ${badRun.status}`);
     const badPayload = parseJson(badRun.stderr);
     assert(badPayload && badPayload.ok === false, 'invalid-id payload should be ok=false');

@@ -12,16 +12,16 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const WORKSPACE_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
-const TRUST_ADD_CMD = `node ${path.join(WORKSPACE_ROOT, 'scripts', 'memory', 'trust_add.ts')}`;
+const TRUST_ADD_CMD = `node ${path.join(WORKSPACE_ROOT, 'tests', 'tooling', 'scripts', 'memory', 'trust_add.ts')}`;
 
 // Import compactor for global chokepoint integration
-const { processToolOutput } = require('../../client/runtime/lib/tool_compactor_integration.ts');
-const { redactSecretsOnly } = require('../../client/runtime/lib/tool_response_compactor.ts');
+const { processToolOutput } = require('../../../../client/runtime/lib/tool_compactor_integration.ts');
+const { redactSecretsOnly } = require('../../../../client/runtime/lib/tool_response_compactor.ts');
 
 // NEW: Tiered Directives enforcement
-const { autoClassifyAndCreate } = require('../../client/runtime/lib/action_envelope.ts');
-const { validateAction } = require('../../client/runtime/lib/directive_resolver.ts');
-const { queueForApproval, formatBlockedResponse, formatApprovalRequiredResponse, wasApproved } = require('../../client/runtime/lib/approval_gate.ts');
+const { autoClassifyAndCreate } = require('../../../../client/runtime/lib/action_envelope.ts');
+const { validateAction } = require('../../../../client/runtime/lib/directive_resolver.ts');
+const { queueForApproval, formatBlockedResponse, formatApprovalRequiredResponse, wasApproved } = require('../../../../client/runtime/lib/approval_gate.ts');
 
 /**
  * Helper: Convert anything to text representation

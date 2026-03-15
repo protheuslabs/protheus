@@ -4,7 +4,7 @@
     "systems",
     "habits",
     "skills",
-    "scripts/memory"
+    "tests/tooling/scripts/memory"
   ],
   "target_files": [
     "README.md",

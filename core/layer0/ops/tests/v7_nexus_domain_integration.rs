@@ -106,7 +106,11 @@ fn v7_nexus_001_1_to_001_7_runtime_contracts_proven() {
 
     let merkle_exit = nexus_plane::run(
         root_path,
-        &["merkle-forest".to_string(), "--op=build".to_string(), "--strict=1".to_string()],
+        &[
+            "merkle-forest".to_string(),
+            "--op=build".to_string(),
+            "--strict=1".to_string(),
+        ],
     );
     assert_eq!(merkle_exit, 0);
     let merkle_latest = read_json(&latest_path(root_path));
@@ -118,7 +122,8 @@ fn v7_nexus_001_1_to_001_7_runtime_contracts_proven() {
             "compliance-ledger".to_string(),
             "--op=append".to_string(),
             "--chain-id=chain-1".to_string(),
-            "--entry-json={\"from\":\"finance\",\"to\":\"government\",\"result\":\"ok\"}".to_string(),
+            "--entry-json={\"from\":\"finance\",\"to\":\"government\",\"result\":\"ok\"}"
+                .to_string(),
             "--strict=1".to_string(),
         ],
     );

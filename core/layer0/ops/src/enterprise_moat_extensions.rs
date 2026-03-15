@@ -1064,7 +1064,12 @@ pub(super) fn run_chaos(
     } else {
         "prompt-injection,receipt-tamper,resource-exhaustion"
     };
-    let attacks = split_csv(flags.get("attacks").map(String::as_str).unwrap_or(default_attacks));
+    let attacks = split_csv(
+        flags
+            .get("attacks")
+            .map(String::as_str)
+            .unwrap_or(default_attacks),
+    );
     let findings = attacks
         .iter()
         .enumerate()

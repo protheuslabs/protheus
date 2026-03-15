@@ -51,7 +51,7 @@ git checkout <commit-sha>
 ./scripts/deploy.sh --environment staging --commit <commit-sha>
 
 # Verify deployment
-./scripts/utils/health-check-deployment.sh --full
+./tests/tooling/scripts/utils/health-check-deployment.sh --full
 ```
 
 ## Production Deployment

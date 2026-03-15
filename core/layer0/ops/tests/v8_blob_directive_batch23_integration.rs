@@ -76,7 +76,10 @@ fn v8_batch23_supersession_enforces_conduit_gate_with_trace() {
     std::env::set_var("BINARY_BLOB_VAULT_SIGNING_KEY", "batch23-blob-key");
 
     allow(root, "allow:blob:*");
-    assert!(has_claim(&latest("directive_kernel", root), "V8-DIRECTIVES-001.1"));
+    assert!(has_claim(
+        &latest("directive_kernel", root),
+        "V8-DIRECTIVES-001.1"
+    ));
     let vault_before = latest("directive_kernel", root)
         .get("entry")
         .cloned()
@@ -123,7 +126,10 @@ fn v8_batch23_supersession_enforces_conduit_gate_with_trace() {
         ),
         0
     );
-    assert!(has_claim(&latest("directive_kernel", root), "V8-DIRECTIVES-001.1"));
+    assert!(has_claim(
+        &latest("directive_kernel", root),
+        "V8-DIRECTIVES-001.1"
+    ));
 
     assert_eq!(
         binary_blob_runtime::run(root, &["load".to_string(), "--module=demo".to_string()]),
@@ -308,7 +314,10 @@ fn v8_batch40_blob_migrate_and_status_emit_dashboard_metrics() {
         .map(|v| v >= 1)
         .unwrap_or(false));
 
-    assert_eq!(binary_blob_runtime::run(root, &["dashboard".to_string()]), 0);
+    assert_eq!(
+        binary_blob_runtime::run(root, &["dashboard".to_string()]),
+        0
+    );
     let status_latest = latest("binary_blob_runtime", root);
     assert_eq!(
         status_latest.get("type").and_then(Value::as_str),
@@ -513,7 +522,10 @@ fn v8_batch23_compliance_and_rsi_bridge_emit_denial_trace_and_rollback() {
         ),
         0
     );
-    assert!(has_claim(&latest("directive_kernel", root), "V8-DIRECTIVES-001.2"));
+    assert!(has_claim(
+        &latest("directive_kernel", root),
+        "V8-DIRECTIVES-001.2"
+    ));
 
     assert_eq!(
         directive_kernel::run(

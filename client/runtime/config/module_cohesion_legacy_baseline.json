@@ -102,6 +102,6 @@
     "core/layer2/ops/src/autophagy_auto_approval.rs": 930,
     "core/layer2/ops/src/command_center_session.rs": 890,
     "core/layer2/ops/src/p2p_gossip_seed.rs": 738,
-    "scripts/memory/rebuild_exclusive.ts": 998
+    "tests/tooling/scripts/memory/rebuild_exclusive.ts": 998
   }
 }

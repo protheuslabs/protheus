@@ -3,7 +3,7 @@
 Canonical metric source for migration progress is:
 
 ```bash
-bash scripts/metrics/tracked_loc_report.sh --ref=HEAD
+bash tests/tooling/scripts/metrics/tracked_loc_report.sh --ref=HEAD
 ```
 
 Definition:
@@ -14,7 +14,7 @@ Definition:
 PR delta mode:
 
 ```bash
-bash scripts/metrics/tracked_loc_report.sh --ref=HEAD --base-ref=origin/main
+bash tests/tooling/scripts/metrics/tracked_loc_report.sh --ref=HEAD --base-ref=origin/main
 ```
 
 This report is the required source for Rust-share discussions and coreization milestone checks.

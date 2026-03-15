@@ -35,7 +35,7 @@ The Protheus platform generates logs across multiple components:
 Execute the log collection script to gather metrics from all nodes:
 
 ```bash
-./scripts/utils/log-analyzer.sh --aggregate --date=$(date -d "yesterday" +%Y-%m-%d)
+./tests/tooling/scripts/utils/log-analyzer.sh --aggregate --date=$(date -d "yesterday" +%Y-%m-%d)
 ```
 
 ### Weekly Analysis
@@ -57,4 +57,4 @@ Review patterns for anomalies:
 ## See Also
 
 - RUNBOOK-003: Database Maintenance
-- scripts/utils/log-analyzer.sh
+- tests/tooling/scripts/utils/log-analyzer.sh

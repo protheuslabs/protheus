@@ -70,7 +70,10 @@ fn v7_moat_and_genesis_lanes_are_behavior_proven() {
         .duration_since(UNIX_EPOCH)
         .expect("clock")
         .as_nanos();
-    let state_root = root.join("local").join("state").join(format!("run_{nonce}"));
+    let state_root = root
+        .join("local")
+        .join("state")
+        .join(format!("run_{nonce}"));
     std::env::set_var("PROTHEUS_CORE_STATE_ROOT", &state_root);
     std::env::set_var("DIRECTIVE_KERNEL_SIGNING_KEY", "test-sign-key");
 

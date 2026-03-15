@@ -257,9 +257,7 @@ fn v6_batch21_cognition_and_cockpit_lanes_are_receipted() {
     );
     assert!(has_claim(&status, "V6-COCKPIT-026.5"));
     assert_eq!(
-        status
-            .get("memory_command")
-            .and_then(Value::as_str),
+        status.get("memory_command").and_then(Value::as_str),
         Some("stable-nano-fork")
     );
 

@@ -11,7 +11,7 @@
     "memory_dir": "memory",
     "memory_index_path": "client/memory/MEMORY_INDEX.md",
     "tags_index_path": "client/memory/TAGS_INDEX.md",
-    "rebuild_script": "scripts/memory/rebuild_exclusive.ts",
+    "rebuild_script": "tests/tooling/scripts/memory/rebuild_exclusive.ts",
     "latest_path": "local/state/client/memory/index_freshness/latest.json",
     "receipts_path": "local/state/client/memory/index_freshness/receipts.jsonl",
     "rebuild_history_path": "local/state/client/memory/index_freshness/rebuild_history.jsonl",

@@ -19,7 +19,7 @@ function mustInclude(needle, output) {
 (function main() {
   const workspace = process.env.OPENCLAW_WORKSPACE || path.resolve(__dirname, "..", "..");
   const memoryDir = path.join(workspace, "memory");
-  const script = path.join(workspace, "scripts/memory/rebuild_exclusive.ts");
+  const script = path.join(workspace, "tests/tooling/scripts/memory/rebuild_exclusive.ts");
 
   const out = run(`cd ${workspace} && node ${script} 2>&1`, { MEMORY_DIR: memoryDir });
   console.log(out);

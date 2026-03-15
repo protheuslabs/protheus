@@ -12,7 +12,7 @@ Hard checkpoint so migration can resume without ambiguity.
 - Rust share of rs+ts+js by bytes: 2.254%
 
 Command used:
-- `scripts/metrics/rust_repo_stats.sh`
+- `tests/tooling/scripts/metrics/rust_repo_stats.sh`
 
 ## Current Worktree State
 - Worktree is dirty with a large previously staged batch and a few unstaged docs/client/backlog files.

@@ -29,19 +29,21 @@
       "proof_commands": [
         {
           "id": "kani_top1_proofs",
-          "required": false,
+          "required": true,
           "argv": [
             "cargo",
             "kani",
             "--manifest-path",
             "core/layer0/ops/Cargo.toml",
             "--lib",
+            "--output-format",
+            "terse",
             "--harness",
-            "prove_receipt_hash_is_deterministic_for_same_payload",
+            "prove_clean_respects_max_len_bound",
             "--harness",
-            "prove_receipt_hash_has_stable_hex_shape",
+            "prove_clean_is_deterministic_for_same_input",
             "--harness",
-            "prove_clean_respects_max_len_bound"
+            "prove_clean_trims_outer_whitespace"
           ]
         }
       ]

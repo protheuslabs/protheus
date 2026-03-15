@@ -72,7 +72,8 @@ fn stage_fixture_root() -> TempDir {
 }
 
 fn assimilation_latest_path(root: &Path) -> PathBuf {
-    root.join("local").join("state")
+    root.join("local")
+        .join("state")
         .join("ops")
         .join("assimilation_controller")
         .join("latest.json")
@@ -181,7 +182,10 @@ fn v7_assimilate_001_1_to_001_5_lanes_are_runtime_proven() {
     );
     assert_eq!(verify_exit, 1);
     let verify_latest = read_json(&assimilation_latest_path(root));
-    assert_eq!(verify_latest.get("ok").and_then(Value::as_bool), Some(false));
+    assert_eq!(
+        verify_latest.get("ok").and_then(Value::as_bool),
+        Some(false)
+    );
     assert_eq!(
         verify_latest.get("chain_valid").and_then(Value::as_bool),
         Some(false)

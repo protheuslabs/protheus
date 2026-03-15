@@ -5,7 +5,7 @@
     "systems",
     "habits",
     "skills",
-    "scripts/memory"
+    "tests/tooling/scripts/memory"
   ],
   "include_extensions": [
     ".js",

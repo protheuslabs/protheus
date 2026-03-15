@@ -122,15 +122,15 @@ run_protheus_ops() {
   run_protheus_ops "$VERIFY_RUST_TIMEOUT_SEC" top1-assurance proof-coverage --strict=1 --check-toolchains=0 --execute-proofs=1
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:dependency-boundary:check
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:formal-spec:check
-  run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" node scripts/ci/client_layer_boundary_audit.mjs --strict=1 --out="$CLIENT_LAYER_AUDIT_OUT"
-  run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" node scripts/ci/module_cohesion_policy_audit.mjs --strict=1 --out-json="$MODULE_COHESION_OUT_JSON" --out-markdown="$MODULE_COHESION_OUT_MD"
+  run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" node tests/tooling/scripts/ci/client_layer_boundary_audit.mjs --strict=1 --out="$CLIENT_LAYER_AUDIT_OUT"
+  run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" node tests/tooling/scripts/ci/module_cohesion_policy_audit.mjs --strict=1 --out-json="$MODULE_COHESION_OUT_JSON" --out-markdown="$MODULE_COHESION_OUT_MD"
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:legacy-alias:guard
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:repo-surface:audit
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:public-platform:contract
-  run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" node scripts/ci/client_import_integrity_audit.mjs --strict=1 --out="$CLIENT_IMPORT_INTEGRITY_OUT"
-  run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" node scripts/ci/client_scope_inventory.mjs --out="$CLIENT_SCOPE_OUT"
-  run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" node scripts/ci/client_surface_disposition.mjs --out="$CLIENT_SURFACE_OUT"
-  run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" node scripts/ci/client_target_contract_audit.mjs --strict=1 --scope="$CLIENT_SCOPE_OUT" --boundary="$CLIENT_LAYER_AUDIT_OUT" --disposition="$CLIENT_SURFACE_OUT" --out="$CLIENT_TARGET_OUT"
+  run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" node tests/tooling/scripts/ci/client_import_integrity_audit.mjs --strict=1 --out="$CLIENT_IMPORT_INTEGRITY_OUT"
+  run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" node tests/tooling/scripts/ci/client_scope_inventory.mjs --out="$CLIENT_SCOPE_OUT"
+  run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" node tests/tooling/scripts/ci/client_surface_disposition.mjs --out="$CLIENT_SURFACE_OUT"
+  run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" node tests/tooling/scripts/ci/client_target_contract_audit.mjs --strict=1 --scope="$CLIENT_SCOPE_OUT" --boundary="$CLIENT_LAYER_AUDIT_OUT" --disposition="$CLIENT_SURFACE_OUT" --out="$CLIENT_TARGET_OUT"
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:v8:runtime-proof:gate
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:dod:gate
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s test:ops:srs-contract-runtime-evidence

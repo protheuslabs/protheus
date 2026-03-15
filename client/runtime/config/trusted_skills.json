@@ -1,12 +1,12 @@
 {
   "allowlist_roots": [
     "${WORKSPACE_ROOT}/skills",
-    "${WORKSPACE_ROOT}/scripts/memory",
+    "${WORKSPACE_ROOT}/tests/tooling/scripts/memory",
     "${WORKSPACE_ROOT}/client/cognition/habits/scripts",
     "${WORKSPACE_ROOT}/config"
   ],
   "trusted_files": {
-    "${WORKSPACE_ROOT}/scripts/memory/rebuild_exclusive.ts": {
+    "${WORKSPACE_ROOT}/tests/tooling/scripts/memory/rebuild_exclusive.ts": {
       "sha256": "12f8dcd5be429e6bb5460b6c99ebbbcd1ce8a4fe787d5815833d45edc38b06b3",
       "approved_by": "local-operator",
       "approved_at": "2026-02-14",
@@ -18,43 +18,43 @@
       "approved_at": "2026-02-14",
       "note": "Enforcement smoke test - validates format/bloat/registry/decisions"
     },
-    "${WORKSPACE_ROOT}/scripts/memory/lint_memory.ts": {
+    "${WORKSPACE_ROOT}/tests/tooling/scripts/memory/lint_memory.ts": {
       "sha256": "7f1da079e4897ec080696edc5d446cd87c780a03a13cf6b735baa1456d92e283",
       "approved_by": "local-operator",
       "approved_at": "2026-02-14",
       "note": "Memory linting tool - validates node format"
     },
-    "${WORKSPACE_ROOT}/scripts/memory/normalize_nodes.ts": {
+    "${WORKSPACE_ROOT}/tests/tooling/scripts/memory/normalize_nodes.ts": {
       "sha256": "7617eba391a3410a3dbd596e88cde4afce849d2157215be01c70fb71ed4e27a7",
       "approved_by": "local-operator",
       "approved_at": "2026-02-14",
       "note": "Node normalization utility"
     },
-    "${WORKSPACE_ROOT}/scripts/memory/health_check_quarterly.ts": {
+    "${WORKSPACE_ROOT}/tests/tooling/scripts/memory/health_check_quarterly.ts": {
       "sha256": "2c0c589fda98b1ec366af5485791dbbb30da3aa22b15bf1b58edd5c158f09535",
       "approved_by": "local-operator",
       "approved_at": "2026-02-14",
       "note": "Quarterly health check diagnostic"
     },
-    "${WORKSPACE_ROOT}/scripts/memory/skill_gate.ts": {
+    "${WORKSPACE_ROOT}/tests/tooling/scripts/memory/skill_gate.ts": {
       "sha256": "e7b3652456e886817d80c0cfd3b7129c48ae2a061b6635789374ecd28b72a9a6",
       "approved_by": "local-operator",
       "approved_at": "2026-02-14",
       "note": "Skill supply-chain security gate - self-trusted"
     },
-    "${WORKSPACE_ROOT}/scripts/memory/trust_add.ts": {
+    "${WORKSPACE_ROOT}/tests/tooling/scripts/memory/trust_add.ts": {
       "sha256": "e7e24769734bc8b00e8a07122e3ff4de2155d985268b1c599465c2ecac3fe301",
       "approved_by": "local-operator",
       "approved_at": "2026-02-14",
       "note": "CLI tool to add trusted skills"
     },
-    "${WORKSPACE_ROOT}/scripts/memory/trust_list.ts": {
+    "${WORKSPACE_ROOT}/tests/tooling/scripts/memory/trust_list.ts": {
       "sha256": "f0dd30efb43f5b7587bc73f78e5f246e91d7f315d13133bd1639328f714e25f2",
       "approved_by": "local-operator",
       "approved_at": "2026-02-14",
       "note": "CLI tool to list trusted skills"
     },
-    "${WORKSPACE_ROOT}/scripts/memory/skill_runner.ts": {
+    "${WORKSPACE_ROOT}/tests/tooling/scripts/memory/skill_runner.ts": {
       "sha256": "5408b432e30d29a65c14305439a526675ebbe6626db97ea212ee08fbe0db98c7",
       "approved_by": "local-operator",
       "approved_at": "2026-02-16",
@@ -144,7 +144,7 @@
       "approved_at": "2026-02-16",
       "note": "Fixed require path"
     },
-    "${WORKSPACE_ROOT}/scripts/memory/audit_exec_usage.ts": {
+    "${WORKSPACE_ROOT}/tests/tooling/scripts/memory/audit_exec_usage.ts": {
       "sha256": "7993ca6a7d15430b10b2b82f215ba49b78e9016569ce1c742d647d7a6f36dfcf",
       "approved_by": "local-operator",
       "approved_at": "2026-02-16",
@@ -198,7 +198,7 @@
       "approved_at": "2026-02-17",
       "note": "Zero-friction CLI wrapper for dopamine engine"
     },
-    "${WORKSPACE_ROOT}/apps/habits/scripts/dopamine-git-hook.sh": {
+    "${WORKSPACE_ROOT}/client/cognition/habits/scripts/dopamine-git-hook.sh": {
       "sha256": "fb18808e34562e417d13436c4d38b7e6146a9b1c47c31eacd5c20681273053c1",
       "approved_by": "local-operator",
       "approved_at": "2026-02-17",

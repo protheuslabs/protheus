@@ -326,7 +326,9 @@ fn v6_memory_batch22_taxonomy_and_causality_lanes_are_receipted() {
     );
     assert!(has_claim(&fuse, "V6-MEMORY-012.4"));
 
-    assert!(root.join("local/state/ops/local_rag/taxonomy_4w.json").exists());
+    assert!(root
+        .join("local/state/ops/local_rag/taxonomy_4w.json")
+        .exists());
     assert!(root
         .join("local/state/ops/local_rag/metacognitive_config.json")
         .exists());

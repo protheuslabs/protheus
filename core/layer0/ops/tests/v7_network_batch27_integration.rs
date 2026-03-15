@@ -154,7 +154,10 @@ fn v7_network_001_1_to_001_4_are_behavior_proven() {
         2
     );
     let consensus_bad = latest(root);
-    assert_eq!(consensus_bad.get("ok").and_then(Value::as_bool), Some(false));
+    assert_eq!(
+        consensus_bad.get("ok").and_then(Value::as_bool),
+        Some(false)
+    );
     assert_claim(&consensus_bad, "V7-NETWORK-001.2");
 
     assert_eq!(

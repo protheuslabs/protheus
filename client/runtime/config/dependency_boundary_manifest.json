@@ -26,7 +26,7 @@
   "enforce_layers": ["core", "systems", "adaptive"],
   "enforce_cycles": false,
   "scan": {
-    "include_dirs": ["client/runtime/systems", "client/runtime/lib", "client/cognition/adaptive", "client/cognition/habits", "scripts/memory", "client/tests"],
+    "include_dirs": ["client/runtime/systems", "client/runtime/lib", "client/cognition/adaptive", "client/cognition/habits", "tests/tooling/scripts/memory", "client/tests"],
     "include_ext": [".ts", ".js"],
     "exclude_contains": [".bak.", ".tmp", "node_modules", "dist/"]
   },
