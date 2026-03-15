@@ -235,3 +235,44 @@ Updated: 2026-03-12 09:10 America/Denver
 - `npm run -s ops:client-target:audit`
 - `./verify.sh`
 - `node tests/tooling/scripts/ci/mcu_proof_preflight.mjs`
+
+---
+
+## Process Notes for Contributors
+
+### Adding New TODO Items
+
+When adding new work items to this TODO:
+
+1. **Prefix with priority**: Use `P0-`, `P1-`, `P2-`, or `P3-` prefix
+2. **Include ID**: Format as `P{N}-CATEGORY-###` (e.g., `P1-EXEC-042`)
+3. **Define exit criteria**: Every item must have measurable completion criteria
+4. **Link to SRS**: If related to SRS requirements, include the SRS ID
+5. **Update timestamp**: Change the "Updated:" field at top of file
+
+### Status Definitions
+
+| Status | Meaning | Next Action |
+|--------|---------|-------------|
+| `TODO` | Not yet started | Queue for execution |
+| `QUEUED` | Scheduled for current pass | Execute when ready |
+| `IN_PROGRESS` | Actively being worked | Continue execution |
+| `BLOCKED` | Has dependencies | Resolve blockers |
+| `DONE` | Completed with evidence | Verify regression |
+| `CANCELLED` | No longer needed | Document rationale |
+
+### Evidence Requirements
+
+All `DONE` items must have:
+- Deterministic execution receipt OR
+- Link to merged PR with review approval OR
+- Documented decision record (for cancelled items)
+
+### Review Cycle
+
+This TODO is reviewed:
+- **Daily**: During active execution passes
+- **Weekly**: Full audit of blocked items
+- **Monthly**: Process effectiveness review
+
+*Last process review: 2026-03-15 by Rohan Kapoor*
