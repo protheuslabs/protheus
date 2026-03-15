@@ -1,0 +1,15 @@
+{
+  "id": "V7-F100-002.1",
+  "generated_at": "2026-03-15T17:34:11.456Z",
+  "generated_by": "codex",
+  "status_at_generation": "blocked_external_prepared",
+  "impact": "10",
+  "layer_map": "0/1/2/client",
+  "upgrade": "Expanded Certification & AI Governance Pack Contract (ISO 42001 / EU AI Act / BAA / AI RMF)",
+  "section": "Fortune-100 Procurement & Platform Leadership Intake (Doc 1C0JmEaPuYJxfBxnZIzzYM5m-h8kiHfMoFwYP82Db514, 2026-03-14)",
+  "unblock": "requires external/human dependency resolution",
+  "packet_markdown": "docs/external/evidence/V7-F100-002.1/external_execution_packet_2026-03-15.md",
+  "evidence_dir": "docs/external/evidence/V7-F100-002.1",
+  "external_dependency": true,
+  "local_preparation_complete": true
+}
