@@ -4,34 +4,8 @@
 const path = require('node:path');
 const fs = require('node:fs');
 const { spawnSync } = require('node:child_process');
+const { parseArgs, parseJson } = require('./cli_shared.ts');
 const { ROOT, resolveBinary } = require(path.join(__dirname, '..', '..', 'runtime', 'systems', 'ops', 'run_protheus_ops.js'));
-
-function parseArgs(argv = []) {
-  const positional = [];
-  const flags = {};
-  for (const raw of Array.isArray(argv) ? argv : []) {
-    const token = String(raw || '').trim();
-    if (!token) continue;
-    if (!token.startsWith('--')) {
-      positional.push(token);
-      continue;
-    }
-    const body = token.slice(2);
-    const eq = body.indexOf('=');
-    if (eq >= 0) flags[body.slice(0, eq)] = body.slice(eq + 1);
-    else flags[body] = '1';
-  }
-  return { positional, flags };
-}
-
-function parseJson(raw, fallback, reasonCode) {
-  if (raw == null || String(raw).trim() === '') return { ok: true, value: fallback };
-  try {
-    return { ok: true, value: JSON.parse(String(raw)) };
-  } catch {
-    return { ok: false, reason_code: reasonCode };
-  }
-}
 
 function parseJsonOutput(stdout) {
   const text = String(stdout || '').trim();

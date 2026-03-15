@@ -7,6 +7,7 @@ const {
   parseJson,
   invokeOrchestration,
 } = require('./core_bridge.ts');
+const { slug, timestampToken, nonceToken } = require('./cli_shared.ts');
 const { runTaskGroupCli } = require('./taskgroup_cli.ts');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
@@ -16,34 +17,6 @@ const GROUP_ID_PATTERN = /^[a-z0-9][a-z0-9._:-]{5,127}$/;
 const AGENT_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{1,127}$/;
 const ALLOWED_AGENT_STATUSES = new Set(['pending', 'running', 'done', 'failed', 'timeout']);
 const TERMINAL_AGENT_STATUSES = new Set(['done', 'failed', 'timeout']);
-
-function slug(raw, fallback = 'task', maxLen = 48) {
-  const normalized = String(raw || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, Math.max(4, Number(maxLen) || 48));
-  return normalized || fallback;
-}
-
-function timestampToken(nowMs = Date.now()) {
-  const d = new Date(nowMs);
-  const year = String(d.getUTCFullYear());
-  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  const hour = String(d.getUTCHours()).padStart(2, '0');
-  const minute = String(d.getUTCMinutes()).padStart(2, '0');
-  const second = String(d.getUTCSeconds()).padStart(2, '0');
-  return `${year}${month}${day}${hour}${minute}${second}`;
-}
-
-function nonceToken(length = 6) {
-  const width = Math.max(4, Number(length) || 6);
-  return [...Array(width)]
-    .map(() => Math.floor(Math.random() * 16).toString(16))
-    .join('');
-}
 
 function generateTaskGroupId(taskType = 'task', options = {}) {
   const nowMs = Number.isFinite(Number(options.now_ms)) ? Number(options.now_ms) : Date.now();

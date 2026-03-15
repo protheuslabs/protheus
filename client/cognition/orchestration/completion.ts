@@ -2,25 +2,7 @@
 'use strict';
 
 const { parseArgs, parseJson, invokeOrchestration } = require('./core_bridge.ts');
-
-function statusCounts(group) {
-  const counts = {
-    pending: 0,
-    running: 0,
-    done: 0,
-    failed: 0,
-    timeout: 0,
-    total: 0,
-  };
-  const agents = Array.isArray(group && group.agents) ? group.agents : [];
-  for (const agent of agents) {
-    const status = String(agent && agent.status ? agent.status : 'pending').toLowerCase();
-    if (!(status in counts)) continue;
-    counts[status] += 1;
-    counts.total += 1;
-  }
-  return counts;
-}
+const { statusCounts } = require('./taskgroup.ts');
 
 function partialCountFromGroup(group) {
   const agents = Array.isArray(group && group.agents) ? group.agents : [];

@@ -45,6 +45,15 @@ fn get_string_any(payload: &Value, keys: &[&str]) -> String {
         .unwrap_or_default()
 }
 
+fn payload_root_dir(payload: &Value) -> Option<String> {
+    let root_dir = get_string_any(payload, &["root_dir", "rootDir"]);
+    if root_dir.is_empty() {
+        None
+    } else {
+        Some(root_dir)
+    }
+}
+
 fn get_i64_any(payload: &Value, keys: &[&str], default: i64) -> i64 {
     for key in keys {
         if let Some(value) = payload.get(*key) {
@@ -65,49 +74,46 @@ fn get_object(value: &Value) -> Map<String, Value> {
     value.as_object().cloned().unwrap_or_default()
 }
 
-fn is_valid_task_id(task_id: &str) -> bool {
-    let bytes = task_id.as_bytes();
-    if bytes.len() < 3 || bytes.len() > 128 {
+#[derive(Clone, Copy)]
+enum FirstByteRule {
+    AlphaNum,
+    LowerOrDigit,
+}
+
+fn validate_identifier(value: &str, min_len: usize, max_len: usize, first_rule: FirstByteRule) -> bool {
+    let bytes = value.as_bytes();
+    if bytes.len() < min_len || bytes.len() > max_len {
         return false;
     }
     let first = bytes[0] as char;
-    if !first.is_ascii_alphanumeric() {
+    let first_ok = match first_rule {
+        FirstByteRule::AlphaNum => first.is_ascii_alphanumeric(),
+        FirstByteRule::LowerOrDigit => first.is_ascii_lowercase() || first.is_ascii_digit(),
+    };
+    if !first_ok {
         return false;
     }
     bytes.iter().all(|b| {
         let ch = *b as char;
-        ch.is_ascii_alphanumeric() || matches!(ch, '.' | '_' | ':' | '-')
+        match first_rule {
+            FirstByteRule::AlphaNum => ch.is_ascii_alphanumeric() || matches!(ch, '.' | '_' | ':' | '-'),
+            FirstByteRule::LowerOrDigit => {
+                ch.is_ascii_lowercase() || ch.is_ascii_digit() || matches!(ch, '.' | '_' | ':' | '-')
+            }
+        }
     })
+}
+
+fn is_valid_task_id(task_id: &str) -> bool {
+    validate_identifier(task_id, 3, 128, FirstByteRule::AlphaNum)
 }
 
 fn validate_group_id(task_group_id: &str) -> bool {
-    let bytes = task_group_id.as_bytes();
-    if bytes.len() < 6 || bytes.len() > 128 {
-        return false;
-    }
-    let first = bytes[0] as char;
-    if !first.is_ascii_lowercase() && !first.is_ascii_digit() {
-        return false;
-    }
-    bytes.iter().all(|b| {
-        let ch = *b as char;
-        ch.is_ascii_lowercase() || ch.is_ascii_digit() || matches!(ch, '.' | '_' | ':' | '-')
-    })
+    validate_identifier(task_group_id, 6, 128, FirstByteRule::LowerOrDigit)
 }
 
 fn validate_agent_id(agent_id: &str) -> bool {
-    let bytes = agent_id.as_bytes();
-    if bytes.len() < 2 || bytes.len() > 128 {
-        return false;
-    }
-    let first = bytes[0] as char;
-    if !first.is_ascii_alphanumeric() {
-        return false;
-    }
-    bytes.iter().all(|b| {
-        let ch = *b as char;
-        ch.is_ascii_alphanumeric() || matches!(ch, '.' | '_' | ':' | '-')
-    })
+    validate_identifier(agent_id, 2, 128, FirstByteRule::AlphaNum)
 }
 
 fn default_scratchpad_dir(root: &Path) -> PathBuf {
@@ -169,17 +175,20 @@ struct LoadedScratchpad {
 
 fn load_scratchpad(root: &Path, task_id: &str, root_dir: Option<&str>) -> Result<LoadedScratchpad, String> {
     let file_path = scratchpad_path(root, task_id, root_dir)?;
-    match fs::read_to_string(&file_path)
-        .ok()
-        .and_then(|raw| serde_json::from_str::<Value>(&raw).ok())
-    {
-        Some(Value::Object(_)) => Ok(LoadedScratchpad {
-            scratchpad: serde_json::from_str::<Value>(&fs::read_to_string(&file_path).unwrap_or_default())
-                .unwrap_or_else(|_| empty_scratchpad(task_id)),
-            file_path,
-            exists: true,
-        }),
-        _ => Ok(LoadedScratchpad {
+    match fs::read_to_string(&file_path) {
+        Ok(raw) => match serde_json::from_str::<Value>(&raw) {
+            Ok(parsed @ Value::Object(_)) => Ok(LoadedScratchpad {
+                scratchpad: parsed,
+                file_path,
+                exists: true,
+            }),
+            _ => Ok(LoadedScratchpad {
+                scratchpad: empty_scratchpad(task_id),
+                file_path,
+                exists: false,
+            }),
+        },
+        Err(_) => Ok(LoadedScratchpad {
             scratchpad: empty_scratchpad(task_id),
             file_path,
             exists: false,
@@ -2537,15 +2546,11 @@ fn invoke(root: &Path, op: &str, payload: &Value) -> Value {
         }
         "scratchpad.path" => {
             let task_id = get_string_any(payload, &["task_id", "taskId"]);
-            let root_dir = get_string_any(payload, &["root_dir", "rootDir"]);
+            let root_dir = payload_root_dir(payload);
             let out = scratchpad_path(
                 root,
                 &task_id,
-                if root_dir.is_empty() {
-                    None
-                } else {
-                    Some(root_dir.as_str())
-                },
+                root_dir.as_deref(),
             );
             match out {
                 Ok(file_path) => json!({
@@ -2564,15 +2569,11 @@ fn invoke(root: &Path, op: &str, payload: &Value) -> Value {
         }
         "scratchpad.status" => {
             let task_id = get_string_any(payload, &["task_id", "taskId"]);
-            let root_dir = get_string_any(payload, &["root_dir", "rootDir"]);
+            let root_dir = payload_root_dir(payload);
             match load_scratchpad(
                 root,
                 &task_id,
-                if root_dir.is_empty() {
-                    None
-                } else {
-                    Some(root_dir.as_str())
-                },
+                root_dir.as_deref(),
             ) {
                 Ok(loaded) => json!({
                     "ok": true,
@@ -2593,16 +2594,12 @@ fn invoke(root: &Path, op: &str, payload: &Value) -> Value {
         "scratchpad.write" => {
             let task_id = get_string_any(payload, &["task_id", "taskId"]);
             let patch = payload.get("patch").cloned().unwrap_or_else(|| payload.clone());
-            let root_dir = get_string_any(payload, &["root_dir", "rootDir"]);
+            let root_dir = payload_root_dir(payload);
             match write_scratchpad(
                 root,
                 &task_id,
                 &patch,
-                if root_dir.is_empty() {
-                    None
-                } else {
-                    Some(root_dir.as_str())
-                },
+                root_dir.as_deref(),
             ) {
                 Ok(value) => value,
                 Err(err) => json!({
@@ -2616,16 +2613,12 @@ fn invoke(root: &Path, op: &str, payload: &Value) -> Value {
         "scratchpad.append_finding" => {
             let task_id = get_string_any(payload, &["task_id", "taskId"]);
             let finding = payload.get("finding").cloned().unwrap_or(Value::Object(Map::new()));
-            let root_dir = get_string_any(payload, &["root_dir", "rootDir"]);
+            let root_dir = payload_root_dir(payload);
             append_finding(
                 root,
                 &task_id,
                 &finding,
-                if root_dir.is_empty() {
-                    None
-                } else {
-                    Some(root_dir.as_str())
-                },
+                root_dir.as_deref(),
             )
         }
         "scratchpad.append_checkpoint" => {
@@ -2634,29 +2627,21 @@ fn invoke(root: &Path, op: &str, payload: &Value) -> Value {
                 .get("checkpoint")
                 .cloned()
                 .unwrap_or(Value::Object(Map::new()));
-            let root_dir = get_string_any(payload, &["root_dir", "rootDir"]);
+            let root_dir = payload_root_dir(payload);
             append_checkpoint(
                 root,
                 &task_id,
                 &checkpoint,
-                if root_dir.is_empty() {
-                    None
-                } else {
-                    Some(root_dir.as_str())
-                },
+                root_dir.as_deref(),
             )
         }
         "scratchpad.cleanup" => {
             let task_id = get_string_any(payload, &["task_id", "taskId"]);
-            let root_dir = get_string_any(payload, &["root_dir", "rootDir"]);
+            let root_dir = payload_root_dir(payload);
             cleanup_scratchpad(
                 root,
                 &task_id,
-                if root_dir.is_empty() {
-                    None
-                } else {
-                    Some(root_dir.as_str())
-                },
+                root_dir.as_deref(),
             )
         }
         "checkpoint.should" => {
@@ -2681,16 +2666,12 @@ fn invoke(root: &Path, op: &str, payload: &Value) -> Value {
                 .get("metrics")
                 .cloned()
                 .unwrap_or_else(|| payload.clone());
-            let root_dir = get_string_any(payload, &["root_dir", "rootDir"]);
+            let root_dir = payload_root_dir(payload);
             maybe_checkpoint(
                 root,
                 &task_id,
                 &metrics,
-                if root_dir.is_empty() {
-                    None
-                } else {
-                    Some(root_dir.as_str())
-                },
+                root_dir.as_deref(),
             )
         }
         "checkpoint.timeout" => {
@@ -2699,29 +2680,21 @@ fn invoke(root: &Path, op: &str, payload: &Value) -> Value {
                 .get("metrics")
                 .cloned()
                 .unwrap_or_else(|| payload.clone());
-            let root_dir = get_string_any(payload, &["root_dir", "rootDir"]);
+            let root_dir = payload_root_dir(payload);
             handle_timeout(
                 root,
                 &task_id,
                 &metrics,
-                if root_dir.is_empty() {
-                    None
-                } else {
-                    Some(root_dir.as_str())
-                },
+                root_dir.as_deref(),
             )
         }
         "taskgroup.path" => {
             let task_group_id = get_string_any(payload, &["task_group_id", "taskGroupId", "id"]);
-            let root_dir = get_string_any(payload, &["root_dir", "rootDir"]);
+            let root_dir = payload_root_dir(payload);
             match taskgroup_path(
                 root,
                 &task_group_id,
-                if root_dir.is_empty() {
-                    None
-                } else {
-                    Some(root_dir.as_str())
-                },
+                root_dir.as_deref(),
             ) {
                 Ok(file_path) => json!({
                     "ok": true,
@@ -2738,28 +2711,20 @@ fn invoke(root: &Path, op: &str, payload: &Value) -> Value {
             }
         }
         "taskgroup.ensure" => {
-            let root_dir = get_string_any(payload, &["root_dir", "rootDir"]);
+            let root_dir = payload_root_dir(payload);
             ensure_task_group(
                 root,
                 payload,
-                if root_dir.is_empty() {
-                    None
-                } else {
-                    Some(root_dir.as_str())
-                },
+                root_dir.as_deref(),
             )
         }
         "taskgroup.query" => {
             let task_group_id = get_string_any(payload, &["task_group_id", "taskGroupId", "id"]);
-            let root_dir = get_string_any(payload, &["root_dir", "rootDir"]);
+            let root_dir = payload_root_dir(payload);
             query_task_group(
                 root,
                 &task_group_id,
-                if root_dir.is_empty() {
-                    None
-                } else {
-                    Some(root_dir.as_str())
-                },
+                root_dir.as_deref(),
             )
         }
         "taskgroup.update_status" => {
@@ -2767,46 +2732,34 @@ fn invoke(root: &Path, op: &str, payload: &Value) -> Value {
             let agent_id = get_string_any(payload, &["agent_id", "agentId"]);
             let status = get_string_any(payload, &["status"]);
             let details = payload.get("details").cloned().unwrap_or(Value::Object(Map::new()));
-            let root_dir = get_string_any(payload, &["root_dir", "rootDir"]);
+            let root_dir = payload_root_dir(payload);
             update_agent_status(
                 root,
                 &task_group_id,
                 &agent_id,
                 &status,
                 &details,
-                if root_dir.is_empty() {
-                    None
-                } else {
-                    Some(root_dir.as_str())
-                },
+                root_dir.as_deref(),
             )
         }
         "completion.status" => {
             let task_group_id = get_string_any(payload, &["task_group_id", "taskGroupId", "id"]);
-            let root_dir = get_string_any(payload, &["root_dir", "rootDir"]);
+            let root_dir = payload_root_dir(payload);
             ensure_and_summarize(
                 root,
                 &task_group_id,
-                if root_dir.is_empty() {
-                    None
-                } else {
-                    Some(root_dir.as_str())
-                },
+                root_dir.as_deref(),
             )
         }
         "completion.track" => {
             let task_group_id = get_string_any(payload, &["task_group_id", "taskGroupId", "id"]);
             let update = payload.get("update").cloned().unwrap_or_else(|| payload.clone());
-            let root_dir = get_string_any(payload, &["root_dir", "rootDir"]);
+            let root_dir = payload_root_dir(payload);
             track_agent_completion(
                 root,
                 &task_group_id,
                 &update,
-                if root_dir.is_empty() {
-                    None
-                } else {
-                    Some(root_dir.as_str())
-                },
+                root_dir.as_deref(),
             )
         }
         "completion.batch" => {
@@ -2817,16 +2770,12 @@ fn invoke(root: &Path, op: &str, payload: &Value) -> Value {
                 .and_then(Value::as_array)
                 .cloned()
                 .unwrap_or_default();
-            let root_dir = get_string_any(payload, &["root_dir", "rootDir"]);
+            let root_dir = payload_root_dir(payload);
             track_batch_completion(
                 root,
                 &task_group_id,
                 &updates,
-                if root_dir.is_empty() {
-                    None
-                } else {
-                    Some(root_dir.as_str())
-                },
+                root_dir.as_deref(),
             )
         }
         "partial.normalize_decision" => {
