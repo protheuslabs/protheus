@@ -263,6 +263,7 @@ client/runtime/config/moltbook/credentials.json
 .nanochat/
 .swarm_test_*.json
 swarm_test_*_data.json
+SWARM_AUDIT_*.md
 client/runtime/systems/skills/packages/
 client/runtime/config/strategies/*.json
 

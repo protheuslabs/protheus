@@ -627,6 +627,7 @@ fn usage() {
     println!("  protheus-ops swarm-runtime sessions wake --session-id=<id> [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime sessions terminate --session-id=<id> [--graceful=1|0] [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime sessions metrics --session-id=<id> [--timeline=1|0] [--state-path=<path>]");
+    println!("  protheus-ops swarm-runtime sessions state --session-id=<id> [--timeline=1|0] [--tool-history-limit=<n>] [--state-path=<path>]");
     println!(
         "  protheus-ops swarm-runtime sessions anomalies --session-id=<id> [--state-path=<path>]"
     );
@@ -640,6 +641,9 @@ fn usage() {
     println!("  protheus-ops swarm-runtime channels <create|publish|poll|monitor> [flags]");
     println!(
         "  protheus-ops swarm-runtime results <publish|query|wait|show|consensus|outliers> [flags]"
+    );
+    println!(
+        "  protheus-ops swarm-runtime metrics queue [--format=<json|prometheus>] [--state-path=<path>]"
     );
     println!("  protheus-ops swarm-runtime test heterogeneous [--label-pattern=<glob>] [--min-count=<n>] [--timeout-sec=<n>] [--state-path=<path>]");
 }
@@ -2656,52 +2660,35 @@ fn run_test_concurrency(state: &mut SwarmState, argv: &[String]) -> Result<Value
         verification_status: "not_verified".to_string(),
     };
 
-    let mut queue_wait_total = 0u64;
-    let mut execution_total = 0u64;
     let mut report_total = 0u64;
-    let mut total_latency = 0u64;
 
     for idx in 0..agents {
         let task = format!("concurrency-test-{idx}");
         let spawned = spawn_single(state, None, &task, 64, &options)?;
         if let Some(metrics) = spawned.get("metrics") {
-            queue_wait_total = queue_wait_total.saturating_add(
-                metrics
-                    .get("queue_wait_ms")
-                    .and_then(Value::as_u64)
-                    .unwrap_or(0),
-            );
-            execution_total = execution_total.saturating_add(
-                metrics
-                    .get("execution_time_ms")
-                    .and_then(Value::as_u64)
-                    .unwrap_or(0),
-            );
             report_total = report_total.saturating_add(
                 metrics
                     .get("report_back_latency_ms")
                     .and_then(Value::as_u64)
                     .unwrap_or(0),
             );
-            total_latency = total_latency.saturating_add(
-                metrics
-                    .get("total_latency_ms")
-                    .and_then(Value::as_u64)
-                    .unwrap_or(0),
-            );
         }
     }
 
-    let denom = agents as f64;
+    let summary = queue_metrics_snapshot(state);
+    let denom = agents.max(1) as f64;
     Ok(json!({
         "ok": true,
         "test": "concurrency",
         "agents": agents,
         "metrics": {
-            "queue_wait_avg_ms": queue_wait_total as f64 / denom,
-            "execution_avg_ms": execution_total as f64 / denom,
+            "queue_wait_avg_ms": summary.get("queue_wait_ms").and_then(|row| row.get("avg")).cloned().unwrap_or(json!(0.0)),
+            "queue_wait_p95_ms": summary.get("queue_wait_ms").and_then(|row| row.get("p95")).cloned().unwrap_or(json!(0)),
+            "execution_avg_ms": summary.get("execution_ms").and_then(|row| row.get("avg")).cloned().unwrap_or(json!(0.0)),
+            "execution_p95_ms": summary.get("execution_ms").and_then(|row| row.get("p95")).cloned().unwrap_or(json!(0)),
             "report_back_avg_ms": report_total as f64 / denom,
-            "total_latency_avg_ms": total_latency as f64 / denom,
+            "total_latency_avg_ms": summary.get("total_latency_ms").and_then(|row| row.get("avg")).cloned().unwrap_or(json!(0.0)),
+            "total_latency_p95_ms": summary.get("total_latency_ms").and_then(|row| row.get("p95")).cloned().unwrap_or(json!(0)),
             "breakdown_available": true,
         }
     }))
@@ -2976,6 +2963,298 @@ fn sessions_anomalies(state: &SwarmState, session_id: &str) -> Result<Value, Str
         "session_id": session_id,
         "anomalies": session.anomalies,
     }))
+}
+
+fn sessions_state(
+    state: &SwarmState,
+    session_id: &str,
+    include_timeline: bool,
+    tool_history_limit: usize,
+) -> Result<Value, String> {
+    let Some(session) = state.sessions.get(session_id) else {
+        return Err(format!("unknown_session:{session_id}"));
+    };
+
+    let registered_roles = state
+        .service_registry
+        .iter()
+        .filter_map(|(role, instances)| {
+            instances
+                .iter()
+                .any(|instance| instance.session_id == session_id)
+                .then(|| role.clone())
+        })
+        .collect::<Vec<_>>();
+    let advertised_capabilities = state
+        .service_registry
+        .values()
+        .flat_map(|rows| rows.iter())
+        .find(|row| row.session_id == session_id)
+        .map(|row| row.capabilities.clone())
+        .unwrap_or_default();
+
+    let results = state
+        .results_by_session
+        .get(session_id)
+        .cloned()
+        .unwrap_or_default();
+
+    let mut tool_history = session
+        .budget_telemetry
+        .as_ref()
+        .map(|telemetry| {
+            telemetry
+                .usage_over_time
+                .iter()
+                .rev()
+                .take(tool_history_limit.max(1))
+                .cloned()
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    tool_history.reverse();
+
+    let metrics = session
+        .metrics
+        .as_ref()
+        .map(SpawnMetrics::as_json)
+        .unwrap_or(Value::Null);
+    let latest_snapshot = session.metrics_timeline.last().cloned();
+    let context_utilization = session
+        .budget_telemetry
+        .as_ref()
+        .map(BudgetTelemetry::utilization)
+        .unwrap_or(0.0);
+    let mailbox = state.mailboxes.get(session_id);
+
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_session_state",
+        "session_id": session_id,
+        "session": {
+            "status": session.status.clone(),
+            "task": session.task.clone(),
+            "created_at": session.created_at.clone(),
+            "depth": session.depth,
+            "parent_id": session.parent_id.clone(),
+            "children": session.children.clone(),
+            "reachable": session.reachable,
+            "byzantine": session.byzantine,
+            "corruption_type": session.corruption_type.clone(),
+            "role": session.role.clone(),
+            "registered_roles": registered_roles,
+            "capabilities": advertised_capabilities,
+            "results_published": results.len(),
+            "result_ids": results,
+            "background_worker": session.background_worker,
+            "persistent": session.persistent.clone(),
+            "report": session.report.clone(),
+            "anomalies": session.anomalies.clone(),
+        },
+        "context": {
+            "utilization_ratio": context_utilization,
+            "utilization_pct": context_utilization * 100.0,
+            "latest_snapshot": latest_snapshot,
+            "snapshot_count": session.metrics_timeline.len(),
+        },
+        "metrics": metrics,
+        "tool_call_history": tool_history,
+        "check_ins": {
+            "count": session.check_ins.len(),
+            "latest": session.check_ins.last().cloned(),
+            "timeline": if include_timeline { Value::Array(session.check_ins.clone()) } else { Value::Null },
+        },
+        "mailbox": {
+            "unread": mailbox.map(|row| row.unread.len()).unwrap_or(0),
+            "read": mailbox.map(|row| row.read.len()).unwrap_or(0),
+        }
+    }))
+}
+
+fn queue_metrics_snapshot(state: &SwarmState) -> Value {
+    let mut queue_wait_values = Vec::new();
+    let mut execution_values = Vec::new();
+    let mut total_latency_values = Vec::new();
+
+    for session in state.sessions.values() {
+        if let Some(metrics) = session.metrics.as_ref() {
+            queue_wait_values.push(metrics.queue_wait_ms);
+            execution_values.push(metrics.execution_time_ms());
+            total_latency_values.push(metrics.total_latency_ms());
+        }
+    }
+
+    let queue_wait_sum: u64 = queue_wait_values.iter().copied().sum();
+    let execution_sum: u64 = execution_values.iter().copied().sum();
+    let total_latency_sum: u64 = total_latency_values.iter().copied().sum();
+    let sample_count = queue_wait_values.len() as u64;
+    let denom = sample_count.max(1) as f64;
+
+    let mut queue_wait_sorted = queue_wait_values.clone();
+    let mut execution_sorted = execution_values.clone();
+    let mut total_latency_sorted = total_latency_values.clone();
+    queue_wait_sorted.sort_unstable();
+    execution_sorted.sort_unstable();
+    total_latency_sorted.sort_unstable();
+
+    let p95_idx = |len: usize| -> usize {
+        if len == 0 {
+            return 0;
+        }
+        (((len as f64) * 0.95).ceil() as usize).saturating_sub(1)
+    };
+
+    let queue_wait_p95 = queue_wait_sorted
+        .get(p95_idx(queue_wait_sorted.len()))
+        .copied()
+        .unwrap_or(0);
+    let execution_p95 = execution_sorted
+        .get(p95_idx(execution_sorted.len()))
+        .copied()
+        .unwrap_or(0);
+    let total_latency_p95 = total_latency_sorted
+        .get(p95_idx(total_latency_sorted.len()))
+        .copied()
+        .unwrap_or(0);
+
+    let unread_messages: usize = state
+        .mailboxes
+        .values()
+        .map(|mailbox| mailbox.unread.len())
+        .sum();
+    let persistent_sessions = state
+        .sessions
+        .values()
+        .filter(|session| session.persistent.is_some())
+        .count();
+    let active_sessions = state
+        .sessions
+        .values()
+        .filter(|session| {
+            matches!(
+                session.status.as_str(),
+                "running" | "persistent_running" | "background_running"
+            )
+        })
+        .count();
+
+    json!({
+        "sample_count": sample_count,
+        "queue_wait_ms": {
+            "sum": queue_wait_sum,
+            "avg": queue_wait_sum as f64 / denom,
+            "p95": queue_wait_p95,
+        },
+        "execution_ms": {
+            "sum": execution_sum,
+            "avg": execution_sum as f64 / denom,
+            "p95": execution_p95,
+        },
+        "total_latency_ms": {
+            "sum": total_latency_sum,
+            "avg": total_latency_sum as f64 / denom,
+            "p95": total_latency_p95,
+        },
+        "session_counts": {
+            "total": state.sessions.len(),
+            "active": active_sessions,
+            "persistent": persistent_sessions,
+        },
+        "mailbox": {
+            "unread_total": unread_messages,
+            "mailbox_count": state.mailboxes.len(),
+        }
+    })
+}
+
+fn queue_metrics_prometheus(state: &SwarmState, snapshot: &Value) -> String {
+    let sample_count = snapshot
+        .get("sample_count")
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+    let queue_wait_sum = snapshot
+        .get("queue_wait_ms")
+        .and_then(|row| row.get("sum"))
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+    let queue_wait_avg = snapshot
+        .get("queue_wait_ms")
+        .and_then(|row| row.get("avg"))
+        .and_then(Value::as_f64)
+        .unwrap_or(0.0);
+    let queue_wait_p95 = snapshot
+        .get("queue_wait_ms")
+        .and_then(|row| row.get("p95"))
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+    let execution_sum = snapshot
+        .get("execution_ms")
+        .and_then(|row| row.get("sum"))
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+    let execution_avg = snapshot
+        .get("execution_ms")
+        .and_then(|row| row.get("avg"))
+        .and_then(Value::as_f64)
+        .unwrap_or(0.0);
+    let execution_p95 = snapshot
+        .get("execution_ms")
+        .and_then(|row| row.get("p95"))
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+    let unread_total = snapshot
+        .get("mailbox")
+        .and_then(|row| row.get("unread_total"))
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+    let active_sessions = snapshot
+        .get("session_counts")
+        .and_then(|row| row.get("active"))
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+    let persistent_sessions = snapshot
+        .get("session_counts")
+        .and_then(|row| row.get("persistent"))
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+
+    vec![
+        "# HELP swarm_runtime_queue_samples_total Number of sessions with spawn metrics."
+            .to_string(),
+        "# TYPE swarm_runtime_queue_samples_total gauge".to_string(),
+        format!("swarm_runtime_queue_samples_total {sample_count}"),
+        "# HELP swarm_runtime_queue_wait_ms_sum Total queue wait time in milliseconds.".to_string(),
+        "# TYPE swarm_runtime_queue_wait_ms_sum gauge".to_string(),
+        format!("swarm_runtime_queue_wait_ms_sum {queue_wait_sum}"),
+        "# HELP swarm_runtime_queue_wait_ms_avg Average queue wait in milliseconds.".to_string(),
+        "# TYPE swarm_runtime_queue_wait_ms_avg gauge".to_string(),
+        format!("swarm_runtime_queue_wait_ms_avg {:.3}", queue_wait_avg),
+        "# HELP swarm_runtime_queue_wait_ms_p95 P95 queue wait in milliseconds.".to_string(),
+        "# TYPE swarm_runtime_queue_wait_ms_p95 gauge".to_string(),
+        format!("swarm_runtime_queue_wait_ms_p95 {queue_wait_p95}"),
+        "# HELP swarm_runtime_execution_ms_sum Total execution time in milliseconds.".to_string(),
+        "# TYPE swarm_runtime_execution_ms_sum gauge".to_string(),
+        format!("swarm_runtime_execution_ms_sum {execution_sum}"),
+        "# HELP swarm_runtime_execution_ms_avg Average execution time in milliseconds.".to_string(),
+        "# TYPE swarm_runtime_execution_ms_avg gauge".to_string(),
+        format!("swarm_runtime_execution_ms_avg {:.3}", execution_avg),
+        "# HELP swarm_runtime_execution_ms_p95 P95 execution time in milliseconds.".to_string(),
+        "# TYPE swarm_runtime_execution_ms_p95 gauge".to_string(),
+        format!("swarm_runtime_execution_ms_p95 {execution_p95}"),
+        "# HELP swarm_runtime_unread_messages_total Total unread inter-agent messages.".to_string(),
+        "# TYPE swarm_runtime_unread_messages_total gauge".to_string(),
+        format!("swarm_runtime_unread_messages_total {unread_total}"),
+        "# HELP swarm_runtime_active_sessions Total active sessions.".to_string(),
+        "# TYPE swarm_runtime_active_sessions gauge".to_string(),
+        format!("swarm_runtime_active_sessions {active_sessions}"),
+        "# HELP swarm_runtime_persistent_sessions Total persistent sessions.".to_string(),
+        "# TYPE swarm_runtime_persistent_sessions gauge".to_string(),
+        format!("swarm_runtime_persistent_sessions {persistent_sessions}"),
+        "# HELP swarm_runtime_sessions_total Total sessions recorded in state.".to_string(),
+        "# TYPE swarm_runtime_sessions_total gauge".to_string(),
+        format!("swarm_runtime_sessions_total {}", state.sessions.len()),
+    ]
+    .join("\n")
 }
 
 fn scheduled_add(state: &mut SwarmState, argv: &[String], now_ms: u64) -> Result<Value, String> {
@@ -3791,6 +4070,20 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                         Err("session_id_required".to_string())
                     }
                 }
+                "state" => {
+                    if let Some(session_id) =
+                        parse_flag(argv, "session-id").filter(|value| !value.trim().is_empty())
+                    {
+                        sessions_state(
+                            &state,
+                            &session_id,
+                            parse_bool_flag(argv, "timeline", false),
+                            parse_u64_flag(argv, "tool-history-limit", 50) as usize,
+                        )
+                    } else {
+                        Err("session_id_required".to_string())
+                    }
+                }
                 "anomalies" => {
                     if let Some(session_id) =
                         parse_flag(argv, "session-id").filter(|value| !value.trim().is_empty())
@@ -4113,6 +4406,33 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                     }))
                 }
                 _ => Err(format!("unknown_results_subcommand:{sub}")),
+            }
+        }
+        "metrics" => {
+            let sub = argv
+                .get(1)
+                .map(|value| value.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "queue".to_string());
+            match sub.as_str() {
+                "queue" => {
+                    let snapshot = queue_metrics_snapshot(&state);
+                    let format = parse_flag(argv, "format")
+                        .unwrap_or_else(|| "json".to_string())
+                        .to_ascii_lowercase();
+                    let prometheus = if format == "prometheus" {
+                        Some(queue_metrics_prometheus(&state, &snapshot))
+                    } else {
+                        None
+                    };
+                    Ok(json!({
+                        "ok": true,
+                        "type": "swarm_runtime_metrics_queue",
+                        "format": format,
+                        "snapshot": snapshot,
+                        "prometheus": prometheus,
+                    }))
+                }
+                _ => Err(format!("unknown_metrics_subcommand:{sub}")),
             }
         }
         "test" => {
@@ -4504,5 +4824,59 @@ mod tests {
             .cloned()
             .unwrap_or_default();
         assert_eq!(outliers.len(), 1);
+    }
+
+    #[test]
+    fn sessions_state_includes_context_and_tool_history() {
+        let mut state = SwarmState::default();
+        let mut options = spawn_options();
+        options.token_budget = Some(1000);
+        options.budget_exhaustion_action = BudgetAction::AllowWithWarning;
+        options.role = Some("calculator".to_string());
+        options.capabilities = vec!["calculate".to_string(), "verify".to_string()];
+
+        let session_id = spawn_single(&mut state, None, "state-introspection", 8, &options)
+            .expect("spawn")
+            .get("session_id")
+            .and_then(Value::as_str)
+            .expect("session_id")
+            .to_string();
+
+        let snapshot = sessions_state(&state, &session_id, true, 8).expect("session state");
+        assert_eq!(
+            snapshot.get("type").and_then(Value::as_str),
+            Some("swarm_runtime_session_state")
+        );
+        assert!(
+            snapshot
+                .get("context")
+                .and_then(|row| row.get("utilization_pct"))
+                .and_then(Value::as_f64)
+                .unwrap_or(0.0)
+                >= 0.0
+        );
+        assert!(
+            snapshot
+                .get("tool_call_history")
+                .and_then(Value::as_array)
+                .map(|rows| !rows.is_empty())
+                .unwrap_or(false),
+            "expected tool call history for spawned session"
+        );
+    }
+
+    #[test]
+    fn queue_metrics_prometheus_export_contains_expected_fields() {
+        let mut state = SwarmState::default();
+        for idx in 0..3 {
+            let task = format!("queue-metrics-{idx}");
+            let _ = spawn_single(&mut state, None, &task, 8, &spawn_options()).expect("spawn");
+        }
+
+        let snapshot = queue_metrics_snapshot(&state);
+        let exported = queue_metrics_prometheus(&state, &snapshot);
+        assert!(exported.contains("swarm_runtime_queue_wait_ms_avg"));
+        assert!(exported.contains("swarm_runtime_execution_ms_p95"));
+        assert!(exported.contains("swarm_runtime_sessions_total"));
     }
 }

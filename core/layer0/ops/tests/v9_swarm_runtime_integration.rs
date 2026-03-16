@@ -850,6 +850,63 @@ fn persistent_mode_supports_tick_wake_terminate_and_metrics() {
 }
 
 #[test]
+fn sessions_state_command_returns_session_introspection() {
+    let root = tempfile::tempdir().expect("tempdir");
+    let state_path = root.path().join("state/swarm/latest.json");
+
+    let spawn_args = vec![
+        "spawn".to_string(),
+        "--task=swarm-test-state-introspection".to_string(),
+        "--role=calculator".to_string(),
+        "--capabilities=calculate,verify".to_string(),
+        "--token-budget=2000".to_string(),
+        format!("--state-path={}", state_path.display()),
+    ];
+    assert_eq!(run_swarm(root.path(), &spawn_args), 0);
+
+    let state = read_state(&state_path);
+    let session_id = state
+        .get("sessions")
+        .and_then(Value::as_object)
+        .and_then(|rows| rows.keys().next())
+        .cloned()
+        .expect("session id");
+
+    let state_args = vec![
+        "sessions".to_string(),
+        "state".to_string(),
+        format!("--session-id={session_id}"),
+        "--timeline=1".to_string(),
+        "--tool-history-limit=10".to_string(),
+        format!("--state-path={}", state_path.display()),
+    ];
+    assert_eq!(run_swarm(root.path(), &state_args), 0);
+}
+
+#[test]
+fn queue_metrics_command_supports_prometheus_format() {
+    let root = tempfile::tempdir().expect("tempdir");
+    let state_path = root.path().join("state/swarm/latest.json");
+
+    for idx in 0..3 {
+        let spawn_args = vec![
+            "spawn".to_string(),
+            format!("--task=swarm-test-metrics-{idx}"),
+            format!("--state-path={}", state_path.display()),
+        ];
+        assert_eq!(run_swarm(root.path(), &spawn_args), 0);
+    }
+
+    let metrics_args = vec![
+        "metrics".to_string(),
+        "queue".to_string(),
+        "--format=prometheus".to_string(),
+        format!("--state-path={}", state_path.display()),
+    ];
+    assert_eq!(run_swarm(root.path(), &metrics_args), 0);
+}
+
+#[test]
 fn background_worker_start_status_stop_lifecycle() {
     let root = tempfile::tempdir().expect("tempdir");
     let state_path = root.path().join("state/swarm/latest.json");
