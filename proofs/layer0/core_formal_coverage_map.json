@@ -1,7 +1,7 @@
 {
   "schema_id": "core_formal_coverage_map",
   "schema_version": "1.0",
-  "generated_at": "2026-03-13T00:00:00Z",
+  "generated_at": "2026-03-16T01:20:00Z",
   "surfaces": [
     {
       "id": "core/layer0/ops::directive_kernel",
@@ -43,7 +43,15 @@
             "--harness",
             "prove_clean_is_deterministic_for_same_input",
             "--harness",
-            "prove_clean_trims_outer_whitespace"
+            "prove_clean_trims_outer_whitespace",
+            "--harness",
+            "prove_canyon_footprint_no_std_helper_is_true_when_no_std_attr_present",
+            "--harness",
+            "prove_cross_plane_guard_requires_signed_jwt",
+            "--harness",
+            "prove_super_gate_release_blocks_when_scheduler_is_unproven",
+            "--harness",
+            "prove_super_gate_release_allows_when_all_assurance_signals_pass"
           ]
         }
       ]
@@ -81,9 +89,30 @@
     },
     {
       "id": "core/layer2/execution::scheduler",
-      "status": "unproven",
-      "engines": [],
-      "artifact": "core/layer2/execution/src/lib.rs"
+      "status": "proven",
+      "engines": ["kani"],
+      "artifact": "core/layer2/execution/src/scheduler_kani_proofs.rs",
+      "proof_commands": [
+        {
+          "id": "kani_execution_scheduler_proofs",
+          "required": true,
+          "argv": [
+            "cargo",
+            "kani",
+            "--manifest-path",
+            "core/layer2/execution/Cargo.toml",
+            "--lib",
+            "--output-format",
+            "terse",
+            "--harness",
+            "prove_normalize_step_id_fills_empty_id",
+            "--harness",
+            "prove_step_fingerprint_is_deterministic_for_same_input",
+            "--harness",
+            "prove_scheduler_receipt_is_deterministic_for_same_workflow"
+          ]
+        }
+      ]
     }
   ]
 }

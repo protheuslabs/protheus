@@ -183,6 +183,18 @@ Purpose: capture high-impact tasks that cannot be executed autonomously from bac
 |---|---|---|---|---|
 | HMAN-092 | Connect physical `ESP32` and `RP2040` boards, run flash + serial verification session, and capture runtime screenshots/logs | Real hardware possession, USB access, and physical flashing actions cannot be executed autonomously from this workspace. | `docs/client/reports/hardware/esp32_tiny_max_status_<date>.png`, `docs/client/reports/hardware/rp2040_tiny_max_status_<date>.png`, `state/ops/evidence/mcu_flash_session_<date>.md` | `P0-MCU-PROOF-001`, `V7-UNDISPUTED-001` |
 
+## Human Intake (Fortune-100 Canyon Addendum Doc `11eLZN7Drln0BNEfP1Q1vYPwbN5_0r-FbmYXrB9aBPc8`, 2026-03-15)
+
+| ID | Human Action | Why This Is Human-Only | Evidence Artifact (suggested) | Backlog Dependencies |
+|---|---|---|---|---|
+| HMAN-093 | Execute legal and corporate-formation actions (entity filings, board/officer assignments, high-liability contract execution above approved threshold) | Corporate authority, legal signatures, and indemnity acceptance are non-delegable and cannot be executed by autonomous lanes. | `state/ops/evidence/fortune100_legal_corporate_actions_<date>.zip` | `V10-CRUSH-001.1`, `V10-CRUSH-001.3`, `V6-F100-A-008` |
+| HMAN-094 | Approve team/people decisions (hiring, termination, promotion, compensation/equity, key-person continuity) | Employment, compensation, and equity grants require executive/legal authority and fiduciary accountability. | `state/ops/evidence/fortune100_people_governance_actions_<date>.md` | `V10-CRUSH-001.3`, `V10-CRUSH-001.8` |
+| HMAN-095 | Commission and attest external assurance/compliance actions (audit firms, certifications, regulatory interactions, trust-center attestations) | Third-party audit engagement and regulatory communications require licensed human accountability and legal authority. | `state/ops/evidence/fortune100_assurance_regulatory_actions_<date>.zip` | `V10-CRUSH-001.2`, `V6-F100-043`, `V6-F100-A-014` |
+| HMAN-096 | Approve high-stakes financial/risk decisions (budgets over threshold, funding/debt/equity instruments, insurance, IP assignment) | Capital allocation, financing instruments, and insurance commitments require human fiduciary control and signature authority. | `state/ops/evidence/fortune100_financial_risk_authorizations_<date>.md` | `V10-CRUSH-001.3`, `V10-CRUSH-001.8` |
+| HMAN-097 | Approve governance and constitutional changes (HUMAN_ONLY list amendments, Layer-0/1 constitutional changes, three-plane boundary changes) | Core constitutional/governance modifications must remain under explicit human sovereign control. | `state/ops/evidence/fortune100_constitutional_change_approval_<date>.md` | `V10-CRUSH-001.8`, `V9-ESCALATE-001.5`, `V9-MERGE-001.4` |
+| HMAN-098 | Approve high-stakes external communications (compliance/certification claims, reference-customer claims, audit/bounty disclosures, enterprise-ready messaging) | Public claims carry legal, reputational, and contractual exposure requiring human legal/brand approval. | `state/ops/evidence/fortune100_public_claims_approval_<date>.md` | `V10-CRUSH-001.2`, `V10-CRUSH-001.3`, `V4-FORT-006` |
+| HMAN-099 | Approve founder-risk shield actions (escrow trigger changes, key-person transition activation, board-grade continuity reporting to enterprise customers) | Escrow and continuity controls involve legal custody, succession authority, and customer-trust commitments that cannot be delegated. | `state/ops/evidence/fortune100_founder_risk_shields_<date>.md` | `V10-CRUSH-001.3`, `V10-CRUSH-001.8`, `HMAN-028` |
+
 ## Non-Negotiable Constraint
 
 These tasks are intentionally not auto-executable. They anchor sovereignty, legal control, and accountability in the human root.

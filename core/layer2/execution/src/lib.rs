@@ -6,6 +6,8 @@ mod importers;
 mod initiative;
 mod inversion;
 mod sprint_contract;
+#[cfg(kani)]
+mod scheduler_kani_proofs;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};

@@ -103,6 +103,29 @@ fn v7_f100_and_moat_batch2_contracts_are_behavior_proven() {
         "local/state/ops/f100_reliability_certification/latest.json",
         r#"{"ok":true,"tier":"gold"}"#,
     );
+    write_text(
+        root,
+        "proofs/layer0/core_formal_coverage_map.json",
+        r#"{
+  "schema_id": "core_formal_coverage_map",
+  "schema_version": "1.0",
+  "surfaces": [
+    {"id":"core/layer0/ops::directive_kernel","status":"proven"},
+    {"id":"core/layer2/execution::scheduler","status":"proven"}
+  ]
+}"#,
+    );
+    write_text(
+        root,
+        "local/state/artifacts/nightly_fuzz_chaos_report_2026-03-16.json",
+        r#"{
+  "ok": true,
+  "summary": {
+    "fuzz_failures": 0,
+    "chaos_failures": 0
+  }
+}"#,
+    );
 
     let ollama_bin = install_ollama_stub(root);
     std::env::set_var("PROTHEUS_LOCAL_AI_BIN", &ollama_bin);
@@ -348,7 +371,20 @@ fn v7_f100_and_moat_batch2_contracts_are_behavior_proven() {
         enterprise_hardening::run(root, &["super-gate".to_string(), "--strict=1".to_string()]),
         0
     );
-    assert_claim(&read_json(&latest_path(root)), "V7-F100-002.7");
+    let super_gate = read_json(&latest_path(root));
+    assert_eq!(
+        super_gate
+            .pointer("/gate/formal/scheduler_proven")
+            .and_then(Value::as_bool),
+        Some(true)
+    );
+    assert_eq!(
+        super_gate
+            .pointer("/gate/fuzz_chaos/report_ok")
+            .and_then(Value::as_bool),
+        Some(true)
+    );
+    assert_claim(&super_gate, "V7-F100-002.7");
 
     std::env::remove_var("PROTHEUS_CORE_STATE_ROOT");
     std::env::remove_var("PROTHEUS_LOCAL_AI_BIN");

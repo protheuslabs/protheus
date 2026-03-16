@@ -32,6 +32,7 @@ fn temp_root(name: &str) -> PathBuf {
 
 // Registry used by CI gates to verify that V8 "done" status cannot bypass runtime proofs.
 const V8_PROOF_IDS: &[&str] = &[
+    "V8-PROOF-REGISTRY-001",
     "V8-BINARY-BLOB-001.1",
     "V8-BINARY-BLOB-001.2",
     "V8-BINARY-BLOB-001.3",
@@ -92,11 +93,38 @@ const V8_PROOF_IDS: &[&str] = &[
     "V8-SKILL-GRAPH-001.3",
     "V8-SKILL-GRAPH-001.4",
     "V8-SKILL-GRAPH-001.5",
+    "V7-CANYON-002.1",
+    "V7-CANYON-002.2",
+    "V7-CANYON-002.3",
+    "V7-CANYON-002.4",
+    "V7-CANYON-002.5",
+    "V7-CANYON-002.6",
+    "V7-F100-002.1",
+    "V7-F100-002.2",
+    "V7-F100-002.3",
+    "V7-F100-002.4",
+    "V7-F100-002.5",
+    "V7-F100-002.6",
+    "V7-F100-002.7",
+    "V7-F100-002.8",
 ];
 
 #[test]
 fn v8_runtime_proof_registry_is_non_empty() {
     assert!(V8_PROOF_IDS.len() >= 30);
+    assert!(V8_PROOF_IDS.contains(&"V8-PROOF-REGISTRY-001"));
+}
+
+#[test]
+fn runtime_proof_registry_includes_v7_canyon_and_f100_series() {
+    for id in [
+        "V7-CANYON-002.1",
+        "V7-CANYON-002.6",
+        "V7-F100-002.3",
+        "V7-F100-002.7",
+    ] {
+        assert!(V8_PROOF_IDS.contains(&id), "missing runtime proof registry id: {id}");
+    }
 }
 
 fn core_state_root(root: &Path) -> PathBuf {

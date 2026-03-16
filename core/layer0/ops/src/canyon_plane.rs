@@ -19,6 +19,10 @@ use std::time::Instant;
 const LANE_ID: &str = "canyon_plane";
 const ENV_KEY: &str = "PROTHEUS_CANYON_PLANE_STATE_ROOT";
 
+pub(crate) fn footprint_no_std_ready(default_empty: bool, no_std_attr: bool) -> bool {
+    no_std_attr || default_empty
+}
+
 fn usage() {
     println!("Usage:");
     println!("  protheus-ops canyon-plane efficiency [--strict=1|0] [--binary-path=<path>] [--idle-memory-mb=<n>] [--concurrent-agents=<n>]");

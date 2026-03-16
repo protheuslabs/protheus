@@ -252,7 +252,10 @@ pub(super) fn footprint_command(
                 "manifest": manifest.display().to_string(),
                 "source": src.display().to_string(),
                 "default_empty": manifest_body.contains("default = []"),
-                "no_std_ready": src_body.contains("#![no_std]") || manifest_body.contains("default = []"),
+                "no_std_ready": super::footprint_no_std_ready(
+                    manifest_body.contains("default = []"),
+                    src_body.contains("#![no_std]")
+                ),
                 "exists": manifest.exists() && src.exists()
             })
         })

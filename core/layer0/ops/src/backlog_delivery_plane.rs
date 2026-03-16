@@ -641,7 +641,7 @@ fn run_v8_skill_graph(root: &Path, id: &str, parsed: &crate::ParsedArgs) -> Valu
         .flags
         .get("folder")
         .cloned()
-        .unwrap_or_else(|| "client/runtime/systems/skills/content-skill-graph".to_string());
+        .unwrap_or_else(|| "adapters/cognition/skills/content-skill-graph".to_string());
     let folder_path = if Path::new(&folder).is_absolute() {
         PathBuf::from(&folder)
     } else {
@@ -903,6 +903,28 @@ fn run_v9_escalate(root: &Path, id: &str, parsed: &crate::ParsedArgs) -> Value {
 }
 
 fn run_v8_or_v9(root: &Path, id: &str, parsed: &crate::ParsedArgs) -> Value {
+    if id == "V6-SKILL-001" {
+        let mut payload = run_v8_skill_graph(root, "V8-SKILL-GRAPH-001.1", parsed);
+        payload["id"] = Value::String(id.to_string());
+        if let Some(rows) = payload
+            .get_mut("claim_evidence")
+            .and_then(Value::as_array_mut)
+        {
+            for row in rows.iter_mut() {
+                if let Some(obj) = row.as_object_mut() {
+                    obj.insert("id".to_string(), Value::String(id.to_string()));
+                    obj.insert(
+                        "claim".to_string(),
+                        Value::String(
+                            "content_skill_graph_contract_executes_in_core_with_default_adapter_path"
+                                .to_string(),
+                        ),
+                    );
+                }
+            }
+        }
+        return payload;
+    }
     if id.starts_with("V8-MOAT-001.") {
         return run_v8_moat(root, id, parsed);
     }

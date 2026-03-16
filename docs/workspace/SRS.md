@@ -6273,9 +6273,9 @@ Notes:
 
 | ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
 | --- | --- | --- | --- | --- | --- | --- |
-| V6-SEC-010 | existing-coverage-validated | [hardening / V6] Continuous Injection/MCP Poisoning Scanner Contract | Security confidence is hard to compare release-to-release without a fixed, repeatable probe harness and deterministic scoring outputs. | Add governed scanner pack (`protheus security scan`) that runs standardized prompt-injection + MCP/tool-poisoning probes with deterministic score artifacts (`score`, `success_rate`, `critical_hits`, `blast_radius_events`) and reproducible receipts. / V6-SEC-005, V6-SEC-008 / 10 / 0/1/2 | 10 | 0/1/2/adapter/client |
-| V6-SEC-011 | existing-coverage-validated | [hardening / V6] Layer-0 Injection Deny + Auto-Remediation Loop Contract | Discovered prompt-policy vulnerabilities can recur without an automatic remediation loop tied to promotion gates. | Add policy-bound remediation lane that proposes/validates hardened prompt-policy patches on scanner failures, blocks promotion until re-scan passes threshold, and emits deterministic remediation/revalidation receipts. / V6-SEC-010, V6-COCKPIT-023.1, V6-COCKPIT-023.3 / 10 / 0/1/2 | 10 | 0/1/2 |
-| V6-SEC-012 | existing-coverage-validated | [hardening / V6] Tool-Execution Blast-Radius Sentinel Contract | Injection success impact depends on downstream tool actions, but current outputs do not always expose attempted/blocked external side effects as first-class evidence. | Add blast-radius sentinel that records attempted tool/network/credential actions per probe/session, enforces fail-closed blocking at Layer 0, and publishes deterministic blast-radius receipts linked to scan outcomes. / V6-SEC-010, V6-CONDUIT-006 / 10 / 0/1/2 | 10 | 0/1/2/adapter/client |
+| V6-SEC-010 | done | [hardening / V6] Continuous Injection/MCP Poisoning Scanner Contract | Security confidence is hard to compare release-to-release without a fixed, repeatable probe harness and deterministic scoring outputs. | Implemented scanner lane in `core/layer0/ops/src/security_plane.rs` (`scan` command) with deterministic score artifacts + receipt persistence; behavior proven by `core/layer0/ops/tests/v6_security_hardening_integration.rs::v6_sec_010_scan_lane_detects_injection_and_emits_receipts`. / V6-SEC-005, V6-SEC-008 / 10 / 0/1/2 | 10 | 0/1/2/adapter/client |
+| V6-SEC-011 | done | [hardening / V6] Layer-0 Injection Deny + Auto-Remediation Loop Contract | Discovered prompt-policy vulnerabilities can recur without an automatic remediation loop tied to promotion gates. | Implemented remediation lane in `core/layer0/ops/src/security_plane.rs` (`remediate` / `auto-remediate`) with promotion-gate fail-close until clean re-scan; behavior proven by `core/layer0/ops/tests/v6_security_hardening_integration.rs::v6_sec_011_auto_remediation_blocks_promotion_until_rescan_passes`. / V6-SEC-010, V6-COCKPIT-023.1, V6-COCKPIT-023.3 / 10 / 0/1/2 | 10 | 0/1/2 |
+| V6-SEC-012 | done | [hardening / V6] Tool-Execution Blast-Radius Sentinel Contract | Injection success impact depends on downstream tool actions, but current outputs do not always expose attempted/blocked external side effects as first-class evidence. | Implemented blast-radius sentinel in `core/layer0/ops/src/security_plane.rs` (`blast-radius-sentinel`) with attempted-action recording and strict fail-closed blocking; behavior proven by `core/layer0/ops/tests/v6_security_hardening_integration.rs::v6_sec_012_blast_radius_sentinel_records_and_blocks_high_risk_actions`. / V6-SEC-010, V6-CONDUIT-006 / 10 / 0/1/2 | 10 | 0/1/2/adapter/client |
 | V6-SEC-013 | existing-coverage-validated | [scale-readiness / V6] Live Security Scoreboard + Trend Alerting Contract | Operators need real-time security posture visibility, not periodic static reports. | Add `protheus-top` security pane showing live score trend, top failure classes, and threshold alerts (policy-defined floors), with deterministic score-history receipts and one-click re-scan control path. / V6-SEC-010, V6-OBSERVABILITY-004.* / 10 / 0/1/2 | 10 | 0/1/2/client |
 | V6-SEC-014 | existing-coverage-validated | [governance / V6] Curated Injection Probe Pack + Remediation Playbook Governance | Probe quality and coverage drift without signed curated packs and periodic review of emerging attack vectors. | Maintain signed probe/playbook pack installable via governed URI (for example `security://zeroleaks-hardened`) with quarterly human review, compatibility metadata, and deterministic install/update/deprecate receipts. / V6-SEC-010, V6-SEC-006 / 10 / 0/1/2 | 10 | 0/1/2 |
 | V6-SEC-015 | existing-coverage-validated | [hardening / V6] Conduit-Only Security Scan/Remediation Boundary Enforcement | Security scanning/remediation can become bypassable if run directly from client scripts or unmanaged adapters. | Enforce conduit-only routing for scan/start/stop/report/remediate actions with bypass-rejection tests and fail-closed policy denials; keep client/app surfaces non-authoritative. / V6-SEC-010, V6-CONDUIT-002 / 10 / 0/1/2 | 10 | app |
@@ -7582,7 +7582,7 @@ Objective: remove self-hosting fragility by making upgrades, backup/restore, sec
 | --- | --- | --- | --- | --- | --- | --- |
 | V6-DEPLOY-001.7 | existing-coverage-validated | Zero-Downtime Rolling Update + Stateful Migration Contract | Upgrades still risk runtime interruption and config/state breakage when migration and rollout are not one atomic governed path. | Add rolling update orchestration that stages/canaries new runtime while old workers continue serving, performs covenant-checked config/state migrations, and only cuts traffic after parity/health gates pass; automatic rollback triggers on migration or SLO failure with deterministic rollout/migrate/rollback receipts. | 8 | 0/1/2/client/adapter |
 | V6-PERSIST-001.13 | existing-coverage-validated | Full-State Snapshot Backup/Restore + Forked Experiment Contract | Operators cannot safely iterate when backups are partial and restore paths do not support instant branch/fork testing. | Add one-command full-state snapshot contract (`memory`, `receipts`, `policies`, `persona/agent state`, `scheduler`, `connectors`) with deterministic restore and optional forked-namespace restore mode for experiment sandboxes; every snapshot/restore/fork operation emits deterministic receipts and integrity hashes. | 8 | 0/1/2/client |
-| V6-SEC-016 | existing-coverage-validated | External Secrets Federation Contract (Vault/AWS/1Password) | Enterprise adoption slows when secrets handling is not uniformly mapped to first-class external secret managers under one governed contract. | Provide policy-scoped external secrets adapters with lease/rotation/audit semantics, fail-closed retrieval, scoped handle issuance, and deterministic fetch/rotate/revoke receipts; non-federated fallback remains available only under explicit policy. | 10 | 0/1/2 |
+| V6-SEC-016 | done | External Secrets Federation Contract (Vault/AWS/1Password) | Enterprise adoption slows when secrets handling is not uniformly mapped to first-class external secret managers under one governed contract. | Implemented `secrets-federation` lane in `core/layer0/ops/src/security_plane.rs` with provider-scoped handles, fail-closed fetch, rotation/revocation semantics, and deterministic receipts; behavior proven by `core/layer0/ops/tests/v6_security_hardening_integration.rs::v6_sec_016_secrets_federation_issues_scoped_handles_and_revokes_them`. | 10 | 0/1/2 |
 | V6-CLOUD-001.1 | existing-coverage-validated | Managed Cloud Control Plane Contract (Private Instance Lifecycle) | Non-technical users face high friction without a one-command managed instance lifecycle for deployment, updates, and runtime ops. | Add managed instance control-plane contract (`create`, `upgrade`, `suspend`, `resume`, `destroy`, `clone`) with deterministic lifecycle receipts, policy-scoped defaults, and guarded workspace bootstrap flow that requires secure setup completion before exposure. | 8 | 0/1/2/adapter/client |
 | V6-CLOUD-001.2 | existing-coverage-validated | Tenant/Workspace Isolation + Managed Ops Health/SLA Evidence Contract | Managed multi-tenant offerings are untrustworthy without explicit workspace isolation boundaries and continuously measured ops health evidence. | Enforce workspace-isolation policy (identity/session/storage/runtime boundaries), emit periodic managed-ops health artifacts (`uptime`, `update success`, `restore drill freshness`, `incident MTTR`), and block high-risk operations when isolation/health checks fail; all checks produce deterministic receipts. | 8 | 0/1/2/adapter/client |
 | V6-SEED-812 | existing-coverage-validated | First-Class Windows Socket/Adapter Profile | Platform support remains uneven when Windows runtime behavior relies on generic fallback paths rather than explicit governed adapters. | Deliver Windows-first socket/adapter profile with install/update/service contracts, policy-bound capability matrix, and deterministic conformance receipts proving parity with core runtime contracts. | 6 | 1/2/client/adapter |
@@ -9236,12 +9236,12 @@ Objective: reduce install and runtime footprint to hard, verifiable targets with
 
 | ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
 | --- | --- | --- | --- | --- | --- | --- |
-| V7-CANYON-002.1 | done | Layer-0/1 `no_std` + Custom Allocator Footprint Contract | The current binary-size floor will not move enough unless the trusted core drops `std` overhead and adopts allocator discipline by default. | Added `core/layer0/alloc.rs`, wired a minimal-profile global allocator in `core/layer0/ops/src/lib.rs`, and shipped `protheus-ops canyon-plane footprint`; behavior verified in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: the real workspace still reports non-`no_std` Layer 0/1 crates, so full conversion is not yet complete. | 10 | -1/0/1 |
-| V7-CANYON-002.2 | done | Lazy Substrate Loading + Empty-Default Feature-Set Contract | Shipping every substrate adapter in the default binary makes footprint and cold-start targets unreachable for the common case. | Added governed `minimal` and `full-substrate` features plus `protheus-ops canyon-plane lazy-substrate --op=enable,load,status`; behavior verified in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: adapters are tracked and activated through the canyon runtime, but the broader adapter graph is not yet fully feature-gated across the whole workspace. | 10 | 0/1/2/adapter |
-| V7-CANYON-002.3 | done | Size-Optimized Release Pipeline Contract (Fat LTO + PGO + BOLT + Strip) | Static builds alone do not guarantee competitive footprint or startup performance without an enforced optimization pipeline. | Added release/minimal profiles in the workspace `Cargo.toml`, tool-aware release pipeline execution in `core/layer0/ops/src/canyon_plane_extensions.rs`, and integration coverage in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs`; runnable CLI evidence exercised `canyon-plane release-pipeline` on 2026-03-14. Remaining gap: CI-enforced PGO/BOLT replay and hard release-policy gating are not yet wired. | 9 | 0/1/2/client |
-| V7-CANYON-002.4 | done | Batched Receipts + Zero-Copy Binary Core Log Contract | Per-event JSON-heavy receipt emission adds avoidable size and runtime overhead to the core binary. | Added batched binary receipt flushing with measured overhead and binary log output in `core/layer0/ops/src/canyon_plane_extensions.rs`; behavior verified in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs` and runnable CLI evidence showed `approx_overhead_us <= 30` on 2026-03-14. Remaining gap: core receipt emission still writes JSON first and is not yet fully queue-backed by default. | 9 | 0/1/2/client |
-| V7-CANYON-002.5 | done | Minimal/Full Artifact Packaging + Signed Reproducible Release Contract | Clean outsider-ready distribution requires a tiny default install without sacrificing a one-command path to the full adapter ecosystem. | Added minimal/full package manifest generation in `core/layer0/ops/src/canyon_plane_extensions.rs`, behavior coverage in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs`, and runnable CLI evidence for `canyon-plane package-release` on 2026-03-14. Remaining gap: signing, Sigstore/SLSA provenance, and reproducible-build verification are not yet complete. | 9 | 0/1/2/client/adapter |
-| V7-CANYON-002.6 | done | Size Trust Center + Hard Size/Perf CI Gate Contract | Size claims are not credible unless build outputs, cold-start, RSS, and throughput targets are continuously proven and publicly auditable. | Added `protheus-ops canyon-plane size-trust` aggregating footprint, release, batching, and benchmark metrics; behavior verified in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: CI/nightly publication and public historical trust-center hosting are not yet implemented. | 10 | 0/1/2/client/app |
+| V7-CANYON-002.1 | in_progress | Layer-0/1 `no_std` + Custom Allocator Footprint Contract | The current binary-size floor will not move enough unless the trusted core drops `std` overhead and adopts allocator discipline by default. | Added `core/layer0/alloc.rs`, wired a minimal-profile global allocator in `core/layer0/ops/src/lib.rs`, and shipped `protheus-ops canyon-plane footprint`; behavior verified in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: the real workspace still reports non-`no_std` Layer 0/1 crates, so full conversion is not yet complete. | 10 | -1/0/1 |
+| V7-CANYON-002.2 | in_progress | Lazy Substrate Loading + Empty-Default Feature-Set Contract | Shipping every substrate adapter in the default binary makes footprint and cold-start targets unreachable for the common case. | Added governed `minimal` and `full-substrate` features plus `protheus-ops canyon-plane lazy-substrate --op=enable,load,status`; behavior verified in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: adapters are tracked and activated through the canyon runtime, but the broader adapter graph is not yet fully feature-gated across the whole workspace. | 10 | 0/1/2/adapter |
+| V7-CANYON-002.3 | in_progress | Size-Optimized Release Pipeline Contract (Fat LTO + PGO + BOLT + Strip) | Static builds alone do not guarantee competitive footprint or startup performance without an enforced optimization pipeline. | Added release/minimal profiles in the workspace `Cargo.toml`, tool-aware release pipeline execution in `core/layer0/ops/src/canyon_plane_extensions.rs`, and integration coverage in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs`; runnable CLI evidence exercised `canyon-plane release-pipeline` on 2026-03-14. Remaining gap: CI-enforced PGO/BOLT replay and hard release-policy gating are not yet wired. | 9 | 0/1/2/client |
+| V7-CANYON-002.4 | in_progress | Batched Receipts + Zero-Copy Binary Core Log Contract | Per-event JSON-heavy receipt emission adds avoidable size and runtime overhead to the core binary. | Added batched binary receipt flushing with measured overhead and binary log output in `core/layer0/ops/src/canyon_plane_extensions.rs`; behavior verified in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs` and runnable CLI evidence showed `approx_overhead_us <= 30` on 2026-03-14. Remaining gap: core receipt emission still writes JSON first and is not yet fully queue-backed by default. | 9 | 0/1/2/client |
+| V7-CANYON-002.5 | in_progress | Minimal/Full Artifact Packaging + Signed Reproducible Release Contract | Clean outsider-ready distribution requires a tiny default install without sacrificing a one-command path to the full adapter ecosystem. | Added minimal/full package manifest generation in `core/layer0/ops/src/canyon_plane_extensions.rs`, behavior coverage in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs`, and runnable CLI evidence for `canyon-plane package-release` on 2026-03-14. Remaining gap: signing, Sigstore/SLSA provenance, and reproducible-build verification are not yet complete. | 9 | 0/1/2/client/adapter |
+| V7-CANYON-002.6 | in_progress | Size Trust Center + Hard Size/Perf CI Gate Contract | Size claims are not credible unless build outputs, cold-start, RSS, and throughput targets are continuously proven and publicly auditable. | Added `protheus-ops canyon-plane size-trust` aggregating footprint, release, batching, and benchmark metrics; behavior verified in `core/layer0/ops/tests/v7_canyon_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: CI/nightly publication and public historical trust-center hosting are not yet implemented. | 10 | 0/1/2/client/app |
 
 ## Fortune-100 Procurement & Platform Leadership Intake (Doc `1C0JmEaPuYJxfBxnZIzzYM5m-h8kiHfMoFwYP82Db514`, 2026-03-14)
 
@@ -9268,11 +9268,11 @@ Objective: close the remaining gap between technical readiness and Fortune-100 p
 | --- | --- | --- | --- | --- | --- | --- |
 | V7-F100-002.1 | blocked_external_prepared | Expanded Certification & AI Governance Pack Contract (ISO 42001 / EU AI Act / BAA / AI RMF) | Existing certification readiness is broad but does not yet explicitly package AI-governance and jurisdiction-specific enterprise artifacts in the form large buyers expect. | Extend compliance export packs to include ISO/IEC 42001, EU AI Act high-risk, HIPAA BAA, PCI-DSS, GDPR Article 28, and NIST AI RMF mappings with deterministic evidence bundles; attach third-party certification/legal artifacts when human-owned issuance completes. | 10 | 0/1/2/client |
 | V7-F100-002.2 | blocked_external_prepared | Commercial Enterprise Shell Contract (SLA + Indemnity + TAM + Audit Rights) | Fortune-100 procurement requires a legal/commercial operating wrapper, not just strong software posture. | Publish commercial support envelope covering 99.99% uptime SLA, service credits, IP/performance indemnity terms, 24/7 support with P1 response commitments, dedicated TAM workflow, DPA/BAA coverage, and explicit right-to-audit clauses, with signed legal artifacts linked from enterprise readiness surfaces. | 10 | 0/1/2/client |
-| V7-F100-002.3 | done | Zero-Trust Enterprise Deployment Profile Contract (Receipt-Signed JWT + CMEK + VPC/PrivateLink) | Large enterprises need a hardened deployment profile that proves every cross-plane call and secret boundary is enforceable inside customer-owned networks. | Added `enterprise-hardening zero-trust-profile` in `core/layer0/ops/src/enterprise_moat_extensions.rs`; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: the profile is generated and enforced at the enterprise-hardening lane, but receipt-signed JWT enforcement across all cross-plane calls is not yet universal. | 10 | 0/1/2/adapter/client |
+| V7-F100-002.3 | in_progress | Zero-Trust Enterprise Deployment Profile Contract (Receipt-Signed JWT + CMEK + VPC/PrivateLink) | Large enterprises need a hardened deployment profile that proves every cross-plane call and secret boundary is enforceable inside customer-owned networks. | Added `enterprise-hardening zero-trust-profile` plus strict cross-plane JWT/CMEK/private-link guard enforcement for cross-plane enterprise-hardening commands in `core/layer0/ops/src/enterprise_hardening.rs`; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs` and `core/layer0/ops/tests/e2e_cross_plane_contract_flow.rs`. Remaining gap: global universal enforcement across every cross-plane lane outside enterprise-hardening is still in progress. | 10 | 0/1/2/adapter/client |
 | V7-F100-002.4 | done | Continuous Control Monitoring + Enterprise Ops Bridge Contract | Procurement confidence rises when control drift, incidents, and change tickets are visible inside the tools enterprise operators already use. | Added governed ops-bridge export for Datadog, Splunk, ServiceNow, and Jira in `core/layer0/ops/src/enterprise_moat_extensions.rs`; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: live under-60-second drift streaming into external providers is not yet implemented. | 9 | 0/1/2/adapter/client |
 | V7-F100-002.5 | done | Fortune-Scale Performance & HA Certification Contract (50k Cluster / 10k Air-Gapped / <100 ms Cold Start) | Existing benchmark lanes are strong, but this source sets a sharper bar for enterprise platform teams evaluating substrate viability at extreme scale. | Added `enterprise-hardening scale-ha-certify` on top of the scale-certification lane with HA/air-gap/cold-start evidence; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: current certification is deterministic simulation/evidence generation rather than a live 50k-node deployment harness. | 10 | 0/1/2/3/client/adapter |
 | V7-F100-002.6 | done | Kubernetes Operator + Air-Gapped Deployment Module Contract | Helm/Terraform alone are not enough for internal platform teams that expect operator-grade lifecycle management and disconnected deployment modules. | Added operator/Helm/Terraform/Ansible module generation via `enterprise-hardening deploy-modules`; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: upgrade/rollback reconciliation and disconnected-cluster parity validation are not yet complete. | 9 | 0/1/2/client/adapter |
-| V7-F100-002.7 | done | Assurance Super-Gate Contract (TCB Coverage + Formal Proof + Fuzz/Red-Team Cadence) | Fortune-100 platform selection depends on demonstrable assurance depth across the trusted core, not only point-in-time feature readiness. | Added `enterprise-hardening super-gate` combining Top1 proof ratio, reliability, scale certification, and chaos posture; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs` and runnable CLI evidence on 2026-03-14. Remaining gap: formal proof/fuzz cadence and third-party penetration-test evidence are not yet first-class inputs to the gate. | 10 | 0/1/2 |
+| V7-F100-002.7 | in_progress | Assurance Super-Gate Contract (TCB Coverage + Formal Proof + Fuzz/Red-Team Cadence) | Fortune-100 platform selection depends on demonstrable assurance depth across the trusted core, not only point-in-time feature readiness. | Extended `enterprise-hardening super-gate` (`core/layer0/ops/src/enterprise_moat_extensions.rs`) to consume formal coverage map + nightly fuzz/chaos report as first-class gate inputs with claim-evidence output; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs`. Remaining gap: third-party penetration-test evidence feed remains external/human-gated. | 10 | 0/1/2 |
 | V7-F100-002.8 | done | Enterprise Adoption Accelerator Contract (OpenAPI + Training + Reference Architectures + Bootstrap) | Strong internals still lose deals if operators and platform teams cannot onboard, integrate, and pilot quickly with canonical materials. | Added `enterprise-hardening adoption-bootstrap` generating OpenAPI, operator manual, reference architecture, and bootstrap pack artifacts; behavior verified in `core/layer0/ops/tests/v7_f100_moat_batch2_integration.rs`. Remaining gap: training/certification flows and vertical case-study packs are not yet fully implemented. | 8 | 1/2/client/app |
 
 ## Evidence-Native Product Superpowers Intake (Operator Addendum, 2026-03-14)
@@ -9647,3 +9647,371 @@ Objective: harden multi-agent orchestration to enable reliable parallel audits, 
 | REQ-38-006 | done | Completion Triggers | Parent session must manually poll to detect when all subagents complete. | Task group ID assigned at spawn; system tracks agent status; auto-notify parent when all done/failed/timeout; include counts in notification; authority is `core/layer0/ops/src/orchestration.rs` with thin client wrappers `client/cognition/orchestration/completion.ts` and `client/cognition/orchestration/taskgroup.ts`; validated by `tests/client/cognition/completion.tracking.test.js`, `tests/client/cognition/completion.notification.test.js`, and `tests/client/cognition/completion.aggregate.test.js`. | 7 | 0/1/core + 1/2/client |
 | REQ-38-007 | done | Task Group Metadata | No way to query all agents in a task group or check collective status. | Task group ID format `{task_type}-{timestamp}-{nonce}`; all subagents tagged; API supports group querying; metadata includes created_at, coordinator_session, agent_count, status; authority is `core/layer0/ops/src/orchestration.rs` with thin client wrapper `client/cognition/orchestration/taskgroup.ts`; validated by `tests/client/cognition/taskgroup.tagging.test.js`, `tests/client/cognition/taskgroup.query.test.js`, and `tests/client/cognition/taskgroup.metadata.test.js`. | 6 | 0/1/core + 1/2/client |
 | REQ-38-008 | done | Partial Result Retrieval | Timed-out agents lose all findings with no way to recover partial results. | API supports partial retrieval from session-history payloads with checkpoint fallback and explicit retry/continue/abort decisions; authority is `core/layer0/ops/src/orchestration.rs` with thin client wrapper `client/cognition/orchestration/partial.ts`; validated by `tests/client/cognition/partial.session.test.js`, `tests/client/cognition/partial.checkpoint.test.js`, and `tests/client/cognition/partial.decision.test.js`. | 8 | 0/1/core + 1/2/client |
+
+## Power + Reliability Gap Closure Intake (Doc `15PgN5jqu34uPksdCgiqzjKmVIK6XaZm5cAkXyDqascE`, 2026-03-15)
+
+Source references:
+- [Gap analysis doc](https://docs.google.com/document/d/15PgN5jqu34uPksdCgiqzjKmVIK6XaZm5cAkXyDqascE/edit?usp=sharing)
+
+Notes:
+- Primitive-first normalization: this intake focuses on objective capability ceilings called out in the source analysis (speed, router intelligence, integrations, autonomous endurance, distributed reliability, external validations).
+- Overlap handled explicitly:
+  - execution footprint and accelerator baselines: `V7-CANYON-001.*`, `V8-MOAT-001.4`
+  - routing/governance baselines: `BL-042`, existing router health + model-health lanes
+  - distributed/federation baselines: `V8-MOAT-001.2`
+  - autonomous evolution baselines: `V8-RSI-IGNITION-*`, `V9-XENO-*`
+  - blocked external validation baselines: `docs/workspace/BLOCKED_EXTERNAL_*.md` + unblock packet lanes
+- Net-new emphasis from source:
+  - release-speed and inference-path optimization as a measurable production target,
+  - predictive, learning model routing over cost/quality/latency tradeoffs,
+  - broad first-party integration coverage with the same safety contracts,
+  - week-scale unattended self-improvement closure with bounded regressions,
+  - byzantine-tolerant distributed consensus reliability at high node counts,
+  - explicit closure plan for remaining external blockers before "best-in-class" claims.
+
+Objective: convert strategic gap analysis into concrete queued upgrades that can be executed and measured under existing evidence-first governance.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V10-POWER-001.1 | queued | Release-Speed + Accelerator Execution Contract | "Most powerful" claims require measured release-mode throughput/latency and governed accelerator offload that materially beats current debug-profile paths. | Establish release-only benchmark lane with hard gates for cold start, steady-state throughput, and latency under CPU/NPU/GPU paths; add deterministic acceleration placement receipts, fail-closed fallback to safe CPU path, and comparable evidence artifacts under `docs/client/reports/`. | 9 | -1/0/1/2 |
+| V10-POWER-001.2 | queued | Predictive Model Router Intelligence Contract | Static routing heuristics leave quality/cost/latency gains untapped compared to a router that learns from prior outcomes and task patterns. | Extend router to learn per-task/per-domain route outcomes and auto-tune model selection over multi-objective constraints (cost, quality, latency, safety); require deterministic routing decision receipts, drift alarms, and rollback-to-baseline controls. | 10 | 0/1/2/client |
+| V10-POWER-001.3 | queued | Integration Surface Expansion Contract (Safety-Equivalent Adapters) | Reliability in real operator environments depends on broad integrations delivered under the same sovereignty and policy guarantees as core flows. | Ship prioritized adapter packs (cloud providers, databases, major SaaS APIs) behind conduit-only execution, adapter capability manifests, and policy-scoped auth boundaries; add adapter contract tests plus explicit deny-path receipts for unauthorized operations. | 8 | 0/1/2/adapter/client |
+| V10-POWER-001.4 | queued | Autonomous Loop Endurance Contract (Week-Scale) | Architectural ambition must be proven by sustained autonomous operation that continues to improve without unbounded drift or hidden human babysitting. | Add endurance lane proving multi-day/week autonomous runs with measurable improvement deltas, bounded failure budget, automatic rollback on regression, and deterministic replay artifacts linking every adaptation to outcomes. | 10 | 0/1/2/3 |
+| V10-POWER-001.5 | queued | Byzantine-Resilient Distributed Consensus Contract | Federated sync is insufficient for "most reliable" positioning without adversarial fault tolerance and convergence guarantees across large fleets. | Implement BFT-grade consensus mode for evidence mesh quorum operations (membership, convergence root attestations, conflict arbitration), validate under adversarial chaos at high node counts, and emit signed consensus receipts with deterministic replays. | 10 | 0/1/2/3/adapter |
+| V10-POWER-001.6 | queued | External Blocker Closure Program Contract | Remaining external blockers (hardware validation, neural I/O, third-party audits) gate public credibility even when internal architecture is strong. | Convert all currently blocked external items into audited unblock packets with owner/timeline/dependency status, execute third-party validation lanes (audit attestations, hardware proofs), and require objective closeout evidence before upgrading related SRS rows. | 9 | 0/1/2/3/adapter/client |
+
+## OpenClaw Agentic CRM Assimilation Intake (Doc `1mcscWIi7CvNOWljUf_jHE1iBu1JEcrrP5-b5eQ77Cvk`, 2026-03-15)
+
+Source references:
+- [OpenClaw agentic CRM assimilation doc](https://docs.google.com/document/d/1mcscWIi7CvNOWljUf_jHE1iBu1JEcrrP5-b5eQ77Cvk/edit?usp=sharing)
+- upstream reference cited by the source doc: [Moritz Kremb post](https://x.com/moritzkremb/status/2032593332174573819)
+
+Notes:
+- Primitive-first normalization: this intake extends existing COMPANY/PERSIST/connectors/workflow primitives; it does not introduce a second authority path outside Rust-core + conduit.
+- Overlap handled explicitly:
+  - company layer foundations: existing `V6-COMPANY-*` surfaces
+  - connector + MCP interoperability: existing connector and adapter lanes
+  - workflow scheduling/follow-up primitives: existing orchestration and delivery lanes
+  - thin client boundary + conduit enforcement: existing Layer-0/1 governance contracts
+- Net-new emphasis from source:
+  - natural-language CRM chat as a first-class operational surface,
+  - one-command Google stack connector onboarding (Sheets/Gmail/Calendar),
+  - event-driven automated follow-up messaging,
+  - deterministic auto-sync/update loop for CRM state,
+  - explicit conduit-only CRM execution with bypass-rejection coverage.
+
+Objective: turn the COMPANY layer into a production-grade agentic CRM extension while preserving strict conduit governance, deterministic receipts, and thin-client boundaries.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-COMPANY-002.1 | queued | CRM Chat Interface Contract | CRM operations stay high-friction unless operators can query/update pipeline state through a governed natural-language chat surface. | Add `protheus company chat` routed through Rust-core company authority with persistent session state, deterministic receipts, and policy-scoped query/update actions over CRM entities. | 8 | 0/1/2/client/app |
+| V6-COMPANY-002.2 | queued | Google Connector Pack Contract (Sheets/Gmail/Calendar) | CRM automation requires first-class contact/calendar/mail/sheet integration with consistent policy and audit semantics. | Add `protheus connector add google` onboarding path that provisions Sheets/Gmail/Calendar adapters via MCP under policy templates, scoped credentials, deterministic connector receipts, and fail-closed auth errors. | 9 | 0/1/2/adapter/client |
+| V6-COMPANY-002.3 | queued | Automated Follow-Up Engine Contract | Sales/support outcomes degrade when follow-up actions rely on manual operator execution instead of event-driven governed automation. | Extend company workflows to trigger automated follow-up emails/messages from CRM events using existing scheduler/delivery primitives, with deterministic follow-up receipts and explicit HUMAN_ONLY gating for sensitive outbound actions. | 9 | 0/1/2/client/app |
+| V6-COMPANY-002.4 | queued | CRM Auto-Update + Change Detection Contract | CRM quality decays without deterministic background synchronization from external sources and bounded conflict handling. | Implement `protheus company sync` auto-update loop that ingests external changes through conduit, applies hash/change detection, emits deterministic sync receipts, and enforces fail-closed conflict/policy denial behavior. | 8 | 0/1/2/client |
+| V6-COMPANY-002.5 | queued | Conduit-Only CRM Boundary + Thin Client Contract | CRM features become a governance liability if chat/connectors/follow-ups/sync can bypass Rust authority or mutate state directly from client code. | Prove all CRM operations route exclusively through Layer-0 conduit with thin wrappers only, add bypass-rejection tests for each CRM operation class, and emit full audit trails for every accepted/denied CRM action. | 10 | 0/1/2/client/app |
+
+## Agentic Critical Training (ACT) Intake (Doc `1iCBvkgJ5Cj4JtrBkIL4NY_q_U3MBjmCDm8GEnecwbr8`, 2026-03-15)
+
+Source references:
+- [ACT assimilation doc](https://docs.google.com/document/d/1iCBvkgJ5Cj4JtrBkIL4NY_q_U3MBjmCDm8GEnecwbr8/edit?usp=sharing)
+- upstream reference cited by the source doc: [Furong Huang thread](https://x.com/furongh/status/2032549425222983688)
+
+Notes:
+- Primitive-first normalization: this intake extends existing RL/self-improvement, metacognition, inversion/self-modification, and directive compliance primitives; it does not introduce a parallel training authority.
+- Overlap handled explicitly:
+  - RL and self-improvement lanes: existing adaptive/RSI/runtime-learning primitives
+  - inversion/self-modification safety gates: existing inversion + directive compliance enforcement
+  - reflection/memory provenance: Epistemic Object + receipt-chain baselines
+  - benchmark surfaces: existing benchmark matrix and evaluation lanes
+  - conduit-only enforcement: existing Layer-0 gate + bypass-rejection contract
+- Net-new emphasis from source:
+  - pairwise action-quality judgment training as a first-class RL objective,
+  - mandatory critical-judgment stage in self-mod proposal evaluation,
+  - explicit judgment-trace artifacts for emergent reflection,
+  - dedicated ACT benchmark lane and receipts.
+
+Objective: harden agent self-judgment quality by adding critical-evaluation training and governance-gated judgment traces to the existing RSI/self-improvement stack.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V8-ACT-001.1 | queued | ACT Pairwise Critical-Training Primitive Contract | Pure imitation/reflection text underperforms on long-horizon autonomy without a trained critic that can judge better-vs-worse actions. | Add `protheus rl train act` lane that trains on pairwise action candidates with reward for correct superiority judgment using existing RL runtime primitives, emitting deterministic training receipts and dataset lineage artifacts. | 9 | 0/1/2 |
+| V8-ACT-001.2 | queued | Critical-Judgment Gate in Self-Modification Contract | Self-mod proposals can regress quality unless every candidate change is explicitly judged for net improvement before merge. | Extend inversion/self-mod proposal pipeline with mandatory critical-evaluation stage (`is_change_better`) prior to merge, enforced by DirectiveComplianceGate, with deterministic allow/deny receipts for each proposal decision. | 10 | 0/1/2 |
+| V8-ACT-001.3 | queued | Judgment-Trace Reflection Artifact Contract | Reflection quality is not auditable unless critic decisions and rationales are persisted as governed provenance objects. | Persist ACT judgment traces as Epistemic Objects with provenance hashes, model/version metadata, and decision outcomes, linked into memory graph and replayable through existing evidence lanes. | 8 | 1/2/client |
+| V8-ACT-001.4 | queued | ACT Benchmark Lane Contract (ALFWorld/WebShop/ScienceWorld/GPQA) | ACT benefits must be measured on standard environments and reasoning suites to validate real capability lift over baseline policies. | Add `protheus benchmark act` evaluation flow across configured environments with deterministic score receipts, baseline-vs-act deltas, and fail-closed reporting when benchmark artifacts are incomplete. | 9 | 0/1/2/client |
+| V8-ACT-001.5 | queued | Conduit-Only ACT Enforcement + Thin Client Contract | Critical training and self-judgment become unsafe if client-side bypass paths can mutate training or gate outcomes. | Route all ACT train/critique/benchmark operations exclusively through Layer-0 conduit with policy checks, explicit bypass-rejection tests, and thin client wrappers only; require full audit trail for every accepted/denied ACT action. | 10 | 0/1/2/client/app |
+
+## InfRing "Crush Mode" Roadmap Intake (Doc `1QXvu2ZlbiGATHe6JRB5hPRbuYkdsxN16KHzkcgG-6LI`, 2026-03-15)
+
+Source references:
+- [Crush mode roadmap doc](https://docs.google.com/document/d/1QXvu2ZlbiGATHe6JRB5hPRbuYkdsxN16KHzkcgG-6LI/edit?usp=sharing)
+
+Notes:
+- Primitive-first normalization: this intake converts strategic alpha-to-leader positioning requirements into queued contracts without introducing any parallel authority path outside Rust-core + conduit.
+- Overlap handled explicitly:
+  - enterprise governance, audit, and policy baselines: existing Fortune-100 and security/compliance lanes
+  - runtime footprint + edge power baselines: `V7-CANYON-*`, `V8-MOAT-*`, `V10-POWER-*`
+  - orchestration, memory continuity, and thin-client boundaries: existing orchestration/memory/conduit contracts
+  - adapter and integration expansion: existing adapter and connector lanes
+- Net-new emphasis from source:
+  - enterprise-license/readiness unblocking as a first-class adoption gate,
+  - formal compliance certification and attestation packaging,
+  - GA/LTS/support maturity with reference deployments,
+  - full Python/TypeScript parity and migration-onramp from competing ecosystems,
+  - visual/declarative orchestration UX and HITL review surfaces,
+  - independent benchmark attestations and extreme edge portability coverage,
+  - governance and observability productization for executive/operator accountability,
+  - adoption accelerators (roadmap/RFC/certification/community flywheel).
+
+Objective: define the concrete backlog needed to move from high-performance alpha into enterprise-default platform status across legal, compliance, DX, ecosystem, and operations axes.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V10-CRUSH-001.1 | queued | Enterprise Licensing + CLA Contract | Fortune-100 adoption stalls when legal review sees non-commercial ambiguity or unclear contributor IP posture. | Ship Apache-2.0 (or approved dual-license) policy, CLA workflow, and explicit enterprise usage terms with deterministic policy docs + release evidence proving no conflicting runtime restrictions. | 10 | 0/1/2/client |
+| V10-CRUSH-001.2 | queued | Compliance Certification + Attestation Export Contract | Security boards require independently auditable control mapping, not internal assertions. | Deliver SOC 2 Type II / ISO 27001 readiness artifacts with mapped GDPR/HIPAA/FedRAMP/NIST AI RMF/EU AI Act controls, plus release SBOM/provenance exports and deterministic audit sink adapters. | 10 | 0/1/2/adapter/client |
+| V10-CRUSH-001.3 | queued | GA/LTS/Support Maturity Contract | Platform teams need versioning guarantees, long-term maintenance windows, and operational support SLAs before standardization. | Publish v1 GA contract with semantic versioning policy, 3-year LTS branch policy, deprecation governance, and evidence-backed enterprise support runbook integrations (health reviews/escalation surfaces). | 9 | 0/1/2/client/app |
+| V10-CRUSH-001.4 | queued | SDK Parity + Ecosystem Integration Contract (Python/TS + Major Providers) | Teams will route around the platform if prototyping APIs and ecosystem connectors lag Python-first competitors. | Ship Python + TypeScript SDKs with parity coverage against Rust-core authority paths, plus first-party adapter packs for priority LLM/providers and deterministic compatibility contract tests for each integration. | 9 | 0/1/2/adapter/client |
+| V10-CRUSH-001.5 | queued | Competitor Workflow Migration Contract (CrewAI/LangGraph/AutoGen/OpenHands) | Switching friction blocks adoption even when runtime quality is better. | Add one-command governed migration flows that ingest competitor workflow definitions, map to InfRing plans, emit deterministic migration receipts, and include parity validation reports + rollback path. | 9 | 0/1/2/client/adapter |
+| V10-CRUSH-001.6 | queued | Declarative Orchestration UX + HITL Contract | Developer adoption drops when orchestration and review require low-level manual wiring for common enterprise use-cases. | Provide declarative DSL + visual builder + paved-road templates + HITL review surface, all generating conduit-routed plans with deterministic receipts and policy-enforced approval gates. | 8 | 0/1/2/client/app |
+| V10-CRUSH-001.7 | queued | Edge/Performance Proof + Independent Benchmark Contract | Performance claims are fragile without third-party attestations and repeatable edge/runtime proof across hardware classes. | Maintain Tiny-max footprint gates, publish reproducible independent benchmark packets, and prove no-code-change autoscaling across edge/on-prem/cloud with deterministic performance receipts. | 9 | -1/0/1/2/adapter |
+| V10-CRUSH-001.8 | queued | Governance/Observability + Adoption Flywheel Contract | Enterprise standardization needs both executive-level governance visibility and a predictable adoption/community pipeline. | Productize observability/governance dashboards (OpenTelemetry/Prometheus/Grafana + ROI governance views), enforce policy-before-exec workflows, and publish roadmap/RFC/certification/community operating cadence with measurable adoption KPIs. | 8 | 0/1/2/client/app |
+
+## Persistent Memory Deepening Intake (Doc `14uXK7Gqpll6NBHbBCSKPiriSnju9nhdDRBuoZV3eRSk`, 2026-03-15)
+
+Source references:
+- [Persistent memory ideas doc](https://docs.google.com/document/d/14uXK7Gqpll6NBHbBCSKPiriSnju9nhdDRBuoZV3eRSk/edit?usp=sharing)
+
+Notes:
+- Primitive-first normalization: this intake deepens memory durability/retrieval behavior through existing memory-bank and epistemic-object primitives without adding a parallel state authority.
+- Overlap handled explicitly:
+  - auto context injection + semantic retrieval baseline: `V8-MEMORY-BANK-001.2`
+  - auto-capture baseline: `V8-MEMORY-BANK-001.3`
+  - workspace sync baseline: `V8-MEMORY-BANK-001.4`
+  - consolidation/tools baseline: `V8-MEMORY-BANK-001.5`
+  - conduit-only governance baseline: `V8-MEMORY-BANK-001.6`
+- Net-new emphasis from source:
+  - explicit working-memory state file and continuation protocol,
+  - memory importance scoring, decay, and archival policy,
+  - multi-tier (hot/warm/cold) retrieval with budgeted loading,
+  - decision-why logs and task-scoped memory slots,
+  - confidence scoring and uncertain-memory surfacing,
+  - cross-reference graph links for dependency traversal,
+  - proactive maintenance jobs that consolidate daily logs into durable summaries.
+
+Objective: increase longitudinal memory quality and continuity while keeping retrieval bounded, explainable, and fully conduit-governed.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V8-MEMORY-BANK-002.1 | queued | Working Memory State Contract (`working_memory.json`) | Session continuity degrades when active goals/decisions/blockers are implicit in chat history instead of explicit durable state. | Add governed working-memory state file with schema for goals/projects/decisions/pending-questions, startup ingest, turn-level updates, and deterministic save/restore receipts. | 9 | 0/1/2/client |
+| V8-MEMORY-BANK-002.2 | queued | Memory Importance + Decay Contract | Unbounded memory growth reduces signal quality unless low-value memories are deprioritized or archived deterministically. | Add per-memory importance/confidence scores, configurable decay windows, and archive transitions with deterministic archive receipts and policy-safe retention overrides. | 8 | 0/1/2 |
+| V8-MEMORY-BANK-002.3 | queued | Multi-Tier Hot/Warm/Cold Retrieval Contract | Loading all history harms latency while loading too little loses context for decisions. | Implement tiered storage/retrieval policy (hot session, warm recent, cold archive) with query-time budget controls and deterministic tier-selection receipts for every retrieval path. | 9 | 0/1/2/client |
+| V8-MEMORY-BANK-002.4 | queued | Decision Log ("Why") Contract | Teams lose rationale continuity when only outcomes are stored without options/rationale lineage. | Add structured decision log artifacts (context/options/choice/rationale/owner/date) and require retrieval hooks that surface linked decisions before plan-modifying actions. | 9 | 0/1/2/client |
+| V8-MEMORY-BANK-002.5 | queued | Task-Scoped Memory Slots Contract | Active work context is noisy without dedicated task slots containing state/blockers/next steps. | Add task-scoped memory slots with bounded loading of active tasks only, deterministic slot mutation receipts, and task-close archival flow. | 8 | 0/1/2/client |
+| V8-MEMORY-BANK-002.6 | queued | Session Continuation Protocol Contract | Operators need explicit resume semantics instead of implicit carry-over or accidental stale state. | Add `resume` vs `fresh` continuation mode with persisted continuation checkpoints, deterministic checkpoint hashes, and fail-closed mismatch handling when checkpoint integrity fails. | 8 | 0/1/2/client |
+| V8-MEMORY-BANK-002.7 | queued | Confidence + Uncertainty Surfacing Contract | Misremembered details become dangerous when the system presents low-confidence memory as fact. | Persist confidence metadata on memory assertions, expose uncertain-memory prompts in retrieval responses, and require confirmation updates to adjust confidence scores with receipts. | 9 | 0/1/2/client |
+| V8-MEMORY-BANK-002.8 | queued | Cross-Reference Graph + Proactive Maintenance Contract | Related memory dependencies and periodic consolidation are required for long-horizon coherence. | Build dependency links between related memories/decisions, support graph traversal retrieval ("what led here"), and run quiet-period maintenance jobs that consolidate daily logs into durable summary artifacts with deterministic maintenance receipts. | 8 | 0/1/2/client/app |
+
+## Universal Substrate Domination Intake (Doc `1Bw87DLCi8J4c95SM96Ru8gNX2JFmHrN0kFzZBH_Vcb0`, 2026-03-15)
+
+Source references:
+- [Universal substrate domination doc](https://docs.google.com/document/d/1Bw87DLCi8J4c95SM96Ru8gNX2JFmHrN0kFzZBH_Vcb0/edit?usp=sharing)
+
+Notes:
+- Primitive-first normalization: this intake defines net-new ecosystem expansion and substrate-compatibility contracts while preserving Rust-core authority and conduit-only governance.
+- Overlap handled explicitly:
+  - migration/adoption/SDK baselines: `V10-CRUSH-001.4` / `V10-CRUSH-001.5`
+  - marketplace/governance/observability baselines: `V10-CRUSH-001.8`
+  - performance/edge/runtime baselines: `V10-CRUSH-001.7`, `V10-POWER-001.*`
+  - policy/receipt/governance baselines: existing Layer-0/1 contracts and evidence lanes
+- Net-new emphasis from source:
+  - broad competitor migration hub with one-command bulk import,
+  - real-world always-on action execution primitives,
+  - high-scale audited marketplace ingestion and receipt-signing,
+  - local-LLM serving parity layer with hardware auto-selection,
+  - workflow-graph conversion runtime for LangGraph-class plans,
+  - universal SDK + WASM substrate lock-in,
+  - internet-scale governance/economic primitives with agent-to-agent trust flows.
+
+Objective: position InfRing as the default execution substrate by making competing frameworks importable/runnable under conduit-governed safety with deterministic receipts.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V11-ECOSYSTEM-001.1 | queued | Adoption Escape Velocity + Migration Hub Contract | Better runtime quality alone does not win if migration friction from incumbent ecosystems remains high. | Add first-party migration hub commands for priority ecosystems (`openclaw`, `langgraph`, `crewai`, `autogen`, `openhands`, `ollama`) with deterministic migration receipts, import parity checks, and rollback reports. | 10 | 0/1/2/client/adapter |
+| V11-ECOSYSTEM-001.2 | queued | Real-World Persistent Actions Engine Contract | Agent utility plateaus without durable, policy-governed actions over email/calendar/messaging/browser channels. | Implement Layer-2 actions primitives with fail-closed policy covenants, always-on channel execution loops, and deterministic action receipts for every accept/deny path. | 10 | 0/1/2/client/adapter |
+| V11-ECOSYSTEM-001.3 | queued | Protheus Hub Marketplace Contract | Ecosystem scale requires audited discovery/install economics with built-in safety, not ad hoc package drops. | Ship marketplace service with signed package manifests, safety assimilation on install, receipt-backed reputation metadata, and deterministic install/update/remove receipts. | 10 | 0/1/2/client/app |
+| V11-ECOSYSTEM-001.4 | queued | Local LLM Serving Dominance Contract | Local-first adoption is constrained without one-command multi-model serving under the same governance plane. | Add native local-LLM serving runtime with hardware auto-detection, quantization-aware model routing, OpenAI-compatible API surface, and deterministic serve/runtime switch receipts. | 9 | -1/0/1/2/client |
+| V11-ECOSYSTEM-001.5 | queued | LangGraph-to-Protheus Converter + Graph Runtime Contract | Teams with existing graph workflows need a low-friction path to gain receipts/safety without rewrites. | Implement graph import converter and runtime compatibility lane with persistence, streaming, HITL checkpoints, safety covenant injection, and deterministic conversion/runtime receipts. | 9 | 0/1/2/client |
+| V11-ECOSYSTEM-001.6 | queued | Universal SDK + WASM Substrate Contract | Cross-language lock-in is required for broad adoption across heterogeneous enterprise stacks. | Ship officially supported SDKs (Python/JS/.NET/Go/Rust/Java) with thin wrappers over conduit authority plus WASM substrate runtime contracts and compatibility tests for no-authority-bypass guarantees. | 10 | -1/0/1/2/client/adapter |
+| V11-ECOSYSTEM-001.7 | queued | Internet-Scale Governance + Economic Layer Contract | At ecosystem scale, coordination and trust require native policy/economic primitives rather than external bolt-ons. | Add Layer-1 governance/economic primitives for staking/reputation/payment policy flows, merkle-anchored audit roots, and evidence-backed constitutional update workflows under HUMAN_ONLY guardrails. | 10 | 0/1/2/3 |
+
+## Mole-Tunnel Substrate Strategy Intake (Doc `1Bw87DLCi8J4c95SM96Ru8gNX2JFmHrN0kFzZBH_Vcb0`, 2026-03-15)
+
+Source references:
+- [Mole doctrine section in universal substrate doc](https://docs.google.com/document/d/1Bw87DLCi8J4c95SM96Ru8gNX2JFmHrN0kFzZBH_Vcb0/edit?usp=sharing)
+
+Notes:
+- Primitive-first normalization: "mole tunnel" requirements are normalized into explicit compatibility-interceptor and governance contracts with fail-closed boundaries (no hidden authority path).
+- Overlap handled explicitly:
+  - adapter compatibility shims and migrations: `V11-ECOSYSTEM-001.1`, `V10-CRUSH-001.5`
+  - receipt-chain invariants and merkle anchoring: existing evidence and governance lanes
+  - conduit-only enforcement and policy controls: existing Layer-0/1 contracts
+- Net-new emphasis from source:
+  - transparent protocol interception for competitor surfaces,
+  - automatic safety/receipt upgrade during compatibility execution,
+  - stealth-style migration path with "no workflow break" operator UX,
+  - irreversible provenance anchoring for imported workloads.
+
+Objective: provide compatibility tunnels that preserve external workflow UX while moving execution under InfRing safety and evidence planes.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V11-MOLE-001.1 | queued | Silent Compatibility Shim Contract (Major Rival Protocols) | Ecosystem capture is slowed when users must manually rewrite workflows to adopt core governance primitives. | Implement substrate tunnel shims for priority rival protocols (OpenAI API, LangGraph JSON, CrewAI YAML, AutoGen messages, Ollama serving, OpenHands calls, skill manifests) routed through conduit with deterministic compatibility receipts. | 10 | -1/0/1/2/adapter |
+| V11-MOLE-001.2 | queued | Automatic Safety Absorption Engine Contract | Compatibility paths are unsafe if imported workloads run without Prime Directive + receipt enforcement. | Add automatic absorption stage that upgrades imported workload execution with policy gates, deterministic receipt issuance, and persona lens binding before first runtime action. | 10 | 0/1/2/client |
+| V11-MOLE-001.3 | queued | One-Way Seamless Tunnel Migration Contract | Adoption requires a migration flow that keeps user-visible behavior stable while moving authority to Rust-core safety planes. | Add `protheus tunnel enable <surface>` flows with parity validation, deterministic tunnel activation receipts, and rollback checkpoints; require no direct client-side authority path for post-enable execution. | 9 | -1/0/1/2/client |
+| V11-MOLE-001.4 | queued | Permanent Receipt Anchoring for Imported Workloads Contract | Imported workflows can silently drift out of governance unless provenance anchoring is enforced at ingest/runtime boundaries. | Ensure every imported workflow/skill receives merkle-anchored receipt lineage with integrity checks that fail-closed on tampering or missing ancestry, plus deterministic audit exports. | 10 | 0/1/2/3 |
+
+## Competitor Gap Closure Intake (Doc `16SND-kQnl2bqZmj5Wd7CrGOlSkCB-uW1RDqPyAmhinU`, 2026-03-15)
+
+Source references:
+- [Beat OpenFang + OpenHands assimilation doc](https://docs.google.com/document/d/16SND-kQnl2bqZmj5Wd7CrGOlSkCB-uW1RDqPyAmhinU/edit?usp=sharing)
+
+Notes:
+- Primitive-first normalization: this intake captures only net-new competitive-gap contracts and keeps all execution conduit-gated under Rust-core authority.
+- Overlap handled explicitly:
+  - adapters / ecosystem migration / hub / local LLM surfaces: `V11-ECOSYSTEM-001.*`
+  - router intelligence and provider optimization: `V10-POWER-001.2`
+  - governance/readiness/certification paths: `V10-CRUSH-001.2`, `V10-CRUSH-001.3`
+  - existing wins called out in source (cold-start/idle/security/auditability) remain maintenance-only and are not duplicated here.
+- Net-new emphasis from source:
+  - explicit adapter-count scale targets with manifest auto-discovery and receipt coverage,
+  - runtime provider-routing surface tied to budget/latency/capability gates,
+  - domain-hand expansion as schedule-driven autonomous surfaces,
+  - strict v1.0 lockdown lane (coverage/proofs/deployment templates/release discipline),
+  - community migration and contribution flywheel automation.
+
+Objective: close remaining competitor-facing gaps through measurable ecosystem breadth, runtime routing depth, domain agent expansion, and release/community execution rigor.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V10-COMPETITOR-001.1 | queued | Channel Adapters Expansion Contract | Competitive parity is constrained when supported channel surfaces lag incumbent ecosystems, even with better core runtime quality. | Expand adapter catalog to configured target breadth (including major messaging/social/collaboration channels), with adapter manifest auto-discovery, deterministic enable/test receipts, and conduit-only execution guarantees. | 9 | -1/0/1/2/adapter/client |
+| V10-COMPETITOR-001.2 | queued | LLM Provider Router + Driver Breadth Contract | Provider lock-in and static routing reduce quality/cost resilience compared to dynamic multi-provider routing. | Add first-party provider drivers and runtime router scoring over budget/latency/capability constraints, enforce cost/policy guardrails via conduit, and emit deterministic provider-selection and fallback receipts. | 10 | 0/1/2/client |
+| V10-COMPETITOR-001.3 | queued | Domain-Specific Hands Expansion Contract | Adoption and retention improve when high-value domain agents ship with ready scheduling, guardrails, and receipts instead of raw primitives only. | Ship new domain Hands with manifests, schedule support, guardrail policies, and dashboard surfaces; require deterministic run receipts and Prime Directive compliance checks on every action path. | 9 | 0/1/2/client/app |
+| V10-COMPETITOR-001.4 | queued | v1.0 Production Lockdown Contract | Enterprise confidence requires hard release quality gates, formal proofs on critical lanes, and repeatable deployment templates. | Enforce release-quality lane with coverage/proof thresholds for target surfaces, Kubernetes/VPC deployment templates, semantic release governance, and deterministic release evidence artifacts. | 10 | 0/1/2/client/adapter |
+| V10-COMPETITOR-001.5 | queued | Community Flywheel + Migration Pipeline Contract | Ecosystem growth stalls without low-friction migration and contributor activation workflows. | Add one-command migration flows for priority competitor surfaces, community bot/templates, and backlog-to-contribution automation with deterministic migration/community receipts and no client authority bypass paths. | 8 | 0/1/2/client/app |
+
+## Fastest-Growing AI Repos Assimilation Intake (Doc `1So3OFpzgTzK2J43_wvrx7ZlurrBT9TBvvPt-SKmsdJA`, 2026-03-15)
+
+Source references:
+- [Fastest-growing AI repos assimilation doc](https://docs.google.com/document/d/1So3OFpzgTzK2J43_wvrx7ZlurrBT9TBvvPt-SKmsdJA/edit?usp=sharing)
+- upstream reference cited by source: [Sharbel list thread](https://x.com/sharbel/status/2032790032336007350)
+
+Notes:
+- Primitive-first normalization: this intake extends runtime/skills/sensory/swarm/voice/research capabilities via existing primitives only, with conduit and policy enforcement unchanged.
+- Overlap handled explicitly:
+  - persistent runtime baseline: existing daemon/heartbeat/runtime lanes
+  - skills and auto-discovery baselines: existing skills framework contracts
+  - swarm + research loops: existing orchestration and assimilation lanes
+  - safety/guardrail enforcement baselines: DirectiveComplianceGate and conduit-only execution contracts
+  - ecosystem and migration surfaces: `V11-ECOSYSTEM-*` contracts
+- Net-new emphasis from source:
+  - 24/7 persistent daemon hardening and reconnect guarantees,
+  - plug-and-play skill import compatibility lane,
+  - WiFi-based pose sensing in Eye substrate,
+  - swarm prediction runtime surface,
+  - real-time voice companion mode with persistent memory coupling,
+  - autonomous research→code→create loop profile,
+  - explicit defensive guardrail-bypass detection layer for external models.
+
+Objective: absorb high-signal capabilities from fast-growing projects while preserving InfRing’s deterministic, policy-governed execution model.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V8-ECOSYSTEM-001.1 | queued | 24/7 Persistent Runtime Contract | Runtime trust degrades when daemon operation needs manual reattach or cannot survive long-lived cross-OS sessions. | Add persistent daemon mode with reconnect supervision, heartbeat receipts, and deterministic continuity proofs under conduit governance (`protheus daemon start --persistent`). | 9 | 0/1/2/client |
+| V8-ECOSYSTEM-001.2 | queued | Plug-and-Play Skills Import Contract | Skill adoption slows when registration/discovery require manual wiring and inconsistent metadata contracts. | Add skill import/discovery compatibility lane with one-command registration, manifest validation, and deterministic install/activation receipts (`protheus skill import <source>`). | 8 | 0/1/2/client/app |
+| V8-ECOSYSTEM-001.3 | queued | WiFi Pose Eye Substrate Contract | Privacy-first ambient sensing use-cases need non-camera posture inference under the same safety/evidence model. | Extend Eye substrate with WiFi-signal-to-pose inference pathway, normalized pose event contracts, and deterministic sensory receipts (`protheus eye enable wifi-pose`). | 8 | -1/0/1/2/client |
+| V8-ECOSYSTEM-001.4 | queued | Swarm Prediction Engine Contract | Collective orchestration is under-leveraged if swarm lanes cannot produce explicit predictive outputs. | Add swarm prediction capability surface with topic/domain inputs, consensus trace artifacts, and deterministic prediction receipts (`protheus swarm predict <topic>`). | 8 | 0/1/2/client |
+| V8-ECOSYSTEM-001.5 | queued | Real-Time Voice Companion Mode Contract | Voice companions require low-latency dialogue and memory continuity while retaining policy and audit constraints. | Add real-time voice companion mode tied to persistent memory and conduit policy checks with deterministic conversation/session receipts (`protheus voice enable airi-mode`). | 8 | 0/1/2/client/app |
+| V8-ECOSYSTEM-001.6 | queued | Autonomous Research→Code→Create Loop Contract | Autonomous utility remains fragmented unless research, implementation, and artifact generation can run as one governed loop. | Add autonomous staged workflow profile that chains research, coding, and creation primitives with deterministic per-stage receipts and rollback checkpoints (`protheus agent run deerflow \"<goal>\"`). | 9 | 0/1/2/client |
+| V8-ECOSYSTEM-001.7 | queued | Defensive Guardrail-Bypass Detection Contract | External-model integrations are risky without explicit detection and denial of guardrail-removal or safety-bypass behavior. | Extend DirectiveComplianceGate with defensive bypass-detection lane for external model actions, enforce deterministic deny receipts, and require bypass-rejection tests for all model adapters. | 10 | 0/1/2/adapter |
+| V8-ECOSYSTEM-001.8 | queued | Conduit-Only Ecosystem Assimilation Boundary Contract | Ecosystem extension work becomes unsafe if new capabilities can execute outside Rust authority and policy planes. | Prove all V8-ECOSYSTEM-001 capabilities route exclusively through Layer-0 conduit with thin client wrappers only, explicit bypass-rejection tests, and complete audit trail receipts. | 10 | 0/1/2/client/app |
+
+## AI Inbound Lead Generation & Qualification Intake (Doc `1eaOEzO8flJzWstCGD6LmGshnlRwg8ontJ7WOyZZPUy4`, 2026-03-15)
+
+Source references:
+- [AI inbound lead generation assimilation doc](https://docs.google.com/document/d/1eaOEzO8flJzWstCGD6LmGshnlRwg8ontJ7WOyZZPUy4/edit?usp=sharing)
+- upstream source noted by doc: LinkedIn post by Daniel Matias (`dmtiass`)
+
+Notes:
+- Primitive-first normalization: this intake extends existing COMPANY/CRM/workflow/research primitives; it does not add a new authority path.
+- Overlap handled explicitly:
+  - CRM and connectors baseline: `V6-COMPANY-002.*`
+  - workflow automation baseline: existing scheduler/orchestration lanes
+  - conduit-only governance baseline: existing Layer-0/1 policy and bypass-rejection contracts
+- Net-new emphasis from source:
+  - autopilot content generation for ICP-targeted inbound funneling,
+  - trust-building exposure tracking over multiple touches,
+  - automated qualification question flow before human engagement,
+  - warm-lead routing into company workflows with qualification payloads,
+  - explicit business metrics lane for leads/month and close-rate attribution.
+
+Objective: convert company workflows from outbound-heavy prospecting to deterministic, governed inbound generation and qualification loops.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-COMPANY-003.1 | queued | Automated LinkedIn Content Creation Engine Contract | Inbound growth stalls when content generation depends on manual drafting rather than repeatable ICP-targeted automation. | Extend company research/skills workflow to generate scheduled LinkedIn-ready content artifacts with deterministic generation receipts (`protheus company content generate`). | 8 | 0/1/2/client/app |
+| V6-COMPANY-003.2 | queued | Progressive Trust-Building Exposure Sequence Contract | Lead conversion quality improves when repeated exposure history is tracked and acted upon, not treated as stateless events. | Add exposure-tracking state and trust progression rules across multi-touch content sequences with provenance receipts linking exposures to downstream engagement. | 8 | 0/1/2/client |
+| V6-COMPANY-003.3 | queued | Automated Lead Qualification Engine Contract | Sales efficiency drops when unqualified leads reach humans without structured pre-qualification checks. | Implement automated qualification question flow via skills/MCP paths, conduit-gated with deterministic qualification decision receipts (`protheus company qualify enable`). | 9 | 0/1/2/adapter/client |
+| V6-COMPANY-003.4 | queued | Warm Inbound Lead Routing + Capture Contract | Pipeline velocity suffers when qualified inbound leads are not routed with full qualification context into company workflows. | Route qualified inbound leads into company pipelines with attached qualification payloads, deterministic routing receipts, and fail-closed policy denials on incomplete lead state. | 9 | 0/1/2/client/app |
+| V6-COMPANY-003.5 | queued | Conduit-Only Execution + Funnel Metrics Contract | Growth claims are not trustworthy without governance-bound execution and measurable business outcomes. | Enforce conduit-only execution across generation/qualification/routing with explicit bypass-rejection tests and deterministic metrics receipts for funnel KPIs (qualified leads/month, conversion/close rates, response latency). | 10 | 0/1/2/client/app |
+
+## Slate Swarm Orchestration + Context Compaction Intake (Doc `1mUuuNFPOoGgFSn9IrQEVlktjLwtGupY7pXBjhQ8w9qM`, 2026-03-15)
+
+Source references:
+- [Slate swarm assimilation doc](https://docs.google.com/document/d/1mUuuNFPOoGgFSn9IrQEVlktjLwtGupY7pXBjhQ8w9qM/edit?usp=sharing)
+- upstream source cited by the doc: [RandomLabs](https://randomlabs.ai/)
+
+Notes:
+- Primitive-first normalization: this intake extends existing swarm orchestration, context compaction, memory sharing, and workflow planning primitives; it does not create new core authority planes.
+- Overlap handled explicitly:
+  - swarm runtime baseline: `V3-RACE-006`, `V6-SWARM-011`, `V4-SUITE-005`
+  - context compaction baseline: `V6-COCKPIT-009.3`, `V6-MODEL-003.1`
+  - conduit-only boundary baseline: existing Layer-0 policy and bypass-rejection contracts
+- Net-new emphasis from source:
+  - massively parallel swarm execution profile with deterministic coordination traces,
+  - self-engineered context compaction on idle/pressure cycles,
+  - implicit planning flow (research first, conversational plan synthesis),
+  - swarm-aware shared memory consolidation,
+  - explicit conduit-only enforcement for swarm/compaction/planning path.
+
+Objective: harden large-scale multi-agent execution so swarm runs stay context-stable, planning-adaptive, and fully governed under deterministic evidence.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V8-SWARM-002.1 | queued | Massively Parallel Swarm Orchestration Engine Contract | Current swarm lanes support coordination but need a dedicated parallel-execution profile for large collaborative tasks with bounded overhead. | Add `protheus swarm run <goal>` parallel swarm profile with deterministic task decomposition/coordination receipts and explicit failure-budget handling across sub-agent groups. | 9 | 0/1/2/client |
+| V8-SWARM-002.2 | queued | Self-Engineered Context Compaction Contract | Long-running swarm sessions degrade without automatic relevance ranking and compacted context surfaces. | Extend memory/context runtime with compaction scoring and idle-triggered compaction cycles, emitting deterministic compaction receipts and preserving provenance links for restored details. | 9 | 0/1/2 |
+| V8-SWARM-002.3 | queued | Implicit Planning via Discussion Contract | Rigid plan-mode workflows reduce adaptivity when agents should research first and synthesize plans conversationally. | Add `protheus swarm plan <goal>` implicit planning flow (research → synthesize → discuss) with deterministic stage receipts and policy-safe human handoff points. | 8 | 0/1/2/client |
+| V8-SWARM-002.4 | queued | Swarm-Aware Memory Sharing Contract | Parallel agents lose coherence unless compacted context and findings are shared with conflict-aware consolidation. | Implement swarm memory-sharing protocol that syncs compacted context/facts across agent cohort with provenance hashes, conflict resolution receipts, and bounded sync latency gates. | 8 | 0/1/2/client |
+| V8-SWARM-002.5 | queued | Conduit-Only Swarm Execution + Thin Client Boundary Contract | Swarm execution and compaction become unsafe if any orchestration path bypasses conduit policy checks. | Prove all V8-SWARM-002 run/plan/compact/sync operations route exclusively through Layer-0 conduit with explicit bypass-rejection tests and full audit trail receipts. | 10 | 0/1/2/client/app |
+
+## Audit V3 Gap Closure Intake (Doc `12XKCWZx-_rt4YGJZKIT38WXz5sIcl_QUfuwxKMJqVGQ`, 2026-03-15)
+
+Source references:
+- [Audit V3 report](https://docs.google.com/document/d/12XKCWZx-_rt4YGJZKIT38WXz5sIcl_QUfuwxKMJqVGQ/edit?usp=sharing)
+
+Notes:
+- Primitive-first normalization: this intake captures cross-cutting audit closures that were reported as partial/unchanged, without introducing new authority paths.
+- Overlap handled explicitly:
+  - security hardening lanes: `V6-SEC-010`, `V6-SEC-011`, `V6-SEC-012`, `V6-SEC-016`
+  - enterprise/proof posture lanes: `V7-F100-002.3`, `V7-F100-002.7`, `V7-TOP1-002`
+  - skill graph and client memory guard surfaces: `V8-SKILL-GRAPH-001.1`, `V6-MEMORY-013..019`
+
+Objective: close audit-reported partial/unchanged gaps with executable tests, documentation, and runnable lane evidence.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| INTEGRATION-001 | done | Cross-Component Integration Architecture Documentation Contract | Integration implementation is hard to audit without one canonical architecture contract describing authority boundaries and cross-plane data flow. | Added dedicated document `docs/ops/INTEGRATION-001-cross-component-architecture.md` with authority map, flow sequence, evidence paths, and runnable verification commands. | 8 | 0/1/2/client |
+| E2E-TEST-001 | done | Cross-Plane End-to-End Validation Contract | Integration tests existed per plane, but no dedicated cross-plane end-to-end contract proved the full business→nexus→security→enterprise path. | Added `core/layer0/ops/tests/e2e_cross_plane_contract_flow.rs` and `docs/ops/E2E-TEST-001-cross-plane-validation.md`; test asserts claim-evidence and strict guard behavior across all planes with deterministic latest receipts. | 9 | 0/1/2/client |
+| V6-SKILL-001 | done | Content Skill Graph Folder + Default Adapter Path Contract | Skill-graph loading drifted to a missing legacy path, leaving the default graph surface empty. | Added adapter-scoped graph bundle under `adapters/cognition/skills/content-skill-graph/` and updated loader default path in `core/layer0/ops/src/backlog_delivery_plane.rs`; regression asserted in `core/layer0/ops/tests/backlog_delivery_plane_integration.rs`. | 7 | 0/1/2/adapter/client |
+| V6-TEST-COVERAGE-001 | done | Active TypeScript Runtime Guard Coverage Contract | Client runtime hardening coverage was concentrated in legacy JS wrappers with only one active vitest suite. | Added active vitest suites `tests/vitest/v6_memory_policy_validator.test.ts` and `tests/vitest/v6_memory_session_isolation.test.ts` proving fail-closed client guards before Rust-core calls. | 8 | 1/2/client |
+| FORMAL-COVERAGE-001 | done | Layer-2 Scheduler Formal Coverage Contract | Audit flagged scheduler formal coverage as unproven, weakening assurance posture for execution control paths. | Added scheduler Kani harness module `core/layer2/execution/src/scheduler_kani_proofs.rs`, wired under `#[cfg(kani)]` in `core/layer2/execution/src/lib.rs`, and promoted scheduler surface to `proven` in `proofs/layer0/core_formal_coverage_map.json`. | 9 | 0/1/2 |
+| V8-PROOF-REGISTRY-001 | done | Runtime Proof Registry Coverage Expansion Contract | Runtime proof registry lacked V7 canyon/F100 IDs and failed to track done claims across series. | Expanded registry coverage in `core/layer0/ops/tests/v8_runtime_proof.rs` to include V7-CANYON-002.* and V7-F100-002.* IDs, with explicit coverage assertion test `runtime_proof_registry_includes_v7_canyon_and_f100_series`. | 8 | 0/1/2 |
+| V7-TOP1-002-KANI-COVERAGE | done | Kani Core-Business-Logic Coverage Expansion Contract | Kani coverage focused on utility helpers and did not include core business-gate logic. | Added Kani proofs in `core/layer0/ops/src/top1_kani_proofs.rs` for canyon footprint helper, cross-plane JWT guard enforcement, and super-gate block/allow logic; mapped in `proofs/layer0/core_formal_coverage_map.json`. | 9 | 0/1/2 |

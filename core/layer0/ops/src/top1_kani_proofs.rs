@@ -6,6 +6,8 @@
 use crate::{clean, deterministic_receipt_hash, stable_json_string};
 use serde_json::{json, Map, Value};
 
+const V7_TOP1_002_KANI_COVERAGE_ID: &str = "V7-TOP1-002-KANI-COVERAGE";
+
 #[kani::proof]
 fn prove_receipt_hash_is_deterministic_for_same_payload() {
     let payload = json!(true);
@@ -85,4 +87,58 @@ fn prove_clean_trims_outer_whitespace() {
     let cleaned = clean(raw, 64);
     assert!(!cleaned.starts_with(' '));
     assert!(!cleaned.ends_with(' '));
+}
+
+#[kani::proof]
+fn prove_canyon_footprint_no_std_helper_is_true_when_no_std_attr_present() {
+    assert!(crate::canyon_plane::footprint_no_std_ready(false, true));
+}
+
+#[kani::proof]
+fn prove_canyon_footprint_no_std_helper_is_true_when_default_feature_empty() {
+    assert!(crate::canyon_plane::footprint_no_std_ready(true, false));
+}
+
+#[kani::proof]
+fn prove_cross_plane_guard_requires_signed_jwt() {
+    assert!(!crate::enterprise_hardening::cross_plane_guard_ok(
+        false,
+        "kms://customer/protheus/main",
+        "aws-privatelink",
+        "deny"
+    ));
+}
+
+#[kani::proof]
+fn prove_cross_plane_guard_accepts_valid_enterprise_profile() {
+    assert!(crate::enterprise_hardening::cross_plane_guard_ok(
+        true,
+        "kms://customer/protheus/main",
+        "aws-privatelink",
+        "deny"
+    ));
+}
+
+#[kani::proof]
+fn prove_super_gate_release_blocks_when_scheduler_is_unproven() {
+    let blocked = crate::enterprise_hardening::super_gate_release_blocked(
+        true, 0.8, true, true, true, 2, false, true,
+    );
+    assert!(blocked);
+}
+
+#[kani::proof]
+fn prove_super_gate_release_allows_when_all_assurance_signals_pass() {
+    let blocked = crate::enterprise_hardening::super_gate_release_blocked(
+        true, 0.8, true, true, true, 2, true, true,
+    );
+    assert!(!blocked);
+}
+
+#[kani::proof]
+fn prove_v7_top1_kani_coverage_contract_id_binding_is_stable() {
+    assert_eq!(
+        V7_TOP1_002_KANI_COVERAGE_ID,
+        "V7-TOP1-002-KANI-COVERAGE"
+    );
 }

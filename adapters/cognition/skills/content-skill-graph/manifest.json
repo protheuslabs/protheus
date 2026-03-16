@@ -1,0 +1,9 @@
+{
+  "schema_id": "content_skill_graph_manifest_v1",
+  "entrypoint": "index.md",
+  "nodes": [
+    "index.md",
+    "campaign-playbook.md",
+    "operator-onboarding.md"
+  ]
+}

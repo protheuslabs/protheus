@@ -2029,6 +2029,102 @@ fn command_exit(strict: bool, payload: &Value) -> i32 {
     }
 }
 
+pub(crate) fn cross_plane_guard_ok(
+    signed_jwt: bool,
+    cmek_key: &str,
+    private_link: &str,
+    egress: &str,
+) -> bool {
+    signed_jwt
+        && cmek_key.starts_with("kms://")
+        && !private_link.trim().is_empty()
+        && matches!(egress, "deny" | "restricted")
+}
+
+pub(crate) fn super_gate_release_blocked(
+    strict: bool,
+    proven_ratio: f64,
+    reliability_ok: bool,
+    scale_ok: bool,
+    chaos_ok: bool,
+    proven_surface_count: usize,
+    scheduler_proven: bool,
+    fuzz_ok: bool,
+) -> bool {
+    strict
+        && !(proven_ratio >= 0.25
+            && reliability_ok
+            && scale_ok
+            && chaos_ok
+            && proven_surface_count > 0
+            && scheduler_proven
+            && fuzz_ok)
+}
+
+fn requires_cross_plane_jwt_guard(cmd: &str) -> bool {
+    matches!(
+        cmd,
+        "ops-bridge"
+            | "scale-ha-certify"
+            | "deploy-modules"
+            | "super-gate"
+            | "adoption-bootstrap"
+            | "replay"
+            | "explore"
+            | "ai"
+            | "sync"
+            | "energy-cert"
+            | "migrate-ecosystem"
+            | "chaos-run"
+            | "assistant-mode"
+            | "assistant_mode"
+    )
+}
+
+fn cross_plane_guard_profile(root: &Path) -> Result<Value, String> {
+    let profile_path = enterprise_state_root(root).join("f100/zero_trust_profile.json");
+    let profile = read_json(&profile_path)
+        .map_err(|_| format!("zero_trust_profile_missing:{}", profile_path.display()))?;
+    let signed_jwt = profile
+        .get("signed_jwt")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    let egress = profile
+        .get("egress")
+        .and_then(Value::as_str)
+        .unwrap_or("unknown")
+        .to_string();
+    let cmek_key = profile
+        .get("cmek_key")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    let private_link = profile
+        .get("private_link")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    let guard_ok = cross_plane_guard_ok(signed_jwt, &cmek_key, &private_link, &egress);
+    Ok(json!({
+        "profile_path": profile_path.display().to_string(),
+        "signed_jwt": signed_jwt,
+        "cmek_key": cmek_key,
+        "private_link": private_link,
+        "egress": egress,
+        "guard_ok": guard_ok
+    }))
+}
+
+fn append_claim_evidence(payload: &mut Value, row: Value) {
+    let mut rows = payload
+        .get("claim_evidence")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    rows.push(row);
+    payload["claim_evidence"] = Value::Array(rows);
+}
+
 pub fn run(root: &Path, argv: &[String]) -> i32 {
     if argv
         .iter()
@@ -2056,6 +2152,11 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         .map(|v| v.trim().to_string())
         .filter(|v| !v.is_empty())
         .unwrap_or_else(|| DEFAULT_POLICY_REL.to_string());
+    let cross_plane_guard = if requires_cross_plane_jwt_guard(&cmd) {
+        Some(cross_plane_guard_profile(root))
+    } else {
+        None
+    };
 
     let result = match cmd.as_str() {
         "run" | "status" => {
@@ -2121,7 +2222,38 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
     };
 
     match result {
-        Ok(payload) => {
+        Ok(mut payload) => {
+            if let Some(guard_result) = &cross_plane_guard {
+                match guard_result {
+                    Ok(guard) => {
+                        payload["cross_plane_jwt_guard"] = guard.clone();
+                        let guard_ok = guard
+                            .get("guard_ok")
+                            .and_then(Value::as_bool)
+                            .unwrap_or(false);
+                        append_claim_evidence(
+                            &mut payload,
+                            json!({
+                                "id": "V7-F100-002.3",
+                                "claim": "cross_plane_calls_require_signed_jwt_cmek_and_private_network_guard",
+                                "evidence": {
+                                    "guard_ok": guard_ok,
+                                    "profile_path": guard.get("profile_path").cloned().unwrap_or(Value::Null)
+                                }
+                            }),
+                        );
+                        if strict && !guard_ok {
+                            payload["ok"] = Value::Bool(false);
+                            payload["error"] =
+                                Value::String("cross_plane_jwt_guard_failed".to_string());
+                        }
+                    }
+                    Err(err) => {
+                        payload["ok"] = Value::Bool(false);
+                        payload["error"] = Value::String(crate::clean(err, 200));
+                    }
+                }
+            }
             if let Err(err) = persist_enterprise_receipt(root, &payload) {
                 let out = with_receipt_hash(json!({
                     "ok": false,

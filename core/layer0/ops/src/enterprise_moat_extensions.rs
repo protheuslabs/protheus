@@ -517,6 +517,78 @@ pub(super) fn run_super_gate(root: &Path, strict: bool) -> Result<Value, String>
         .unwrap_or_else(|_| json!({"ok": false}));
     let chaos = read_json(&enterprise_state_root(root).join("moat/chaos/latest.json"))
         .unwrap_or_else(|_| json!({"ok": false}));
+    let formal_map_path = root.join("proofs/layer0/core_formal_coverage_map.json");
+    let formal = read_json(&formal_map_path).unwrap_or_else(|_| {
+        json!({
+            "ok": false,
+            "error": "formal_coverage_map_missing",
+            "path": rel(root, &formal_map_path)
+        })
+    });
+    let surfaces = formal
+        .get("surfaces")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let proven_surface_count = surfaces
+        .iter()
+        .filter(|row| row.get("status").and_then(Value::as_str) == Some("proven"))
+        .count();
+    let scheduler_status = surfaces
+        .iter()
+        .find(|row| {
+            row.get("id").and_then(Value::as_str) == Some("core/layer2/execution::scheduler")
+        })
+        .and_then(|row| row.get("status"))
+        .and_then(Value::as_str)
+        .unwrap_or("missing")
+        .to_string();
+    let scheduler_proven = matches!(scheduler_status.as_str(), "proven" | "partial");
+
+    let artifacts_root = crate::core_state_root(root).join("artifacts");
+    let fuzz_report_name = fs::read_dir(&artifacts_root)
+        .ok()
+        .into_iter()
+        .flat_map(|rows| rows.flatten())
+        .filter_map(|entry| {
+            let name = entry.file_name().to_string_lossy().to_string();
+            if name.starts_with("nightly_fuzz_chaos_report_") && name.ends_with(".json") {
+                Some(name)
+            } else {
+                None
+            }
+        })
+        .max();
+    let fuzz_report = fuzz_report_name
+        .as_ref()
+        .and_then(|name| read_json(&artifacts_root.join(name)).ok())
+        .unwrap_or_else(|| {
+            json!({
+                "ok": false,
+                "error": "nightly_fuzz_chaos_report_missing"
+            })
+        });
+    let fuzz_failures = fuzz_report
+        .pointer("/summary/fuzz_failures")
+        .and_then(Value::as_u64)
+        .unwrap_or_else(|| {
+            fuzz_report
+                .pointer("/fuzz/failures")
+                .and_then(Value::as_u64)
+                .unwrap_or(0)
+        });
+    let chaos_failures = fuzz_report
+        .pointer("/summary/chaos_failures")
+        .and_then(Value::as_u64)
+        .unwrap_or_else(|| {
+            fuzz_report
+                .pointer("/chaos/failures")
+                .and_then(Value::as_u64)
+                .unwrap_or(0)
+        });
+    let fuzz_ok = fuzz_report.get("ok").and_then(Value::as_bool).unwrap_or(false)
+        || (fuzz_failures == 0 && chaos_failures == 0);
+
     let proven_ratio = top1
         .get("proven_ratio")
         .and_then(Value::as_f64)
@@ -525,18 +597,23 @@ pub(super) fn run_super_gate(root: &Path, strict: bool) -> Result<Value, String>
         .get("ok")
         .and_then(Value::as_bool)
         .unwrap_or_else(|| chaos.get("failure_count").and_then(Value::as_u64) == Some(0));
-    let release_blocked = strict
-        && !(proven_ratio >= 0.25
-            && reliability
-                .get("ok")
-                .and_then(Value::as_bool)
-                .unwrap_or(false)
-            && scale
-                .get("base")
-                .and_then(|v| v.get("ok"))
-                .and_then(Value::as_bool)
-                .unwrap_or(false)
-            && chaos_ok);
+    let release_blocked = super::super_gate_release_blocked(
+        strict,
+        proven_ratio,
+        reliability
+            .get("ok")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
+        scale
+            .get("base")
+            .and_then(|v| v.get("ok"))
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
+        chaos_ok,
+        proven_surface_count,
+        scheduler_proven,
+        fuzz_ok,
+    );
     let path = enterprise_state_root(root).join("f100/super_gate.json");
     let payload = json!({
         "generated_at": now_iso(),
@@ -544,6 +621,18 @@ pub(super) fn run_super_gate(root: &Path, strict: bool) -> Result<Value, String>
         "reliability": reliability,
         "scale": scale,
         "chaos": chaos,
+        "formal": {
+            "map_path": rel(root, &formal_map_path),
+            "proven_surface_count": proven_surface_count,
+            "scheduler_status": scheduler_status,
+            "scheduler_proven": scheduler_proven
+        },
+        "fuzz_chaos": {
+            "report_name": fuzz_report_name,
+            "report_ok": fuzz_ok,
+            "fuzz_failures": fuzz_failures,
+            "chaos_failures": chaos_failures
+        },
         "release_blocked": release_blocked
     });
     write_json(&path, &payload)?;
@@ -558,8 +647,14 @@ pub(super) fn run_super_gate(root: &Path, strict: bool) -> Result<Value, String>
         "gate": payload,
         "claim_evidence": [{
             "id": "V7-F100-002.7",
-            "claim": "assurance_super_gate_blocks_release_when_core_proof_reliability_or_chaos_signals_fail",
-            "evidence": {"gate_path": rel(root, &path), "release_blocked": release_blocked}
+            "claim": "assurance_super_gate_blocks_release_when_core_proof_reliability_chaos_or_fuzz_signals_fail",
+            "evidence": {
+                "gate_path": rel(root, &path),
+                "release_blocked": release_blocked,
+                "proven_surface_count": proven_surface_count,
+                "scheduler_status": scheduler_status,
+                "fuzz_report_ok": fuzz_ok
+            }
         }]
     })))
 }

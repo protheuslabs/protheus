@@ -25,8 +25,21 @@ fn latest_path(root: &Path) -> PathBuf {
     root.join("core/local/state/ops/backlog_delivery_plane/latest.json")
 }
 
+fn seed_skill_graph_fixture(root: &Path) {
+    let graph_dir = root.join("adapters/cognition/skills/content-skill-graph");
+    fs::create_dir_all(&graph_dir).expect("mkdir skill graph");
+    fs::write(
+        graph_dir.join("index.md"),
+        "# Graph\n\n- [[node-a]]\n- [[node-b]]\n",
+    )
+    .expect("write index");
+    fs::write(graph_dir.join("node-a.md"), "# Node A\n\nrefs [[node-b]]\n").expect("write node-a");
+    fs::write(graph_dir.join("node-b.md"), "# Node B\n").expect("write node-b");
+}
+
 fn all_ids() -> Vec<&'static str> {
     vec![
+        "V6-SKILL-001",
         "V7-TOP1-002",
         "V7-CANYON-002.1",
         "V7-CANYON-002.2",
@@ -86,6 +99,7 @@ fn all_ids() -> Vec<&'static str> {
 #[test]
 fn backlog_delivery_plane_executes_all_actionable_ids_with_receipts() {
     let root = temp_root("all");
+    seed_skill_graph_fixture(&root);
 
     for id in all_ids() {
         let exit = backlog_delivery_plane::run(
@@ -108,6 +122,17 @@ fn backlog_delivery_plane_executes_all_actionable_ids_with_receipts() {
             })
             .unwrap_or(false);
         assert!(has_claim, "missing claim evidence for {id}");
+        if id == "V6-SKILL-001" || id == "V8-SKILL-GRAPH-001.1" {
+            let node_count = latest
+                .pointer("/details/nodes")
+                .and_then(Value::as_array)
+                .map(|rows| rows.len())
+                .unwrap_or(0);
+            assert!(
+                node_count > 0,
+                "skill graph loader should discover markdown nodes from default folder"
+            );
+        }
     }
 
     let _ = fs::remove_dir_all(root);
