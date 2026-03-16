@@ -14,7 +14,7 @@ jobs:
       PROTHEUS_OPS_DOMAIN_BRIDGE_TIMEOUT_MS: "60000"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Setup Node
         uses: actions/setup-node@v4
         with:

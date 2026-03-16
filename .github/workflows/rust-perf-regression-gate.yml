@@ -8,6 +8,6 @@ jobs:
   rust-perf-gate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run rust perf regression policy check
         run: node client/runtime/systems/ops/rust_enterprise_productivity_program.ts run --id=V5-RUST-PROD-007 --strict=1 --apply=0
