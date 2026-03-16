@@ -20,6 +20,10 @@ struct RuntimeSystemContractFamily {
 }
 
 const NEW_ACTIONABLE_IDS: &[&str] = &[
+    "V9-AUDIT-026.1",
+    "V9-AUDIT-026.2",
+    "V9-AUDIT-026.3",
+    "V9-AUDIT-026.4",
     "V10-ULTIMATE-001.1",
     "V10-ULTIMATE-001.2",
     "V10-ULTIMATE-001.3",
@@ -374,6 +378,12 @@ const CONTRACT_FAMILIES: &[RuntimeSystemContractFamily] = &[
 ];
 
 fn inferred_family_for(id: &str) -> Option<(&'static str, &'static str)> {
+    if id.starts_with("V9-AUDIT-026.") {
+        return Some((
+            "audit_self_healing_stack",
+            "proactive_drift_detection_self_healing_confidence_scoring_and_cross_agent_verification",
+        ));
+    }
     if id.starts_with("V10-ULTIMATE-001.") {
         return Some((
             "ultimate_evolution",
@@ -536,8 +546,7 @@ fn profiles_registry() -> &'static [RuntimeSystemContractProfile] {
 }
 
 fn profile_index() -> &'static BTreeMap<&'static str, RuntimeSystemContractProfile> {
-    static INDEX: OnceLock<BTreeMap<&'static str, RuntimeSystemContractProfile>> =
-        OnceLock::new();
+    static INDEX: OnceLock<BTreeMap<&'static str, RuntimeSystemContractProfile>> = OnceLock::new();
     INDEX.get_or_init(|| {
         profiles_registry()
             .iter()
@@ -577,8 +586,8 @@ mod tests {
         let profiles = actionable_profiles();
         assert_eq!(
             profiles.len(),
-            239,
-            "expected 239 actionable runtime contracts"
+            243,
+            "expected 243 actionable runtime contracts"
         );
         let mut seen = BTreeSet::new();
         for profile in profiles {
@@ -601,6 +610,7 @@ mod tests {
         assert!(profile_for("V5-RUST-HYB-010").is_some());
         assert!(profile_for("V5-RUST-PROD-012").is_some());
         assert!(profile_for("V10-ULTIMATE-001.6").is_some());
+        assert!(profile_for("V9-AUDIT-026.4").is_some());
         assert!(profile_for("V8-SWARM-012.10").is_some());
         assert!(profile_for("V9-TINYMAX-021.2").is_some());
         assert!(profile_for("X-UNKNOWN-404.1").is_none());

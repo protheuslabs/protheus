@@ -7,7 +7,7 @@ use crate::runtime_system_contracts::{
 use crate::{client_state_root, deterministic_receipt_hash, now_iso};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -93,6 +93,127 @@ fn payload_bool(payload: &Value, key: &str, fallback: bool) -> bool {
         .unwrap_or(fallback)
 }
 
+fn payload_string(payload: &Value, key: &str, fallback: &str) -> String {
+    payload
+        .get(key)
+        .and_then(Value::as_str)
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+        .unwrap_or_else(|| fallback.to_string())
+}
+
+fn payload_string_array(payload: &Value, key: &str, fallback: &[&str]) -> Vec<String> {
+    payload
+        .get(key)
+        .and_then(Value::as_array)
+        .map(|rows| {
+            rows.iter()
+                .filter_map(Value::as_str)
+                .map(|v| v.trim().to_string())
+                .filter(|v| !v.is_empty())
+                .collect::<Vec<_>>()
+        })
+        .filter(|rows| !rows.is_empty())
+        .unwrap_or_else(|| fallback.iter().map(|v| (*v).to_string()).collect())
+}
+
+fn missing_required_tokens(actual: &[String], required: &[&str]) -> Vec<String> {
+    let set: BTreeSet<String> = actual.iter().map(|v| v.to_ascii_lowercase()).collect();
+    required
+        .iter()
+        .filter_map(|token| {
+            let canonical = token.to_ascii_lowercase();
+            if set.contains(&canonical) {
+                None
+            } else {
+                Some((*token).to_string())
+            }
+        })
+        .collect()
+}
+
+fn contract_specific_gates(
+    profile: RuntimeSystemContractProfile,
+    payload: &Value,
+) -> (serde_json::Map<String, Value>, Vec<String>) {
+    let mut checks = serde_json::Map::new();
+    let mut violations = Vec::<String>::new();
+
+    match profile.id {
+        "V9-AUDIT-026.1" => {
+            let targets = payload_string_array(
+                payload,
+                "audit_targets",
+                &[
+                    "origin_integrity",
+                    "supply_chain_provenance_v2",
+                    "alpha_readiness",
+                ],
+            );
+            let missing = missing_required_tokens(
+                &targets,
+                &[
+                    "origin_integrity",
+                    "supply_chain_provenance_v2",
+                    "alpha_readiness",
+                ],
+            );
+            checks.insert("audit_targets".to_string(), json!(targets));
+            checks.insert("audit_targets_missing".to_string(), json!(missing));
+            if !missing.is_empty() {
+                violations.push(format!(
+                    "specific_missing_audit_targets:{}",
+                    missing.join("|")
+                ));
+            }
+        }
+        "V9-AUDIT-026.2" => {
+            let actions = payload_string_array(
+                payload,
+                "self_healing_actions",
+                &[
+                    "refresh_spine_receipt",
+                    "rebuild_supply_chain_bundle",
+                    "reconcile_workspace_churn",
+                ],
+            );
+            let missing = missing_required_tokens(
+                &actions,
+                &[
+                    "refresh_spine_receipt",
+                    "rebuild_supply_chain_bundle",
+                    "reconcile_workspace_churn",
+                ],
+            );
+            checks.insert("self_healing_actions".to_string(), json!(actions));
+            checks.insert("self_healing_actions_missing".to_string(), json!(missing));
+            if !missing.is_empty() {
+                violations.push(format!(
+                    "specific_missing_self_healing_actions:{}",
+                    missing.join("|")
+                ));
+            }
+        }
+        "V9-AUDIT-026.3" => {
+            let range = payload_string(payload, "confidence_range", "0.0-1.0");
+            checks.insert("confidence_range".to_string(), json!(range.clone()));
+            if range != "0.0-1.0" {
+                violations.push(format!("specific_confidence_range_mismatch:{range}"));
+            }
+        }
+        "V9-AUDIT-026.4" => {
+            let consensus = payload_string(payload, "consensus_mode", "strict_match");
+            checks.insert("consensus_mode".to_string(), json!(consensus.clone()));
+            if consensus != "strict_match" {
+                violations.push(format!("specific_consensus_mode_mismatch:{consensus}"));
+            }
+        }
+        _ => {}
+    }
+
+    (checks, violations)
+}
+
 fn count_lines(path: &Path) -> u64 {
     fs::read_to_string(path)
         .ok()
@@ -166,6 +287,21 @@ const EMPTY_NUM_GATES: &[(&str, f64)] = &[];
 
 fn family_contract_requirements(family: &str) -> FamilyContractRequirements {
     match family {
+        "audit_self_healing_stack" => FamilyContractRequirements {
+            required_true: &[
+                "drift_detection_enabled",
+                "self_healing_playbooks_enabled",
+                "confidence_scoring_enabled",
+                "cross_agent_verification_enabled",
+                "human_review_gate_enforced",
+                "conduit_only_enforced",
+            ],
+            min_values: &[
+                ("confidence_high_threshold", 0.85),
+                ("verification_agents", 2.0),
+            ],
+            max_values: &[("poll_interval_minutes", 15.0)],
+        },
         "ultimate_evolution" => FamilyContractRequirements {
             required_true: &[
                 "replication_policy_gate",
@@ -187,7 +323,10 @@ fn family_contract_requirements(family: &str) -> FamilyContractRequirements {
                 "mission_dashboard_enabled",
             ],
             min_values: EMPTY_NUM_GATES,
-            max_values: &[("checkpoint_interval_items", 10.0), ("checkpoint_interval_minutes", 2.0)],
+            max_values: &[
+                ("checkpoint_interval_items", 10.0),
+                ("checkpoint_interval_minutes", 2.0),
+            ],
         },
         "autonomy_opportunity_engine" => FamilyContractRequirements {
             required_true: &[
@@ -419,7 +558,10 @@ fn family_contract_requirements(family: &str) -> FamilyContractRequirements {
             max_values: EMPTY_NUM_GATES,
         },
         "tinymax_extreme_profile" => FamilyContractRequirements {
-            required_true: &["trait_driven_swappable_tinymax_core", "sub5mb_idle_memory_mode"],
+            required_true: &[
+                "trait_driven_swappable_tinymax_core",
+                "sub5mb_idle_memory_mode",
+            ],
             min_values: EMPTY_NUM_GATES,
             max_values: &[("idle_memory_mb", 5.0)],
         },
@@ -444,6 +586,7 @@ fn execute_generic_family_contract(
     let mut bool_checks = serde_json::Map::new();
     let mut min_checks = serde_json::Map::new();
     let mut max_checks = serde_json::Map::new();
+    let mut specific_checks = serde_json::Map::new();
     let mut violations = Vec::<String>::new();
 
     for key in requirements.required_true {
@@ -468,6 +611,10 @@ fn execute_generic_family_contract(
         }
     }
 
+    let (specific, specific_violations) = contract_specific_gates(profile, payload);
+    specific_checks.extend(specific);
+    violations.extend(specific_violations);
+
     if strict && !violations.is_empty() {
         return Err(format!(
             "family_contract_gate_failed:{}:{}",
@@ -485,6 +632,7 @@ fn execute_generic_family_contract(
         "required_true": bool_checks,
         "min_checks": min_checks,
         "max_checks": max_checks,
+        "specific_checks": specific_checks,
         "violations": violations,
         "state_path": state_rel
     });
@@ -821,6 +969,29 @@ fn payload_object(raw: Option<&str>) -> Result<Value, String> {
 
 fn contract_defaults(profile: RuntimeSystemContractProfile) -> Value {
     match profile.family {
+        "audit_self_healing_stack" => json!({
+            "drift_detection_enabled": true,
+            "self_healing_playbooks_enabled": true,
+            "confidence_scoring_enabled": true,
+            "cross_agent_verification_enabled": true,
+            "human_review_gate_enforced": true,
+            "conduit_only_enforced": true,
+            "poll_interval_minutes": 15.0,
+            "verification_agents": 2.0,
+            "confidence_high_threshold": 0.9,
+            "audit_targets": [
+                "origin_integrity",
+                "supply_chain_provenance_v2",
+                "alpha_readiness"
+            ],
+            "self_healing_actions": [
+                "refresh_spine_receipt",
+                "rebuild_supply_chain_bundle",
+                "reconcile_workspace_churn"
+            ],
+            "confidence_range": "0.0-1.0",
+            "consensus_mode": "strict_match"
+        }),
         "act_critical_judgment" => json!({
             "critical_judgment_gate": true,
             "pairwise_training_enabled": true,
@@ -1423,7 +1594,7 @@ mod tests {
                 .and_then(Value::as_object)
                 .and_then(|m| m.get("contracts"))
                 .and_then(Value::as_u64),
-            Some(239)
+            Some(243)
         );
     }
 
@@ -1480,5 +1651,91 @@ mod tests {
                 "expected contract state artifact to exist"
             );
         }
+    }
+
+    #[test]
+    fn v9_audit_contract_family_persists_state_and_claims() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let out = run_payload(
+            root.path(),
+            "V9-AUDIT-026.1",
+            "run",
+            &["--strict=1".to_string(), "--apply=1".to_string()],
+        )
+        .expect("contract run should succeed");
+        assert_eq!(out.get("ok").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            out.get("contract_profile")
+                .and_then(Value::as_object)
+                .and_then(|m| m.get("family"))
+                .and_then(Value::as_str),
+            Some("audit_self_healing_stack")
+        );
+        let artifacts = out
+            .get("artifacts")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        assert!(!artifacts.is_empty());
+        let state_file = artifacts[0].as_str().unwrap_or_default().to_string();
+        assert!(root.path().join(state_file).exists());
+    }
+
+    #[test]
+    fn v9_audit_contract_family_fails_closed_on_threshold_violation() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let err = run_payload(
+            root.path(),
+            "V9-AUDIT-026.4",
+            "run",
+            &[
+                "--strict=1".to_string(),
+                "--payload-json={\"verification_agents\":1,\"poll_interval_minutes\":30}"
+                    .to_string(),
+            ],
+        )
+        .expect_err("strict threshold violation should fail");
+        assert!(
+            err.contains("family_contract_gate_failed"),
+            "expected family gate failure, got {err}"
+        );
+    }
+
+    #[test]
+    fn v9_audit_self_healing_requires_all_actions() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let err = run_payload(
+            root.path(),
+            "V9-AUDIT-026.2",
+            "run",
+            &[
+                "--strict=1".to_string(),
+                "--payload-json={\"self_healing_actions\":[\"refresh_spine_receipt\"]}".to_string(),
+            ],
+        )
+        .expect_err("strict missing self-healing actions should fail");
+        assert!(
+            err.contains("specific_missing_self_healing_actions"),
+            "expected self-healing action gate failure, got {err}"
+        );
+    }
+
+    #[test]
+    fn v9_audit_cross_agent_requires_strict_consensus_mode() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let err = run_payload(
+            root.path(),
+            "V9-AUDIT-026.4",
+            "run",
+            &[
+                "--strict=1".to_string(),
+                "--payload-json={\"consensus_mode\":\"weighted\"}".to_string(),
+            ],
+        )
+        .expect_err("strict non-matching consensus mode should fail");
+        assert!(
+            err.contains("specific_consensus_mode_mismatch"),
+            "expected consensus mode gate failure, got {err}"
+        );
     }
 }

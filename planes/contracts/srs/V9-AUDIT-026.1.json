@@ -1,0 +1,46 @@
+{
+  "id": "V9-AUDIT-026.1",
+  "upgrade": "Proactive Drift Detection",
+  "description": "Continuously audit constitution integrity, supply-chain parity, and git-tree cleanliness with fail-closed receipts.",
+  "section": "V9 Audit and Self-Healing",
+  "impact": 8,
+  "layer_map": "0/2",
+  "layer": 2,
+  "category": "safety",
+  "conduit_only_boundary": true,
+  "todo_bucket": "automation_lane",
+  "execution_contract": {
+    "runtime": "core/layer0/ops:runtime_systems",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "local/state/ops/srs_contract_runtime/V9-AUDIT-026.1/latest.json",
+    "history_path": "local/state/ops/srs_contract_runtime/history.jsonl",
+    "audit_targets": [
+      "origin_integrity",
+      "supply_chain_provenance_v2",
+      "alpha_readiness"
+    ]
+  },
+  "deliverables": [
+    {
+      "type": "contract",
+      "path": "planes/contracts/srs/V9-AUDIT-026.1.json"
+    },
+    {
+      "type": "runtime_policy",
+      "path": "core/layer0/ops/src/runtime_system_contracts.rs"
+    },
+    {
+      "type": "runtime_lane",
+      "path": "core/layer0/ops/src/runtime_systems.rs"
+    }
+  ],
+  "cli": {
+    "run": "protheus-ops runtime-systems run --system-id=V9-AUDIT-026.1 --strict=1",
+    "status": "protheus-ops runtime-systems status --system-id=V9-AUDIT-026.1"
+  },
+  "validation": {
+    "lane_command": "protheus-ops srs-contract-runtime run --id=V9-AUDIT-026.1",
+    "status_command": "protheus-ops srs-contract-runtime status --id=V9-AUDIT-026.1",
+    "fail_closed_on_missing_contract": true
+  }
+}

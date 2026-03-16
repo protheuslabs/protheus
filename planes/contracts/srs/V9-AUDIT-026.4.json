@@ -1,0 +1,43 @@
+{
+  "id": "V9-AUDIT-026.4",
+  "upgrade": "Cross-Agent Verification",
+  "description": "Run independent verification passes and fail closed when consensus between verification agents is not reached.",
+  "section": "V9 Audit and Self-Healing",
+  "impact": 8,
+  "layer_map": "2",
+  "layer": 2,
+  "category": "organism",
+  "conduit_only_boundary": true,
+  "todo_bucket": "automation_lane",
+  "execution_contract": {
+    "runtime": "core/layer0/ops:runtime_systems",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "local/state/ops/srs_contract_runtime/V9-AUDIT-026.4/latest.json",
+    "history_path": "local/state/ops/srs_contract_runtime/history.jsonl",
+    "verification_agents": 2,
+    "consensus_mode": "strict_match"
+  },
+  "deliverables": [
+    {
+      "type": "contract",
+      "path": "planes/contracts/srs/V9-AUDIT-026.4.json"
+    },
+    {
+      "type": "runtime_policy",
+      "path": "core/layer0/ops/src/runtime_system_contracts.rs"
+    },
+    {
+      "type": "runtime_lane",
+      "path": "core/layer0/ops/src/runtime_systems.rs"
+    }
+  ],
+  "cli": {
+    "run": "protheus-ops runtime-systems run --system-id=V9-AUDIT-026.4 --strict=1",
+    "status": "protheus-ops runtime-systems status --system-id=V9-AUDIT-026.4"
+  },
+  "validation": {
+    "lane_command": "protheus-ops srs-contract-runtime run --id=V9-AUDIT-026.4",
+    "status_command": "protheus-ops srs-contract-runtime status --id=V9-AUDIT-026.4",
+    "fail_closed_on_missing_contract": true
+  }
+}

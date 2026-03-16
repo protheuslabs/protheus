@@ -1,0 +1,43 @@
+{
+  "id": "V9-AUDIT-026.3",
+  "upgrade": "Confidence Scoring on Outputs",
+  "description": "Score audit findings with deterministic confidence bands so low-confidence outputs are escalated instead of auto-applied.",
+  "section": "V9 Audit and Self-Healing",
+  "impact": 7,
+  "layer_map": "2",
+  "layer": 2,
+  "category": "organism",
+  "conduit_only_boundary": true,
+  "todo_bucket": "automation_lane",
+  "execution_contract": {
+    "runtime": "core/layer0/ops:runtime_systems",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "local/state/ops/srs_contract_runtime/V9-AUDIT-026.3/latest.json",
+    "history_path": "local/state/ops/srs_contract_runtime/history.jsonl",
+    "confidence_range": "0.0-1.0",
+    "high_confidence_threshold": 0.85
+  },
+  "deliverables": [
+    {
+      "type": "contract",
+      "path": "planes/contracts/srs/V9-AUDIT-026.3.json"
+    },
+    {
+      "type": "runtime_policy",
+      "path": "core/layer0/ops/src/runtime_system_contracts.rs"
+    },
+    {
+      "type": "runtime_lane",
+      "path": "core/layer0/ops/src/runtime_systems.rs"
+    }
+  ],
+  "cli": {
+    "run": "protheus-ops runtime-systems run --system-id=V9-AUDIT-026.3 --strict=1",
+    "status": "protheus-ops runtime-systems status --system-id=V9-AUDIT-026.3"
+  },
+  "validation": {
+    "lane_command": "protheus-ops srs-contract-runtime run --id=V9-AUDIT-026.3",
+    "status_command": "protheus-ops srs-contract-runtime status --id=V9-AUDIT-026.3",
+    "fail_closed_on_missing_contract": true
+  }
+}

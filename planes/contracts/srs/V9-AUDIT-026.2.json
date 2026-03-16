@@ -1,0 +1,46 @@
+{
+  "id": "V9-AUDIT-026.2",
+  "upgrade": "Self-Healing for Known Failure Classes",
+  "description": "Execute bounded self-healing playbooks for known drift classes while enforcing human review gates.",
+  "section": "V9 Audit and Self-Healing",
+  "impact": 8,
+  "layer_map": "0/2",
+  "layer": 2,
+  "category": "safety",
+  "conduit_only_boundary": true,
+  "todo_bucket": "automation_lane",
+  "execution_contract": {
+    "runtime": "core/layer0/ops:runtime_systems",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "local/state/ops/srs_contract_runtime/V9-AUDIT-026.2/latest.json",
+    "history_path": "local/state/ops/srs_contract_runtime/history.jsonl",
+    "self_healing_actions": [
+      "refresh_spine_receipt",
+      "rebuild_supply_chain_bundle",
+      "reconcile_workspace_churn"
+    ]
+  },
+  "deliverables": [
+    {
+      "type": "contract",
+      "path": "planes/contracts/srs/V9-AUDIT-026.2.json"
+    },
+    {
+      "type": "runtime_policy",
+      "path": "core/layer0/ops/src/runtime_system_contracts.rs"
+    },
+    {
+      "type": "runtime_lane",
+      "path": "core/layer0/ops/src/runtime_systems.rs"
+    }
+  ],
+  "cli": {
+    "run": "protheus-ops runtime-systems run --system-id=V9-AUDIT-026.2 --strict=1 --apply=1",
+    "verify": "protheus-ops runtime-systems verify --system-id=V9-AUDIT-026.2"
+  },
+  "validation": {
+    "lane_command": "protheus-ops srs-contract-runtime run --id=V9-AUDIT-026.2",
+    "status_command": "protheus-ops srs-contract-runtime status --id=V9-AUDIT-026.2",
+    "fail_closed_on_missing_contract": true
+  }
+}

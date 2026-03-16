@@ -20,6 +20,17 @@ For every incoming user prompt:
 2. Emit marker: `[codex_enforcer] reviewed`
 3. Then continue with preflight + execution.
 
+## Standard Implementation Rules (Mandatory)
+- Implement all requested items as production code, not receipt scaffolds.
+- Authorized modification scope includes `core/`, `client/`, `apps/`, `adapters/`, `tests/`, and `docs/`.
+- You may add crates/packages, change schemas, and remove/replace placeholder flows when needed.
+- Enforce Rust-core authority and thin-client boundaries on every implementation.
+- Do not mark any item `done` unless acceptance criteria are proven by:
+  - behavior tests,
+  - integration tests,
+  - runnable CLI evidence.
+- If blocked by missing secrets/tools, stop immediately and report the exact blocker.
+
 ## Honesty and Completion Rules
 - Never mark any backlog item `done` unless it is fully implemented in code and verified.
 - Never claim work that was not implemented.
