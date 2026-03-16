@@ -1335,6 +1335,7 @@
     "test:ops:f100-enterprise-baseline": "node tests/client-memory-tools/f100_enterprise_baseline_gate.test.js",
     "ops:f100-a-plus:run": "node client/runtime/systems/ops/f100_a_plus_readiness_gate.ts run --strict=0 --write=1",
     "ops:f100-a-plus:status": "node client/runtime/systems/ops/f100_a_plus_readiness_gate.ts status",
+    "ops:f100-readiness:remediate": "node client/runtime/systems/ops/f100_readiness_remediation.ts",
     "test:ops:f100-a-plus": "node tests/client-memory-tools/f100_a_plus_readiness_gate.test.js",
     "ops:good-first-issues:seed": "node client/runtime/systems/ops/good_first_issue_seed.ts --apply=0",
     "ops:good-first-issues:publish": "node client/runtime/systems/ops/good_first_issue_seed.ts --apply=1",

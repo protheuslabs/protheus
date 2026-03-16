@@ -43,6 +43,7 @@
       "client/runtime/lib/ops_domain_conduit_runner.ts",
       "client/lib/conduit_full_lifecycle_probe.ts",
       "client/runtime/systems/ops/protheusd.ts",
+      "client/runtime/systems/ops/run_protheus_ops.js",
       "client/runtime/systems/ops/dependency_boundary_guard.ts",
       "client/runtime/systems/ops/rust50_sprint_contract.ts",
       "client/runtime/systems/conduit/conduit-client.ts",

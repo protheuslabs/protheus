@@ -62,15 +62,7 @@ function runProtheusOps(args, options = {}) {
       })
     : spawnSync(
         'cargo',
-        [
-          'run',
-          '--quiet',
-          '--manifest-path',
-          'core/layer0/ops/Cargo.toml',
-          '--bin',
-          'protheus-ops',
-          '--',
-        ].concat(args),
+        ['run', '--quiet', '-p', 'protheus-ops-core', '--bin', 'protheus-ops', '--'].concat(args),
         {
           cwd: ROOT,
           encoding: 'utf8',
