@@ -19,6 +19,10 @@ const SWARM_CONTRACT_IDS: &[&str] = &[
     "V6-SWARM-025",
     "V6-SWARM-026",
     "V6-SWARM-027",
+    "V6-SWARM-028",
+    "V6-SWARM-029",
+    "V6-SWARM-030",
+    "V6-SWARM-031",
 ];
 
 fn run_swarm(root: &std::path::Path, args: &[String]) -> i32 {
@@ -31,7 +35,7 @@ fn read_state(path: &std::path::Path) -> Value {
 
 #[test]
 fn swarm_contract_ids_are_embedded_for_receipt_audit_evidence() {
-    assert_eq!(SWARM_CONTRACT_IDS.len(), 15);
+    assert_eq!(SWARM_CONTRACT_IDS.len(), 19);
     assert!(SWARM_CONTRACT_IDS
         .iter()
         .all(|id| id.starts_with("V6-SWARM-0")));
@@ -267,6 +271,127 @@ fn channels_create_publish_poll_and_communication_test_pass() {
         .map(|rows| rows.len())
         .unwrap_or(0);
     assert!(mailbox_total >= 2, "expected message mailboxes to exist");
+}
+
+#[test]
+fn heterogeneous_results_registry_supports_query_wait_consensus_and_outliers() {
+    let root = tempfile::tempdir().expect("tempdir");
+    let state_path = root.path().join("state/swarm/latest.json");
+
+    let fast = vec![
+        "spawn".to_string(),
+        "--task=Calculate 1-100 quickly".to_string(),
+        "--role=calculator".to_string(),
+        "--auto-publish-results=1".to_string(),
+        "--agent-label=swarm-test-7-het-agent-fast".to_string(),
+        "--result-value=5050".to_string(),
+        format!("--state-path={}", state_path.display()),
+    ];
+    let thorough = vec![
+        "spawn".to_string(),
+        "--task=Calculate and verify 1-100".to_string(),
+        "--role=calculator".to_string(),
+        "--auto-publish-results=1".to_string(),
+        "--agent-label=swarm-test-7-het-agent-thorough".to_string(),
+        "--result-value=5050".to_string(),
+        "--verification-status=verified".to_string(),
+        format!("--state-path={}", state_path.display()),
+    ];
+    assert_eq!(run_swarm(root.path(), &fast), 0);
+    assert_eq!(run_swarm(root.path(), &thorough), 0);
+
+    let wait_args = vec![
+        "results".to_string(),
+        "wait".to_string(),
+        "--label-pattern=swarm-test-7-het-agent-*".to_string(),
+        "--min-count=2".to_string(),
+        "--timeout-sec=2".to_string(),
+        format!("--state-path={}", state_path.display()),
+    ];
+    assert_eq!(run_swarm(root.path(), &wait_args), 0);
+
+    let query_args = vec![
+        "results".to_string(),
+        "query".to_string(),
+        "--role=calculator".to_string(),
+        format!("--state-path={}", state_path.display()),
+    ];
+    assert_eq!(run_swarm(root.path(), &query_args), 0);
+
+    let consensus_args = vec![
+        "results".to_string(),
+        "consensus".to_string(),
+        "--label-pattern=swarm-test-7-het-agent-*".to_string(),
+        "--field=value".to_string(),
+        format!("--state-path={}", state_path.display()),
+    ];
+    assert_eq!(run_swarm(root.path(), &consensus_args), 0);
+
+    let outlier_args = vec![
+        "results".to_string(),
+        "outliers".to_string(),
+        "--label-pattern=swarm-test-7-het-agent-*".to_string(),
+        "--field=value".to_string(),
+        format!("--state-path={}", state_path.display()),
+    ];
+    assert_eq!(run_swarm(root.path(), &outlier_args), 0);
+
+    let state = read_state(&state_path);
+    let result_count = state
+        .get("result_registry")
+        .and_then(Value::as_object)
+        .map(|rows| rows.len())
+        .unwrap_or(0);
+    assert!(result_count >= 2, "expected published result rows");
+    let labels = state
+        .get("results_by_label")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    assert!(
+        labels.contains_key("swarm-test-7-het-agent-fast")
+            && labels.contains_key("swarm-test-7-het-agent-thorough"),
+        "expected both heterogeneous labels indexed"
+    );
+}
+
+#[test]
+fn heterogeneous_test_suite_completes_with_consensus() {
+    let root = tempfile::tempdir().expect("tempdir");
+    let state_path = root.path().join("state/swarm/latest.json");
+
+    let args = vec![
+        "test".to_string(),
+        "heterogeneous".to_string(),
+        "--label-pattern=swarm-test-7-het-agent-*".to_string(),
+        "--min-count=2".to_string(),
+        "--timeout-sec=5".to_string(),
+        format!("--state-path={}", state_path.display()),
+    ];
+    assert_eq!(run_swarm(root.path(), &args), 0);
+
+    let state = read_state(&state_path);
+    let roles = state
+        .get("service_registry")
+        .and_then(|rows| rows.get("calculator"))
+        .and_then(Value::as_array)
+        .map(|rows| rows.len())
+        .unwrap_or(0);
+    assert!(roles >= 2, "expected at least two calculator services");
+    let results = state
+        .get("result_registry")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    assert!(
+        results.values().any(|row| {
+            row.get("payload")
+                .and_then(|payload| payload.get("kind"))
+                .and_then(Value::as_str)
+                == Some("calculation")
+        }),
+        "expected calculation payloads in result registry"
+    );
 }
 
 #[test]

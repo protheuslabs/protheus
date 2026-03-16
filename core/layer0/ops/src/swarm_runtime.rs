@@ -26,6 +26,14 @@ struct SwarmState {
     #[serde(default)]
     service_registry: BTreeMap<String, Vec<ServiceInstance>>,
     #[serde(default)]
+    result_registry: BTreeMap<String, AgentResult>,
+    #[serde(default)]
+    results_by_session: BTreeMap<String, Vec<String>>,
+    #[serde(default)]
+    results_by_label: BTreeMap<String, Vec<String>>,
+    #[serde(default)]
+    results_by_role: BTreeMap<String, Vec<String>>,
+    #[serde(default)]
     exactly_once_dedupe: BTreeMap<String, String>,
     #[serde(default)]
     scheduled_tasks: BTreeMap<String, ScheduledTask>,
@@ -43,6 +51,10 @@ impl Default for SwarmState {
             mailboxes: BTreeMap::new(),
             channels: BTreeMap::new(),
             service_registry: BTreeMap::new(),
+            result_registry: BTreeMap::new(),
+            results_by_session: BTreeMap::new(),
+            results_by_label: BTreeMap::new(),
+            results_by_role: BTreeMap::new(),
             exactly_once_dedupe: BTreeMap::new(),
             scheduled_tasks: BTreeMap::new(),
             events: Vec::new(),
@@ -442,6 +454,12 @@ struct SpawnOptions {
     execution_mode: ExecutionMode,
     role: Option<String>,
     capabilities: Vec<String>,
+    auto_publish_results: bool,
+    agent_label: Option<String>,
+    result_value: Option<f64>,
+    result_text: Option<String>,
+    result_confidence: f64,
+    verification_status: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -536,6 +554,60 @@ struct ServiceInstance {
     registered_at: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "kind")]
+enum ResultPayload {
+    Calculation { value: f64 },
+    Text { content: String },
+    Structured { schema: String, data: Value },
+}
+
+impl ResultPayload {
+    fn field_value(&self, field: &str) -> Option<Value> {
+        match self {
+            Self::Calculation { value } if matches!(field, "value" | "calculation") => {
+                Some(json!(value))
+            }
+            Self::Text { content } if matches!(field, "value" | "text" | "content") => {
+                Some(json!(content))
+            }
+            Self::Structured { data, .. } => data.get(field).cloned(),
+            _ => None,
+        }
+    }
+
+    fn numeric_value(&self) -> Option<f64> {
+        match self {
+            Self::Calculation { value } => Some(*value),
+            Self::Structured { data, .. } => data.get("value").and_then(Value::as_f64),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct AgentResult {
+    result_id: String,
+    session_id: String,
+    agent_label: String,
+    agent_role: String,
+    task_id: String,
+    payload: ResultPayload,
+    data: Value,
+    confidence: f64,
+    verification_status: String,
+    timestamp_ms: u64,
+    created_at: String,
+}
+
+#[derive(Debug, Clone, Default)]
+struct ResultFilters {
+    label_pattern: Option<String>,
+    role: Option<String>,
+    task_id: Option<String>,
+    session_id: Option<String>,
+}
+
 fn usage() {
     println!("Usage:");
     println!("  protheus-ops swarm-runtime status [--state-path=<path>]");
@@ -566,6 +638,10 @@ fn usage() {
     println!("  protheus-ops swarm-runtime background <start|status|stop> [flags]");
     println!("  protheus-ops swarm-runtime scheduled <add|status|run-due> [flags]");
     println!("  protheus-ops swarm-runtime channels <create|publish|poll|monitor> [flags]");
+    println!(
+        "  protheus-ops swarm-runtime results <publish|query|wait|show|consensus|outliers> [flags]"
+    );
+    println!("  protheus-ops swarm-runtime test heterogeneous [--label-pattern=<glob>] [--min-count=<n>] [--timeout-sec=<n>] [--state-path=<path>]");
 }
 
 fn parse_flag(argv: &[String], key: &str) -> Option<String> {
@@ -865,6 +941,17 @@ fn build_spawn_options(argv: &[String]) -> SpawnOptions {
         execution_mode: parse_execution_mode(argv),
         role: parse_flag(argv, "role"),
         capabilities: parse_capabilities(argv),
+        auto_publish_results: parse_bool_flag(argv, "auto-publish-results", false),
+        agent_label: parse_flag(argv, "agent-label")
+            .or_else(|| parse_flag(argv, "label"))
+            .filter(|value| !value.trim().is_empty()),
+        result_value: parse_flag(argv, "result-value")
+            .and_then(|value| value.trim().parse::<f64>().ok()),
+        result_text: parse_flag(argv, "result-text").filter(|value| !value.trim().is_empty()),
+        result_confidence: parse_f64_flag(argv, "result-confidence", 1.0).clamp(0.0, 1.0),
+        verification_status: parse_flag(argv, "verification-status")
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or_else(|| "not_verified".to_string()),
     }
 }
 
@@ -1207,6 +1294,366 @@ fn send_to_role(
         delivery,
         false,
     )
+}
+
+fn wildcard_matches(pattern: &str, candidate: &str) -> bool {
+    if pattern.is_empty() || pattern == "*" {
+        return true;
+    }
+    if !pattern.contains('*') {
+        return pattern == candidate;
+    }
+    let mut remainder = candidate;
+    let mut first = true;
+    for part in pattern.split('*') {
+        if part.is_empty() {
+            continue;
+        }
+        if first && !pattern.starts_with('*') {
+            if !remainder.starts_with(part) {
+                return false;
+            }
+            remainder = &remainder[part.len()..];
+            first = false;
+            continue;
+        }
+        if let Some(pos) = remainder.find(part) {
+            remainder = &remainder[pos + part.len()..];
+        } else {
+            return false;
+        }
+        first = false;
+    }
+    if !pattern.ends_with('*')
+        && pattern
+            .rsplit('*')
+            .find(|part| !part.is_empty())
+            .map(|tail| !candidate.ends_with(tail))
+            .unwrap_or(false)
+    {
+        return false;
+    }
+    true
+}
+
+fn next_result_id(state: &SwarmState, session_id: &str, task_id: &str) -> String {
+    let mut salt = 0u64;
+    loop {
+        let digest = deterministic_receipt_hash(&json!({
+            "session_id": session_id,
+            "task_id": task_id,
+            "salt": salt,
+            "ts": now_epoch_ms(),
+        }));
+        let result_id = format!("result-{}", &digest[..12]);
+        if !state.result_registry.contains_key(&result_id) {
+            return result_id;
+        }
+        salt = salt.saturating_add(1);
+    }
+}
+
+fn index_result_id(index: &mut BTreeMap<String, Vec<String>>, key: String, result_id: &str) {
+    let ids = index.entry(key).or_default();
+    if !ids.iter().any(|row| row == result_id) {
+        ids.push(result_id.to_string());
+    }
+}
+
+fn publish_result(
+    state: &mut SwarmState,
+    session_id: &str,
+    agent_label: Option<String>,
+    task_id: Option<String>,
+    payload: ResultPayload,
+    data: Value,
+    confidence: f64,
+    verification_status: String,
+) -> Result<Value, String> {
+    let Some(session) = state.sessions.get(session_id) else {
+        return Err(format!("unknown_session:{session_id}"));
+    };
+    if !(0.0..=1.0).contains(&confidence) {
+        return Err(format!("invalid_confidence:{confidence}"));
+    }
+    let role = session
+        .role
+        .clone()
+        .unwrap_or_else(|| "unassigned".to_string());
+    let task = task_id.unwrap_or_else(|| session.task.clone());
+    let label = agent_label.unwrap_or_else(|| session_id.to_string());
+    let result_id = next_result_id(state, session_id, &task);
+    let result = AgentResult {
+        result_id: result_id.clone(),
+        session_id: session_id.to_string(),
+        agent_label: label.clone(),
+        agent_role: role.clone(),
+        task_id: task.clone(),
+        payload,
+        data,
+        confidence,
+        verification_status,
+        timestamp_ms: now_epoch_ms(),
+        created_at: now_iso(),
+    };
+    state
+        .result_registry
+        .insert(result_id.clone(), result.clone());
+    index_result_id(
+        &mut state.results_by_session,
+        session_id.to_string(),
+        &result_id,
+    );
+    index_result_id(&mut state.results_by_label, label.clone(), &result_id);
+    index_result_id(&mut state.results_by_role, role.clone(), &result_id);
+
+    append_event(
+        state,
+        json!({
+            "type": "swarm_result_published",
+            "result_id": result_id,
+            "session_id": session_id,
+            "agent_label": label,
+            "agent_role": role,
+            "task_id": task,
+            "timestamp": now_iso(),
+        }),
+    );
+
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_results_publish",
+        "result": result,
+    }))
+}
+
+fn parse_result_filters(argv: &[String]) -> ResultFilters {
+    ResultFilters {
+        label_pattern: parse_flag(argv, "label-pattern")
+            .or_else(|| parse_flag(argv, "label"))
+            .filter(|value| !value.trim().is_empty()),
+        role: parse_flag(argv, "role").filter(|value| !value.trim().is_empty()),
+        task_id: parse_flag(argv, "task-id").filter(|value| !value.trim().is_empty()),
+        session_id: parse_flag(argv, "session-id").filter(|value| !value.trim().is_empty()),
+    }
+}
+
+fn query_results(state: &SwarmState, filters: &ResultFilters) -> Vec<AgentResult> {
+    let mut results = state
+        .result_registry
+        .values()
+        .filter(|result| {
+            filters
+                .label_pattern
+                .as_deref()
+                .map(|pattern| wildcard_matches(pattern, &result.agent_label))
+                .unwrap_or(true)
+        })
+        .filter(|result| {
+            filters
+                .role
+                .as_deref()
+                .map(|role| role == result.agent_role)
+                .unwrap_or(true)
+        })
+        .filter(|result| {
+            filters
+                .task_id
+                .as_deref()
+                .map(|task_id| task_id == result.task_id)
+                .unwrap_or(true)
+        })
+        .filter(|result| {
+            filters
+                .session_id
+                .as_deref()
+                .map(|session_id| session_id == result.session_id)
+                .unwrap_or(true)
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    results.sort_by_key(|result| result.timestamp_ms);
+    results
+}
+
+fn wait_for_results(
+    state_file: &Path,
+    state: &SwarmState,
+    filters: &ResultFilters,
+    min_count: usize,
+    timeout_ms: u64,
+) -> Result<Vec<AgentResult>, String> {
+    let min_count = min_count.max(1);
+    let initial = query_results(state, filters);
+    if initial.len() >= min_count {
+        return Ok(initial);
+    }
+    let deadline = now_epoch_ms().saturating_add(timeout_ms.max(1));
+    loop {
+        let snapshot = load_state(state_file).unwrap_or_else(|_| state.clone());
+        let results = query_results(&snapshot, filters);
+        if results.len() >= min_count {
+            return Ok(results);
+        }
+        if now_epoch_ms() >= deadline {
+            return Err(format!(
+                "result_wait_timeout:min_count={min_count}:found={}",
+                results.len()
+            ));
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+}
+
+fn consensus_value_from_result(result: &AgentResult, field: &str) -> Option<Value> {
+    if field.trim().is_empty() || field == "value" {
+        return result
+            .payload
+            .numeric_value()
+            .map(|value| json!(value))
+            .or_else(|| result.payload.field_value("value"))
+            .or_else(|| result.data.get("value").cloned());
+    }
+    result
+        .payload
+        .field_value(field)
+        .or_else(|| result.data.get(field).cloned())
+}
+
+fn analyze_result_consensus(results: &[AgentResult], field: &str, threshold: f64) -> Value {
+    if results.is_empty() {
+        return json!({
+            "consensus_reached": false,
+            "status": "no_results",
+            "confidence": 0.0,
+            "sample_size": 0,
+            "outliers": [],
+        });
+    }
+    let mut groups: BTreeMap<String, Vec<(String, String, Value)>> = BTreeMap::new();
+    for result in results {
+        let Some(value) = consensus_value_from_result(result, field) else {
+            continue;
+        };
+        let fingerprint = deterministic_receipt_hash(&value);
+        groups.entry(fingerprint).or_default().push((
+            result.result_id.clone(),
+            result.agent_label.clone(),
+            value,
+        ));
+    }
+    if groups.is_empty() {
+        return json!({
+            "consensus_reached": false,
+            "status": "no_extractable_values",
+            "confidence": 0.0,
+            "sample_size": results.len(),
+            "field": field,
+            "outliers": [],
+        });
+    }
+
+    let (leader_key, leader_group) = groups
+        .iter()
+        .max_by_key(|(_, rows)| rows.len())
+        .expect("leader group");
+    let confidence =
+        leader_group.len() as f64 / groups.values().map(Vec::len).sum::<usize>() as f64;
+    let status = if leader_group.len() == groups.values().map(Vec::len).sum::<usize>() {
+        "full_agreement"
+    } else if confidence >= threshold {
+        "partial_agreement"
+    } else {
+        "disagreement"
+    };
+
+    let mut outliers = Vec::new();
+    for (fingerprint, rows) in &groups {
+        if fingerprint == leader_key {
+            continue;
+        }
+        for (result_id, agent_label, value) in rows {
+            outliers.push(json!({
+                "result_id": result_id,
+                "agent_label": agent_label,
+                "value": value,
+                "deviation": "majority_mismatch",
+            }));
+        }
+    }
+
+    json!({
+        "consensus_reached": confidence >= threshold,
+        "status": status,
+        "confidence": confidence,
+        "threshold": threshold,
+        "field": field,
+        "sample_size": results.len(),
+        "agreement_count": leader_group.len(),
+        "agreed_value": leader_group.first().map(|(_, _, value)| value.clone()).unwrap_or(Value::Null),
+        "outliers": outliers,
+    })
+}
+
+fn analyze_result_outliers(results: &[AgentResult], field: &str) -> Value {
+    let points = results
+        .iter()
+        .filter_map(|result| {
+            consensus_value_from_result(result, field)
+                .and_then(|value| value.as_f64())
+                .map(|value| (result.result_id.clone(), result.agent_label.clone(), value))
+        })
+        .collect::<Vec<_>>();
+    if points.len() < 3 {
+        return json!({
+            "status": "insufficient_data",
+            "field": field,
+            "sample_size": points.len(),
+            "outliers": [],
+        });
+    }
+    let mean = points.iter().map(|(_, _, value)| *value).sum::<f64>() / points.len() as f64;
+    let variance = points
+        .iter()
+        .map(|(_, _, value)| (*value - mean).powi(2))
+        .sum::<f64>()
+        / points.len() as f64;
+    let std_dev = variance.sqrt();
+    if std_dev == 0.0 {
+        return json!({
+            "status": "stable",
+            "field": field,
+            "sample_size": points.len(),
+            "mean": mean,
+            "std_dev": std_dev,
+            "outliers": [],
+        });
+    }
+    let outliers = points
+        .into_iter()
+        .filter_map(|(result_id, agent_label, value)| {
+            let z_score = (value - mean).abs() / std_dev;
+            if z_score > 2.0 {
+                Some(json!({
+                    "result_id": result_id,
+                    "agent_label": agent_label,
+                    "value": value,
+                    "z_score": z_score,
+                }))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+    json!({
+        "status": if outliers.is_empty() { "stable" } else { "outliers_detected" },
+        "field": field,
+        "sample_size": results.len(),
+        "mean": mean,
+        "std_dev": std_dev,
+        "outlier_count": outliers.len(),
+        "outliers": outliers,
+    })
 }
 
 fn create_channel(
@@ -1818,7 +2265,7 @@ fn spawn_single(
             "parent_id": parent_id,
             "depth": depth,
             "task": task,
-            "scaled_task": scaled_task,
+            "scaled_task": scaled_task.clone(),
             "verified": options.verify,
             "byzantine": options.byzantine,
             "token_budget": options.token_budget,
@@ -1829,6 +2276,37 @@ fn spawn_single(
         }),
     );
 
+    let auto_publish_receipt = if options.auto_publish_results {
+        let payload = if let Some(value) = options.result_value {
+            ResultPayload::Calculation { value }
+        } else if let Some(text) = options.result_text.as_ref() {
+            ResultPayload::Text {
+                content: text.to_string(),
+            }
+        } else {
+            ResultPayload::Structured {
+                schema: "swarm_runtime_report_v1".to_string(),
+                data: report.clone(),
+            }
+        };
+        let mut metadata = Map::new();
+        metadata.insert("source".to_string(), json!("spawn_auto_publish"));
+        metadata.insert("task".to_string(), json!(scaled_task));
+        metadata.insert("report".to_string(), report.clone());
+        Some(publish_result(
+            state,
+            &session_id,
+            options.agent_label.clone(),
+            Some(task.to_string()),
+            payload,
+            Value::Object(metadata),
+            options.result_confidence,
+            options.verification_status.clone(),
+        )?)
+    } else {
+        None
+    };
+
     Ok(json!({
         "session_id": session_id,
         "parent_id": parent_id,
@@ -1837,6 +2315,7 @@ fn spawn_single(
         "report": report,
         "metrics": metrics.as_json(),
         "budget_report": budget_telemetry.map(|telemetry| telemetry.generate_report()),
+        "auto_publish_result": auto_publish_receipt,
     }))
 }
 
@@ -2058,6 +2537,12 @@ fn run_test_recursive(state: &mut SwarmState, argv: &[String]) -> Result<Value, 
         execution_mode: ExecutionMode::TaskOriented,
         role: None,
         capabilities: Vec::new(),
+        auto_publish_results: false,
+        agent_label: None,
+        result_value: None,
+        result_text: None,
+        result_confidence: 1.0,
+        verification_status: "not_verified".to_string(),
     };
 
     let result = recursive_spawn_with_tracking(
@@ -2163,6 +2648,12 @@ fn run_test_concurrency(state: &mut SwarmState, argv: &[String]) -> Result<Value
         execution_mode: ExecutionMode::TaskOriented,
         role: None,
         capabilities: Vec::new(),
+        auto_publish_results: false,
+        agent_label: None,
+        result_value: None,
+        result_text: None,
+        result_confidence: 1.0,
+        verification_status: "not_verified".to_string(),
     };
 
     let mut queue_wait_total = 0u64;
@@ -2239,6 +2730,12 @@ fn run_test_budget(state: &mut SwarmState, argv: &[String]) -> Result<Value, Str
         execution_mode: ExecutionMode::TaskOriented,
         role: None,
         capabilities: Vec::new(),
+        auto_publish_results: false,
+        agent_label: None,
+        result_value: None,
+        result_text: None,
+        result_confidence: 1.0,
+        verification_status: "not_verified".to_string(),
     };
 
     let result = spawn_single(state, None, &task, 8, &options);
@@ -2555,6 +3052,12 @@ fn scheduled_run_due(state: &mut SwarmState, now_ms: u64, max_runs: u64) -> Resu
             execution_mode: ExecutionMode::TaskOriented,
             role: None,
             capabilities: Vec::new(),
+            auto_publish_results: false,
+            agent_label: None,
+            result_value: None,
+            result_text: None,
+            result_confidence: 1.0,
+            verification_status: "not_verified".to_string(),
         };
         let spawn = spawn_single(state, None, &task_row.task, 64, &options)?;
         let session_id = spawn
@@ -2699,6 +3202,12 @@ fn run_test_persistent(state: &mut SwarmState, argv: &[String]) -> Result<Value,
         execution_mode: ExecutionMode::Persistent(cfg.clone()),
         role: Some("health-monitor".to_string()),
         capabilities: vec!["check_in".to_string(), "status_report".to_string()],
+        auto_publish_results: false,
+        agent_label: None,
+        result_value: None,
+        result_text: None,
+        result_confidence: 1.0,
+        verification_status: "not_verified".to_string(),
     };
     let task =
         parse_flag(argv, "task").unwrap_or_else(|| "Persistent health check loop".to_string());
@@ -2733,6 +3242,12 @@ fn run_test_communication(state: &mut SwarmState, argv: &[String]) -> Result<Val
         execution_mode: ExecutionMode::TaskOriented,
         role: None,
         capabilities: Vec::new(),
+        auto_publish_results: false,
+        agent_label: None,
+        result_value: None,
+        result_text: None,
+        result_confidence: 1.0,
+        verification_status: "not_verified".to_string(),
     };
 
     let generator_id = spawn_single(
@@ -2919,6 +3434,118 @@ fn run_test_communication(state: &mut SwarmState, argv: &[String]) -> Result<Val
     }))
 }
 
+fn run_test_heterogeneous(
+    state: &mut SwarmState,
+    state_file: &Path,
+    argv: &[String],
+) -> Result<Value, String> {
+    let start = parse_u64_flag(argv, "range-start", 1);
+    let end = parse_u64_flag(argv, "range-end", 100);
+    if end < start {
+        return Err(format!("invalid_range:start={start}:end={end}"));
+    }
+    let expected_sum = ((start + end) * (end - start + 1)) as f64 / 2.0;
+    let label_pattern = parse_flag(argv, "label-pattern")
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or_else(|| "swarm-test-7-het-agent-*".to_string());
+    let timeout_ms = (parse_f64_flag(argv, "timeout-sec", 30.0).max(0.1) * 1000.0) as u64;
+    let min_count = parse_u64_flag(argv, "min-count", 2) as usize;
+
+    let base = SpawnOptions {
+        verify: true,
+        timeout_ms: 1_000,
+        metrics_detailed: true,
+        simulate_unreachable: false,
+        byzantine: false,
+        corruption_type: "data_falsification".to_string(),
+        token_budget: Some(1_200),
+        token_warning_threshold: 0.8,
+        budget_exhaustion_action: BudgetAction::AllowWithWarning,
+        adaptive_complexity: true,
+        execution_mode: ExecutionMode::TaskOriented,
+        role: Some("calculator".to_string()),
+        capabilities: vec!["calculate".to_string(), "verify".to_string()],
+        auto_publish_results: true,
+        agent_label: None,
+        result_value: Some(expected_sum),
+        result_text: None,
+        result_confidence: 1.0,
+        verification_status: "not_verified".to_string(),
+    };
+
+    let fast = spawn_single(
+        state,
+        None,
+        &format!("Calculate {start}-{end} quickly"),
+        8,
+        &SpawnOptions {
+            agent_label: Some("swarm-test-7-het-agent-fast".to_string()),
+            result_confidence: 1.0,
+            verification_status: "not_verified".to_string(),
+            ..base.clone()
+        },
+    )?;
+    let thorough = spawn_single(
+        state,
+        None,
+        &format!("Calculate and verify {start}-{end}"),
+        8,
+        &SpawnOptions {
+            agent_label: Some("swarm-test-7-het-agent-thorough".to_string()),
+            result_confidence: 0.98,
+            verification_status: "verified".to_string(),
+            ..base.clone()
+        },
+    )?;
+    let coordinator = spawn_single(
+        state,
+        None,
+        "Coordinate heterogeneous consensus",
+        8,
+        &SpawnOptions {
+            role: Some("coordinator".to_string()),
+            capabilities: vec!["consensus".to_string(), "audit".to_string()],
+            auto_publish_results: false,
+            result_value: None,
+            agent_label: Some("swarm-test-7-het-agent-coordinator".to_string()),
+            ..base
+        },
+    )?;
+
+    let filters = ResultFilters {
+        label_pattern: Some(label_pattern.clone()),
+        role: None,
+        task_id: None,
+        session_id: None,
+    };
+    let results = wait_for_results(state_file, state, &filters, min_count, timeout_ms)?;
+    let consensus = analyze_result_consensus(&results, "value", 1.0);
+    let outliers = analyze_result_outliers(&results, "value");
+    let coordination_success = consensus
+        .get("consensus_reached")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_test_heterogeneous",
+        "range_start": start,
+        "range_end": end,
+        "expected_sum": expected_sum,
+        "coordinator_status": if coordination_success { "success" } else { "failed" },
+        "coordination_success": coordination_success,
+        "result_count": results.len(),
+        "sessions": {
+            "fast": fast,
+            "thorough": thorough,
+            "coordinator": coordinator,
+        },
+        "consensus": consensus,
+        "outliers": outliers,
+        "results": results,
+    }))
+}
+
 fn parse_reports_from_flag(reports_flag: Option<String>) -> Vec<AgentReport> {
     reports_flag
         .and_then(|raw| serde_json::from_str::<Value>(&raw).ok())
@@ -2957,6 +3584,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             "type": "swarm_runtime_status",
             "byzantine_test_mode": state.byzantine_test_mode,
             "session_count": state.sessions.len(),
+            "result_count": state.result_registry.len(),
             "event_count": state.events.len(),
             "max_depth": state
                 .sessions
@@ -3316,6 +3944,149 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 _ => Err(format!("unknown_channels_subcommand:{sub}")),
             }
         }
+        "results" => {
+            let sub = argv
+                .get(1)
+                .map(|value| value.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "query".to_string());
+            match sub.as_str() {
+                "publish" => {
+                    match parse_flag(argv, "session-id").filter(|value| !value.trim().is_empty()) {
+                        Some(session_id) => {
+                            let confidence =
+                                parse_f64_flag(argv, "confidence", 1.0).clamp(0.0, 1.0);
+                            let verification_status = parse_flag(argv, "verification-status")
+                                .filter(|value| !value.trim().is_empty())
+                                .unwrap_or_else(|| "not_verified".to_string());
+                            let payload_result: Result<ResultPayload, String> = if let Some(value) =
+                                parse_flag(argv, "value")
+                                    .and_then(|value| value.parse::<f64>().ok())
+                            {
+                                Ok(ResultPayload::Calculation { value })
+                            } else if let Some(text) =
+                                parse_flag(argv, "text").filter(|value| !value.trim().is_empty())
+                            {
+                                Ok(ResultPayload::Text { content: text })
+                            } else if let Some(data_json) = parse_flag(argv, "data-json")
+                                .filter(|value| !value.trim().is_empty())
+                            {
+                                match serde_json::from_str::<Value>(&data_json) {
+                                    Ok(data) => Ok(ResultPayload::Structured {
+                                        schema: parse_flag(argv, "schema")
+                                            .unwrap_or_else(|| "result_v1".to_string()),
+                                        data,
+                                    }),
+                                    Err(err) => Err(format!("invalid_data_json:{err}")),
+                                }
+                            } else if let Some(session) = state.sessions.get(&session_id) {
+                                Ok(ResultPayload::Structured {
+                                    schema: "swarm_runtime_report_v1".to_string(),
+                                    data: session.report.clone().unwrap_or(Value::Null),
+                                })
+                            } else {
+                                Err(format!("unknown_session:{session_id}"))
+                            };
+                            match payload_result {
+                                Ok(payload) => publish_result(
+                                    &mut state,
+                                    &session_id,
+                                    parse_flag(argv, "label")
+                                        .filter(|value| !value.trim().is_empty()),
+                                    parse_flag(argv, "task-id")
+                                        .filter(|value| !value.trim().is_empty()),
+                                    payload,
+                                    json!({"source": "results_publish_command"}),
+                                    confidence,
+                                    verification_status,
+                                ),
+                                Err(err) => Err(err),
+                            }
+                        }
+                        None => Err("session_id_required".to_string()),
+                    }
+                }
+                "query" => {
+                    let filters = parse_result_filters(argv);
+                    let results = query_results(&state, &filters);
+                    Ok(json!({
+                        "ok": true,
+                        "type": "swarm_runtime_results_query",
+                        "filters": {
+                            "label_pattern": filters.label_pattern,
+                            "role": filters.role,
+                            "task_id": filters.task_id,
+                            "session_id": filters.session_id,
+                        },
+                        "result_count": results.len(),
+                        "results": results,
+                    }))
+                }
+                "wait" => {
+                    let filters = parse_result_filters(argv);
+                    let min_count = parse_u64_flag(argv, "min-count", 1) as usize;
+                    let timeout_ms =
+                        (parse_f64_flag(argv, "timeout-sec", 30.0).max(0.1) * 1000.0) as u64;
+                    match wait_for_results(&state_file, &state, &filters, min_count, timeout_ms) {
+                        Ok(results) => Ok(json!({
+                            "ok": true,
+                            "type": "swarm_runtime_results_wait",
+                            "min_count": min_count.max(1),
+                            "timeout_ms": timeout_ms,
+                            "result_count": results.len(),
+                            "results": results,
+                        })),
+                        Err(err) => Err(err),
+                    }
+                }
+                "show" => {
+                    if let Some(result_id) =
+                        parse_flag(argv, "result-id").filter(|value| !value.trim().is_empty())
+                    {
+                        if let Some(result) = state.result_registry.get(&result_id).cloned() {
+                            Ok(json!({
+                                "ok": true,
+                                "type": "swarm_runtime_results_show",
+                                "result": result,
+                            }))
+                        } else {
+                            Err(format!("unknown_result:{result_id}"))
+                        }
+                    } else {
+                        Err("result_id_required".to_string())
+                    }
+                }
+                "consensus" => {
+                    let filters = parse_result_filters(argv);
+                    let field = parse_flag(argv, "field")
+                        .filter(|value| !value.trim().is_empty())
+                        .unwrap_or_else(|| "value".to_string());
+                    let threshold = parse_f64_flag(argv, "threshold", 1.0).clamp(0.0, 1.0);
+                    let results = query_results(&state, &filters);
+                    Ok(json!({
+                        "ok": true,
+                        "type": "swarm_runtime_results_consensus",
+                        "field": field,
+                        "result_count": results.len(),
+                        "consensus": analyze_result_consensus(&results, &field, threshold),
+                    }))
+                }
+                "outliers" => {
+                    let filters = parse_result_filters(argv);
+                    let field = parse_flag(argv, "field")
+                        .filter(|value| !value.trim().is_empty())
+                        .unwrap_or_else(|| "value".to_string());
+                    let results = query_results(&state, &filters);
+                    Ok(json!({
+                        "ok": true,
+                        "type": "swarm_runtime_results_outliers",
+                        "field": field,
+                        "result_count": results.len(),
+                        "analysis": analyze_result_outliers(&results, &field),
+                    }))
+                }
+                _ => Err(format!("unknown_results_subcommand:{sub}")),
+            }
+        }
         "test" => {
             let suite = argv
                 .get(1)
@@ -3328,6 +4099,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 "budget" => run_test_budget(&mut state, argv),
                 "persistent" => run_test_persistent(&mut state, argv),
                 "communication" => run_test_communication(&mut state, argv),
+                "heterogeneous" => run_test_heterogeneous(&mut state, &state_file, argv),
                 _ => Err(format!("unknown_test_suite:{suite}")),
             }
         }
@@ -3395,6 +4167,12 @@ mod tests {
             execution_mode: ExecutionMode::TaskOriented,
             role: None,
             capabilities: Vec::new(),
+            auto_publish_results: false,
+            agent_label: None,
+            result_value: None,
+            result_text: None,
+            result_confidence: 1.0,
+            verification_status: "not_verified".to_string(),
         }
     }
 
@@ -3641,5 +4419,62 @@ mod tests {
         let inbox_len = state.mailboxes.get(&b).expect("mailbox").unread.len();
         assert_eq!(inbox_len, 1, "exactly-once must avoid duplicate inbox rows");
         assert!(state.sessions.contains_key(&a));
+    }
+
+    #[test]
+    fn wildcard_label_match_supports_prefix_suffix_patterns() {
+        assert!(wildcard_matches(
+            "swarm-test-7-*",
+            "swarm-test-7-agent-fast"
+        ));
+        assert!(wildcard_matches("*agent-fast", "swarm-test-7-agent-fast"));
+        assert!(!wildcard_matches(
+            "swarm-test-8-*",
+            "swarm-test-7-agent-fast"
+        ));
+    }
+
+    #[test]
+    fn auto_publish_results_are_queryable_and_consensus_detects_mismatch() {
+        let mut state = SwarmState::default();
+        let mut first = spawn_options();
+        first.auto_publish_results = true;
+        first.result_value = Some(5050.0);
+        first.agent_label = Some("swarm-test-7-het-agent-fast".to_string());
+        first.role = Some("calculator".to_string());
+        spawn_single(&mut state, None, "calc-fast", 8, &first).expect("first spawn");
+
+        let mut second = spawn_options();
+        second.auto_publish_results = true;
+        second.result_value = Some(5000.0);
+        second.agent_label = Some("swarm-test-7-het-agent-thorough".to_string());
+        second.role = Some("calculator".to_string());
+        spawn_single(&mut state, None, "calc-thorough", 8, &second).expect("second spawn");
+
+        let results = query_results(
+            &state,
+            &ResultFilters {
+                label_pattern: Some("swarm-test-7-het-agent-*".to_string()),
+                role: Some("calculator".to_string()),
+                task_id: None,
+                session_id: None,
+            },
+        );
+        assert_eq!(results.len(), 2);
+
+        let consensus = analyze_result_consensus(&results, "value", 1.0);
+        assert_eq!(
+            consensus
+                .get("consensus_reached")
+                .and_then(Value::as_bool)
+                .unwrap_or(true),
+            false
+        );
+        let outliers = consensus
+            .get("outliers")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        assert_eq!(outliers.len(), 1);
     }
 }
