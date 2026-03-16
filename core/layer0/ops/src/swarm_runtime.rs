@@ -20,6 +20,14 @@ struct SwarmState {
     #[serde(default)]
     sessions: BTreeMap<String, SessionMetadata>,
     #[serde(default)]
+    mailboxes: BTreeMap<String, SessionMailbox>,
+    #[serde(default)]
+    channels: BTreeMap<String, MessageChannel>,
+    #[serde(default)]
+    service_registry: BTreeMap<String, Vec<ServiceInstance>>,
+    #[serde(default)]
+    exactly_once_dedupe: BTreeMap<String, String>,
+    #[serde(default)]
     scheduled_tasks: BTreeMap<String, ScheduledTask>,
     #[serde(default)]
     events: Vec<Value>,
@@ -32,6 +40,10 @@ impl Default for SwarmState {
             updated_at: now_iso(),
             byzantine_test_mode: false,
             sessions: BTreeMap::new(),
+            mailboxes: BTreeMap::new(),
+            channels: BTreeMap::new(),
+            service_registry: BTreeMap::new(),
+            exactly_once_dedupe: BTreeMap::new(),
             scheduled_tasks: BTreeMap::new(),
             events: Vec::new(),
         }
@@ -62,6 +74,8 @@ struct SessionMetadata {
     scaled_task: Option<String>,
     #[serde(default)]
     budget_action_taken: Option<String>,
+    #[serde(default)]
+    role: Option<String>,
     #[serde(default)]
     check_ins: Vec<Value>,
     #[serde(default)]
@@ -426,6 +440,8 @@ struct SpawnOptions {
     budget_exhaustion_action: BudgetAction,
     adaptive_complexity: bool,
     execution_mode: ExecutionMode,
+    role: Option<String>,
+    capabilities: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -435,10 +451,95 @@ struct AgentReport {
     values: BTreeMap<String, Value>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+enum DeliveryGuarantee {
+    AtMostOnce,
+    AtLeastOnce,
+    ExactlyOnce,
+}
+
+impl DeliveryGuarantee {
+    fn from_flag(raw: Option<String>) -> Self {
+        match raw
+            .unwrap_or_else(|| "at_most_once".to_string())
+            .trim()
+            .to_ascii_lowercase()
+            .as_str()
+        {
+            "at_least_once" | "at-least-once" | "atleastonce" => Self::AtLeastOnce,
+            "exactly_once" | "exactly-once" | "exactlyonce" => Self::ExactlyOnce,
+            _ => Self::AtMostOnce,
+        }
+    }
+
+    fn as_label(&self) -> &'static str {
+        match self {
+            Self::AtMostOnce => "at_most_once",
+            Self::AtLeastOnce => "at_least_once",
+            Self::ExactlyOnce => "exactly_once",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct AgentMessage {
+    message_id: String,
+    sender_session_id: String,
+    recipient_session_id: String,
+    payload: String,
+    created_at: String,
+    timestamp_ms: u64,
+    delivery: DeliveryGuarantee,
+    attempts: u32,
+    acknowledged: bool,
+    #[serde(default)]
+    acked_at_ms: Option<u64>,
+    #[serde(default)]
+    dedupe_key: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+struct SessionMailbox {
+    session_id: String,
+    #[serde(default)]
+    unread: Vec<AgentMessage>,
+    #[serde(default)]
+    read: Vec<AgentMessage>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct ChannelMessage {
+    message_id: String,
+    sender_session_id: String,
+    payload: String,
+    timestamp_ms: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct MessageChannel {
+    channel_id: String,
+    name: String,
+    participants: Vec<String>,
+    created_at: String,
+    #[serde(default)]
+    messages: Vec<ChannelMessage>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct ServiceInstance {
+    session_id: String,
+    role: String,
+    #[serde(default)]
+    capabilities: Vec<String>,
+    healthy: bool,
+    registered_at: String,
+}
+
 fn usage() {
     println!("Usage:");
     println!("  protheus-ops swarm-runtime status [--state-path=<path>]");
-    println!("  protheus-ops swarm-runtime spawn [--task=<text>] [--session-id=<parent>] [--recursive=1|0] [--levels=<n>] [--max-depth=<n>] [--verify=1|0] [--timeout-sec=<seconds>] [--metrics=<none|detailed>] [--byzantine=1|0] [--corruption-type=<id>] [--token-budget=<n>] [--token-warning-at=<0..1>] [--on-budget-exhausted=<fail|warn|compact>] [--adaptive-complexity=1|0] [--execution-mode=<task|persistent|background>] [--lifespan-sec=<n>] [--check-in-interval-sec=<n>] [--report-mode=<always|anomalies|final>] [--state-path=<path>]");
+    println!("  protheus-ops swarm-runtime spawn [--task=<text>] [--session-id=<parent>] [--recursive=1|0] [--levels=<n>] [--max-depth=<n>] [--verify=1|0] [--timeout-sec=<seconds>] [--metrics=<none|detailed>] [--byzantine=1|0] [--corruption-type=<id>] [--token-budget=<n>] [--token-warning-at=<0..1>] [--on-budget-exhausted=<fail|warn|compact>] [--adaptive-complexity=1|0] [--execution-mode=<task|persistent|background>] [--role=<name>] [--capabilities=<csv>] [--lifespan-sec=<n>] [--check-in-interval-sec=<n>] [--report-mode=<always|anomalies|final>] [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime tick [--advance-ms=<n>] [--max-check-ins=<n>] [--state-path=<path>]");
     println!(
         "  protheus-ops swarm-runtime byzantine-test <enable|disable|status> [--state-path=<path>]"
@@ -457,8 +558,14 @@ fn usage() {
     println!(
         "  protheus-ops swarm-runtime sessions anomalies --session-id=<id> [--state-path=<path>]"
     );
+    println!("  protheus-ops swarm-runtime sessions send --sender-id=<session|coordinator> --session-id=<recipient> --message=<text> [--delivery=<at_most_once|at_least_once|exactly_once>] [--state-path=<path>]");
+    println!("  protheus-ops swarm-runtime sessions receive --session-id=<id> [--limit=<n>] [--mark-read=1|0] [--state-path=<path>]");
+    println!("  protheus-ops swarm-runtime sessions ack --session-id=<id> --message-id=<id> [--state-path=<path>]");
+    println!("  protheus-ops swarm-runtime sessions discover --role=<name> [--state-path=<path>]");
+    println!("  protheus-ops swarm-runtime sessions send-role --sender-id=<session|coordinator> --role=<name> --message=<text> [--delivery=<at_most_once|at_least_once|exactly_once>] [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime background <start|status|stop> [flags]");
     println!("  protheus-ops swarm-runtime scheduled <add|status|run-due> [flags]");
+    println!("  protheus-ops swarm-runtime channels <create|publish|poll|monitor> [flags]");
 }
 
 fn parse_flag(argv: &[String], key: &str) -> Option<String> {
@@ -756,7 +863,488 @@ fn build_spawn_options(argv: &[String]) -> SpawnOptions {
         budget_exhaustion_action: BudgetAction::from_flag(parse_flag(argv, "on-budget-exhausted")),
         adaptive_complexity: parse_bool_flag(argv, "adaptive-complexity", false),
         execution_mode: parse_execution_mode(argv),
+        role: parse_flag(argv, "role"),
+        capabilities: parse_capabilities(argv),
     }
+}
+
+fn parse_capabilities(argv: &[String]) -> Vec<String> {
+    parse_flag(argv, "capabilities")
+        .map(|raw| {
+            raw.split(',')
+                .map(|value| value.trim())
+                .filter(|value| !value.is_empty())
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default()
+}
+
+fn ensure_mailbox<'a>(state: &'a mut SwarmState, session_id: &str) -> &'a mut SessionMailbox {
+    state
+        .mailboxes
+        .entry(session_id.to_string())
+        .or_insert_with(|| SessionMailbox {
+            session_id: session_id.to_string(),
+            unread: Vec::new(),
+            read: Vec::new(),
+        })
+}
+
+fn session_exists(state: &SwarmState, session_id: &str) -> bool {
+    state.sessions.contains_key(session_id)
+}
+
+fn next_message_id(
+    state: &SwarmState,
+    sender_session_id: &str,
+    recipient_session_id: &str,
+    payload: &str,
+) -> String {
+    let mut salt = 0u64;
+    loop {
+        let digest = deterministic_receipt_hash(&json!({
+            "sender": sender_session_id,
+            "recipient": recipient_session_id,
+            "payload": payload,
+            "salt": salt,
+            "ts": now_epoch_ms(),
+        }));
+        let candidate = format!("msg-{}", &digest[..12]);
+        let in_mailboxes = state.mailboxes.values().any(|mailbox| {
+            mailbox.unread.iter().any(|msg| msg.message_id == candidate)
+                || mailbox.read.iter().any(|msg| msg.message_id == candidate)
+        });
+        if !in_mailboxes {
+            return candidate;
+        }
+        salt = salt.saturating_add(1);
+    }
+}
+
+fn is_sibling_or_child_allowed(
+    state: &SwarmState,
+    sender_session_id: &str,
+    recipient_session_id: &str,
+) -> bool {
+    let Some(sender) = state.sessions.get(sender_session_id) else {
+        return false;
+    };
+    let Some(recipient) = state.sessions.get(recipient_session_id) else {
+        return false;
+    };
+    let sibling = sender.parent_id == recipient.parent_id;
+    let child = recipient.parent_id.as_deref() == Some(sender_session_id);
+    sibling || child
+}
+
+fn send_session_message(
+    state: &mut SwarmState,
+    sender_session_id: &str,
+    recipient_session_id: &str,
+    payload: &str,
+    delivery: DeliveryGuarantee,
+    simulate_first_attempt_fail: bool,
+) -> Result<Value, String> {
+    if sender_session_id != "coordinator" && !session_exists(state, sender_session_id) {
+        return Err(format!("unknown_sender_session:{sender_session_id}"));
+    }
+    if !session_exists(state, recipient_session_id) {
+        return Err(format!("unknown_recipient_session:{recipient_session_id}"));
+    }
+    if sender_session_id != "coordinator" && sender_session_id == recipient_session_id {
+        return Err("self_delivery_blocked".to_string());
+    }
+    if sender_session_id != "coordinator"
+        && !is_sibling_or_child_allowed(state, sender_session_id, recipient_session_id)
+    {
+        return Err(format!(
+            "recipient_scope_denied:sender={sender_session_id}:recipient={recipient_session_id}"
+        ));
+    }
+
+    let dedupe_key = deterministic_receipt_hash(&json!({
+        "sender": sender_session_id,
+        "recipient": recipient_session_id,
+        "payload": payload,
+        "delivery": delivery.as_label(),
+    }));
+    if matches!(delivery, DeliveryGuarantee::ExactlyOnce) {
+        if let Some(existing_message_id) = state.exactly_once_dedupe.get(&dedupe_key).cloned() {
+            return Ok(json!({
+                "ok": true,
+                "type": "swarm_runtime_sessions_send",
+                "sender_session_id": sender_session_id,
+                "recipient_session_id": recipient_session_id,
+                "delivery": delivery.as_label(),
+                "dedupe_hit": true,
+                "message_id": existing_message_id,
+            }));
+        }
+    }
+
+    let recipient_reachable = state
+        .sessions
+        .get(recipient_session_id)
+        .map(|session| session.reachable)
+        .unwrap_or(false);
+    let attempts = if simulate_first_attempt_fail
+        && matches!(
+            delivery,
+            DeliveryGuarantee::AtLeastOnce | DeliveryGuarantee::ExactlyOnce
+        ) {
+        2
+    } else if !recipient_reachable
+        && matches!(
+            delivery,
+            DeliveryGuarantee::AtLeastOnce | DeliveryGuarantee::ExactlyOnce
+        )
+    {
+        3
+    } else {
+        1
+    };
+    if !recipient_reachable
+        && matches!(
+            delivery,
+            DeliveryGuarantee::AtMostOnce | DeliveryGuarantee::ExactlyOnce
+        )
+    {
+        return Err(format!(
+            "recipient_unreachable:delivery={}:recipient={recipient_session_id}",
+            delivery.as_label()
+        ));
+    }
+    if !recipient_reachable && matches!(delivery, DeliveryGuarantee::AtLeastOnce) {
+        return Err(format!("delivery_retries_exhausted:{recipient_session_id}"));
+    }
+
+    let message_id = next_message_id(state, sender_session_id, recipient_session_id, payload);
+    let message = AgentMessage {
+        message_id: message_id.clone(),
+        sender_session_id: sender_session_id.to_string(),
+        recipient_session_id: recipient_session_id.to_string(),
+        payload: payload.to_string(),
+        created_at: now_iso(),
+        timestamp_ms: now_epoch_ms(),
+        delivery: delivery.clone(),
+        attempts,
+        acknowledged: false,
+        acked_at_ms: None,
+        dedupe_key: if matches!(delivery, DeliveryGuarantee::ExactlyOnce) {
+            Some(dedupe_key.clone())
+        } else {
+            None
+        },
+    };
+    ensure_mailbox(state, recipient_session_id)
+        .unread
+        .push(message.clone());
+    if matches!(delivery, DeliveryGuarantee::ExactlyOnce) {
+        state
+            .exactly_once_dedupe
+            .insert(dedupe_key, message_id.clone());
+    }
+
+    append_event(
+        state,
+        json!({
+            "type": "swarm_message_sent",
+            "message_id": message_id,
+            "sender_session_id": sender_session_id,
+            "recipient_session_id": recipient_session_id,
+            "delivery": delivery.as_label(),
+            "attempts": attempts,
+            "timestamp": now_iso(),
+        }),
+    );
+
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_sessions_send",
+        "message_id": message.message_id,
+        "sender_session_id": message.sender_session_id,
+        "recipient_session_id": message.recipient_session_id,
+        "delivery": message.delivery.as_label(),
+        "attempts": message.attempts,
+        "dedupe_hit": false,
+    }))
+}
+
+fn receive_session_messages(
+    state: &mut SwarmState,
+    session_id: &str,
+    limit: usize,
+    mark_read: bool,
+) -> Result<Value, String> {
+    if !session_exists(state, session_id) {
+        return Err(format!("unknown_session:{session_id}"));
+    }
+    let mailbox = ensure_mailbox(state, session_id);
+    let take = mailbox.unread.len().min(limit.max(1));
+    let mut messages = mailbox
+        .unread
+        .iter()
+        .take(take)
+        .cloned()
+        .collect::<Vec<_>>();
+    if mark_read && !messages.is_empty() {
+        let remaining = mailbox.unread.split_off(take);
+        mailbox.read.extend(messages.iter().cloned());
+        mailbox.unread = remaining;
+    }
+    messages.sort_by_key(|message| message.timestamp_ms);
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_sessions_receive",
+        "session_id": session_id,
+        "message_count": messages.len(),
+        "messages": messages,
+    }))
+}
+
+fn acknowledge_session_message(
+    state: &mut SwarmState,
+    session_id: &str,
+    message_id: &str,
+) -> Result<Value, String> {
+    if !session_exists(state, session_id) {
+        return Err(format!("unknown_session:{session_id}"));
+    }
+    let mailbox = ensure_mailbox(state, session_id);
+    let mark_ack = |message: &mut AgentMessage| {
+        message.acknowledged = true;
+        message.acked_at_ms = Some(now_epoch_ms());
+    };
+    if let Some(message) = mailbox
+        .unread
+        .iter_mut()
+        .find(|row| row.message_id == message_id)
+    {
+        mark_ack(message);
+    } else if let Some(message) = mailbox
+        .read
+        .iter_mut()
+        .find(|row| row.message_id == message_id)
+    {
+        mark_ack(message);
+    } else {
+        return Err(format!("unknown_message:{message_id}"));
+    }
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_sessions_ack",
+        "session_id": session_id,
+        "message_id": message_id,
+        "acknowledged": true,
+    }))
+}
+
+fn register_service_instance(
+    state: &mut SwarmState,
+    session_id: &str,
+    role: Option<String>,
+    capabilities: Vec<String>,
+) {
+    let Some(role_name) = role else {
+        return;
+    };
+    let entries = state.service_registry.entry(role_name.clone()).or_default();
+    entries.retain(|row| row.session_id != session_id);
+    entries.push(ServiceInstance {
+        session_id: session_id.to_string(),
+        role: role_name,
+        capabilities,
+        healthy: true,
+        registered_at: now_iso(),
+    });
+}
+
+fn mark_service_instance_unhealthy(state: &mut SwarmState, session_id: &str) {
+    for instances in state.service_registry.values_mut() {
+        for instance in instances.iter_mut() {
+            if instance.session_id == session_id {
+                instance.healthy = false;
+            }
+        }
+    }
+}
+
+fn discover_services(state: &SwarmState, role: &str) -> Vec<ServiceInstance> {
+    state
+        .service_registry
+        .get(role)
+        .cloned()
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|instance| {
+            instance.healthy
+                && state
+                    .sessions
+                    .get(&instance.session_id)
+                    .map(|session| session.reachable)
+                    .unwrap_or(false)
+        })
+        .collect::<Vec<_>>()
+}
+
+fn send_to_role(
+    state: &mut SwarmState,
+    sender_session_id: &str,
+    role: &str,
+    payload: &str,
+    delivery: DeliveryGuarantee,
+) -> Result<Value, String> {
+    let services = discover_services(state, role);
+    let Some(recipient) = services.first() else {
+        return Err(format!("no_healthy_instances_for_role:{role}"));
+    };
+    send_session_message(
+        state,
+        sender_session_id,
+        &recipient.session_id,
+        payload,
+        delivery,
+        false,
+    )
+}
+
+fn create_channel(
+    state: &mut SwarmState,
+    channel_name: &str,
+    participants: Vec<String>,
+) -> Result<Value, String> {
+    if participants.is_empty() {
+        return Err("channel_participants_required".to_string());
+    }
+    let mut cleaned = participants
+        .into_iter()
+        .filter(|session_id| !session_id.trim().is_empty())
+        .collect::<Vec<_>>();
+    cleaned.sort();
+    cleaned.dedup();
+    for participant in &cleaned {
+        if !session_exists(state, participant) {
+            return Err(format!("unknown_channel_participant:{participant}"));
+        }
+    }
+    let channel_id = format!(
+        "chan-{}",
+        &deterministic_receipt_hash(&json!({
+            "name": channel_name,
+            "participants": cleaned,
+            "ts": now_epoch_ms(),
+        }))[..12]
+    );
+    let channel = MessageChannel {
+        channel_id: channel_id.clone(),
+        name: channel_name.to_string(),
+        participants: cleaned,
+        created_at: now_iso(),
+        messages: Vec::new(),
+    };
+    state.channels.insert(channel_id.clone(), channel.clone());
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_channel_create",
+        "channel": channel,
+    }))
+}
+
+fn publish_channel_message(
+    state: &mut SwarmState,
+    channel_id: &str,
+    sender_session_id: &str,
+    payload: &str,
+    delivery: DeliveryGuarantee,
+) -> Result<Value, String> {
+    if sender_session_id != "coordinator" && !session_exists(state, sender_session_id) {
+        return Err(format!("unknown_sender_session:{sender_session_id}"));
+    }
+    let participants = state
+        .channels
+        .get(channel_id)
+        .map(|channel| channel.participants.clone())
+        .ok_or_else(|| format!("unknown_channel:{channel_id}"))?;
+    let message_id = format!(
+        "chanmsg-{}",
+        &deterministic_receipt_hash(&json!({
+            "channel_id": channel_id,
+            "sender": sender_session_id,
+            "payload": payload,
+            "ts": now_epoch_ms(),
+        }))[..12]
+    );
+    if let Some(channel) = state.channels.get_mut(channel_id) {
+        channel.messages.push(ChannelMessage {
+            message_id: message_id.clone(),
+            sender_session_id: sender_session_id.to_string(),
+            payload: payload.to_string(),
+            timestamp_ms: now_epoch_ms(),
+        });
+    }
+    let mut delivered = Vec::new();
+    for participant in participants {
+        if participant == sender_session_id {
+            continue;
+        }
+        let result = send_session_message(
+            state,
+            sender_session_id,
+            &participant,
+            payload,
+            delivery.clone(),
+            false,
+        )?;
+        delivered.push(result);
+    }
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_channel_publish",
+        "channel_id": channel_id,
+        "message_id": message_id,
+        "delivery": delivery.as_label(),
+        "delivered": delivered,
+    }))
+}
+
+fn poll_channel_messages(
+    state: &SwarmState,
+    channel_id: &str,
+    session_id: &str,
+    since_ms: Option<u64>,
+) -> Result<Value, String> {
+    let channel = state
+        .channels
+        .get(channel_id)
+        .ok_or_else(|| format!("unknown_channel:{channel_id}"))?;
+    if !channel
+        .participants
+        .iter()
+        .any(|participant| participant == session_id)
+    {
+        return Err(format!(
+            "channel_access_denied:channel={channel_id}:session={session_id}"
+        ));
+    }
+    let messages = channel
+        .messages
+        .iter()
+        .filter(|message| {
+            since_ms
+                .map(|value| message.timestamp_ms >= value)
+                .unwrap_or(true)
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_channel_poll",
+        "channel_id": channel_id,
+        "session_id": session_id,
+        "message_count": messages.len(),
+        "messages": messages,
+    }))
 }
 
 fn persistent_session_ids(state: &SwarmState) -> Vec<String> {
@@ -962,6 +1550,7 @@ fn spawn_persistent_session(
         budget_telemetry: parse_budget_config(options, &session_id),
         scaled_task: Some(scaled_task),
         budget_action_taken: None,
+        role: options.role.clone(),
         check_ins: Vec::new(),
         metrics_timeline: Vec::new(),
         anomalies: Vec::new(),
@@ -982,6 +1571,12 @@ fn spawn_persistent_session(
             }
         }
     }
+    register_service_instance(
+        state,
+        &session_id,
+        options.role.clone(),
+        options.capabilities.clone(),
+    );
 
     append_event(
         state,
@@ -1094,6 +1689,7 @@ fn spawn_single(
                         budget_telemetry: Some(telemetry.clone()),
                         scaled_task: Some(scaled_task.clone()),
                         budget_action_taken: budget_action_taken.clone(),
+                        role: options.role.clone(),
                         check_ins: Vec::new(),
                         metrics_timeline: Vec::new(),
                         anomalies: Vec::new(),
@@ -1172,6 +1768,7 @@ fn spawn_single(
         budget_telemetry: budget_telemetry.clone(),
         scaled_task: Some(scaled_task.clone()),
         budget_action_taken: budget_action_taken.clone(),
+        role: options.role.clone(),
         check_ins: Vec::new(),
         metrics_timeline: Vec::new(),
         anomalies: Vec::new(),
@@ -1180,6 +1777,12 @@ fn spawn_single(
     };
 
     state.sessions.insert(session_id.clone(), metadata);
+    register_service_instance(
+        state,
+        &session_id,
+        options.role.clone(),
+        options.capabilities.clone(),
+    );
 
     if let Some(parent) = parent_id {
         if let Some(parent_session) = state.sessions.get_mut(parent) {
@@ -1453,6 +2056,8 @@ fn run_test_recursive(state: &mut SwarmState, argv: &[String]) -> Result<Value, 
         budget_exhaustion_action: BudgetAction::FailHard,
         adaptive_complexity: false,
         execution_mode: ExecutionMode::TaskOriented,
+        role: None,
+        capabilities: Vec::new(),
     };
 
     let result = recursive_spawn_with_tracking(
@@ -1556,6 +2161,8 @@ fn run_test_concurrency(state: &mut SwarmState, argv: &[String]) -> Result<Value
         budget_exhaustion_action: BudgetAction::FailHard,
         adaptive_complexity: false,
         execution_mode: ExecutionMode::TaskOriented,
+        role: None,
+        capabilities: Vec::new(),
     };
 
     let mut queue_wait_total = 0u64;
@@ -1630,6 +2237,8 @@ fn run_test_budget(state: &mut SwarmState, argv: &[String]) -> Result<Value, Str
         budget_exhaustion_action: exhaustion_action.clone(),
         adaptive_complexity: parse_bool_flag(argv, "adaptive-complexity", true),
         execution_mode: ExecutionMode::TaskOriented,
+        role: None,
+        capabilities: Vec::new(),
     };
 
     let result = spawn_single(state, None, &task, 8, &options);
@@ -1726,6 +2335,7 @@ fn tick_persistent_sessions(
                     runtime.terminated_at_ms = Some(now_ms);
                     runtime.terminated_reason = Some("lifespan_expired".to_string());
                 }
+                mark_service_instance_unhealthy(state, &session_id);
                 finalized_sessions.push(session_id.clone());
                 result
             } else {
@@ -1823,6 +2433,7 @@ fn sessions_terminate(
             "terminated".to_string()
         });
     }
+    mark_service_instance_unhealthy(state, session_id);
 
     Ok(json!({
         "ok": true,
@@ -1942,6 +2553,8 @@ fn scheduled_run_due(state: &mut SwarmState, now_ms: u64, max_runs: u64) -> Resu
             budget_exhaustion_action: BudgetAction::FailHard,
             adaptive_complexity: false,
             execution_mode: ExecutionMode::TaskOriented,
+            role: None,
+            capabilities: Vec::new(),
         };
         let spawn = spawn_single(state, None, &task_row.task, 64, &options)?;
         let session_id = spawn
@@ -2084,6 +2697,8 @@ fn run_test_persistent(state: &mut SwarmState, argv: &[String]) -> Result<Value,
         budget_exhaustion_action: BudgetAction::AllowWithWarning,
         adaptive_complexity: true,
         execution_mode: ExecutionMode::Persistent(cfg.clone()),
+        role: Some("health-monitor".to_string()),
+        capabilities: vec!["check_in".to_string(), "status_report".to_string()],
     };
     let task =
         parse_flag(argv, "task").unwrap_or_else(|| "Persistent health check loop".to_string());
@@ -2099,6 +2714,208 @@ fn run_test_persistent(state: &mut SwarmState, argv: &[String]) -> Result<Value,
         "type": "swarm_runtime_test_persistent",
         "spawned": spawned,
         "ticked": ticked,
+    }))
+}
+
+fn run_test_communication(state: &mut SwarmState, argv: &[String]) -> Result<Value, String> {
+    let delivery = DeliveryGuarantee::from_flag(parse_flag(argv, "delivery"));
+    let options = SpawnOptions {
+        verify: true,
+        timeout_ms: 1_000,
+        metrics_detailed: true,
+        simulate_unreachable: false,
+        byzantine: false,
+        corruption_type: "data_falsification".to_string(),
+        token_budget: Some(1200),
+        token_warning_threshold: 0.8,
+        budget_exhaustion_action: BudgetAction::AllowWithWarning,
+        adaptive_complexity: true,
+        execution_mode: ExecutionMode::TaskOriented,
+        role: None,
+        capabilities: Vec::new(),
+    };
+
+    let generator_id = spawn_single(
+        state,
+        None,
+        "swarm-test-6-generator",
+        8,
+        &SpawnOptions {
+            role: Some("generator".to_string()),
+            capabilities: vec!["generate".to_string(), "relay".to_string()],
+            ..options.clone()
+        },
+    )?
+    .get("session_id")
+    .and_then(Value::as_str)
+    .ok_or_else(|| "generator_session_id_missing".to_string())?
+    .to_string();
+    let filter_id = spawn_single(
+        state,
+        None,
+        "swarm-test-6-filter",
+        8,
+        &SpawnOptions {
+            role: Some("filter".to_string()),
+            capabilities: vec!["filter".to_string()],
+            ..options.clone()
+        },
+    )?
+    .get("session_id")
+    .and_then(Value::as_str)
+    .ok_or_else(|| "filter_session_id_missing".to_string())?
+    .to_string();
+    let summarizer_id = spawn_single(
+        state,
+        None,
+        "swarm-test-6-summarizer",
+        8,
+        &SpawnOptions {
+            role: Some("summarizer".to_string()),
+            capabilities: vec!["summarize".to_string()],
+            ..options.clone()
+        },
+    )?
+    .get("session_id")
+    .and_then(Value::as_str)
+    .ok_or_else(|| "summarizer_session_id_missing".to_string())?
+    .to_string();
+    let validator_id = spawn_single(
+        state,
+        None,
+        "swarm-test-6-validator",
+        8,
+        &SpawnOptions {
+            role: Some("validator".to_string()),
+            capabilities: vec!["validate".to_string()],
+            ..options
+        },
+    )?
+    .get("session_id")
+    .and_then(Value::as_str)
+    .ok_or_else(|| "validator_session_id_missing".to_string())?
+    .to_string();
+
+    let top_10 = vec![
+        "Write clear, self-documenting code",
+        "Practice test-driven development",
+        "Use version control with clear commits",
+        "Conduct regular code reviews",
+        "Keep modules single-responsibility",
+        "Document APIs and interfaces",
+        "Automate CI/CD",
+        "Refactor to reduce debt",
+        "Design for scalability",
+        "Treat security as default",
+    ];
+    let generator_payload = serde_json::to_string(&json!({
+        "report": {"original_list_size": top_10.len()},
+        "payload": {"items": top_10},
+    }))
+    .map_err(|err| format!("encode_generator_payload_failed:{err}"))?;
+    let send_1 = send_session_message(
+        state,
+        &generator_id,
+        &filter_id,
+        &generator_payload,
+        delivery.clone(),
+        parse_bool_flag(argv, "simulate-first-attempt-fail", false),
+    )?;
+
+    let filter_inbox = receive_session_messages(state, &filter_id, 1, true)?;
+    let filter_message = filter_inbox
+        .get("messages")
+        .and_then(Value::as_array)
+        .and_then(|rows| rows.first())
+        .and_then(|row| row.get("payload"))
+        .and_then(Value::as_str)
+        .ok_or_else(|| "filter_message_missing".to_string())?;
+    let filter_payload_json: Value = serde_json::from_str(filter_message)
+        .map_err(|err| format!("filter_payload_parse_failed:{err}"))?;
+    let items = filter_payload_json
+        .get("payload")
+        .and_then(|row| row.get("items"))
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let top_5 = items.into_iter().take(5).collect::<Vec<_>>();
+    let filter_payload = serde_json::to_string(&json!({
+        "report": {"filtered_list_size": top_5.len()},
+        "payload": {"top_5_items": top_5},
+    }))
+    .map_err(|err| format!("encode_filter_payload_failed:{err}"))?;
+    let send_2 = send_session_message(
+        state,
+        &filter_id,
+        &summarizer_id,
+        &filter_payload,
+        delivery.clone(),
+        false,
+    )?;
+
+    let summarizer_inbox = receive_session_messages(state, &summarizer_id, 1, true)?;
+    let summarizer_message = summarizer_inbox
+        .get("messages")
+        .and_then(Value::as_array)
+        .and_then(|rows| rows.first())
+        .and_then(|row| row.get("payload"))
+        .and_then(Value::as_str)
+        .ok_or_else(|| "summarizer_message_missing".to_string())?;
+    let summarizer_payload_json: Value = serde_json::from_str(summarizer_message)
+        .map_err(|err| format!("summarizer_payload_parse_failed:{err}"))?;
+    let top_5_values = summarizer_payload_json
+        .get("payload")
+        .and_then(|row| row.get("top_5_items"))
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let top_3 = top_5_values.into_iter().take(3).collect::<Vec<_>>();
+    let summarizer_payload = serde_json::to_string(&json!({
+        "payload": {
+            "top_3_items": top_3,
+            "summary": "Top practices prioritize readable code, TDD, and disciplined version control."
+        }
+    }))
+    .map_err(|err| format!("encode_summarizer_payload_failed:{err}"))?;
+    let send_3 = send_session_message(
+        state,
+        &summarizer_id,
+        &validator_id,
+        &summarizer_payload,
+        delivery,
+        false,
+    )?;
+
+    let validator_inbox = receive_session_messages(state, &validator_id, 1, true)?;
+    let validator_message = validator_inbox
+        .get("messages")
+        .and_then(Value::as_array)
+        .and_then(|rows| rows.first())
+        .cloned()
+        .unwrap_or(Value::Null);
+    let chain_complete = validator_message
+        .get("payload")
+        .and_then(Value::as_str)
+        .and_then(|payload| serde_json::from_str::<Value>(payload).ok())
+        .and_then(|payload| payload.get("payload").cloned())
+        .and_then(|payload| payload.get("top_3_items").cloned())
+        .and_then(|payload| payload.as_array().map(|rows| rows.len()))
+        .map(|len| len == 3)
+        .unwrap_or(false);
+
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_test_communication",
+        "delivery": DeliveryGuarantee::from_flag(parse_flag(argv, "delivery")).as_label(),
+        "chain_complete": chain_complete,
+        "sessions": {
+            "generator": generator_id,
+            "filter": filter_id,
+            "summarizer": summarizer_id,
+            "validator": validator_id,
+        },
+        "messages": [send_1, send_2, send_3],
+        "validator_inbox": validator_inbox,
     }))
 }
 
@@ -2355,7 +3172,148 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                         Err("session_id_required".to_string())
                     }
                 }
+                "send" => {
+                    let sender_id = parse_flag(argv, "sender-id")
+                        .filter(|value| !value.trim().is_empty())
+                        .unwrap_or_else(|| "coordinator".to_string());
+                    let recipient_id =
+                        parse_flag(argv, "session-id").filter(|value| !value.trim().is_empty());
+                    let message =
+                        parse_flag(argv, "message").filter(|value| !value.trim().is_empty());
+                    match (recipient_id, message) {
+                        (Some(recipient_id), Some(message)) => send_session_message(
+                            &mut state,
+                            &sender_id,
+                            &recipient_id,
+                            &message,
+                            DeliveryGuarantee::from_flag(parse_flag(argv, "delivery")),
+                            parse_bool_flag(argv, "simulate-first-attempt-fail", false),
+                        ),
+                        (None, _) => Err("session_id_required".to_string()),
+                        (_, None) => Err("message_required".to_string()),
+                    }
+                }
+                "receive" => {
+                    if let Some(session_id) =
+                        parse_flag(argv, "session-id").filter(|value| !value.trim().is_empty())
+                    {
+                        receive_session_messages(
+                            &mut state,
+                            &session_id,
+                            parse_u64_flag(argv, "limit", 50) as usize,
+                            parse_bool_flag(argv, "mark-read", true),
+                        )
+                    } else {
+                        Err("session_id_required".to_string())
+                    }
+                }
+                "ack" => {
+                    let session_id =
+                        parse_flag(argv, "session-id").filter(|value| !value.trim().is_empty());
+                    let message_id =
+                        parse_flag(argv, "message-id").filter(|value| !value.trim().is_empty());
+                    match (session_id, message_id) {
+                        (Some(session_id), Some(message_id)) => {
+                            acknowledge_session_message(&mut state, &session_id, &message_id)
+                        }
+                        (None, _) => Err("session_id_required".to_string()),
+                        (_, None) => Err("message_id_required".to_string()),
+                    }
+                }
+                "discover" => {
+                    if let Some(role) =
+                        parse_flag(argv, "role").filter(|value| !value.trim().is_empty())
+                    {
+                        Ok(json!({
+                            "ok": true,
+                            "type": "swarm_runtime_sessions_discover",
+                            "role": role,
+                            "instances": discover_services(&state, &role),
+                        }))
+                    } else {
+                        Err("role_required".to_string())
+                    }
+                }
+                "send-role" => {
+                    let sender_id = parse_flag(argv, "sender-id")
+                        .filter(|value| !value.trim().is_empty())
+                        .unwrap_or_else(|| "coordinator".to_string());
+                    let role = parse_flag(argv, "role").filter(|value| !value.trim().is_empty());
+                    let message =
+                        parse_flag(argv, "message").filter(|value| !value.trim().is_empty());
+                    match (role, message) {
+                        (Some(role), Some(message)) => send_to_role(
+                            &mut state,
+                            &sender_id,
+                            &role,
+                            &message,
+                            DeliveryGuarantee::from_flag(parse_flag(argv, "delivery")),
+                        ),
+                        (None, _) => Err("role_required".to_string()),
+                        (_, None) => Err("message_required".to_string()),
+                    }
+                }
                 _ => Err(format!("unknown_sessions_subcommand:{sub}")),
+            }
+        }
+        "channels" => {
+            let sub = argv
+                .get(1)
+                .map(|value| value.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "status".to_string());
+            match sub.as_str() {
+                "create" => {
+                    let name = parse_flag(argv, "name")
+                        .filter(|value| !value.trim().is_empty())
+                        .unwrap_or_else(|| "swarm-channel".to_string());
+                    let participants = parse_flag(argv, "participants")
+                        .map(|raw| {
+                            raw.split(',')
+                                .map(|value| value.trim().to_string())
+                                .filter(|value| !value.is_empty())
+                                .collect::<Vec<_>>()
+                        })
+                        .unwrap_or_default();
+                    create_channel(&mut state, &name, participants)
+                }
+                "publish" => {
+                    let channel_id =
+                        parse_flag(argv, "channel-id").filter(|value| !value.trim().is_empty());
+                    let sender_id = parse_flag(argv, "sender-id")
+                        .filter(|value| !value.trim().is_empty())
+                        .unwrap_or_else(|| "coordinator".to_string());
+                    let message =
+                        parse_flag(argv, "message").filter(|value| !value.trim().is_empty());
+                    match (channel_id, message) {
+                        (Some(channel_id), Some(message)) => publish_channel_message(
+                            &mut state,
+                            &channel_id,
+                            &sender_id,
+                            &message,
+                            DeliveryGuarantee::from_flag(parse_flag(argv, "delivery")),
+                        ),
+                        (None, _) => Err("channel_id_required".to_string()),
+                        (_, None) => Err("message_required".to_string()),
+                    }
+                }
+                "poll" | "monitor" => {
+                    let channel_id =
+                        parse_flag(argv, "channel-id").filter(|value| !value.trim().is_empty());
+                    let session_id =
+                        parse_flag(argv, "session-id").filter(|value| !value.trim().is_empty());
+                    match (channel_id, session_id) {
+                        (Some(channel_id), Some(session_id)) => poll_channel_messages(
+                            &state,
+                            &channel_id,
+                            &session_id,
+                            parse_flag(argv, "since-ms")
+                                .and_then(|value| value.trim().parse::<u64>().ok()),
+                        ),
+                        (None, _) => Err("channel_id_required".to_string()),
+                        (_, None) => Err("session_id_required".to_string()),
+                    }
+                }
+                _ => Err(format!("unknown_channels_subcommand:{sub}")),
             }
         }
         "test" => {
@@ -2369,6 +3327,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 "concurrency" => run_test_concurrency(&mut state, argv),
                 "budget" => run_test_budget(&mut state, argv),
                 "persistent" => run_test_persistent(&mut state, argv),
+                "communication" => run_test_communication(&mut state, argv),
                 _ => Err(format!("unknown_test_suite:{suite}")),
             }
         }
@@ -2434,6 +3393,8 @@ mod tests {
             budget_exhaustion_action: BudgetAction::FailHard,
             adaptive_complexity: false,
             execution_mode: ExecutionMode::TaskOriented,
+            role: None,
+            capabilities: Vec::new(),
         }
     }
 
@@ -2591,5 +3552,94 @@ mod tests {
             report_task.contains("ultra-concise"),
             "expected scaled task annotation, got: {report_task}"
         );
+    }
+
+    #[test]
+    fn sessions_send_allows_sibling_delivery() {
+        let mut state = SwarmState::default();
+        let parent = spawn_single(&mut state, None, "parent", 8, &spawn_options())
+            .expect("parent spawn")
+            .get("session_id")
+            .and_then(Value::as_str)
+            .expect("parent id")
+            .to_string();
+        let child_a = spawn_single(&mut state, Some(&parent), "child-a", 8, &spawn_options())
+            .expect("child-a")
+            .get("session_id")
+            .and_then(Value::as_str)
+            .expect("child-a id")
+            .to_string();
+        let child_b = spawn_single(&mut state, Some(&parent), "child-b", 8, &spawn_options())
+            .expect("child-b")
+            .get("session_id")
+            .and_then(Value::as_str)
+            .expect("child-b id")
+            .to_string();
+
+        let delivered = send_session_message(
+            &mut state,
+            &child_a,
+            &child_b,
+            "hello",
+            DeliveryGuarantee::AtMostOnce,
+            false,
+        )
+        .expect("sibling message should be delivered");
+        assert_eq!(
+            delivered
+                .get("recipient_session_id")
+                .and_then(Value::as_str)
+                .map(ToString::to_string),
+            Some(child_b.clone())
+        );
+        let inbox = state.mailboxes.get(&child_b).expect("mailbox").unread.len();
+        assert_eq!(inbox, 1);
+    }
+
+    #[test]
+    fn exactly_once_dedupes_repeat_messages() {
+        let mut state = SwarmState::default();
+        let a = spawn_single(&mut state, None, "sender", 8, &spawn_options())
+            .expect("sender spawn")
+            .get("session_id")
+            .and_then(Value::as_str)
+            .expect("sender id")
+            .to_string();
+        let b = spawn_single(&mut state, None, "receiver", 8, &spawn_options())
+            .expect("receiver spawn")
+            .get("session_id")
+            .and_then(Value::as_str)
+            .expect("receiver id")
+            .to_string();
+
+        let first = send_session_message(
+            &mut state,
+            "coordinator",
+            &b,
+            "dedupe-message",
+            DeliveryGuarantee::ExactlyOnce,
+            false,
+        )
+        .expect("first send");
+        let second = send_session_message(
+            &mut state,
+            "coordinator",
+            &b,
+            "dedupe-message",
+            DeliveryGuarantee::ExactlyOnce,
+            false,
+        )
+        .expect("second send");
+        assert_eq!(
+            second.get("dedupe_hit").and_then(Value::as_bool),
+            Some(true)
+        );
+        assert_eq!(
+            first.get("message_id").and_then(Value::as_str),
+            second.get("message_id").and_then(Value::as_str)
+        );
+        let inbox_len = state.mailboxes.get(&b).expect("mailbox").unread.len();
+        assert_eq!(inbox_len, 1, "exactly-once must avoid duplicate inbox rows");
+        assert!(state.sessions.contains_key(&a));
     }
 }
