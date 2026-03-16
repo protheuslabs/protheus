@@ -20,6 +20,8 @@ struct SwarmState {
     #[serde(default)]
     sessions: BTreeMap<String, SessionMetadata>,
     #[serde(default)]
+    scheduled_tasks: BTreeMap<String, ScheduledTask>,
+    #[serde(default)]
     events: Vec<Value>,
 }
 
@@ -30,6 +32,7 @@ impl Default for SwarmState {
             updated_at: now_iso(),
             byzantine_test_mode: false,
             sessions: BTreeMap::new(),
+            scheduled_tasks: BTreeMap::new(),
             events: Vec::new(),
         }
     }
@@ -59,6 +62,16 @@ struct SessionMetadata {
     scaled_task: Option<String>,
     #[serde(default)]
     budget_action_taken: Option<String>,
+    #[serde(default)]
+    check_ins: Vec<Value>,
+    #[serde(default)]
+    metrics_timeline: Vec<MetricsSnapshot>,
+    #[serde(default)]
+    anomalies: Vec<String>,
+    #[serde(default)]
+    persistent: Option<PersistentRuntime>,
+    #[serde(default)]
+    background_worker: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -140,11 +153,97 @@ impl BudgetAction {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+enum ReportMode {
+    Always,
+    AnomaliesOnly,
+    FinalOnly,
+}
+
+impl ReportMode {
+    fn from_flag(raw: Option<String>) -> Self {
+        match raw
+            .unwrap_or_else(|| "always".to_string())
+            .trim()
+            .to_ascii_lowercase()
+            .as_str()
+        {
+            "anomalies" | "anomalies_only" => Self::AnomaliesOnly,
+            "final" | "final_only" => Self::FinalOnly,
+            _ => Self::Always,
+        }
+    }
+
+    fn as_label(&self) -> &'static str {
+        match self {
+            Self::Always => "always",
+            Self::AnomaliesOnly => "anomalies_only",
+            Self::FinalOnly => "final_only",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct TokenBudgetConfig {
     max_tokens: u32,
     warning_threshold: f32,
     exhaustion_action: BudgetAction,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct PersistentAgentConfig {
+    lifespan_sec: u64,
+    check_in_interval_sec: u64,
+    report_mode: ReportMode,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct PersistentRuntime {
+    mode: String,
+    config: PersistentAgentConfig,
+    started_at_ms: u64,
+    deadline_ms: u64,
+    next_check_in_ms: u64,
+    check_in_count: u64,
+    #[serde(default)]
+    last_check_in_ms: Option<u64>,
+    #[serde(default)]
+    terminated_at_ms: Option<u64>,
+    #[serde(default)]
+    terminated_reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct MetricsSnapshot {
+    timestamp_ms: u64,
+    cumulative_tokens: u32,
+    context_percentage: f64,
+    response_latency_ms: u64,
+    memory_usage_mb: u64,
+    active_tools: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct ScheduledTask {
+    task_id: String,
+    task: String,
+    interval_sec: u64,
+    max_runtime_sec: u64,
+    next_run_ms: u64,
+    remaining_runs: u64,
+    #[serde(default)]
+    last_run_ms: Option<u64>,
+    #[serde(default)]
+    last_session_id: Option<String>,
+    active: bool,
+}
+
+#[derive(Debug, Clone)]
+enum ExecutionMode {
+    TaskOriented,
+    Persistent(PersistentAgentConfig),
+    Background(PersistentAgentConfig),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -326,6 +425,7 @@ struct SpawnOptions {
     token_warning_threshold: f32,
     budget_exhaustion_action: BudgetAction,
     adaptive_complexity: bool,
+    execution_mode: ExecutionMode,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -338,7 +438,8 @@ struct AgentReport {
 fn usage() {
     println!("Usage:");
     println!("  protheus-ops swarm-runtime status [--state-path=<path>]");
-    println!("  protheus-ops swarm-runtime spawn [--task=<text>] [--session-id=<parent>] [--recursive=1|0] [--levels=<n>] [--max-depth=<n>] [--verify=1|0] [--timeout-sec=<seconds>] [--metrics=<none|detailed>] [--byzantine=1|0] [--corruption-type=<id>] [--token-budget=<n>] [--token-warning-at=<0..1>] [--on-budget-exhausted=<fail|warn|compact>] [--adaptive-complexity=1|0] [--state-path=<path>]");
+    println!("  protheus-ops swarm-runtime spawn [--task=<text>] [--session-id=<parent>] [--recursive=1|0] [--levels=<n>] [--max-depth=<n>] [--verify=1|0] [--timeout-sec=<seconds>] [--metrics=<none|detailed>] [--byzantine=1|0] [--corruption-type=<id>] [--token-budget=<n>] [--token-warning-at=<0..1>] [--on-budget-exhausted=<fail|warn|compact>] [--adaptive-complexity=1|0] [--execution-mode=<task|persistent|background>] [--lifespan-sec=<n>] [--check-in-interval-sec=<n>] [--report-mode=<always|anomalies|final>] [--state-path=<path>]");
+    println!("  protheus-ops swarm-runtime tick [--advance-ms=<n>] [--max-check-ins=<n>] [--state-path=<path>]");
     println!(
         "  protheus-ops swarm-runtime byzantine-test <enable|disable|status> [--state-path=<path>]"
     );
@@ -347,8 +448,17 @@ fn usage() {
     println!("  protheus-ops swarm-runtime test byzantine [--agents=<n>] [--corrupt=<n>] [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime test concurrency [--agents=<n>] [--metrics=detailed] [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime test budget [--budget=<n>] [--warning-at=<0..1>] [--on-budget-exhausted=<fail|warn|compact>] [--expect-fail=1|0] [--task=<text>] [--state-path=<path>]");
+    println!("  protheus-ops swarm-runtime test persistent [--lifespan-sec=<n>] [--check-in-interval-sec=<n>] [--advance-ms=<n>] [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime budget-report --session-id=<id> [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime sessions budget-report --session-id=<id> [--state-path=<path>]");
+    println!("  protheus-ops swarm-runtime sessions wake --session-id=<id> [--state-path=<path>]");
+    println!("  protheus-ops swarm-runtime sessions terminate --session-id=<id> [--graceful=1|0] [--state-path=<path>]");
+    println!("  protheus-ops swarm-runtime sessions metrics --session-id=<id> [--timeline=1|0] [--state-path=<path>]");
+    println!(
+        "  protheus-ops swarm-runtime sessions anomalies --session-id=<id> [--state-path=<path>]"
+    );
+    println!("  protheus-ops swarm-runtime background <start|status|stop> [flags]");
+    println!("  protheus-ops swarm-runtime scheduled <add|status|run-due> [flags]");
 }
 
 fn parse_flag(argv: &[String], key: &str) -> Option<String> {
@@ -541,6 +651,361 @@ fn parse_budget_config(options: &SpawnOptions, session_id: &str) -> Option<Budge
     })
 }
 
+fn parse_execution_mode(argv: &[String]) -> ExecutionMode {
+    let mode = parse_flag(argv, "execution-mode")
+        .unwrap_or_else(|| "task".to_string())
+        .trim()
+        .to_ascii_lowercase();
+    let cfg = PersistentAgentConfig {
+        lifespan_sec: parse_u64_flag(argv, "lifespan-sec", 3600).max(1),
+        check_in_interval_sec: parse_u64_flag(argv, "check-in-interval-sec", 900).max(1),
+        report_mode: ReportMode::from_flag(parse_flag(argv, "report-mode")),
+    };
+    match mode.as_str() {
+        "persistent" => ExecutionMode::Persistent(cfg),
+        "background" => ExecutionMode::Background(cfg),
+        _ => ExecutionMode::TaskOriented,
+    }
+}
+
+fn report_mode_should_emit(report_mode: &ReportMode, anomalies: &[String], is_final: bool) -> bool {
+    if is_final {
+        return true;
+    }
+    match report_mode {
+        ReportMode::Always => true,
+        ReportMode::AnomaliesOnly => !anomalies.is_empty(),
+        ReportMode::FinalOnly => false,
+    }
+}
+
+fn collect_metrics_snapshot(
+    telemetry: Option<&BudgetTelemetry>,
+    check_in_count: u64,
+    response_latency_ms: u64,
+    active_tools: Vec<String>,
+) -> MetricsSnapshot {
+    let cumulative_tokens = telemetry.map(|t| t.final_usage).unwrap_or(0);
+    let context_percentage = (cumulative_tokens as f64 / 8192.0).min(1.0);
+    let memory_usage_mb = 1 + (check_in_count / 8);
+    MetricsSnapshot {
+        timestamp_ms: now_epoch_ms(),
+        cumulative_tokens,
+        context_percentage,
+        response_latency_ms,
+        memory_usage_mb,
+        active_tools,
+    }
+}
+
+fn detect_anomalies(timeline: &[MetricsSnapshot]) -> Vec<String> {
+    if timeline.is_empty() {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
+    for window in timeline.windows(2) {
+        let prev = &window[0];
+        let current = &window[1];
+        let delta = current
+            .cumulative_tokens
+            .saturating_sub(prev.cumulative_tokens);
+        if delta > 400 {
+            out.push("token_spike".to_string());
+            break;
+        }
+    }
+    if let (Some(first), Some(last)) = (timeline.first(), timeline.last()) {
+        if first.response_latency_ms > 0
+            && last.response_latency_ms > first.response_latency_ms.saturating_mul(2)
+            && last.response_latency_ms > 10
+        {
+            out.push("latency_degradation".to_string());
+        }
+    }
+    if timeline
+        .last()
+        .map(|row| row.context_percentage >= 0.85)
+        .unwrap_or(false)
+    {
+        out.push("context_bloat".to_string());
+    }
+    out.sort();
+    out.dedup();
+    out
+}
+
+fn build_spawn_options(argv: &[String]) -> SpawnOptions {
+    let metrics_detailed = parse_flag(argv, "metrics")
+        .map(|value| value.eq_ignore_ascii_case("detailed"))
+        .unwrap_or(false);
+    let token_budget = parse_flag(argv, "token-budget")
+        .and_then(|value| value.trim().parse::<u32>().ok())
+        .filter(|value| *value > 0);
+    let token_warning_threshold =
+        parse_f64_flag(argv, "token-warning-at", 0.8).clamp(0.0, 1.0) as f32;
+    SpawnOptions {
+        verify: parse_bool_flag(argv, "verify", false),
+        timeout_ms: (parse_f64_flag(argv, "timeout-sec", 30.0).max(0.0) * 1000.0) as u64,
+        metrics_detailed,
+        simulate_unreachable: parse_bool_flag(argv, "simulate-unreachable", false),
+        byzantine: parse_bool_flag(argv, "byzantine", false),
+        corruption_type: parse_flag(argv, "corruption-type")
+            .unwrap_or_else(|| "data_falsification".to_string()),
+        token_budget,
+        token_warning_threshold,
+        budget_exhaustion_action: BudgetAction::from_flag(parse_flag(argv, "on-budget-exhausted")),
+        adaptive_complexity: parse_bool_flag(argv, "adaptive-complexity", false),
+        execution_mode: parse_execution_mode(argv),
+    }
+}
+
+fn persistent_session_ids(state: &SwarmState) -> Vec<String> {
+    state
+        .sessions
+        .iter()
+        .filter(|(_, session)| {
+            session.persistent.is_some()
+                && matches!(
+                    session.status.as_str(),
+                    "persistent_running" | "background_running"
+                )
+        })
+        .map(|(id, _)| id.clone())
+        .collect::<Vec<_>>()
+}
+
+fn apply_tool_plan_for_session(
+    session: &mut SessionMetadata,
+    tool_plan: &[(String, u32)],
+) -> Result<(u32, Option<String>), String> {
+    let mut budget_action_taken: Option<String> = None;
+    if let Some(telemetry) = session.budget_telemetry.as_mut() {
+        for (tool, requested_tokens) in tool_plan {
+            match telemetry.record_tool_usage(tool, *requested_tokens) {
+                BudgetUsageOutcome::Ok => {}
+                BudgetUsageOutcome::Warning(event) => session.check_ins.push(event),
+                BudgetUsageOutcome::ExhaustedAllowed { event, action } => {
+                    session.check_ins.push(event);
+                    budget_action_taken = Some(action);
+                }
+                BudgetUsageOutcome::ExceededDenied(reason) => {
+                    session.status = "failed".to_string();
+                    return Err(reason);
+                }
+            }
+        }
+        return Ok((telemetry.final_usage, budget_action_taken));
+    }
+    let usage = tool_plan.iter().map(|(_, tokens)| *tokens).sum::<u32>();
+    Ok((usage, budget_action_taken))
+}
+
+fn perform_persistent_check_in(
+    session: &mut SessionMetadata,
+    reason: &str,
+    final_report: bool,
+) -> Result<Value, String> {
+    let task = session
+        .scaled_task
+        .clone()
+        .unwrap_or_else(|| session.task.clone());
+    let token_budget = session
+        .budget_telemetry
+        .as_ref()
+        .map(|telemetry| telemetry.budget_config.max_tokens);
+    let plan = estimate_tool_plan(&task, token_budget);
+    let active_tools = plan
+        .iter()
+        .map(|(name, _)| name.clone())
+        .collect::<Vec<_>>();
+    let response_latency_ms = if session
+        .metrics
+        .as_ref()
+        .map(|metrics| metrics.execution_time_ms())
+        .unwrap_or(0)
+        == 0
+    {
+        1
+    } else {
+        session
+            .metrics
+            .as_ref()
+            .map(|metrics| metrics.execution_time_ms())
+            .unwrap_or(1)
+    };
+    let (token_usage, budget_action) = apply_tool_plan_for_session(session, &plan)?;
+    if budget_action.is_some() {
+        session.budget_action_taken = budget_action;
+    }
+
+    let (check_in_count, report_mode) = {
+        let runtime = session
+            .persistent
+            .as_mut()
+            .ok_or_else(|| "persistent_runtime_missing".to_string())?;
+        runtime.check_in_count = runtime.check_in_count.saturating_add(1);
+        runtime.last_check_in_ms = Some(now_epoch_ms());
+        (runtime.check_in_count, runtime.config.report_mode.clone())
+    };
+
+    let snapshot = collect_metrics_snapshot(
+        session.budget_telemetry.as_ref(),
+        check_in_count,
+        response_latency_ms,
+        active_tools,
+    );
+    session.metrics_timeline.push(snapshot.clone());
+    session.anomalies = detect_anomalies(&session.metrics_timeline);
+
+    let report = json!({
+        "type": "persistent_check_in",
+        "session_id": session.session_id,
+        "reason": reason,
+        "timestamp_ms": snapshot.timestamp_ms,
+        "check_in_count": check_in_count,
+        "token_usage_estimate": token_usage,
+        "metrics": snapshot,
+        "anomalies": session.anomalies,
+        "report_mode": report_mode.as_label(),
+        "final_report": final_report,
+    });
+    session.check_ins.push(report.clone());
+
+    let should_emit = report_mode_should_emit(&report_mode, &session.anomalies, final_report);
+    if should_emit {
+        session.report = Some(report.clone());
+    }
+
+    Ok(json!({
+        "emitted": should_emit,
+        "report": report,
+    }))
+}
+
+fn spawn_persistent_session(
+    state: &mut SwarmState,
+    parent_id: Option<&str>,
+    task: &str,
+    max_depth: u8,
+    options: &SpawnOptions,
+    cfg: &PersistentAgentConfig,
+    background_worker: bool,
+) -> Result<Value, String> {
+    let parent_depth = if let Some(parent) = parent_id {
+        let parent_session = state
+            .sessions
+            .get(parent)
+            .ok_or_else(|| format!("parent_session_missing:{parent}"))?;
+        parent_session.depth
+    } else {
+        0
+    };
+    let depth = if parent_id.is_some() {
+        parent_depth.saturating_add(1)
+    } else {
+        0
+    };
+    if depth >= max_depth {
+        return Err(format!("max_depth_exceeded:{depth}>=max_depth:{max_depth}"));
+    }
+
+    let session_id = next_session_id(state, task, depth);
+    let now_ms = now_epoch_ms();
+    let scaled_task = if options.adaptive_complexity {
+        options
+            .token_budget
+            .map(|budget| scale_task_complexity(task, budget))
+            .unwrap_or_else(|| task.to_string())
+    } else {
+        task.to_string()
+    };
+    let runtime = PersistentRuntime {
+        mode: if background_worker {
+            "background".to_string()
+        } else {
+            "persistent".to_string()
+        },
+        config: cfg.clone(),
+        started_at_ms: now_ms,
+        deadline_ms: now_ms.saturating_add(cfg.lifespan_sec.saturating_mul(1000)),
+        next_check_in_ms: now_ms.saturating_add(cfg.check_in_interval_sec.saturating_mul(1000)),
+        check_in_count: 0,
+        last_check_in_ms: None,
+        terminated_at_ms: None,
+        terminated_reason: None,
+    };
+    let mut metadata = SessionMetadata {
+        session_id: session_id.clone(),
+        parent_id: parent_id.map(ToString::to_string),
+        children: Vec::new(),
+        depth,
+        task: task.to_string(),
+        created_at: now_iso(),
+        status: if background_worker {
+            "background_running".to_string()
+        } else {
+            "persistent_running".to_string()
+        },
+        reachable: true,
+        byzantine: false,
+        corruption_type: None,
+        report: None,
+        metrics: Some(SpawnMetrics {
+            request_received_ms: now_ms,
+            queue_wait_ms: 0,
+            spawn_initiated_ms: now_ms,
+            spawn_completed_ms: now_ms,
+            execution_start_ms: now_ms,
+            execution_end_ms: now_ms,
+            report_back_latency_ms: 0,
+        }),
+        budget_telemetry: parse_budget_config(options, &session_id),
+        scaled_task: Some(scaled_task),
+        budget_action_taken: None,
+        check_ins: Vec::new(),
+        metrics_timeline: Vec::new(),
+        anomalies: Vec::new(),
+        persistent: Some(runtime),
+        background_worker,
+    };
+
+    let initial = perform_persistent_check_in(&mut metadata, "initial", false)?;
+    state.sessions.insert(session_id.clone(), metadata);
+    if let Some(parent) = parent_id {
+        if let Some(parent_session) = state.sessions.get_mut(parent) {
+            if !parent_session
+                .children
+                .iter()
+                .any(|child| child == &session_id)
+            {
+                parent_session.children.push(session_id.clone());
+            }
+        }
+    }
+
+    append_event(
+        state,
+        json!({
+            "type": if background_worker { "swarm_background_spawn" } else { "swarm_persistent_spawn" },
+            "session_id": session_id,
+            "task": task,
+            "lifespan_sec": cfg.lifespan_sec,
+            "check_in_interval_sec": cfg.check_in_interval_sec,
+            "report_mode": cfg.report_mode.as_label(),
+            "timestamp": now_iso(),
+        }),
+    );
+
+    Ok(json!({
+        "session_id": session_id,
+        "mode": if background_worker { "background" } else { "persistent" },
+        "lifespan_sec": cfg.lifespan_sec,
+        "check_in_interval_sec": cfg.check_in_interval_sec,
+        "report_mode": cfg.report_mode.as_label(),
+        "initial_check_in": initial,
+    }))
+}
+
 fn spawn_single(
     state: &mut SwarmState,
     parent_id: Option<&str>,
@@ -629,6 +1094,11 @@ fn spawn_single(
                         budget_telemetry: Some(telemetry.clone()),
                         scaled_task: Some(scaled_task.clone()),
                         budget_action_taken: budget_action_taken.clone(),
+                        check_ins: Vec::new(),
+                        metrics_timeline: Vec::new(),
+                        anomalies: Vec::new(),
+                        persistent: None,
+                        background_worker: false,
                     };
                     state.sessions.insert(session_id.clone(), failed_metadata);
                     append_event(
@@ -702,6 +1172,11 @@ fn spawn_single(
         budget_telemetry: budget_telemetry.clone(),
         scaled_task: Some(scaled_task.clone()),
         budget_action_taken: budget_action_taken.clone(),
+        check_ins: Vec::new(),
+        metrics_timeline: Vec::new(),
+        anomalies: Vec::new(),
+        persistent: None,
+        background_worker: false,
     };
 
     state.sessions.insert(session_id.clone(), metadata);
@@ -977,6 +1452,7 @@ fn run_test_recursive(state: &mut SwarmState, argv: &[String]) -> Result<Value, 
         token_warning_threshold: 0.8,
         budget_exhaustion_action: BudgetAction::FailHard,
         adaptive_complexity: false,
+        execution_mode: ExecutionMode::TaskOriented,
     };
 
     let result = recursive_spawn_with_tracking(
@@ -1079,6 +1555,7 @@ fn run_test_concurrency(state: &mut SwarmState, argv: &[String]) -> Result<Value
         token_warning_threshold: 0.8,
         budget_exhaustion_action: BudgetAction::FailHard,
         adaptive_complexity: false,
+        execution_mode: ExecutionMode::TaskOriented,
     };
 
     let mut queue_wait_total = 0u64;
@@ -1152,6 +1629,7 @@ fn run_test_budget(state: &mut SwarmState, argv: &[String]) -> Result<Value, Str
         token_warning_threshold: warning_at,
         budget_exhaustion_action: exhaustion_action.clone(),
         adaptive_complexity: parse_bool_flag(argv, "adaptive-complexity", true),
+        execution_mode: ExecutionMode::TaskOriented,
     };
 
     let result = spawn_single(state, None, &task, 8, &options);
@@ -1199,6 +1677,428 @@ fn budget_report_for_session(state: &SwarmState, session_id: &str) -> Result<Val
         "type": "swarm_runtime_budget_report",
         "session_id": session_id,
         "report": telemetry.generate_report(),
+    }))
+}
+
+fn tick_persistent_sessions(
+    state: &mut SwarmState,
+    now_ms: u64,
+    max_check_ins: u64,
+) -> Result<Value, String> {
+    let mut processed_sessions = 0u64;
+    let mut check_ins = 0u64;
+    let mut finalized_sessions = Vec::new();
+    let mut reports = Vec::new();
+
+    for session_id in persistent_session_ids(state) {
+        let mut local_processed = 0u64;
+        loop {
+            if local_processed >= max_check_ins {
+                break;
+            }
+            let mut should_finalize = false;
+            let should_check_in = match state
+                .sessions
+                .get(&session_id)
+                .and_then(|session| session.persistent.as_ref())
+            {
+                Some(runtime) => {
+                    if now_ms >= runtime.deadline_ms {
+                        should_finalize = true;
+                        true
+                    } else {
+                        now_ms >= runtime.next_check_in_ms
+                    }
+                }
+                None => false,
+            };
+            if !should_check_in {
+                break;
+            }
+
+            let Some(session) = state.sessions.get_mut(&session_id) else {
+                break;
+            };
+            let report = if should_finalize {
+                let result = perform_persistent_check_in(session, "lifespan_expired", true)?;
+                session.status = "completed".to_string();
+                if let Some(runtime) = session.persistent.as_mut() {
+                    runtime.terminated_at_ms = Some(now_ms);
+                    runtime.terminated_reason = Some("lifespan_expired".to_string());
+                }
+                finalized_sessions.push(session_id.clone());
+                result
+            } else {
+                let result = perform_persistent_check_in(session, "interval", false)?;
+                if let Some(runtime) = session.persistent.as_mut() {
+                    runtime.next_check_in_ms = now_ms
+                        .saturating_add(runtime.config.check_in_interval_sec.saturating_mul(1000));
+                }
+                result
+            };
+
+            reports.push(json!({
+                "session_id": session_id,
+                "result": report,
+            }));
+            local_processed = local_processed.saturating_add(1);
+            check_ins = check_ins.saturating_add(1);
+            if should_finalize {
+                break;
+            }
+        }
+        if local_processed > 0 {
+            processed_sessions = processed_sessions.saturating_add(1);
+        }
+    }
+
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_tick",
+        "processed_sessions": processed_sessions,
+        "check_ins": check_ins,
+        "finalized_sessions": finalized_sessions,
+        "reports": reports,
+    }))
+}
+
+fn sessions_wake(state: &mut SwarmState, session_id: &str, now_ms: u64) -> Result<Value, String> {
+    let Some(session) = state.sessions.get_mut(session_id) else {
+        return Err(format!("unknown_session:{session_id}"));
+    };
+    if session.persistent.is_none() {
+        return Err(format!("session_not_persistent:{session_id}"));
+    }
+    if !matches!(
+        session.status.as_str(),
+        "persistent_running" | "background_running"
+    ) {
+        return Err(format!("session_not_active:{session_id}"));
+    }
+    let report = perform_persistent_check_in(session, "manual_wake", false)?;
+    if let Some(runtime) = session.persistent.as_mut() {
+        runtime.next_check_in_ms =
+            now_ms.saturating_add(runtime.config.check_in_interval_sec.saturating_mul(1000));
+    }
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_wake",
+        "session_id": session_id,
+        "report": report,
+    }))
+}
+
+fn sessions_terminate(
+    state: &mut SwarmState,
+    session_id: &str,
+    graceful: bool,
+    now_ms: u64,
+) -> Result<Value, String> {
+    let Some(session) = state.sessions.get_mut(session_id) else {
+        return Err(format!("unknown_session:{session_id}"));
+    };
+    if session.persistent.is_none() {
+        return Err(format!("session_not_persistent:{session_id}"));
+    }
+
+    let final_report = if graceful {
+        Some(perform_persistent_check_in(
+            session,
+            "terminated_graceful",
+            true,
+        )?)
+    } else {
+        None
+    };
+    session.status = if graceful {
+        "terminated_graceful".to_string()
+    } else {
+        "terminated".to_string()
+    };
+    if let Some(runtime) = session.persistent.as_mut() {
+        runtime.terminated_at_ms = Some(now_ms);
+        runtime.terminated_reason = Some(if graceful {
+            "terminated_graceful".to_string()
+        } else {
+            "terminated".to_string()
+        });
+    }
+
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_terminate",
+        "session_id": session_id,
+        "graceful": graceful,
+        "final_report": final_report,
+    }))
+}
+
+fn sessions_metrics(
+    state: &SwarmState,
+    session_id: &str,
+    include_timeline: bool,
+) -> Result<Value, String> {
+    let Some(session) = state.sessions.get(session_id) else {
+        return Err(format!("unknown_session:{session_id}"));
+    };
+    let started_at_ms = session
+        .persistent
+        .as_ref()
+        .map(|runtime| runtime.started_at_ms)
+        .unwrap_or_else(now_epoch_ms);
+    let latest = session.metrics_timeline.last().cloned();
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_metrics",
+        "session_id": session_id,
+        "started_at_ms": started_at_ms,
+        "snapshot_count": session.metrics_timeline.len(),
+        "latest": latest,
+        "timeline": if include_timeline { Value::Array(session.metrics_timeline.iter().cloned().map(|row| json!(row)).collect::<Vec<_>>()) } else { Value::Null },
+    }))
+}
+
+fn sessions_anomalies(state: &SwarmState, session_id: &str) -> Result<Value, String> {
+    let Some(session) = state.sessions.get(session_id) else {
+        return Err(format!("unknown_session:{session_id}"));
+    };
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_anomalies",
+        "session_id": session_id,
+        "anomalies": session.anomalies,
+    }))
+}
+
+fn scheduled_add(state: &mut SwarmState, argv: &[String], now_ms: u64) -> Result<Value, String> {
+    let task = parse_flag(argv, "task").unwrap_or_else(|| "scheduled-swarm-task".to_string());
+    let interval_sec = parse_u64_flag(argv, "interval-sec", 900).max(1);
+    let runs = parse_u64_flag(argv, "runs", 4).max(1);
+    let max_runtime_sec = parse_u64_flag(argv, "max-runtime-sec", 30).max(1);
+    let task_id = format!(
+        "scheduled-{}",
+        &deterministic_receipt_hash(&json!({
+            "task": task,
+            "interval_sec": interval_sec,
+            "runs": runs,
+            "ts": now_ms,
+        }))[..12]
+    );
+    let row = ScheduledTask {
+        task_id: task_id.clone(),
+        task,
+        interval_sec,
+        max_runtime_sec,
+        next_run_ms: now_ms.saturating_add(interval_sec.saturating_mul(1000)),
+        remaining_runs: runs,
+        last_run_ms: None,
+        last_session_id: None,
+        active: true,
+    };
+    state.scheduled_tasks.insert(task_id.clone(), row.clone());
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_scheduled_add",
+        "task": row,
+    }))
+}
+
+fn scheduled_status(state: &SwarmState) -> Value {
+    let active = state
+        .scheduled_tasks
+        .values()
+        .filter(|row| row.active)
+        .count();
+    json!({
+        "ok": true,
+        "type": "swarm_runtime_scheduled_status",
+        "total_tasks": state.scheduled_tasks.len(),
+        "active_tasks": active,
+        "tasks": state.scheduled_tasks.values().cloned().collect::<Vec<_>>(),
+    })
+}
+
+fn scheduled_run_due(state: &mut SwarmState, now_ms: u64, max_runs: u64) -> Result<Value, String> {
+    let mut executed = Vec::new();
+    let due_ids = state
+        .scheduled_tasks
+        .iter()
+        .filter(|(_, row)| row.active && row.remaining_runs > 0 && row.next_run_ms <= now_ms)
+        .map(|(id, _)| id.clone())
+        .collect::<Vec<_>>();
+    for task_id in due_ids.into_iter().take(max_runs as usize) {
+        let Some(task_row) = state.scheduled_tasks.get(&task_id).cloned() else {
+            continue;
+        };
+        let options = SpawnOptions {
+            verify: false,
+            timeout_ms: task_row.max_runtime_sec.saturating_mul(1000),
+            metrics_detailed: true,
+            simulate_unreachable: false,
+            byzantine: false,
+            corruption_type: "data_falsification".to_string(),
+            token_budget: None,
+            token_warning_threshold: 0.8,
+            budget_exhaustion_action: BudgetAction::FailHard,
+            adaptive_complexity: false,
+            execution_mode: ExecutionMode::TaskOriented,
+        };
+        let spawn = spawn_single(state, None, &task_row.task, 64, &options)?;
+        let session_id = spawn
+            .get("session_id")
+            .and_then(Value::as_str)
+            .map(ToString::to_string);
+        if let Some(task) = state.scheduled_tasks.get_mut(&task_id) {
+            task.last_run_ms = Some(now_ms);
+            task.last_session_id = session_id.clone();
+            task.remaining_runs = task.remaining_runs.saturating_sub(1);
+            task.next_run_ms = now_ms.saturating_add(task.interval_sec.saturating_mul(1000));
+            if task.remaining_runs == 0 {
+                task.active = false;
+            }
+        }
+        executed.push(json!({
+            "task_id": task_id,
+            "session_id": session_id,
+        }));
+    }
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_scheduled_run_due",
+        "executed": executed,
+    }))
+}
+
+fn run_background_command(state: &mut SwarmState, argv: &[String]) -> Result<Value, String> {
+    let sub = argv
+        .get(1)
+        .map(|value| value.trim().to_ascii_lowercase())
+        .unwrap_or_else(|| "status".to_string());
+    let now_ms = now_epoch_ms();
+    match sub.as_str() {
+        "start" => {
+            let task = parse_flag(argv, "task")
+                .unwrap_or_else(|| "Background worker heartbeat".to_string());
+            let parent_id = parse_flag(argv, "session-id");
+            let options = build_spawn_options(argv);
+            let cfg = match &options.execution_mode {
+                ExecutionMode::Background(cfg) | ExecutionMode::Persistent(cfg) => cfg.clone(),
+                ExecutionMode::TaskOriented => PersistentAgentConfig {
+                    lifespan_sec: parse_u64_flag(argv, "lifespan-sec", 3600).max(1),
+                    check_in_interval_sec: parse_u64_flag(argv, "check-in-interval-sec", 900)
+                        .max(1),
+                    report_mode: ReportMode::from_flag(parse_flag(argv, "report-mode")),
+                },
+            };
+            let payload = spawn_persistent_session(
+                state,
+                parent_id.as_deref(),
+                &task,
+                parse_u8_flag(argv, "max-depth", 8).max(1),
+                &options,
+                &cfg,
+                true,
+            )?;
+            Ok(json!({
+                "ok": true,
+                "type": "swarm_runtime_background_start",
+                "payload": payload,
+            }))
+        }
+        "status" => {
+            let workers = state
+                .sessions
+                .values()
+                .filter(|session| session.background_worker)
+                .map(|session| {
+                    let runtime = session.persistent.as_ref();
+                    json!({
+                        "session_id": session.session_id,
+                        "status": session.status,
+                        "check_in_count": runtime.map(|r| r.check_in_count).unwrap_or(0),
+                        "next_check_in_ms": runtime.and_then(|r| if matches!(session.status.as_str(), "background_running") { Some(r.next_check_in_ms) } else { None }),
+                        "remaining_lifespan_ms": runtime.map(|r| r.deadline_ms.saturating_sub(now_ms)).unwrap_or(0),
+                    })
+                })
+                .collect::<Vec<_>>();
+            Ok(json!({
+                "ok": true,
+                "type": "swarm_runtime_background_status",
+                "worker_count": workers.len(),
+                "workers": workers,
+            }))
+        }
+        "stop" => {
+            let graceful = parse_bool_flag(argv, "graceful", true);
+            if let Some(session_id) =
+                parse_flag(argv, "session-id").filter(|value| !value.trim().is_empty())
+            {
+                return sessions_terminate(state, &session_id, graceful, now_ms).map(|payload| {
+                    json!({
+                        "ok": true,
+                        "type": "swarm_runtime_background_stop",
+                        "stopped": [payload],
+                    })
+                });
+            }
+            let to_stop = state
+                .sessions
+                .iter()
+                .filter(|(_, session)| {
+                    session.background_worker
+                        && matches!(session.status.as_str(), "background_running")
+                })
+                .map(|(id, _)| id.clone())
+                .collect::<Vec<_>>();
+            let mut stopped = Vec::new();
+            for session_id in to_stop {
+                let payload = sessions_terminate(state, &session_id, graceful, now_ms)?;
+                stopped.push(payload);
+            }
+            Ok(json!({
+                "ok": true,
+                "type": "swarm_runtime_background_stop",
+                "stopped_count": stopped.len(),
+                "stopped": stopped,
+            }))
+        }
+        _ => Err(format!("unknown_background_subcommand:{sub}")),
+    }
+}
+
+fn run_test_persistent(state: &mut SwarmState, argv: &[String]) -> Result<Value, String> {
+    let cfg = PersistentAgentConfig {
+        lifespan_sec: parse_u64_flag(argv, "lifespan-sec", 60).max(1),
+        check_in_interval_sec: parse_u64_flag(argv, "check-in-interval-sec", 15).max(1),
+        report_mode: ReportMode::Always,
+    };
+    let options = SpawnOptions {
+        verify: false,
+        timeout_ms: 1_000,
+        metrics_detailed: true,
+        simulate_unreachable: false,
+        byzantine: false,
+        corruption_type: "data_falsification".to_string(),
+        token_budget: Some(2000),
+        token_warning_threshold: 0.8,
+        budget_exhaustion_action: BudgetAction::AllowWithWarning,
+        adaptive_complexity: true,
+        execution_mode: ExecutionMode::Persistent(cfg.clone()),
+    };
+    let task =
+        parse_flag(argv, "task").unwrap_or_else(|| "Persistent health check loop".to_string());
+    let spawned = spawn_persistent_session(state, None, &task, 8, &options, &cfg, false)?;
+    let advance_ms = parse_u64_flag(
+        argv,
+        "advance-ms",
+        cfg.check_in_interval_sec.saturating_mul(1000),
+    );
+    let ticked = tick_persistent_sessions(state, now_epoch_ms().saturating_add(advance_ms), 16)?;
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_test_persistent",
+        "spawned": spawned,
+        "ticked": ticked,
     }))
 }
 
@@ -1255,49 +2155,68 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             let recursive = parse_bool_flag(argv, "recursive", false);
             let max_depth = parse_u8_flag(argv, "max-depth", 8).max(1);
             let levels = parse_u8_flag(argv, "levels", max_depth).max(1);
-            let metrics_detailed = parse_flag(argv, "metrics")
-                .map(|value| value.eq_ignore_ascii_case("detailed"))
-                .unwrap_or(false);
-            let token_budget = parse_flag(argv, "token-budget")
-                .and_then(|value| value.trim().parse::<u32>().ok())
-                .filter(|value| *value > 0);
-            let token_warning_threshold =
-                parse_f64_flag(argv, "token-warning-at", 0.8).clamp(0.0, 1.0) as f32;
+            let options = build_spawn_options(argv);
+            let mode = options.execution_mode.clone();
 
-            let options = SpawnOptions {
-                verify: parse_bool_flag(argv, "verify", false),
-                timeout_ms: (parse_f64_flag(argv, "timeout-sec", 30.0).max(0.0) * 1000.0) as u64,
-                metrics_detailed,
-                simulate_unreachable: parse_bool_flag(argv, "simulate-unreachable", false),
-                byzantine: parse_bool_flag(argv, "byzantine", false),
-                corruption_type: parse_flag(argv, "corruption-type")
-                    .unwrap_or_else(|| "data_falsification".to_string()),
-                token_budget,
-                token_warning_threshold,
-                budget_exhaustion_action: BudgetAction::from_flag(parse_flag(
-                    argv,
-                    "on-budget-exhausted",
-                )),
-                adaptive_complexity: parse_bool_flag(argv, "adaptive-complexity", false),
-            };
-
-            if recursive {
-                recursive_spawn_with_tracking(
-                    &mut state,
-                    parent_id.as_deref(),
-                    &task,
-                    levels,
-                    max_depth,
-                    &options,
-                )
+            let payload_result = if recursive {
+                if !matches!(mode, ExecutionMode::TaskOriented) {
+                    Err("recursive_mode_requires_task_execution_mode".to_string())
+                } else {
+                    recursive_spawn_with_tracking(
+                        &mut state,
+                        parent_id.as_deref(),
+                        &task,
+                        levels,
+                        max_depth,
+                        &options,
+                    )
+                }
             } else {
-                spawn_single(&mut state, parent_id.as_deref(), &task, max_depth, &options)
-            }
-            .map(|payload| {
+                match mode {
+                    ExecutionMode::TaskOriented => {
+                        spawn_single(&mut state, parent_id.as_deref(), &task, max_depth, &options)
+                    }
+                    ExecutionMode::Persistent(cfg) => spawn_persistent_session(
+                        &mut state,
+                        parent_id.as_deref(),
+                        &task,
+                        max_depth,
+                        &options,
+                        &cfg,
+                        false,
+                    ),
+                    ExecutionMode::Background(cfg) => spawn_persistent_session(
+                        &mut state,
+                        parent_id.as_deref(),
+                        &task,
+                        max_depth,
+                        &options,
+                        &cfg,
+                        true,
+                    ),
+                }
+            };
+            payload_result.map(|payload| {
                 json!({
                     "ok": true,
                     "type": "swarm_runtime_spawn",
                     "recursive": recursive,
+                    "mode": match options.execution_mode {
+                        ExecutionMode::TaskOriented => "task",
+                        ExecutionMode::Persistent(_) => "persistent",
+                        ExecutionMode::Background(_) => "background",
+                    },
+                    "payload": payload,
+                })
+            })
+        }
+        "tick" => {
+            let now_ms = now_epoch_ms().saturating_add(parse_u64_flag(argv, "advance-ms", 0));
+            let max_check_ins = parse_u64_flag(argv, "max-check-ins", 16).max(1);
+            tick_persistent_sessions(&mut state, now_ms, max_check_ins).map(|payload| {
+                json!({
+                    "ok": true,
+                    "type": "swarm_runtime_tick",
                     "payload": payload,
                 })
             })
@@ -1358,6 +2277,24 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 Err("session_id_required".to_string())
             }
         }
+        "background" => run_background_command(&mut state, argv),
+        "scheduled" => {
+            let sub = argv
+                .get(1)
+                .map(|value| value.trim().to_ascii_lowercase())
+                .unwrap_or_else(|| "status".to_string());
+            match sub.as_str() {
+                "add" => scheduled_add(&mut state, argv, now_epoch_ms()),
+                "status" => Ok(scheduled_status(&state)),
+                "run-due" => {
+                    let now_ms =
+                        now_epoch_ms().saturating_add(parse_u64_flag(argv, "advance-ms", 0));
+                    let max_runs = parse_u64_flag(argv, "max-runs", 8).max(1);
+                    scheduled_run_due(&mut state, now_ms, max_runs)
+                }
+                _ => Err(format!("unknown_scheduled_subcommand:{sub}")),
+            }
+        }
         "sessions" => {
             let sub = argv
                 .get(1)
@@ -1369,6 +2306,51 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                         parse_flag(argv, "session-id").filter(|value| !value.trim().is_empty())
                     {
                         budget_report_for_session(&state, &session_id)
+                    } else {
+                        Err("session_id_required".to_string())
+                    }
+                }
+                "wake" => {
+                    if let Some(session_id) =
+                        parse_flag(argv, "session-id").filter(|value| !value.trim().is_empty())
+                    {
+                        sessions_wake(&mut state, &session_id, now_epoch_ms())
+                    } else {
+                        Err("session_id_required".to_string())
+                    }
+                }
+                "terminate" => {
+                    if let Some(session_id) =
+                        parse_flag(argv, "session-id").filter(|value| !value.trim().is_empty())
+                    {
+                        sessions_terminate(
+                            &mut state,
+                            &session_id,
+                            parse_bool_flag(argv, "graceful", true),
+                            now_epoch_ms(),
+                        )
+                    } else {
+                        Err("session_id_required".to_string())
+                    }
+                }
+                "metrics" => {
+                    if let Some(session_id) =
+                        parse_flag(argv, "session-id").filter(|value| !value.trim().is_empty())
+                    {
+                        sessions_metrics(
+                            &state,
+                            &session_id,
+                            parse_bool_flag(argv, "timeline", false),
+                        )
+                    } else {
+                        Err("session_id_required".to_string())
+                    }
+                }
+                "anomalies" => {
+                    if let Some(session_id) =
+                        parse_flag(argv, "session-id").filter(|value| !value.trim().is_empty())
+                    {
+                        sessions_anomalies(&state, &session_id)
                     } else {
                         Err("session_id_required".to_string())
                     }
@@ -1386,6 +2368,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 "byzantine" => run_test_byzantine(&mut state, argv),
                 "concurrency" => run_test_concurrency(&mut state, argv),
                 "budget" => run_test_budget(&mut state, argv),
+                "persistent" => run_test_persistent(&mut state, argv),
                 _ => Err(format!("unknown_test_suite:{suite}")),
             }
         }
@@ -1450,6 +2433,7 @@ mod tests {
             token_warning_threshold: 0.8,
             budget_exhaustion_action: BudgetAction::FailHard,
             adaptive_complexity: false,
+            execution_mode: ExecutionMode::TaskOriented,
         }
     }
 
