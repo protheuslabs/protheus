@@ -2,9 +2,8 @@
 
 [![CI](https://github.com/protheuslabs/InfRing/actions/workflows/ci.yml/badge.svg)](https://github.com/protheuslabs/InfRing/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/protheuslabs/InfRing/actions/workflows/codeql.yml/badge.svg)](https://github.com/protheuslabs/InfRing/actions/workflows/codeql.yml)
-[![License: Protheus-NC-1.0](https://img.shields.io/badge/license-Protheus--NC--1.0-red.svg)](LICENSE)
+[![License: InfRing-NC-1.0](https://img.shields.io/badge/license-InfRing--NC--1.0-red.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/protheuslabs/InfRing?display_name=tag)](https://github.com/protheuslabs/InfRing/releases)
-[![npm version](https://img.shields.io/npm/v/protheus)](https://www.npmjs.com/package/protheus)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fprotheuslabs%2Finfring-blue)](https://github.com/protheuslabs/InfRing/pkgs/container/infring)
 [![Architecture](https://img.shields.io/badge/architecture-three--plane%20metakernel-0A7A5E)](planes/README.md)
 [![ORCID](https://img.shields.io/badge/ORCID-0009--0002--0617--7360-A6CE39?logo=orcid&logoColor=white)](https://orcid.org/0009-0002-0617-7360)
@@ -12,8 +11,8 @@
 ![Dependabot](https://img.shields.io/badge/dependabot-enabled-025E8C?logo=dependabot)
 
 InfRing is an evidence-first Rust kernel for autonomous operations, workflow execution, and policy-governed system evolution.
-This repository is maintained under the Protheus Labs operating model.
-InfRing is the Protheus substrate and three-plane metakernel: deterministic safety core, probabilistic cognition userland, and substrate adapters for heterogeneous execution.
+This repository is maintained under the InfRing operating model.
+InfRing is the three-plane metakernel substrate: deterministic safety core, probabilistic cognition userland, and substrate adapters for heterogeneous execution.
 
 > **Clarification:** The term "metakernel" refers to the architectural pattern where the runtime itself operates as a managed system layer, not a traditional monolithic kernel. This enables policy-driven, auditable execution across safety, cognition, and substrate planes.
 
@@ -21,7 +20,7 @@ This repository is organized to run like an internal platform team: typed runtim
 
 ## What This Repo Includes
 
-- Control plane CLI surface (`infring`, `infringd`, `infringctl`, `protheus-top`)
+- Control plane CLI surface (`infring`, `infringd`, `infringctl`, `infring top`)
 - Policy-backed runtime lanes across `client/runtime/systems/` (ops, security, memory, routing, workflow, observability, and more)
 - Deterministic state and receipt contracts for auditable execution
 - Backlog governance pipeline with generated active/archive/reviewed views
@@ -30,12 +29,6 @@ This repository is organized to run like an internal platform team: typed runtim
 ## Quick Start
 
 Install with one command (macOS/Linux):
-
-```bash
-curl -fsSL https://get.protheus.ai/install | sh
-```
-
-Fallback installer URL:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.sh | sh
@@ -55,7 +48,7 @@ infringctl --help
 infringd --help
 ```
 
-`protheus`, `protheusctl`, and `protheusd` remain supported aliases with a deprecation notice.
+Legacy command aliases remain supported with a deprecation notice.
 
 > **Note:** Full CLI surface requires Node.js 22+ (see `package.json#engines`). Rust fallback supports `help`, `list`, `status`, and `version` even when Node is unavailable. See `docs/TROUBLESHOOTING.md` for environment setup details.
 
@@ -86,20 +79,20 @@ This regenerates:
 - `docs/client/reports/benchmark_matrix_run_2026-03-06.json`
 - `docs/client/reports/benchmark_matrix_run_2026-03-06_full_install.json`
 
-### Current Runtime Measurements (OpenClaw + Pure Workspace + Tiny-Max)
+### Current Runtime Measurements (InfRing Instance Modes)
 
 Sources:
 - Live control-plane run: `docs/client/reports/benchmark_matrix_run_2026-03-06.json`
 - Snapshot/reference baseline: `docs/client/reports/runtime_snapshots/ops/proof_pack/top1_benchmark_snapshot.json`
 
-| Metric | OpenClaw Live | Pure Workspace Live | Pure Workspace Tiny-Max Live | Snapshot/Reference |
+| Metric | InfRing (rich) | InfRing (pure) | InfRing (tiny-max) | Snapshot/Reference |
 |---|---:|---:|---:|---:|
 | Cold start | 5.797 ms | 3.973 ms | 2.314 ms | 74.5 ms |
 | Idle memory | 9.594 MB | 1.375 MB | 1.375 MB | 22.1 MB |
 | Install size (full) | 11.378 MB | 0.670 MB | 0.483 MB | 126.4 MB |
 | Throughput | 12,835 ops/sec | 12,414 ops/sec | 12,632 ops/sec | 7,420 ops/sec |
 
-| Capability Counter | OpenClaw Live | Pure Workspace Live | Pure Workspace Tiny-Max Live |
+| Capability Counter | InfRing (rich) | InfRing (pure) | InfRing (tiny-max) |
 |---|---:|---:|---:|
 | Static daemon size (musl + UPX) | 0.448 MB | 0.448 MB | 0.257 MB |
 | Rust client binary size (musl + UPX) | n/a | 0.244 MB | 0.244 MB |
@@ -108,16 +101,16 @@ Sources:
 | Channel adapters | 6 | 0 | 0 |
 | LLM providers | 3 | 0 | 0 |
 
-### Competitive Benchmark Matrix (Feb 2026 Snapshot + Live Protheus)
+### Competitive Benchmark Matrix (Feb 2026 Snapshot + Live InfRing)
 
 External baseline (OpenFang public table):
 <https://raw.githubusercontent.com/RightNow-AI/openfang/main/README.md>
 
 | Project | Install Size (MB) ↓ | Cold Start ↓ | Idle Memory (MB) ↓ | Throughput (ops/sec) ↑ | Static Daemon (MB) ↓ | Security Systems ↑ | Channel Adapters ↑ | LLM Providers ↑ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| **Protheus (OpenClaw Rich Mode, Live)** | **11.378** | **5.797 ms** | **9.594** | **12,835** | **0.448** | **83** | 6 | 3 |
-| **Protheus (Pure Workspace Mode, Live)** | **0.670** | **3.973 ms** | **1.375** | **12,414** | **0.448** | **83** | 0 | 0 |
-| **Protheus (Pure Workspace Tiny-Max, Live)** | **0.483** | **2.314 ms** | **1.375** | **12,632** | **0.257** | **83** | 0 | 0 |
+| **InfRing (rich)** | **11.378** | **5.797 ms** | **9.594** | **12,835** | **0.448** | **83** | 6 | 3 |
+| **InfRing (pure)** | **0.670** | **3.973 ms** | **1.375** | **12,414** | **0.448** | **83** | 0 | 0 |
+| **InfRing (tiny-max)** | **0.483** | **2.314 ms** | **1.375** | **12,632** | **0.257** | **83** | 0 | 0 |
 | OpenFang | 32.0 | 180 ms | 40.0 | n/p | n/p | 16 | 40 | 27 |
 | OpenHands | 95.5 | 1.30 sec | 150.0 | n/p | n/p | 7 | 15 | 5 |
 | LangGraph | 150.0 | 2.50 sec | 180.0 | n/p | n/p | 2 | 4 | 15 |
@@ -183,7 +176,7 @@ AutoGen    #-------------------------------------------  200.0 MB
 
 ```text
 Security Systems (higher is better)
-Protheus   ############################################  83
+InfRing    ############################################  83
 OpenFang   ########------------------------------------  16
 OpenHands  ###-----------------------------------------  7
 AutoGen    #-------------------------------------------  2
@@ -220,8 +213,8 @@ Recommended preflight gates:
 ```bash
 npm run -s ops:repo-surface:audit
 npm run -s ops:root-surface:check
-cargo test -p protheus-ops-core optimize_receipt_emits_cost_savings_plan -- --test-threads=1
-cargo test -p protheus-ops-core enable_bedrock_produces_sigv4_private_profile -- --test-threads=1
+cargo test --manifest-path core/layer0/ops/Cargo.toml optimize_receipt_emits_cost_savings_plan -- --test-threads=1
+cargo test --manifest-path core/layer0/ops/Cargo.toml enable_bedrock_produces_sigv4_private_profile -- --test-threads=1
 ```
 
 ## npm Installation (Primary Distribution)
@@ -229,28 +222,27 @@ cargo test -p protheus-ops-core enable_bedrock_produces_sigv4_private_profile --
 Install the CLI globally:
 
 ```bash
-npm install -g protheus
+npm install -g ./packages/*-npm
 ```
 
 For local source installs from this repository:
 
 ```bash
-cd packages/protheus-npm
 npm install -g .
-protheus --help
+infring --help
 ```
 
-The npm package is a thin wrapper around the Rust `protheus-ops` binary and includes:
+The npm package is a thin wrapper around the Rust operator runtime and includes:
 - release-binary download on install (when available)
 - local Cargo build fallback
 - `infring` / `infringd` command entrypoints for operator workflows
-- backward aliases: `protheus` / `protheusd`
+- backward compatibility aliases for legacy scripts
 
 Then verify the runtime surface:
 
 ```bash
 infring status
-protheus-top
+infring top
 ```
 
 ## pip Installation (Thin Wrapper Option)
@@ -258,18 +250,18 @@ protheus-top
 Install the Python wrapper from PyPI:
 
 ```bash
-pip install protheus-cli-wrapper
+pip install ./packages/*-py
 infring --help
 ```
 
-Install from this repository:
+Install from this repository with editable mode:
 
 ```bash
-pip install ./packages/protheus-py
+pip install -e ./packages/*-py
 infring status --dashboard
 ```
 
-The Python package is intentionally thin and delegates all kernel authority to Rust (`protheus-ops`).
+The Python package is intentionally thin and delegates all kernel authority to Rust.
 
 ## Operator Commands
 
@@ -293,12 +285,9 @@ The Python package is intentionally thin and delegates all kernel authority to R
 | `infring` | Primary control-plane interface |
 | `infringd` | Daemon lifecycle wrapper |
 | `infringctl` | Job and control-plane operations |
-| `protheus-top` | Live operator observability surface |
+| `infring top` | Live operator observability surface |
 
-Compatibility aliases:
-- `protheus` -> `infring`
-- `protheusctl` -> `infringctl`
-- `protheusd` -> `infringd`
+Compatibility aliases remain available for legacy scripts.
 
 Run `infring list` (or `infring --help`) for a categorized command index.
 
@@ -508,7 +497,7 @@ The project is operated with explicit documentation and governance contracts:
 ## Legal
 
 - License: [LICENSE](LICENSE)
-- License details: Protheus Non-Commercial License v1.0
+- License details: InfRing Non-Commercial License v1.0
 - Archived historical legal docs: [docs/client/legal/archive](docs/client/legal/archive)
 
 ## Platform Compatibility Notes
