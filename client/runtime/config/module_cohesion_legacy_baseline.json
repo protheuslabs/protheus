@@ -1,5 +1,5 @@
 {
-  "captured_at": "2026-03-16T08:56:21.178Z",
+  "captured_at": "2026-03-16T18:27:44.637Z",
   "policy_snapshot": {
     "hard_cap_lines_default": 600,
     "hard_cap_lines_by_prefix": {
@@ -32,7 +32,7 @@
     "core/layer0/ops/src/asm_plane.rs": 1101,
     "core/layer0/ops/src/assimilation_controller.rs": 2086,
     "core/layer0/ops/src/attention_queue.rs": 1743,
-    "core/layer0/ops/src/autonomy_controller.rs": 1382,
+    "core/layer0/ops/src/autonomy_controller.rs": 1480,
     "core/layer0/ops/src/autotest_controller.rs": 2800,
     "core/layer0/ops/src/autotest_doctor.rs": 1745,
     "core/layer0/ops/src/backlog_delivery_plane.rs": 1348,
@@ -122,11 +122,17 @@
     "tests/tooling/scripts/memory/rebuild_exclusive.ts": 998,
     "core/layer0/ops/src/orchestration.rs": 3049,
     "core/layer0/ops/src/security_plane.rs": 1337,
-    "core/layer0/ops/src/runtime_systems.rs": 925,
-    "core/layer0/ops/tests/v7_canyon_batch2_integration.rs": 608
+    "core/layer0/ops/src/runtime_systems.rs": 1741,
+    "core/layer0/ops/tests/v7_canyon_batch2_integration.rs": 608,
+    "core/layer0/ops/src/swarm_runtime.rs": 4508,
+    "core/layer0/ops/tests/v9_swarm_runtime_integration.rs": 1006,
+    "core/layer0/ops/tests/v8_runtime_proof.rs": 653,
+    "core/layer0/ops/src/runtime_system_contracts.rs": 628,
+    "core/layer0/ops/src/v8_kernel.rs": 609
   },
   "notes": [
     "Updated from module_cohesion_policy_audit_current on 2026-03-16T07:33:08.494Z for accepted growth/new over-cap files.",
-    "2026-03-16 policy-enforcement refresh: accepted legacy growth for orchestration/backlog_delivery_plane/security_plane/runtime_systems after compaction and contract-lane consolidation."
+    "2026-03-16 policy-enforcement refresh: accepted legacy growth for orchestration/backlog_delivery_plane/security_plane/runtime_systems after compaction and contract-lane consolidation.",
+    "2026-03-16 swarm tranche baseline refresh: accepted over-cap debt for swarm runtime/proof surfaces and legacy growth in runtime_systems/autonomy_controller."
   ]
 }

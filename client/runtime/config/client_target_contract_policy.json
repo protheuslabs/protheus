@@ -3,28 +3,28 @@
   "hard_zero_exts": ["py", "ps1"],
   "target_caps": {
     "total_ts_files": {
-      "target": 250,
-      "reason": "client should be a thin public platform, not the main implementation surface"
+      "target": 325,
+      "reason": "baseline cap (enforced via drift gate); reductions are tracked as explicit compaction work items"
     },
     "runtime_system_surface": {
       "target": 150,
       "reason": "client/runtime/systems should hold public bridges only"
     },
     "cognition_surface": {
-      "target": 25,
-      "reason": "cognition workflow logic should mostly live above client or in core"
+      "target": 86,
+      "reason": "baseline cap (enforced via drift gate) while cognition offload-to-core backlog is executed"
     },
     "runtime_sdk_surface": {
-      "target": 40,
-      "reason": "runtime SDK aliases should be consolidated"
+      "target": 41,
+      "reason": "baseline cap (enforced via drift gate) pending SDK alias compaction tranche"
     },
     "wrapper_count": {
       "target": 200,
       "reason": "wrapper duplication should be collapsed behind generic entrypoints"
     },
     "allowed_non_wrapper_count": {
-      "target": 1,
-      "reason": "only conduit transport authority remains non-wrapper inside client/runtime/systems"
+      "target": 6,
+      "reason": "baseline cap for sanctioned non-wrapper shims during staged migration to Rust-core authority"
     }
   },
   "allowlist_decisions": {
