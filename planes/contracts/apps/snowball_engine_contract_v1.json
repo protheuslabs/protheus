@@ -21,7 +21,20 @@
   },
   "compaction": {
     "snapshot_profile": "sphere-of-ice",
-    "restore_pointer_required": true
+    "restore_pointer_required": true,
+    "benchmark_report_default_path": "docs/client/reports/benchmark_matrix_run_2026-03-06.json",
+    "discarded_idea_blob_archive_required": true,
+    "prime_directive_compacted_state_required": true
+  },
+  "assimilation": {
+    "four_gate_evaluation_required": true,
+    "required_gates": [
+      "metrics",
+      "pure_tiny",
+      "rsi_organism",
+      "tiny_hardware"
+    ],
+    "discarded_ideas_must_be_blob_archived": true
   },
   "backlog_pack": {
     "dependency_ordering_required": true
@@ -33,4 +46,3 @@
     "compact"
   ]
 }
-

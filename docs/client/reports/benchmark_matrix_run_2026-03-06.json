@@ -2,7 +2,7 @@
   "ascii_report": [
     "Benchmarks: Measured, Not Marketed",
     "Cold Start Time (lower is better)",
-    "Protheus Pure Tiny-Max ############################################  4 ms",
+    "Protheus Pure Tiny-Max ############################################  2 ms",
     "Protheus Pure ############################################  4 ms",
     "OpenClaw   ############################################  6 ms",
     "OpenFang   ##########################################--  180 ms",
@@ -14,7 +14,7 @@
     "Idle Memory Usage (lower is better)",
     "Protheus Pure ############################################  1.4 MB",
     "Protheus Pure Tiny-Max ############################################  1.4 MB",
-    "OpenClaw   ###########################################-  9.8 MB",
+    "OpenClaw   ###########################################-  9.6 MB",
     "OpenFang   #####################################-------  40.0 MB",
     "OpenHands  ##################--------------------------  150.0 MB",
     "LangGraph  ############--------------------------------  180.0 MB",
@@ -24,7 +24,7 @@
     "Install Size (lower is better)",
     "Protheus Pure Tiny-Max ############################################  0.5 MB",
     "Protheus Pure ############################################  0.7 MB",
-    "OpenClaw   ##########################################--  9.9 MB",
+    "OpenClaw   ##########################################--  11.4 MB",
     "OpenFang   #####################################-------  32.0 MB",
     "OpenHands  #######################---------------------  95.5 MB",
     "CrewAI     ######################----------------------  100.0 MB",
@@ -67,7 +67,7 @@
     {
       "ascii_lines": [
         "Cold Start Time (lower is better)",
-        "Protheus Pure Tiny-Max ############################################  4 ms",
+        "Protheus Pure Tiny-Max ############################################  2 ms",
         "Protheus Pure ############################################  4 ms",
         "OpenClaw   ############################################  6 ms",
         "OpenFang   ##########################################--  180 ms",
@@ -86,8 +86,8 @@
           "highlight": false,
           "project": "Protheus Pure Tiny-Max",
           "rank": 1,
-          "score": "4 ms",
-          "value": 3.70825
+          "score": "2 ms",
+          "value": 2.314375
         },
         {
           "bar": "############################################",
@@ -95,7 +95,7 @@
           "project": "Protheus Pure",
           "rank": 2,
           "score": "4 ms",
-          "value": 4.0720410000000005
+          "value": 3.9734159999999994
         },
         {
           "bar": "############################################",
@@ -103,7 +103,7 @@
           "project": "OpenClaw",
           "rank": 3,
           "score": "6 ms",
-          "value": 6.442
+          "value": 5.797
         },
         {
           "bar": "##########################################--",
@@ -153,7 +153,7 @@
         "Idle Memory Usage (lower is better)",
         "Protheus Pure ############################################  1.4 MB",
         "Protheus Pure Tiny-Max ############################################  1.4 MB",
-        "OpenClaw   ###########################################-  9.8 MB",
+        "OpenClaw   ###########################################-  9.6 MB",
         "OpenFang   #####################################-------  40.0 MB",
         "OpenHands  ##################--------------------------  150.0 MB",
         "LangGraph  ############--------------------------------  180.0 MB",
@@ -186,8 +186,8 @@
           "highlight": false,
           "project": "OpenClaw",
           "rank": 3,
-          "score": "9.8 MB",
-          "value": 9.844
+          "score": "9.6 MB",
+          "value": 9.594
         },
         {
           "bar": "#####################################-------",
@@ -237,7 +237,7 @@
         "Install Size (lower is better)",
         "Protheus Pure Tiny-Max ############################################  0.5 MB",
         "Protheus Pure ############################################  0.7 MB",
-        "OpenClaw   ##########################################--  9.9 MB",
+        "OpenClaw   ##########################################--  11.4 MB",
         "OpenFang   #####################################-------  32.0 MB",
         "OpenHands  #######################---------------------  95.5 MB",
         "CrewAI     ######################----------------------  100.0 MB",
@@ -263,15 +263,15 @@
           "project": "Protheus Pure",
           "rank": 2,
           "score": "0.7 MB",
-          "value": 0.671
+          "value": 0.67
         },
         {
           "bar": "##########################################--",
           "highlight": false,
           "project": "OpenClaw",
           "rank": 3,
-          "score": "9.9 MB",
-          "value": 9.92
+          "score": "11.4 MB",
+          "value": 11.378
         },
         {
           "bar": "#####################################-------",
@@ -611,10 +611,10 @@
   "ok": true,
   "openclaw_measured": {
     "channel_adapters": 6.0,
-    "cold_start_ms": 6.442,
+    "cold_start_ms": 5.797,
     "data_source": "runtime_efficiency_floor + policy counters",
-    "idle_memory_mb": 9.844,
-    "install_size_mb": 9.92,
+    "idle_memory_mb": 9.594,
+    "install_size_mb": 11.378,
     "llm_providers": 3.0,
     "measured": true,
     "runtime_metric_source": {
@@ -626,7 +626,7 @@
       "tasks_work_factor": 16
     },
     "security_systems": 83.0,
-    "tasks_per_sec": 11108.61,
+    "tasks_per_sec": 12834.51,
     "throughput_source": "live_hash_workload_v1"
   },
   "projects": {
@@ -656,10 +656,10 @@
     },
     "OpenClaw": {
       "channel_adapters": 6.0,
-      "cold_start_ms": 6.442,
+      "cold_start_ms": 5.797,
       "data_source": "runtime_efficiency_floor + policy counters",
-      "idle_memory_mb": 9.844,
-      "install_size_mb": 9.92,
+      "idle_memory_mb": 9.594,
+      "install_size_mb": 11.378,
       "llm_providers": 3.0,
       "measured": true,
       "runtime_metric_source": {
@@ -671,7 +671,7 @@
         "tasks_work_factor": 16
       },
       "security_systems": 83.0,
-      "tasks_per_sec": 11108.61,
+      "tasks_per_sec": 12834.51,
       "throughput_source": "live_hash_workload_v1"
     },
     "OpenFang": {
@@ -692,23 +692,23 @@
     },
     "Protheus Pure": {
       "channel_adapters": 0.0,
-      "cold_start_ms": 4.0720410000000005,
+      "cold_start_ms": 3.9734159999999994,
       "daemon_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheusd",
       "data_source": "pure_workspace_binary_probe",
       "idle_memory_mb": 1.375,
-      "install_size_mb": 0.671,
+      "install_size_mb": 0.67,
       "llm_providers": 0.0,
       "measured": true,
       "mode": "pure",
       "probe_binary_path": "/Users/jay/.openclaw/workspace/target/release/protheus-pure-workspace",
       "security_systems": 83.0,
       "size_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheus-pure-workspace",
-      "tasks_per_sec": 11131.0,
+      "tasks_per_sec": 12413.69,
       "throughput_source": "live_hash_workload_v1"
     },
     "Protheus Pure Tiny-Max": {
       "channel_adapters": 0.0,
-      "cold_start_ms": 3.70825,
+      "cold_start_ms": 2.314375,
       "daemon_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheusd_tiny_max",
       "data_source": "pure_workspace_binary_probe",
       "idle_memory_mb": 1.375,
@@ -719,29 +719,29 @@
       "probe_binary_path": "/Users/jay/.openclaw/workspace/target/release/protheus-pure-workspace",
       "security_systems": 83.0,
       "size_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheus-pure-workspace",
-      "tasks_per_sec": 10986.92,
+      "tasks_per_sec": 12631.61,
       "throughput_source": "live_hash_workload_v1"
     }
   },
   "pure_workspace_measured": {
     "channel_adapters": 0.0,
-    "cold_start_ms": 4.0720410000000005,
+    "cold_start_ms": 3.9734159999999994,
     "daemon_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheusd",
     "data_source": "pure_workspace_binary_probe",
     "idle_memory_mb": 1.375,
-    "install_size_mb": 0.671,
+    "install_size_mb": 0.67,
     "llm_providers": 0.0,
     "measured": true,
     "mode": "pure",
     "probe_binary_path": "/Users/jay/.openclaw/workspace/target/release/protheus-pure-workspace",
     "security_systems": 83.0,
     "size_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheus-pure-workspace",
-    "tasks_per_sec": 11131.0,
+    "tasks_per_sec": 12413.69,
     "throughput_source": "live_hash_workload_v1"
   },
   "pure_workspace_tiny_max_measured": {
     "channel_adapters": 0.0,
-    "cold_start_ms": 3.70825,
+    "cold_start_ms": 2.314375,
     "daemon_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheusd_tiny_max",
     "data_source": "pure_workspace_binary_probe",
     "idle_memory_mb": 1.375,
@@ -752,10 +752,10 @@
     "probe_binary_path": "/Users/jay/.openclaw/workspace/target/release/protheus-pure-workspace",
     "security_systems": 83.0,
     "size_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheus-pure-workspace",
-    "tasks_per_sec": 10986.92,
+    "tasks_per_sec": 12631.61,
     "throughput_source": "live_hash_workload_v1"
   },
-  "receipt_hash": "559d873c7c1697dd1c4a6ce1317b22f0f59e94553f2cea8242cdf65611ba69e8",
+  "receipt_hash": "da4d5289acfda7634ddaf394b71c0f1cee0727d841b15fde20ab9d931b9b496d",
   "reference_month": "2026-02",
   "runtime_receipt": {
     "cold_start": {
@@ -769,41 +769,42 @@
       "dist_target": null,
       "engine": "core-lazy",
       "max_ms": 500.0,
-      "p95_ms": 6.442,
+      "p95_ms": 5.797,
       "runtime_mode": "source",
       "samples": 5
     },
     "enforce_hold_streak_strict": false,
     "full_install": {
       "paths": {
-        "client/runtime": 5.123,
-        "core/layer0/ops": 4.359,
+        "client/runtime": 5.462,
+        "core/layer0/ops": 4.601,
+        "dist": 0.877,
         "target/x86_64-unknown-linux-musl/release/protheusd": 0.438
       },
-      "sum_mb": 9.92
+      "sum_mb": 11.378
     },
     "history_path": "local/state/ops/runtime_efficiency_floor_history.jsonl",
-    "hold_streak_days": 1,
+    "hold_streak_days": 2,
     "idle_rss": {
       "max_mb": 120.0,
       "measurement_mode": "process",
-      "p95_mb": 9.844,
+      "p95_mb": 9.594,
       "required_modules": [],
       "samples": 3
     },
     "install_artifact": {
       "max_mb": 60.0,
       "paths": {
-        "dist": 0.0
+        "dist": 0.877
       },
-      "sum_mb": 0.0
+      "sum_mb": 0.877
     },
     "metrics": {
-      "cold_start_p95_ms": 6.442,
-      "full_install_total_mb": 9.92,
-      "idle_rss_p95_mb": 9.844,
-      "install_artifact_total_mb": 0.0,
-      "tasks_per_sec": 11108.61
+      "cold_start_p95_ms": 5.797,
+      "full_install_total_mb": 11.378,
+      "idle_rss_p95_mb": 9.594,
+      "install_artifact_total_mb": 0.877,
+      "tasks_per_sec": 12834.51
     },
     "ok": true,
     "pass": true,
@@ -813,12 +814,12 @@
     "strict": false,
     "strict_hold_ok": true,
     "target_hold_days": 7,
-    "ts": "2026-03-15T14:49:59.550Z",
+    "ts": "2026-03-16T03:36:04.740Z",
     "type": "runtime_efficiency_floor"
   },
   "snapshot_generated_from": null,
   "snapshot_path": "client/runtime/config/competitive_benchmark_snapshot_2026_02.json",
   "snapshot_version": null,
-  "ts": "2026-03-15T14:50:02.166Z",
+  "ts": "2026-03-16T03:36:07.347Z",
   "type": "competitive_benchmark_matrix"
 }

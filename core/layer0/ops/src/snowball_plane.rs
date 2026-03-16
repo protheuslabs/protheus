@@ -9,11 +9,14 @@ use crate::v8_kernel::{
 use crate::{clean, parse_args};
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, HashSet};
+use std::fs;
 use std::path::{Path, PathBuf};
 
 const STATE_ENV: &str = "SNOWBALL_PLANE_STATE_ROOT";
 const STATE_SCOPE: &str = "snowball_plane";
 const CONTRACT_PATH: &str = "planes/contracts/apps/snowball_engine_contract_v1.json";
+const DEFAULT_BENCHMARK_REPORT_PATH: &str =
+    "docs/client/reports/benchmark_matrix_run_2026-03-06.json";
 
 fn usage() {
     println!("Usage:");
@@ -25,6 +28,9 @@ fn usage() {
         "  protheus-ops snowball-plane melt-refine|regress [--cycle-id=<id>] [--regression-suite=<id>] [--regression-pass=1|0] [--strict=1|0]"
     );
     println!("  protheus-ops snowball-plane compact [--cycle-id=<id>] [--strict=1|0]");
+    println!(
+        "      compact flags: [--benchmark-report=<path>] [--assimilations-json=<json>] [--reliability-before=<f>] [--reliability-after=<f>]"
+    );
     println!(
         "  protheus-ops snowball-plane backlog-pack [--cycle-id=<id>] [--unresolved-json=<json>] [--strict=1|0]"
     );
@@ -53,6 +59,56 @@ fn backlog_path(root: &Path, cycle_id: &str) -> PathBuf {
     state_root(root)
         .join("backlog")
         .join(format!("{cycle_id}-next.json"))
+}
+
+fn assimilation_plan_path(root: &Path, cycle_id: &str) -> PathBuf {
+    state_root(root)
+        .join("evolution")
+        .join(format!("{cycle_id}-assimilation-plan.json"))
+}
+
+fn kept_path(root: &Path, cycle_id: &str) -> PathBuf {
+    state_root(root)
+        .join("evolution")
+        .join(format!("{cycle_id}-kept.json"))
+}
+
+fn discarded_path(root: &Path, cycle_id: &str) -> PathBuf {
+    state_root(root)
+        .join("evolution")
+        .join(format!("{cycle_id}-discarded.json"))
+}
+
+fn discarded_blob_index_path(root: &Path, cycle_id: &str) -> PathBuf {
+    state_root(root)
+        .join("blob_archive")
+        .join("discarded_ideas")
+        .join(format!("{cycle_id}-index.json"))
+}
+
+fn discarded_blob_dir(root: &Path, cycle_id: &str) -> PathBuf {
+    state_root(root)
+        .join("blob_archive")
+        .join("discarded_ideas")
+        .join(cycle_id)
+}
+
+fn prime_directive_compacted_state_path(root: &Path) -> PathBuf {
+    state_root(root).join("prime_directive_compacted_state.json")
+}
+
+fn benchmark_report_path(root: &Path, parsed: &crate::ParsedArgs) -> PathBuf {
+    let configured = parsed
+        .flags
+        .get("benchmark-report")
+        .map(String::as_str)
+        .unwrap_or(DEFAULT_BENCHMARK_REPORT_PATH);
+    let candidate = PathBuf::from(configured);
+    if candidate.is_absolute() {
+        candidate
+    } else {
+        root.join(candidate)
+    }
 }
 
 fn print_payload(payload: &Value) {
@@ -86,6 +142,11 @@ fn emit(root: &Path, payload: Value) -> i32 {
 
 fn parse_json_flag(raw: Option<&String>) -> Option<Value> {
     raw.and_then(|text| serde_json::from_str::<Value>(text).ok())
+}
+
+fn parse_f64(raw: Option<&String>, default: f64) -> f64 {
+    raw.and_then(|text| text.trim().parse::<f64>().ok())
+        .unwrap_or(default)
 }
 
 fn clean_id(raw: Option<&str>, fallback: &str) -> String {
@@ -130,6 +191,218 @@ fn parse_csv_unique(raw: Option<&String>, fallback: &[&str]) -> Vec<String> {
     } else {
         out
     }
+}
+
+fn parse_mode_metrics(report: &Value, key: &str) -> Value {
+    report
+        .get(key)
+        .and_then(Value::as_object)
+        .map(|obj| {
+            json!({
+                "cold_start_ms": obj.get("cold_start_ms").and_then(Value::as_f64).unwrap_or(0.0),
+                "idle_memory_mb": obj.get("idle_memory_mb").and_then(Value::as_f64).unwrap_or(0.0),
+                "install_size_mb": obj.get("install_size_mb").and_then(Value::as_f64).unwrap_or(0.0),
+                "tasks_per_sec": obj.get("tasks_per_sec").and_then(Value::as_f64).unwrap_or(0.0),
+                "security_systems": obj.get("security_systems").and_then(Value::as_f64).unwrap_or(0.0),
+                "channel_adapters": obj.get("channel_adapters").and_then(Value::as_f64).unwrap_or(0.0),
+                "llm_providers": obj.get("llm_providers").and_then(Value::as_f64).unwrap_or(0.0)
+            })
+        })
+        .unwrap_or_else(|| {
+            json!({
+                "cold_start_ms": 0.0,
+                "idle_memory_mb": 0.0,
+                "install_size_mb": 0.0,
+                "tasks_per_sec": 0.0,
+                "security_systems": 0.0,
+                "channel_adapters": 0.0,
+                "llm_providers": 0.0
+            })
+        })
+}
+
+fn benchmark_modes_from_report(report: &Value) -> Value {
+    json!({
+        "openclaw": parse_mode_metrics(report, "openclaw_measured"),
+        "pure_workspace": parse_mode_metrics(report, "pure_workspace_measured"),
+        "pure_workspace_tiny_max": parse_mode_metrics(report, "pure_workspace_tiny_max_measured")
+    })
+}
+
+fn load_benchmark_modes(path: &Path) -> Value {
+    read_json(path)
+        .map(|v| benchmark_modes_from_report(&v))
+        .unwrap_or_else(|| {
+            json!({
+                "openclaw": parse_mode_metrics(&Value::Null, ""),
+                "pure_workspace": parse_mode_metrics(&Value::Null, ""),
+                "pure_workspace_tiny_max": parse_mode_metrics(&Value::Null, "")
+            })
+        })
+}
+
+fn metric_from_mode(mode: &Value, key: &str) -> f64 {
+    mode.get(key).and_then(Value::as_f64).unwrap_or(0.0)
+}
+
+fn mode_delta(before: &Value, after: &Value) -> Value {
+    let cold_before = metric_from_mode(before, "cold_start_ms");
+    let cold_after = metric_from_mode(after, "cold_start_ms");
+    let idle_before = metric_from_mode(before, "idle_memory_mb");
+    let idle_after = metric_from_mode(after, "idle_memory_mb");
+    let install_before = metric_from_mode(before, "install_size_mb");
+    let install_after = metric_from_mode(after, "install_size_mb");
+    let throughput_before = metric_from_mode(before, "tasks_per_sec");
+    let throughput_after = metric_from_mode(after, "tasks_per_sec");
+    let cold_improved = cold_before > 0.0 && cold_after > 0.0 && cold_after < cold_before;
+    let idle_improved = idle_before > 0.0 && idle_after > 0.0 && idle_after < idle_before;
+    let install_improved =
+        install_before > 0.0 && install_after > 0.0 && install_after < install_before;
+    let throughput_improved =
+        throughput_before > 0.0 && throughput_after > 0.0 && throughput_after > throughput_before;
+    let improved_count = [
+        cold_improved,
+        idle_improved,
+        install_improved,
+        throughput_improved,
+    ]
+    .iter()
+    .filter(|v| **v)
+    .count();
+    json!({
+        "cold_start_ms_before": cold_before,
+        "cold_start_ms_after": cold_after,
+        "idle_memory_mb_before": idle_before,
+        "idle_memory_mb_after": idle_after,
+        "install_size_mb_before": install_before,
+        "install_size_mb_after": install_after,
+        "tasks_per_sec_before": throughput_before,
+        "tasks_per_sec_after": throughput_after,
+        "cold_improved": cold_improved,
+        "idle_improved": idle_improved,
+        "install_improved": install_improved,
+        "throughput_improved": throughput_improved,
+        "improved_count": improved_count
+    })
+}
+
+fn benchmark_delta(before: &Value, after: &Value) -> Value {
+    let openclaw_before = before.get("openclaw").cloned().unwrap_or(Value::Null);
+    let openclaw_after = after.get("openclaw").cloned().unwrap_or(Value::Null);
+    let pure_before = before.get("pure_workspace").cloned().unwrap_or(Value::Null);
+    let pure_after = after.get("pure_workspace").cloned().unwrap_or(Value::Null);
+    let tiny_before = before
+        .get("pure_workspace_tiny_max")
+        .cloned()
+        .unwrap_or(Value::Null);
+    let tiny_after = after
+        .get("pure_workspace_tiny_max")
+        .cloned()
+        .unwrap_or(Value::Null);
+    let openclaw = mode_delta(&openclaw_before, &openclaw_after);
+    let pure = mode_delta(&pure_before, &pure_after);
+    let tiny = mode_delta(&tiny_before, &tiny_after);
+    let improved_total = openclaw
+        .get("improved_count")
+        .and_then(Value::as_u64)
+        .unwrap_or(0)
+        + pure
+            .get("improved_count")
+            .and_then(Value::as_u64)
+            .unwrap_or(0)
+        + tiny
+            .get("improved_count")
+            .and_then(Value::as_u64)
+            .unwrap_or(0);
+    json!({
+        "openclaw": openclaw,
+        "pure_workspace": pure,
+        "pure_workspace_tiny_max": tiny,
+        "improved_metric_count": improved_total
+    })
+}
+
+fn default_assimilation_items(cycle_id: &str, drops: &[String]) -> Vec<Value> {
+    drops
+        .iter()
+        .map(|drop| {
+            let lower = drop.to_ascii_lowercase();
+            let tiny_hint = lower.contains("tiny")
+                || lower.contains("pure")
+                || lower.contains("embedded")
+                || lower.contains("mcu")
+                || lower.contains("rpi");
+            let intelligence_hint = lower.contains("rsi")
+                || lower.contains("organism")
+                || lower.contains("memory")
+                || lower.contains("planner")
+                || lower.contains("reason");
+            json!({
+                "id": format!("assim-{}-{}", cycle_id, clean_id(Some(drop.as_str()), "idea")),
+                "idea": drop,
+                "source": "snowball_drop",
+                "metric_gain": true,
+                "pure_tiny_strength": tiny_hint || lower.contains("ops") || lower.contains("core"),
+                "intelligence_gain": intelligence_hint || lower.contains("core"),
+                "tiny_hardware_fit": tiny_hint || lower.contains("core")
+            })
+        })
+        .collect()
+}
+
+fn as_bool_opt(value: Option<&Value>) -> Option<bool> {
+    value.and_then(Value::as_bool)
+}
+
+fn candidate_gate_bool(candidate: &Value, keys: &[&str], fallback: bool) -> bool {
+    for key in keys {
+        if let Some(result) = as_bool_opt(candidate.get(*key)) {
+            return result;
+        }
+    }
+    fallback
+}
+
+fn archive_discarded_blobs(
+    root: &Path,
+    cycle_id: &str,
+    discarded: &[Value],
+) -> (Vec<Value>, Value) {
+    let dir = discarded_blob_dir(root, cycle_id);
+    let _ = fs::create_dir_all(&dir);
+    let mut index_rows = Vec::<Value>::new();
+    for entry in discarded {
+        let id = clean_id(entry.get("id").and_then(Value::as_str), "discarded");
+        let encoded = serde_json::to_string(entry).unwrap_or_else(|_| "{}".to_string());
+        let blob_hash = sha256_hex_str(&encoded);
+        let path = dir.join(format!("{blob_hash}.blob"));
+        let mut bytes = Vec::<u8>::with_capacity(encoded.len() + 8);
+        bytes.extend_from_slice(b"SNOWV1\0");
+        bytes.extend_from_slice(encoded.as_bytes());
+        let _ = fs::write(&path, &bytes);
+        index_rows.push(json!({
+            "id": id,
+            "path": path.display().to_string(),
+            "sha256": blob_hash,
+            "bytes": bytes.len()
+        }));
+    }
+    let index = json!({
+        "version": "v1",
+        "cycle_id": cycle_id,
+        "written_at": crate::now_iso(),
+        "items": index_rows
+    });
+    let index_path = discarded_blob_index_path(root, cycle_id);
+    let _ = write_json(&index_path, &index);
+    (
+        index
+            .get("items")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default(),
+        index,
+    )
 }
 
 fn claim_ids_for_action(action: &str) -> Vec<&'static str> {
@@ -398,6 +671,8 @@ fn run_start(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
         .max(1)
         .min(max_parallel);
     let allow_high_risk = parse_bool(parsed.flags.get("allow-high-risk"), false);
+    let benchmark_path = benchmark_report_path(root, parsed);
+    let benchmark_before = load_benchmark_modes(&benchmark_path);
     let deps_map = dependencies_from_json(
         drops.as_slice(),
         parse_json_flag(parsed.flags.get("deps-json")),
@@ -465,14 +740,27 @@ fn run_start(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
         "drops": drop_rows,
         "waves": waves,
         "dependency_graph": deps_map,
+        "benchmark_before": benchmark_before,
         "started_at": now
     });
+    let assimilation_plan = default_assimilation_items(&cycle_id, &drops);
     let cycle_value = json!({
         "cycle_id": cycle_id,
         "stage": "running",
         "orchestration": orchestration,
+        "benchmark_before": benchmark_before,
+        "assimilation_plan_path": assimilation_plan_path(root, &cycle_id).display().to_string(),
         "updated_at": crate::now_iso()
     });
+    let _ = write_json(
+        &assimilation_plan_path(root, &cycle_id),
+        &json!({
+            "version": "v1",
+            "cycle_id": cycle_id,
+            "generated_at": crate::now_iso(),
+            "items": assimilation_plan
+        }),
+    );
     let mut cycles_map = cycles
         .get("cycles")
         .and_then(Value::as_object)
@@ -510,7 +798,8 @@ fn run_start(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
                 "claim": "snowball_start_orchestrates_bounded_parallel_drop_waves_with_dependency_and_risk_gates",
                 "evidence": {
                     "cycle_id": cycle_id,
-                    "parallel_limit": parallel_limit
+                    "parallel_limit": parallel_limit,
+                    "benchmark_before_path": benchmark_path.display().to_string()
                 }
             },
             {
@@ -668,6 +957,148 @@ fn run_compact(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
     let snapshot_hash =
         sha256_hex_str(&read_json(&snapshot_path).unwrap_or(Value::Null).to_string());
 
+    let benchmark_path = benchmark_report_path(root, parsed);
+    let benchmark_after = load_benchmark_modes(&benchmark_path);
+    let benchmark_before = cycle
+        .as_ref()
+        .and_then(|v| v.get("benchmark_before"))
+        .cloned()
+        .unwrap_or_else(|| benchmark_after.clone());
+    let bench_delta = benchmark_delta(&benchmark_before, &benchmark_after);
+    let reliability_before = parse_f64(parsed.flags.get("reliability-before"), 1.0);
+    let reliability_after = parse_f64(parsed.flags.get("reliability-after"), reliability_before);
+    let reliability_gate_pass = reliability_after >= reliability_before;
+    let metrics_gate_pass = bench_delta
+        .get("improved_metric_count")
+        .and_then(Value::as_u64)
+        .unwrap_or(0)
+        > 0;
+    let tiny_strengthened = bench_delta
+        .pointer("/pure_workspace_tiny_max/improved_count")
+        .and_then(Value::as_u64)
+        .unwrap_or(0)
+        > 0
+        || bench_delta
+            .pointer("/pure_workspace/improved_count")
+            .and_then(Value::as_u64)
+            .unwrap_or(0)
+            > 0;
+
+    let assimilation_plan = parse_json_flag(parsed.flags.get("assimilations-json"))
+        .and_then(|v| v.as_array().cloned())
+        .or_else(|| {
+            read_json(&assimilation_plan_path(root, &cycle_id))
+                .and_then(|v| v.get("items").and_then(Value::as_array).cloned())
+        })
+        .unwrap_or_default();
+    let mut kept = Vec::<Value>::new();
+    let mut discarded = Vec::<Value>::new();
+    for candidate in assimilation_plan {
+        if !candidate.is_object() {
+            continue;
+        }
+        let mut normalized = candidate.clone();
+        let lower = normalized
+            .get("idea")
+            .and_then(Value::as_str)
+            .or_else(|| normalized.get("id").and_then(Value::as_str))
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        let intelligence_fallback = lower.contains("rsi")
+            || lower.contains("organism")
+            || lower.contains("memory")
+            || lower.contains("planner")
+            || lower.contains("learn")
+            || lower.contains("inference");
+        let hardware_fallback = lower.contains("tiny")
+            || lower.contains("embedded")
+            || lower.contains("mcu")
+            || lower.contains("pure")
+            || lower.contains("low-power")
+            || lower.contains("edge");
+        let metric_gate = candidate_gate_bool(
+            &normalized,
+            &["metric_gain", "metrics_pass"],
+            metrics_gate_pass,
+        );
+        let tiny_gate = candidate_gate_bool(
+            &normalized,
+            &["pure_tiny_strength", "tiny_strengthened", "pure_mode_gain"],
+            tiny_strengthened,
+        );
+        let intelligence_gate = candidate_gate_bool(
+            &normalized,
+            &["intelligence_gain", "rsi_gain", "organism_gain"],
+            intelligence_fallback,
+        );
+        let hardware_gate = candidate_gate_bool(
+            &normalized,
+            &["tiny_hardware_fit", "hardware_fit", "embedded_fit"],
+            hardware_fallback,
+        );
+        let keep =
+            metric_gate && tiny_gate && intelligence_gate && hardware_gate && reliability_gate_pass;
+        normalized["gate_results"] = json!({
+            "metrics": metric_gate,
+            "tiny_pure": tiny_gate,
+            "rsi_organism": intelligence_gate,
+            "tiny_hardware": hardware_gate,
+            "reliability": reliability_gate_pass
+        });
+        normalized["status"] = Value::String(if keep {
+            "kept".to_string()
+        } else {
+            "discarded".to_string()
+        });
+        normalized["evaluated_at"] = Value::String(crate::now_iso());
+        if keep {
+            kept.push(normalized);
+        } else {
+            discarded.push(normalized);
+        }
+    }
+    let _ = write_json(
+        &kept_path(root, &cycle_id),
+        &json!({
+            "version": "v1",
+            "cycle_id": cycle_id,
+            "generated_at": crate::now_iso(),
+            "items": kept
+        }),
+    );
+    let _ = write_json(
+        &discarded_path(root, &cycle_id),
+        &json!({
+            "version": "v1",
+            "cycle_id": cycle_id,
+            "generated_at": crate::now_iso(),
+            "items": discarded
+        }),
+    );
+    let (discarded_blob_rows, discarded_blob_index) =
+        archive_discarded_blobs(root, &cycle_id, &discarded);
+    let prime_state = json!({
+        "version": "v1",
+        "cycle_id": cycle_id,
+        "updated_at": crate::now_iso(),
+        "benchmarks": {
+            "before": benchmark_before,
+            "after": benchmark_after,
+            "delta": bench_delta
+        },
+        "assimilation": {
+            "kept_count": kept.len(),
+            "discarded_count": discarded.len(),
+            "discarded_blob_index_path": discarded_blob_index_path(root, &cycle_id).display().to_string()
+        },
+        "reliability": {
+            "before": reliability_before,
+            "after": reliability_after,
+            "pass": reliability_gate_pass
+        }
+    });
+    let _ = write_json(&prime_directive_compacted_state_path(root), &prime_state);
+
     let mut next_cycle = cycle.unwrap_or_else(|| json!({"cycle_id": cycle_id, "stage":"running"}));
     next_cycle["snapshot"] = json!({
         "path": snapshot_path.display().to_string(),
@@ -675,6 +1106,20 @@ fn run_compact(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
         "captured_at": ts
     });
     next_cycle["stage"] = Value::String("compacted".to_string());
+    next_cycle["benchmark_after"] = benchmark_after.clone();
+    next_cycle["benchmark_delta"] = bench_delta.clone();
+    next_cycle["assimilation"] = json!({
+        "kept_path": kept_path(root, &cycle_id).display().to_string(),
+        "discarded_path": discarded_path(root, &cycle_id).display().to_string(),
+        "kept_count": kept.len(),
+        "discarded_count": discarded.len(),
+        "discarded_blob_index_path": discarded_blob_index_path(root, &cycle_id).display().to_string()
+    });
+    next_cycle["prime_directive_compacted_state_path"] = Value::String(
+        prime_directive_compacted_state_path(root)
+            .display()
+            .to_string(),
+    );
     next_cycle["updated_at"] = Value::String(crate::now_iso());
     cycles_map.insert(cycle_id.clone(), next_cycle.clone());
     cycles["cycles"] = Value::Object(cycles_map);
@@ -690,6 +1135,19 @@ fn run_compact(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
         "action": "compact",
         "cycle_id": cycle_id,
         "snapshot": next_cycle.get("snapshot").cloned().unwrap_or(Value::Null),
+        "benchmark_delta": bench_delta,
+        "assimilation": {
+            "kept_count": kept.len(),
+            "discarded_count": discarded.len(),
+            "discarded_blob_count": discarded_blob_rows.len(),
+            "kept_path": kept_path(root, &cycle_id).display().to_string(),
+            "discarded_path": discarded_path(root, &cycle_id).display().to_string(),
+            "discarded_blob_index": discarded_blob_index
+        },
+        "prime_directive_compacted_state": {
+            "path": prime_directive_compacted_state_path(root).display().to_string(),
+            "sha256": sha256_hex_str(&read_json(&prime_directive_compacted_state_path(root)).unwrap_or(Value::Null).to_string())
+        },
         "claim_evidence": [
             {
                 "id": "V6-APP-023.3",
@@ -697,6 +1155,17 @@ fn run_compact(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
                 "evidence": {
                     "cycle_id": cycle_id,
                     "snapshot_path": snapshot_path.display().to_string()
+                }
+            },
+            {
+                "id": "V9-EVOLUTION-COMPACTION-001",
+                "claim": "snowball_compaction_assimilates_external_ideas_with_four_gate_scoring_and_binary_blob_archival_for_discarded_candidates",
+                "evidence": {
+                    "cycle_id": cycle_id,
+                    "kept_count": kept.len(),
+                    "discarded_count": discarded.len(),
+                    "discarded_blob_count": discarded_blob_rows.len(),
+                    "benchmark_report_path": benchmark_path.display().to_string()
                 }
             },
             {
@@ -1140,5 +1609,65 @@ mod tests {
                 .and_then(Value::as_bool),
             Some(false)
         );
+    }
+
+    #[test]
+    fn compact_scores_assimilation_and_archives_discarded_blob_rows() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let report_path = root
+            .path()
+            .join("docs/client/reports/benchmark_matrix_run_2026-03-06.json");
+        let report = json!({
+            "openclaw_measured": {"cold_start_ms": 5.0, "idle_memory_mb": 9.0, "install_size_mb": 10.0, "tasks_per_sec": 10000.0, "security_systems": 83.0, "channel_adapters": 6.0, "llm_providers": 3.0},
+            "pure_workspace_measured": {"cold_start_ms": 4.0, "idle_memory_mb": 1.4, "install_size_mb": 0.7, "tasks_per_sec": 12000.0, "security_systems": 83.0, "channel_adapters": 0.0, "llm_providers": 0.0},
+            "pure_workspace_tiny_max_measured": {"cold_start_ms": 3.0, "idle_memory_mb": 1.3, "install_size_mb": 0.5, "tasks_per_sec": 12100.0, "security_systems": 83.0, "channel_adapters": 0.0, "llm_providers": 0.0}
+        });
+        let _ = write_json(&report_path, &report);
+        let _ = run_start(
+            root.path(),
+            &crate::parse_args(&[
+                "start".to_string(),
+                "--strict=1".to_string(),
+                "--cycle-id=c39".to_string(),
+            ]),
+            true,
+        );
+        let assimilations = json!([
+            {"id":"tiny-allocator","metric_gain":true,"pure_tiny_strength":true,"intelligence_gain":true,"tiny_hardware_fit":true},
+            {"id":"big-ui-runtime","metric_gain":false,"pure_tiny_strength":false,"intelligence_gain":false,"tiny_hardware_fit":false}
+        ]);
+        let out = run_compact(
+            root.path(),
+            &crate::parse_args(&[
+                "compact".to_string(),
+                "--strict=1".to_string(),
+                "--cycle-id=c39".to_string(),
+                format!("--assimilations-json={}", assimilations),
+            ]),
+            true,
+        );
+        assert_eq!(out.get("ok").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            out.pointer("/assimilation/kept_count")
+                .and_then(Value::as_u64),
+            Some(1)
+        );
+        assert_eq!(
+            out.pointer("/assimilation/discarded_count")
+                .and_then(Value::as_u64),
+            Some(1)
+        );
+        let prime_path = out
+            .pointer("/prime_directive_compacted_state/path")
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        assert!(!prime_path.is_empty());
+        assert!(Path::new(prime_path).exists());
+        let blob_rows = out
+            .pointer("/assimilation/discarded_blob_index/items")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        assert_eq!(blob_rows.len(), 1);
     }
 }
