@@ -684,6 +684,7 @@ fn budget_test_and_budget_report_emit_telemetry() {
     let test_args = vec![
         "test".to_string(),
         "budget".to_string(),
+        "--assert-hard-enforcement=0".to_string(),
         "--budget=2000".to_string(),
         "--warning-at=0.5".to_string(),
         "--on-budget-exhausted=warn".to_string(),
@@ -722,6 +723,39 @@ fn budget_test_and_budget_report_emit_telemetry() {
     assert!(
         telemetry_present,
         "expected per-tool budget telemetry to be persisted"
+    );
+}
+
+#[test]
+fn budget_test_defaults_to_hard_fail_enforcement() {
+    let root = tempfile::tempdir().expect("tempdir");
+    let state_path = root.path().join("state/swarm/latest.json");
+    let args = vec![
+        "test".to_string(),
+        "budget".to_string(),
+        "--budget=120".to_string(),
+        "--expect-fail=1".to_string(),
+        "--on-budget-exhausted=fail".to_string(),
+        format!("--state-path={}", state_path.display()),
+    ];
+    assert_eq!(run_swarm(root.path(), &args), 0);
+}
+
+#[test]
+fn budget_test_warn_action_requires_explicit_hard_enforcement_opt_out() {
+    let root = tempfile::tempdir().expect("tempdir");
+    let state_path = root.path().join("state/swarm/latest.json");
+    let args = vec![
+        "test".to_string(),
+        "budget".to_string(),
+        "--budget=2000".to_string(),
+        "--on-budget-exhausted=warn".to_string(),
+        format!("--state-path={}", state_path.display()),
+    ];
+    assert_eq!(
+        run_swarm(root.path(), &args),
+        2,
+        "warn action should fail unless --assert-hard-enforcement=0 is set"
     );
 }
 

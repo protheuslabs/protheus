@@ -620,7 +620,7 @@ fn usage() {
     println!("  protheus-ops swarm-runtime test recursive [--levels=<n>] [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime test byzantine [--agents=<n>] [--corrupt=<n>] [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime test concurrency [--agents=<n>] [--metrics=detailed] [--state-path=<path>]");
-    println!("  protheus-ops swarm-runtime test budget [--budget=<n>] [--warning-at=<0..1>] [--on-budget-exhausted=<fail|warn|compact>] [--expect-fail=1|0] [--task=<text>] [--state-path=<path>]");
+    println!("  protheus-ops swarm-runtime test budget [--budget=<n>] [--warning-at=<0..1>] [--on-budget-exhausted=<fail|warn|compact>] [--assert-hard-enforcement=1|0] [--expect-fail=1|0] [--task=<text>] [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime test persistent [--lifespan-sec=<n>] [--check-in-interval-sec=<n>] [--advance-ms=<n>] [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime budget-report --session-id=<id> [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime sessions budget-report --session-id=<id> [--state-path=<path>]");
@@ -2695,13 +2695,34 @@ fn run_test_concurrency(state: &mut SwarmState, argv: &[String]) -> Result<Value
 }
 
 fn run_test_budget(state: &mut SwarmState, argv: &[String]) -> Result<Value, String> {
-    let budget = parse_u64_flag(argv, "budget", 1_000).max(1) as u32;
+    let budget = parse_u64_flag(argv, "budget", 120).max(1) as u32;
     let warning_at = parse_f64_flag(argv, "warning-at", 0.8).clamp(0.0, 1.0) as f32;
-    let expect_fail = parse_bool_flag(argv, "expect-fail", false);
+    let assert_hard_enforcement = parse_bool_flag(argv, "assert-hard-enforcement", true);
     let exhaustion_action = BudgetAction::from_flag(parse_flag(argv, "on-budget-exhausted"));
+    if assert_hard_enforcement && exhaustion_action != BudgetAction::FailHard {
+        return Err("budget_test_hard_enforcement_requires_fail_action".to_string());
+    }
+    let expect_fail = parse_bool_flag(argv, "expect-fail", assert_hard_enforcement);
+    let adaptive_complexity = parse_bool_flag(argv, "adaptive-complexity", !assert_hard_enforcement);
     let task = parse_flag(argv, "task").unwrap_or_else(|| {
         "Write a 10-page essay on quantum physics with detailed references".to_string()
     });
+    if assert_hard_enforcement {
+        let planned_task = if adaptive_complexity {
+            scale_task_complexity(&task, budget)
+        } else {
+            task.clone()
+        };
+        let planned_tokens = estimate_tool_plan(&planned_task, Some(budget))
+            .iter()
+            .map(|(_, tokens)| *tokens)
+            .sum::<u32>();
+        if planned_tokens <= budget {
+            return Err(format!(
+                "budget_test_hard_enforcement_not_triggered:planned={planned_tokens}:budget={budget}:set_lower_budget_or_disable_adaptive"
+            ));
+        }
+    }
 
     let options = SpawnOptions {
         verify: true,
@@ -2713,7 +2734,7 @@ fn run_test_budget(state: &mut SwarmState, argv: &[String]) -> Result<Value, Str
         token_budget: Some(budget),
         token_warning_threshold: warning_at,
         budget_exhaustion_action: exhaustion_action.clone(),
-        adaptive_complexity: parse_bool_flag(argv, "adaptive-complexity", true),
+        adaptive_complexity,
         execution_mode: ExecutionMode::TaskOriented,
         role: None,
         capabilities: Vec::new(),
@@ -2732,6 +2753,7 @@ fn run_test_budget(state: &mut SwarmState, argv: &[String]) -> Result<Value, Str
             Err(reason) if reason.contains("token_budget_exceeded") => Ok(json!({
                 "ok": true,
                 "test": "budget",
+                "hard_enforcement": assert_hard_enforcement,
                 "expect_fail": true,
                 "expectation_met": true,
                 "reason": reason,
@@ -2747,6 +2769,7 @@ fn run_test_budget(state: &mut SwarmState, argv: &[String]) -> Result<Value, Str
         Ok(payload) => Ok(json!({
             "ok": true,
             "test": "budget",
+            "hard_enforcement": assert_hard_enforcement,
             "expect_fail": false,
             "expectation_met": true,
             "budget": budget,
