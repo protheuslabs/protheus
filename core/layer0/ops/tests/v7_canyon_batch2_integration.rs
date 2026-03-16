@@ -122,6 +122,51 @@ fn write_large_binary(root: &Path, rel: &str, size_bytes: usize) {
     fs::write(path, vec![0u8; size_bytes]).expect("write large binary");
 }
 
+fn write_substrate_adapter_graph(root: &Path) {
+    write_text(
+        root,
+        "client/runtime/config/substrate_adapter_graph.json",
+        &serde_json::json!({
+            "schema_id": "substrate_adapter_graph",
+            "schema_version": "1.0",
+            "adapters": [
+                {"id": "wifi-csi-engine", "feature_gate": "embedded-minimal-core", "feature_sets": ["minimal", "full-substrate"]},
+                {"id": "browser-sandbox", "feature_gate": "full-substrate", "feature_sets": ["full-substrate"]},
+                {"id": "bio-adapter-template", "feature_gate": "full-substrate", "feature_sets": ["full-substrate"]},
+                {"id": "vbrowser", "feature_gate": "full-substrate", "feature_sets": ["full-substrate"]},
+                {"id": "binary-vuln", "feature_gate": "full-substrate", "feature_sets": ["full-substrate"]}
+            ]
+        })
+        .to_string(),
+    );
+}
+
+fn write_release_security_workflow(root: &Path) {
+    write_text(
+        root,
+        ".github/workflows/release-security-artifacts.yml",
+        "name: Release Security Artifacts\njobs:\n  release:\n    steps:\n      - uses: actions/attest-build-provenance@v2\n      - run: supply-chain-provenance-v2 run --strict=1\n      - run: echo reproducible_build_equivalence.json\n",
+    );
+}
+
+fn write_size_trust_workflows(root: &Path) {
+    write_text(
+        root,
+        ".github/workflows/size-gate.yml",
+        "name: Size Gate\njobs:\n  gate:\n    steps:\n      - run: echo Build static protheusd\n      - run: echo Enforce full install size gate\n      - run: echo Enforce throughput gate\n",
+    );
+    write_text(
+        root,
+        ".github/workflows/protheusd-static-size-gate.yml",
+        "name: Static Size Gate\njobs:\n  gate:\n    steps:\n      - run: echo Build static protheusd\n      - run: echo Enforce static size gate\n      - run: echo Verify reproducible static rebuild\n",
+    );
+    write_text(
+        root,
+        ".github/workflows/nightly-size-trust-center.yml",
+        "name: Nightly Size Trust Center\non:\n  schedule:\n    - cron: \"17 7 * * *\"\njobs:\n  publish:\n    steps:\n      - run: echo upload-pages-artifact\n      - run: echo deploy-pages\n",
+    );
+}
+
 fn assert_claim(payload: &Value, id: &str) {
     let claims = payload
         .get("claim_evidence")
@@ -146,25 +191,25 @@ fn v7_canyon_batch2_contracts_are_behavior_proven() {
     write_text(
         root,
         "core/layer0/kernel_layers/Cargo.toml",
-        "[package]\nname='kernel_layers'\n[features]\ndefault = []\n",
+        "[package]\nname='kernel_layers'\n[features]\ndefault = []\nno_std_probe = []\n",
     );
     write_text(root, "core/layer0/kernel_layers/src/lib.rs", "#![no_std]\n");
     write_text(
         root,
         "core/layer2/conduit/Cargo.toml",
-        "[package]\nname='conduit'\n[features]\ndefault = []\n",
+        "[package]\nname='conduit'\n[features]\ndefault = []\nno_std_probe = []\n",
     );
     write_text(root, "core/layer2/conduit/src/lib.rs", "#![no_std]\n");
     write_text(
         root,
         "core/layer0/memory/Cargo.toml",
-        "[package]\nname='memory'\n[features]\ndefault = []\n",
+        "[package]\nname='memory'\n[features]\ndefault = []\nno_std_probe = []\n",
     );
     write_text(root, "core/layer0/memory/src/lib.rs", "pub fn x() {}\n");
     write_text(
         root,
         "core/layer1/security/Cargo.toml",
-        "[package]\nname='security'\n[features]\ndefault = []\n",
+        "[package]\nname='security'\n[features]\ndefault = []\nno_std_probe = []\n",
     );
     write_text(root, "core/layer1/security/src/lib.rs", "pub fn y() {}\n");
     write_text(
@@ -177,6 +222,9 @@ fn v7_canyon_batch2_contracts_are_behavior_proven() {
         "core/layer0/alloc.rs",
         "pub struct Layer0CountingAllocator;\n",
     );
+    write_substrate_adapter_graph(root);
+    write_release_security_workflow(root);
+    write_size_trust_workflows(root);
 
     let stub_bin = install_stub_binary(root);
     let toolbin = install_tool_stubs(root);
@@ -361,8 +409,8 @@ fn v7_canyon_batch2_contracts_are_behavior_proven() {
 }
 
 #[test]
-fn v7_canyon_release_pipeline_allows_missing_optional_llvm_tools_and_size_trust_uses_top1_fallback()
-{
+fn v7_canyon_release_pipeline_allows_missing_optional_llvm_tools_when_not_strict_and_size_trust_uses_top1_fallback(
+) {
     let _guard = test_env_lock();
     let tmp = temp_root("canyon_batch2_optional_tools");
     let root = tmp.path();
@@ -374,6 +422,8 @@ fn v7_canyon_release_pipeline_allows_missing_optional_llvm_tools_and_size_trust_
         "core/layer0/ops/Cargo.toml",
         "[package]\nname='protheus-ops-core'\n[features]\nminimal = []\n",
     );
+    write_release_security_workflow(root);
+    write_size_trust_workflows(root);
     let toolbin = install_tool_stubs(root);
     std::env::set_var("PROTHEUS_CARGO_BIN", toolbin.join("cargo"));
     std::env::set_var("PROTHEUS_STRIP_BIN", toolbin.join("strip"));
@@ -397,7 +447,7 @@ fn v7_canyon_release_pipeline_allows_missing_optional_llvm_tools_and_size_trust_
                 "--binary=protheusd".to_string(),
                 "--target=x86_64-unknown-linux-musl".to_string(),
                 "--profile=release-minimal".to_string(),
-                "--strict=1".to_string(),
+                "--strict=0".to_string(),
             ],
         ),
         0
@@ -417,13 +467,13 @@ fn v7_canyon_release_pipeline_allows_missing_optional_llvm_tools_and_size_trust_
             &[
                 "package-release".to_string(),
                 "--op=build".to_string(),
-                "--strict=1".to_string(),
+                "--strict=0".to_string(),
             ],
         ),
         0
     );
     assert_eq!(
-        canyon_plane::run(root, &["size-trust".to_string(), "--strict=1".to_string()]),
+        canyon_plane::run(root, &["size-trust".to_string(), "--strict=0".to_string()]),
         0
     );
     let latest = read_json(&latest_path(&canyon_state));
@@ -445,7 +495,63 @@ fn v7_canyon_release_pipeline_allows_missing_optional_llvm_tools_and_size_trust_
 }
 
 #[test]
-fn v7_canyon_release_pipeline_reuses_real_release_artifact_when_minimal_profile_missing() {
+fn v7_canyon_release_pipeline_strict_fails_when_optional_llvm_tools_are_missing() {
+    let _guard = test_env_lock();
+    let tmp = temp_root("canyon_batch2_missing_llvm_strict");
+    let root = tmp.path();
+    let canyon_state = root.join("local").join("state").join("canyon");
+    std::env::set_var(ENV_KEY, &canyon_state);
+
+    write_text(
+        root,
+        "core/layer0/ops/Cargo.toml",
+        "[package]\nname='protheus-ops-core'\n[features]\nminimal = []\n",
+    );
+    let toolbin = install_tool_stubs(root);
+    std::env::set_var("PROTHEUS_CARGO_BIN", toolbin.join("cargo"));
+    std::env::set_var("PROTHEUS_STRIP_BIN", toolbin.join("strip"));
+    std::env::set_var(
+        "PROTHEUS_LLVM_PROFDATA_BIN",
+        root.join("missing").join("llvm-profdata"),
+    );
+    std::env::set_var(
+        "PROTHEUS_LLVM_BOLT_BIN",
+        root.join("missing").join("llvm-bolt"),
+    );
+
+    assert_eq!(
+        canyon_plane::run(
+            root,
+            &[
+                "release-pipeline".to_string(),
+                "--op=run".to_string(),
+                "--binary=protheusd".to_string(),
+                "--target=x86_64-unknown-linux-musl".to_string(),
+                "--profile=release-minimal".to_string(),
+                "--strict=1".to_string(),
+            ],
+        ),
+        1
+    );
+    let latest = read_json(&latest_path(&canyon_state));
+    let errors = latest
+        .get("errors")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    assert!(errors
+        .iter()
+        .any(|row| row.as_str() == Some("tool_missing:llvm-profdata")));
+    if !cfg!(target_os = "macos") {
+        assert!(errors
+            .iter()
+            .any(|row| row.as_str() == Some("tool_missing:llvm-bolt")));
+    }
+}
+
+#[test]
+fn v7_canyon_release_pipeline_reuses_real_release_artifact_when_minimal_profile_missing_non_strict()
+{
     let _guard = test_env_lock();
     let tmp = temp_root("canyon_batch2_release_fallback");
     let root = tmp.path();
@@ -457,6 +563,7 @@ fn v7_canyon_release_pipeline_reuses_real_release_artifact_when_minimal_profile_
         "core/layer0/ops/Cargo.toml",
         "[package]\nname='protheus-ops-core'\n[features]\nminimal = []\n",
     );
+    write_release_security_workflow(root);
     let toolbin = install_tool_stubs(root);
     std::env::set_var("PROTHEUS_CARGO_BIN", toolbin.join("cargo"));
     std::env::set_var("PROTHEUS_STRIP_BIN", toolbin.join("strip"));
@@ -478,7 +585,7 @@ fn v7_canyon_release_pipeline_reuses_real_release_artifact_when_minimal_profile_
                 "--binary=protheusd".to_string(),
                 "--target=x86_64-unknown-linux-musl".to_string(),
                 "--profile=release-minimal".to_string(),
-                "--strict=1".to_string(),
+                "--strict=0".to_string(),
             ],
         ),
         0

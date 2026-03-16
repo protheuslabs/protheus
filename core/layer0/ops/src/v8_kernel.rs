@@ -90,7 +90,52 @@ pub fn append_jsonl(path: &Path, value: &Value) -> Result<(), String> {
         .append(true)
         .open(path)
         .map_err(|err| format!("open_jsonl_failed:{}:{err}", path.display()))?;
-    writeln!(file, "{line}").map_err(|err| format!("append_jsonl_failed:{}:{err}", path.display()))
+    writeln!(file, "{line}")
+        .map_err(|err| format!("append_jsonl_failed:{}:{err}", path.display()))?;
+    if receipt_binary_queue_enabled() {
+        append_binary_queue(&receipt_binary_queue_path(path), value)?;
+    }
+    Ok(())
+}
+
+fn receipt_binary_queue_enabled() -> bool {
+    match std::env::var("PROTHEUS_RECEIPT_BINARY_QUEUE") {
+        Ok(raw) => !matches!(
+            raw.trim().to_ascii_lowercase().as_str(),
+            "0" | "false" | "off" | "no"
+        ),
+        Err(_) => true,
+    }
+}
+
+pub fn receipt_binary_queue_path(history_jsonl_path: &Path) -> PathBuf {
+    let parent = history_jsonl_path
+        .parent()
+        .map(Path::to_path_buf)
+        .unwrap_or_default();
+    let stem = history_jsonl_path
+        .file_stem()
+        .and_then(|v| v.to_str())
+        .unwrap_or("history");
+    parent.join(format!("{stem}.bin"))
+}
+
+pub fn append_binary_queue(path: &Path, value: &Value) -> Result<(), String> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|err| format!("create_dir_failed:{}:{err}", parent.display()))?;
+    }
+    let encoded = serde_json::to_vec(value)
+        .map_err(|err| format!("encode_binary_receipt_failed:{}:{err}", path.display()))?;
+    let mut file = fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+        .map_err(|err| format!("open_binary_receipt_failed:{}:{err}", path.display()))?;
+    let len = (encoded.len() as u32).to_le_bytes();
+    file.write_all(&len)
+        .and_then(|_| file.write_all(&encoded))
+        .map_err(|err| format!("append_binary_receipt_failed:{}:{err}", path.display()))
 }
 
 pub fn print_json(value: &Value) {

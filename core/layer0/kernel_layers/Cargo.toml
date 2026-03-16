@@ -6,7 +6,8 @@ license.workspace = true
 description = "Compile-time kernel layer topology for portable Rust-only substrate builds."
 
 [features]
-default = ["layer3"]
+default = []
+no_std_probe = []
 layer_minus_one = ["dep:exotic_wrapper"]
 layer0 = ["layer_minus_one", "dep:task", "dep:resource"]
 layer1 = ["layer0", "dep:isolation", "dep:ipc", "dep:storage", "dep:update"]

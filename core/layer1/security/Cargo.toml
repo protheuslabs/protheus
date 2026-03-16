@@ -8,6 +8,10 @@ license = "SEE LICENSE IN ../../../LICENSE"
 name = "infring_layer1_security"
 path = "src/lib.rs"
 
+[features]
+default = []
+no_std_probe = []
+
 [dependencies]
 base64 = "0.22"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }

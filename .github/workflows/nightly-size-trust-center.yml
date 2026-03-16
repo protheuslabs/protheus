@@ -1,0 +1,60 @@
+name: Nightly Size Trust Center
+
+on:
+  schedule:
+    - cron: "17 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  publish-size-trust:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build latest size-trust payload
+        run: |
+          cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- \
+            canyon-plane size-trust --strict=0
+
+      - name: Stage trust-center site
+        run: |
+          set -euo pipefail
+          SITE_DIR="_site"
+          mkdir -p "${SITE_DIR}/size-trust"
+          cp -R core/local/state/ops/canyon_plane/trust_center/public/. "${SITE_DIR}/size-trust/"
+          if [ ! -f "${SITE_DIR}/index.html" ]; then
+            cat > "${SITE_DIR}/index.html" <<'HTML'
+          <!doctype html>
+          <html>
+            <body>
+              <h1>InfRing Trust Center</h1>
+              <p><a href="./size-trust/index.html">Size Trust Center</a></p>
+            </body>
+          </html>
+          HTML
+          fi
+
+      - name: Upload trust-center pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy-pages:
+    needs: publish-size-trust
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy pages
+        id: deployment
+        uses: actions/deploy-pages@v4

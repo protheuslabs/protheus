@@ -19,8 +19,10 @@ use std::time::Instant;
 const LANE_ID: &str = "canyon_plane";
 const ENV_KEY: &str = "PROTHEUS_CANYON_PLANE_STATE_ROOT";
 
-pub(crate) fn footprint_no_std_ready(default_empty: bool, no_std_attr: bool) -> bool {
-    no_std_attr || default_empty
+pub(crate) fn footprint_no_std_ready(default_empty: bool, source_body: &str) -> bool {
+    let has_no_std_attr = source_body.contains("#![no_std]");
+    let has_cfg_no_std = source_body.contains("cfg_attr") && source_body.contains("no_std");
+    default_empty || has_no_std_attr || has_cfg_no_std
 }
 
 fn usage() {
@@ -1324,7 +1326,12 @@ fn ecosystem_command(
             files.push(target.join("README.md").to_string_lossy().to_string());
             files.push(target.join("Cargo.toml").to_string_lossy().to_string());
             files.push(target.join("src/main.rs").to_string_lossy().to_string());
-            files.push(target.join("protheus.init.json").to_string_lossy().to_string());
+            files.push(
+                target
+                    .join("protheus.init.json")
+                    .to_string_lossy()
+                    .to_string(),
+            );
             if !dry_run {
                 fs::create_dir_all(target.join("src"))
                     .map_err(|err| format!("ecosystem_init_dir_failed:{err}"))?;
@@ -1361,7 +1368,12 @@ fn ecosystem_command(
             }
         } else {
             files.push(target.join("README.md").to_string_lossy().to_string());
-            files.push(target.join("protheus.init.json").to_string_lossy().to_string());
+            files.push(
+                target
+                    .join("protheus.init.json")
+                    .to_string_lossy()
+                    .to_string(),
+            );
             if !dry_run {
                 fs::create_dir_all(&target)
                     .map_err(|err| format!("ecosystem_init_dir_failed:{err}"))?;

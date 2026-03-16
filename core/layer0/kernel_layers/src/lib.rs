@@ -1,5 +1,9 @@
+#![no_std]
 #![forbid(unsafe_code)]
 // SPDX-License-Identifier: Apache-2.0
+
+#[cfg(test)]
+extern crate std;
 
 /// Compile-time layers for portable kernel shedding.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

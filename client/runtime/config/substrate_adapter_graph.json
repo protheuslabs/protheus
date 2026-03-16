@@ -1,0 +1,36 @@
+{
+  "schema_id": "substrate_adapter_graph",
+  "schema_version": "1.0",
+  "adapters": [
+    {
+      "id": "wifi-csi-engine",
+      "feature_gate": "embedded-minimal-core",
+      "feature_sets": ["minimal", "full-substrate"],
+      "layer_owner": "layer_minus_one"
+    },
+    {
+      "id": "browser-sandbox",
+      "feature_gate": "full-substrate",
+      "feature_sets": ["full-substrate"],
+      "layer_owner": "layer2"
+    },
+    {
+      "id": "bio-adapter-template",
+      "feature_gate": "full-substrate",
+      "feature_sets": ["full-substrate"],
+      "layer_owner": "layer_minus_one"
+    },
+    {
+      "id": "vbrowser",
+      "feature_gate": "full-substrate",
+      "feature_sets": ["full-substrate"],
+      "layer_owner": "layer2"
+    },
+    {
+      "id": "binary-vuln",
+      "feature_gate": "full-substrate",
+      "feature_sets": ["full-substrate"],
+      "layer_owner": "layer0"
+    }
+  ]
+}

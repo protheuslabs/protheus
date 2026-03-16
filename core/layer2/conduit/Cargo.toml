@@ -7,6 +7,7 @@ license.workspace = true
 [features]
 default = []
 edge = []
+no_std_probe = []
 
 [dependencies]
 conduit-security = { path = "../conduit-security" }

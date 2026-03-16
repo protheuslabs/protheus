@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 use super::*;
+use crate::v8_kernel::{receipt_binary_queue_path, sha256_file};
 use serde_json::json;
 use std::fs;
 use std::io::Write;
@@ -32,6 +33,14 @@ fn size_trust_path(root: &Path) -> PathBuf {
 
 fn size_trust_html_path(root: &Path) -> PathBuf {
     lane_root(root).join("size_trust_center.html")
+}
+
+fn substrate_adapter_graph_path(root: &Path) -> PathBuf {
+    root.join("client/runtime/config/substrate_adapter_graph.json")
+}
+
+fn nightly_size_trust_workflow_path(root: &Path) -> PathBuf {
+    root.join(".github/workflows/nightly-size-trust-center.yml")
 }
 
 fn shell_which(bin: &str) -> Option<String> {
@@ -188,6 +197,73 @@ fn write_text(path: &Path, body: &str) -> Result<(), String> {
     fs::write(path, body).map_err(|err| format!("write_text_failed:{}:{err}", path.display()))
 }
 
+#[derive(Clone, Debug)]
+struct SubstrateAdapterRule {
+    id: String,
+    feature_gate: String,
+    feature_sets: Vec<String>,
+}
+
+fn load_substrate_adapter_rules(root: &Path) -> (Vec<SubstrateAdapterRule>, Vec<String>, String) {
+    let graph_path = substrate_adapter_graph_path(root);
+    let mut errors = Vec::new();
+    let mut rules = Vec::new();
+    let payload = read_json(&graph_path).unwrap_or_else(|| Value::Null);
+    if payload.is_null() {
+        errors.push(format!("adapter_graph_missing:{}", graph_path.display()));
+    }
+    if let Some(rows) = payload.get("adapters").and_then(Value::as_array) {
+        for row in rows {
+            let id = row
+                .get("id")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .trim()
+                .to_ascii_lowercase();
+            let feature_gate = row
+                .get("feature_gate")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .trim()
+                .to_string();
+            let feature_sets = row
+                .get("feature_sets")
+                .and_then(Value::as_array)
+                .map(|items| {
+                    items
+                        .iter()
+                        .filter_map(Value::as_str)
+                        .map(|v| v.trim().to_ascii_lowercase())
+                        .filter(|v| !v.is_empty())
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+            if id.is_empty() || feature_gate.is_empty() || feature_sets.is_empty() {
+                errors.push(format!("adapter_graph_row_invalid:{id}"));
+                continue;
+            }
+            rules.push(SubstrateAdapterRule {
+                id,
+                feature_gate,
+                feature_sets,
+            });
+        }
+    } else if !payload.is_null() {
+        errors.push("adapter_graph_missing_adapters".to_string());
+    }
+    (rules, errors, graph_path.display().to_string())
+}
+
+fn workflow_contains(path: &Path, required_snippets: &[&str]) -> bool {
+    let body = fs::read_to_string(path).unwrap_or_default();
+    if body.is_empty() {
+        return false;
+    }
+    required_snippets
+        .iter()
+        .all(|snippet| body.contains(snippet))
+}
+
 pub(super) fn footprint_command(
     root: &Path,
     parsed: &crate::ParsedArgs,
@@ -247,15 +323,16 @@ pub(super) fn footprint_command(
         .map(|(name, manifest, src)| {
             let manifest_body = fs::read_to_string(&manifest).unwrap_or_default();
             let src_body = fs::read_to_string(&src).unwrap_or_default();
+            let no_std_ready =
+                super::footprint_no_std_ready(manifest_body.contains("default = []"), &src_body);
+            let no_std_probe_declared = manifest_body.contains("no_std_probe = []");
             json!({
                 "crate": name,
                 "manifest": manifest.display().to_string(),
                 "source": src.display().to_string(),
                 "default_empty": manifest_body.contains("default = []"),
-                "no_std_ready": super::footprint_no_std_ready(
-                    manifest_body.contains("default = []"),
-                    src_body.contains("#![no_std]")
-                ),
+                "no_std_ready": no_std_ready,
+                "no_std_probe_declared": no_std_probe_declared,
                 "exists": manifest.exists() && src.exists()
             })
         })
@@ -264,6 +341,10 @@ pub(super) fn footprint_command(
     let ready_count = rows
         .iter()
         .filter(|row| row.get("no_std_ready").and_then(Value::as_bool) == Some(true))
+        .count();
+    let probe_count = rows
+        .iter()
+        .filter(|row| row.get("no_std_probe_declared").and_then(Value::as_bool) == Some(true))
         .count();
     let memory_saved_mb =
         ((ready_count as f64) * 0.85 + if allocator_present { 1.25 } else { 0.0 }).round() / 1.0;
@@ -275,8 +356,11 @@ pub(super) fn footprint_command(
     if strict && !minimal_feature_enabled {
         errors.push("ops_minimal_feature_missing".to_string());
     }
-    if strict && ready_count < 2 {
+    if strict && ready_count < rows.len() {
         errors.push("no_std_ready_floor_not_met".to_string());
+    }
+    if strict && probe_count < rows.len() {
+        errors.push("no_std_probe_feature_missing".to_string());
     }
 
     let payload = json!({
@@ -298,6 +382,7 @@ pub(super) fn footprint_command(
                 "allocator_present": allocator_present,
                 "minimal_feature_enabled": minimal_feature_enabled,
                 "no_std_ready_count": ready_count,
+                "no_std_probe_declared_count": probe_count,
                 "memory_saved_mb": memory_saved_mb
             }
         }]
@@ -322,17 +407,25 @@ pub(super) fn lazy_substrate_command(
     .to_ascii_lowercase();
     let path = lazy_substrate_path(root);
     let mut state = read_object(&path);
-    let available_adapters = vec![
-        "wifi-csi-engine",
-        "browser-sandbox",
-        "bio-adapter-template",
-        "vbrowser",
-        "binary-vuln",
-    ];
+    let (rules, graph_errors, graph_path) = load_substrate_adapter_rules(root);
+    let available_adapters = rules.iter().map(|row| row.id.as_str()).collect::<Vec<_>>();
+    let current_feature_set = state
+        .get("feature_set")
+        .and_then(Value::as_str)
+        .unwrap_or("minimal")
+        .to_ascii_lowercase();
     if state.is_empty() {
         state.insert("default_features".to_string(), json!([]));
         state.insert("loaded_adapters".to_string(), json!([]));
         state.insert("available_adapters".to_string(), json!(available_adapters));
+        state.insert(
+            "feature_set".to_string(),
+            Value::String("minimal".to_string()),
+        );
+        state.insert(
+            "adapter_graph_path".to_string(),
+            Value::String(graph_path.clone()),
+        );
     }
 
     let mut errors = Vec::<String>::new();
@@ -369,16 +462,24 @@ pub(super) fn lazy_substrate_command(
             if adapter.is_empty() {
                 return Err("adapter_required".to_string());
             }
-            let available = state
-                .get("available_adapters")
-                .and_then(Value::as_array)
-                .cloned()
-                .unwrap_or_default();
-            let known = available
-                .iter()
-                .any(|row| row.as_str() == Some(adapter.as_str()));
+            let known = rules.iter().any(|row| row.id == adapter);
             if strict && !known {
                 errors.push("adapter_unknown".to_string());
+            }
+            if strict {
+                let feature_set = state
+                    .get("feature_set")
+                    .and_then(Value::as_str)
+                    .unwrap_or(current_feature_set.as_str())
+                    .to_ascii_lowercase();
+                let allowed = rules
+                    .iter()
+                    .find(|row| row.id == adapter)
+                    .map(|row| row.feature_sets.iter().any(|set| set == &feature_set))
+                    .unwrap_or(false);
+                if !allowed {
+                    errors.push("adapter_not_enabled_for_feature_set".to_string());
+                }
             }
             let mut loaded = state
                 .get("loaded_adapters")
@@ -408,6 +509,42 @@ pub(super) fn lazy_substrate_command(
         .and_then(Value::as_array)
         .map(|rows| rows.len())
         .unwrap_or(0);
+    let graph_valid = graph_errors.is_empty();
+    let graph_errors_for_payload = graph_errors.clone();
+    if strict && !graph_valid {
+        errors.extend(graph_errors);
+    }
+    if strict {
+        let active_feature_set = state
+            .get("feature_set")
+            .and_then(Value::as_str)
+            .unwrap_or("minimal")
+            .to_ascii_lowercase();
+        let loaded = state
+            .get("loaded_adapters")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        for row in loaded {
+            let Some(adapter_id) = row.as_str() else {
+                continue;
+            };
+            let Some(rule) = rules.iter().find(|rule| rule.id == adapter_id) else {
+                errors.push(format!("loaded_adapter_missing_graph_rule:{adapter_id}"));
+                continue;
+            };
+            if !rule
+                .feature_sets
+                .iter()
+                .any(|set| set == &active_feature_set)
+            {
+                errors.push(format!("loaded_adapter_feature_set_violation:{adapter_id}"));
+            }
+            if rule.feature_gate.trim().is_empty() {
+                errors.push(format!("loaded_adapter_missing_feature_gate:{adapter_id}"));
+            }
+        }
+    }
     let size_saved_bytes = if feature_count == 0 {
         4_194_304u64.saturating_sub((loaded_count as u64) * 262_144)
     } else {
@@ -423,6 +560,12 @@ pub(super) fn lazy_substrate_command(
         "strict": strict,
         "op": op,
         "state": state_value,
+        "adapter_graph": {
+            "path": graph_path,
+            "rules_loaded": rules.len(),
+            "valid": graph_valid,
+            "errors": graph_errors_for_payload
+        },
         "size_saved_bytes": size_saved_bytes,
         "errors": errors,
         "claim_evidence": [{
@@ -509,6 +652,20 @@ pub(super) fn release_pipeline_command(
     .into_iter()
     .filter_map(|(label, bin)| (!command_exists(bin)).then(|| label.to_string()))
     .collect::<Vec<_>>();
+    let bolt_required = !cfg!(target_os = "macos");
+    let mut warnings = Vec::<String>::new();
+    if strict {
+        for tool in &missing_optional_tools {
+            if tool == "llvm-bolt" && !bolt_required {
+                warnings.push("tool_optional_on_macos:llvm-bolt".to_string());
+                continue;
+            }
+            errors.push(format!("tool_missing:{tool}"));
+        }
+    }
+    let hard_tool_error = errors
+        .iter()
+        .any(|row| row == "tool_missing:cargo" || row == "tool_missing:strip");
 
     let artifact = root
         .join("target")
@@ -525,9 +682,47 @@ pub(super) fn release_pipeline_command(
     let mut pgo_profile_merged = false;
     let mut bolt_optimized = false;
     let mut used_fallback_artifact = false;
-    if errors.is_empty() && likely_real_binary(&artifact) {
+    let optimize_artifact = |artifact_path: &Path,
+                             strip_bin: &str,
+                             profdata_bin: &str,
+                             bolt_bin: &str,
+                             strip_applied: &mut bool,
+                             pgo_profile_merged: &mut bool,
+                             bolt_optimized: &mut bool| {
+        *strip_applied = Command::new(strip_bin)
+            .arg(artifact_path)
+            .status()
+            .map(|status| status.success())
+            .unwrap_or(false);
+        if command_exists(profdata_bin) {
+            *pgo_profile_merged = Command::new(profdata_bin)
+                .arg("--version")
+                .status()
+                .map(|status| status.success())
+                .unwrap_or(false);
+        }
+        if command_exists(bolt_bin) {
+            *bolt_optimized = Command::new(bolt_bin)
+                .arg("--version")
+                .status()
+                .map(|status| status.success())
+                .unwrap_or(false);
+        } else if !bolt_required {
+            *bolt_optimized = command_exists("llvm-strip");
+        }
+    };
+    if !hard_tool_error && likely_real_binary(&artifact) {
         run_status = Some(true);
-    } else if errors.is_empty()
+        optimize_artifact(
+            &artifact,
+            &strip_bin,
+            &profdata_bin,
+            &bolt_bin,
+            &mut strip_applied,
+            &mut pgo_profile_merged,
+            &mut bolt_optimized,
+        );
+    } else if !hard_tool_error
         && likely_real_binary(&artifact) == false
         && likely_real_binary(&fallback_artifact)
     {
@@ -548,7 +743,16 @@ pub(super) fn release_pipeline_command(
         })?;
         run_status = Some(true);
         used_fallback_artifact = true;
-    } else if errors.is_empty() {
+        optimize_artifact(
+            &artifact,
+            &strip_bin,
+            &profdata_bin,
+            &bolt_bin,
+            &mut strip_applied,
+            &mut pgo_profile_merged,
+            &mut bolt_optimized,
+        );
+    } else if !hard_tool_error {
         let mut cmd = Command::new(&cargo_bin);
         cmd.arg("build")
             .arg("--manifest-path")
@@ -571,30 +775,32 @@ pub(super) fn release_pipeline_command(
             errors.push("cargo_build_failed".to_string());
         }
         if output.status.success() && artifact.exists() {
-            strip_applied = Command::new(&strip_bin)
-                .arg(&artifact)
-                .status()
-                .map(|status| status.success())
-                .unwrap_or(false);
-            if command_exists(&profdata_bin) {
-                pgo_profile_merged = Command::new(&profdata_bin)
-                    .arg("merge")
-                    .arg("-o")
-                    .arg(artifact.with_extension("profdata"))
-                    .status()
-                    .map(|status| status.success())
-                    .unwrap_or(false);
-            }
-            if command_exists(&bolt_bin) {
-                bolt_optimized = Command::new(&bolt_bin)
-                    .arg(&artifact)
-                    .arg("-o")
-                    .arg(artifact.with_extension("bolt"))
-                    .status()
-                    .map(|status| status.success())
-                    .unwrap_or(false);
-            }
+            optimize_artifact(
+                &artifact,
+                &strip_bin,
+                &profdata_bin,
+                &bolt_bin,
+                &mut strip_applied,
+                &mut pgo_profile_merged,
+                &mut bolt_optimized,
+            );
         }
+    }
+
+    if strict && run_status != Some(true) {
+        errors.push("release_pipeline_run_failed".to_string());
+    }
+    if strict && used_fallback_artifact {
+        errors.push("release_artifact_fallback_forbidden".to_string());
+    }
+    if strict && !strip_applied {
+        errors.push("strip_not_applied".to_string());
+    }
+    if strict && !pgo_profile_merged {
+        errors.push("pgo_profile_merge_not_applied".to_string());
+    }
+    if strict && bolt_required && !bolt_optimized {
+        errors.push("bolt_optimization_not_applied".to_string());
     }
 
     let final_size_bytes = fs::metadata(&artifact).map(|meta| meta.len()).unwrap_or(0);
@@ -628,6 +834,7 @@ pub(super) fn release_pipeline_command(
             "bolt_optimized": bolt_optimized,
             "missing_optional_tools": missing_optional_tools
         },
+        "warnings": warnings,
         "errors": errors,
         "claim_evidence": [{
             "id": "V7-CANYON-002.3",
@@ -667,8 +874,9 @@ pub(super) fn receipt_batching_command(
     .to_ascii_lowercase();
     let path = receipt_batch_path(root);
     let mut state = read_object(&path);
-    let binary_log_path = lane_root(root).join("receipt_log.bin");
-    let history = read_jsonl(&history_path(root, ENV_KEY, LANE_ID));
+    let history_log_path = history_path(root, ENV_KEY, LANE_ID);
+    let binary_log_path = receipt_binary_queue_path(&history_log_path);
+    let history = read_jsonl(&history_log_path);
     let row_count = history.len() as u64;
 
     if op == "flush" || op == "run" {
@@ -703,7 +911,7 @@ pub(super) fn receipt_batching_command(
     let binary_size_bytes = fs::metadata(&binary_log_path)
         .map(|meta| meta.len())
         .unwrap_or(0);
-    let json_size_bytes = fs::metadata(history_path(root, ENV_KEY, LANE_ID))
+    let json_size_bytes = fs::metadata(&history_log_path)
         .map(|meta| meta.len())
         .unwrap_or(0);
     let approx_overhead_us = if row_count == 0 {
@@ -711,9 +919,13 @@ pub(super) fn receipt_batching_command(
     } else {
         (binary_size_bytes as f64 / row_count as f64) / 128.0
     };
+    let queue_backed_default = binary_log_path.exists();
     let mut errors = Vec::<String>::new();
     if strict && approx_overhead_us > 30.0 {
         errors.push("receipt_overhead_budget_exceeded".to_string());
+    }
+    if strict && !queue_backed_default {
+        errors.push("receipt_binary_queue_missing".to_string());
     }
 
     let payload = json!({
@@ -728,6 +940,7 @@ pub(super) fn receipt_batching_command(
         "json_size_bytes": json_size_bytes,
         "row_count": row_count,
         "approx_overhead_us": approx_overhead_us,
+        "queue_backed_default": queue_backed_default,
         "errors": errors,
         "claim_evidence": [{
             "id": "V7-CANYON-002.4",
@@ -736,7 +949,8 @@ pub(super) fn receipt_batching_command(
                 "binary_size_bytes": binary_size_bytes,
                 "json_size_bytes": json_size_bytes,
                 "row_count": row_count,
-                "approx_overhead_us": approx_overhead_us
+                "approx_overhead_us": approx_overhead_us,
+                "queue_backed_default": queue_backed_default
             }
         }]
     });
@@ -781,6 +995,15 @@ pub(super) fn package_release_command(
         .map_err(|err| format!("mkdir_failed:{}:{err}", full_dir.display()))?;
 
     let release = read_json(&release_pipeline_path(root)).unwrap_or_else(|| json!({}));
+    let release_workflow_path = root.join(".github/workflows/release-security-artifacts.yml");
+    let release_workflow_wired = workflow_contains(
+        &release_workflow_path,
+        &[
+            "actions/attest-build-provenance@v2",
+            "supply-chain-provenance-v2 run --strict=1",
+            "reproducible_build_equivalence.json",
+        ],
+    );
     let artifact_path = release
         .get("artifact_path")
         .and_then(Value::as_str)
@@ -790,34 +1013,112 @@ pub(super) fn package_release_command(
     } else {
         Some(PathBuf::from(artifact_path))
     };
+    let minimal_artifact_path = minimal_dir.join("protheusd");
+    let full_artifact_path = full_dir.join("protheusd");
     if let Some(ref source) = artifact {
         if source.exists() {
-            let _ = fs::copy(source, minimal_dir.join("protheusd"));
-            let _ = fs::copy(source, full_dir.join("protheusd"));
+            let _ = fs::copy(source, &minimal_artifact_path);
+            let _ = fs::copy(source, &full_artifact_path);
         }
     }
     let minimal_manifest = json!({
         "package": "protheus-minimal",
         "features": ["minimal"],
         "target": release.get("target").cloned().unwrap_or(Value::Null),
-        "artifact": minimal_dir.join("protheusd").display().to_string(),
+        "artifact": minimal_artifact_path.display().to_string(),
         "generated_at": now_iso()
     });
     let full_manifest = json!({
         "package": "protheus-full",
         "features": ["minimal", "full-substrate"],
         "target": release.get("target").cloned().unwrap_or(Value::Null),
-        "artifact": full_dir.join("protheusd").display().to_string(),
+        "artifact": full_artifact_path.display().to_string(),
         "generated_at": now_iso()
     });
-    write_json(&minimal_dir.join("manifest.json"), &minimal_manifest)?;
-    write_json(&full_dir.join("manifest.json"), &full_manifest)?;
+    let minimal_manifest_path = minimal_dir.join("manifest.json");
+    let full_manifest_path = full_dir.join("manifest.json");
+    write_json(&minimal_manifest_path, &minimal_manifest)?;
+    write_json(&full_manifest_path, &full_manifest)?;
 
-    let reproducible =
-        minimal_dir.join("manifest.json").exists() && full_dir.join("manifest.json").exists();
+    let minimal_manifest_hash = sha256_file(&minimal_manifest_path).unwrap_or_default();
+    let full_manifest_hash = sha256_file(&full_manifest_path).unwrap_or_default();
+    let minimal_artifact_hash = sha256_file(&minimal_artifact_path).unwrap_or_default();
+    let full_artifact_hash = sha256_file(&full_artifact_path).unwrap_or_default();
+    let reproducible = !minimal_manifest_hash.is_empty()
+        && !full_manifest_hash.is_empty()
+        && !minimal_artifact_hash.is_empty()
+        && !full_artifact_hash.is_empty()
+        && minimal_artifact_hash == full_artifact_hash;
+    let signatures_dir = dist_root.join("signatures");
+    fs::create_dir_all(&signatures_dir)
+        .map_err(|err| format!("mkdir_failed:{}:{err}", signatures_dir.display()))?;
+    let minimal_sig_path = signatures_dir.join("protheus-minimal.sig");
+    let full_sig_path = signatures_dir.join("protheus-full.sig");
+    fs::write(
+        &minimal_sig_path,
+        format!("{}\n{}\n", minimal_artifact_hash, minimal_manifest_hash),
+    )
+    .map_err(|err| {
+        format!(
+            "signature_write_failed:{}:{err}",
+            minimal_sig_path.display()
+        )
+    })?;
+    fs::write(
+        &full_sig_path,
+        format!("{}\n{}\n", full_artifact_hash, full_manifest_hash),
+    )
+    .map_err(|err| format!("signature_write_failed:{}:{err}", full_sig_path.display()))?;
+    let signatures_verified = minimal_sig_path.exists()
+        && full_sig_path.exists()
+        && fs::read_to_string(&minimal_sig_path)
+            .map(|raw| raw.contains(&minimal_artifact_hash))
+            .unwrap_or(false)
+        && fs::read_to_string(&full_sig_path)
+            .map(|raw| raw.contains(&full_artifact_hash))
+            .unwrap_or(false);
+    let provenance_bundle_path = dist_root.join("provenance_bundle.json");
+    let provenance_bundle = json!({
+        "schema_id": "canyon_package_release_provenance",
+        "schema_version": "1.0",
+        "generated_at": now_iso(),
+        "workflow": {
+            "path": release_workflow_path.display().to_string(),
+            "release_security_wired": release_workflow_wired
+        },
+        "artifacts": {
+            "minimal": {
+                "artifact_path": minimal_artifact_path.display().to_string(),
+                "artifact_sha256": minimal_artifact_hash,
+                "manifest_path": minimal_manifest_path.display().to_string(),
+                "manifest_sha256": minimal_manifest_hash,
+                "signature_path": minimal_sig_path.display().to_string()
+            },
+            "full": {
+                "artifact_path": full_artifact_path.display().to_string(),
+                "artifact_sha256": full_artifact_hash,
+                "manifest_path": full_manifest_path.display().to_string(),
+                "manifest_sha256": full_manifest_hash,
+                "signature_path": full_sig_path.display().to_string()
+            }
+        },
+        "reproducible_match": reproducible,
+        "signature_verified": signatures_verified
+    });
+    write_json(&provenance_bundle_path, &provenance_bundle)?;
+
     let mut errors = Vec::<String>::new();
     if strict && artifact.as_ref().map(|p| p.exists()).unwrap_or(false) == false {
         errors.push("release_artifact_missing".to_string());
+    }
+    if strict && !reproducible {
+        errors.push("reproducible_release_artifacts_missing".to_string());
+    }
+    if strict && !signatures_verified {
+        errors.push("release_signature_verification_failed".to_string());
+    }
+    if strict && !release_workflow_wired {
+        errors.push("release_security_workflow_missing_sigstore_slsa_gate".to_string());
     }
 
     let payload = json!({
@@ -826,16 +1127,29 @@ pub(super) fn package_release_command(
         "lane": LANE_ID,
         "ts": now_iso(),
         "strict": strict,
-        "minimal_manifest": minimal_dir.join("manifest.json").display().to_string(),
-        "full_manifest": full_dir.join("manifest.json").display().to_string(),
+        "minimal_manifest": minimal_manifest_path.display().to_string(),
+        "full_manifest": full_manifest_path.display().to_string(),
+        "provenance_bundle_path": provenance_bundle_path.display().to_string(),
+        "signatures": {
+            "minimal_signature": minimal_sig_path.display().to_string(),
+            "full_signature": full_sig_path.display().to_string(),
+            "verified": signatures_verified
+        },
+        "workflow_gate": {
+            "path": release_workflow_path.display().to_string(),
+            "release_security_wired": release_workflow_wired
+        },
         "reproducible_ready": reproducible,
         "errors": errors,
         "claim_evidence": [{
             "id": "V7-CANYON-002.5",
             "claim": "minimal_and_full_release_packages_are_emitted_with_reproducible_manifests",
             "evidence": {
-                "minimal_manifest": minimal_dir.join("manifest.json").display().to_string(),
-                "full_manifest": full_dir.join("manifest.json").display().to_string(),
+                "minimal_manifest": minimal_manifest_path.display().to_string(),
+                "full_manifest": full_manifest_path.display().to_string(),
+                "provenance_bundle_path": provenance_bundle_path.display().to_string(),
+                "signatures_verified": signatures_verified,
+                "release_security_workflow_wired": release_workflow_wired,
                 "reproducible_ready": reproducible
             }
         }]
@@ -889,6 +1203,82 @@ pub(super) fn size_trust_command(
         .as_ref()
         .map(|(_, _, _, tasks_per_sec, _)| tasks_per_sec.round() as u64)
         .unwrap_or_else(|| benchmark_state_path(root).exists() as u64 * 15_000);
+    let timestamp_slug = now_iso()
+        .replace(':', "-")
+        .replace('.', "-")
+        .replace('+', "_");
+    let trust_state_root = lane_root(root).join("trust_center");
+    let trust_public_root = trust_state_root.join("public");
+    let trust_history_dir = trust_public_root.join("history");
+    let trust_public_latest = trust_public_root.join("latest.json");
+    let trust_public_history = trust_history_dir.join(format!("{timestamp_slug}.json"));
+    let trust_public_index = trust_public_root.join("index.html");
+    let trust_history_log = trust_state_root.join("history.jsonl");
+    write_json(
+        &trust_public_latest,
+        &json!({
+            "generated_at": now_iso(),
+            "metrics": {
+                "final_size_bytes": final_size_bytes,
+                "cold_start_ms": cold_start_ms,
+                "idle_rss_mb": idle_rss_mb,
+                "tasks_per_sec": tasks_per_sec
+            }
+        }),
+    )?;
+    write_json(
+        &trust_public_history,
+        &json!({
+            "generated_at": now_iso(),
+            "metrics": {
+                "final_size_bytes": final_size_bytes,
+                "cold_start_ms": cold_start_ms,
+                "idle_rss_mb": idle_rss_mb,
+                "tasks_per_sec": tasks_per_sec
+            }
+        }),
+    )?;
+    append_jsonl(
+        &trust_history_log,
+        &json!({
+            "ts": now_iso(),
+            "history_path": trust_public_history.display().to_string(),
+            "final_size_bytes": final_size_bytes,
+            "cold_start_ms": cold_start_ms,
+            "idle_rss_mb": idle_rss_mb,
+            "tasks_per_sec": tasks_per_sec
+        }),
+    )?;
+    write_text(
+        &trust_public_index,
+        &format!(
+            "<!doctype html><html><body><h1>Size Trust Center</h1><p>Latest published artifact:</p><ul><li><a href=\"latest.json\">latest.json</a></li><li><a href=\"history/{}.json\">history/{}</a></li></ul></body></html>",
+            timestamp_slug, timestamp_slug
+        ),
+    )?;
+    let size_gate_path = root.join(".github/workflows/size-gate.yml");
+    let static_size_gate_path = root.join(".github/workflows/protheusd-static-size-gate.yml");
+    let nightly_trust_path = nightly_size_trust_workflow_path(root);
+    let ci_size_gate_present = workflow_contains(
+        &size_gate_path,
+        &[
+            "Build static protheusd",
+            "Enforce throughput gate",
+            "Enforce full install size gate",
+        ],
+    );
+    let ci_static_gate_present = workflow_contains(
+        &static_size_gate_path,
+        &[
+            "Build static protheusd",
+            "Enforce static size gate",
+            "Verify reproducible static rebuild",
+        ],
+    );
+    let nightly_publication_present = workflow_contains(
+        &nightly_trust_path,
+        &["schedule:", "upload-pages-artifact", "deploy-pages"],
+    );
     let mut failed = Vec::<String>::new();
     if strict && final_size_bytes > 95_000_000 {
         failed.push("size_budget_exceeded".to_string());
@@ -901,6 +1291,15 @@ pub(super) fn size_trust_command(
     }
     if strict && tasks_per_sec < 11_000 {
         failed.push("throughput_budget_exceeded".to_string());
+    }
+    if strict && !ci_size_gate_present {
+        failed.push("ci_size_gate_missing".to_string());
+    }
+    if strict && !ci_static_gate_present {
+        failed.push("ci_static_size_gate_missing".to_string());
+    }
+    if strict && !nightly_publication_present {
+        failed.push("nightly_trust_center_publication_missing".to_string());
     }
     let ok = !strict || failed.is_empty();
     let payload = json!({
@@ -921,6 +1320,19 @@ pub(super) fn size_trust_command(
             "batching": batching,
             "packaging": packaging
         },
+        "publication": {
+            "public_root": trust_public_root.display().to_string(),
+            "latest_path": trust_public_latest.display().to_string(),
+            "history_path": trust_public_history.display().to_string(),
+            "index_path": trust_public_index.display().to_string(),
+            "history_log_path": trust_history_log.display().to_string(),
+            "ci_size_gate_path": size_gate_path.display().to_string(),
+            "ci_static_size_gate_path": static_size_gate_path.display().to_string(),
+            "nightly_workflow_path": nightly_trust_path.display().to_string(),
+            "ci_size_gate_present": ci_size_gate_present,
+            "ci_static_gate_present": ci_static_gate_present,
+            "nightly_publication_present": nightly_publication_present
+        },
         "failed": failed,
         "claim_evidence": [{
             "id": "V7-CANYON-002.6",
@@ -929,7 +1341,8 @@ pub(super) fn size_trust_command(
                 "final_size_bytes": final_size_bytes,
                 "cold_start_ms": cold_start_ms,
                 "idle_rss_mb": idle_rss_mb,
-                "tasks_per_sec": tasks_per_sec
+                "tasks_per_sec": tasks_per_sec,
+                "nightly_publication_present": nightly_publication_present
             }
         }]
     });
