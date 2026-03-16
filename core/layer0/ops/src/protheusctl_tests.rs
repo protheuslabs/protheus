@@ -65,6 +65,21 @@ fn core_shortcut_routes_memory_command() {
 }
 
 #[test]
+fn core_shortcut_routes_alpha_check_to_alpha_readiness_domain() {
+    let route = resolve_core_shortcuts("alpha-check", &[]).expect("route");
+    assert_eq!(route.script_rel, "core://alpha-readiness");
+    assert_eq!(route.args, vec!["run"]);
+}
+
+#[test]
+fn core_shortcut_routes_alpha_check_flags_default_to_run_subcommand() {
+    let route = resolve_core_shortcuts("alpha-check", &["--strict=1".to_string()])
+        .expect("route");
+    assert_eq!(route.script_rel, "core://alpha-readiness");
+    assert_eq!(route.args, vec!["run", "--strict=1"]);
+}
+
+#[test]
 fn core_shortcut_routes_chat_with_files() {
     let route = resolve_core_shortcuts(
         "chat",

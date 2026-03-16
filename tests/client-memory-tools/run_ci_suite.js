@@ -5,22 +5,35 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const ROOT = path.resolve(__dirname, '../..');
+const VITEST_BIN = require.resolve('vitest/vitest.mjs');
 const SUITE = [
-  'tests/client-memory-tools/memory_security_gate_integration.test.js',
-  'tests/client-memory-tools/memory_uid_enforcement.test.js',
-  'tests/client-memory-tools/memory_recall_context_budget.test.js',
-  'tests/client-memory-tools/memory_index_freshness_gate.test.js',
-  'tests/client-memory-tools/v6_memory_013_019_client_regression.test.js'
+  'tests/vitest/v6_memory_policy_validator.test.ts',
+  'tests/vitest/v6_memory_session_isolation.test.ts',
+  'tests/vitest/v6_memory_client_guard_integration.test.ts'
 ];
 
-function runOne(testPath) {
-  const absolutePath = path.resolve(ROOT, testPath);
-  const proc = spawnSync(process.execPath, [absolutePath], {
+function runVitestSuite(extraArgs = []) {
+  const args = ['run', '--config', 'vitest.config.ts'].concat(SUITE).concat(extraArgs);
+  return spawnSync(process.execPath, [VITEST_BIN].concat(args), {
     cwd: ROOT,
     encoding: 'utf8'
   });
+}
+
+function runLegacyCorpusAudit() {
+  return spawnSync(
+    process.execPath,
+    ['tests/tooling/scripts/ci/legacy_client_memory_wrapper_audit.mjs', '--strict=1'],
+    {
+      cwd: ROOT,
+      encoding: 'utf8'
+    }
+  );
+}
+
+function normalizeResult(name, proc) {
   return {
-    test: testPath,
+    test: name,
     status: Number.isFinite(Number(proc.status)) ? Number(proc.status) : 1,
     stdout: String(proc.stdout || ''),
     stderr: String(proc.stderr || '')
@@ -28,10 +41,20 @@ function runOne(testPath) {
 }
 
 function main() {
+  const argv = process.argv.slice(2);
+  const includeLegacyAudit = argv.includes('--full-corpus');
+
   const results = [];
-  for (const testPath of SUITE) {
-    const result = runOne(testPath);
-    results.push(result);
+  const vitest = normalizeResult('vitest_memory_client_suite', runVitestSuite());
+  results.push(vitest);
+
+  if (includeLegacyAudit) {
+    results.push(
+      normalizeResult('legacy_client_memory_wrapper_audit', runLegacyCorpusAudit())
+    );
+  }
+
+  for (const result of results) {
     if (result.stdout) process.stdout.write(result.stdout);
     if (result.stderr) process.stderr.write(result.stderr);
   }
@@ -54,5 +77,6 @@ if (require.main === module) {
 
 module.exports = {
   SUITE,
-  runOne
+  runVitestSuite,
+  runLegacyCorpusAudit
 };

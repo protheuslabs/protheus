@@ -1,0 +1,10 @@
+{
+  "type": "legacy_client_memory_wrapper_baseline",
+  "captured_at": "2026-03-16T05:20:00Z",
+  "counts": {
+    "total_test_files": 1024,
+    "retired_wrapper_files": 959,
+    "delegated_wrapper_files": 27,
+    "assertion_based_files": 52
+  }
+}

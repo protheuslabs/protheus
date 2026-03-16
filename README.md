@@ -34,10 +34,22 @@ Install with one command (macOS/Linux):
 curl -fsSL https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.sh | sh
 ```
 
+Repair a stale local install/workspace before reinstalling:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.sh | sh -s -- --repair --pure
+```
+
 Windows (PowerShell):
 
 ```powershell
 irm https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.ps1 | iex
+```
+
+Windows repair + reinstall:
+
+```powershell
+irm https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.ps1 | iex -Repair -Pure
 ```
 
 Then verify:
@@ -206,6 +218,7 @@ npm run local:migrate:openclaw
 npm run local:status
 npm run build
 npm run test:ci
+infring alpha-check --strict=1 --run-gates=1
 ```
 
 Recommended preflight gates:

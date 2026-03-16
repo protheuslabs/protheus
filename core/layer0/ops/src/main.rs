@@ -491,6 +491,11 @@ fn main() {
             let exit = protheus_ops_core::health_status::run(&cwd, &rest);
             std::process::exit(exit);
         }
+        "alpha-readiness" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::alpha_readiness::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
         "foundation-contract-gate" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::foundation_contract_gate::run(&cwd, &rest);

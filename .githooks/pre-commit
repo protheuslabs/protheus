@@ -3,3 +3,4 @@ set -euo pipefail
 
 node tests/client-memory-tools/org_code_format_guard.test.js
 npm run -s ops:legacy-alias:guard
+npm run -s ops:churn:commit-gate

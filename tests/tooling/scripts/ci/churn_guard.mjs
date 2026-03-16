@@ -13,9 +13,14 @@ function parseArgs(argv) {
     argv.includes('--allow-governance-doc-churn=1') ||
     argv.includes('--allow-governance-doc-churn') ||
     process.env.ALLOW_GOVERNANCE_DOC_CHURN === '1';
+  const commitGate =
+    argv.includes('--commit-gate=1') ||
+    argv.includes('--commit-gate') ||
+    process.env.CHURN_GUARD_COMMIT_GATE === '1';
   return {
     strict: argv.includes('--strict=1') || argv.includes('--strict'),
     allowGovernanceDocChurn,
+    commitGate,
   };
 }
 
@@ -132,6 +137,7 @@ function toMarkdown(payload) {
   lines.push('');
   lines.push('## Summary');
   lines.push(`- strict: ${payload.summary.strict}`);
+  lines.push(`- commit_gate: ${payload.summary.commit_gate}`);
   lines.push(`- total_dirty_entries: ${payload.summary.total}`);
   lines.push(`- local_simulation_churn: ${payload.summary.local_simulation_churn}`);
   lines.push(`- lensmap_churn: ${payload.summary.lensmap_churn}`);
@@ -139,7 +145,11 @@ function toMarkdown(payload) {
   lines.push(`- governance_doc_churn: ${payload.summary.governance_doc_churn}`);
   lines.push(`- allow_governance_doc_churn: ${payload.summary.allow_governance_doc_churn}`);
   lines.push(`- likely_unstaged_moves: ${payload.summary.likely_unstaged_moves}`);
+  lines.push(`- untracked: ${payload.summary.untracked}`);
+  lines.push(`- commit_gate_forbidden: ${payload.summary.commit_gate_forbidden}`);
   lines.push(`- other: ${payload.summary.other}`);
+  lines.push(`- clean_pass: ${payload.summary.clean_pass}`);
+  lines.push(`- commit_gate_pass: ${payload.summary.commit_gate_pass}`);
   lines.push(`- pass: ${payload.summary.pass}`);
   lines.push('');
   if (payload.likely_unstaged_moves.length > 0) {
@@ -168,8 +178,23 @@ function main() {
   const args = parseArgs(process.argv.slice(2));
   const rows = parseStatus();
   const likelyUnstagedMoves = detectLikelyUnstagedMoves(rows);
+  const untrackedRows = rows.filter((row) => isUntracked(row.status));
+  const forbiddenCommitCategories = new Set([
+    'local_simulation_churn',
+    'lensmap_churn',
+    'generated_report_churn',
+  ]);
+  const forbiddenCommitRows = rows.filter((row) => forbiddenCommitCategories.has(row.category));
+  const governanceCommitRows = rows.filter((row) => row.category === 'governance_doc_churn');
+  const commitGatePass =
+    forbiddenCommitRows.length === 0 &&
+    (args.allowGovernanceDocChurn || governanceCommitRows.length === 0) &&
+    likelyUnstagedMoves.length === 0 &&
+    untrackedRows.length === 0;
+
   const summary = {
     strict: args.strict,
+    commit_gate: args.commitGate,
     total: rows.length,
     local_simulation_churn: rows.filter((r) => r.category === 'local_simulation_churn').length,
     lensmap_churn: rows.filter((r) => r.category === 'lensmap_churn').length,
@@ -177,14 +202,18 @@ function main() {
     governance_doc_churn: rows.filter((r) => r.category === 'governance_doc_churn').length,
     allow_governance_doc_churn: args.allowGovernanceDocChurn,
     likely_unstaged_moves: likelyUnstagedMoves.length,
+    untracked: untrackedRows.length,
+    commit_gate_forbidden: forbiddenCommitRows.length,
     other: rows.filter((r) => r.category === 'other').length,
   };
-  summary.pass =
+  summary.clean_pass =
     summary.local_simulation_churn === 0 &&
     summary.lensmap_churn === 0 &&
     (summary.governance_doc_churn === 0 || args.allowGovernanceDocChurn) &&
     summary.likely_unstaged_moves === 0 &&
     summary.other === 0;
+  summary.commit_gate_pass = commitGatePass;
+  summary.pass = args.commitGate ? summary.commit_gate_pass : summary.clean_pass;
 
   const payload = {
     ok: true,

@@ -13,6 +13,7 @@ BASE_URL="${INFRING_RELEASE_BASE_URL:-${PROTHEUS_RELEASE_BASE_URL:-$DEFAULT_BASE
 INSTALL_FULL="${INFRING_INSTALL_FULL:-${PROTHEUS_INSTALL_FULL:-0}}"
 INSTALL_PURE="${INFRING_INSTALL_PURE:-${PROTHEUS_INSTALL_PURE:-0}}"
 INSTALL_TINY_MAX="${INFRING_INSTALL_TINY_MAX:-${PROTHEUS_INSTALL_TINY_MAX:-0}}"
+INSTALL_REPAIR="${INFRING_INSTALL_REPAIR:-${PROTHEUS_INSTALL_REPAIR:-0}}"
 
 need_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -53,12 +54,16 @@ parse_install_args() {
         INSTALL_PURE=1
         INSTALL_FULL=0
         ;;
+      --repair)
+        INSTALL_REPAIR=1
+        ;;
       --help|-h)
-        echo "Usage: install.sh [--full|--minimal|--pure|--tiny-max]"
+        echo "Usage: install.sh [--full|--minimal|--pure|--tiny-max|--repair]"
         echo "  --full     install optional client runtime bundle when available"
         echo "  --minimal  install daemon + CLI only (default)"
         echo "  --pure     install pure Rust client + daemon only (no Node/TS surfaces)"
         echo "  --tiny-max install tiny-max pure profile for old/embedded hardware targets"
+        echo "  --repair   clear stale install wrappers + workspace runtime state before install"
         exit 0
         ;;
       *)
@@ -67,6 +72,65 @@ parse_install_args() {
         ;;
     esac
   done
+}
+
+repair_install_dir() {
+  for name in \
+    infring infringctl infringd protheus protheusctl protheusd \
+    protheus-ops protheusd-bin conduit_daemon \
+    protheus-pure-workspace protheus-pure-workspace-tiny-max \
+    protheus-client
+  do
+    target="$INSTALL_DIR/$name"
+    if [ -e "$target" ]; then
+      rm -rf "$target"
+      echo "[infring install] repair removed stale install artifact: $target"
+    fi
+  done
+}
+
+resolve_workspace_root_for_repair() {
+  for candidate in \
+    "${INFRING_WORKSPACE_ROOT:-}" \
+    "${PROTHEUS_WORKSPACE_ROOT:-}" \
+    "$(pwd)" \
+    "$HOME/.openclaw/workspace"
+  do
+    [ -n "$candidate" ] || continue
+    if [ -f "$candidate/core/layer0/ops/Cargo.toml" ] && [ -d "$candidate/client/runtime" ]; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+repair_workspace_state() {
+  if ! workspace_root="$(resolve_workspace_root_for_repair)"; then
+    echo "[infring install] repair skipped workspace cleanup (workspace root not detected)"
+    return 0
+  fi
+  ts="$(date -u +%Y%m%dT%H%M%SZ)"
+  archive_dir="$workspace_root/local/workspace/archive/install-repair"
+  mkdir -p "$archive_dir"
+
+  if [ -d "$workspace_root/local/workspace/memory" ]; then
+    tar -czf "$archive_dir/memory-$ts.tgz" -C "$workspace_root/local/workspace" memory >/dev/null 2>&1 || true
+    echo "[infring install] repair archived local/workspace/memory to $archive_dir/memory-$ts.tgz"
+  fi
+  if [ -d "$workspace_root/local/state" ]; then
+    tar -czf "$archive_dir/state-$ts.tgz" -C "$workspace_root/local" state >/dev/null 2>&1 || true
+    echo "[infring install] repair archived local/state to $archive_dir/state-$ts.tgz"
+  fi
+
+  for rel in client/runtime/local client/tmp core/local/tmp local/state; do
+    abs="$workspace_root/$rel"
+    if [ -e "$abs" ]; then
+      rm -rf "$abs"
+      echo "[infring install] repair removed stale runtime path: $rel"
+    fi
+  done
+  mkdir -p "$workspace_root/local/state"
 }
 
 norm_os() {
@@ -256,6 +320,11 @@ main() {
   parse_install_args "$@"
 
   mkdir -p "$INSTALL_DIR"
+  if is_truthy "$INSTALL_REPAIR"; then
+    echo "[infring install] repair mode enabled"
+    repair_install_dir
+    repair_workspace_state
+  fi
   triple="$(platform_triple)"
   version="$(resolve_version)"
 

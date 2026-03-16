@@ -25,6 +25,7 @@ pub mod ab_lane_eval;
 pub mod adaptive_intelligence;
 pub mod adaptive_runtime;
 pub mod agency_plane;
+pub mod alpha_readiness;
 pub mod app_plane;
 pub mod asm_plane;
 pub mod assimilation_controller;

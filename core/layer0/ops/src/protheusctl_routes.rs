@@ -4,8 +4,7 @@ use super::Route;
 mod protheusctl_plane_shortcuts;
 
 fn contains_help_flag(args: &[String]) -> bool {
-    args.iter()
-        .any(|arg| matches!(arg.trim(), "--help" | "-h"))
+    args.iter().any(|arg| matches!(arg.trim(), "--help" | "-h"))
 }
 
 fn parse_true_flag(args: &[String], key: &str) -> bool {
@@ -162,6 +161,23 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                 forward_stdin: false,
             })
         }
+        "alpha-check" => Some(Route {
+            script_rel: "core://alpha-readiness".to_string(),
+            args: if rest.is_empty() {
+                vec!["run".to_string()]
+            } else if rest
+                .first()
+                .map(|value| value.trim().starts_with("--"))
+                .unwrap_or(false)
+            {
+                std::iter::once("run".to_string())
+                    .chain(rest.iter().cloned())
+                    .collect::<Vec<_>>()
+            } else {
+                rest.to_vec()
+            },
+            forward_stdin: false,
+        }),
         "marketplace" => {
             let sub = rest
                 .first()

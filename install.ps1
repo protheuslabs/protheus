@@ -2,7 +2,8 @@ param(
   [switch]$Full,
   [switch]$Minimal,
   [switch]$Pure,
-  [switch]$TinyMax
+  [switch]$TinyMax,
+  [switch]$Repair
 )
 
 $ErrorActionPreference = "Stop"
@@ -34,6 +35,12 @@ if ($env:INFRING_INSTALL_TINY_MAX -and @("1", "true", "yes", "on") -contains $en
 } elseif ($env:PROTHEUS_INSTALL_TINY_MAX -and @("1", "true", "yes", "on") -contains $env:PROTHEUS_INSTALL_TINY_MAX.ToLower()) {
   $InstallTinyMax = $true
 }
+$InstallRepair = $false
+if ($env:INFRING_INSTALL_REPAIR -and @("1", "true", "yes", "on") -contains $env:INFRING_INSTALL_REPAIR.ToLower()) {
+  $InstallRepair = $true
+} elseif ($env:PROTHEUS_INSTALL_REPAIR -and @("1", "true", "yes", "on") -contains $env:PROTHEUS_INSTALL_REPAIR.ToLower()) {
+  $InstallRepair = $true
+}
 if ($Full) { $InstallFull = $true }
 if ($Minimal) { $InstallFull = $false }
 if ($Pure) {
@@ -45,6 +52,7 @@ if ($TinyMax) {
   $InstallPure = $true
   $InstallFull = $false
 }
+if ($Repair) { $InstallRepair = $true }
 
 function Resolve-Arch {
   $archRaw = if ($env:PROCESSOR_ARCHITECTURE) { $env:PROCESSOR_ARCHITECTURE } else { [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString() }
@@ -162,7 +170,89 @@ function Install-ClientBundle($Version, $Triple, $OutDir) {
   return $false
 }
 
+function Resolve-WorkspaceRootForRepair {
+  $candidates = @(
+    $env:INFRING_WORKSPACE_ROOT,
+    $env:PROTHEUS_WORKSPACE_ROOT,
+    (Get-Location).Path,
+    (Join-Path $HOME ".openclaw/workspace")
+  )
+  foreach ($candidate in $candidates) {
+    if (-not $candidate) { continue }
+    $manifest = Join-Path $candidate "core/layer0/ops/Cargo.toml"
+    $runtimeDir = Join-Path $candidate "client/runtime"
+    if ((Test-Path $manifest) -and (Test-Path $runtimeDir)) {
+      return $candidate
+    }
+  }
+  return $null
+}
+
+function Invoke-RepairInstallDir {
+  $targets = @(
+    "infring.cmd", "infringctl.cmd", "infringd.cmd",
+    "protheus.cmd", "protheusctl.cmd", "protheusd.cmd",
+    "protheus-ops.exe", "protheus-pure-workspace.exe",
+    "protheusd.exe", "conduit_daemon.exe", "protheus-client"
+  )
+  foreach ($target in $targets) {
+    $path = Join-Path $InstallDir $target
+    if (Test-Path $path) {
+      Remove-Item -Force -Recurse $path
+      Write-Host "[infring install] repair removed stale install artifact: $path"
+    }
+  }
+}
+
+function Invoke-RepairWorkspaceState {
+  $workspaceRoot = Resolve-WorkspaceRootForRepair
+  if (-not $workspaceRoot) {
+    Write-Host "[infring install] repair skipped workspace cleanup (workspace root not detected)"
+    return
+  }
+  $timestamp = Get-Date -Format "yyyyMMddTHHmmssZ"
+  $archiveDir = Join-Path $workspaceRoot "local/workspace/archive/install-repair"
+  New-Item -ItemType Directory -Force -Path $archiveDir | Out-Null
+
+  $memoryPath = Join-Path $workspaceRoot "local/workspace/memory"
+  if (Test-Path $memoryPath) {
+    $memoryArchive = Join-Path $archiveDir "memory-$timestamp.zip"
+    try {
+      Compress-Archive -Path $memoryPath -DestinationPath $memoryArchive -Force
+      Write-Host "[infring install] repair archived local/workspace/memory to $memoryArchive"
+    } catch {
+      Write-Host "[infring install] repair warning: failed to archive memory path ($memoryPath)"
+    }
+  }
+
+  $statePath = Join-Path $workspaceRoot "local/state"
+  if (Test-Path $statePath) {
+    $stateArchive = Join-Path $archiveDir "state-$timestamp.zip"
+    try {
+      Compress-Archive -Path $statePath -DestinationPath $stateArchive -Force
+      Write-Host "[infring install] repair archived local/state to $stateArchive"
+    } catch {
+      Write-Host "[infring install] repair warning: failed to archive state path ($statePath)"
+    }
+  }
+
+  $cleanup = @("client/runtime/local", "client/tmp", "core/local/tmp", "local/state")
+  foreach ($rel in $cleanup) {
+    $abs = Join-Path $workspaceRoot $rel
+    if (Test-Path $abs) {
+      Remove-Item -Force -Recurse $abs
+      Write-Host "[infring install] repair removed stale runtime path: $rel"
+    }
+  }
+  New-Item -ItemType Directory -Force -Path (Join-Path $workspaceRoot "local/state") | Out-Null
+}
+
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
+if ($InstallRepair) {
+  Write-Host "[infring install] repair mode enabled"
+  Invoke-RepairInstallDir
+  Invoke-RepairWorkspaceState
+}
 $arch = Resolve-Arch
 $triple = if ($IsWindows) {
   "$arch-pc-windows-msvc"

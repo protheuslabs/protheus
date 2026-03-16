@@ -30,6 +30,7 @@ describe('conduit primitive wrapper contract', () => {
     expect(source.includes('api.github.com/repos')).toBe(true);
     expect(source.includes('protheus-ops')).toBe(true);
     expect(source.includes('infringd')).toBe(true);
+    expect(source.includes('--repair')).toBe(true);
     expect(source.includes("'protheusd' is deprecated")).toBe(true);
   });
 
@@ -38,6 +39,7 @@ describe('conduit primitive wrapper contract', () => {
     expect(source.includes('protheus-ops.exe')).toBe(true);
     expect(source.includes('infringd.cmd')).toBe(true);
     expect(source.includes('protheusd.cmd')).toBe(true);
+    expect(source.includes('$Repair')).toBe(true);
     expect(source.includes('conduit_daemon')).toBe(true);
   });
 

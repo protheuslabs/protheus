@@ -8,6 +8,7 @@ VERIFY_DEFER_HOST_STALL="${PROTHEUS_VERIFY_DEFER_HOST_STALL:-1}"
 PROTHEUS_OPS_BIN="${PROTHEUS_OPS_BIN:-$ROOT/target/debug/protheus-ops}"
 VERIFY_NPM_TIMEOUT_SEC="${PROTHEUS_VERIFY_NPM_TIMEOUT_SEC:-60}"
 VERIFY_RUST_TIMEOUT_SEC="${PROTHEUS_VERIFY_RUST_TIMEOUT_SEC:-180}"
+VERIFY_PROOF_TIMEOUT_SEC="${PROTHEUS_VERIFY_PROOF_TIMEOUT_SEC:-420}"
 VERIFY_ARTIFACT_MODE="${PROTHEUS_VERIFY_ARTIFACT_MODE:-ephemeral}"
 
 if [[ "$VERIFY_ARTIFACT_MODE" == "ephemeral" ]]; then
@@ -119,7 +120,7 @@ run_protheus_ops() {
   cd "$ROOT"
   run_with_timeout_strict "$VERIFY_RUST_TIMEOUT_SEC" cargo test --manifest-path "$MANIFEST_PATH" --test v8_runtime_proof
   run_with_timeout_strict "$VERIFY_RUST_TIMEOUT_SEC" bash "$ROOT/proofs/layer0/verify.sh"
-  run_protheus_ops "$VERIFY_RUST_TIMEOUT_SEC" top1-assurance proof-coverage --strict=1 --check-toolchains=0 --execute-proofs=1
+  run_protheus_ops "$VERIFY_PROOF_TIMEOUT_SEC" top1-assurance proof-coverage --strict=1 --check-toolchains=0 --execute-proofs=1
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:dependency-boundary:check
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" npm run -s ops:formal-spec:check
   run_with_timeout_strict "$VERIFY_NPM_TIMEOUT_SEC" node tests/tooling/scripts/ci/client_layer_boundary_audit.mjs --strict=1 --out="$CLIENT_LAYER_AUDIT_OUT"

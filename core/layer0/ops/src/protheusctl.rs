@@ -171,6 +171,7 @@ fn print_node_free_command_list(mode: &str) {
         "adaptive <status|propose|shadow-train|prioritize|graduate>",
         "enterprise-hardening <run|status|export-compliance|identity-surface|certify-scale|dashboard>",
         "benchmark <run|status>",
+        "alpha-check [--strict=1|0] [--run-gates=1|0]",
         "research <status|diagnostics|fetch>",
         "help",
         "list",

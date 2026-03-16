@@ -22,7 +22,10 @@
 2. Churn classifier gate:
 - `npm run -s ops:churn:guard`
 - strict mode fails when local/simulation/lensmap/other unexpected churn is present.
-3. Simplicity drift gate:
+3. Pre-commit churn gate:
+- `npm run -s ops:churn:commit-gate`
+- fails commits when untracked noise, local/generated churn, or unstaged move-pairs are present.
+4. Simplicity drift gate:
 - `npm run -s ops:simplicity:audit`
 - ensures no duplicated command bodies and no client boundary drift.
 
@@ -31,6 +34,7 @@
 1. Before commit:
 
 ```bash
+npm run -s ops:churn:commit-gate
 npm run -s ops:churn:guard
 npm run -s ops:simplicity:audit
 ```

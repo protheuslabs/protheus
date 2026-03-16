@@ -3,7 +3,7 @@
     "test:ci": "node tests/client-memory-tools/run_ci_suite.js",
     "test:ci:stateful": "node tests/client-memory-tools/run_ci_suite.js --include-stateful",
     "test:ci:full": "node tests/client-memory-tools/run_ci_suite.js --full-corpus",
-    "test:memory:client-guards": "node tests/client-memory-tools/v6_memory_013_019_client_regression.test.js && node tests/client-memory-tools/memory_security_gate_integration.test.js && node tests/client-memory-tools/memory_uid_enforcement.test.js && node tests/client-memory-tools/memory_recall_context_budget.test.js && node tests/client-memory-tools/memory_index_freshness_gate.test.js && node tests/client-memory-tools/llmn_mode_conformance.test.js",
+    "test:memory:client-guards": "vitest run --config vitest.config.ts tests/vitest/v6_memory_policy_validator.test.ts tests/vitest/v6_memory_session_isolation.test.ts tests/vitest/v6_memory_client_guard_integration.test.ts",
     "test:cognition:orchestration": "node tests/client/cognition/schema.test.js && node tests/client/cognition/scratchpad.test.js && node tests/client/cognition/checkpoint.test.js && node tests/client/cognition/scope.validation.test.js && node tests/client/cognition/scope.overlap.test.js && node tests/client/cognition/scope.violation.test.js && node tests/client/cognition/taskgroup.tagging.test.js && node tests/client/cognition/taskgroup.query.test.js && node tests/client/cognition/taskgroup.metadata.test.js && node tests/client/cognition/completion.tracking.test.js && node tests/client/cognition/completion.notification.test.js && node tests/client/cognition/completion.aggregate.test.js && node tests/client/cognition/partial.session.test.js && node tests/client/cognition/partial.checkpoint.test.js && node tests/client/cognition/partial.decision.test.js && node tests/client/cognition/coordinator.test.js && node tests/client/cognition/orchestration.integration.test.js && node tests/client/cognition/orchestration.load.test.js",
     "metrics:rust-share": "bash tests/tooling/scripts/metrics/tracked_loc_report.sh --ref=HEAD",
     "metrics:rust-share:delta-main": "bash tests/tooling/scripts/metrics/tracked_loc_report.sh --ref=HEAD --base-ref=origin/main",
@@ -14,10 +14,12 @@
     "ops:simplicity:audit": "node tests/tooling/scripts/ci/simplicity_drift_audit.mjs --strict=1",
     "ops:legacy-alias:guard": "node tests/tooling/scripts/ci/legacy_alias_guard.mjs --strict=1",
     "ops:churn:guard": "node tests/tooling/scripts/ci/churn_guard.mjs --strict=1",
+    "ops:churn:commit-gate": "node tests/tooling/scripts/ci/churn_guard.mjs --strict=1 --commit-gate=1",
     "ops:repo-surface:audit": "node tests/tooling/scripts/ci/repo_surface_policy_audit.mjs --strict=1",
     "ops:public-platform:contract": "node tests/tooling/scripts/ci/public_platform_contract_audit.mjs --strict=1",
     "ops:client-import-integrity:audit": "node tests/tooling/scripts/ci/client_import_integrity_audit.mjs --strict=1",
     "ops:client-legacy-debt:report": "node tests/tooling/scripts/ci/client_legacy_debt_report.mjs",
+    "ops:legacy-memory-wrapper:audit": "node tests/tooling/scripts/ci/legacy_client_memory_wrapper_audit.mjs --strict=1",
     "ops:client-scope:inventory": "node tests/tooling/scripts/ci/client_scope_inventory.mjs --out=core/local/artifacts/client_scope_inventory_current.json",
     "ops:backlog:actionable-report": "node tests/tooling/scripts/ci/backlog_actionable_report.mjs",
     "ops:backlog:actionable-gate": "node tests/tooling/scripts/ci/backlog_actionable_report.mjs --fail-on-actionable",
@@ -1681,7 +1683,9 @@
     "lane:v9-escalate-001.3:run": "cargo run -q -p protheus-ops-core --bin protheus-ops -- backlog-delivery-plane run --id=V9-ESCALATE-001.3 --strict=1",
     "lane:v9-escalate-001.4:run": "cargo run -q -p protheus-ops-core --bin protheus-ops -- backlog-delivery-plane run --id=V9-ESCALATE-001.4 --strict=1",
     "lane:v9-escalate-001.5:run": "cargo run -q -p protheus-ops-core --bin protheus-ops -- backlog-delivery-plane run --id=V9-ESCALATE-001.5 --strict=1",
-    "lane:v9-escalate-001.6:run": "cargo run -q -p protheus-ops-core --bin protheus-ops -- backlog-delivery-plane run --id=V9-ESCALATE-001.6 --strict=1"
+    "lane:v9-escalate-001.6:run": "cargo run -q -p protheus-ops-core --bin protheus-ops -- backlog-delivery-plane run --id=V9-ESCALATE-001.6 --strict=1",
+    "ops:alpha:check": "cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- alpha-readiness run --strict=1 --run-gates=1",
+    "ops:alpha:status": "cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- alpha-readiness status"
   },
   "bin": {
     "infring": "./client/cli/bin/protheus",

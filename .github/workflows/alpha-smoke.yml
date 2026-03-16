@@ -1,0 +1,39 @@
+name: alpha-smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "core/layer0/ops/src/alpha_readiness.rs"
+      - "core/layer0/ops/src/protheusctl*.rs"
+      - "core/layer0/ops/src/main.rs"
+      - "core/layer0/ops/src/ops_main_usage.rs"
+      - "install.sh"
+      - "install.ps1"
+      - "verify.sh"
+      - "README.md"
+
+jobs:
+  alpha-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install JS deps
+        run: npm ci
+
+      - name: Build core operator
+        run: cargo build --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops
+
+      - name: Alpha readiness strict check
+        run: cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- alpha-readiness run --strict=1 --run-gates=1

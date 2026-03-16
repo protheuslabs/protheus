@@ -78,6 +78,7 @@ pub(super) fn print_usage() {
     println!("  protheus-ops legacy-retired-lane <build|verify> --lane-id=<SYSTEMS-OPS-...>");
     println!("  protheus-ops inversion-controller <command> [flags]");
     println!("  protheus-ops health-status <command> [flags]");
+    println!("  protheus-ops alpha-readiness <run|status> [--strict=1|0] [--run-gates=1|0]");
     println!("  protheus-ops foundation-contract-gate <run|status> [flags]");
     println!(
         "  protheus-ops origin-integrity <run|status|certificate|seed-bootstrap-verify> [flags]"
