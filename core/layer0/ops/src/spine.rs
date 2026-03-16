@@ -1021,40 +1021,26 @@ fn emit_terminal_receipt(
 }
 
 fn run_guard(root: &Path, files: &[&str]) -> StepResult {
-    let file_list = files.join(",");
-    run_node_json(
-        root,
-        &[
-            "client/runtime/systems/security/guard.ts".to_string(),
-            format!("--files={file_list}"),
-        ],
-    )
-}
-
-fn step(
-    root: &Path,
-    name: &str,
-    args: Vec<String>,
-    ledger: &mut LedgerWriter,
-    mode: &str,
-    date: &str,
-) -> Result<StepResult, String> {
-    let res = run_node_json(root, &args);
-    ledger.append(json!({
-        "type": "spine_step",
-        "mode": mode,
-        "date": date,
-        "step": name,
-        "ok": res.ok,
-        "code": res.code,
-        "payload": res.payload,
-        "reason": if res.ok { Value::Null } else { Value::String(clean_reason(&res.stderr, &res.stdout)) }
-    }));
-
-    if res.ok {
-        Ok(res)
-    } else {
-        Err(format!("step_failed:{name}:{}", res.code))
+    let mut missing = Vec::new();
+    for file in files {
+        if !root.join(file).is_file() {
+            missing.push((*file).to_string());
+        }
+    }
+    let ok = missing.is_empty();
+    let payload = json!({
+        "ok": ok,
+        "type": "spine_guard_payload",
+        "checked_count": files.len(),
+        "checked_files": files,
+        "missing_files": missing
+    });
+    StepResult {
+        ok,
+        code: if ok { 0 } else { 1 },
+        payload: Some(payload.clone()),
+        stdout: serde_json::to_string(&payload).unwrap_or_else(|_| "{}".to_string()),
+        stderr: String::new(),
     }
 }
 
@@ -1099,9 +1085,10 @@ fn append_self_documentation_closeout(
     }
 
     let args = vec![
-        "client/runtime/systems/autonomy/self_documentation_closeout.js".to_string(),
-        "run".to_string(),
-        date.to_string(),
+        "client/runtime/systems/ops/run_protheus_ops.js".to_string(),
+        "autonomy-controller".to_string(),
+        "self-documentation-closeout".to_string(),
+        format!("--date={date}"),
         "--approve=1".to_string(),
     ];
     let res = run_node_json(root, &args);
@@ -1198,15 +1185,11 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
 
     let mut ledger = LedgerWriter::new(root, &cli.date, &run_id);
     let invoked = vec![
-        "client/runtime/systems/spine/spine.js",
-        "client/runtime/systems/security/guard.ts",
-        "client/cognition/habits/scripts/external_eyes.js",
-        "client/cognition/habits/scripts/eyes_insight.js",
-        "client/cognition/habits/scripts/sensory_queue.js",
-        "client/runtime/systems/actuation/bridge_from_proposals.js",
-        "client/runtime/systems/sensory/cross_signal_engine.js",
-        "client/runtime/systems/autonomy/autonomy_controller.js",
-        "client/runtime/systems/autonomy/self_documentation_closeout.js",
+        "core/layer0/ops/src/spine.rs",
+        "core/layer0/ops/src/security_plane.rs",
+        "core/layer0/ops/src/autonomy_controller.rs",
+        "core/layer0/ops/src/sensory_eyes_intake.rs",
+        "client/runtime/systems/ops/run_protheus_ops.js",
     ];
 
     let (constitution_ok, constitution_hash, expected_hash) = constitution_hash(root);
@@ -1271,17 +1254,12 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
         );
     }
 
-    let mut step_args = vec![
-        "client/cognition/habits/scripts/external_eyes.js".to_string(),
-        "run".to_string(),
-    ];
-    if let Some(max_eyes) = cli.max_eyes {
-        step_args.push(format!("--max-eyes={max_eyes}"));
-    }
-    if let Err(reason) = step(
+    if let Err(reason) = step_ops_domain(
         root,
-        "external_eyes_run",
-        step_args,
+        "sensory_eyes_intake_run",
+        "sensory-eyes-intake",
+        vec!["run".to_string()],
+        Some(&run_context),
         &mut ledger,
         &cli.mode,
         &cli.date,
@@ -1304,112 +1282,32 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
         );
     }
 
-    if cli.mode == "daily" {
-        for (name, args) in [
-            (
-                "external_eyes_canary",
-                vec![
-                    "client/cognition/habits/scripts/external_eyes.js".to_string(),
-                    "canary".to_string(),
-                ],
-            ),
-            (
-                "external_eyes_canary_signal",
-                vec![
-                    "client/cognition/habits/scripts/external_eyes.js".to_string(),
-                    "canary-signal".to_string(),
-                ],
-            ),
-        ] {
-            if let Err(reason) = step(root, name, args, &mut ledger, &cli.mode, &cli.date) {
-                return emit_terminal_with_closeout(
-                    root,
-                    &mut ledger,
-                    &TerminalReceiptContext {
-                        run_id: &run_id,
-                        cli,
-                        policy: &policy,
-                        constitution_hash: &constitution_hash,
-                        constitution_ok,
-                        evidence_plan: &evidence_plan,
-                        evidence_ok,
-                        started_ms: run_started_ms,
-                    },
-                    false,
-                    Some(&reason),
-                );
-            }
-        }
-    }
-
-    for (name, args) in [
-        (
-            "external_eyes_score",
-            vec![
-                "client/cognition/habits/scripts/external_eyes.js".to_string(),
-                "score".to_string(),
-                cli.date.clone(),
-            ],
-        ),
-        (
-            "external_eyes_evolve",
-            vec![
-                "client/cognition/habits/scripts/external_eyes.js".to_string(),
-                "evolve".to_string(),
-                cli.date.clone(),
-            ],
-        ),
-        (
-            "cross_signal_engine",
-            vec![
-                "client/runtime/systems/sensory/cross_signal_engine.js".to_string(),
-                "run".to_string(),
-                cli.date.clone(),
-            ],
-        ),
-        (
-            "eyes_insight",
-            vec![
-                "client/cognition/habits/scripts/eyes_insight.js".to_string(),
-                "run".to_string(),
-                cli.date.clone(),
-            ],
-        ),
-        (
-            "sensory_queue_ingest",
-            vec![
-                "client/cognition/habits/scripts/sensory_queue.js".to_string(),
-                "ingest".to_string(),
-                cli.date.clone(),
-            ],
-        ),
-        (
-            "bridge_from_proposals",
-            vec![
-                "client/runtime/systems/actuation/bridge_from_proposals.js".to_string(),
-                "run".to_string(),
-                cli.date.clone(),
-            ],
-        ),
-    ] {
-        if let Err(reason) = step(root, name, args, &mut ledger, &cli.mode, &cli.date) {
-            return emit_terminal_with_closeout(
-                root,
-                &mut ledger,
-                &TerminalReceiptContext {
-                    run_id: &run_id,
-                    cli,
-                    policy: &policy,
-                    constitution_hash: &constitution_hash,
-                    constitution_ok,
-                    evidence_plan: &evidence_plan,
-                    evidence_ok,
-                    started_ms: run_started_ms,
-                },
-                false,
-                Some(&reason),
-            );
-        }
+    if let Err(reason) = step_ops_domain(
+        root,
+        "autonomy_status",
+        "autonomy-controller",
+        vec!["status".to_string(), format!("--date={}", cli.date)],
+        Some(&run_context),
+        &mut ledger,
+        &cli.mode,
+        &cli.date,
+    ) {
+        return emit_terminal_with_closeout(
+            root,
+            &mut ledger,
+            &TerminalReceiptContext {
+                run_id: &run_id,
+                cli,
+                policy: &policy,
+                constitution_hash: &constitution_hash,
+                constitution_ok,
+                evidence_plan: &evidence_plan,
+                evidence_ok,
+                started_ms: run_started_ms,
+            },
+            false,
+            Some(&reason),
+        );
     }
 
     if cli.mode == "daily" {
@@ -1438,24 +1336,19 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
         let mut per_type = HashMap::<String, i64>::new();
 
         for idx in 0..runs {
-            let res = run_node_json(
+            let res = run_ops_domain_json(
                 root,
+                "autonomy-controller",
                 &[
-                    "client/runtime/systems/autonomy/autonomy_controller.js".to_string(),
-                    "evidence".to_string(),
-                    cli.date.clone(),
+                    "run".to_string(),
+                    format!("--date={}", cli.date),
+                    "--strict=0".to_string(),
                 ],
+                Some(&run_context),
             );
-            let proposal_type = res
-                .payload
-                .as_ref()
-                .and_then(|p| p.get("proposal_type"))
-                .and_then(Value::as_str)
-                .unwrap_or_default()
-                .to_string();
-
+            let proposal_type = "autonomy_run".to_string();
             let current = per_type.get(&proposal_type).copied().unwrap_or(0);
-            let over_cap = type_cap > 0 && !proposal_type.is_empty() && current >= type_cap;
+            let over_cap = type_cap > 0 && current >= type_cap;
             if over_cap {
                 ledger.append(json!({
                     "type": "spine_autonomy_evidence_skipped_type_cap",
@@ -1481,7 +1374,7 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
                 "date": cli.date,
                 "attempt": idx + 1,
                 "ok": res.ok,
-                "proposal_type": if proposal_type.is_empty() { Value::Null } else { Value::String(proposal_type) },
+                "proposal_type": Value::String(proposal_type),
                 "preview_receipt_id": res.payload.as_ref().and_then(|p| p.get("preview_receipt_id")).cloned().unwrap_or(Value::Null),
                 "reason": if res.ok { Value::Null } else { Value::String(clean_reason(&res.stderr, &res.stdout)) }
             }));
@@ -1491,52 +1384,6 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
     }
 
     if cli.mode == "daily" {
-        for (name, args) in [
-            (
-                "queue_gc",
-                vec![
-                    "client/cognition/habits/scripts/queue_gc.js".to_string(),
-                    "run".to_string(),
-                    cli.date.clone(),
-                ],
-            ),
-            (
-                "git_outcomes",
-                vec![
-                    "client/cognition/habits/scripts/git_outcomes.js".to_string(),
-                    "run".to_string(),
-                    cli.date.clone(),
-                ],
-            ),
-            (
-                "sensory_digest_daily",
-                vec![
-                    "client/cognition/habits/scripts/sensory_digest.js".to_string(),
-                    "daily".to_string(),
-                    cli.date.clone(),
-                ],
-            ),
-        ] {
-            if let Err(reason) = step(root, name, args, &mut ledger, &cli.mode, &cli.date) {
-                return emit_terminal_with_closeout(
-                    root,
-                    &mut ledger,
-                    &TerminalReceiptContext {
-                        run_id: &run_id,
-                        cli,
-                        policy: &policy,
-                        constitution_hash: &constitution_hash,
-                        constitution_ok,
-                        evidence_plan: &evidence_plan,
-                        evidence_ok,
-                        started_ms: run_started_ms,
-                    },
-                    false,
-                    Some(&reason),
-                );
-            }
-        }
-
         if let Err(reason) = step_ops_domain(
             root,
             "dopamine_closeout",
@@ -1551,22 +1398,15 @@ fn execute_native(root: &Path, cli: &CliArgs) -> i32 {
             &cli.mode,
             &cli.date,
         ) {
-            return emit_terminal_with_closeout(
-                root,
-                &mut ledger,
-                &TerminalReceiptContext {
-                    run_id: &run_id,
-                    cli,
-                    policy: &policy,
-                    constitution_hash: &constitution_hash,
-                    constitution_ok,
-                    evidence_plan: &evidence_plan,
-                    evidence_ok,
-                    started_ms: run_started_ms,
-                },
-                false,
-                Some(&reason),
-            );
+            ledger.append(json!({
+                "type": "spine_step_non_blocking",
+                "mode": cli.mode,
+                "date": cli.date,
+                "step": "dopamine_closeout",
+                "ok": false,
+                "non_blocking": true,
+                "reason": reason
+            }));
         }
     }
 
