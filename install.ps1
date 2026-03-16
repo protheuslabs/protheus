@@ -11,11 +11,13 @@ $ErrorActionPreference = "Stop"
 $RepoOwner = "protheuslabs"
 $RepoName = "InfRing"
 $DefaultApi = "https://api.github.com/repos/$RepoOwner/$RepoName/releases/latest"
+$DefaultLatestUrl = "https://github.com/$RepoOwner/$RepoName/releases/latest"
 $DefaultBase = "https://github.com/$RepoOwner/$RepoName/releases/download"
 
 $InstallDir = if ($env:INFRING_INSTALL_DIR) { $env:INFRING_INSTALL_DIR } elseif ($env:PROTHEUS_INSTALL_DIR) { $env:PROTHEUS_INSTALL_DIR } else { Join-Path $HOME ".protheus\bin" }
 $RequestedVersion = if ($env:INFRING_VERSION) { $env:INFRING_VERSION } elseif ($env:PROTHEUS_VERSION) { $env:PROTHEUS_VERSION } else { "latest" }
 $ApiUrl = if ($env:INFRING_RELEASE_API_URL) { $env:INFRING_RELEASE_API_URL } elseif ($env:PROTHEUS_RELEASE_API_URL) { $env:PROTHEUS_RELEASE_API_URL } else { $DefaultApi }
+$LatestUrl = if ($env:INFRING_RELEASE_LATEST_URL) { $env:INFRING_RELEASE_LATEST_URL } elseif ($env:PROTHEUS_RELEASE_LATEST_URL) { $env:PROTHEUS_RELEASE_LATEST_URL } else { $DefaultLatestUrl }
 $BaseUrl = if ($env:INFRING_RELEASE_BASE_URL) { $env:INFRING_RELEASE_BASE_URL } elseif ($env:PROTHEUS_RELEASE_BASE_URL) { $env:PROTHEUS_RELEASE_BASE_URL } else { $DefaultBase }
 $InstallFull = $false
 if ($env:INFRING_INSTALL_FULL -and @("1", "true", "yes", "on") -contains $env:INFRING_INSTALL_FULL.ToLower()) {
@@ -54,6 +56,9 @@ if ($TinyMax) {
 }
 if ($Repair) { $InstallRepair = $true }
 
+$script:SourceFallbackDir = $null
+$script:SourceFallbackTmp = $null
+
 function Resolve-Arch {
   $archRaw = if ($env:PROCESSOR_ARCHITECTURE) { $env:PROCESSOR_ARCHITECTURE } else { [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString() }
   switch ($archRaw.ToLower()) {
@@ -64,16 +69,58 @@ function Resolve-Arch {
 }
 
 function Resolve-Version {
-  if ($RequestedVersion -ne "latest") {
-    if ($RequestedVersion.StartsWith("v")) { return $RequestedVersion }
-    return "v$RequestedVersion"
+  function Normalize-Version([string]$RawVersion) {
+    if ($RawVersion.StartsWith("v")) { return $RawVersion }
+    return "v$RawVersion"
   }
 
-  $release = Invoke-RestMethod -Uri $ApiUrl -UseBasicParsing
-  if (-not $release.tag_name) {
-    throw "Failed to resolve latest release tag"
+  function Resolve-VersionFromApi {
+    try {
+      $release = Invoke-RestMethod -Uri $ApiUrl -UseBasicParsing
+      if ($release.tag_name) {
+        return Normalize-Version ([string]$release.tag_name)
+      }
+    } catch {
+      return $null
+    }
+    return $null
   }
-  return $release.tag_name
+
+  function Resolve-VersionFromRedirect {
+    try {
+      $response = Invoke-WebRequest -Uri $LatestUrl -Method Head -MaximumRedirection 10 -UseBasicParsing
+      $finalUrl = $response.BaseResponse.ResponseUri.AbsoluteUri
+      if (-not $finalUrl) { return $null }
+      if ($finalUrl -match "/releases/tag/(v[^/?#]+)") {
+        return $Matches[1]
+      }
+    } catch {
+      return $null
+    }
+    return $null
+  }
+
+  if ($RequestedVersion -ne "latest") {
+    return Normalize-Version $RequestedVersion
+  }
+
+  $version = Resolve-VersionFromApi
+  if ($version) { return $version }
+
+  $version = Resolve-VersionFromRedirect
+  if ($version) {
+    Write-Host "[infring install] GitHub API unavailable; resolved latest tag via releases/latest redirect: $version"
+    return $version
+  }
+
+  $fallback = if ($env:INFRING_FALLBACK_VERSION) { $env:INFRING_FALLBACK_VERSION } elseif ($env:PROTHEUS_FALLBACK_VERSION) { $env:PROTHEUS_FALLBACK_VERSION } else { $null }
+  if ($fallback) {
+    $fallbackVersion = Normalize-Version ([string]$fallback)
+    Write-Host "[infring install] using fallback version: $fallbackVersion"
+    return $fallbackVersion
+  }
+
+  throw "Failed to resolve latest release tag (GitHub API + releases/latest redirect). Set INFRING_VERSION=vX.Y.Z and retry."
 }
 
 function Download-Asset($Version, $Asset, $OutPath) {
@@ -88,6 +135,65 @@ function Download-Asset($Version, $Asset, $OutPath) {
 }
 
 function Install-Binary($Version, $Triple, $Stem, $OutPath) {
+  function Resolve-SourceBinName([string]$StemName) {
+    switch ($StemName) {
+      "protheus-ops" { return "protheus-ops" }
+      "protheusd" { return "protheusd" }
+      "protheusd-tiny-max" { return "protheusd" }
+      "conduit_daemon" { return "conduit_daemon" }
+      "protheus-pure-workspace" { return "protheus-pure-workspace" }
+      "protheus-pure-workspace-tiny-max" { return "protheus-pure-workspace" }
+      default { return $null }
+    }
+  }
+
+  function Prepare-SourceFallbackRepo([string]$VersionTag) {
+    if ($script:SourceFallbackDir -and (Test-Path $script:SourceFallbackDir)) {
+      return $script:SourceFallbackDir
+    }
+    if (-not (Get-Command git -ErrorAction SilentlyContinue) -or -not (Get-Command cargo -ErrorAction SilentlyContinue)) {
+      return $null
+    }
+
+    $script:SourceFallbackTmp = New-TemporaryFile
+    Remove-Item $script:SourceFallbackTmp.FullName -Force
+    New-Item -ItemType Directory -Path $script:SourceFallbackTmp.FullName | Out-Null
+    $script:SourceFallbackDir = Join-Path $script:SourceFallbackTmp.FullName "repo"
+    $repoUrl = "https://github.com/$RepoOwner/$RepoName.git"
+    try {
+      git clone --depth 1 --branch $VersionTag $repoUrl $script:SourceFallbackDir | Out-Null
+      return $script:SourceFallbackDir
+    } catch {
+      try {
+        git clone --depth 1 $repoUrl $script:SourceFallbackDir | Out-Null
+        return $script:SourceFallbackDir
+      } catch {
+        return $null
+      }
+    }
+  }
+
+  function Install-BinaryFromSourceFallback([string]$VersionTag, [string]$StemName, [string]$OutBinaryPath) {
+    $binName = Resolve-SourceBinName $StemName
+    if (-not $binName) { return $false }
+
+    $repoDir = Prepare-SourceFallbackRepo $VersionTag
+    if (-not $repoDir) { return $false }
+
+    $manifest = Join-Path $repoDir "core/layer0/ops/Cargo.toml"
+    try {
+      cargo build --release --manifest-path $manifest --bin $binName | Out-Null
+    } catch {
+      return $false
+    }
+
+    $built = Join-Path $repoDir "target/release/$binName.exe"
+    if (-not (Test-Path $built)) { return $false }
+    Copy-Item -Force $built $OutBinaryPath
+    Write-Host "[infring install] built $binName from source fallback"
+    return $true
+  }
+
   $tmp = New-TemporaryFile
   Remove-Item $tmp.FullName -Force
   New-Item -ItemType Directory -Path $tmp.FullName | Out-Null
@@ -118,7 +224,7 @@ function Install-Binary($Version, $Triple, $Stem, $OutPath) {
     return $true
   }
 
-  return $false
+  return (Install-BinaryFromSourceFallback $Version $Stem $OutPath)
 }
 
 function Install-ClientBundle($Version, $Triple, $OutDir) {
@@ -377,3 +483,7 @@ if ($machinePath -notlike "*$InstallDir*") {
 Write-Host "[infring install] installed: infring, infringctl, infringd"
 Write-Host "[infring install] aliases: protheus, protheusctl, protheusd"
 Write-Host "[infring install] open a new terminal and run: infring --help"
+
+if ($script:SourceFallbackTmp -and (Test-Path $script:SourceFallbackTmp.FullName)) {
+  Remove-Item -Force -Recurse $script:SourceFallbackTmp.FullName
+}

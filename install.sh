@@ -4,16 +4,20 @@ set -eu
 REPO_OWNER="protheuslabs"
 REPO_NAME="InfRing"
 DEFAULT_API="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest"
+DEFAULT_LATEST_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest"
 DEFAULT_BASE="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download"
 
 INSTALL_DIR="${INFRING_INSTALL_DIR:-${PROTHEUS_INSTALL_DIR:-$HOME/.local/bin}}"
 REQUESTED_VERSION="${INFRING_VERSION:-${PROTHEUS_VERSION:-latest}}"
 API_URL="${INFRING_RELEASE_API_URL:-${PROTHEUS_RELEASE_API_URL:-$DEFAULT_API}}"
+LATEST_URL="${INFRING_RELEASE_LATEST_URL:-${PROTHEUS_RELEASE_LATEST_URL:-$DEFAULT_LATEST_URL}}"
 BASE_URL="${INFRING_RELEASE_BASE_URL:-${PROTHEUS_RELEASE_BASE_URL:-$DEFAULT_BASE}}"
 INSTALL_FULL="${INFRING_INSTALL_FULL:-${PROTHEUS_INSTALL_FULL:-0}}"
 INSTALL_PURE="${INFRING_INSTALL_PURE:-${PROTHEUS_INSTALL_PURE:-0}}"
 INSTALL_TINY_MAX="${INFRING_INSTALL_TINY_MAX:-${PROTHEUS_INSTALL_TINY_MAX:-0}}"
 INSTALL_REPAIR="${INFRING_INSTALL_REPAIR:-${PROTHEUS_INSTALL_REPAIR:-0}}"
+SOURCE_FALLBACK_DIR=""
+SOURCE_FALLBACK_TMP=""
 
 need_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -170,18 +174,48 @@ latest_version() {
   curl -fsSL "$API_URL" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1
 }
 
+latest_version_from_redirect() {
+  final_url="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "$LATEST_URL" || true)"
+  case "$final_url" in
+    */releases/tag/v*)
+      printf '%s\n' "$final_url" | sed -n 's#.*\/releases\/tag\/\(v[^/?#]*\).*#\1#p' | head -n 1
+      ;;
+    *)
+      ;;
+  esac
+}
+
+normalize_version() {
+  raw="$1"
+  case "$raw" in
+    v*) printf '%s\n' "$raw" ;;
+    *) printf 'v%s\n' "$raw" ;;
+  esac
+}
+
 resolve_version() {
   if [ "$REQUESTED_VERSION" != "latest" ]; then
-    case "$REQUESTED_VERSION" in
-      v*) echo "$REQUESTED_VERSION" ;;
-      *) echo "v$REQUESTED_VERSION" ;;
-    esac
+    normalize_version "$REQUESTED_VERSION"
     return
   fi
 
   version="$(latest_version || true)"
   if [ -z "$version" ]; then
-    echo "[infring install] failed to resolve latest release tag from GitHub API" >&2
+    version="$(latest_version_from_redirect || true)"
+    if [ -n "$version" ]; then
+      echo "[infring install] GitHub API unavailable; resolved latest tag via releases/latest redirect: $version" >&2
+    fi
+  fi
+  if [ -z "$version" ]; then
+    fallback="${INFRING_FALLBACK_VERSION:-${PROTHEUS_FALLBACK_VERSION:-}}"
+    if [ -n "$fallback" ]; then
+      version="$(normalize_version "$fallback")"
+      echo "[infring install] using fallback version: $version" >&2
+    fi
+  fi
+  if [ -z "$version" ]; then
+    echo "[infring install] failed to resolve latest release tag (GitHub API + releases/latest redirect)." >&2
+    echo "[infring install] set INFRING_VERSION=vX.Y.Z (or PROTHEUS_VERSION) and rerun installer." >&2
     exit 1
   fi
   echo "$version"
@@ -199,6 +233,68 @@ download_asset() {
     return 0
   fi
   return 1
+}
+
+source_fallback_bin_name() {
+  stem_name="$1"
+  case "$stem_name" in
+    protheus-ops) echo "protheus-ops" ;;
+    protheusd|protheusd-tiny-max) echo "protheusd" ;;
+    conduit_daemon) echo "conduit_daemon" ;;
+    protheus-pure-workspace|protheus-pure-workspace-tiny-max) echo "protheus-pure-workspace" ;;
+    *) return 1 ;;
+  esac
+}
+
+prepare_source_fallback_repo() {
+  version_tag="$1"
+  if [ -n "$SOURCE_FALLBACK_DIR" ] && [ -d "$SOURCE_FALLBACK_DIR" ]; then
+    return 0
+  fi
+  if ! command -v git >/dev/null 2>&1 || ! command -v cargo >/dev/null 2>&1; then
+    return 1
+  fi
+
+  SOURCE_FALLBACK_TMP="$(mktemp -d)"
+  SOURCE_FALLBACK_DIR="$SOURCE_FALLBACK_TMP/repo"
+  repo_url="https://github.com/${REPO_OWNER}/${REPO_NAME}.git"
+
+  if git clone --depth 1 --branch "$version_tag" "$repo_url" "$SOURCE_FALLBACK_DIR" >/dev/null 2>&1; then
+    return 0
+  fi
+  if git clone --depth 1 "$repo_url" "$SOURCE_FALLBACK_DIR" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  rm -rf "$SOURCE_FALLBACK_TMP"
+  SOURCE_FALLBACK_TMP=""
+  SOURCE_FALLBACK_DIR=""
+  return 1
+}
+
+install_binary_from_source_fallback() {
+  version_tag="$1"
+  stem_name="$2"
+  binary_out="$3"
+
+  bin_name="$(source_fallback_bin_name "$stem_name" || true)"
+  [ -n "$bin_name" ] || return 1
+
+  prepare_source_fallback_repo "$version_tag" || return 1
+  repo_dir="$SOURCE_FALLBACK_DIR"
+  [ -n "$repo_dir" ] || return 1
+
+  manifest="$repo_dir/core/layer0/ops/Cargo.toml"
+  if ! cargo build --release --manifest-path "$manifest" --bin "$bin_name"; then
+    return 1
+  fi
+  built="$repo_dir/target/release/$bin_name"
+  [ -f "$built" ] || return 1
+
+  cp "$built" "$binary_out"
+  chmod 755 "$binary_out"
+  echo "[infring install] built $bin_name from source fallback"
+  return 0
 }
 
 install_binary() {
@@ -247,6 +343,9 @@ install_binary() {
   fi
 
   rm -rf "$tmpdir"
+  if install_binary_from_source_fallback "$version_tag" "$stem_name" "$binary_out"; then
+    return 0
+  fi
   return 1
 }
 
@@ -451,6 +550,10 @@ main() {
       echo "[infring install] add to PATH: export PATH=\"$INSTALL_DIR:\$PATH\""
       ;;
   esac
+
+  if [ -n "$SOURCE_FALLBACK_TMP" ] && [ -d "$SOURCE_FALLBACK_TMP" ]; then
+    rm -rf "$SOURCE_FALLBACK_TMP"
+  fi
 }
 
 main "$@"
