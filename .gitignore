@@ -258,6 +258,12 @@ docs/workspace/CHURN_GUARD_CURRENT.md
 # Runtime local credentials (instance-specific)
 client/runtime/config/credentials.json
 client/runtime/config/moltbook/credentials.json
+
+# Generated local harness artifacts (non-source, high churn)
+.nanochat/
+.swarm_test_*.json
+swarm_test_*_data.json
+client/runtime/systems/skills/packages/
 client/runtime/config/strategies/*.json
 
 # Additional local churn currently restored from stashes

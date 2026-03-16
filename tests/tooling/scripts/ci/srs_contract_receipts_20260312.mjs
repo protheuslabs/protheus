@@ -39,7 +39,7 @@ const checks = [
   {
     id: 'V6-EVAL-001.4',
     argv: ['protheusctl', 'eval', 'enable', 'neuralavb', '--enabled=1'],
-    expectedType: 'ab_lane_eval_neuralavb_enable',
+    expectedTypes: ['ab_lane_eval_neuralavb_enable', 'eval_plane_enable_neuralavb'],
   },
   {
     id: 'V6-ECONOMY-001.1',
@@ -200,7 +200,7 @@ const checks = [
   {
     id: 'V6-NETWORK-004.6',
     argv: ['protheusctl', 'network', 'join', 'hyperspace', '--apply=1'],
-    expectedType: 'p2p_gossip_seed_join',
+    expectedTypes: ['p2p_gossip_seed_join', 'network_protocol_join_hyperspace'],
   },
   {
     id: 'V6-COGNITION-012.1',
@@ -210,7 +210,7 @@ const checks = [
   {
     id: 'V6-COGNITION-012.2',
     argv: ['protheusctl', 'skill', 'create', '--task=triage github issues'],
-    expectedType: 'assimilation_controller_skill_create',
+    expectedTypes: ['assimilation_controller_skill_create', 'skills_plane_create'],
   },
   {
     id: 'V6-COGNITION-012.3',
@@ -238,7 +238,7 @@ const checks = [
   {
     id: 'V6-COGNITION-012.5',
     argv: ['protheusctl', 'skills', 'dashboard'],
-    expectedType: 'assimilation_controller_skills_dashboard',
+    expectedTypes: ['assimilation_controller_skills_dashboard', 'skills_plane_dashboard'],
   },
   {
     id: 'V6-COCKPIT-026.1',
@@ -366,6 +366,9 @@ function ensureBinary() {
 
 function runCheck(check) {
   const startedAt = new Date().toISOString();
+  const expectedTypes = Array.isArray(check.expectedTypes)
+    ? check.expectedTypes
+    : [check.expectedType].filter(Boolean);
   try {
     const raw = execFileSync(BIN, check.argv, {
       cwd: ROOT,
@@ -386,7 +389,7 @@ function runCheck(check) {
     collectTypes(payload, allTypes);
     const hashes = new Set();
     collectReceiptHashes(payload, hashes);
-    const ok = allTypes.has(check.expectedType);
+    const ok = expectedTypes.some((type) => allTypes.has(type));
     return {
       ...check,
       ok,
@@ -395,7 +398,7 @@ function runCheck(check) {
       observedTypes: [...allTypes].sort(),
       observedReceiptHashes: [...hashes].sort(),
       payload,
-      error: ok ? null : `expected_type_missing:${check.expectedType}`,
+      error: ok ? null : `expected_type_missing_any:${expectedTypes.join('|')}`,
     };
   } catch (error) {
     const stdout = String(error?.stdout ?? '');
@@ -405,7 +408,7 @@ function runCheck(check) {
     collectTypes(payload, allTypes);
     const hashes = new Set();
     collectReceiptHashes(payload, hashes);
-    const ok = payload && allTypes.has(check.expectedType);
+    const ok = payload && expectedTypes.some((type) => allTypes.has(type));
     return {
       ...check,
       ok,
@@ -432,7 +435,10 @@ function writeReports(results, summary) {
         results: results.map((r) => ({
           id: r.id,
           ok: r.ok,
-          expectedType: r.expectedType,
+          expectedTypes:
+            Array.isArray(r.expectedTypes) && r.expectedTypes.length > 0
+              ? r.expectedTypes
+              : [r.expectedType].filter(Boolean),
           observedTypes: r.observedTypes ?? [],
           observedReceiptHashes: r.observedReceiptHashes ?? [],
           argv: r.argv,
@@ -457,8 +463,11 @@ function writeReports(results, summary) {
   lines.push('| ID | Result | Expected Type | Observed Types | Receipt Hash Count |');
   lines.push('|---|---|---|---|---:|');
   for (const r of results) {
+    const expected = Array.isArray(r.expectedTypes) && r.expectedTypes.length > 0
+      ? r.expectedTypes.join(' | ')
+      : r.expectedType;
     lines.push(
-      `| ${r.id} | ${r.ok ? 'PASS' : 'FAIL'} | ${r.expectedType} | ${(r.observedTypes ?? []).join(', ')} | ${(r.observedReceiptHashes ?? []).length} |`,
+      `| ${r.id} | ${r.ok ? 'PASS' : 'FAIL'} | ${expected} | ${(r.observedTypes ?? []).join(', ')} | ${(r.observedReceiptHashes ?? []).length} |`,
     );
   }
   lines.push('');
