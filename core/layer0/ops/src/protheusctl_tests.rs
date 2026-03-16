@@ -56,6 +56,14 @@ fn core_shortcut_routes_rag_command() {
 }
 
 #[test]
+fn core_shortcut_routes_swarm_command() {
+    let route = resolve_core_shortcuts("swarm", &["test".to_string(), "recursive".to_string()])
+        .expect("route");
+    assert_eq!(route.script_rel, "core://swarm-runtime");
+    assert_eq!(route.args, vec!["test", "recursive"]);
+}
+
+#[test]
 fn core_shortcut_routes_memory_command() {
     let route = resolve_core_shortcuts("memory", &["search".to_string(), "--q=ledger".to_string()])
         .expect("route");

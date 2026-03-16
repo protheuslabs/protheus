@@ -1,8 +1,8 @@
 // Layer ownership: core/layer0/ops (authoritative)
 // SPDX-License-Identifier: Apache-2.0
 use protheus_ops_core::{
-    configure_low_memory_allocator_env, deterministic_receipt_hash, parse_args, parse_os_args, run_runtime_efficiency_floor,
-    status_runtime_efficiency_floor,
+    configure_low_memory_allocator_env, deterministic_receipt_hash, parse_args, parse_os_args,
+    run_runtime_efficiency_floor, status_runtime_efficiency_floor,
 };
 use serde_json::{json, Value};
 use std::env;
@@ -639,6 +639,11 @@ fn main() {
         "spawn-broker" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::spawn_broker::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "swarm-runtime" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::swarm_runtime::run(&cwd, &rest);
             std::process::exit(exit);
         }
         "execution-yield-recovery" => {

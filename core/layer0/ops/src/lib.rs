@@ -129,6 +129,7 @@ pub mod strategy_mode_governor;
 pub mod strategy_resolver;
 pub mod substrate_plane;
 pub mod supply_chain_provenance_v2;
+pub mod swarm_runtime;
 pub mod top1_assurance;
 pub mod v8_kernel;
 pub mod vbrowser_plane;

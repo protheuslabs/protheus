@@ -114,6 +114,9 @@ pub(super) fn print_usage() {
     println!("  protheus-ops contribution-oracle <validate|status> [flags]");
     println!("  protheus-ops sensory-eyes-intake <command> [flags]");
     println!("  protheus-ops spawn-broker <status|request|release> [flags]");
+    println!(
+        "  protheus-ops swarm-runtime <status|spawn|byzantine-test|consensus-check|test> [flags]"
+    );
     println!("  protheus-ops execution-yield-recovery <command> [flags]");
     println!("  protheus-ops protheus-control-plane <command> [flags]");
     println!("  protheus-ops rust50-migration-program <command> [flags]");
