@@ -140,7 +140,10 @@ function runSpawn(parsed) {
     '--metrics=detailed',
   ];
 
-  const tokenBudget = optionalIntFlag(parsed['token-budget'] ?? parsed.token_budget, 1);
+  const tokenBudget = optionalIntFlag(
+    parsed['token-budget'] ?? parsed.token_budget ?? parsed['max-tokens'] ?? parsed.max_tokens,
+    1
+  );
   if (tokenBudget != null) args.push(`--token-budget=${tokenBudget}`);
 
   const tokenWarningAt = optionalFloatFlag(

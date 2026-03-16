@@ -2,5 +2,11 @@
   "version": "1.0",
   "enabled": true,
   "shadow_only": true,
-  "strict_default": true
+  "strict_default": true,
+  "gates": {
+    "cold_start_ms_max": 250,
+    "idle_memory_mb_max": 64,
+    "install_size_mb_max": 128,
+    "tasks_per_sec_min": 3000
+  }
 }

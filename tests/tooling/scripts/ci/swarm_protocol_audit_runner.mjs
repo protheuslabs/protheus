@@ -154,7 +154,7 @@ function runBudgetTest(statePath) {
   try {
     bridge.sessionsSpawn({
       task: 'summarize largest programming language communities',
-      token_budget: 80,
+      max_tokens: 80,
       on_budget_exhausted: 'fail',
       state_path: statePath,
     });
@@ -169,7 +169,7 @@ function runBudgetTest(statePath) {
   }
   const warn = bridge.sessionsSpawn({
     task: 'summarize largest programming language communities',
-    token_budget: 80,
+    max_tokens: 80,
     on_budget_exhausted: 'warn',
     state_path: statePath,
   });
@@ -185,14 +185,10 @@ function runPersistentTest(statePath) {
       task: 'monitor',
       sessionType: 'persistent',
       ttlMinutes: 5,
-      checkpointInterval: 60,
+      checkpointInterval: 1,
       state_path: statePath,
     });
-    bridge.sessionsTick({
-      advance_ms: 180000,
-      max_check_ins: 32,
-      state_path: statePath,
-    });
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1300);
     const state = bridge.sessionsState({
       session_id: persistent.session_id,
       timeline: 1,
@@ -229,6 +225,12 @@ function runCommunicationTest(statePath) {
       session_id: parent.session_id,
       state_path: statePath,
     });
+    if (!Array.isArray(sender.tool_access) || !sender.tool_access.includes('sessions_send')) {
+      return fail('test_6_inter_agent_communication', 'sessions_send_not_advertised', {
+        sender: sender.session_id,
+        tool_access: sender.tool_access || null,
+      });
+    }
     const sent = bridge.sessionsSend({
       sender: sender.session_id,
       session_id: receiver.session_id,

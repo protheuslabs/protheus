@@ -468,6 +468,27 @@ fn run_node_script(root: &Path, script_rel: &str, args: &[String], forward_stdin
     }
 
     let script_abs = workspace_root.join(script_rel);
+    if !script_abs.exists() {
+        let synthetic_route = Route {
+            script_rel: script_rel.to_string(),
+            args: args.to_vec(),
+            forward_stdin,
+        };
+        if let Some(status) = node_missing_fallback(&workspace_root, &synthetic_route, false) {
+            return status;
+        }
+        eprintln!(
+            "{}",
+            json!({
+                "ok": false,
+                "type": "protheusctl_dispatch",
+                "error": "script_missing",
+                "script_rel": clean(script_rel, 220)
+            })
+        );
+        return 1;
+    }
+
     let mut cmd = Command::new(node_bin());
     cmd.arg(script_abs)
         .args(args)

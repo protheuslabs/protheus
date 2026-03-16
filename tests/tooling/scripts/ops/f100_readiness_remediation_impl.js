@@ -59,7 +59,7 @@ function median(values) {
 }
 
 function writeRunbooks() {
-  const runbookDir = path.join(ROOT, 'observability', 'runbooks');
+  const runbookDir = path.join(ROOT, 'docs', 'observability', 'runbooks');
   ensureDir(runbookDir);
 
   const incidentCommandPath = path.join(runbookDir, 'INCIDENT_COMMAND.md');
@@ -298,4 +298,3 @@ module.exports = {
   writeOnboardingMetrics,
   ensureRootArchiveSurface,
 };
-

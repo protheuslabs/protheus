@@ -29,8 +29,8 @@
       "target_mtta_minutes": 5,
       "target_mttr_minutes": 30,
       "required_docs": [
-        "observability/runbooks/INCIDENT_COMMAND.md",
-        "observability/runbooks/POSTMORTEM_TEMPLATE.md"
+        "docs/observability/runbooks/INCIDENT_COMMAND.md",
+        "docs/observability/runbooks/POSTMORTEM_TEMPLATE.md"
       ]
     },
     "V6-F100-009": {

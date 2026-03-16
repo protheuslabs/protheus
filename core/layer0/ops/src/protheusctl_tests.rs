@@ -2186,3 +2186,23 @@ fn node_missing_fallback_is_none_for_non_fallback_routes() {
     };
     assert_eq!(node_missing_fallback(Path::new("."), &route, false), None);
 }
+
+#[test]
+fn run_node_script_falls_back_when_command_list_script_is_missing() {
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("clock")
+        .as_nanos();
+    let base = std::env::temp_dir().join(format!("protheusctl_missing_script_fallback_{nonce}"));
+    fs::create_dir_all(base.join("client/runtime/systems/ops")).expect("mkdir");
+
+    let status = run_node_script(
+        &base,
+        "client/runtime/systems/ops/protheus_command_list.js",
+        &["--mode=list".to_string()],
+        false,
+    );
+    assert_eq!(status, 0, "expected fallback command list to succeed");
+
+    let _ = fs::remove_dir_all(base);
+}

@@ -2,9 +2,9 @@
   "ascii_report": [
     "Benchmarks: Measured, Not Marketed",
     "Cold Start Time (lower is better)",
-    "Protheus Pure Tiny-Max ############################################  2 ms",
-    "Protheus Pure ############################################  4 ms",
-    "OpenClaw   ############################################  5 ms",
+    "InfRing (pure) ############################################  4 ms",
+    "InfRing (tiny-max) ############################################  5 ms",
+    "OpenClaw   ############################################  6 ms",
     "OpenFang   ##########################################--  180 ms",
     "OpenHands  ##############################--------------  1.30 sec",
     "LangGraph  #################---------------------------  2.50 sec",
@@ -12,9 +12,9 @@
     "AutoGen    #-------------------------------------------  4.00 sec",
     "",
     "Idle Memory Usage (lower is better)",
-    "Protheus Pure ############################################  1.4 MB",
-    "Protheus Pure Tiny-Max ############################################  1.4 MB",
-    "OpenClaw   ###########################################-  9.6 MB",
+    "InfRing (pure) ############################################  1.4 MB",
+    "InfRing (tiny-max) ############################################  1.4 MB",
+    "OpenClaw   ###########################################-  9.7 MB",
     "OpenFang   #####################################-------  40.0 MB",
     "OpenHands  ##################--------------------------  150.0 MB",
     "LangGraph  ############--------------------------------  180.0 MB",
@@ -22,19 +22,24 @@
     "AutoGen    #-------------------------------------------  250.0 MB",
     "",
     "Install Size (lower is better)",
-    "Protheus Pure Tiny-Max ############################################  0.5 MB",
-    "Protheus Pure ############################################  0.7 MB",
-    "OpenClaw   ##########################################--  11.5 MB",
+    "InfRing (tiny-max) ############################################  0.5 MB",
+    "InfRing (pure) ############################################  0.7 MB",
+    "OpenClaw   #########################################---  11.8 MB",
     "OpenFang   #####################################-------  32.0 MB",
     "OpenHands  #######################---------------------  95.5 MB",
     "CrewAI     ######################----------------------  100.0 MB",
     "LangGraph  ###########---------------------------------  150.0 MB",
     "AutoGen    #-------------------------------------------  200.0 MB",
     "",
+    "Throughput (ops/sec, higher is better)",
+    "InfRing (tiny-max) ############################################  11380.6 ops/sec",
+    "InfRing (pure) ###################################---------  11290.9 ops/sec",
+    "OpenClaw   #-------------------------------------------  10943.1 ops/sec",
+    "",
     "Security Systems (higher is better)",
+    "InfRing (pure) ############################################  83",
+    "InfRing (tiny-max) ############################################  83",
     "OpenClaw   ############################################  83",
-    "Protheus Pure ############################################  83",
-    "Protheus Pure Tiny-Max ############################################  83",
     "OpenFang   ########------------------------------------  16",
     "OpenHands  ###-----------------------------------------  7",
     "AutoGen    #-------------------------------------------  2",
@@ -48,8 +53,8 @@
     "AutoGen    ####----------------------------------------  4",
     "LangGraph  ####----------------------------------------  4",
     "CrewAI     ###-----------------------------------------  3",
-    "Protheus Pure #-------------------------------------------  0",
-    "Protheus Pure Tiny-Max #-------------------------------------------  0",
+    "InfRing (pure) #-------------------------------------------  0",
+    "InfRing (tiny-max) #-------------------------------------------  0",
     "",
     "LLM Providers (higher is better)",
     "OpenFang   ############################################  27",
@@ -58,8 +63,8 @@
     "AutoGen    #############-------------------------------  8",
     "OpenHands  ########------------------------------------  5",
     "OpenClaw   #####---------------------------------------  3",
-    "Protheus Pure #-------------------------------------------  0",
-    "Protheus Pure Tiny-Max #-------------------------------------------  0",
+    "InfRing (pure) #-------------------------------------------  0",
+    "InfRing (tiny-max) #-------------------------------------------  0",
     ""
   ],
   "bar_width": 44,
@@ -67,9 +72,9 @@
     {
       "ascii_lines": [
         "Cold Start Time (lower is better)",
-        "Protheus Pure Tiny-Max ############################################  2 ms",
-        "Protheus Pure ############################################  4 ms",
-        "OpenClaw   ############################################  5 ms",
+        "InfRing (pure) ############################################  4 ms",
+        "InfRing (tiny-max) ############################################  5 ms",
+        "OpenClaw   ############################################  6 ms",
         "OpenFang   ##########################################--  180 ms",
         "OpenHands  ##############################--------------  1.30 sec",
         "LangGraph  #################---------------------------  2.50 sec",
@@ -84,26 +89,26 @@
         {
           "bar": "############################################",
           "highlight": false,
-          "project": "Protheus Pure Tiny-Max",
+          "project": "InfRing (pure)",
           "rank": 1,
-          "score": "2 ms",
-          "value": 2.485833
+          "score": "4 ms",
+          "value": 4.281583
         },
         {
           "bar": "############################################",
           "highlight": false,
-          "project": "Protheus Pure",
+          "project": "InfRing (tiny-max)",
           "rank": 2,
-          "score": "4 ms",
-          "value": 3.979041
+          "score": "5 ms",
+          "value": 4.590041
         },
         {
           "bar": "############################################",
           "highlight": false,
           "project": "OpenClaw",
           "rank": 3,
-          "score": "5 ms",
-          "value": 4.892
+          "score": "6 ms",
+          "value": 5.557
         },
         {
           "bar": "##########################################--",
@@ -151,9 +156,9 @@
     {
       "ascii_lines": [
         "Idle Memory Usage (lower is better)",
-        "Protheus Pure ############################################  1.4 MB",
-        "Protheus Pure Tiny-Max ############################################  1.4 MB",
-        "OpenClaw   ###########################################-  9.6 MB",
+        "InfRing (pure) ############################################  1.4 MB",
+        "InfRing (tiny-max) ############################################  1.4 MB",
+        "OpenClaw   ###########################################-  9.7 MB",
         "OpenFang   #####################################-------  40.0 MB",
         "OpenHands  ##################--------------------------  150.0 MB",
         "LangGraph  ############--------------------------------  180.0 MB",
@@ -168,7 +173,7 @@
         {
           "bar": "############################################",
           "highlight": false,
-          "project": "Protheus Pure",
+          "project": "InfRing (pure)",
           "rank": 1,
           "score": "1.4 MB",
           "value": 1.375
@@ -176,7 +181,7 @@
         {
           "bar": "############################################",
           "highlight": false,
-          "project": "Protheus Pure Tiny-Max",
+          "project": "InfRing (tiny-max)",
           "rank": 2,
           "score": "1.4 MB",
           "value": 1.375
@@ -186,8 +191,8 @@
           "highlight": false,
           "project": "OpenClaw",
           "rank": 3,
-          "score": "9.6 MB",
-          "value": 9.609
+          "score": "9.7 MB",
+          "value": 9.734
         },
         {
           "bar": "#####################################-------",
@@ -235,9 +240,9 @@
     {
       "ascii_lines": [
         "Install Size (lower is better)",
-        "Protheus Pure Tiny-Max ############################################  0.5 MB",
-        "Protheus Pure ############################################  0.7 MB",
-        "OpenClaw   ##########################################--  11.5 MB",
+        "InfRing (tiny-max) ############################################  0.5 MB",
+        "InfRing (pure) ############################################  0.7 MB",
+        "OpenClaw   #########################################---  11.8 MB",
         "OpenFang   #####################################-------  32.0 MB",
         "OpenHands  #######################---------------------  95.5 MB",
         "CrewAI     ######################----------------------  100.0 MB",
@@ -252,7 +257,7 @@
         {
           "bar": "############################################",
           "highlight": false,
-          "project": "Protheus Pure Tiny-Max",
+          "project": "InfRing (tiny-max)",
           "rank": 1,
           "score": "0.5 MB",
           "value": 0.483
@@ -260,18 +265,18 @@
         {
           "bar": "############################################",
           "highlight": false,
-          "project": "Protheus Pure",
+          "project": "InfRing (pure)",
           "rank": 2,
           "score": "0.7 MB",
           "value": 0.67
         },
         {
-          "bar": "##########################################--",
+          "bar": "#########################################---",
           "highlight": false,
           "project": "OpenClaw",
           "rank": 3,
-          "score": "11.5 MB",
-          "value": 11.467
+          "score": "11.8 MB",
+          "value": 11.837
         },
         {
           "bar": "#####################################-------",
@@ -318,10 +323,49 @@
     },
     {
       "ascii_lines": [
+        "Throughput (ops/sec, higher is better)",
+        "InfRing (tiny-max) ############################################  11380.6 ops/sec",
+        "InfRing (pure) ###################################---------  11290.9 ops/sec",
+        "OpenClaw   #-------------------------------------------  10943.1 ops/sec"
+      ],
+      "bar_width": 44,
+      "key": "tasks_per_sec",
+      "label": "Throughput (ops/sec, higher is better)",
+      "lower_is_better": false,
+      "rows": [
+        {
+          "bar": "############################################",
+          "highlight": false,
+          "project": "InfRing (tiny-max)",
+          "rank": 1,
+          "score": "11380.6 ops/sec",
+          "value": 11380.6
+        },
+        {
+          "bar": "###################################---------",
+          "highlight": false,
+          "project": "InfRing (pure)",
+          "rank": 2,
+          "score": "11290.9 ops/sec",
+          "value": 11290.9
+        },
+        {
+          "bar": "#-------------------------------------------",
+          "highlight": false,
+          "project": "OpenClaw",
+          "rank": 3,
+          "score": "10943.1 ops/sec",
+          "value": 10943.09
+        }
+      ],
+      "unit": "ops/sec"
+    },
+    {
+      "ascii_lines": [
         "Security Systems (higher is better)",
+        "InfRing (pure) ############################################  83",
+        "InfRing (tiny-max) ############################################  83",
         "OpenClaw   ############################################  83",
-        "Protheus Pure ############################################  83",
-        "Protheus Pure Tiny-Max ############################################  83",
         "OpenFang   ########------------------------------------  16",
         "OpenHands  ###-----------------------------------------  7",
         "AutoGen    #-------------------------------------------  2",
@@ -336,7 +380,7 @@
         {
           "bar": "############################################",
           "highlight": false,
-          "project": "OpenClaw",
+          "project": "InfRing (pure)",
           "rank": 1,
           "score": "83",
           "value": 83.0
@@ -344,7 +388,7 @@
         {
           "bar": "############################################",
           "highlight": false,
-          "project": "Protheus Pure",
+          "project": "InfRing (tiny-max)",
           "rank": 2,
           "score": "83",
           "value": 83.0
@@ -352,7 +396,7 @@
         {
           "bar": "############################################",
           "highlight": false,
-          "project": "Protheus Pure Tiny-Max",
+          "project": "OpenClaw",
           "rank": 3,
           "score": "83",
           "value": 83.0
@@ -409,8 +453,8 @@
         "AutoGen    ####----------------------------------------  4",
         "LangGraph  ####----------------------------------------  4",
         "CrewAI     ###-----------------------------------------  3",
-        "Protheus Pure #-------------------------------------------  0",
-        "Protheus Pure Tiny-Max #-------------------------------------------  0"
+        "InfRing (pure) #-------------------------------------------  0",
+        "InfRing (tiny-max) #-------------------------------------------  0"
       ],
       "bar_width": 44,
       "key": "channel_adapters",
@@ -468,7 +512,7 @@
         {
           "bar": "#-------------------------------------------",
           "highlight": false,
-          "project": "Protheus Pure",
+          "project": "InfRing (pure)",
           "rank": 7,
           "score": "0",
           "value": 0.0
@@ -476,7 +520,7 @@
         {
           "bar": "#-------------------------------------------",
           "highlight": false,
-          "project": "Protheus Pure Tiny-Max",
+          "project": "InfRing (tiny-max)",
           "rank": 8,
           "score": "0",
           "value": 0.0
@@ -493,8 +537,8 @@
         "AutoGen    #############-------------------------------  8",
         "OpenHands  ########------------------------------------  5",
         "OpenClaw   #####---------------------------------------  3",
-        "Protheus Pure #-------------------------------------------  0",
-        "Protheus Pure Tiny-Max #-------------------------------------------  0"
+        "InfRing (pure) #-------------------------------------------  0",
+        "InfRing (tiny-max) #-------------------------------------------  0"
       ],
       "bar_width": 44,
       "key": "llm_providers",
@@ -552,7 +596,7 @@
         {
           "bar": "#-------------------------------------------",
           "highlight": false,
-          "project": "Protheus Pure",
+          "project": "InfRing (pure)",
           "rank": 7,
           "score": "0",
           "value": 0.0
@@ -560,7 +604,7 @@
         {
           "bar": "#-------------------------------------------",
           "highlight": false,
-          "project": "Protheus Pure Tiny-Max",
+          "project": "InfRing (tiny-max)",
           "rank": 8,
           "score": "0",
           "value": 0.0
@@ -616,7 +660,7 @@
   "environment_fingerprint": {
     "arch": "aarch64",
     "cpu_parallelism": 8,
-    "git_revision": "b1bf0ad3424b337a10c24fd8822ab0e16fdd73ea",
+    "git_revision": "46568d4e421091b0fbb8eee1326eff4e2c6e495b",
     "os": "macos",
     "rustc_version": "rustc 1.93.1 (01f6ddf75 2026-02-11)",
     "workload_id": "live_hash_workload_v1"
@@ -626,10 +670,10 @@
   "ok": true,
   "openclaw_measured": {
     "channel_adapters": 6.0,
-    "cold_start_ms": 4.892,
+    "cold_start_ms": 5.557,
     "data_source": "runtime_efficiency_floor + policy counters",
-    "idle_memory_mb": 9.609,
-    "install_size_mb": 11.467,
+    "idle_memory_mb": 9.734,
+    "install_size_mb": 11.837,
     "llm_providers": 3.0,
     "measured": true,
     "runtime_metric_source": {
@@ -641,7 +685,7 @@
       "tasks_work_factor": 16
     },
     "security_systems": 83.0,
-    "tasks_per_sec": 12767.82,
+    "tasks_per_sec": 10943.09,
     "throughput_source": "live_hash_workload_v1"
   },
   "projects": {
@@ -661,6 +705,50 @@
       "llm_providers": 10,
       "security_systems": 1
     },
+    "InfRing (pure)": {
+      "channel_adapters": 0.0,
+      "cold_start_ms": 4.281583,
+      "cold_start_p50_ms": 2.469709,
+      "cold_start_p95_ms": 4.281583,
+      "cold_start_p99_ms": 4.281583,
+      "daemon_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheusd",
+      "data_source": "pure_workspace_binary_probe",
+      "idle_memory_mb": 1.375,
+      "idle_rss_p50_mb": 1.375,
+      "idle_rss_p95_mb": 1.375,
+      "idle_rss_p99_mb": 1.375,
+      "install_size_mb": 0.67,
+      "llm_providers": 0.0,
+      "measured": true,
+      "mode": "pure",
+      "probe_binary_path": "/Users/jay/.openclaw/workspace/target/release/protheus-pure-workspace",
+      "security_systems": 83.0,
+      "size_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheus-pure-workspace",
+      "tasks_per_sec": 11290.9,
+      "throughput_source": "live_hash_workload_v1"
+    },
+    "InfRing (tiny-max)": {
+      "channel_adapters": 0.0,
+      "cold_start_ms": 4.590041,
+      "cold_start_p50_ms": 2.43825,
+      "cold_start_p95_ms": 4.590041,
+      "cold_start_p99_ms": 4.590041,
+      "daemon_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheusd_tiny_max",
+      "data_source": "pure_workspace_binary_probe",
+      "idle_memory_mb": 1.375,
+      "idle_rss_p50_mb": 1.375,
+      "idle_rss_p95_mb": 1.375,
+      "idle_rss_p99_mb": 1.375,
+      "install_size_mb": 0.483,
+      "llm_providers": 0.0,
+      "measured": true,
+      "mode": "pure-tiny-max",
+      "probe_binary_path": "/Users/jay/.openclaw/workspace/target/release/protheus-pure-workspace",
+      "security_systems": 83.0,
+      "size_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheus-pure-workspace",
+      "tasks_per_sec": 11380.6,
+      "throughput_source": "live_hash_workload_v1"
+    },
     "LangGraph": {
       "channel_adapters": 4,
       "cold_start_ms": 2500,
@@ -671,10 +759,10 @@
     },
     "OpenClaw": {
       "channel_adapters": 6.0,
-      "cold_start_ms": 4.892,
+      "cold_start_ms": 5.557,
       "data_source": "runtime_efficiency_floor + policy counters",
-      "idle_memory_mb": 9.609,
-      "install_size_mb": 11.467,
+      "idle_memory_mb": 9.734,
+      "install_size_mb": 11.837,
       "llm_providers": 3.0,
       "measured": true,
       "runtime_metric_source": {
@@ -686,7 +774,7 @@
         "tasks_work_factor": 16
       },
       "security_systems": 83.0,
-      "tasks_per_sec": 12767.82,
+      "tasks_per_sec": 10943.09,
       "throughput_source": "live_hash_workload_v1"
     },
     "OpenFang": {
@@ -704,58 +792,14 @@
       "install_size_mb": 95.5,
       "llm_providers": 5,
       "security_systems": 7
-    },
-    "Protheus Pure": {
-      "channel_adapters": 0.0,
-      "cold_start_ms": 3.979041,
-      "cold_start_p50_ms": 1.649708,
-      "cold_start_p95_ms": 3.979041,
-      "cold_start_p99_ms": 3.979041,
-      "daemon_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheusd",
-      "data_source": "pure_workspace_binary_probe",
-      "idle_memory_mb": 1.375,
-      "idle_rss_p50_mb": 1.375,
-      "idle_rss_p95_mb": 1.375,
-      "idle_rss_p99_mb": 1.375,
-      "install_size_mb": 0.67,
-      "llm_providers": 0.0,
-      "measured": true,
-      "mode": "pure",
-      "probe_binary_path": "/Users/jay/.openclaw/workspace/target/release/protheus-pure-workspace",
-      "security_systems": 83.0,
-      "size_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheus-pure-workspace",
-      "tasks_per_sec": 12357.34,
-      "throughput_source": "live_hash_workload_v1"
-    },
-    "Protheus Pure Tiny-Max": {
-      "channel_adapters": 0.0,
-      "cold_start_ms": 2.485833,
-      "cold_start_p50_ms": 1.748209,
-      "cold_start_p95_ms": 2.485833,
-      "cold_start_p99_ms": 2.485833,
-      "daemon_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheusd_tiny_max",
-      "data_source": "pure_workspace_binary_probe",
-      "idle_memory_mb": 1.375,
-      "idle_rss_p50_mb": 1.375,
-      "idle_rss_p95_mb": 1.375,
-      "idle_rss_p99_mb": 1.375,
-      "install_size_mb": 0.483,
-      "llm_providers": 0.0,
-      "measured": true,
-      "mode": "pure-tiny-max",
-      "probe_binary_path": "/Users/jay/.openclaw/workspace/target/release/protheus-pure-workspace",
-      "security_systems": 83.0,
-      "size_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheus-pure-workspace",
-      "tasks_per_sec": 12647.45,
-      "throughput_source": "live_hash_workload_v1"
     }
   },
   "pure_workspace_measured": {
     "channel_adapters": 0.0,
-    "cold_start_ms": 3.979041,
-    "cold_start_p50_ms": 1.649708,
-    "cold_start_p95_ms": 3.979041,
-    "cold_start_p99_ms": 3.979041,
+    "cold_start_ms": 4.281583,
+    "cold_start_p50_ms": 2.469709,
+    "cold_start_p95_ms": 4.281583,
+    "cold_start_p99_ms": 4.281583,
     "daemon_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheusd",
     "data_source": "pure_workspace_binary_probe",
     "idle_memory_mb": 1.375,
@@ -769,15 +813,15 @@
     "probe_binary_path": "/Users/jay/.openclaw/workspace/target/release/protheus-pure-workspace",
     "security_systems": 83.0,
     "size_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheus-pure-workspace",
-    "tasks_per_sec": 12357.34,
+    "tasks_per_sec": 11290.9,
     "throughput_source": "live_hash_workload_v1"
   },
   "pure_workspace_tiny_max_measured": {
     "channel_adapters": 0.0,
-    "cold_start_ms": 2.485833,
-    "cold_start_p50_ms": 1.748209,
-    "cold_start_p95_ms": 2.485833,
-    "cold_start_p99_ms": 2.485833,
+    "cold_start_ms": 4.590041,
+    "cold_start_p50_ms": 2.43825,
+    "cold_start_p95_ms": 4.590041,
+    "cold_start_p99_ms": 4.590041,
     "daemon_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheusd_tiny_max",
     "data_source": "pure_workspace_binary_probe",
     "idle_memory_mb": 1.375,
@@ -791,10 +835,10 @@
     "probe_binary_path": "/Users/jay/.openclaw/workspace/target/release/protheus-pure-workspace",
     "security_systems": 83.0,
     "size_binary_path": "/Users/jay/.openclaw/workspace/target/x86_64-unknown-linux-musl/release/protheus-pure-workspace",
-    "tasks_per_sec": 12647.45,
+    "tasks_per_sec": 11380.6,
     "throughput_source": "live_hash_workload_v1"
   },
-  "receipt_hash": "9c6467c17c9535e48a0e447ab681fae6893d0ad271d6cc7ea81d76a5de13aa86",
+  "receipt_hash": "e8c0f76b9a6242de828ff722cfe1ebd5176a5214ba19763c617e7395cf0ab094",
   "reference_month": "2026-02",
   "runtime_receipt": {
     "cold_start": {
@@ -808,26 +852,26 @@
       "dist_target": null,
       "engine": "core-lazy",
       "max_ms": 500.0,
-      "p95_ms": 4.892,
+      "p95_ms": 5.557,
       "runtime_mode": "source",
       "samples": 5
     },
     "enforce_hold_streak_strict": false,
     "full_install": {
       "paths": {
-        "client/runtime": 5.471,
-        "core/layer0/ops": 4.681,
+        "client/runtime": 5.636,
+        "core/layer0/ops": 4.887,
         "dist": 0.877,
         "target/x86_64-unknown-linux-musl/release/protheusd": 0.438
       },
-      "sum_mb": 11.467
+      "sum_mb": 11.837
     },
     "history_path": "local/state/ops/runtime_efficiency_floor_history.jsonl",
     "hold_streak_days": 2,
     "idle_rss": {
       "max_mb": 120.0,
       "measurement_mode": "process",
-      "p95_mb": 9.609,
+      "p95_mb": 9.734,
       "required_modules": [],
       "samples": 3
     },
@@ -839,11 +883,11 @@
       "sum_mb": 0.877
     },
     "metrics": {
-      "cold_start_p95_ms": 4.892,
-      "full_install_total_mb": 11.467,
-      "idle_rss_p95_mb": 9.609,
+      "cold_start_p95_ms": 5.557,
+      "full_install_total_mb": 11.837,
+      "idle_rss_p95_mb": 9.734,
       "install_artifact_total_mb": 0.877,
-      "tasks_per_sec": 12767.82
+      "tasks_per_sec": 10943.09
     },
     "ok": true,
     "pass": true,
@@ -853,12 +897,12 @@
     "strict": false,
     "strict_hold_ok": true,
     "target_hold_days": 7,
-    "ts": "2026-03-16T12:41:59.793Z",
+    "ts": "2026-03-16T23:11:17.117Z",
     "type": "runtime_efficiency_floor"
   },
   "snapshot_generated_from": null,
   "snapshot_path": "client/runtime/config/competitive_benchmark_snapshot_2026_02.json",
   "snapshot_version": null,
-  "ts": "2026-03-16T12:42:02.786Z",
+  "ts": "2026-03-16T23:11:20.079Z",
   "type": "competitive_benchmark_matrix"
 }

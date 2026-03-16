@@ -31,6 +31,10 @@ function run() {
     session_id: level1.session_id,
     state_path: state,
   });
+  assert(
+    Array.isArray(level1.tool_access) && level1.tool_access.includes('sessions_send'),
+    'expected spawned sessions to advertise sessions_send in tool_access'
+  );
   assert.strictEqual(level2.payload.payload.parent_id, level1.session_id);
   assert(
     Array.isArray(level1State.payload.session.children)
@@ -61,14 +65,10 @@ function run() {
     task: 'monitor and report',
     sessionType: 'persistent',
     ttlMinutes: 5,
-    checkpointInterval: 60,
+    checkpointInterval: 1,
     state_path: state,
   });
-  bridge.sessionsTick({
-    advance_ms: 120000,
-    max_check_ins: 16,
-    state_path: state,
-  });
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1300);
   const persistentState = bridge.sessionsState({
     session_id: persistent.session_id,
     timeline: 1,
@@ -156,7 +156,7 @@ function run() {
   try {
     bridge.sessionsSpawn({
       task: 'summarize largest programming language communities',
-      token_budget: 80,
+      max_tokens: 80,
       on_budget_exhausted: 'fail',
       state_path: state,
     });

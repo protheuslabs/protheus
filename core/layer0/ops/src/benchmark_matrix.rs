@@ -34,7 +34,7 @@ struct Category {
     unit: &'static str,
 }
 
-const CATEGORIES: [Category; 6] = [
+const CATEGORIES: [Category; 7] = [
     Category {
         key: "cold_start_ms",
         label: "Cold Start Time (lower is better)",
@@ -52,6 +52,12 @@ const CATEGORIES: [Category; 6] = [
         label: "Install Size (lower is better)",
         lower_is_better: true,
         unit: "MB",
+    },
+    Category {
+        key: "tasks_per_sec",
+        label: "Throughput (ops/sec, higher is better)",
+        lower_is_better: false,
+        unit: "ops/sec",
     },
     Category {
         key: "security_systems",
@@ -735,6 +741,7 @@ fn format_metric_value(category: Category, value: f64) -> String {
             }
         }
         "idle_memory_mb" | "install_size_mb" => format!("{value:.1} {}", category.unit),
+        "tasks_per_sec" => format!("{value:.1} {}", category.unit),
         _ => format!("{value:.0}"),
     }
 }
@@ -827,11 +834,11 @@ fn run_impl(
     let projects = merge_projects(&snapshot, &openclaw_measured)?;
     let mut projects = projects;
     if let Some(ref pure) = pure_workspace_measured {
-        projects.insert("Protheus Pure".to_string(), Value::Object(pure.clone()));
+        projects.insert("InfRing (pure)".to_string(), Value::Object(pure.clone()));
     }
     if let Some(ref pure_tiny_max) = pure_workspace_tiny_max_measured {
         projects.insert(
-            "Protheus Pure Tiny-Max".to_string(),
+            "InfRing (tiny-max)".to_string(),
             Value::Object(pure_tiny_max.clone()),
         );
     }

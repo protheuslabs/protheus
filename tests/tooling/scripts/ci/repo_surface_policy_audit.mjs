@@ -2,7 +2,7 @@
 /* eslint-disable no-console */
 import fs from 'node:fs';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 
 const ROOT = process.cwd();
 const SOURCE_RE = /\.(rs|c|cc|cpp|h|hpp|ts|tsx|js|jsx|py|sh|ps1|html|css|scss)$/;
@@ -83,6 +83,14 @@ function countByExt(files) {
   return Object.fromEntries(Object.entries(counts).sort((a, b) => b[1] - a[1]));
 }
 
+function isGitIgnored(entry) {
+  const probe = spawnSync('git', ['check-ignore', '-q', '--', entry], {
+    cwd: ROOT,
+    stdio: 'ignore',
+  });
+  return Number.isFinite(Number(probe.status)) && Number(probe.status) === 0;
+}
+
 function buildRootSurfaceReport(rootContractPath, revision) {
   const contractPath = path.resolve(ROOT, rootContractPath);
   const contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
@@ -95,6 +103,7 @@ function buildRootSurfaceReport(rootContractPath, revision) {
 
   for (const entry of fs.readdirSync(ROOT).sort()) {
     if (ignored.has(entry)) continue;
+    if (isGitIgnored(entry)) continue;
     const abs = path.join(ROOT, entry);
     const isDir = fs.lstatSync(abs).isDirectory();
     if (isDir) {

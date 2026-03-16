@@ -88,6 +88,8 @@ struct SessionMetadata {
     budget_action_taken: Option<String>,
     #[serde(default)]
     role: Option<String>,
+    #[serde(default = "default_session_tool_access")]
+    tool_access: Vec<String>,
     #[serde(default)]
     check_ins: Vec<Value>,
     #[serde(default)]
@@ -98,6 +100,18 @@ struct SessionMetadata {
     persistent: Option<PersistentRuntime>,
     #[serde(default)]
     background_worker: bool,
+}
+
+fn default_session_tool_access() -> Vec<String> {
+    vec![
+        "sessions_spawn".to_string(),
+        "sessions_send".to_string(),
+        "sessions_receive".to_string(),
+        "sessions_ack".to_string(),
+        "sessions_query".to_string(),
+        "sessions_state".to_string(),
+        "sessions_tick".to_string(),
+    ]
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -611,7 +625,7 @@ struct ResultFilters {
 fn usage() {
     println!("Usage:");
     println!("  protheus-ops swarm-runtime status [--state-path=<path>]");
-    println!("  protheus-ops swarm-runtime spawn [--task=<text>] [--session-id=<parent>] [--recursive=1|0] [--levels=<n>] [--max-depth=<n>] [--verify=1|0] [--timeout-sec=<seconds>] [--metrics=<none|detailed>] [--byzantine=1|0] [--corruption-type=<id>] [--token-budget=<n>] [--token-warning-at=<0..1>] [--on-budget-exhausted=<fail|warn|compact>] [--adaptive-complexity=1|0] [--execution-mode=<task|persistent|background>] [--role=<name>] [--capabilities=<csv>] [--lifespan-sec=<n>] [--check-in-interval-sec=<n>] [--report-mode=<always|anomalies|final>] [--state-path=<path>]");
+    println!("  protheus-ops swarm-runtime spawn [--task=<text>] [--session-id=<parent>] [--recursive=1|0] [--levels=<n>] [--max-depth=<n>] [--verify=1|0] [--timeout-sec=<seconds>] [--metrics=<none|detailed>] [--byzantine=1|0] [--corruption-type=<id>] [--token-budget=<n>|--max-tokens=<n>] [--token-warning-at=<0..1>] [--on-budget-exhausted=<fail|warn|compact>] [--adaptive-complexity=1|0] [--execution-mode=<task|persistent|background>] [--role=<name>] [--capabilities=<csv>] [--lifespan-sec=<n>] [--check-in-interval-sec=<n>] [--report-mode=<always|anomalies|final>] [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime tick [--advance-ms=<n>] [--max-check-ins=<n>] [--state-path=<path>]");
     println!(
         "  protheus-ops swarm-runtime byzantine-test <enable|disable|status> [--state-path=<path>]"
@@ -663,6 +677,10 @@ fn parse_flag(argv: &[String], key: &str) -> Option<String> {
         idx += 1;
     }
     None
+}
+
+fn parse_first_flag(argv: &[String], keys: &[&str]) -> Option<String> {
+    keys.iter().find_map(|key| parse_flag(argv, key))
 }
 
 fn parse_bool_flag(argv: &[String], key: &str, fallback: bool) -> bool {
@@ -845,7 +863,7 @@ fn parse_execution_mode(argv: &[String]) -> ExecutionMode {
         .to_ascii_lowercase();
     let cfg = PersistentAgentConfig {
         lifespan_sec: parse_u64_flag(argv, "lifespan-sec", 3600).max(1),
-        check_in_interval_sec: parse_u64_flag(argv, "check-in-interval-sec", 900).max(1),
+        check_in_interval_sec: parse_u64_flag(argv, "check-in-interval-sec", 60).max(1),
         report_mode: ReportMode::from_flag(parse_flag(argv, "report-mode")),
     };
     match mode.as_str() {
@@ -925,7 +943,10 @@ fn build_spawn_options(argv: &[String]) -> SpawnOptions {
     let metrics_detailed = parse_flag(argv, "metrics")
         .map(|value| value.eq_ignore_ascii_case("detailed"))
         .unwrap_or(false);
-    let token_budget = parse_flag(argv, "token-budget")
+    let token_budget = parse_first_flag(
+        argv,
+        &["token-budget", "token_budget", "max-tokens", "max_tokens"],
+    )
         .and_then(|value| value.trim().parse::<u32>().ok())
         .filter(|value| *value > 0);
     let token_warning_threshold =
@@ -2002,6 +2023,7 @@ fn spawn_persistent_session(
         scaled_task: Some(scaled_task),
         budget_action_taken: None,
         role: options.role.clone(),
+        tool_access: default_session_tool_access(),
         check_ins: Vec::new(),
         metrics_timeline: Vec::new(),
         anomalies: Vec::new(),
@@ -2141,6 +2163,7 @@ fn spawn_single(
                         scaled_task: Some(scaled_task.clone()),
                         budget_action_taken: budget_action_taken.clone(),
                         role: options.role.clone(),
+                        tool_access: default_session_tool_access(),
                         check_ins: Vec::new(),
                         metrics_timeline: Vec::new(),
                         anomalies: Vec::new(),
@@ -2220,6 +2243,7 @@ fn spawn_single(
         scaled_task: Some(scaled_task.clone()),
         budget_action_taken: budget_action_taken.clone(),
         role: options.role.clone(),
+        tool_access: default_session_tool_access(),
         check_ins: Vec::new(),
         metrics_timeline: Vec::new(),
         anomalies: Vec::new(),
@@ -3067,6 +3091,7 @@ fn sessions_state(
             "role": session.role.clone(),
             "registered_roles": registered_roles,
             "capabilities": advertised_capabilities,
+            "tool_access": session.tool_access.clone(),
             "results_published": results.len(),
             "result_ids": results,
             "background_worker": session.background_worker,
@@ -3879,6 +3904,13 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             return 2;
         }
     };
+
+    let auto_tick_enabled = parse_bool_flag(argv, "auto-tick", true);
+    if auto_tick_enabled && cmd != "tick" && !persistent_session_ids(&state).is_empty() {
+        let auto_now_ms = now_epoch_ms();
+        let auto_max_check_ins = parse_u64_flag(argv, "auto-max-check-ins", 16).max(1);
+        let _ = tick_persistent_sessions(&mut state, auto_now_ms, auto_max_check_ins);
+    }
 
     let result: Result<Value, String> = match cmd.as_str() {
         "status" => Ok(json!({

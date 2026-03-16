@@ -26,15 +26,32 @@ function mtimeMs(filePath) {
 }
 
 function sourceNewestMtimeMs() {
-  const sourceCandidates = [
-    path.join(ROOT, 'core', 'layer0', 'ops', 'Cargo.toml'),
-    path.join(ROOT, 'core', 'layer0', 'ops', 'src', 'main.rs'),
-    path.join(ROOT, 'core', 'layer0', 'ops', 'src', 'lib.rs'),
-    path.join(ROOT, 'core', 'layer0', 'ops', 'src', 'swarm_runtime.rs'),
-  ];
-  let newest = 0;
-  for (const candidate of sourceCandidates) {
-    newest = Math.max(newest, mtimeMs(candidate));
+  const opsRoot = path.join(ROOT, 'core', 'layer0', 'ops');
+  const srcRoot = path.join(opsRoot, 'src');
+  let newest = Math.max(
+    mtimeMs(path.join(ROOT, 'Cargo.toml')),
+    mtimeMs(path.join(opsRoot, 'Cargo.toml'))
+  );
+
+  const stack = [srcRoot];
+  while (stack.length > 0) {
+    const dir = stack.pop();
+    let entries = [];
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+        continue;
+      }
+      if (entry.isFile() && fullPath.endsWith('.rs')) {
+        newest = Math.max(newest, mtimeMs(fullPath));
+      }
+    }
   }
   return newest;
 }
@@ -106,10 +123,19 @@ function processOutput(proc) {
   };
 }
 
+function writeAll(fd, text) {
+  if (!text) return;
+  const buffer = Buffer.from(text, 'utf8');
+  let offset = 0;
+  while (offset < buffer.length) {
+    offset += fs.writeSync(fd, buffer, offset, buffer.length - offset);
+  }
+}
+
 function emitProcessOutput(proc) {
   const out = processOutput(proc);
-  if (out.stdout) process.stdout.write(out.stdout);
-  if (out.stderr) process.stderr.write(out.stderr);
+  writeAll(1, out.stdout);
+  writeAll(2, out.stderr);
 }
 
 function shouldFallbackToCargo(args, proc, options = {}) {

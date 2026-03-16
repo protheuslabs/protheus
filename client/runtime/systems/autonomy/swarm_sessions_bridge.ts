@@ -141,11 +141,18 @@ function normalizeSpawnPayload(payload) {
     (payload && payload.payload && payload.payload.session_id) ||
     (payload && payload.session_id) ||
     '';
+  const toolAccess =
+    (payload
+      && payload.payload
+      && payload.payload.session_state
+      && payload.payload.session_state.tool_access)
+    || ['sessions_spawn', 'sessions_send', 'sessions_receive', 'sessions_ack', 'sessions_query', 'sessions_state', 'sessions_tick'];
   return {
     ok: true,
     type: 'sessions_spawn',
     session_id: sessionId,
     session_key: asSessionKey(sessionId),
+    tool_access: Array.isArray(toolAccess) ? toolAccess : [],
     payload,
   };
 }
@@ -202,13 +209,22 @@ function sessionsSpawn(options = {}) {
     args.push(`--max-depth=${asInt(parsed.max_depth ?? parsed.maxDepth, 8, 1)}`);
   }
 
-  const tokenBudget = cleanString(parsed.token_budget ?? parsed['token-budget']);
+  const tokenBudget = cleanString(
+    parsed.token_budget
+      ?? parsed['token-budget']
+      ?? parsed.max_tokens
+      ?? parsed.maxTokens
+      ?? parsed['max-tokens']
+  );
   if (tokenBudget) args.push(`--token-budget=${asInt(tokenBudget, 1, 1)}`);
   const tokenWarningAt = cleanString(parsed.token_warning_at ?? parsed['token-warning-at']);
   if (tokenWarningAt) args.push(`--token-warning-at=${asFloat(tokenWarningAt, 0.8, 0, 1)}`);
   const budgetMode = cleanString(parsed.on_budget_exhausted ?? parsed['on-budget-exhausted']).toLowerCase();
   if (budgetMode === 'fail' || budgetMode === 'warn' || budgetMode === 'compact') {
     args.push(`--on-budget-exhausted=${budgetMode}`);
+  } else if (tokenBudget) {
+    // Fail-closed by default whenever a budget is explicitly requested.
+    args.push('--on-budget-exhausted=fail');
   }
   if (parsed.adaptive_complexity != null || parsed['adaptive-complexity'] != null) {
     args.push(`--adaptive-complexity=${asBool(parsed.adaptive_complexity ?? parsed['adaptive-complexity']) ? 1 : 0}`);
@@ -224,14 +240,14 @@ function sessionsSpawn(options = {}) {
   const sessionType = cleanString(parsed.sessionType || parsed.session_type).toLowerCase();
   if (sessionType === 'persistent' || sessionType === 'background') {
     args.push(`--execution-mode=${sessionType}`);
-    const ttlMinutes = asInt(parsed.ttlMinutes ?? parsed.ttl_minutes, 0, 1);
-    if (ttlMinutes > 0) args.push(`--lifespan-sec=${ttlMinutes * 60}`);
+    const ttlMinutes = asInt(parsed.ttlMinutes ?? parsed.ttl_minutes, 60, 1);
+    args.push(`--lifespan-sec=${ttlMinutes * 60}`);
     const checkpointSec = asInt(
       parsed.checkpointInterval ?? parsed.checkpoint_interval_sec,
-      0,
+      60,
       1
     );
-    if (checkpointSec > 0) args.push(`--check-in-interval-sec=${checkpointSec}`);
+    args.push(`--check-in-interval-sec=${checkpointSec}`);
   }
 
   const autoPublish = parsed.auto_publish_results ?? parsed.autoPublishResults;
@@ -421,7 +437,7 @@ function printUsage() {
   process.stdout.write(
     [
       'Usage:',
-      '  node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_spawn --task=<text> [--session-id=<parent>] [--sessionType=persistent|background] [--ttlMinutes=<n>] [--checkpointInterval=<sec>] [--testMode=byzantine] [--faultPattern=\'{\"type\":\"corruption\"}\'] [--state-path=<path>]',
+      '  node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_spawn --task=<text> [--session-id=<parent>] [--sessionType=persistent|background] [--ttlMinutes=<n>] [--checkpointInterval=<sec>] [--token-budget=<n>|--max-tokens=<n>] [--testMode=byzantine] [--faultPattern=\'{\"type\":\"corruption\"}\'] [--state-path=<path>]',
       '  node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_send --sessionKey=<key|id> --message=<text> [--sender=<key|id>] [--delivery=<at_most_once|at_least_once|exactly_once>] [--state-path=<path>]',
       '  node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_receive --sessionKey=<key|id> [--limit=<n>] [--state-path=<path>]',
       '  node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_ack --sessionKey=<key|id> --message-id=<id> [--state-path=<path>]',
