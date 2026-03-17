@@ -165,15 +165,16 @@ This regenerates:
 
 Sources:
 - Live control-plane run: `docs/client/reports/benchmark_matrix_run_2026-03-06.json`
+- Stabilized multi-run median (2 warmups + 9 runs): `docs/client/reports/benchmark_matrix_stabilized_2026-03-16.json`
 - Snapshot/reference baseline: `docs/client/reports/runtime_snapshots/ops/proof_pack/top1_benchmark_snapshot.json`
 - Headline runtime metrics use median (`p50`) values from multi-sample probes; `p95/p99` remain in the JSON report for tail-latency diagnostics.
 
 | Metric | InfRing (rich) | InfRing (pure) | InfRing (tiny-max) | Snapshot/Reference |
 |---|---:|---:|---:|---:|
-| Cold start | 5.5 ms | 2.4 ms | 2.5 ms | 74.5 ms |
+| Cold start | 5.3 ms | 2.2 ms | 2.2 ms | 74.5 ms |
 | Idle memory | 9.8 MB | 1.4 MB | 1.4 MB | 22.1 MB |
 | Install size (full) | 11.9 MB | 0.7 MB | 0.5 MB | 126.4 MB |
-| Throughput | 10,929.6 ops/sec | 9,599.6 ops/sec | 10,126.0 ops/sec | 7,420.0 ops/sec |
+| Throughput | 12,141.6 ops/sec | 11,722.4 ops/sec | 12,081.9 ops/sec | 7,420.0 ops/sec |
 
 | Capability Counter | InfRing (rich) | InfRing (pure) | InfRing (tiny-max) |
 |---|---:|---:|---:|
@@ -191,9 +192,9 @@ External baseline (OpenFang public table):
 
 | Project | Install Size (MB) ↓ | Cold Start ↓ | Idle Memory (MB) ↓ | Throughput (ops/sec) ↑ | Static Daemon (MB) ↓ | Security Systems ↑ | Channel Adapters ↑ | LLM Providers ↑ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| **InfRing (rich)** | **11.9** | **5.5 ms** | **9.8** | **10,929.6** | **0.4** | **83** | 6 | 3 |
-| **InfRing (pure)** | **0.7** | **2.4 ms** | **1.4** | **9,599.6** | **0.4** | **83** | 0 | 0 |
-| **InfRing (tiny-max)** | **0.5** | **2.5 ms** | **1.4** | **10,126.0** | **0.3** | **83** | 0 | 0 |
+| **InfRing (rich)** | **11.9** | **5.3 ms** | **9.8** | **12,141.6** | **0.4** | **83** | 6 | 3 |
+| **InfRing (pure)** | **0.7** | **2.2 ms** | **1.4** | **11,722.4** | **0.4** | **83** | 0 | 0 |
+| **InfRing (tiny-max)** | **0.5** | **2.2 ms** | **1.4** | **12,081.9** | **0.3** | **83** | 0 | 0 |
 | OpenFang | 32.0 | 180.0 ms | 40.0 | n/p | n/p | 16 | 40 | 27 |
 | OpenHands | 95.5 | 1.3 sec | 150.0 | n/p | n/p | 7 | 15 | 5 |
 | LangGraph | 150.0 | 2.5 sec | 180.0 | n/p | n/p | 2 | 4 | 15 |
@@ -223,9 +224,9 @@ Tiny-max is the smallest full agentic OS artifact shipped in this repo today and
 
 ```text
 Cold Start Time (lower is better)
-InfRing (tiny-max) ############################################  2.5 ms
-InfRing (pure)     ############################################  2.4 ms
-InfRing (rich)     ############################################  5.5 ms
+InfRing (tiny-max) ############################################  2.2 ms
+InfRing (pure)     ############################################  2.2 ms
+InfRing (rich)     ############################################  5.3 ms
 OpenFang   ###########################################-  180.0 ms
 OpenHands  ###############################-------------  1.3 sec
 LangGraph  #################---------------------------  2.5 sec
@@ -269,9 +270,9 @@ CrewAI     #-------------------------------------------  1
 
 ```text
 Throughput (ops/sec, higher is better)
-InfRing (rich)     ############################################  10,929.6
-InfRing (tiny-max) ############################################  10,126.0
-InfRing (pure)     ###########################################-  9,599.6
+InfRing (rich)     ############################################  12,141.6
+InfRing (tiny-max) ###########################################-  12,081.9
+InfRing (pure)     ##########################################--  11,722.4
 OpenFang   n/p
 OpenHands  n/p
 LangGraph  n/p

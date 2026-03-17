@@ -1,0 +1,110 @@
+{
+  "type": "competitive_benchmark_matrix_stabilized",
+  "ts": "2026-03-17T04:05:56.945Z",
+  "method": {
+    "warmup_runs": 2,
+    "measured_runs": 9,
+    "aggregation": "median",
+    "notes": "Generated via repeated ops:benchmark:refresh under low-background load."
+  },
+  "medians": {
+    "rich": {
+      "cold_start_ms": 5.313,
+      "idle_memory_mb": 9.813,
+      "install_size_mb": 11.879,
+      "tasks_per_sec": 12141.55
+    },
+    "pure": {
+      "cold_start_ms": 2.1506670000000003,
+      "idle_memory_mb": 1.375,
+      "install_size_mb": 0.67,
+      "tasks_per_sec": 11722.44
+    },
+    "tiny_max": {
+      "cold_start_ms": 2.196167,
+      "idle_memory_mb": 1.375,
+      "install_size_mb": 0.483,
+      "tasks_per_sec": 12081.87
+    }
+  },
+  "full_summary": {
+    "rich": {
+      "cold": {
+        "min": 4.495,
+        "max": 6.513,
+        "mean": 5.324111111111112,
+        "median": 5.313
+      },
+      "idle": {
+        "min": 9.813,
+        "max": 9.813,
+        "mean": 9.813,
+        "median": 9.813
+      },
+      "install": {
+        "min": 11.879,
+        "max": 11.879,
+        "mean": 11.879000000000001,
+        "median": 11.879
+      },
+      "tps": {
+        "min": 10542.12,
+        "max": 12238.51,
+        "mean": 11924.218888888889,
+        "median": 12141.55
+      }
+    },
+    "pure": {
+      "cold": {
+        "min": 1.736458,
+        "max": 3.852375,
+        "mean": 2.329157222222222,
+        "median": 2.1506670000000003
+      },
+      "idle": {
+        "min": 1.375,
+        "max": 1.375,
+        "mean": 1.375,
+        "median": 1.375
+      },
+      "install": {
+        "min": 0.67,
+        "max": 0.67,
+        "mean": 0.67,
+        "median": 0.67
+      },
+      "tps": {
+        "min": 10155.32,
+        "max": 12243.64,
+        "mean": 11552.144444444446,
+        "median": 11722.44
+      }
+    },
+    "tiny": {
+      "cold": {
+        "min": 1.707041,
+        "max": 3.576292,
+        "mean": 2.2907778888888886,
+        "median": 2.196167
+      },
+      "idle": {
+        "min": 1.375,
+        "max": 1.375,
+        "mean": 1.375,
+        "median": 1.375
+      },
+      "install": {
+        "min": 0.483,
+        "max": 0.483,
+        "mean": 0.48300000000000004,
+        "median": 0.483
+      },
+      "tps": {
+        "min": 11220.55,
+        "max": 12306.78,
+        "mean": 11906.481111111112,
+        "median": 12081.87
+      }
+    }
+  }
+}
