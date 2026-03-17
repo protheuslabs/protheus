@@ -209,6 +209,11 @@ fn main() {
             let exit = protheus_ops_core::directive_kernel::run(&cwd, &rest);
             std::process::exit(exit);
         }
+        "action-envelope-kernel" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::action_envelope_kernel::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
         "success-criteria-kernel" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::success_criteria_kernel::run(&cwd, &rest);
@@ -267,6 +272,16 @@ fn main() {
         "memory-policy-kernel" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::memory_policy_kernel::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "memory-session-isolation-kernel" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::memory_session_isolation_kernel::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "readiness-bridge-pack-kernel" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::readiness_bridge_pack_kernel::run(&cwd, &rest);
             std::process::exit(exit);
         }
         "runtime-systems" => {

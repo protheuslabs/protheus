@@ -1,4 +1,10 @@
-const crypto = require('crypto');
+#!/usr/bin/env node
+'use strict';
+
+// Layer ownership: core/layer0/ops (authoritative)
+// Thin TypeScript wrapper only.
+
+const { createOpsLaneBridge } = require('./rust_lane_bridge.ts');
 
 const ACTION_TYPES = {
   RESEARCH: 'research',
@@ -11,260 +17,99 @@ const ACTION_TYPES = {
   OUTBOUND_CONTACT_EXISTING: 'outbound_contact_existing',
   DEPLOYMENT: 'deployment',
   OTHER: 'other'
-} as const;
+};
 
 const RISK_LEVELS = {
   LOW: 'low',
   MEDIUM: 'medium',
   HIGH: 'high'
-} as const;
-
-type ActionType = typeof ACTION_TYPES[keyof typeof ACTION_TYPES];
-type RiskLevel = typeof RISK_LEVELS[keyof typeof RISK_LEVELS];
-
-const HIGH_STAKES_PATTERNS: Record<string, RegExp[]> = {
-  spend_money: [
-    /purchase/i,
-    /buy/i,
-    /subscribe/i,
-    /payment/i,
-    /\$\d+/,
-    /\d+\s*(USD|EUR|GBP)/i
-  ],
-  publish_publicly: [
-    /post\s+to/i,
-    /publish/i,
-    /tweet/i,
-    /moltbook.*create/i,
-    /blog/i,
-    /medium/i,
-    /github.*push/i
-  ],
-  change_credentials: [
-    /password/i,
-    /api_key/i,
-    /token/i,
-    /credential/i,
-    /auth/i,
-    /secret/i,
-    /rotate/i
-  ],
-  delete_data: [
-    /rm\s+-rf/i,
-    /delete/i,
-    /drop\s+table/i,
-    /destroy/i,
-    /reset/i,
-    /truncate/i
-  ],
-  outbound_contact_new: [
-    /send.*email/i,
-    /email.*to/i,
-    /message.*new/i,
-    /contact.*@/i,
-    /reach.out/i
-  ],
-  deployment: [
-    /deploy/i,
-    /release/i,
-    /production/i,
-    /prod/i,
-    /go.*live/i
-  ]
 };
 
-const LOW_RISK_PATTERNS: RegExp[] = [
-  /read/i,
-  /list/i,
-  /get/i,
-  /fetch/i,
-  /search/i,
-  /grep/i,
-  /cat\s+/i,
-  /ls\s+/i,
-  /echo/i,
-  /test/i,
-  /benchmark/i
-];
+process.env.PROTHEUS_OPS_USE_PREBUILT = process.env.PROTHEUS_OPS_USE_PREBUILT || '0';
+process.env.PROTHEUS_OPS_LOCAL_TIMEOUT_MS = process.env.PROTHEUS_OPS_LOCAL_TIMEOUT_MS || '120000';
+const bridge = createOpsLaneBridge(__dirname, 'action_envelope', 'action-envelope-kernel');
 
-type CreateActionEnvelopeInput = {
-  directive_id?: string | null;
-  tier?: number;
-  type?: ActionType;
-  summary: string;
-  risk?: RiskLevel;
-  payload?: Record<string, unknown>;
-  tags?: string[];
-  toolName?: string | null;
-  commandText?: string | null;
-};
-
-type ActionEnvelope = {
-  action_id: string;
-  directive_id: string | null;
-  tier: number;
-  type: ActionType;
-  summary: string;
-  risk: RiskLevel;
-  payload: Record<string, unknown>;
-  tags: string[];
-  metadata: {
-    created_at: string;
-    tool_name: string | null;
-    command_text: string | null;
-    requires_approval: boolean;
-    allowed: boolean;
-    blocked_reason: string | null;
-  };
-};
-
-type Classification = {
-  type: ActionType;
-  risk: RiskLevel;
-  confidence: 'low' | 'medium' | 'high';
-  matched_pattern: string | null;
-};
-
-function createActionEnvelope({
-  directive_id = null,
-  tier = 2,
-  type = ACTION_TYPES.OTHER,
-  summary,
-  risk = RISK_LEVELS.LOW,
-  payload = {},
-  tags = [],
-  toolName = null,
-  commandText = null
-}: CreateActionEnvelopeInput): ActionEnvelope {
-  const actionId = generateActionId();
-
-  return {
-    action_id: actionId,
-    directive_id,
-    tier,
-    type,
-    summary,
-    risk,
-    payload,
-    tags,
-    metadata: {
-      created_at: new Date().toISOString(),
-      tool_name: toolName,
-      command_text: commandText,
-      requires_approval: false,
-      allowed: true,
-      blocked_reason: null
-    }
-  };
+function encodeBase64(value) {
+  return Buffer.from(String(value == null ? '' : value), 'utf8').toString('base64');
 }
 
-function generateActionId(): string {
-  const timestamp = Date.now().toString(36);
-  const random = crypto.randomBytes(4).toString('hex');
-  return `act_${timestamp}_${random}`;
-}
-
-function classifyAction({ toolName, commandText }: { toolName?: string | null; commandText?: string | null; payload?: Record<string, unknown> }): Classification {
-  const text = `${toolName || ''} ${commandText || ''}`.toLowerCase();
-
-  for (const [type, patterns] of Object.entries(HIGH_STAKES_PATTERNS)) {
-    for (const pattern of patterns) {
-      if (pattern.test(text)) {
-        return {
-          type: (ACTION_TYPES as Record<string, ActionType>)[type.toUpperCase()] || ACTION_TYPES.OTHER,
-          risk: RISK_LEVELS.HIGH,
-          confidence: 'medium',
-          matched_pattern: pattern.toString()
-        };
-      }
-    }
+function invoke(command, payload = {}, opts = {}) {
+  const out = bridge.run([
+    command,
+    `--payload-base64=${encodeBase64(JSON.stringify(payload || {}))}`
+  ]);
+  const receipt = out && out.payload && typeof out.payload === 'object' ? out.payload : null;
+  const payloadOut = receipt && receipt.payload && typeof receipt.payload === 'object'
+    ? receipt.payload
+    : receipt;
+  if (out.status !== 0) {
+    const message = payloadOut && typeof payloadOut.error === 'string'
+      ? payloadOut.error
+      : (out && out.stderr ? String(out.stderr).trim() : `action_envelope_kernel_${command}_failed`);
+    if (opts.throwOnError !== false) throw new Error(message || `action_envelope_kernel_${command}_failed`);
+    return { ok: false, error: message || `action_envelope_kernel_${command}_failed` };
   }
-
-  for (const pattern of LOW_RISK_PATTERNS) {
-    if (pattern.test(text)) {
-      return {
-        type: ACTION_TYPES.RESEARCH,
-        risk: RISK_LEVELS.LOW,
-        confidence: 'low',
-        matched_pattern: pattern.toString()
-      };
-    }
+  if (!payloadOut || typeof payloadOut !== 'object') {
+    const message = out && out.stderr
+      ? String(out.stderr).trim() || `action_envelope_kernel_${command}_bridge_failed`
+      : `action_envelope_kernel_${command}_bridge_failed`;
+    if (opts.throwOnError !== false) throw new Error(message);
+    return { ok: false, error: message };
   }
-
-  return {
-    type: ACTION_TYPES.OTHER,
-    risk: RISK_LEVELS.MEDIUM,
-    confidence: 'low',
-    matched_pattern: null
-  };
+  return payloadOut;
 }
 
-function requiresApprovalByDefault(type: ActionType): boolean {
-  const approvalRequiredTypes: ActionType[] = [
-    ACTION_TYPES.PUBLISH_PUBLICLY,
-    ACTION_TYPES.SPEND_MONEY,
-    ACTION_TYPES.CHANGE_CREDENTIALS,
-    ACTION_TYPES.DELETE_DATA,
-    ACTION_TYPES.OUTBOUND_CONTACT_NEW,
-    ACTION_TYPES.DEPLOYMENT
-  ];
-
-  return approvalRequiredTypes.includes(type);
-}
-
-function detectIrreversible(commandText: string): { is_irreversible: boolean; pattern?: string; severity?: 'critical' } {
-  const irreversiblePatterns: RegExp[] = [
-    /rm\s+-rf/i,
-    /rm\s+.*\/\*/i,
-    /drop\s+database/i,
-    /drop\s+table/i,
-    /truncate.*table/i,
-    /delete.*where/i,
-    /destroy/i,
-    /reset\s+--hard/i,
-    /git\s+clean\s+-fd/i
-  ];
-
-  for (const pattern of irreversiblePatterns) {
-    if (pattern.test(commandText)) {
-      return {
-        is_irreversible: true,
-        pattern: pattern.toString(),
-        severity: 'critical'
-      };
-    }
-  }
-
-  return { is_irreversible: false };
-}
-
-function autoClassifyAndCreate({ toolName, commandText, payload = {}, summary = null }: { toolName?: string | null; commandText?: string | null; payload?: Record<string, unknown>; summary?: string | null }): ActionEnvelope {
-  const classification = classifyAction({ toolName, commandText, payload });
-  const autoSummary = summary || generateSummary(toolName, commandText, classification.type);
-
-  return createActionEnvelope({
-    type: classification.type,
-    risk: classification.risk,
-    summary: autoSummary,
-    toolName,
-    commandText,
-    payload,
-    tags: [classification.type, classification.risk]
+function createActionEnvelope(input) {
+  const out = invoke('create', {
+    input: input && typeof input === 'object' ? input : {}
   });
+  return out.envelope && typeof out.envelope === 'object' ? out.envelope : null;
 }
 
-function generateSummary(toolName: string | null | undefined, commandText: string | null | undefined, type: ActionType): string {
-  if (toolName && commandText) {
-    return `${type}: ${toolName} - ${commandText.substring(0, 50)}${commandText.length > 50 ? '...' : ''}`;
-  } else if (toolName) {
-    return `${type}: ${toolName}`;
-  } else if (commandText) {
-    return `${type}: ${commandText.substring(0, 60)}${commandText.length > 60 ? '...' : ''}`;
-  }
-  return `${type}: Unnamed action`;
+function generateActionId() {
+  const out = invoke('generate-id', {});
+  return String(out.action_id || '').trim();
 }
 
-export {
+function classifyAction({ toolName = null, commandText = null, payload = {} } = {}) {
+  const out = invoke('classify', {
+    tool_name: toolName,
+    command_text: commandText,
+    payload: payload && typeof payload === 'object' ? payload : {}
+  });
+  return out.classification && typeof out.classification === 'object'
+    ? out.classification
+    : {
+        type: ACTION_TYPES.OTHER,
+        risk: RISK_LEVELS.MEDIUM,
+        confidence: 'low',
+        matched_pattern: null
+      };
+}
+
+function requiresApprovalByDefault(type) {
+  const out = invoke('requires-approval', { type });
+  return out.requires_approval === true;
+}
+
+function detectIrreversible(commandText) {
+  const out = invoke('detect-irreversible', { command_text: commandText });
+  return out.result && typeof out.result === 'object'
+    ? out.result
+    : { is_irreversible: false };
+}
+
+function autoClassifyAndCreate({ toolName = null, commandText = null, payload = {}, summary = null } = {}) {
+  const out = invoke('auto-classify', {
+    tool_name: toolName,
+    command_text: commandText,
+    payload: payload && typeof payload === 'object' ? payload : {},
+    summary
+  });
+  return out.envelope && typeof out.envelope === 'object' ? out.envelope : null;
+}
+
+module.exports = {
   ACTION_TYPES,
   RISK_LEVELS,
   createActionEnvelope,
