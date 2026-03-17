@@ -1,0 +1,47 @@
+{
+  "id": "V10-ULTIMATE-001.1",
+  "upgrade": "Viral Self-Replication Protocol",
+  "section": "V10-ULTIMATE-001",
+  "impact": 10,
+  "layer_map": "-1/0/1/2/3/adapter/conduit",
+  "conduit_only_boundary": false,
+  "todo_bucket": "pending",
+  "execution_contract": {
+    "runtime": "core/layer2/ops:srs_contract_runtime",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "local/state/ops/srs_contract_runtime/V10-ULTIMATE-001.1/latest.json",
+    "history_path": "local/state/ops/srs_contract_runtime/history.jsonl"
+  },
+  "deliverables": [
+    { "type": "core_authority", "path": "core/layer0/ops/src/viral_replication.rs", "status": "pending" },
+    { "type": "cli_route", "path": "core/layer0/ops/src/protheusctl_routes.rs", "status": "pending" },
+    { "type": "behavior_tests", "path": "core/layer0/ops/tests/viral_replication_tests.rs", "status": "pending" },
+    { "type": "integration_tests", "path": "core/layer0/ops/tests/v10_viral_replication_integration.rs", "status": "pending" },
+    { "type": "state_receipt", "path": "local/state/ops/srs_contract_runtime/V10-ULTIMATE-001.1/latest.json", "status": "pending" }
+  ],
+  "validation": {
+    "lane_command": "cargo test --manifest-path core/layer0/ops/Cargo.toml v10_viral_replication -- --nocapture && cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- viral-replication status",
+    "status_command": "cargo run --quiet --manifest-path core/layer0/ops/Cargo.toml --bin protheus-ops -- viral-replication status",
+    "fail_closed_on_missing_contract": true
+  },
+  "specification": {
+    "description": "Enables autonomous self-replication across compatible substrates with viral propagation patterns",
+    "capabilities": [
+      "Self-replication across distributed nodes",
+      "Viral propagation with rate limiting",
+      "Compatibility detection for target substrates",
+      "Integrity verification during replication",
+      "Rollback mechanisms for failed replications"
+    ],
+    "dependencies": ["V9-VIRAL-001.1", "V9-IMMORTAL-001.1"],
+    "security_considerations": [
+      "Replication must be consent-based",
+      "Rate limiting to prevent exponential explosion",
+      "Sandbox validation before activation"
+    ]
+  },
+  "generated_from": {
+    "source": "srs_v10_ultimate_audit_2026-03-16",
+    "source_ref": "artifacts/srs-v10-ultimate-audit-report.json"
+  }
+}

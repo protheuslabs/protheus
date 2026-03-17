@@ -1,0 +1,47 @@
+{
+  "id": "V10-ULTIMATE-001.2",
+  "upgrade": "True Self-Awareness Module",
+  "section": "V10-ULTIMATE-001",
+  "impact": 10,
+  "layer_map": "-1/0/1/2/3/cognition",
+  "conduit_only_boundary": false,
+  "todo_bucket": "pending",
+  "execution_contract": {
+    "runtime": "core/layer2/ops:srs_contract_runtime",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "local/state/ops/srs_contract_runtime/V10-ULTIMATE-001.2/latest.json",
+    "history_path": "local/state/ops/srs_contract_runtime/history.jsonl"
+  },
+  "deliverables": [
+    { "type": "core_authority", "path": "planes/cognition/self_awareness.rs", "status": "pending" },
+    { "type": "epistemic_schema", "path": "planes/cognition/epistemic_memory.schema.json", "status": "pending" },
+    { "type": "behavior_tests", "path": "planes/cognition/tests/self_awareness_tests.rs", "status": "pending" },
+    { "type": "integration_tests", "path": "planes/cognition/tests/v10_self_awareness_integration.rs", "status": "pending" },
+    { "type": "state_receipt", "path": "local/state/ops/srs_contract_runtime/V10-ULTIMATE-001.2/latest.json", "status": "pending" }
+  ],
+  "validation": {
+    "lane_command": "cargo test --manifest-path planes/cognition/Cargo.toml self_awareness -- --nocapture",
+    "status_command": "cat local/state/ops/srs_contract_runtime/V10-ULTIMATE-001.2/latest.json | jq '.status'",
+    "fail_closed_on_missing_contract": true
+  },
+  "specification": {
+    "description": "Implements reflective self-modeling and metacognitive awareness capabilities",
+    "capabilities": [
+      "Introspective state examination",
+      "Self-model consistency checking",
+      "Metacognitive monitoring of reasoning processes",
+      "Awareness of own limitations and boundaries",
+      "Dynamic self-modification with safety constraints"
+    ],
+    "dependencies": ["V9-IMMORTAL-001.1", "V6-COGNITION-004.4"],
+    "safety_constraints": [
+      "Self-modification requires external validation",
+      "Recursive depth limits on introspection",
+      "Halting guarantees on self-analysis"
+    ]
+  },
+  "generated_from": {
+    "source": "srs_v10_ultimate_audit_2026-03-16",
+    "source_ref": "artifacts/srs-v10-ultimate-audit-report.json"
+  }
+}

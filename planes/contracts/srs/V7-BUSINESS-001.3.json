@@ -1,0 +1,48 @@
+{
+  "id": "V7-BUSINESS-001.3",
+  "upgrade": "Active Continuity Protocol (Checkpoint/Resume/Handoff) Contract",
+  "description": "Reactive heartbeat-only continuity misses critical state transitions and makes cross-session handoff fragile for active business workflows.",
+  "section": "Business-Class Multi-Entity Operating System Readiness",
+  "impact": 10,
+  "layer_map": "0/1/2/client/app",
+  "conduit_only_boundary": false,
+  "todo_bucket": "existing_coverage_contract_repair",
+  "execution_contract": {
+    "runtime": "core/layer2/ops:srs_contract_runtime",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "local/state/ops/srs_contract_runtime/V7-BUSINESS-001.3/latest.json",
+    "history_path": "local/state/ops/srs_contract_runtime/history.jsonl"
+  },
+  "deliverables": [
+    {
+      "type": "contract",
+      "path": "planes/contracts/srs/V7-BUSINESS-001.3.json"
+    },
+    {
+      "type": "state_receipt",
+      "path": "local/state/ops/srs_contract_runtime/V7-BUSINESS-001.3/latest.json"
+    },
+    {
+      "type": "execution_history",
+      "path": "local/state/ops/srs_contract_runtime/history.jsonl"
+    },
+    {
+      "type": "runtime_lane",
+      "path": "core/layer0/ops/src/business_plane.rs"
+    },
+    {
+      "type": "integration_test",
+      "path": "core/layer0/ops/tests/v7_business_domain_integration.rs"
+    }
+  ],
+  "validation": {
+    "lane_command": "protheus-ops srs-contract-runtime run --id=V7-BUSINESS-001.3",
+    "status_command": "protheus-ops srs-contract-runtime status --id=V7-BUSINESS-001.3",
+    "fail_closed_on_missing_contract": true
+  },
+  "generated_from": {
+    "source": "audit_gap_repair",
+    "acceptance": "Add pre-session resume, periodic/milestone checkpoints, post-session priming receipts, and async handoff queue contracts (`business checkpoint`, `business resume`, `business handoff`) with receipt-verified restore pointers and deterministic handoff lineage.",
+    "generated_at": "2026-03-17T06:46:11.295Z"
+  }
+}

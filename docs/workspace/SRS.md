@@ -7835,6 +7835,564 @@ Objective: produce and execute dependency-aware project roadmaps from PRD + tech
 | V6-WORKFLOW-003.5 | existing-coverage-validated | One-Command Project Planner Activation Contract | Adoption remains low if project-planning flow requires manual multi-command composition each run. | Provide thin command surface (`protheus app run project-planner --prd <path> [--stack <path>]`) that launches full governed flow end-to-end and emits deterministic run/session receipts. | 7 | 1/2/client/app |
 | V6-WORKFLOW-003.6 | existing-coverage-validated | Conduit-Only Project Planner Boundary + Thin Surface Enforcement | Planning/execution logic can bypass governance if implemented directly in client/app wrappers. | Enforce conduit-only routing for ingest/estimate/plan/execute/merge actions with bypass-rejection tests; keep client/app layers non-authoritative orchestration surfaces only. | 10 | 0/1/2/client/app |
 
+## Complete Shannon Production Framework Assimilation Source Coverage Intake (Doc `17JIvRFQ5zUh1ml3Bhu1IItY2VJIefqT4swMaQ8PmMMw`, 2026-03-17)
+
+Source references:
+- https://docs.google.com/document/d/17JIvRFQ5zUh1ml3Bhu1IItY2VJIefqT4swMaQ8PmMMw/edit?usp=sharing
+- https://github.com/Kocoro-lab/Shannon
+
+Notes:
+- Primitive-first normalization: this intake extends existing workflow, swarm, memory, observability, security, and adapter lanes; it does not authorize a parallel Shannon-owned subsystem.
+- Overlap handled explicitly:
+  - graph, replay, and workflow-execution baselines: `V6-WORKFLOW-002.*`, `V6-WORKFLOW-003.*`
+  - swarm reliability and hierarchy baselines: `V6-SWARM-*`, `V6-SWARM-033` through `V6-SWARM-038`
+  - memory/session/context baselines: `V6-MEMORY-*`, `V6-CONTEXT-*`, `V6-RESEARCH-*`
+  - observability/replay/tracing lanes: `V6-OBSERVABILITY-*`, `V9-AUDIT-026`
+  - substrate, tenancy, and sandbox baselines: `V6-SUBSTRATE-007.*`
+- Placement correction from source doc:
+  - source suggests `apps/shannon/` and `apps/shannon-desktop/`; normalized placement is core-authoritative workflow/replay/memory/sandbox orchestration plus thin runtime/client shells and adapter-owned compat, sandbox, and desktop bridges. Optional desktop/demo shells may exist only as deletable surfaces.
+- Default placement:
+  - Layer `0`: conduit-routed pattern/replay/budget/gateway/cron/sandbox actions + deterministic receipts
+  - Layer `1`: policy/budget/privacy/tenancy/receipt contracts
+  - Layer `2`: workflow orchestration, replay coordination, scheduler, observability capture, P2P reliability logic
+  - Layer `3`: optional persona defaults only
+  - `client`: thin `infring assimilate shannon` control and optional desktop shells only
+  - `adapter`: OpenAI-compat, MCP, sandbox, and desktop bridges
+
+Objective: assimilate Shannon’s orchestration patterns, hard budget fallback, hierarchical and vector memory, deterministic replay, HITL middleware, sandbox and multi-tenant isolation, observability, OpenAI compatibility, skills/MCP, cron, desktop ergonomics, and P2P swarm reliability into InfRing by reusing existing primitives without duplicating authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-WORKFLOW-001.1 | queued | Orchestration Pattern Registry Contract | Production workflow patterns remain fragmented unless Shannon strategy semantics normalize onto one governed workflow/swarm surface. | Model Shannon multi-strategy orchestration patterns as receipted executions over existing workflow and swarm/runtime lanes so pattern execution remains deterministic without adding a duplicate authority path. | 10 | 0/1/2/client |
+| V6-WORKFLOW-001.2 | queued | Token Budget and Auto-Fallback Guard Contract | Hard budget enforcement and fallback drift unless Shannon budget semantics stay inside existing routing and budget primitives. | Reuse current budget and routing lanes for Shannon-style hard budgets and automatic model fallback so breaches and fallback decisions emit deterministic receipts and remain fail closed. | 10 | 0/1/2/client |
+| V6-WORKFLOW-001.3 | queued | Hierarchical and Vector Memory Bridge Contract | Session workspaces and semantic/recent retrieval create memory sprawl unless Shannon memory semantics map onto canonical memory authority. | Route Shannon-style hierarchical/vector memory behavior through Dream Sequencer, auto-recall, and governed memory lanes so retrieval remains receipted, deduplicated, and context-budgeted without introducing a second memory system. | 9 | 0/1/2/client |
+| V6-WORKFLOW-001.4 | queued | Deterministic Replay Engine Contract | Time-travel and replay become untrustworthy unless Shannon replay semantics route through existing receipt and replay authority. | Reuse existing receipt and replay primitives for Shannon-style deterministic replay so exports and re-executions remain auditable and policy-governed without a separate replay authority path. | 10 | 0/1/2/client |
+| V6-WORKFLOW-001.5 | queued | Human-in-the-Loop Middleware Contract | Mandatory review points create boundary drift unless Shannon HITL semantics remain inside current pause and approval surfaces. | Support Shannon-style human review through existing pause, approval, and shadow/operator lanes so approval state emits deterministic receipts and no second approval system is introduced. | 8 | 0/1/2/client |
+| V6-WORKFLOW-001.6 | queued | Sandbox and Multi-Tenant Isolation Contract | WASI/Firecracker-style sandboxing and isolation become unsafe unless Shannon execution semantics stay within current substrate and tenancy authority. | Express Shannon-style sandbox, read-only, FileDelete-style destructive control, and multi-tenant isolation through existing substrate, security, and tenancy primitives so execution remains fail closed and auditable. | 10 | -1/0/1/2/adapter/client |
+| V6-WORKFLOW-001.7 | queued | Observability Bridge Contract | Shannon telemetry and debugging lose trust unless their events stream through the native observability stack. | Fold Shannon-style Prometheus, OpenTelemetry, and Temporal-like debugging semantics into existing observability and receipt lanes so dashboards/export paths can render the evidence without a duplicate telemetry stack. | 9 | 0/1/2/client/adapter |
+| V6-WORKFLOW-001.8 | queued | OpenAI-Compatible Gateway Contract | `/v1` compatibility becomes integration debt unless Shannon gateway semantics normalize onto current inference and streaming authority. | Support Shannon-style OpenAI-compatible gateway behavior through existing inference and streaming lanes so route and invocation paths emit deterministic receipts and unsupported modes degrade explicitly. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-001.9 | queued | Skills and MCP Tool Registry Contract | Skills and MCP registration create tool sprawl unless Shannon tool semantics route through governed content-skill and adapter bridges. | Reuse content-skill and adapter bridges for Shannon-style skills and MCP tools so registration and invocation emit deterministic receipts and unsafe tool paths fail closed. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-001.10 | queued | Cron and Scheduled Execution Contract | Scheduled execution becomes inconsistent unless Shannon cron semantics stay inside existing workflow and initiative primitives. | Map Shannon recurring execution semantics onto current scheduler/workflow lanes so scheduled runs emit deterministic receipts and remain subject to existing budget and priority controls. | 8 | 0/1/2/client |
+| V6-WORKFLOW-001.11 | queued | Desktop Surface Extension Contract | Desktop ergonomics are useful only if Shannon tray and notification surfaces remain thin shells over the same authority lanes. | Support Shannon-style desktop tray, notification, and offline-history behavior as deletable shells whose actions delegate to governed authority surfaces and emit deterministic receipts. | 7 | 1/2/client/app |
+| V6-WORKFLOW-001.12 | queued | P2P Swarm Reliability Contract | P2P swarm gates and deduplication become dangerous unless Shannon reliability semantics stay inside authoritative swarm and security lanes. | Reuse current swarm primitives for Shannon-style deduplication, version gates, and P2P safety checks so all reliability events emit deterministic receipts and no separate P2P control plane is introduced. | 8 | 0/1/2/client/adapter |
+
+## LangGraph Persistent Graph Orchestration Assimilation Source Coverage Intake (Doc `1PKuE-cGAatgZ4ahBnf0tK0KK8hM1OYJ8WDIcA-FMJb8`, 2026-03-17)
+
+Source references:
+- https://docs.google.com/document/d/1PKuE-cGAatgZ4ahBnf0tK0KK8hM1OYJ8WDIcA-FMJb8/edit?usp=sharing
+- https://github.com/langchain-ai/langgraph
+
+Notes:
+- Primitive-first normalization: this intake extends existing workflow, swarm, memory, observability, and adapter lanes; it does not authorize a parallel LangGraph-owned subsystem.
+- Overlap handled explicitly:
+  - workflow planning/execution baselines: `V6-WORKFLOW-003.*`
+  - swarm nesting, messaging, hierarchy, and orchestration hardening: `V6-SWARM-*`, `V6-SWARM-033` through `V6-SWARM-038`
+  - memory/checkpoint/context baselines: `V6-MEMORY-*`, `V6-CONTEXT-*`, `V6-RESEARCH-*`
+  - observability/replay/tracing lanes: `V6-OBSERVABILITY-*`, `V9-AUDIT-026`
+- Placement correction from source doc:
+  - source suggests `apps/langgraph/`; normalized placement is core-authoritative graph/workflow/checkpoint orchestration plus thin runtime/client shells and adapter-owned trace/export bridges. Optional demo shells may exist only as deletable surfaces.
+- Default placement:
+  - Layer `0`: conduit-routed graph/checkpoint/replay/inspect/stream actions + deterministic receipts
+  - Layer `1`: policy/budget/privacy/receipt contracts
+  - Layer `2`: graph orchestration, checkpoint coordination, nested-flow execution, trace capture
+  - Layer `3`: optional persona defaults only
+  - `client`: thin `infring assimilate langgraph` control and optional demo shells only
+  - `adapter`: optional trace/export bridges
+
+Objective: assimilate LangGraph’s stateful graph execution, checkpoints and time-travel replay, conditional edges and cycles, HITL state inspection, subgraph nesting, streaming, and LangSmith-style tracing into InfRing by reusing existing primitives without duplicating authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-WORKFLOW-002.1 | queued | Graph Node and Edge Registry Contract | Graph-based orchestration remains fragmented unless LangGraph node, edge, and cycle semantics normalize onto one governed workflow/swarm surface. | Model LangGraph nodes, edges, conditional branches, and cycles as receipted executions over existing workflow and swarm/runtime lanes so graph execution remains deterministic without adding a duplicate authority path. | 10 | 0/1/2/client |
+| V6-WORKFLOW-002.2 | queued | Checkpoint Persistence and Time-Travel Replay Contract | Durable resumption and replay become brittle unless LangGraph checkpoint semantics route through existing receipt and memory authority. | Reuse existing receipt and memory primitives for checkpoint export, restore, and replay so all state transitions are deterministic, receipted, and auditable without introducing a second persistence authority path. | 10 | 0/1/2/client |
+| V6-WORKFLOW-002.3 | queued | Human-in-the-Loop State Inspection Contract | Runtime state inspection becomes unsafe unless LangGraph HITL semantics remain inside current pause and approval boundaries. | Support LangGraph-style state inspection and intervention through existing pause, shadow, and operator surfaces so all inspection/modification actions emit deterministic receipts and no separate HITL authority is introduced. | 9 | 0/1/2/client |
+| V6-WORKFLOW-002.4 | queued | Subgraph and Multi-Agent Coordination Contract | Nested graphs and sub-agent orchestration become fragile unless LangGraph subgraphs map directly onto authoritative swarm/session primitives. | Map LangGraph-style subgraphs and multi-agent nesting onto existing swarm, session, and persona lanes so nested execution remains isolated, budgeted, and receipted with preserved lineage semantics. | 9 | 0/1/2/client |
+| V6-WORKFLOW-002.5 | queued | LangSmith-Style Observability Bridge Contract | Graph trace trust degrades unless LangGraph execution traces and state transitions stream through the native observability stack. | Fold graph traces, state transitions, and evaluation-friendly telemetry into existing observability and receipt lanes so dashboards/export paths can render the evidence without introducing a duplicate telemetry stack. | 8 | 0/1/2/client/adapter |
+| V6-WORKFLOW-002.6 | queued | Streaming and Conditional Execution Guard Contract | Streaming and conditional edge execution become opaque unless LangGraph runtime semantics remain governed by current workflow and policy primitives. | Support LangGraph-style streaming and conditional edge evaluation through existing inference, workflow, and policy lanes so streaming stays receipt-anchored, conditional logic remains fail closed, and unsupported paths degrade explicitly. | 8 | 0/1/2/client |
+
+## CrewAI Role-Based Hierarchical Crews Assimilation Source Coverage Intake (Doc `10jW_kdehmfj5Cpg9l2tVSwvHhFtkWcvqAxHTgR0pKlY`, 2026-03-17)
+
+Source references:
+- https://docs.google.com/document/d/10jW_kdehmfj5Cpg9l2tVSwvHhFtkWcvqAxHTgR0pKlY/edit?usp=sharing
+- https://github.com/crewAIInc/crewAI
+
+Notes:
+- Source proposes `V6-WORKFLOW-003.*`, but that family is already occupied by the PRD-to-roadmap planner intake in this repo. This intake is normalized to the next free contiguous family, `V6-WORKFLOW-004.*`, to avoid contract collision.
+- Primitive-first normalization: this intake extends existing workflow, swarm, memory, observability, and adapter lanes; it does not authorize a parallel CrewAI-owned subsystem.
+- Overlap handled explicitly:
+  - workflow planning/execution baselines: `V6-WORKFLOW-003.*`
+  - swarm messaging, hierarchy, budgets, and orchestration hardening: `V6-SWARM-*`, `V6-SWARM-033` through `V6-SWARM-038`
+  - memory/context persistence baselines: `V6-MEMORY-*`, `V6-CONTEXT-*`, `V6-RESEARCH-*`
+  - observability/control-plane lanes: `V6-OBSERVABILITY-*`, `V9-AUDIT-026`
+  - substrate/provider/local-model bridges: `V6-SUBSTRATE-007.*`
+- Placement correction from source doc:
+  - source suggests `apps/crewai/`; normalized placement is core-authoritative workflow/swarm/memory orchestration plus thin runtime/client shells and adapter-owned provider/tool/local-model bridges. Optional visual/demo shells may exist only as deletable surfaces.
+- Default placement:
+  - Layer `0`: conduit-routed crew/flow/memory/delegation/approval actions + deterministic receipts
+  - Layer `1`: policy/budget/privacy/receipt contracts
+  - Layer `2`: workflow orchestration, hierarchical delegation, flow routing, trace capture
+  - Layer `3`: optional persona defaults only
+  - `client`: thin `infring assimilate crewai` control and optional demo shells only
+  - `adapter`: provider, tool, multimodal, and local-model bridges
+
+Objective: assimilate CrewAI’s role-based crews, hierarchical manager delegation, event-driven flows, unified memory, declarative configs, dynamic delegation, human-in-the-loop controls, observability, and standalone runtime strengths into InfRing by reusing existing primitives without duplicating authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-WORKFLOW-004.1 | queued | Role-Based Agent and Crew Registry Contract | Role-specialized crews remain fragmented unless CrewAI agent and crew semantics normalize onto one governed workflow/swarm surface. | Model CrewAI roles, goals, backstories, and crew composition as receipted executions over existing workflow, swarm, and persona lanes so specialized execution preserves lineage and deterministic orchestration semantics without adding a duplicate authority path. | 10 | 0/1/2/client |
+| V6-WORKFLOW-004.2 | queued | Sequential and Hierarchical Process Engine Contract | Manager-led delegation and validation become brittle unless CrewAI process semantics stay inside the authoritative workflow engine. | Support CrewAI-style sequential and hierarchical processes through existing workflow and initiative primitives with deterministic delegation/validation receipts, preserved checkpoint/budget enforcement, and no parallel process runtime. | 10 | 0/1/2/client |
+| V6-WORKFLOW-004.3 | queued | Event-Driven Flows and Decorator Bridge Contract | Event-driven flow semantics drift into wrappers unless CrewAI routers, listeners, and decorators normalize onto governed workflow paths. | Reuse governed workflow and conduit lanes for CrewAI-style event-driven flows, routers, listeners, and decorator-driven definitions so routing emits deterministic receipts and conditional logic remains fail closed. | 9 | 0/1/2/client |
+| V6-WORKFLOW-004.4 | queued | Unified Memory Bridge Contract | Unified memory loses trust unless CrewAI persistence semantics route through canonical memory authority. | Map CrewAI unified memory onto Dream Sequencer, auto-recall, and governed memory lanes so persistence remains receipted, context-budgeted, and renderable through existing memory surfaces without introducing a second memory authority path. | 9 | 0/1/2/client |
+| V6-WORKFLOW-004.5 | queued | YAML and Declarative Crew Config Bridge Contract | YAML/decorator ergonomics become operational debt unless CrewAI config assets normalize through governed manifests. | Support `infring assimilate crewai` ingestion of YAML/config assets and decorator-driven definitions through content-skill and intake bridges so config-driven execution emits deterministic receipts and unsupported config paths fail closed. | 8 | 0/1/2/adapter/client |
+| V6-WORKFLOW-004.6 | queued | Dynamic Delegation and Tool Routing Contract | Dynamic task assignment and tool use become unsafe unless CrewAI delegation semantics stay inside authoritative swarm and tool lanes. | Map CrewAI-style delegation and tool routing onto existing swarm, importance, and tool-invocation primitives so delegation decisions emit deterministic receipts, tool calls fail closed when required, and unsupported pure/tiny-max paths degrade explicitly. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-004.7 | queued | Human-in-the-Loop Middleware Contract | Human review points create boundary drift unless CrewAI HITL semantics remain inside existing approval surfaces. | Support CrewAI-style human review and intervention through pause, approval, and shadow/operator control surfaces so approvals emit deterministic receipts and no separate HITL authority is introduced. | 8 | 0/1/2/client |
+| V6-WORKFLOW-004.8 | queued | AMP-Style Observability and Control Plane Contract | Crew execution and flow trust degrades unless CrewAI telemetry and control-plane semantics stream through the native observability stack. | Fold CrewAI tracing, metrics, logs, and control-plane semantics into native observability and receipt lanes so existing dashboards/export paths can render the evidence without introducing a duplicate telemetry stack. | 8 | 0/1/2/client |
+| V6-WORKFLOW-004.9 | queued | Performance and Standalone Runtime Parity Contract | Runtime-performance claims become noise unless CrewAI-style standalone efficiency is measured through current benchmark authority. | Capture CrewAI runtime-performance parity through existing inference, streaming, and benchmark lanes so claims route through governed benchmark receipts and cannot bypass tiny-max/pure performance gates. | 8 | 0/1/2/client |
+| V6-WORKFLOW-004.10 | queued | Multimodal and Local Model Gateway Contract | Broad local-model and multimodal compatibility becomes operational sprawl unless CrewAI integration patterns stay adapter-owned. | Support CrewAI-style multimodal and local-model compatibility through substrate and inference adapters so all invocations emit deterministic route and invocation receipts and unsupported paths degrade explicitly. | 8 | 0/1/2/adapter/client |
+
+## Dify Visual No-Code Agent Platform Assimilation Source Coverage Intake (Doc `1uI9TXxygz4NC_gpwHzU3pNgO73u18D0YT4-ihbQTwPY`, 2026-03-17)
+
+Source references:
+- https://docs.google.com/document/d/1uI9TXxygz4NC_gpwHzU3pNgO73u18D0YT4-ihbQTwPY/edit?usp=sharing
+- https://github.com/langgenius/dify
+
+Notes:
+- Primitive-first normalization: this intake extends existing workflow, swarm, memory, observability, and adapter lanes; it does not authorize a parallel Dify-owned subsystem.
+- Overlap handled explicitly:
+  - workflow planning/execution baselines: `V6-WORKFLOW-003.*`
+  - swarm orchestration and hardening baselines: `V6-SWARM-*`, `V6-SWARM-033` through `V6-SWARM-038`
+  - knowledge/RAG/memory baselines: `V6-MEMORY-*`, `V6-RESEARCH-*`, `V6-CONTEXT-*`
+  - observability/evals/tracing lanes: `V6-OBSERVABILITY-*`, `V9-AUDIT-026`
+  - plugin/MCP/provider/substrate baselines: `REQ-17`, `V6-SUBSTRATE-007.*`, `V6-COMP-002`
+- Placement correction from source doc:
+  - source suggests `apps/dify/` and `apps/dify-canvas/`; normalized placement is core-authoritative workflow/knowledge/deployment orchestration plus thin runtime/client shells and adapter-owned provider/plugin/deployment bridges. Optional visual shells may exist only as deletable surfaces.
+- Default placement:
+  - Layer `0`: conduit-routed canvas/knowledge/tool/flow/deploy actions + deterministic receipts
+  - Layer `1`: policy/budget/privacy/receipt contracts
+  - Layer `2`: workflow orchestration, retrieval coordination, conditional routing, trace capture
+  - Layer `3`: optional persona defaults only
+  - `client`: thin `infring assimilate dify` control and optional visual shells only
+  - `adapter`: provider, plugin, MCP, multimodal, and deployment bridges
+
+Objective: assimilate Dify’s visual drag-and-drop workflows, knowledge-base and RAG ergonomics, agentic app patterns, multimodal tools, team collaboration, deployment dashboards, and broad provider compatibility into InfRing by reusing existing primitives without duplicating authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-WORKFLOW-005.1 | queued | Visual Canvas and Drag-and-Drop Workflow Registry Contract | Visual workflow building remains fragmented unless Dify canvas semantics normalize onto one governed workflow/swarm surface. | Model Dify visual canvas nodes, edges, and drag-and-drop orchestration as receipted executions over existing workflow and swarm/runtime lanes so visual flows preserve deterministic semantics without adding a duplicate authority path. | 10 | 0/1/2/client |
+| V6-WORKFLOW-005.2 | queued | Knowledge Base and RAG Bridge Contract | Knowledge-base and RAG convenience become retrieval sprawl unless Dify patterns are absorbed into authoritative memory and retrieval lanes. | Reuse Dream Sequencer, auto-recall, and governed retrieval primitives for Dify-style knowledge bases and RAG flows with deterministic retrieval receipts, context-budget enforcement, and explicit degraded-mode behavior for unsupported profiles. | 10 | 0/1/2/adapter/client |
+| V6-WORKFLOW-005.3 | queued | Agentic App and Multi-Modal Tool Registry Contract | Agentic apps and multimodal tools become unsafe unless Dify agent/tool semantics stay inside governed workflow and adapter paths. | Support Dify-style agents, plugins, and multimodal tools through existing workflow, inference, and adapter bridges so all registrations and invocations emit deterministic receipts and fail-closed denials. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-005.4 | queued | Team Collaboration and Deployment Dashboard Shell Contract | Collaboration and deployment UX are useful only if they remain thin shells over the same authority lanes. | Support Dify-style team collaboration and deployment dashboards as deletable shells whose publish/monitor/deploy actions delegate to governed authority surfaces and emit deterministic receipts. | 8 | 1/2/client/app |
+| V6-WORKFLOW-005.5 | queued | Broad LLM Integration Gateway Contract | Provider breadth becomes operational debt unless Dify compatibility is absorbed into existing inference and routing primitives. | Extend existing inference and routing lanes to support Dify-style provider compatibility with deterministic route/invocation receipts, adapter-owned provider shims, and no regression for unsupported pure/tiny-max paths. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-005.6 | queued | Orchestration and Conditional Flow Engine Contract | Branches, loops, and agent handoffs become opaque unless Dify flow semantics normalize onto the canonical workflow engine. | Support Dify-style conditional branches, loops, and agent handoffs through existing workflow and initiative primitives with deterministic receipts, preserved checkpoint semantics, and no duplicate flow engine. | 9 | 0/1/2/client |
+| V6-WORKFLOW-005.7 | queued | Observability and Audit Bridge Contract | No-code workflow trust degrades unless Dify logs, metrics, and traces stream through the native observability stack. | Fold Dify-style logging, metrics, and debugging traces into native observability and receipt lanes so all events stream with zero-loss capture and existing dashboards/export paths can render the evidence. | 8 | 0/1/2/client |
+
+## MetaGPT Software Company Simulation Assimilation Source Coverage Intake (Doc `1ZTJWRdQpXzsKnXXJ9nvJqA0Dr_Q1kGgexNa6o2_G9y4`, 2026-03-17)
+
+Source references:
+- https://docs.google.com/document/d/1ZTJWRdQpXzsKnXXJ9nvJqA0Dr_Q1kGgexNa6o2_G9y4/edit?usp=sharing
+- https://github.com/geekan/MetaGPT
+
+Notes:
+- Primitive-first normalization: this intake extends existing workflow, swarm, memory, observability, and adapter lanes; it does not authorize a parallel MetaGPT-owned subsystem.
+- Overlap handled explicitly:
+  - workflow planning/execution baselines: `V6-WORKFLOW-003.*`
+  - swarm messaging, hierarchy, budgets, and orchestration hardening: `V6-SWARM-*`, `V6-SWARM-033` through `V6-SWARM-038`
+  - memory/context/requirements decomposition baselines: `V6-MEMORY-*`, `V6-CONTEXT-*`, `V6-RESEARCH-*`
+  - observability/review/tracing lanes: `V6-OBSERVABILITY-*`, `V9-AUDIT-026`
+  - sandbox and substrate execution baselines: `V6-SUBSTRATE-007.*`
+- Placement correction from source doc:
+  - source suggests `apps/metagpt/`; normalized placement is core-authoritative workflow/swarm/product-to-code orchestration plus thin runtime/client shells and adapter-owned sandbox/integration bridges. Optional demo shells may exist only as deletable surfaces.
+- Default placement:
+  - Layer `0`: conduit-routed role/SOP/code/review/intervention actions + deterministic receipts
+  - Layer `1`: policy/budget/privacy/receipt contracts
+  - Layer `2`: workflow orchestration, debate/review coordination, product-to-code execution, trace capture
+  - Layer `3`: optional persona defaults only
+  - `client`: thin `infring assimilate metagpt` control and optional demo shells only
+  - `adapter`: sandbox/execution/config bridges
+
+Objective: assimilate MetaGPT’s role-based software-company simulation, SOP pipelines, code generation and execution, PR-style review, debate loops, requirements decomposition, and human oversight strengths into InfRing by reusing existing primitives without duplicating authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-WORKFLOW-006.1 | queued | Role-Based Company Simulation Registry Contract | Company-style multi-role execution remains fragmented unless MetaGPT role semantics normalize onto one governed workflow/swarm surface. | Model MetaGPT-style company roles as receipted executions over existing workflow, swarm, and persona lanes so specialized role execution preserves lineage and deterministic orchestration semantics without adding a duplicate authority path. | 10 | 0/1/2/client |
+| V6-WORKFLOW-006.2 | queued | SOP-Driven Pipeline Engine Contract | Product-to-code flows become brittle unless MetaGPT SOP semantics stay inside the authoritative workflow engine. | Support MetaGPT-style SOP pipelines through existing workflow and initiative primitives with deterministic pipeline receipts, preserved checkpoint/budget enforcement, and no parallel pipeline runtime. | 9 | 0/1/2/client |
+| V6-WORKFLOW-006.3 | queued | Code Generation, Execution, and PR Simulation Contract | Code-writing and execution flows become unsafe unless MetaGPT automation remains bound to existing sandbox and review gates. | Reuse governed inference, sandbox, and review lanes for MetaGPT-style code generation, execution, and PR simulation so all actions emit deterministic receipts and sandbox paths remain fail closed. | 10 | 0/1/2/adapter/client |
+| V6-WORKFLOW-006.4 | queued | Multi-Agent Debate and Review Mechanism Contract | Structured debate and peer review drift into wrapper logic unless they map onto authoritative swarm and persona coordination. | Extend existing swarm/persona/review primitives to support MetaGPT-style debate and peer-review cycles with isolated receipts, preserved attention/importance semantics, and strict context-budget enforcement. | 9 | 0/1/2/client |
+| V6-WORKFLOW-006.5 | queued | Product Management and Requirements Bridge Contract | Requirements analysis and task breakdown become lossy unless MetaGPT product semantics route through authoritative memory and decomposition lanes. | Reuse Dream Sequencer, content-skill, and governed memory primitives for MetaGPT-style requirement analysis, story generation, and task breakdown with deterministic persistence and auto-recall receipts. | 8 | 0/1/2/client |
+| V6-WORKFLOW-006.6 | queued | Human Oversight and Intervention Hooks Contract | Review checkpoints become unsafe unless MetaGPT human-in-the-loop semantics remain inside existing approval boundaries. | Support MetaGPT-style review and intervention points through existing pause/approval/shadow surfaces so operator decisions emit deterministic receipts and no separate review authority is introduced. | 8 | 0/1/2/client |
+| V6-WORKFLOW-006.7 | queued | Observability and Pipeline Tracing Contract | Full-company simulations are hard to trust unless MetaGPT pipeline events stream through the native observability stack. | Fold MetaGPT-style workflow tracing and debugging into native observability and receipt lanes so all simulation events stream with zero-loss capture and existing dashboards/export paths can render the evidence. | 8 | 0/1/2/client |
+| V6-WORKFLOW-006.8 | queued | YAML/Config and Extensibility Bridge Contract | Declarative configs and SOP extensions create operational debt unless MetaGPT config surfaces normalize through governed manifests. | Support `infring assimilate metagpt` ingestion of YAML/config assets through content-skill and adapter-owned bridges so config-driven execution emits deterministic receipts and unsupported config paths fail closed with explicit reasons. | 8 | 0/1/2/adapter/client |
+
+## OpenAI Swarm Lightweight Handoff Orchestration Assimilation Source Coverage Intake (Doc `1rOMGeqiWLK71_J-pIgSMvAQvg8aFh-HsDpm_t7mqtbo`, 2026-03-17)
+
+Source references:
+- https://docs.google.com/document/d/1rOMGeqiWLK71_J-pIgSMvAQvg8aFh-HsDpm_t7mqtbo/edit?usp=sharing
+- https://github.com/openai/swarm
+
+Notes:
+- Primitive-first normalization: this intake extends existing swarm, workflow, memory, observability, and adapter lanes; it does not authorize a parallel OpenAI-Swarm-owned subsystem.
+- Overlap handled explicitly:
+  - swarm messaging, hierarchy, budgets, and orchestration hardening: `V6-SWARM-*`, `V6-SWARM-033` through `V6-SWARM-038`
+  - workflow planning/execution baselines: `V6-WORKFLOW-003.*`
+  - memory/context/auto-recall baselines: `V6-MEMORY-*`, `V6-CONTEXT-*`, `V6-RESEARCH-*`
+  - observability/evals/tracing lanes: `V6-OBSERVABILITY-*`, `V9-AUDIT-026`
+  - tool/adaptation baselines: `REQ-17`, `V6-COMP-002`, `V6-SUBSTRATE-007.*`
+- Placement correction from source doc:
+  - source suggests `apps/swarm/`; normalized placement is core-authoritative swarm/workflow/context orchestration plus thin runtime/client shells and adapter-owned tool/polyglot bridges. Optional REPL/demo shells may exist only as deletable surfaces.
+- Default placement:
+  - Layer `0`: conduit-routed handoff/context/tool/stream/recovery actions + deterministic receipts
+  - Layer `1`: policy/budget/privacy/receipt contracts
+  - Layer `2`: swarm coordination, context propagation, multi-turn execution, streaming orchestration
+  - Layer `3`: optional persona defaults only
+  - `client`: thin `infring assimilate swarm` control and optional REPL/demo shells only
+  - `adapter`: polyglot import and tool-schema bridges
+
+Objective: assimilate OpenAI Swarm’s lightweight handoff orchestration, mutable context propagation, auto-tool generation, streaming delimiters, multi-turn execution, REPL ergonomics, and composable agent-network strengths into InfRing by reusing existing primitives without duplicating authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-WORKFLOW-007.1 | queued | Agent Handoff Registry Contract | Handoff-driven orchestration remains fragmented unless Swarm-style control transfer normalizes onto one governed swarm/workflow execution surface. | Model OpenAI Swarm handoffs as receipted executions over existing swarm and workflow/runtime lanes so control transfer preserves lineage, importance, and deterministic receipts without adding a duplicate orchestration authority path. | 10 | 0/1/2/client |
+| V6-WORKFLOW-007.2 | queued | Context Variable Propagation Contract | Mutable context becomes unsafe and lossy unless Swarm-style context variables route through authoritative memory and context-budget primitives. | Support mutable context propagation through Dream Sequencer, auto-recall, and context-budget guards so dynamic context persists with deterministic receipts and explicit degraded-mode behavior for unsupported profiles. | 9 | 0/1/2/client |
+| V6-WORKFLOW-007.3 | queued | Automatic JSON-Schema Tool Bridge Contract | Auto-generated function tools create schema and safety drift unless they normalize through governed skill and adapter bridges. | Reuse content-skill and adapter bridges to convert imported functions into governed tool manifests with deterministic registration/invocation receipts and fail-closed denials for unsupported or unsafe tool paths. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-007.4 | queued | Streaming with Agent Delimiters Contract | Streaming loses operator trust unless agent-boundary events and partial outputs remain visible through native observability paths. | Map Swarm-style streaming delimiters and agent-boundary semantics onto native inference and observability lanes so every delimited chunk is receipt-anchored and renderable in existing live surfaces without a parallel trace stack. | 8 | 0/1/2/client |
+| V6-WORKFLOW-007.5 | queued | Multi-Turn Execution and Error Recovery Contract | Multi-turn execution and self-recovery drift into wrappers unless they stay inside authoritative workflow and safety lanes. | Support Swarm-style multi-turn execution and error recovery through existing workflow/swarm/security primitives so runs continue under governance, errors emit deterministic receipts, and recovery paths remain fail closed. | 9 | 0/1/2/client |
+| V6-WORKFLOW-007.6 | queued | REPL and Demo Loop Ergonomics Contract | Lightweight experimentation is less usable unless REPL/demo loops exist as thin shells over the same governed runtime. | Optional REPL/demo shells may run alongside `infring`, but every turn delegates to conduit-backed authority surfaces, emits deterministic receipts, and does not introduce Node or app-owned authority into pure/tiny-max profiles. | 7 | 1/2/client/app |
+| V6-WORKFLOW-007.7 | queued | Composable Agent Networks Contract | Agent-as-node composition remains brittle unless Swarm-style network ergonomics map onto existing session, persona, and attention primitives. | Support composable agent networks over existing swarm/session/persona lanes with isolated receipts, preserved attention/importance semantics, and no second orchestration runtime. | 8 | 0/1/2/client |
+
+## Microsoft Semantic Kernel Enterprise Agents Assimilation Source Coverage Intake (Doc `1nkybisybRVTONzYR4I347wC07gzLNZoorKec0W4d4KU`, 2026-03-17)
+
+Source references:
+- https://docs.google.com/document/d/1nkybisybRVTONzYR4I347wC07gzLNZoorKec0W4d4KU/edit?usp=sharing
+- https://github.com/microsoft/semantic-kernel
+
+Notes:
+- Primitive-first normalization: this intake extends existing workflow, swarm, memory, observability, and adapter lanes; it does not authorize a parallel Semantic-Kernel-owned subsystem.
+- Overlap handled explicitly:
+  - workflow planning/execution baselines: `V6-WORKFLOW-003.*`
+  - swarm messaging, hierarchy, budgets, and orchestration hardening: `V6-SWARM-*`, `V6-SWARM-033` through `V6-SWARM-038`
+  - memory/RAG/semantic recall baselines: `V6-MEMORY-*`, `V6-RESEARCH-*`, `V6-CONTEXT-*`
+  - observability/evals/tracing lanes: `V6-OBSERVABILITY-*`, `V9-AUDIT-026`
+  - MCP/OpenAPI/tool and multi-language adapter baselines: `V6-COMP-002`, `V6-SUBSTRATE-007.*`, `REQ-17`
+- Placement correction from source doc:
+  - source suggests `apps/semantic-kernel/` and `apps/semantic-kernel-dotnet/`; normalized placement is core-authoritative workflow/swarm/memory orchestration plus thin runtime/client shells and adapter-owned plugin, Azure, MCP/OpenAPI, and .NET bridges. Optional UI shells may exist only as deletable surfaces.
+- Default placement:
+  - Layer `0`: conduit-routed kernel/plugin/plan/memory/eval actions + deterministic receipts
+  - Layer `1`: policy/budget/privacy/schema/receipt contracts
+  - Layer `2`: workflow orchestration, planner routing, multi-agent collaboration, memory connector coordination
+  - Layer `3`: optional persona defaults only
+  - `client`: thin `infring assimilate semantic-kernel` control and optional UI shells only
+  - `adapter`: plugin/OpenAPI/MCP/Azure/provider/.NET bridges
+
+Objective: assimilate Microsoft Semantic Kernel’s kernel orchestration, plugin ecosystem, multi-agent collaboration, planner semantics, vector memory connectors, multimodal connectors, structured output, enterprise observability, Azure integrations, and .NET parity into InfRing by reusing existing primitives without duplicating authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-WORKFLOW-008.1 | queued | Kernel Orchestration Registry Contract | Kernel-style service registration and dispatch remain fragmented unless they normalize onto one governed workflow/swarm execution surface. | Model Semantic Kernel kernel orchestration and service registration as receipted executions over existing workflow and swarm/runtime lanes, preserving deterministic step receipts without adding a parallel orchestration authority path. | 10 | 0/1/2/client |
+| V6-WORKFLOW-008.2 | queued | Plugin Ecosystem Bridge Contract | Plugin breadth becomes unsafe and duplicative unless native functions, prompt assets, OpenAPI imports, and MCP tools normalize through governed bridge families. | Reuse content-skill and adapter bridges for Semantic Kernel plugin assets so registration and invocation emit deterministic receipts and unsupported or unsafe plugin paths fail closed. | 10 | 0/1/2/adapter/client |
+| V6-WORKFLOW-008.3 | queued | Agent Framework and Multi-Agent Collaboration Contract | Enterprise collaboration patterns remain brittle unless Semantic Kernel chat/custom agents map onto authoritative swarm, session, and persona lanes. | Extend existing swarm/session/persona primitives to support Semantic Kernel-style multi-agent collaboration with isolated receipts, preserved handoff semantics, and bounded lineage/budget enforcement. | 9 | 0/1/2/client |
+| V6-WORKFLOW-008.4 | queued | Planner and Structured Reasoning Engine Contract | Multi-step reasoning and function selection drift into wrappers unless planner semantics normalize onto the canonical workflow engine. | Support Semantic Kernel planner and function-selection behavior through existing workflow, tool-selection, and orchestration primitives with deterministic plan receipts and no duplicate planner runtime. | 9 | 0/1/2/client |
+| V6-WORKFLOW-008.5 | queued | Vector Memory and Semantic Connector Bridge Contract | Vector memory and semantic connectors create retrieval sprawl unless they are absorbed into Dream Sequencer, auto-recall, and adapter-owned bridges. | Route Azure AI Search, Chroma, Elasticsearch, and similar semantic connectors through existing memory/retrieval lanes with context-budget enforcement, deterministic retrieval receipts, and explicit degraded-mode reasons for unsupported profiles. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-008.6 | queued | LLM Connectors and Multimodal Gateway Contract | Connector breadth and multimodal support become operational debt unless they remain adapter-owned and policy-gated. | Extend governed inference and adapter surfaces to support Semantic Kernel-style provider connectors and multimodal flows, wrapping every route/invocation in deterministic receipts and rejecting unsupported paths fail closed. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-008.7 | queued | Structured Output and Process Framework Contract | Structured outputs and business-process modeling lose trust unless they reuse existing schema, receipt, and policy lanes. | Map Semantic Kernel structured output and process framework semantics onto native schema-validation and receipt contracts so outputs are fail-closed, schema-anchored, and fully auditable. | 8 | 0/1/2/client |
+| V6-WORKFLOW-008.8 | queued | Enterprise Observability and Azure Integration Contract | Enterprise telemetry and Azure deployment value is lost if framework-specific trace or cloud paths bypass the native governance stack. | Fold Semantic Kernel observability, logging, security, and Azure integration semantics into native observability and adapter governance with zero-loss capture, deterministic deployment receipts, and no duplicate telemetry stack. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-008.9 | queued | .NET Interop Surface Contract | Semantic Kernel's .NET-heavy enterprise footprint becomes runtime sprawl unless parity flows stay bridge-owned rather than authority-owned. | Support C#/.NET plugin and agent parity through thin governed interop bridges that preserve deterministic receipt semantics while keeping optional .NET shells deletable and non-authoritative. | 8 | 0/1/2/adapter/client |
+
+## LlamaIndex RAG + Agentic Workflow Assimilation Source Coverage Intake (Doc `1DXI7-djrWFMxL_R1MlPNNXs8LDB3UFjaC0yM8nwzh8A`, 2026-03-17)
+
+Source references:
+- https://docs.google.com/document/d/1DXI7-djrWFMxL_R1MlPNNXs8LDB3UFjaC0yM8nwzh8A/edit?usp=sharing
+- https://github.com/run-llama/llama_index
+
+Notes:
+- Primitive-first normalization: this intake extends existing Dream Sequencer, memory/runtime, workflow, swarm, observability, and adapter lanes; it does not authorize a parallel LlamaIndex-owned subsystem.
+- Overlap handled explicitly:
+  - workflow planning/execution baselines: `V6-WORKFLOW-003.*`
+  - memory, retrieval, and context baselines: `V6-MEMORY-*`, `V6-RESEARCH-*`, `V6-CONTEXT-*`
+  - observability/evaluation/tracing lanes: `V6-OBSERVABILITY-*`, `V9-AUDIT-026`
+  - swarm, handoff, and tool-interaction baselines: `V6-SWARM-*`, `REQ-17`
+  - connector/import breadth baselines: `V6-COMP-002`, `V6-SUBSTRATE-007.*`
+- Placement correction from source doc:
+  - source suggests `apps/llamaindex/`; normalized placement is core-authoritative retrieval/workflow/memory orchestration plus thin runtime/client shells and adapter-owned connector bridges. Optional explorer shells may exist only as deletable surfaces.
+- Default placement:
+  - Layer `0`: conduit-routed RAG/query/workflow/eval actions + deterministic receipts
+  - Layer `1`: policy/budget/receipt contracts for retrieval, state, and evaluation
+  - Layer `2`: query engines, workflow orchestration, agentic routing, and tracing
+  - Layer `3`: optional persona defaults only
+  - `client`: thin `infring assimilate llamaindex` control and optional explorer shells only
+  - `adapter`: data loaders, connectors, and multi-modal ingestion bridges
+
+Objective: assimilate LlamaIndex’s industry-standard RAG pipelines, query engines, agentic workflows, multi-modal ingestion, memory-store patterns, evaluations, and connector breadth into InfRing by reusing existing primitives without duplicating authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-WORKFLOW-009.1 | queued | RAG Pipeline and Query Engine Registry Contract | RAG/query surfaces remain fragmented unless LlamaIndex-style indexes, retrievers, and query engines map onto one governed retrieval/runtime surface. | Model indexes, retrievers, and query engines as receipted executions over Dream Sequencer and workflow/runtime lanes while preserving hybrid/vector/graph retrieval behavior and avoiding new retrieval authority primitives. | 10 | 0/1/2/client |
+| V6-WORKFLOW-009.2 | queued | Agentic Workflow and Tool-Calling Bridge Contract | Agentic query and tool flows drift into wrappers unless they route through the authoritative workflow, swarm, and tool bridge family. | Extend existing workflow/swarm/content-skill primitives to support LlamaIndex-style agentic workflows and tool-calling with deterministic receipts, preserved handoff semantics, and pure/tiny-max-safe degradation. | 9 | 0/1/2/client |
+| V6-WORKFLOW-009.3 | queued | Multi-Modal Indexing and Data Loader Bridge Contract | Multi-modal ingestion and connector breadth become duplicated debt unless they normalize onto adapter-owned ingestion lanes. | Route PDFs, images, audio, video, and connector-backed ingestion through substrate adapters and governed runtime paths with enforced context budgets, deterministic ingestion receipts, and explicit degraded-mode reasons when unsupported. | 9 | -1/0/1/2/adapter/client |
+| V6-WORKFLOW-009.4 | queued | Memory Store and Evaluation Assimilation Contract | Memory-store and evaluation value is lost unless they map onto existing state and observability contracts rather than a parallel benchmark stack. | Reuse existing memory runtime, auto-recall, and observability lanes so memory-store semantics and evaluation metrics stream natively as governed artifacts with deterministic receipts. | 8 | 0/1/2/client |
+| V6-WORKFLOW-009.5 | queued | Workflow Orchestration and Conditional Routing Contract | Workflow transitions and conditional handoffs become opaque unless LlamaIndex-style orchestration is absorbed into the canonical workflow engine. | Support LlamaIndex workflow transitions and conditional routing through existing workflow and initiative primitives with deterministic receipts, preserved checkpoint semantics, and no duplicate workflow engine. | 9 | 0/1/2/client |
+| V6-WORKFLOW-009.6 | queued | Observability and Tracing Bridge Contract | Tracing and debugging lose trust value when framework-specific trace stacks bypass the native observability path. | Map LlamaIndex traces and debug events into the native receipt/observability stack with zero-loss capture and dashboard/export parity. | 8 | 0/1/2/client |
+| V6-WORKFLOW-009.7 | queued | Connector and Integration Gateway Contract | Connector sprawl becomes operational debt unless LlamaIndex’s 100+ loaders and integrations normalize through one governed intake path. | Provide thin `infring assimilate llamaindex` intake that normalizes loaders/connectors into adapter-owned manifests, wraps every load/query path in deterministic receipts, and rejects unsupported integrations fail-closed with explicit reasons. | 9 | 0/1/2/adapter/client |
+
+## Google ADK Protocol-First Agents Assimilation Source Coverage Intake (Doc `1ijzS46TOklhWpmpvx5OfhQnJ8lKP96BI81s3ERRaUWo`, 2026-03-17)
+
+Source references:
+- https://docs.google.com/document/d/1ijzS46TOklhWpmpvx5OfhQnJ8lKP96BI81s3ERRaUWo/edit?usp=sharing
+- https://github.com/google/adk-python
+- https://google.github.io/adk-docs/
+- https://github.com/google/adk-samples
+
+Notes:
+- Primitive-first normalization: this intake extends existing swarm, workflow, memory, observability, and adapter lanes; it does not authorize a parallel Google-ADK-owned subsystem.
+- Overlap handled explicitly:
+  - swarm messaging/session/runtime and hierarchy baselines: `V6-SWARM-*`, `V6-SWARM-033` through `V6-SWARM-038`
+  - workflow planning/execution baselines: `V6-WORKFLOW-003.*`
+  - memory/rewind/retrieval baselines: `V6-MEMORY-*`, `V6-RESEARCH-*`, `V6-CONTEXT-*`
+  - observability/evals/tracing lanes: `V6-OBSERVABILITY-*`, `V9-AUDIT-026`
+  - MCP/OpenAPI, tool, and universal adapter baselines: `V6-COMP-002`, `V6-SUBSTRATE-007.*`, `REQ-17`
+- Placement correction from source doc:
+  - source suggests `apps/google-adk/` and `apps/google-adk-ui/`; normalized placement is core-authoritative swarm/workflow/memory orchestration plus thin runtime/client shells and adapter-owned protocol, cloud, and polyglot bridges. Optional UI shells may exist only as deletable surfaces.
+- Default placement:
+  - Layer `0`: conduit-routed A2A/workflow/tool/rewind/eval actions + deterministic receipts
+  - Layer `1`: policy/budget/privacy/approval/receipt contracts
+  - Layer `2`: swarm coordination, workflow agents, rewind, evaluation, routing
+  - Layer `3`: optional persona defaults only
+  - `client`: thin `infring assimilate google-adk` control and optional UI shells only
+  - `adapter`: A2A/polyglot/cloud/MCP/OpenAPI/provider bridges
+
+Objective: assimilate Google ADK’s protocol-first A2A interop, agent/workflow semantics, tool ecosystem, hierarchical coordination, HITL confirmation, rewind/evaluation, sandbox, and cloud deployment strengths into InfRing by reusing existing primitives without duplicating authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-WORKFLOW-010.1 | queued | A2A Protocol-First Agent Registry Contract | Distributed agent interoperability remains fragmented unless ADK-style A2A communication maps onto one governed session and swarm surface. | Model A2A handoffs and remote agent communication as receipted swarm/session operations over existing runtime primitives while preserving cross-language interoperability through adapters and avoiding duplicate message-bus authority. | 10 | 0/1/2/adapter/client |
+| V6-WORKFLOW-010.2 | queued | `LlmAgent` and Workflow Agent Engine Contract | Agent and workflow semantics drift into wrappers unless ADK execution patterns normalize onto the authoritative workflow/persona lanes. | Extend existing workflow and persona primitives to support ADK-style `LlmAgent` and sequential/parallel/loop workflow semantics with deterministic receipts and preserved routing/budget policy. | 9 | 0/1/2/client |
+| V6-WORKFLOW-010.3 | queued | Tool Ecosystem and MCP/OpenAPI Bridge Contract | Tool ecosystems become inconsistent and unsafe unless ADK prebuilt/custom/OpenAPI/MCP tools normalize through the governed bridge family. | Route ADK-style tool imports and invocations through content-skill and adapter bridges so tools auto-register via `infring assimilate`, emit deterministic invocation receipts, and fail closed on unsupported or out-of-policy paths. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-010.4 | queued | Hierarchical Multi-Agent Coordination Contract | Coordinator/sub-agent patterns remain fragile unless ADK-style hierarchies map directly onto the bounded swarm lineage and budget model. | Support nested multi-agent coordination over existing swarm/persona primitives with isolated receipts, importance/context-budget enforcement, and safe pure/tiny-max degradation. | 9 | 0/1/2/client |
+| V6-WORKFLOW-010.5 | queued | HITL Tool Confirmation Middleware Contract | Risky tool invocation is unsafe if ADK-style human approvals are implemented outside the existing pause and receipt governance path. | Add ADK-style approval checkpoints through existing pause/approval middleware so tool calls can require explicit approval and emit deterministic approval-state receipts without a second authority boundary. | 8 | 0/1/2/client |
+| V6-WORKFLOW-010.6 | queued | Session Rewind and Evaluation Bridge Contract | Rewind and evaluation lose trust value unless they are mapped onto existing state and observability contracts rather than isolated CLI semantics. | Route ADK-style session rewind and evaluation artifacts through existing memory/receipt/observability lanes so rewind restores governed state and evaluation metrics stream natively with deterministic receipts and safe pure-mode compatibility. | 9 | 0/1/2/client |
+| V6-WORKFLOW-010.7 | queued | Code Executor Sandbox and Cloud Integration Contract | Sandbox and cloud deployment strengths become unsafe unless they remain policy-gated and adapter-owned. | Extend existing security/substrate/adapter lanes to support ADK-style code execution sandboxing and GCP integrations with fail-closed execution, explicit degraded-mode reasons, and deterministic integration receipts. | 9 | -1/0/1/2/adapter/client |
+| V6-WORKFLOW-010.8 | queued | Development UI and Deployment Shell Contract | Developer UI and deployment shells are useful, but they must remain deletable and non-authoritative. | Optional ADK-like dev UI and deployment shells may run alongside `infring`, but all execution and artifact generation delegate to conduit-backed authority and produce deterministic deployment receipts. | 7 | client/app |
+| V6-WORKFLOW-010.9 | queued | Model-Agnostic and Multi-Language Gateway Contract | Polyglot and model-agnostic interop becomes runtime sprawl unless it is absorbed into governed adapter and routing primitives. | Support ADK-style model-agnostic multi-language interop through adapter-owned Python/TS/Go/Java bridges and existing inference routing, with deterministic receipts and no regressions for unsupported tiny-max/pure paths. | 8 | 0/1/2/adapter/client |
+
+## Mastra Lightweight TypeScript Agent Framework Assimilation Source Coverage Intake (Doc `1QDZnA7Ezfjn5Ez4xcKyz00hpfy5Rbj9FI1XW-x-OAgI`, 2026-03-17)
+
+Source references:
+- https://docs.google.com/document/d/1QDZnA7Ezfjn5Ez4xcKyz00hpfy5Rbj9FI1XW-x-OAgI/edit?usp=sharing
+- https://github.com/mastra-ai/mastra
+
+Notes:
+- Primitive-first normalization: this intake extends existing workflow, swarm, memory, observability, and adapter lanes; it does not authorize a parallel Mastra-owned subsystem.
+- Overlap handled explicitly:
+  - workflow planning/execution baselines: `V6-WORKFLOW-003.*`
+  - swarm messaging, hierarchy, budgets, and orchestration hardening: `V6-SWARM-033` through `V6-SWARM-038`
+  - memory/RAG and semantic recall baselines: `V6-MEMORY-*`, `V6-RESEARCH-*`, `V6-CONTEXT-*`
+  - observability, evals, and tracing lanes: `V6-OBSERVABILITY-*`, `V9-AUDIT-026`
+  - MCP/interoperability and adapter/connectivity baselines: `V6-COMP-002`, `V6-SUBSTRATE-007.*`, `V6-APP-006.*`, `REQ-17`
+- Placement correction from source doc:
+  - source suggests `apps/mastra/` and `apps/mastra-studio/`; normalized placement is core-authoritative workflow/memory/orchestration plus thin runtime/client surfaces and adapter-owned MCP/provider bridges. Optional studio/playground apps may exist only as deletable shells.
+- Default placement:
+  - Layer `0`: conduit-routed workflow/agent/memory/HITL/MCP/eval actions + deterministic receipts
+  - Layer `1`: policy/budget/privacy/approval/receipt contracts
+  - Layer `2`: graph workflow orchestration, agents, semantic recall, routing, tracing
+  - Layer `3`: optional persona defaults only
+  - `client`: thin `infring assimilate mastra` control and optional studio shell surfaces only
+  - `adapter`: provider, MCP, and protocol interoperability shims
+
+Objective: assimilate Mastra’s lightweight TypeScript-first graph workflows, agent/tool loops, semantic memory, HITL suspend/resume, MCP interoperability, evals/tracing, model routing, and dev-studio/full-stack ergonomics into InfRing by reusing existing primitives without duplicating authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-WORKFLOW-011.1 | queued | Graph Workflow Engine Contract | Lightweight graph-based AI workflows remain fragmented unless Mastra-style chaining, branching, and parallel flow patterns map onto one governed execution surface. | Model Mastra-style workflow chaining, branching, and parallelism as receipted executions over existing workflow/swarm lanes while preserving explicit control flow and deterministic receipts without adding a parallel execution engine. | 9 | 0/1/2/client |
+| V6-WORKFLOW-011.2 | queued | Autonomous Agent and Tool Reasoning Contract | Agent loops and tool reasoning drift into non-deterministic wrappers unless they route through the authoritative swarm and persona lanes. | Extend existing swarm/persona primitives to support Mastra-style agent reasoning, tool selection, and bounded iteration with deterministic receipts and preserved budget/safety controls. | 9 | 0/1/2/client |
+| V6-WORKFLOW-011.3 | queued | Memory, Semantic Recall, and RAG Bridge Contract | TS-first memory ergonomics become duplicated debt unless semantic recall and RAG normalize onto the existing memory runtime. | Route conversation memory, working memory, semantic recall, and RAG through Dream Sequencer, auto-recall, and governed retrieval/runtime contracts with enforced context budgets and safe pure/tiny-max degradation. | 10 | 0/1/2/client/adapter |
+| V6-WORKFLOW-011.4 | queued | Human-in-the-Loop Suspend/Resume Contract | Workflow pauses and approvals are unreliable if state persistence and review semantics are implemented outside the existing receipt-backed runtime. | Support storage-backed suspend/resume and approval checkpoints through existing persistence and receipt lanes so paused state survives restart and human approval emits deterministic approval receipts. | 8 | 0/1/2/client |
+| V6-WORKFLOW-011.5 | queued | MCP Server and Interoperability Bridge Contract | MCP interoperability becomes unsafe and inconsistent unless it is normalized through governed adapter-owned bridges. | Extend content-skill and adapter bridges to expose Mastra-style MCP servers/tools/resources through conduit-backed interop surfaces with fail-closed enforcement and deterministic interoperability receipts. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-011.6 | queued | Evals and Tracing Observability Contract | Lightweight eval/tracing value is lost if Mastra-style traces and metrics bypass the native observability stack. | Map model-graded, rule-based, and statistical evaluations plus traces/logs/token telemetry onto existing observability and receipt lanes with zero-loss capture and dashboard/export parity. | 8 | 0/1/2/client |
+| V6-WORKFLOW-011.7 | queued | 40+ LLM Routing Compatibility Contract | TS-first provider ergonomics create fragmentation unless model routing compatibility is absorbed into the canonical inference path. | Extend existing inference/routing primitives to support Mastra-style multi-provider routing with deterministic route receipts, adapter-owned provider shims, and no regression for pure/tiny-max unsupported paths. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-011.8 | queued | Dev Studio and Full-Stack Shell Contract | Developer adoption improves with studio and full-stack UI shells, but those shells must not become system authority. | Optional studio/playground/full-stack shells may run alongside `infring`, but all execution and mutation paths delegate to conduit-backed authority and remain deletable without changing system behavior. | 7 | client/app |
+| V6-WORKFLOW-011.9 | queued | Lightweight TypeScript Ergonomics Intake Contract | TS-first developer experience is valuable only if scaffolding and intake stay thin and do not force Node dependency into sovereign profiles. | Provide `infring assimilate mastra` intake/scaffolding for Mastra-style TS projects as thin wrappers/templates over existing authority lanes, with no new Node dependency for pure/tiny-max profiles. | 8 | 0/1/2/client |
+
+## Haystack Modular Pipeline & Agent Orchestration Assimilation Source Coverage Intake (Doc `1eqzU0knBOiWTNv4MiaMD2HSIiLyKB9Jg0-CBBL8rfwI`, 2026-03-16)
+
+Source references:
+- https://docs.google.com/document/d/1eqzU0knBOiWTNv4MiaMD2HSIiLyKB9Jg0-CBBL8rfwI/edit?usp=sharing
+- https://github.com/deepset-ai/haystack
+
+Notes:
+- Primitive-first normalization: this intake extends existing workflow, swarm, memory, observability, and adapter lanes; it does not authorize a parallel Haystack-owned subsystem.
+- Overlap handled explicitly:
+  - workflow planning/execution baselines: `V6-WORKFLOW-003.*`
+  - swarm messaging, hierarchy, budgets, and orchestration hardening: `V6-SWARM-033` through `V6-SWARM-038`
+  - memory/RAG and low-burn retrieval baselines: `V6-MEMORY-*`, `V6-RESEARCH-*`, `V6-CONTEXT-*`
+  - observability and tracing lanes: `V6-OBSERVABILITY-*`, `V9-AUDIT-026`
+  - adapter/import/connectivity baselines: `V6-COMP-002`, `V6-SUBSTRATE-007.*`, `V6-APP-006.*`
+- Placement correction from source doc:
+  - source suggests `apps/haystack/`; normalized placement is core-authoritative workflow/memory/orchestration plus thin client surfaces and adapter-owned integration shims, because this is system capability rather than a deletable app.
+- Default placement:
+  - Layer `0`: conduit-routed pipeline/agent/retrieval/eval actions + deterministic receipts
+  - Layer `1`: policy/budget/privacy/connector gates and receipt contracts
+  - Layer `2`: pipeline orchestration, routing, rankers, agent execution, trace emission
+  - Layer `3`: optional persona defaults only
+  - `client`: thin `infring assimilate haystack` control and status surfaces only
+  - `adapter`: connector/document-store/model integration shims
+
+Objective: assimilate Haystack v2.25.x strengths into InfRing by reusing existing primitives for modular pipelines, agent tool use, dynamic prompt templates, explicit RAG control, conditional routing, multimodal evaluation, tracing, and connector breadth without duplicating authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-WORKFLOW-012.1 | queued | Modular Component and Pipeline Registry Contract | Explicit multi-stage AI pipelines remain fragmented unless Haystack-style component graphs map onto one governed pipeline registry over existing execution primitives. | Model retrieval, routing, memory, and generation stages as receipted components over existing workflow/swarm lanes; preserve explicit stage visibility, deterministic receipts, and pure/tiny-max capability degradation without new parallel execution authority. | 9 | 0/1/2/client |
+| V6-WORKFLOW-012.2 | queued | Agent + Searchable Toolset Engine Contract | Tool-using agents waste context and lose determinism unless searchable tool selection runs through the governed swarm/session path. | Extend existing swarm/inference primitives to support Haystack-style agent execution and searchable tool reduction with deterministic tool-selection and invocation receipts, direct messaging preservation, and hard budget enforcement. | 9 | 0/1/2/client |
+| V6-WORKFLOW-012.3 | queued | Template and Prompt Bridge Contract | Dynamic template-driven prompting becomes non-auditable if template ingestion and rendering happen outside governed artifact flows. | Ingest Haystack-style template assets through `infring assimilate haystack`, persist them as versioned provenance-linked artifacts, and emit deterministic receipts for every rendered prompt output using thin client surfaces only. | 8 | 0/1/2/client/adapter |
+| V6-WORKFLOW-012.4 | queued | RAG and Document Store Bridge Contract | Connector-rich RAG systems drift into duplicated retrieval logic unless document stores and retrievers are normalized onto existing memory/runtime contracts. | Route Haystack-style retrieval, converters, document stores, and rankers through Dream Sequencer, auto-recall, and adapter-owned integration manifests with end-to-end context-budget enforcement and governed degraded-mode behavior for pure/tiny-max profiles. | 10 | 0/1/2/adapter/client |
+| V6-WORKFLOW-012.5 | queued | Conditional Routing and Ranker Orchestration Contract | Metadata routing and reranking become opaque and unsafe when branch selection is not deterministic and replayable. | Support conditional routes, metadata selectors, and rerankers as explicit workflow decisions with deterministic routing receipts, fail-closed unsupported-path handling, and compatibility with existing checkpoints and orchestration guards. | 9 | 0/1/2 |
+| V6-WORKFLOW-012.6 | queued | Multimodal and Evaluation Assimilation Contract | Multimodal pipelines and quality evaluation lose trust value when they bypass existing artifact and observability surfaces. | Map multimodal stages and evaluation outputs onto existing substrate adapters and observability lanes so typed artifacts, correctness/faithfulness evidence, and metrics stream natively with deterministic receipts. | 8 | -1/0/1/2/adapter/client |
+| V6-WORKFLOW-012.7 | queued | Tracing and Production Observability Parity Contract | Stepwise inspect/debug visibility is incomplete unless every pipeline branch and tool call is captured by the native tracing stack. | Expose full step traces, tool calls, branch decisions, and optimization signals through existing receipt + observability contracts with zero-loss capture and dashboard/export parity for Haystack-assimilated flows. | 9 | 0/1/2/client |
+| V6-WORKFLOW-012.8 | queued | Connector Integration Gateway and Assimilation Entry Contract | Large connector ecosystems become operational debt unless they ingest through one governed import path with adapter ownership. | Provide thin `infring assimilate haystack` intake that normalizes connectors and pipeline assets into adapter-owned manifests, wraps every import in provenance receipts, and rejects unsupported integrations fail-closed with explicit reasons. | 9 | 0/1/2/client/adapter |
+
+## CAMEL Scaling-Law Agent Society Assimilation Source Coverage Intake (Doc `18JoI69ZnPTtAqsp3QtKyLJ8NNRWDXqWcOW8RkwwgQEU`, 2026-03-17)
+
+Source references:
+- https://docs.google.com/document/d/18JoI69ZnPTtAqsp3QtKyLJ8NNRWDXqWcOW8RkwwgQEU/edit?usp=sharing
+- https://github.com/camel-ai/camel
+
+Notes:
+- Primitive-first normalization: this intake extends existing swarm, workflow, memory, observability, content-skill, and adapter lanes; it does not authorize a parallel CAMEL-owned society runtime.
+- Overlap handled explicitly:
+  - workflow and graph-execution baselines: `V6-WORKFLOW-001.*` through `V6-WORKFLOW-012.*`
+  - swarm messaging, hierarchy, capabilities, and reliability baselines: `V6-SWARM-*`, `V6-SWARM-033` through `V6-SWARM-038`
+  - memory/context/simulation baselines: `V6-MEMORY-*`, `V6-CONTEXT-*`, `V6-RESEARCH-*`
+  - observability/eval/receipt baselines: `V9-AUDIT-026`, `V6-OBSERVABILITY-*`
+- Placement correction from source doc:
+  - source suggests `apps/camel/` and `apps/camel-oasis/`; normalized placement is core-authoritative society/workflow/memory orchestration plus thin runtime/client shells and adapter-owned dataset/tool bridges. Optional society/demo shells may exist only as deletable surfaces.
+- Default placement:
+  - Layer `0`: conduit-routed society, dataset, benchmark, and simulation actions + deterministic receipts
+  - Layer `1`: policy/budget/receipt/provenance contracts
+  - Layer `2`: society orchestration, role routing, world simulation coordination, scaling observability
+  - Layer `3`: optional persona defaults only
+  - `client`: thin `infring assimilate camel` control and optional demo shells only
+  - `adapter`: dataset/tool/provider bridges
+
+Objective: assimilate CAMEL’s role-playing societies, large-scale agent coordination, OASIS-style world simulation, synthetic datasets, code-as-prompt conversations, CRAB-style evaluations, tool ecosystem, and emergent scaling-law observability into InfRing by reusing existing primitives without duplicating authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-WORKFLOW-013.1 | queued | Role-Playing Society Registry Contract | Role-specialized agent societies remain fragmented unless CAMEL-style roles normalize onto one governed swarm/workflow execution surface. | Model role-playing societies and role dispatch over existing swarm and workflow lanes so role specialization preserves lineage, deterministic receipts, and bounded policy enforcement without introducing a duplicate society runtime. | 9 | 0/1/2/client |
+| V6-WORKFLOW-013.2 | queued | Scalable Multi-Agent Society Execution Contract | Large-scale society runs become unsafe and opaque unless scaling behavior remains inside existing swarm, budget, and capability boundaries. | Extend current swarm primitives to support CAMEL-style large-society coordination with isolated receipts, importance queue preservation, explicit degraded-mode behavior, and hard context/budget enforcement for all profiles. | 10 | 0/1/2/client |
+| V6-WORKFLOW-013.3 | queued | OASIS World Simulation Bridge Contract | Social/world simulation loses continuity unless CAMEL-style OASIS state maps onto canonical memory and simulation lanes. | Reuse Dream Sequencer, auto-recall, and governed memory/runtime contracts for OASIS-style world state and information-spread simulation so state persists with deterministic receipts and unsupported paths degrade explicitly. | 9 | 0/1/2/client |
+| V6-WORKFLOW-013.4 | queued | Synthetic Dataset Ingestion Contract | Society and domain datasets create ingestion sprawl unless CAMEL-style dataset assets normalize through one governed artifact path. | Extend content-skill and adapter-owned dataset bridges so society, code, and domain datasets ingest through `infring assimilate camel`, every run emits provenance-linked receipts, and unsupported inputs fail closed. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-013.5 | queued | Code-as-Prompt and Stateful Conversation Routing Contract | Stateful code-as-prompt conversations become non-auditable unless they stay inside canonical inference, streaming, and session/swarm lanes. | Support CAMEL-style code-as-prompt and dynamic multi-turn conversations through existing inference, streaming, and swarm/session primitives so state transitions remain receipted, lineage-safe, and observable without a second conversation runtime. | 8 | 0/1/2/client |
+| V6-WORKFLOW-013.6 | queued | CRAB Benchmark and Evaluation Bridge Contract | Benchmark value is lost unless CAMEL-style evaluation flows stream through the native observability and receipt stack. | Map CRAB-style multimodal benchmarks and eval outputs onto existing observability/eval lanes so benchmark runs are receipted, replayable, and exportable without a parallel evaluation stack. | 8 | 0/1/2/client/adapter |
+| V6-WORKFLOW-013.7 | queued | Tool Ecosystem and Real-World Integration Gateway Contract | CAMEL tool integrations become unsafe unless search, crawl, OCR, and productivity connectors stay within governed bridge families. | Reuse conduit, content-skill, and adapter bridges for CAMEL-style tools so registration and invocation emit deterministic receipts and unsupported or unsafe integrations fail closed. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-013.8 | queued | Emergent Scaling-Law Observability Contract | Emergent behavior and societal dynamics remain anecdotal unless CAMEL-style scaling signals are captured by the native telemetry stack. | Extend existing observability lanes to capture society-scale metrics, emergent-risk indicators, and scaling-law dynamics with deterministic telemetry receipts and dashboard/export compatibility. | 8 | 0/1/2/client |
+
+## LangChain Declarative Ecosystem Assimilation Source Coverage Intake (Doc `1tghS8K-vKzMb-3-gtHo7byy_W22g92upY-BDom7SbCw`, 2026-03-17)
+
+Source references:
+- https://docs.google.com/document/d/1tghS8K-vKzMb-3-gtHo7byy_W22g92upY-BDom7SbCw/edit?usp=sharing
+- https://github.com/langchain-ai/langchain
+
+Notes:
+- Primitive-first normalization: this intake extends existing workflow, swarm, memory, inference, observability, content-skill, and adapter lanes; it does not authorize a parallel LangChain-owned execution runtime.
+- Overlap handled explicitly:
+  - workflow and graph-execution baselines: `V6-WORKFLOW-001.*` through `V6-WORKFLOW-013.*`
+  - swarm and agent-handoff baselines: `V6-SWARM-*`, `V6-SWARM-033` through `V6-SWARM-038`
+  - memory/retrieval/context baselines: `V6-MEMORY-*`, `V6-CONTEXT-*`, `V6-RESEARCH-*`
+  - observability/eval/receipt baselines: `V9-AUDIT-026`, `V6-OBSERVABILITY-*`
+- Placement correction from source doc:
+  - source suggests `apps/langchain/`; normalized placement is core-authoritative workflow/memory/integration orchestration plus thin runtime/client shells and adapter-owned provider, retriever, and loader bridges. Optional demo shells may exist only as deletable surfaces.
+- Default placement:
+  - Layer `0`: conduit-routed chain, agent, retrieval, integration, and trace actions + deterministic receipts
+  - Layer `1`: policy/budget/receipt/provenance contracts
+  - Layer `2`: workflow orchestration, declarative chaining, memory/retrieval coordination, integration routing
+  - Layer `3`: optional persona defaults only
+  - `client`: thin `infring assimilate langchain` control and optional demo shells only
+  - `adapter`: provider/tool/retriever/loader bridges
+
+Objective: assimilate LangChain’s LCEL chains, Runnable composability, legacy and deep agents, retrieval and memory abstractions, broad integration layer, model interoperability, prompt templating, and LangSmith-style observability into InfRing by reusing existing primitives without duplicating authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-WORKFLOW-014.1 | queued | LCEL and Runnable Chain Registry Contract | Declarative chains remain fragmented unless LangChain-style LCEL and Runnable semantics normalize onto one governed workflow/swarm execution surface. | Model LCEL and Runnable components over existing workflow and swarm lanes so declarative composition preserves deterministic receipts, lineage, and bounded policy enforcement without introducing a duplicate chain runtime. | 9 | 0/1/2/client |
+| V6-WORKFLOW-014.2 | queued | Legacy and Deep Agent Bridge Contract | Legacy agent patterns and deep-agent semantics become unsafe unless they normalize onto current swarm and persona orchestration surfaces. | Support legacy and deep-agent execution through existing swarm and persona lanes so planning, sub-agent, and file-oriented behaviors remain deterministic, receipted, and policy-bounded without a second agent authority path. | 9 | 0/1/2/client |
+| V6-WORKFLOW-014.3 | queued | Retrieval and Memory Abstraction Bridge Contract | Vector-store, retriever, and memory abstractions create duplicate state unless they map onto canonical Dream Sequencer and memory/runtime lanes. | Reuse current memory and retrieval primitives so LangChain-style vector stores, retrievers, and memory abstractions remain context-budgeted, receipted, and explicitly degraded when unsupported. | 10 | 0/1/2/adapter/client |
+| V6-WORKFLOW-014.4 | queued | Broad Integration Gateway Contract | Massive integration ecosystems create unsafe sprawl unless LangChain-style assets ingest through one governed bridge family. | Extend content-skill and adapter bridges so models, tools, vector stores, and loaders normalize through `infring assimilate langchain`, every component emits provenance-linked receipts, and unsupported integrations fail closed. | 10 | 0/1/2/adapter/client |
+| V6-WORKFLOW-014.5 | queued | Model Interoperability and Prompt Engine Contract | Model-agnostic routing and prompt templates become brittle unless they remain in the canonical inference and streaming lanes. | Reuse current inference, routing, and streaming primitives for model swaps and prompt-template execution so route and invocation paths emit deterministic receipts and unsupported providers degrade explicitly. | 9 | 0/1/2/client |
+| V6-WORKFLOW-014.6 | queued | LangSmith-Style Observability Bridge Contract | Tracing and eval value is lost unless LangChain observability semantics stream through the native evidence and telemetry stack. | Fold LangSmith-style traces, evals, debugging events, and deployment diagnostics into existing observability and receipt lanes so dashboards/export paths can render the evidence without introducing a duplicate telemetry stack. | 8 | 0/1/2/adapter/client |
+| V6-WORKFLOW-014.7 | queued | Stateful Workflow and Rapid Prototyping Contract | Stateful chain execution and rapid-iteration workflows become fragmented unless they normalize onto the authoritative workflow engine and checkpoint surfaces. | Support stateful declarative execution through existing workflow, checkpoint, and replay lanes so execution remains deterministic, receipted, and bounded without a second stateful-workflow authority path. | 8 | 0/1/2/client |
+
+## Pydantic AI Type-Safe Structured Agents Assimilation Source Coverage Intake (Doc `1QijtkfhfaFMbtBuV-PGlTmbL2uoeKtGccbEAAKra9uE`, 2026-03-17)
+
+Source references:
+- https://docs.google.com/document/d/1QijtkfhfaFMbtBuV-PGlTmbL2uoeKtGccbEAAKra9uE/edit?usp=sharing
+- https://github.com/pydantic/pydantic-ai
+
+Notes:
+- Primitive-first normalization: this intake extends existing workflow, swarm, memory, observability, content-skill, and adapter lanes; it does not authorize a parallel Pydantic-AI-owned execution runtime.
+- Overlap handled explicitly:
+  - workflow, graph, and durable execution baselines: `V6-WORKFLOW-001.*` through `V6-WORKFLOW-013.*`
+  - swarm messaging, hierarchy, and interop baselines: `V6-SWARM-*`, `V6-SWARM-033` through `V6-SWARM-038`
+  - memory/context/checkpoint baselines: `V6-MEMORY-*`, `V6-CONTEXT-*`, `V6-RESEARCH-*`
+  - observability/eval/receipt baselines: `V9-AUDIT-026`, `V6-OBSERVABILITY-*`
+- Placement correction from source doc:
+  - source suggests `apps/pydantic-ai/`; normalized placement is core-authoritative workflow/validation/memory orchestration plus thin runtime/client shells and adapter-owned protocol, provider, and tool bridges. Optional UI/demo shells may exist only as deletable surfaces.
+- Default placement:
+  - Layer `0`: conduit-routed agent, validation, protocol, retry, and eval actions + deterministic receipts
+  - Layer `1`: policy/budget/receipt/provenance contracts
+  - Layer `2`: agent orchestration, validation coordination, durable execution, graph control flow, observability routing
+  - Layer `3`: optional persona defaults only
+  - `client`: thin `infring assimilate pydantic-ai` control and optional demo shells only
+  - `adapter`: protocol/provider/tool bridges
+
+Objective: assimilate Pydantic AI’s type-safe agents, structured output validation, tool and dependency validation, MCP/A2A/UI protocols, durable execution, HITL approval, graph control flow, model-agnostic streaming, and evaluation flows into InfRing by reusing existing primitives without duplicating authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-WORKFLOW-015.1 | queued | Type-Safe Agent Registry Contract | Type-safe agent definitions remain fragmented unless Pydantic-AI-style agent semantics normalize onto one governed workflow/swarm execution surface. | Model typed agents, dependencies, and output contracts over existing workflow and swarm lanes so execution preserves type-safe lineage, deterministic receipts, and bounded policy enforcement without introducing a duplicate runtime. | 9 | 0/1/2/client |
+| V6-WORKFLOW-015.2 | queued | Structured Output and Validation Engine Contract | Structured outputs lose trust unless validation, correction, and rejection stay inside existing receipt and memory primitives. | Reuse Dream Sequencer, inference, and receipt lanes for validated structured outputs so validation failures emit deterministic retry or rejection receipts and supported profiles preserve guaranteed structure. | 10 | 0/1/2/client |
+| V6-WORKFLOW-015.3 | queued | Tool and Dependency Injection Bridge Contract | Tool registration and dependency injection create unsafe wrappers unless they route through governed bridge families. | Extend content-skill and adapter bridges for tool schemas, validated arguments, and dependency contexts so invocation and rejection remain receipted and no client-owned tool authority is introduced. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-015.4 | queued | MCP / A2A / UI Protocol Bridge Contract | Protocol interop becomes fragmented unless Pydantic-AI transport semantics normalize onto current swarm/session and interop lanes. | Support MCP, A2A, and UI event flows through existing swarm/session and adapter primitives so interop remains receipted, policy-bounded, and explicitly degraded when unsupported. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-015.5 | queued | Durable Execution and Retry Engine Contract | Long-running resilient agents become unreliable unless durable resume/retry semantics stay inside current checkpoint and workflow authority. | Reuse current receipt, checkpoint, and workflow lanes for durable execution and retry so resumed runs preserve deterministic lineage and no second persistence authority is introduced. | 10 | 0/1/2/client |
+| V6-WORKFLOW-015.6 | queued | Human-in-the-Loop Approval Middleware Contract | Tool approval boundaries drift unless deferred execution stays inside current pause, approval, and shadow/operator surfaces. | Support approval-gated tool execution through existing pause and approval lanes so approval state emits deterministic receipts and risky operations remain fail closed without a second approval system. | 8 | 0/1/2/client |
+| V6-WORKFLOW-015.7 | queued | Logfire / OTel Observability Bridge Contract | Pydantic-AI telemetry loses trust unless it streams through the native observability stack. | Fold Logfire/OTel-style events, traces, and cost metrics into existing observability and receipt lanes so dashboards/export paths can render the evidence without introducing a duplicate telemetry stack. | 8 | 0/1/2/adapter/client |
+| V6-WORKFLOW-015.8 | queued | Graph Control Flow Contract | Graph-defined stepped control flow becomes fragmented unless pydantic-graph semantics normalize onto the authoritative workflow engine. | Support graph execution and stepped iteration through existing workflow, checkpoint, and lineage primitives so transitions remain deterministic, receipted, and policy-bounded without a second graph runtime. | 9 | 0/1/2/client |
+| V6-WORKFLOW-015.9 | queued | Model-Agnostic Gateway and Structured Streaming Contract | Provider-agnostic routing and validated streaming become brittle unless they remain in the canonical inference and streaming lanes. | Reuse current inference, routing, and streaming primitives for model-agnostic execution and structured streaming so route and chunk decisions emit deterministic receipts and unsupported providers degrade explicitly. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-015.10 | queued | Evaluation Framework Bridge Contract | Evaluation value is lost unless Pydantic-AI eval flows stream through the native evidence and observability stack. | Map evaluation runs and metrics onto existing observability/eval lanes so artifacts remain replayable, provenance-linked, and exportable without a parallel evaluation stack. | 8 | 0/1/2/client |
+
+## DSPy Declarative Self-Improving Pipelines Assimilation Source Coverage Intake (Doc `1J0UghF4LAP303v7I6lwf1x8wTGNyAhEoIBQTqaNw-9E`, 2026-03-17)
+
+Source references:
+- https://docs.google.com/document/d/1J0UghF4LAP303v7I6lwf1x8wTGNyAhEoIBQTqaNw-9E/edit?usp=sharing
+- https://github.com/stanfordnlp/dspy
+
+Notes:
+- Primitive-first normalization: this intake extends existing workflow, inference, swarm, memory, observability, content-skill, and adapter lanes; it does not authorize a parallel DSPy-owned compiler or execution runtime.
+- Overlap handled explicitly:
+  - workflow, graph, and durable execution baselines: `V6-WORKFLOW-001.*` through `V6-WORKFLOW-015.*`
+  - swarm and agent-loop baselines: `V6-SWARM-*`, `V6-SWARM-033` through `V6-SWARM-038`
+  - memory/context/RAG baselines: `V6-MEMORY-*`, `V6-CONTEXT-*`, `V6-RESEARCH-*`
+  - observability/eval/receipt baselines: `V9-AUDIT-026`, `V6-OBSERVABILITY-*`
+- Placement correction from source doc:
+  - source suggests `apps/dspy/`; normalized placement is core-authoritative workflow/optimization/memory orchestration plus thin runtime/client shells and adapter-owned retrieval/tool bridges. Optional demo shells may exist only as deletable surfaces.
+- Default placement:
+  - Layer `0`: conduit-routed signature, compiler, optimizer, assertion, and eval actions + deterministic receipts
+  - Layer `1`: policy/budget/receipt/provenance contracts
+  - Layer `2`: workflow orchestration, optimization coordination, multi-hop routing, self-refining execution
+  - Layer `3`: optional persona defaults only
+  - `client`: thin `infring assimilate dspy` control and optional demo shells only
+  - `adapter`: retrieval/tool/provider bridges
+
+Objective: assimilate DSPy’s declarative signatures, typed predictors, modules, compiler, optimizers, assertions, multi-hop RAG and agent loops, metrics/evaluators, integration gateways, and self-improving observability into InfRing by reusing existing primitives without duplicating authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-WORKFLOW-017.1 | queued | Signatures and Typed Predictor Registry Contract | Declarative signatures and typed predictors remain fragmented unless DSPy-style execution semantics normalize onto one governed workflow/swarm surface. | Model signatures and typed predictors over existing workflow and swarm lanes so typed execution preserves deterministic receipts, lineage, and bounded policy enforcement without introducing a duplicate runtime. | 9 | 0/1/2/client |
+| V6-WORKFLOW-017.2 | queued | Modules and Compiler Engine Contract | Compiler-style orchestration becomes fragmented unless DSPy modules and compilation semantics normalize onto the authoritative workflow engine. | Support module composition and compiled execution through existing workflow and initiative primitives so programs remain deterministic, receipted, and replayable without a second compiler authority path. | 9 | 0/1/2/client |
+| V6-WORKFLOW-017.3 | queued | Optimizers and Teleprompter Bridge Contract | Automatic prompt and pipeline optimization loses trust unless it stays inside current inference, memory, and evidence lanes. | Reuse inference, Dream Sequencer, and receipt lanes for optimizer-style refinement so optimization runs emit traceable receipts, benchmarkable outcomes, and explicit degraded-mode behavior when unsupported. | 9 | 0/1/2/client |
+| V6-WORKFLOW-017.4 | queued | Assertions and Self-Refining Engine Contract | Assertion-driven self-correction becomes unsafe unless retries and rejections stay inside current receipt and policy primitives. | Express assertion-driven refinement through existing receipt and policy lanes so assertion failures emit deterministic retry or rejection receipts, remain fail closed, and preserve context-budget enforcement. | 9 | 0/1/2/client |
+| V6-WORKFLOW-017.5 | queued | Multi-Hop RAG and Agent Loop Bridge Contract | Multi-hop reasoning and tool-using agent loops become fragmented unless DSPy-style RAG and loop patterns normalize onto canonical memory and swarm lanes. | Reuse Dream Sequencer, content-skill, and swarm primitives for multi-hop programs, RAG pipelines, and tool-use so multi-stage execution remains receipted, lineage-safe, and conduit-routed without a second loop authority path. | 10 | 0/1/2/adapter/client |
+| V6-WORKFLOW-017.6 | queued | Metrics, Evaluators, and Benchmark Bridge Contract | Metrics and evaluator value is lost unless DSPy-style evals stream through the native observability and evidence stack. | Map metrics, evaluators, and benchmark runs onto existing observability/eval lanes so artifacts remain receipted, replayable, provenance-linked, and exportable without a parallel evaluation stack. | 8 | 0/1/2/client |
+| V6-WORKFLOW-017.7 | queued | RAG, Tool, and Integration Gateway Contract | Retrieval and external integrations create unsafe wrapper sprawl unless DSPy-style program assets normalize through governed intake and bridge families. | Extend adapter, inference, and content-skill bridges so `infring assimilate dspy` normalizes program assets into governed manifests, wraps every component in receipts, and rejects unsupported integrations fail closed. | 9 | 0/1/2/adapter/client |
+| V6-WORKFLOW-017.8 | queued | Declarative Self-Improving Observability Contract | Self-improving pipeline traces remain anecdotal unless DSPy optimization and reproducibility signals are captured by the native telemetry stack. | Extend existing observability lanes to capture optimization traces, reproducibility state, and program logs with deterministic telemetry receipts and dashboard/export compatibility. | 8 | 0/1/2/client |
+
 ## Automatic Context-Tree Curation for Coding Agents Source Coverage Intake (Doc `1J_1zmz-_-DIF6Ok9AyVkbmO3PRPPVZb8vPT2LVZn_3Q`, 2026-03-11)
 
 Source references:
@@ -8200,6 +8758,11 @@ Objective: encode Snowball Method as a governed native orchestration app that ru
 | V6-APP-023.4 | existing-coverage-validated | Next-Snow Backlog Packing Contract | Improvement momentum stalls when next-cycle backlog assembly is manual and disconnected from cycle evidence. | Auto-generate next snow backlog from unresolved findings/opportunities with dependency ordering, confidence scores, and deterministic backlog-pack receipts. | 9 | 1/2/app |
 | V6-APP-023.5 | existing-coverage-validated | Live Cycle Visibility + Operator Control Contract (`protheus snowball status` / `protheus snowball compact`) | Operators need cycle transparency and intervention controls without embedding orchestration authority in client code. | Provide thin status/control surfaces showing current cycle stage, batch outcomes, regression state, and compact/backlog controls backed entirely by conduit-routed app runtime actions. | 7 | app/client |
 | V6-APP-023.6 | existing-coverage-validated | Conduit-Only Snowball Boundary + App-Layer Placement Enforcement | Self-management orchestration can bypass policy if implemented directly as client-side scripts. | Enforce app-layer placement (`/apps/snowball_engine/`) and conduit-only routing for start/melt/compact/regress/pack actions; boundary tests reject client-owned authority paths. | 10 | 0/1/2/app/client |
+| V6-APP-023.7 | queued | Metric-Gated Assimilation Fitness Review Contract | Broad assimilation creates bloat unless every new pattern is scored against real system metrics before promotion. | Add compaction review lane that scores assimilations against cold start, idle memory, install size, throughput, reliability, Tiny-max/Pure impact, and RSI utility; non-survivors are rejected or demoted with deterministic scoring receipts. | 10 | 0/1/2/app/client |
+| V6-APP-023.8 | queued | Survivor-Only Compaction Promotion Contract | Compaction cycles are unsafe if they can promote code churn without measurable benefit and full regression proof. | Require full regression + benchmark delta evidence before promotion; only improving or justified-neutral consolidations advance active state, and failed cycles emit rollback pointers with deterministic promotion receipts. | 10 | 0/1/2/app |
+| V6-APP-023.9 | queued | Discarded-Idea Blob Archive Contract | Aggressive compaction loses strategic optionality unless rejected ideas are archived outside live code paths with provenance. | Persist discarded/demoted ideas as versioned blob artifacts with rejection reason, resurrection metadata, and links to the originating compaction cycle, emitting deterministic archive receipts. | 8 | 1/2/app |
+| V6-APP-023.10 | queued | Benchmark Delta + README Publication Gate Contract | Compaction claims drift into theater unless before/after metrics and public benchmark surfaces refresh only from measured evidence. | Every successful cycle emits receipted benchmark deltas for cold start, idle memory, install size, and throughput from the canonical harness, and README-facing benchmark publication fails closed when evidence is stale or missing. | 9 | 0/1/2/app/client |
+| V6-APP-023.11 | queued | Prime Directive and Compacted-State Update Contract | Evolutionary optimization can violate system intent unless successful cycles update compacted-state ledgers and any directive deltas through governed policy paths. | Successful compaction cycles record promoted survivors, discarded artifacts, and active state deltas, and route any directive-affecting updates through existing Prime Directive governance with deterministic receipts and rollback lineage. | 9 | 0/1/2/3/app |
 
 ## Semantic Agent Skills Marketplace Source Coverage Addendum (Doc `1J8BwVaRmGlu8SK3fg5YOUoOknvQ4gtBQk4YX5GaIbTw`, 2026-03-11)
 
@@ -10127,6 +10690,35 @@ Objective: define the final end-state backlog pillars that unify replication, me
 | V10-ULTIMATE-001.5 | done | Perfect Human-AI Symbiosis Interface Contract | Utility ceilings persist when the system cannot reliably infer user context/intent and provide anticipatory, low-friction collaboration. | Add `protheus symbiosis enable` contract with predictive assistance models, context-intent fusion, emotional-safety policy checks, and deterministic interaction receipts tied to user-approved personalization bounds. | 9 | 1/2/3/client |
 | V10-ULTIMATE-001.6 | done | Universal Software Adapter Skeleton-Key Contract | Broad platform integration remains costly without dynamic adapter synthesis and governed runtime interop for legacy/modern systems. | Implement `protheus adapter create <app>` lane that generates policy-scoped adapter manifests/runtime bindings for target software classes (desktop/mobile/legacy/cloud APIs), validates interop in integration tests, and emits deterministic adapter provenance receipts. | 10 | -1/0/1/2/adapter/client |
 
+## Ultra Instinct Capability Mastery Intake (Doc `1wUXF1VxkWC55LWEnc4LjYaHkmlVBaY5R5NlpSkpgnfk`, 2026-03-17)
+
+Source references:
+- [Ultra Instinct source doc](https://docs.google.com/document/d/1wUXF1VxkWC55LWEnc4LjYaHkmlVBaY5R5NlpSkpgnfk/edit?usp=sharing)
+
+Notes:
+- Primitive-first normalization: this intake turns "Ultra Instinct" into governed self-capability awareness and proactive activation using current organism, capability, blob-history, and policy primitives.
+- Overlap handled explicitly:
+  - self-awareness and metacognitive continuity baseline: `V10-ULTIMATE-001.2`
+  - evolving organism and replanning baseline: `V9-ORGANISM-025.*`
+  - instinct-learning promotion baseline: `V6-COCKPIT-020.3`
+  - adaptive capability partitioning baseline: `V8-SWARM-012.8`
+  - compaction fitness and survivor governance baselines: `V6-APP-023.7` through `V6-APP-023.11`
+- Placement correction from source doc:
+  - source proposes a standalone instinct mode and `protheus instinct ...` commands; normalized placement is core capability/self-model authority with thin operator surfaces, and operator naming should prefer `infring`.
+- Default placement:
+  - Layer `1`: blob-history evidence and capability-refinement lineage
+  - Layer `2`: organism capability registry, proactive activation, and runtime profile selection
+  - Layer `3`: persona-level instinct policy and self-mastery defaults
+  - `client`: thin `infring instinct ...` control/status surfaces only
+
+Objective: ensure InfRing wakes up with a governed, proactive understanding of its own capability surface and can activate the best valid combination of features from cold start, while continuously refining that self-model through real usage and blob-history evidence.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V10-ULTIMATE-002.1 | queued | Ultra Instinct Core Contract | The system cannot operate at maximum potential from cold start unless it maintains a live, authoritative self-model of its own capabilities. | Add governed capability-self-model primitives covering tools, skills, adapters, modes, memory lanes, and hardware-sensitive runtime profiles; cold-start activation must emit deterministic receipts and must not introduce a second scheduler or cognition authority path. | 10 | 1/2/3/client |
+| V10-ULTIMATE-002.2 | queued | Automatic Capability Activation Contract | Boot and context changes remain under-optimized unless the system can proactively activate the strongest valid combination of features without waiting for explicit human commands. | Reuse existing organism/runtime/profile lanes so boot and context changes trigger policy-bounded activation of optimal modes (pure, tiny-max, swarm, provenance, memory, degraded profiles as needed), with deterministic activation receipts and explicit degraded-mode reasons for rejected activations. | 9 | 0/1/2/3/client |
+| V10-ULTIMATE-002.3 | queued | Instinct Evolution and Refinement Contract | Self-mastery stagnates unless the capability-self-model improves through real usage, RSI feedback, and blob-history evidence over time. | Add governed refinement flow that consumes runtime evidence and blob-history lineage to improve capability understanding, preserves rollbackable lineage, and emits deterministic refinement receipts without bypassing existing governance or policy mutation gates. | 9 | 1/2/3/client |
+
 ## Long-Horizon Security Simulation Intake (Doc `1PUyquQc2qJGRNQ2zEvG6Dx-yLV24E54F0nd8rHojJK4`, 2026-03-16)
 
 Source references:
@@ -10902,6 +11494,40 @@ Objective: eliminate lost-work and stalled-partition failure modes in multi-agen
 | V8-SWARM-012.8 | done | Capability Advertisement + Adaptive Partitioning Contract | Static partitioning ignores worker heterogeneity and reduces throughput. | Require worker capability advertisement (`max_items`, rate estimate, specialties`) at spawn; coordinator must use capability-aware partitioning and emit deterministic assignment rationale receipts. | 7 | 0/1/2 |
 | V8-SWARM-012.9 | done | Cross-Agent Dedup + Reconciliation Contract | Duplicate/conflicting findings create integrity risk without deterministic conflict resolution. | Add dedup/conflict detector keyed by `item_id`; on conflict spawn reconciliation sub-agent and emit deterministic merge/reject receipts with provenance links. | 8 | 0/1/2 |
 | V8-SWARM-012.10 | done | Timeout Graceful Degradation Contract | Timeouts currently risk empty returns and lost partial progress. | Require timed-out workers to return partial results + checkpoint pointer; coordinator auto-spawns finisher worker for remainder with deterministic timeout/degradation receipts. | 9 | 0/1/2 |
+
+## Phone-Specific Optimization Intake (Doc `1FZ7cB3gvTrit1TEClP5dBK0mqUoz4d4lgn2QFpLFMB0`, 2026-03-17)
+
+Source references:
+- https://docs.google.com/document/d/1FZ7cB3gvTrit1TEClP5dBK0mqUoz4d4lgn2QFpLFMB0/edit?usp=sharing
+- internal phone compatibility discussion, March 2026
+
+Notes:
+- Primitive-first normalization: this intake extends existing substrate, scheduler, sensory, pure/tiny-max, and runtime lanes; it does not authorize a parallel phone-owned subsystem.
+- Overlap handled explicitly:
+  - substrate and hardware capability baselines: `V6-SUBSTRATE-007.*`
+  - pure/tiny-max profile baselines: `V7-PURE-WORKSPACE-*`, `V9-PURE-INTEL-*`
+  - sensory and eye ingestion baselines: `V6-EYES-*`, `V6-SENSORY-*`
+  - daemon/runtime and battery-sensitive scheduling baselines: existing organism scheduler and runtime lanes
+- Placement correction from source doc:
+  - source suggests `client/apps/phone-optim/`; normalized placement is core-authoritative scheduler/runtime/sensory behavior plus thin runtime/client shells and adapter-owned platform bridges. Optional mobile shells may exist only as deletable surfaces.
+- Default placement:
+  - Layer `-1`: phone hardware detection and sensor bridge hooks
+  - Layer `0`: conduit-routed mode-switch, wake, and policy receipts
+  - Layer `1`: battery/privacy/sensor policy and receipt contracts
+  - Layer `2`: organism scheduler adaptation, daemon runtime behavior, phone profile selection
+  - Layer `3`: optional phone-aware persona defaults only
+  - `client`: thin phone control/notification surfaces only
+  - `adapter`: Android/iOS-specific background, sensor, and notification bridges
+
+Objective: optimize InfRing for phone hardware as a background intelligence layer by reusing current scheduler, sensory, substrate, and tiny-max primitives without duplicating authority.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V10-PHONE-001.1 | queued | Battery-Aware Scheduling Engine | Phone viability degrades unless the organism scheduler can adapt work levels to battery state. | Extend the current organism scheduler so low-battery thresholds can pause or reduce non-critical work, switch modes deterministically, and emit explicit mode-switch receipts without introducing a second scheduler authority path. | 9 | -1/0/1/2/client |
+| V10-PHONE-001.2 | queued | Phone Sensor Integration Contract | Phone-specific intelligence is limited unless GPS, camera, and microphone paths map onto governed sensory primitives. | Extend existing sensory and Eyes primitives to support policy-gated phone sensor ingestion with deterministic receipts, privacy-safe controls, and explicit degraded-mode reasons when sensors are unavailable or denied. | 9 | -1/0/1/2/adapter/client |
+| V10-PHONE-001.3 | queued | Low-Latency Voice and Text Interaction Mode | Phone interaction feels clumsy unless voice/text paths are optimized through existing runtime primitives. | Support phone-oriented voice and text interaction over existing inference, sensory, and notification lanes so every interaction remains receipted, low-latency targets are benchmarkable, and no phone-only interaction authority is introduced. | 8 | 0/1/2/client/adapter |
+| V10-PHONE-001.4 | queued | Background Daemon Minimal-Drain Contract | Background phone operation is not credible unless wake, pause, and idle behavior remain efficient and auditable. | Reuse current daemon/runtime primitives to support background phone execution with explicit wake/pause receipts, platform-bridge-owned background behavior, and policy-bounded low-drain scheduling. | 9 | -1/0/1/2/adapter/client |
+| V10-PHONE-001.5 | queued | Phone-Specific Tiny-max Optimization Contract | Older phones need deterministic capability shedding and tuning rather than ad hoc degradation. | Auto-detect phone hardware and apply existing tiny-max/pure capability shedding deterministically via a receipted phone profile path, preserving policy bounds and explicit degraded-mode behavior on constrained devices. | 9 | -1/0/1/2/client |
 
 ## Pure Intelligence v1 Intake (Node-free `--pure` / `--tiny-max`, 2026-03-16)
 

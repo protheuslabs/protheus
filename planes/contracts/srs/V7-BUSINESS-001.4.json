@@ -1,0 +1,48 @@
+{
+  "id": "V7-BUSINESS-001.4",
+  "upgrade": "Stakeholder Alert Surface + Escalation Matrix Contract",
+  "description": "Operators need deterministic escalation when ambiguity, lease expiry, checkpoint mismatch, or health degradation requires human intervention.",
+  "section": "Business-Class Multi-Entity Operating System Readiness",
+  "impact": 8,
+  "layer_map": "0/1/2/adapter/client",
+  "conduit_only_boundary": false,
+  "todo_bucket": "existing_coverage_contract_repair",
+  "execution_contract": {
+    "runtime": "core/layer2/ops:srs_contract_runtime",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "local/state/ops/srs_contract_runtime/V7-BUSINESS-001.4/latest.json",
+    "history_path": "local/state/ops/srs_contract_runtime/history.jsonl"
+  },
+  "deliverables": [
+    {
+      "type": "contract",
+      "path": "planes/contracts/srs/V7-BUSINESS-001.4.json"
+    },
+    {
+      "type": "state_receipt",
+      "path": "local/state/ops/srs_contract_runtime/V7-BUSINESS-001.4/latest.json"
+    },
+    {
+      "type": "execution_history",
+      "path": "local/state/ops/srs_contract_runtime/history.jsonl"
+    },
+    {
+      "type": "runtime_lane",
+      "path": "core/layer0/ops/src/business_plane.rs"
+    },
+    {
+      "type": "integration_test",
+      "path": "core/layer0/ops/tests/v7_business_domain_integration.rs"
+    }
+  ],
+  "validation": {
+    "lane_command": "protheus-ops srs-contract-runtime run --id=V7-BUSINESS-001.4",
+    "status_command": "protheus-ops srs-contract-runtime status --id=V7-BUSINESS-001.4",
+    "fail_closed_on_missing_contract": true
+  },
+  "generated_from": {
+    "source": "audit_gap_repair",
+    "acceptance": "Implement policy-configured alert matrix (decision-required, lease-expiry, checkpoint-mismatch, async-complete, vitality-drop) with channel adapters (dashboard/Slack/email/SMS/PagerDuty), deterministic alert/ack receipts, and fail-closed escalation fallback.",
+    "generated_at": "2026-03-17T06:46:11.295Z"
+  }
+}

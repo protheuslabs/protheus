@@ -1,0 +1,49 @@
+{
+  "id": "V10-ULTIMATE-001.3",
+  "upgrade": "Quantum Hardware Abstraction Layer",
+  "section": "V10-ULTIMATE-001",
+  "impact": 10,
+  "layer_map": "-1/0/substrate",
+  "conduit_only_boundary": false,
+  "todo_bucket": "pending",
+  "execution_contract": {
+    "runtime": "core/layer2/ops:srs_contract_runtime",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "local/state/ops/srs_contract_runtime/V10-ULTIMATE-001.3/latest.json",
+    "history_path": "local/state/ops/srs_contract_runtime/history.jsonl"
+  },
+  "deliverables": [
+    { "type": "core_authority", "path": "planes/substrate/quantum_abstraction.rs", "status": "pending" },
+    { "type": "substrate_descriptor", "path": "planes/substrate/quantum_substrate.schema.json", "status": "pending" },
+    { "type": "behavior_tests", "path": "planes/substrate/tests/quantum_abstraction_tests.rs", "status": "pending" },
+    { "type": "integration_tests", "path": "planes/substrate/tests/v10_quantum_integration.rs", "status": "pending" },
+    { "type": "state_receipt", "path": "local/state/ops/srs_contract_runtime/V10-ULTIMATE-001.3/latest.json", "status": "pending" }
+  ],
+  "validation": {
+    "lane_command": "cargo test --manifest-path planes/substrate/Cargo.toml quantum_abstraction -- --nocapture",
+    "status_command": "cat local/state/ops/srs_contract_runtime/V10-ULTIMATE-001.3/latest.json | jq '.status'",
+    "fail_closed_on_missing_contract": true
+  },
+  "specification": {
+    "description": "Abstracts quantum computing hardware for hybrid classical-quantum execution",
+    "capabilities": [
+      "Quantum circuit compilation and optimization",
+      "Hybrid classical-quantum workflow orchestration",
+      "Quantum error correction integration",
+      "Hardware-agnostic quantum algorithm deployment",
+      "Quantum state persistence and recovery"
+    ],
+    "dependencies": ["V6-SUBSTRATE-001", "V3-QPROOF-001"],
+    "hardware_targets": [
+      "IBM Quantum",
+      "Google Sycamore",
+      "Rigetti",
+      "IonQ",
+      "Simulated quantum backends"
+    ]
+  },
+  "generated_from": {
+    "source": "srs_v10_ultimate_audit_2026-03-16",
+    "source_ref": "artifacts/srs-v10-ultimate-audit-report.json"
+  }
+}
