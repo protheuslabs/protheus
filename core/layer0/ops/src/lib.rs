@@ -154,6 +154,7 @@ pub mod symbiosis_coherence_kernel;
 pub mod system_health_audit_runner_kernel;
 pub mod ternary_belief_kernel;
 pub mod top1_assurance;
+pub mod tool_response_compactor_kernel;
 pub mod training_conduit_schema_kernel;
 pub mod trit_shadow_kernel;
 pub mod upgrade_lane_kernel;

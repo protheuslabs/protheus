@@ -1,217 +1,107 @@
 #!/usr/bin/env node
-/**
- * Tool Response Compactor
- * 
- * Rules:
- * - If output > 1200 chars OR > 40 lines → save raw to client/runtime/local/logs/tool_raw/<timestamp>.txt
- * - Inject only: 5-10 bullet summary with key ids/urls/counts/errors
- * - Include pointer to raw log path
- * - Redact secrets (moltbook_sk_*, Authorization headers)
- */
+'use strict';
 
-const fs = require('fs');
+// Layer ownership: core/layer0/ops (authoritative)
+// Thin TypeScript wrapper only.
+
 const path = require('path');
+const { createOpsLaneBridge } = require('./rust_lane_bridge.ts');
 
 const CLIENT_ROOT = path.resolve(__dirname, '..');
 const TOOL_RAW_DIR = path.join(CLIENT_ROOT, 'local', 'logs', 'tool_raw');
 const COMPACTION_THRESHOLD_CHARS = 1200;
 const COMPACTION_THRESHOLD_LINES = 40;
 
-/**
- * Redact sensitive information from content
- */
+process.env.PROTHEUS_OPS_USE_PREBUILT = process.env.PROTHEUS_OPS_USE_PREBUILT || '0';
+process.env.PROTHEUS_OPS_LOCAL_TIMEOUT_MS = process.env.PROTHEUS_OPS_LOCAL_TIMEOUT_MS || '120000';
+const bridge = createOpsLaneBridge(__dirname, 'tool_response_compactor', 'tool-response-compactor-kernel');
+
+function encodeBase64(value) {
+  return Buffer.from(String(value == null ? '' : value), 'utf8').toString('base64');
+}
+
+function invoke(command, payload = {}, opts = {}) {
+  const out = bridge.run([
+    command,
+    `--payload-base64=${encodeBase64(JSON.stringify(payload || {}))}`
+  ]);
+  const receipt = out && out.payload && typeof out.payload === 'object' ? out.payload : null;
+  const payloadOut = receipt && typeof receipt.payload === 'object' ? receipt.payload : receipt;
+  if (out.status !== 0) {
+    const message = payloadOut && typeof payloadOut.error === 'string'
+      ? payloadOut.error
+      : (out && out.stderr ? String(out.stderr).trim() : `tool_response_compactor_kernel_${command}_failed`);
+    if (opts.throwOnError !== false) throw new Error(message || `tool_response_compactor_kernel_${command}_failed`);
+    return { ok: false, error: message || `tool_response_compactor_kernel_${command}_failed` };
+  }
+  if (!payloadOut || typeof payloadOut !== 'object') {
+    const message = out && out.stderr
+      ? String(out.stderr).trim() || `tool_response_compactor_kernel_${command}_bridge_failed`
+      : `tool_response_compactor_kernel_${command}_bridge_failed`;
+    if (opts.throwOnError !== false) throw new Error(message);
+    return { ok: false, error: message };
+  }
+  return payloadOut;
+}
+
 function redactSecrets(content) {
-  if (typeof content !== 'string') return content;
-  
-  // Redact moltbook_sk_* tokens (show last 4 only)
-  content = content.replace(/moltbook_sk_[a-zA-Z0-9]{32,}/g, (match) => {
-    const last4 = match.slice(-4);
-    return `moltbook_sk_****${last4}`;
+  const out = invoke('redact', {
+    root_dir: CLIENT_ROOT,
+    data: typeof content === 'string' ? content : JSON.stringify(content)
   });
-  
-  // Redact Authorization: Bearer headers
-  content = content.replace(/Authorization:\s*Bearer\s+[^\s"']+/gi, 'Authorization: Bearer [REDACTED]');
-
-  // Redact common auth header/value forms
-  content = content.replace(/(x-api-key|api-key|auth-token|authorization)\s*[:=]\s*["']?[a-z0-9._~+\\/-]{12,}["']?/gi, (_m, key) => `${key}: [REDACTED]`);
-
-  // Redact common JSON key secrets
-  content = content.replace(/("(?:auth_token|access_token|refresh_token|api_key|secret|password)"\s*:\s*)"(.*?)"/gi, '$1"[REDACTED]"');
-
-  // Redact common URL/query token forms
-  content = content.replace(/([?&](?:token|access_token|api_key|auth|ct0|bearer)=)[^&\\s]+/gi, '$1[REDACTED]');
-  
-  return content;
+  return String(out.content || '');
 }
 
-/**
- * Extract key information for summary
- */
 function extractSummary(data, toolName) {
-  const bullets = [];
-  
-  try {
-    const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-    
-    // Count items if array
-    if (Array.isArray(parsed)) {
-      bullets.push(`• Count: ${parsed.length} items`);
-    }
-    
-    // Extract IDs
-    const ids = [];
-    const extractIds = (obj) => {
-      if (typeof obj !== 'object' || obj === null) return;
-      for (const [key, val] of Object.entries(obj)) {
-        if (key.toLowerCase().includes('id') && typeof val === 'string') {
-          ids.push(val.substring(0, 8) + '...');
-        }
-        if (typeof val === 'object') extractIds(val);
-      }
-    };
-    extractIds(parsed);
-    if (ids.length > 0) {
-      bullets.push(`• IDs: ${ids.slice(0, 5).join(', ')}${ids.length > 5 ? '...' : ''}`);
-    }
-    
-    // Extract URLs
-    const urls = [];
-    const extractUrls = (obj) => {
-      if (typeof obj !== 'object' || obj === null) return;
-      for (const [key, val] of Object.entries(obj)) {
-        if (typeof val === 'string' && (val.startsWith('http://') || val.startsWith('https://'))) {
-          urls.push(val.substring(0, 50) + (val.length > 50 ? '...' : ''));
-        }
-        if (typeof val === 'object') extractUrls(val);
-      }
-    };
-    extractUrls(parsed);
-    if (urls.length > 0) {
-      bullets.push(`• URLs: ${urls.slice(0, 3).join(', ')}${urls.length > 3 ? '...' : ''}`);
-    }
-    
-    // Extract counts
-    const counts = [];
-    for (const [key, val] of Object.entries(parsed)) {
-      if (typeof val === 'number' && (key.includes('count') || key.includes('total') || key.includes('upvotes') || key.includes('downvotes'))) {
-        counts.push(`${key}: ${val}`);
-      }
-    }
-    if (counts.length > 0) {
-      bullets.push(`• Metrics: ${counts.slice(0, 4).join(', ')}`);
-    }
-    
-    // Extract errors
-    if (parsed.error || parsed.errors) {
-      bullets.push(`• ⚠️ Error detected`);
-    }
-    if (parsed.status === 'error') {
-      bullets.push(`• ⚠️ Status: error`);
-    }
-    
-  } catch (e) {
-    // Not JSON, extract what we can from text
-    const lines = data.split('\n');
-    if (lines.length > 0) {
-      bullets.push(`• ${lines.length} lines of text output`);
-    }
-  }
-  
-  // Ensure at least 5 bullets, max 10
-  while (bullets.length < 5 && bullets.length < 10) {
-    if (!bullets.some(b => b.includes('Type:'))) {
-      bullets.push(`• Type: ${toolName || 'tool output'}`);
-    } else if (!bullets.some(b => b.includes('Status:'))) {
-      bullets.push(`• Status: success`);
-    } else {
-      break;
-    }
-  }
-  
-  return bullets.slice(0, 10);
+  const out = invoke('extract-summary', {
+    root_dir: CLIENT_ROOT,
+    data,
+    tool_name: toolName || 'unknown'
+  });
+  return Array.isArray(out.summary) ? out.summary : [];
 }
 
-/**
- * Main compaction function
- */
 function compactToolResponse(data, options = {}) {
-  const opts = (options && typeof options === 'object' ? options : {}) as Record<string, any>;
-  const toolName = opts.toolName || 'unknown';
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const rawContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
-  
-  const charCount = rawContent.length;
-  const lineCount = rawContent.split('\n').length;
-  
-  // Check if compaction needed
-  if (charCount <= COMPACTION_THRESHOLD_CHARS && lineCount <= COMPACTION_THRESHOLD_LINES) {
-    // Small output, just redact and return
-    return {
-      compacted: false,
-      content: redactSecrets(rawContent),
-      metrics: { chars: charCount, lines: lineCount }
-    };
-  }
-  
-  // Compaction needed
-  const safeToolName = toolName.replace(/[:\/]/g, '_');
-  const rawFilename = `${safeToolName}_${timestamp}.txt`;
-  const rawPath = path.join(TOOL_RAW_DIR, rawFilename);
-  
-  // Redact and save raw
-  const redactedRaw = redactSecrets(rawContent);
-  fs.mkdirSync(TOOL_RAW_DIR, { recursive: true });
-  fs.writeFileSync(rawPath, redactedRaw, 'utf8');
-  
-  // Generate summary
-  const summary = extractSummary(data, toolName);
-  
-  // Build compact output
-  const compactOutput = [
-    `📦 [TOOL OUTPUT COMPACTED]`,
-    ``,
-    ...summary,
-    ``,
-    `📁 Raw output saved to: client/runtime/local/logs/tool_raw/${rawFilename}`,
-    `📊 Original: ${charCount} chars, ${lineCount} lines`,
-    `📊 Compacted: ${summary.join('').length} chars (summary only)`
-  ].join('\n');
-  
-  return {
-    compacted: true,
-    content: compactOutput,
-    rawPath: rawPath,
-    metrics: {
-      originalChars: charCount,
-      originalLines: lineCount,
-      compactedChars: compactOutput.length,
-      savingsPercent: Math.round(((charCount - compactOutput.length) / charCount) * 100)
-    }
-  };
+  const opts = options && typeof options === 'object' ? options : {};
+  const out = invoke('compact', {
+    root_dir: opts.rootDir || CLIENT_ROOT,
+    data,
+    tool_name: opts.toolName || 'unknown'
+  });
+  return out && typeof out === 'object'
+    ? out
+    : {
+        compacted: false,
+        content: redactSecrets(typeof data === 'string' ? data : JSON.stringify(data)),
+        metrics: { chars: 0, lines: 0 }
+      };
 }
 
-/**
- * Redact sensitive information from content (redact-only mode)
- * Use when RAW_OK=true - redacts but doesn't compact
- */
 function redactSecretsOnly(content) {
   return redactSecrets(content);
 }
 
-module.exports = { compactToolResponse, redactSecrets, redactSecretsOnly, extractSummary };
+module.exports = {
+  TOOL_RAW_DIR,
+  COMPACTION_THRESHOLD_CHARS,
+  COMPACTION_THRESHOLD_LINES,
+  compactToolResponse,
+  redactSecrets,
+  redactSecretsOnly,
+  extractSummary
+};
 
-// CLI usage for testing
 if (require.main === module) {
-  // Read from stdin
   let input = '';
   process.stdin.setEncoding('utf8');
-  process.stdin.on('data', chunk => input += chunk);
+  process.stdin.on('data', (chunk) => {
+    input += chunk;
+  });
   process.stdin.on('end', () => {
     const result = compactToolResponse(input, { toolName: process.argv[2] || 'test' });
     console.log(result.content);
     if (result.metrics) {
-      console.error(`\n[COMPACTOR METRICS]`, JSON.stringify(result.metrics, null, 2));
+      console.error(`\n[COMPACTOR METRICS] ${JSON.stringify(result.metrics, null, 2)}`);
     }
   });
 }
-export {};

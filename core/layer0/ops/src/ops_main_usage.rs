@@ -28,6 +28,7 @@ pub(super) fn print_usage() {
     println!("  protheus-ops success-criteria-compiler-kernel <compile-rows|compile-proposal|to-action-spec-rows> [--payload-base64=<base64_json>]");
     println!("  protheus-ops outcome-fitness-kernel <load-policy|normalize-threshold-overrides|normalize-ranking-weights|normalize-proposal-type-threshold-offsets|normalize-promotion-policy-overrides|normalize-value-currency-policy-overrides|normalize-proposal-type-key|normalize-value-currency-token|proposal-type-threshold-offsets-for> [--payload-base64=<base64_json>]");
     println!("  protheus-ops training-conduit-schema-kernel <default-policy|normalize-policy|load-policy|build-metadata|validate-metadata> [--payload-base64=<base64_json>]");
+    println!("  protheus-ops tool-response-compactor-kernel <compact|redact|extract-summary> [--payload-base64=<base64_json>]");
     println!("  protheus-ops local-runtime-partitioner <status|init|reset> [--workspace-root=<path>] [--confirm=RESET_LOCAL]");
     println!("  protheus-ops strategy-store-kernel <paths|default-state|default-draft|normalize-mode|normalize-execution-mode|normalize-profile|validate-profile|normalize-queue-item|recommend-mode|read-state|ensure-state|set-state|upsert-profile|intake-signal|materialize-from-queue|touch-profile-usage|evaluate-gc-candidates|gc-profiles> [--payload-base64=<base64_json>]");
     println!("  protheus-ops strategy-campaign-scheduler-kernel <normalize-campaigns|annotate-priority|build-decomposition-plans> [--payload-base64=<base64_json>]");
