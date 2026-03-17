@@ -3,6 +3,7 @@ pub(super) fn print_usage() {
     println!("  protheus-ops runtime-efficiency-floor run [--strict=1|0] [--policy=<path>]");
     println!("  protheus-ops runtime-efficiency-floor status [--policy=<path>]");
     println!("  protheus-ops benchmark-autonomy-gate <run|status> [--strict=1|0]");
+    println!("  protheus-ops approval-gate-kernel <status|queue|approve|deny|was-approved|parse-command|parse-yaml|replace> [flags]");
     println!("  protheus-ops benchmark-matrix <run|status> [--snapshot=<path>] [--refresh-runtime=1|0] [--bar-width=44]");
     println!("  protheus-ops f100-reliability-certification <run|status> [--strict=1|0] [--policy=<path>]");
     println!("  protheus-ops sdlc-change-control <run|status> [--strict=1|0] [--policy=<path>] [--pr-body-path=<path>] [--changed-paths-path=<path>]");

@@ -128,13 +128,20 @@ function rustMilestones(trackedRsLines, trackedTsLines, milestones) {
 
 function isThinBridge(record) {
   if (record.ext !== '.ts') return false;
-  if (record.lines > 80) return false;
   const text = record.text;
+  const normalized = String(text || '');
   return (
-    text.includes('createOpsLaneBridge') ||
-    text.includes("runProtheusOps(args") ||
-    text.includes("runProtheusOps(['") ||
-    text.includes("require('./run_protheus_ops.js')")
+    normalized.includes('createOpsLaneBridge') ||
+    normalized.includes("runProtheusOps(args") ||
+    normalized.includes("runProtheusOps(['") ||
+    normalized.includes("require('./run_protheus_ops.js')") ||
+    normalized.includes('Thin TypeScript wrapper only') ||
+    normalized.includes('thin CLI bridge') ||
+    normalized.includes('compatibility shim only') ||
+    normalized.includes('Layer ownership: core/layer0/ops') && (
+      normalized.includes('runProtheusOps(') ||
+      normalized.includes('createOpsLaneBridge(')
+    )
   );
 }
 

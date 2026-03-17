@@ -36,4 +36,8 @@ assert(queue.current_rust_percent >= 60, 'expected current rust percent to refle
 assert(queue.bridge_wrappers_excluded > 0, 'expected bridge wrappers to be excluded');
 assert(queue.top.every((lane) => fs.existsSync(path.join(ROOT, lane.path))), 'expected queue paths to exist');
 assert(queue.top.every((lane) => !lane.path.endsWith('gated_self_improvement_loop.ts')), 'expected thin bridge wrappers excluded');
+assert(
+  queue.top.every((lane) => lane.path !== 'client/runtime/systems/autonomy/swarm_orchestration_runtime.ts'),
+  'expected thin swarm bridge wrapper to be excluded from live queue'
+);
 console.log('top50_roi_sweep_runner.test.js: OK');

@@ -186,8 +186,7 @@ function resolveProtheusOpsCommand(root, domain) {
   };
 }
 
-function runLocalOpsDomain(root, domain, passArgs, cliMode, inheritStdio) {
-  const resolved = resolveProtheusOpsCommand(root, domain);
+function runLocalOpsDomainOnce(root, domain, passArgs, cliMode, inheritStdio, resolved) {
   const commandArgs = resolved.args.concat(Array.isArray(passArgs) ? passArgs : []);
   const timeoutMs = parseTimeoutMs('PROTHEUS_OPS_LOCAL_TIMEOUT_MS', 45000);
   const run = spawnSync(resolved.command, commandArgs, {
@@ -235,6 +234,45 @@ function runLocalOpsDomain(root, domain, passArgs, cliMode, inheritStdio) {
     timeout_ms: timeoutMs,
     routed_via: 'core_local'
   };
+}
+
+function shouldRetryWithCargo(result) {
+  if (!result || result.status === 0) return false;
+  const reason = String(
+    (result.payload && result.payload.reason)
+      || (result.payload && result.payload.error)
+      || result.stderr
+      || ''
+  ).toLowerCase();
+  return reason.includes('unknown_domain') || reason.includes('unknown_command');
+}
+
+function runLocalOpsDomain(root, domain, passArgs, cliMode, inheritStdio) {
+  const resolved = resolveProtheusOpsCommand(root, domain);
+  const initial = runLocalOpsDomainOnce(root, domain, passArgs, cliMode, inheritStdio, resolved);
+  if (resolved.command === 'cargo' || !shouldRetryWithCargo(initial)) {
+    return initial;
+  }
+
+  const cargoResolved = {
+    command: 'cargo',
+    args: [
+      'run',
+      '--quiet',
+      '--manifest-path',
+      'core/layer0/ops/Cargo.toml',
+      '--bin',
+      'protheus-ops',
+      '--',
+      domain
+    ]
+  };
+  const retried = runLocalOpsDomainOnce(root, domain, passArgs, cliMode, inheritStdio, cargoResolved);
+  if (retried.ok || retried.status === 0) {
+    retried.fallback_reason = 'stale_prebuilt_retry';
+    return retried;
+  }
+  return initial;
 }
 
 function runBridge(config, args = [], cliMode = false) {

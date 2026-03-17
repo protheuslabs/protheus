@@ -154,6 +154,11 @@ fn main() {
             let exit = protheus_ops_core::benchmark_autonomy_gate::run(&cwd, &rest);
             std::process::exit(exit);
         }
+        "approval-gate-kernel" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::approval_gate_kernel::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
         "model-router" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::model_router::run(&cwd, &rest);
