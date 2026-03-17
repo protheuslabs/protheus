@@ -2,13 +2,14 @@
 'use strict';
 export {};
 
-const fs = require('fs');
+// Layer ownership: core/layer0/ops (authoritative)
+// Shared CLI helper surface. Pure string/number helpers remain local; file/path authority moved into Rust.
+
 const path = require('path');
-const crypto = require('crypto');
+const { createOpsLaneBridge } = require('./rust_lane_bridge.ts');
 
-type AnyObj = Record<string, any>;
-
-function hasWorkspaceMarkers(absPath: string) {
+function hasWorkspaceMarkers(absPath) {
+  const fs = require('fs');
   try {
     if (!absPath || !path.isAbsolute(absPath)) return false;
     return fs.existsSync(path.join(absPath, '.git'))
@@ -19,7 +20,7 @@ function hasWorkspaceMarkers(absPath: string) {
   }
 }
 
-function findWorkspaceRoot(startAbsPath: string) {
+function findWorkspaceRoot(startAbsPath) {
   let cursor = path.resolve(startAbsPath || process.cwd());
   for (let i = 0; i < 12; i += 1) {
     if (hasWorkspaceMarkers(cursor)) return cursor;
@@ -37,16 +38,14 @@ function resolveWorkspaceRoot() {
     if (hasWorkspaceMarkers(resolved)) return resolved;
     if (path.isAbsolute(resolved)) return resolved;
   }
-  const byDirname = findWorkspaceRoot(path.resolve(__dirname, '..'));
+  const byDirname = findWorkspaceRoot(path.resolve(__dirname, '..', '..', '..'));
   if (byDirname) return byDirname;
   const byCwd = findWorkspaceRoot(process.cwd());
   if (byCwd) return byCwd;
-  return path.resolve(__dirname, '..');
+  return path.resolve(__dirname, '..', '..', '..');
 }
 
 const ROOT = resolveWorkspaceRoot();
-const CLIENT_ROOT = fs.existsSync(path.join(ROOT, 'client')) ? path.join(ROOT, 'client') : ROOT;
-const CORE_ROOT = fs.existsSync(path.join(ROOT, 'core')) ? path.join(ROOT, 'core') : path.join(ROOT, 'core');
 
 function nowIso() {
   const override = cleanText(process.env.PROTHEUS_NOW_ISO || '', 80);
@@ -57,11 +56,11 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-function cleanText(v: unknown, maxLen = 260) {
+function cleanText(v, maxLen = 260) {
   return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, maxLen);
 }
 
-function normalizeToken(v: unknown, maxLen = 120) {
+function normalizeToken(v, maxLen = 120) {
   return cleanText(v, maxLen)
     .toLowerCase()
     .replace(/[^a-z0-9_.:/-]+/g, '_')
@@ -69,11 +68,11 @@ function normalizeToken(v: unknown, maxLen = 120) {
     .replace(/^_+|_+$/g, '');
 }
 
-function normalizeUpperToken(v: unknown, maxLen = 120) {
+function normalizeUpperToken(v, maxLen = 120) {
   return normalizeToken(v, maxLen).toUpperCase();
 }
 
-function toBool(v: unknown, fallback = false) {
+function toBool(v, fallback = false) {
   if (v == null) return fallback;
   const raw = String(v).trim().toLowerCase();
   if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
@@ -81,7 +80,7 @@ function toBool(v: unknown, fallback = false) {
   return fallback;
 }
 
-function clampNumber(v: unknown, lo: number, hi: number, fallback: number) {
+function clampNumber(v, lo, hi, fallback) {
   const n = Number(v);
   if (!Number.isFinite(n)) return fallback;
   if (n < lo) return lo;
@@ -89,7 +88,7 @@ function clampNumber(v: unknown, lo: number, hi: number, fallback: number) {
   return n;
 }
 
-function clampInt(v: unknown, lo: number, hi: number, fallback: number) {
+function clampInt(v, lo, hi, fallback) {
   const n = Number(v);
   if (!Number.isFinite(n)) return fallback;
   const i = Math.floor(n);
@@ -98,8 +97,8 @@ function clampInt(v: unknown, lo: number, hi: number, fallback: number) {
   return i;
 }
 
-function parseArgs(argv: string[]) {
-  const out: AnyObj = { _: [] };
+function parseArgs(argv) {
+  const out = { _: [] };
   for (let i = 0; i < argv.length; i += 1) {
     const tok = String(argv[i] || '');
     if (tok === '--help' || tok === '-h') {
@@ -128,149 +127,123 @@ function parseArgs(argv: string[]) {
   return out;
 }
 
-function ensureDir(dirPath: string) {
-  fs.mkdirSync(dirPath, { recursive: true });
+process.env.PROTHEUS_OPS_USE_PREBUILT = process.env.PROTHEUS_OPS_USE_PREBUILT || '0';
+process.env.PROTHEUS_OPS_LOCAL_TIMEOUT_MS = process.env.PROTHEUS_OPS_LOCAL_TIMEOUT_MS || '120000';
+const bridge = createOpsLaneBridge(__dirname, 'queued_backlog_runtime', 'queued-backlog-kernel');
+
+function encodeBase64(value) {
+  return Buffer.from(String(value == null ? '' : value), 'utf8').toString('base64');
 }
 
-function readJson(filePath: string, fallback: any = null) {
-  try {
-    if (!fs.existsSync(filePath)) return fallback;
-    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    return parsed == null ? fallback : parsed;
-  } catch {
-    return fallback;
+function invoke(command, payload = {}, opts = {}) {
+  const out = bridge.run([
+    command,
+    `--payload-base64=${encodeBase64(JSON.stringify(payload || {}))}`
+  ]);
+  const receipt = out && out.payload && typeof out.payload === 'object' ? out.payload : null;
+  const payloadOut = receipt && receipt.payload && typeof receipt.payload === 'object'
+    ? receipt.payload
+    : receipt;
+  if (out.status !== 0) {
+    const message = payloadOut && typeof payloadOut.error === 'string'
+      ? payloadOut.error
+      : (out && out.stderr ? String(out.stderr).trim() : `queued_backlog_kernel_${command}_failed`);
+    if (opts.throwOnError !== false) throw new Error(message || `queued_backlog_kernel_${command}_failed`);
+    return { ok: false, error: message || `queued_backlog_kernel_${command}_failed` };
   }
+  if (!payloadOut || typeof payloadOut !== 'object') {
+    const message = out && out.stderr
+      ? String(out.stderr).trim() || `queued_backlog_kernel_${command}_bridge_failed`
+      : `queued_backlog_kernel_${command}_bridge_failed`;
+    if (opts.throwOnError !== false) throw new Error(message);
+    return { ok: false, error: message };
+  }
+  return payloadOut;
 }
 
-function writeJsonAtomic(filePath: string, value: AnyObj) {
-  ensureDir(path.dirname(filePath));
-  const tmp = `${filePath}.tmp-${Date.now()}-${process.pid}`;
-  fs.writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
-  fs.renameSync(tmp, filePath);
+function ensureDir(dirPath) {
+  invoke('ensure-dir', {
+    dir_path: String(dirPath || '')
+  });
 }
 
-function appendJsonl(filePath: string, row: AnyObj) {
-  ensureDir(path.dirname(filePath));
-  fs.appendFileSync(filePath, `${JSON.stringify(row)}\n`, 'utf8');
+function readJson(filePath, fallback = null) {
+  const out = invoke('read-json', {
+    file_path: String(filePath || ''),
+    fallback
+  });
+  return out.value == null ? fallback : out.value;
 }
 
-function readJsonl(filePath: string) {
-  try {
-    if (!fs.existsSync(filePath)) return [];
-    return String(fs.readFileSync(filePath, 'utf8') || '')
-      .split('\n')
-      .filter(Boolean)
-      .map((line) => {
-        try { return JSON.parse(line); } catch { return null; }
-      })
-      .filter(Boolean);
-  } catch {
-    return [];
-  }
+function writeJsonAtomic(filePath, value) {
+  invoke('write-json-atomic', {
+    file_path: String(filePath || ''),
+    value
+  });
 }
 
-function relPath(filePath: string) {
-  return path.relative(ROOT, filePath).replace(/\\/g, '/');
+function appendJsonl(filePath, row) {
+  invoke('append-jsonl', {
+    file_path: String(filePath || ''),
+    row
+  });
 }
 
-function normalizeRelativePathToken(input: string) {
-  return String(input || '').replace(/\\/g, '/').replace(/^\.\/+/, '').replace(/^\/+/, '');
+function readJsonl(filePath) {
+  const out = invoke('read-jsonl', {
+    file_path: String(filePath || '')
+  });
+  return Array.isArray(out.rows) ? out.rows : [];
 }
 
-function rewriteLegacyRuntimeRelative(relPath: string) {
-  const rel = normalizeRelativePathToken(relPath);
-  if (!rel) return rel;
-  if (rel === 'local' || rel.startsWith('local/')) {
-    const suffix = rel === 'local' ? '' : rel.slice('local/'.length);
-    return normalizeRelativePathToken(path.join('client', 'runtime', 'local', suffix));
-  }
-  if (rel === 'state' || rel.startsWith('local/state/')) {
-    const suffix = rel === 'state' ? '' : rel.slice('local/state/'.length);
-    return normalizeRelativePathToken(path.join('client', 'runtime', 'local', 'state', suffix));
-  }
-  if (rel === 'client/runtime/state' || rel.startsWith('client/runtime/local/state/')) {
-    const suffix = rel === 'client/runtime/state' ? '' : rel.slice('client/runtime/local/state/'.length);
-    return normalizeRelativePathToken(path.join('client', 'runtime', 'local', 'state', suffix));
-  }
-  if (rel === 'core/state' || rel.startsWith('core/local/state/')) {
-    const suffix = rel === 'core/state' ? '' : rel.slice('core/local/state/'.length);
-    return normalizeRelativePathToken(path.join('core', 'local', 'state', suffix));
-  }
-  return rel;
+function relPath(filePath) {
+  return path.relative(ROOT, String(filePath || '')).replace(/\\/g, '/');
 }
 
-function rewriteLegacyRuntimeAbsolute(absPath: string) {
-  const normalized = path.resolve(String(absPath || ''));
-  const workspaceLocal = path.resolve(ROOT, 'local');
-  const workspaceState = path.resolve(ROOT, 'state');
-  const clientState = path.resolve(CLIENT_ROOT, 'state');
-  const coreState = path.resolve(CORE_ROOT, 'state');
-  if (normalized === workspaceLocal || normalized.startsWith(`${workspaceLocal}${path.sep}`)) {
-    const suffix = path.relative(workspaceLocal, normalized);
-    return path.resolve(CLIENT_ROOT, 'local', suffix);
-  }
-  if (normalized === workspaceState || normalized.startsWith(`${workspaceState}${path.sep}`)) {
-    const suffix = path.relative(workspaceState, normalized);
-    return path.resolve(CLIENT_ROOT, 'local', 'state', suffix);
-  }
-  if (normalized === clientState || normalized.startsWith(`${clientState}${path.sep}`)) {
-    const suffix = path.relative(clientState, normalized);
-    return path.resolve(CLIENT_ROOT, 'local', 'state', suffix);
-  }
-  if (normalized === coreState || normalized.startsWith(`${coreState}${path.sep}`)) {
-    const suffix = path.relative(coreState, normalized);
-    return path.resolve(CORE_ROOT, 'local', 'state', suffix);
-  }
-  return normalized;
+function resolvePath(raw, fallbackRel) {
+  const out = invoke('resolve-path', {
+    raw: cleanText(raw, 520),
+    fallback_rel: String(fallbackRel || '')
+  });
+  return String(out.resolved_path || '');
 }
 
-function resolvePath(raw: unknown, fallbackRel: string) {
-  const txt = cleanText(raw, 520);
-  const expanded = txt
-    .replace(/^\$OPENCLAW_WORKSPACE\b/, ROOT)
-    .replace(/\$\{OPENCLAW_WORKSPACE\}/g, ROOT);
-  if (!expanded) {
-    return path.join(ROOT, rewriteLegacyRuntimeRelative(fallbackRel));
-  }
-  if (path.isAbsolute(expanded)) {
-    return rewriteLegacyRuntimeAbsolute(expanded);
-  }
-  return path.join(ROOT, rewriteLegacyRuntimeRelative(expanded));
-}
-
-function parseIsoMs(v: unknown): number | null {
+function parseIsoMs(v) {
   const ms = Date.parse(String(v || ''));
   return Number.isFinite(ms) ? ms : null;
 }
 
-function stableHash(v: unknown, len = 16) {
-  return crypto.createHash('sha256').update(String(v == null ? '' : v), 'utf8').digest('hex').slice(0, len);
+function stableHash(v, len = 16) {
+  const out = invoke('stable-hash', {
+    value: v,
+    len
+  });
+  return String(out.hash || '');
 }
 
-function loadPolicy(policyPath: string, defaults: AnyObj) {
-  const raw = readJson(policyPath, {});
-  const merged = {
-    ...defaults,
-    ...(raw && typeof raw === 'object' ? raw : {})
-  };
-  return merged;
+function loadPolicy(policyPath, defaults) {
+  const out = invoke('load-policy', {
+    policy_path: String(policyPath || ''),
+    defaults: defaults && typeof defaults === 'object' ? defaults : {}
+  });
+  return out.policy && typeof out.policy === 'object' ? out.policy : {};
 }
 
-function rollingAverage(rows: number[]) {
-  const vals = rows.map((n) => Number(n)).filter((n) => Number.isFinite(n));
+function rollingAverage(rows) {
+  const vals = (Array.isArray(rows) ? rows : []).map((n) => Number(n)).filter((n) => Number.isFinite(n));
   if (!vals.length) return null;
   return Number((vals.reduce((acc, n) => acc + n, 0) / vals.length).toFixed(6));
 }
 
-function median(rows: number[]) {
-  const vals = rows.map((n) => Number(n)).filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
+function median(rows) {
+  const vals = (Array.isArray(rows) ? rows : []).map((n) => Number(n)).filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
   if (!vals.length) return null;
   const mid = Math.floor(vals.length / 2);
   if (vals.length % 2 === 1) return vals[mid];
   return Number(((vals[mid - 1] + vals[mid]) / 2).toFixed(6));
 }
 
-function emit(payload: AnyObj, exitCode = 0) {
+function emit(payload, exitCode = 0) {
   process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
   process.exit(exitCode);
 }

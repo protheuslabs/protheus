@@ -20,6 +20,9 @@ pub(super) fn print_usage() {
     println!("  protheus-ops success-criteria-kernel <status|parse-rows|evaluate> [flags]");
     println!("  protheus-ops local-runtime-partitioner <status|init|reset> [--workspace-root=<path>] [--confirm=RESET_LOCAL]");
     println!("  protheus-ops strategy-store-kernel <paths|default-state|default-draft|normalize-mode|normalize-execution-mode|normalize-profile|validate-profile|normalize-queue-item|recommend-mode|read-state|ensure-state|set-state|upsert-profile|intake-signal|materialize-from-queue|touch-profile-usage|evaluate-gc-candidates|gc-profiles> [--payload-base64=<base64_json>]");
+    println!("  protheus-ops strategy-campaign-scheduler-kernel <normalize-campaigns|annotate-priority|build-decomposition-plans> [--payload-base64=<base64_json>]");
+    println!("  protheus-ops queued-backlog-kernel <ensure-dir|read-json|write-json-atomic|append-jsonl|read-jsonl|resolve-path|stable-hash|load-policy> [--payload-base64=<base64_json>]");
+    println!("  protheus-ops mech-suit-mode-kernel <load-policy|approx-token-count|classify-severity|should-emit-console|update-status|append-attention-event> [--payload-base64=<base64_json>]");
     println!("  protheus-ops rsi-ignition <status|ignite|reflect|swarm|evolve> [flags]");
     println!("  protheus-ops continuity-runtime <resurrection-protocol|session-continuity-vault> [flags]");
     println!("  protheus-ops memory-plane <causal-temporal-graph|memory-federation-plane> [flags]");

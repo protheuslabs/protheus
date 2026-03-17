@@ -224,6 +224,21 @@ fn main() {
             let exit = protheus_ops_core::strategy_store_kernel::run(&cwd, &rest);
             std::process::exit(exit);
         }
+        "strategy-campaign-scheduler-kernel" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::strategy_campaign_scheduler_kernel::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "queued-backlog-kernel" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::queued_backlog_kernel::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "mech-suit-mode-kernel" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::mech_suit_mode_kernel::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
         "rsi-ignition" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::rsi_ignition::run(&cwd, &rest);
