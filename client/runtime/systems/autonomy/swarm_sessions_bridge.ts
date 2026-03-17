@@ -147,12 +147,19 @@ function normalizeSpawnPayload(payload) {
       && payload.payload.session_state
       && payload.payload.session_state.tool_access)
     || ['sessions_spawn', 'sessions_send', 'sessions_receive', 'sessions_ack', 'sessions_query', 'sessions_state', 'sessions_tick'];
+  const toolManifest =
+    (payload
+      && payload.payload
+      && payload.payload.session_state
+      && payload.payload.session_state.tool_manifest)
+    || null;
   return {
     ok: true,
     type: 'sessions_spawn',
     session_id: sessionId,
     session_key: asSessionKey(sessionId),
     tool_access: Array.isArray(toolAccess) ? toolAccess : [],
+    tool_manifest: toolManifest,
     payload,
   };
 }
@@ -292,6 +299,7 @@ function sessionsSend(options = {}) {
   );
   const message = cleanString(parsed.message || parsed.payload);
   const delivery = cleanString(parsed.delivery || 'at_least_once');
+  const ttlMs = asInt(parsed.ttl_ms ?? parsed.ttlMs, 300000, 1);
   const args = [
     'swarm-runtime',
     'sessions',
@@ -300,11 +308,70 @@ function sessionsSend(options = {}) {
     `--session-id=${sessionId}`,
     `--message=${message}`,
     `--delivery=${delivery || 'at_least_once'}`,
+    `--ttl-ms=${ttlMs}`,
     `--state-path=${statePath(parsed)}`,
   ];
   const run = execOps(args);
   const payload = requireOk(run, 'sessions_send');
   return normalizeSendPayload(payload);
+}
+
+function sessionsResume(options = {}) {
+  const parsed = normalizedOptions(options);
+  const sessionId = sessionIdFromKey(
+    parsed.sessionKey || parsed.session_key || parsed.session_id || parsed.sessionId
+  );
+  const run = execOps([
+    'swarm-runtime',
+    'sessions',
+    'resume',
+    `--session-id=${sessionId}`,
+    `--state-path=${statePath(parsed)}`,
+  ]);
+  const payload = requireOk(run, 'sessions_resume');
+  return {
+    ok: true,
+    type: 'sessions_resume',
+    session_id: sessionId,
+    payload,
+  };
+}
+
+function sessionsDeadLetters(options = {}) {
+  const parsed = normalizedOptions(options);
+  const args = ['swarm-runtime', 'sessions', 'dead-letter'];
+  const sessionId = sessionIdFromKey(
+    parsed.sessionKey || parsed.session_key || parsed.session_id || parsed.sessionId
+  );
+  if (sessionId) args.push(`--session-id=${sessionId}`);
+  if (parsed.retryable != null) args.push(`--retryable=${asBool(parsed.retryable) ? 1 : 0}`);
+  args.push(`--state-path=${statePath(parsed)}`);
+  const run = execOps(args);
+  const payload = requireOk(run, 'sessions_dead_letter');
+  return {
+    ok: true,
+    type: 'sessions_dead_letter',
+    payload,
+  };
+}
+
+function sessionsRetryDeadLetter(options = {}) {
+  const parsed = normalizedOptions(options);
+  const messageId = cleanString(parsed.message_id || parsed.messageId);
+  const run = execOps([
+    'swarm-runtime',
+    'sessions',
+    'retry-dead-letter',
+    `--message-id=${messageId}`,
+    `--state-path=${statePath(parsed)}`,
+  ]);
+  const payload = requireOk(run, 'sessions_retry_dead_letter');
+  return {
+    ok: true,
+    type: 'sessions_retry_dead_letter',
+    message_id: messageId,
+    payload,
+  };
 }
 
 function sessionsReceive(options = {}) {
@@ -441,11 +508,14 @@ function printUsage() {
       '  node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_send --sessionKey=<key|id> --message=<text> [--sender=<key|id>] [--delivery=<at_most_once|at_least_once|exactly_once>] [--state-path=<path>]',
       '  node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_receive --sessionKey=<key|id> [--limit=<n>] [--state-path=<path>]',
       '  node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_ack --sessionKey=<key|id> --message-id=<id> [--state-path=<path>]',
+      '  node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_resume --sessionKey=<key|id> [--state-path=<path>]',
+      '  node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_dead_letter [--sessionKey=<key|id>] [--retryable=1|0] [--state-path=<path>]',
+      '  node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_retry_dead_letter --message-id=<id> [--state-path=<path>]',
       '  node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_query [--agentRole=<role>] [--agentLabel=<label>] [--testId=<task>] [--wait=1] [--state-path=<path>]',
       '  node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_state --sessionKey=<key|id> [--timeline=1] [--tool-history-limit=<n>] [--state-path=<path>]',
       '  node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_tick [--advance-ms=<n>] [--max-check-ins=<n>] [--state-path=<path>]',
       '',
-      'Aliases: spawn/send/receive/ack/query/state/tick',
+      'Aliases: spawn/send/receive/ack/resume/query/state/tick',
       '',
     ].join('\n')
   );
@@ -464,6 +534,9 @@ function run(argv = process.argv.slice(2)) {
   else if (command === 'sessions_send' || command === 'send') payload = sessionsSend(parsed);
   else if (command === 'sessions_receive' || command === 'receive') payload = sessionsReceive(parsed);
   else if (command === 'sessions_ack' || command === 'ack') payload = sessionsAck(parsed);
+  else if (command === 'sessions_resume' || command === 'resume') payload = sessionsResume(parsed);
+  else if (command === 'sessions_dead_letter' || command === 'dead-letter') payload = sessionsDeadLetters(parsed);
+  else if (command === 'sessions_retry_dead_letter' || command === 'retry-dead-letter') payload = sessionsRetryDeadLetter(parsed);
   else if (command === 'sessions_query' || command === 'query') payload = sessionsQuery(parsed);
   else if (command === 'sessions_state' || command === 'state') payload = sessionsState(parsed);
   else if (command === 'sessions_tick' || command === 'tick') payload = sessionsTick(parsed);
@@ -494,6 +567,9 @@ module.exports = {
   sessionsSend,
   sessionsReceive,
   sessionsAck,
+  sessionsResume,
+  sessionsDeadLetters,
+  sessionsRetryDeadLetter,
   sessionsQuery,
   sessionsState,
   sessionsTick,

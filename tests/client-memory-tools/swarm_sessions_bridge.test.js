@@ -35,6 +35,10 @@ function run() {
     Array.isArray(level1.tool_access) && level1.tool_access.includes('sessions_send'),
     'expected spawned sessions to advertise sessions_send in tool_access'
   );
+  assert(
+    level1.tool_manifest && Array.isArray(level1.tool_manifest.tool_access),
+    'expected spawned sessions to expose an authoritative tool manifest'
+  );
   assert.strictEqual(level2.payload.payload.parent_id, level1.session_id);
   assert(
     Array.isArray(level1State.payload.session.children)
@@ -120,6 +124,38 @@ function run() {
   });
   assert.strictEqual(ack.payload.acknowledged, true);
 
+  // Hierarchical budget reservation + settlement.
+  const budgetParent = bridge.sessionsSpawn({
+    task: 'budget-parent',
+    max_tokens: 500,
+    on_budget_exhausted: 'fail',
+    state_path: state,
+  });
+  const budgetChild = bridge.sessionsSpawn({
+    task: 'budget-child',
+    session_id: budgetParent.session_id,
+    max_tokens: 200,
+    on_budget_exhausted: 'fail',
+    state_path: state,
+  });
+  const budgetChildState = bridge.sessionsState({
+    session_id: budgetChild.session_id,
+    state_path: state,
+  });
+  const budgetParentState = bridge.sessionsState({
+    session_id: budgetParent.session_id,
+    state_path: state,
+  });
+  assert.strictEqual(
+    budgetChildState.payload.session.budget_parent_session_id,
+    budgetParent.session_id,
+    'expected child session to record hierarchical budget parent'
+  );
+  assert(
+    Number(budgetParentState.payload.session.budget.settled_child_tokens || 0) > 0,
+    'expected parent budget to settle child token usage'
+  );
+
   // Test 7 parity: service discovery + result query.
   bridge.sessionsSpawn({
     task: 'calc-fast',
@@ -164,6 +200,55 @@ function run() {
     hardBudgetRejected = /token_budget_exceeded/.test(String(err && err.message));
   }
   assert.strictEqual(hardBudgetRejected, true, 'expected hard budget fail-close rejection');
+
+  // Dead-letter expiry + retry recovery.
+  const dlqParent = bridge.sessionsSpawn({ task: 'dlq-parent', state_path: state });
+  const dlqSender = bridge.sessionsSpawn({
+    task: 'dlq-sender',
+    session_id: dlqParent.session_id,
+    state_path: state,
+  });
+  const dlqReceiver = bridge.sessionsSpawn({
+    task: 'dlq-receiver',
+    session_id: dlqParent.session_id,
+    state_path: state,
+  });
+  bridge.sessionsSend({
+    sender: dlqSender.session_id,
+    session_id: dlqReceiver.session_id,
+    message: 'expire-me',
+    delivery: 'at_least_once',
+    ttl_ms: 1,
+    state_path: state,
+  });
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
+  bridge.sessionsState({ session_id: dlqReceiver.session_id, state_path: state });
+  const deadLetters = bridge.sessionsDeadLetters({
+    session_id: dlqReceiver.session_id,
+    state_path: state,
+  });
+  assert(deadLetters.payload.dead_letter_count >= 1, 'expected a dead-lettered message');
+  const deadLetterMessageId = deadLetters.payload.dead_letters[0].message.message_id;
+  const retried = bridge.sessionsRetryDeadLetter({
+    message_id: deadLetterMessageId,
+    state_path: state,
+  });
+  const recoveredInbox = bridge.sessionsReceive({
+    session_id: dlqReceiver.session_id,
+    limit: 8,
+    state_path: state,
+  });
+  assert(
+    recoveredInbox.messages.some((row) => row.message_id === retried.payload.retry_result.message_id),
+    'expected retried dead-letter message to return to receiver inbox'
+  );
+
+  // Persistent resume / restart recovery command.
+  const resumed = bridge.sessionsResume({
+    session_id: persistent.session_id,
+    state_path: state,
+  });
+  assert.strictEqual(resumed.payload.status, 'persistent_running');
 }
 
 run();

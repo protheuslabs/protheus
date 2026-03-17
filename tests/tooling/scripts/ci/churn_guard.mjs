@@ -7,6 +7,19 @@ import { resolve } from 'node:path';
 
 const OUT_JSON = 'core/local/artifacts/churn_guard_current.json';
 const OUT_MD = 'local/workspace/reports/CHURN_GUARD_CURRENT.md';
+const SWARM_CODE_SURFACES = new Set([
+  'core/layer0/ops/src/swarm_runtime.rs',
+  'client/runtime/systems/autonomy/swarm_sessions_bridge.ts',
+]);
+const SWARM_TEST_SURFACES = new Set([
+  'core/layer0/ops/tests/v9_swarm_runtime_integration.rs',
+  'tests/client-memory-tools/swarm_sessions_bridge.test.js',
+  'tests/tooling/scripts/ci/swarm_protocol_audit_runner.mjs',
+]);
+const SWARM_DOC_SURFACES = new Set([
+  'docs/workspace/SRS.md',
+  'docs/client/requirements/REQ-38-agent-orchestration-hardening.md',
+]);
 
 function parseArgs(argv) {
   const allowGovernanceDocChurn =
@@ -25,6 +38,9 @@ function parseArgs(argv) {
 }
 
 function classifyPath(path) {
+  if (SWARM_CODE_SURFACES.has(path) || SWARM_TEST_SURFACES.has(path)) {
+    return 'swarm_surface_churn';
+  }
   if (
     path === 'docs/workspace/TODO.md' ||
     path === 'docs/workspace/SRS.md' ||
@@ -63,6 +79,32 @@ function classifyPath(path) {
     return 'generated_report_churn';
   }
   return 'other';
+}
+
+function detectSwarmCompanionGaps(rows) {
+  const dirtyPaths = new Set(rows.map((row) => row.path));
+  const touchesSwarmCode = [...dirtyPaths].some((path) => SWARM_CODE_SURFACES.has(path));
+  const touchesSwarmTests = [...dirtyPaths].some((path) => SWARM_TEST_SURFACES.has(path));
+  if (!touchesSwarmCode && !touchesSwarmTests) {
+    return [];
+  }
+  const touchesSwarmDocs = [...dirtyPaths].some((path) => SWARM_DOC_SURFACES.has(path));
+  const gaps = [];
+  if (touchesSwarmCode && !touchesSwarmTests) {
+    gaps.push({
+      type: 'missing_swarm_tests',
+      detail:
+        'swarm runtime or bridge changed without updating swarm integration/bridge/audit coverage',
+    });
+  }
+  if ((touchesSwarmCode || touchesSwarmTests) && !touchesSwarmDocs) {
+    gaps.push({
+      type: 'missing_swarm_docs',
+      detail:
+        'swarm runtime or audit changes must update SRS or REQ-38 orchestration hardening evidence',
+    });
+  }
+  return gaps;
 }
 
 function parseStatus() {
@@ -143,6 +185,8 @@ function toMarkdown(payload) {
   lines.push(`- lensmap_churn: ${payload.summary.lensmap_churn}`);
   lines.push(`- generated_report_churn: ${payload.summary.generated_report_churn}`);
   lines.push(`- governance_doc_churn: ${payload.summary.governance_doc_churn}`);
+  lines.push(`- swarm_surface_churn: ${payload.summary.swarm_surface_churn}`);
+  lines.push(`- swarm_companion_gaps: ${payload.summary.swarm_companion_gaps}`);
   lines.push(`- allow_governance_doc_churn: ${payload.summary.allow_governance_doc_churn}`);
   lines.push(`- likely_unstaged_moves: ${payload.summary.likely_unstaged_moves}`);
   lines.push(`- untracked: ${payload.summary.untracked}`);
@@ -163,6 +207,19 @@ function toMarkdown(payload) {
     lines.push('Remediation: stage moves as a single rename set (`git add -A`) before continuing.');
     lines.push('');
   }
+  if (payload.swarm_companion_gaps.length > 0) {
+    lines.push('## Swarm Companion Gaps');
+    lines.push('| Type | Detail |');
+    lines.push('| --- | --- |');
+    for (const gap of payload.swarm_companion_gaps) {
+      lines.push(`| ${gap.type} | ${gap.detail} |`);
+    }
+    lines.push('');
+    lines.push(
+      'Remediation: stage swarm runtime/bridge changes together with swarm tests and SRS/REQ evidence updates.',
+    );
+    lines.push('');
+  }
   if (payload.rows.length > 0) {
     lines.push('| Status | Category | Path |');
     lines.push('| --- | --- | --- |');
@@ -178,6 +235,7 @@ function main() {
   const args = parseArgs(process.argv.slice(2));
   const rows = parseStatus();
   const likelyUnstagedMoves = detectLikelyUnstagedMoves(rows);
+  const swarmCompanionGaps = detectSwarmCompanionGaps(rows);
   const untrackedRows = rows.filter((row) => isUntracked(row.status));
   const forbiddenCommitCategories = new Set([
     'local_simulation_churn',
@@ -186,10 +244,13 @@ function main() {
   ]);
   const forbiddenCommitRows = rows.filter((row) => forbiddenCommitCategories.has(row.category));
   const governanceCommitRows = rows.filter((row) => row.category === 'governance_doc_churn');
+  const nonGovernanceRows = rows.filter((row) => row.category !== 'governance_doc_churn');
+  const governanceOnlyChurn = governanceCommitRows.length > 0 && nonGovernanceRows.length === 0;
   const commitGatePass =
     forbiddenCommitRows.length === 0 &&
-    (args.allowGovernanceDocChurn || governanceCommitRows.length === 0) &&
+    (args.allowGovernanceDocChurn || governanceCommitRows.length === 0 || !governanceOnlyChurn) &&
     likelyUnstagedMoves.length === 0 &&
+    swarmCompanionGaps.length === 0 &&
     untrackedRows.length === 0;
 
   const summary = {
@@ -200,6 +261,8 @@ function main() {
     lensmap_churn: rows.filter((r) => r.category === 'lensmap_churn').length,
     generated_report_churn: rows.filter((r) => r.category === 'generated_report_churn').length,
     governance_doc_churn: rows.filter((r) => r.category === 'governance_doc_churn').length,
+    swarm_surface_churn: rows.filter((r) => r.category === 'swarm_surface_churn').length,
+    swarm_companion_gaps: swarmCompanionGaps.length,
     allow_governance_doc_churn: args.allowGovernanceDocChurn,
     likely_unstaged_moves: likelyUnstagedMoves.length,
     untracked: untrackedRows.length,
@@ -210,6 +273,8 @@ function main() {
     summary.local_simulation_churn === 0 &&
     summary.lensmap_churn === 0 &&
     (summary.governance_doc_churn === 0 || args.allowGovernanceDocChurn) &&
+    summary.swarm_surface_churn === 0 &&
+    summary.swarm_companion_gaps === 0 &&
     summary.likely_unstaged_moves === 0 &&
     summary.other === 0;
   summary.commit_gate_pass = commitGatePass;
@@ -221,6 +286,7 @@ function main() {
     generatedAt: new Date().toISOString(),
     summary,
     likely_unstaged_moves: likelyUnstagedMoves,
+    swarm_companion_gaps: swarmCompanionGaps,
     rows,
   };
 

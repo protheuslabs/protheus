@@ -269,6 +269,174 @@ function runCommunicationTest(statePath) {
   }
 }
 
+function runToolManifestTest(statePath) {
+  try {
+    const spawned = bridge.sessionsSpawn({
+      task: 'manifest-check',
+      state_path: statePath,
+    });
+    const manifest = spawned.tool_manifest || null;
+    if (!manifest || !Array.isArray(manifest.tool_access) || !manifest.tool_access.includes('sessions_send')) {
+      return fail('test_8_tool_manifest_injection', 'tool_manifest_missing_sessions_send', {
+        session_id: spawned.session_id,
+        tool_manifest: manifest,
+      });
+    }
+    return pass('test_8_tool_manifest_injection', {
+      session_id: spawned.session_id,
+      tool_access: manifest.tool_access,
+      bridge_path: manifest.transport?.bridge_path || null,
+    });
+  } catch (err) {
+    return fail('test_8_tool_manifest_injection', 'bridge_exception', {
+      error: String(err && err.message ? err.message : err),
+    });
+  }
+}
+
+function runHierarchicalBudgetTest(statePath) {
+  try {
+    const parent = bridge.sessionsSpawn({
+      task: 'parent-budget',
+      max_tokens: 500,
+      on_budget_exhausted: 'fail',
+      state_path: statePath,
+    });
+    const child = bridge.sessionsSpawn({
+      task: 'child-budget',
+      session_id: parent.session_id,
+      max_tokens: 200,
+      on_budget_exhausted: 'fail',
+      state_path: statePath,
+    });
+    const childState = bridge.sessionsState({
+      session_id: child.session_id,
+      state_path: statePath,
+    });
+    const parentState = bridge.sessionsState({
+      session_id: parent.session_id,
+      state_path: statePath,
+    });
+    if (childState.payload?.session?.budget_parent_session_id !== parent.session_id) {
+      return fail('test_9_hierarchical_budget', 'child_missing_parent_budget_link', {
+        parent: parent.session_id,
+        child: child.session_id,
+        session: childState.payload?.session || null,
+      });
+    }
+    const settledChildTokens = Number(parentState.payload?.session?.budget?.settled_child_tokens || 0);
+    if (settledChildTokens <= 0) {
+      return fail('test_9_hierarchical_budget', 'parent_budget_settlement_missing', {
+        parent: parent.session_id,
+        budget: parentState.payload?.session?.budget || null,
+      });
+    }
+    return pass('test_9_hierarchical_budget', {
+      parent: parent.session_id,
+      child: child.session_id,
+      settled_child_tokens: settledChildTokens,
+    });
+  } catch (err) {
+    return fail('test_9_hierarchical_budget', 'bridge_exception', {
+      error: String(err && err.message ? err.message : err),
+    });
+  }
+}
+
+function runDeadLetterRecoveryTest(statePath) {
+  try {
+    const parent = bridge.sessionsSpawn({ task: 'dlq-parent', state_path: statePath });
+    const sender = bridge.sessionsSpawn({
+      task: 'dlq-sender',
+      session_id: parent.session_id,
+      state_path: statePath,
+    });
+    const receiver = bridge.sessionsSpawn({
+      task: 'dlq-receiver',
+      session_id: parent.session_id,
+      state_path: statePath,
+    });
+    bridge.sessionsSend({
+      sender: sender.session_id,
+      session_id: receiver.session_id,
+      message: 'expire-me',
+      delivery: 'at_least_once',
+      ttl_ms: 1,
+      state_path: statePath,
+    });
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
+    runOps(['swarm-runtime', 'status', `--state-path=${statePath}`]);
+    const deadLetters = bridge.sessionsDeadLetters({
+      session_id: receiver.session_id,
+      state_path: statePath,
+    });
+    const entry = (deadLetters.payload?.dead_letters || [])[0] || null;
+    if (!entry) {
+      return fail('test_10_dead_letter_recovery', 'dead_letter_missing', {
+        session_id: receiver.session_id,
+        payload: deadLetters.payload || null,
+      });
+    }
+    const retried = bridge.sessionsRetryDeadLetter({
+      message_id: entry.message.message_id,
+      state_path: statePath,
+    });
+    const inbox = bridge.sessionsReceive({
+      session_id: receiver.session_id,
+      limit: 8,
+      state_path: statePath,
+    });
+    const recovered = (inbox.messages || []).some((row) => row.message_id === retried.payload?.retry_result?.message_id);
+    if (!recovered) {
+      return fail('test_10_dead_letter_recovery', 'retry_not_delivered', {
+        retry: retried.payload || null,
+        inbox: inbox.messages || [],
+      });
+    }
+    return pass('test_10_dead_letter_recovery', {
+      retried_message_id: retried.payload?.retry_result?.message_id || null,
+      dead_letter_reason: entry.reason || null,
+    });
+  } catch (err) {
+    return fail('test_10_dead_letter_recovery', 'bridge_exception', {
+      error: String(err && err.message ? err.message : err),
+    });
+  }
+}
+
+function runRestartRecoveryTest(statePath) {
+  try {
+    const persistent = bridge.sessionsSpawn({
+      task: 'restart-recovery',
+      sessionType: 'persistent',
+      ttlMinutes: 5,
+      checkpointInterval: 1,
+      state_path: statePath,
+    });
+    const resumed = bridge.sessionsResume({
+      session_id: persistent.session_id,
+      state_path: statePath,
+    });
+    const state = bridge.sessionsState({
+      session_id: persistent.session_id,
+      state_path: statePath,
+    });
+    if ((resumed.payload?.status || '') !== 'persistent_running') {
+      return fail('test_11_restart_recovery', 'resume_not_running', {
+        resumed: resumed.payload || null,
+      });
+    }
+    return pass('test_11_restart_recovery', {
+      session_id: persistent.session_id,
+      status: state.payload?.session?.status || null,
+    });
+  } catch (err) {
+    return fail('test_11_restart_recovery', 'bridge_exception', {
+      error: String(err && err.message ? err.message : err),
+    });
+  }
+}
+
 function runHeterogeneousTest(statePath) {
   try {
     bridge.sessionsSpawn({
@@ -327,6 +495,10 @@ function main() {
     runPersistentTest(statePath),
     runCommunicationTest(statePath),
     runHeterogeneousTest(statePath),
+    runToolManifestTest(statePath),
+    runHierarchicalBudgetTest(statePath),
+    runDeadLetterRecoveryTest(statePath),
+    runRestartRecoveryTest(statePath),
   ];
 
   const passed = tests.filter((row) => row.ok).length;

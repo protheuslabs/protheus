@@ -29,6 +29,7 @@ Out of scope:
 - REQ-12: Swarm Engine Router (message routing, queue handoff)
 - REQ-15: Sandboxed Sub-Agent Execution (isolated execution, scoped permissions)
 - REQ-36: Smart Memory Low-Burn Regression Contract (shared state patterns)
+- V6-SWARM-033 through V6-SWARM-037: spawned-agent tool manifests, hierarchical budgets, dead-letter recovery, restart recovery, and the expanded dominance audit suite
 
 ## Requirements
 
@@ -183,6 +184,11 @@ Out of scope:
 - Load test: 20+ parallel agents with checkpointing and timeout recovery
 - Invariant: No overlapping work assignments in partitioned tasks
 - Invariant: All findings conform to standardized schema
+- Swarm-runtime hardening must also preserve:
+  - authoritative spawned-agent tool manifests (`sessions_send`/`sessions_query`/`sessions_state` exposed from spawn receipts, not inferred),
+  - hierarchical token reservation/settlement across parent-child chains,
+  - dead-letter + retry recovery under TTL expiry/backpressure,
+  - persistent-session resume after runtime reload.
 
 ## Execution Notes
 

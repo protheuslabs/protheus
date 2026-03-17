@@ -11,6 +11,9 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 const DEFAULT_STATE_PATH: &str = "local/state/ops/swarm_runtime/latest.json";
 const MAX_EVENT_ROWS: usize = 256;
+const MAX_DEAD_LETTER_ROWS: usize = 256;
+const DEFAULT_MESSAGE_TTL_MS: u64 = 300_000;
+const MAX_MAILBOX_UNREAD: usize = 32;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct SwarmState {
@@ -36,6 +39,8 @@ struct SwarmState {
     #[serde(default)]
     exactly_once_dedupe: BTreeMap<String, String>,
     #[serde(default)]
+    dead_letters: Vec<DeadLetterMessage>,
+    #[serde(default)]
     scheduled_tasks: BTreeMap<String, ScheduledTask>,
     #[serde(default)]
     events: Vec<Value>,
@@ -56,6 +61,7 @@ impl Default for SwarmState {
             results_by_label: BTreeMap::new(),
             results_by_role: BTreeMap::new(),
             exactly_once_dedupe: BTreeMap::new(),
+            dead_letters: Vec::new(),
             scheduled_tasks: BTreeMap::new(),
             events: Vec::new(),
         }
@@ -100,6 +106,12 @@ struct SessionMetadata {
     persistent: Option<PersistentRuntime>,
     #[serde(default)]
     background_worker: bool,
+    #[serde(default)]
+    budget_parent_session_id: Option<String>,
+    #[serde(default)]
+    budget_reservation_tokens: u32,
+    #[serde(default)]
+    budget_reservation_settled: bool,
 }
 
 fn default_session_tool_access() -> Vec<String> {
@@ -306,6 +318,12 @@ struct BudgetTelemetry {
     warning_emitted: bool,
     warning_at_tokens: u32,
     compaction_triggered: bool,
+    #[serde(default)]
+    reserved_for_children: u32,
+    #[serde(default)]
+    child_reservations: BTreeMap<String, u32>,
+    #[serde(default)]
+    settled_child_tokens: u32,
 }
 
 enum BudgetUsageOutcome {
@@ -330,13 +348,16 @@ impl BudgetTelemetry {
             warning_emitted: false,
             warning_at_tokens: threshold,
             compaction_triggered: false,
+            reserved_for_children: 0,
+            child_reservations: BTreeMap::new(),
+            settled_child_tokens: 0,
         }
     }
 
     fn remaining_tokens(&self) -> u32 {
         self.budget_config
             .max_tokens
-            .saturating_sub(self.final_usage)
+            .saturating_sub(self.final_usage.saturating_add(self.reserved_for_children))
     }
 
     fn utilization(&self) -> f64 {
@@ -446,6 +467,9 @@ impl BudgetTelemetry {
             "budget_exhausted": self.budget_exhausted,
             "warning_emitted": self.warning_emitted,
             "compaction_triggered": self.compaction_triggered,
+            "reserved_for_children": self.reserved_for_children,
+            "settled_child_tokens": self.settled_child_tokens,
+            "child_reservations": self.child_reservations,
             "tool_breakdown": self.tool_breakdown,
             "most_expensive_tool": most_expensive_tool,
             "timeline": self.usage_over_time,
@@ -529,6 +553,10 @@ struct AgentMessage {
     acked_at_ms: Option<u64>,
     #[serde(default)]
     dedupe_key: Option<String>,
+    ttl_ms: u64,
+    expires_at_ms: u64,
+    #[serde(default)]
+    deferred: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -538,6 +566,18 @@ struct SessionMailbox {
     unread: Vec<AgentMessage>,
     #[serde(default)]
     read: Vec<AgentMessage>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DeadLetterMessage {
+    dead_letter_id: String,
+    message: AgentMessage,
+    reason: String,
+    moved_at: String,
+    moved_at_ms: u64,
+    retryable: bool,
+    #[serde(default)]
+    retry_count: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -645,9 +685,14 @@ fn usage() {
     println!(
         "  protheus-ops swarm-runtime sessions anomalies --session-id=<id> [--state-path=<path>]"
     );
-    println!("  protheus-ops swarm-runtime sessions send --sender-id=<session|coordinator> --session-id=<recipient> --message=<text> [--delivery=<at_most_once|at_least_once|exactly_once>] [--state-path=<path>]");
+    println!("  protheus-ops swarm-runtime sessions send --sender-id=<session|coordinator> --session-id=<recipient> --message=<text> [--delivery=<at_most_once|at_least_once|exactly_once>] [--ttl-ms=<n>] [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime sessions receive --session-id=<id> [--limit=<n>] [--mark-read=1|0] [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime sessions ack --session-id=<id> --message-id=<id> [--state-path=<path>]");
+    println!(
+        "  protheus-ops swarm-runtime sessions resume --session-id=<id> [--state-path=<path>]"
+    );
+    println!("  protheus-ops swarm-runtime sessions dead-letter [--session-id=<id>] [--retryable=1|0] [--state-path=<path>]");
+    println!("  protheus-ops swarm-runtime sessions retry-dead-letter --message-id=<id> [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime sessions discover --role=<name> [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime sessions send-role --sender-id=<session|coordinator> --role=<name> --message=<text> [--delivery=<at_most_once|at_least_once|exactly_once>] [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime background <start|status|stop> [flags]");
@@ -774,6 +819,223 @@ fn append_event(state: &mut SwarmState, event: Value) {
     }
 }
 
+fn append_dead_letter(
+    state: &mut SwarmState,
+    message: AgentMessage,
+    reason: &str,
+    retryable: bool,
+) {
+    let dead_letter = DeadLetterMessage {
+        dead_letter_id: format!(
+            "dlq-{}",
+            &deterministic_receipt_hash(&json!({
+                "message_id": message.message_id,
+                "reason": reason,
+                "moved_at_ms": now_epoch_ms(),
+            }))[..12]
+        ),
+        message,
+        reason: reason.to_string(),
+        moved_at: now_iso(),
+        moved_at_ms: now_epoch_ms(),
+        retryable,
+        retry_count: 0,
+    };
+    state.dead_letters.push(dead_letter);
+    if state.dead_letters.len() > MAX_DEAD_LETTER_ROWS {
+        let excess = state.dead_letters.len() - MAX_DEAD_LETTER_ROWS;
+        state.dead_letters.drain(0..excess);
+    }
+}
+
+fn session_key(session_id: &str) -> String {
+    format!("agent:main:subagent:{session_id}")
+}
+
+fn session_capabilities(state: &SwarmState, session_id: &str) -> Vec<String> {
+    state
+        .service_registry
+        .values()
+        .flat_map(|rows| rows.iter())
+        .find(|row| row.session_id == session_id)
+        .map(|row| row.capabilities.clone())
+        .unwrap_or_default()
+}
+
+fn session_tool_manifest(state: &SwarmState, session: &SessionMetadata) -> Value {
+    let session_id = session.session_id.as_str();
+    let session_key = session_key(session_id);
+    json!({
+        "version": "swarm-tool-manifest/v1",
+        "session_id": session_id,
+        "session_key": session_key,
+        "tool_access": session.tool_access.clone(),
+        "role": session.role.clone(),
+        "capabilities": session_capabilities(state, session_id),
+        "transport": {
+            "bridge_path": "client/runtime/systems/autonomy/swarm_sessions_bridge.ts",
+            "sessions_send": format!("node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_send --sender={session_key} --sessionKey=<target> --message=<text>"),
+            "sessions_receive": format!("node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_receive --sessionKey={session_key}"),
+            "sessions_ack": format!("node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_ack --sessionKey={session_key} --message-id=<id>"),
+            "sessions_state": format!("node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_state --sessionKey={session_key}"),
+            "sessions_tick": "node client/runtime/systems/autonomy/swarm_sessions_bridge.ts sessions_tick".to_string(),
+        },
+        "resumption": {
+            "persistent": session.persistent.is_some(),
+            "resume_command": format!("protheus-ops swarm-runtime sessions resume --session-id={session_id}"),
+        },
+    })
+}
+
+fn reserve_budget_from_parent(
+    state: &mut SwarmState,
+    parent_id: Option<&str>,
+    child_id: &str,
+    requested_budget: Option<u32>,
+) -> Result<(Option<u32>, Option<String>, u32), String> {
+    let Some(parent_id) = parent_id else {
+        return Ok((requested_budget, None, 0));
+    };
+    let Some(parent_session) = state.sessions.get_mut(parent_id) else {
+        return Err(format!("parent_session_missing:{parent_id}"));
+    };
+    let Some(telemetry) = parent_session.budget_telemetry.as_mut() else {
+        return Ok((requested_budget, None, 0));
+    };
+    let remaining = telemetry.remaining_tokens();
+    if remaining == 0 {
+        return Err(format!(
+            "parent_token_budget_exceeded:parent={parent_id}:remaining=0"
+        ));
+    }
+    let child_budget = requested_budget.unwrap_or(remaining);
+    if child_budget > remaining {
+        return Err(format!(
+            "parent_token_budget_exceeded:parent={parent_id}:requested={child_budget}:remaining={remaining}"
+        ));
+    }
+    telemetry.reserved_for_children = telemetry.reserved_for_children.saturating_add(child_budget);
+    telemetry
+        .child_reservations
+        .insert(child_id.to_string(), child_budget);
+    Ok((
+        Some(child_budget),
+        Some(parent_id.to_string()),
+        child_budget,
+    ))
+}
+
+fn settle_budget_reservation(state: &mut SwarmState, session_id: &str) {
+    let settlement = {
+        let Some(session) = state.sessions.get(session_id) else {
+            return;
+        };
+        if session.budget_reservation_settled || session.budget_reservation_tokens == 0 {
+            return;
+        }
+        let Some(parent_id) = session.budget_parent_session_id.clone() else {
+            return;
+        };
+        let child_usage = session
+            .budget_telemetry
+            .as_ref()
+            .map(|telemetry| telemetry.final_usage)
+            .unwrap_or(0);
+        (
+            parent_id,
+            session.budget_reservation_tokens,
+            child_usage,
+            format!("child_session:{session_id}"),
+        )
+    };
+
+    let (parent_id, reserved_tokens, child_usage, child_tool) = settlement;
+    if let Some(parent_session) = state.sessions.get_mut(&parent_id) {
+        if let Some(telemetry) = parent_session.budget_telemetry.as_mut() {
+            telemetry.reserved_for_children = telemetry
+                .reserved_for_children
+                .saturating_sub(reserved_tokens);
+            telemetry.child_reservations.remove(session_id);
+            telemetry.settled_child_tokens =
+                telemetry.settled_child_tokens.saturating_add(child_usage);
+            if child_usage > 0 {
+                telemetry.push_usage(&child_tool, child_usage);
+                if !telemetry.warning_emitted
+                    && telemetry.final_usage >= telemetry.warning_at_tokens
+                {
+                    telemetry.warning_emitted = true;
+                }
+            }
+        }
+    }
+    if let Some(session) = state.sessions.get_mut(session_id) {
+        session.budget_reservation_settled = true;
+    }
+}
+
+fn drain_expired_messages(state: &mut SwarmState, now_ms: u64) {
+    let mut expired = Vec::new();
+    for mailbox in state.mailboxes.values_mut() {
+        let mut remaining = Vec::new();
+        for message in mailbox.unread.drain(..) {
+            if message.expires_at_ms <= now_ms {
+                expired.push(message);
+            } else {
+                remaining.push(message);
+            }
+        }
+        mailbox.unread = remaining;
+    }
+    for message in expired {
+        let recipient_session_id = message.recipient_session_id.clone();
+        let message_id = message.message_id.clone();
+        append_dead_letter(state, message, "message_ttl_expired", true);
+        append_event(
+            state,
+            json!({
+                "type": "swarm_dead_letter",
+                "message_id": message_id,
+                "recipient_session_id": recipient_session_id,
+                "reason": "message_ttl_expired",
+                "timestamp": now_iso(),
+            }),
+        );
+    }
+}
+
+fn recover_persistent_sessions_after_reload(state: &mut SwarmState, now_ms: u64) {
+    let mut resumed = Vec::new();
+    for (session_id, session) in state.sessions.iter_mut() {
+        let Some(runtime) = session.persistent.as_mut() else {
+            continue;
+        };
+        if runtime.terminated_at_ms.is_some() {
+            continue;
+        }
+        if !matches!(
+            session.status.as_str(),
+            "persistent_running" | "background_running" | "running"
+        ) {
+            continue;
+        }
+        session.reachable = true;
+        if runtime.next_check_in_ms < now_ms {
+            runtime.next_check_in_ms = now_ms;
+        }
+        resumed.push(session_id.clone());
+    }
+    if !resumed.is_empty() {
+        append_event(
+            state,
+            json!({
+                "type": "swarm_restart_recovery",
+                "resumed_sessions": resumed,
+                "timestamp": now_iso(),
+            }),
+        );
+    }
+}
+
 fn next_session_id(state: &SwarmState, task: &str, depth: u8) -> String {
     let mut salt = 0u64;
     loop {
@@ -841,19 +1103,6 @@ fn estimate_tool_plan(task: &str, token_budget: Option<u32>) -> Vec<(String, u32
         ("read".to_string(), read_tokens),
         ("generate".to_string(), generate_tokens),
     ]
-}
-
-fn parse_budget_config(options: &SpawnOptions, session_id: &str) -> Option<BudgetTelemetry> {
-    options.token_budget.map(|max_tokens| {
-        BudgetTelemetry::new(
-            session_id.to_string(),
-            TokenBudgetConfig {
-                max_tokens,
-                warning_threshold: options.token_warning_threshold,
-                exhaustion_action: options.budget_exhaustion_action.clone(),
-            },
-        )
-    })
 }
 
 fn parse_execution_mode(argv: &[String]) -> ExecutionMode {
@@ -947,8 +1196,8 @@ fn build_spawn_options(argv: &[String]) -> SpawnOptions {
         argv,
         &["token-budget", "token_budget", "max-tokens", "max_tokens"],
     )
-        .and_then(|value| value.trim().parse::<u32>().ok())
-        .filter(|value| *value > 0);
+    .and_then(|value| value.trim().parse::<u32>().ok())
+    .filter(|value| *value > 0);
     let token_warning_threshold =
         parse_f64_flag(argv, "token-warning-at", 0.8).clamp(0.0, 1.0) as f32;
     SpawnOptions {
@@ -1057,6 +1306,7 @@ fn send_session_message(
     payload: &str,
     delivery: DeliveryGuarantee,
     simulate_first_attempt_fail: bool,
+    ttl_ms: u64,
 ) -> Result<Value, String> {
     if sender_session_id != "coordinator" && !session_exists(state, sender_session_id) {
         return Err(format!("unknown_sender_session:{sender_session_id}"));
@@ -1116,22 +1366,8 @@ fn send_session_message(
     } else {
         1
     };
-    if !recipient_reachable
-        && matches!(
-            delivery,
-            DeliveryGuarantee::AtMostOnce | DeliveryGuarantee::ExactlyOnce
-        )
-    {
-        return Err(format!(
-            "recipient_unreachable:delivery={}:recipient={recipient_session_id}",
-            delivery.as_label()
-        ));
-    }
-    if !recipient_reachable && matches!(delivery, DeliveryGuarantee::AtLeastOnce) {
-        return Err(format!("delivery_retries_exhausted:{recipient_session_id}"));
-    }
-
     let message_id = next_message_id(state, sender_session_id, recipient_session_id, payload);
+    let ttl_ms = ttl_ms.max(1);
     let message = AgentMessage {
         message_id: message_id.clone(),
         sender_session_id: sender_session_id.to_string(),
@@ -1148,7 +1384,50 @@ fn send_session_message(
         } else {
             None
         },
+        ttl_ms,
+        expires_at_ms: now_epoch_ms().saturating_add(ttl_ms),
+        deferred: !recipient_reachable,
     };
+
+    let mailbox_depth = state
+        .mailboxes
+        .get(recipient_session_id)
+        .map(|mailbox| mailbox.unread.len())
+        .unwrap_or(0);
+    if mailbox_depth >= MAX_MAILBOX_UNREAD {
+        append_dead_letter(state, message.clone(), "mailbox_backpressure", true);
+        append_event(
+            state,
+            json!({
+                "type": "swarm_dead_letter",
+                "message_id": message_id,
+                "sender_session_id": sender_session_id,
+                "recipient_session_id": recipient_session_id,
+                "reason": "mailbox_backpressure",
+                "timestamp": now_iso(),
+            }),
+        );
+        return Ok(json!({
+            "ok": true,
+            "type": "swarm_runtime_sessions_send",
+            "message_id": message.message_id,
+            "sender_session_id": message.sender_session_id,
+            "recipient_session_id": message.recipient_session_id,
+            "delivery": message.delivery.as_label(),
+            "attempts": message.attempts,
+            "dedupe_hit": false,
+            "dead_lettered": true,
+            "dead_letter_reason": "mailbox_backpressure",
+        }));
+    }
+    if !recipient_reachable && matches!(delivery, DeliveryGuarantee::AtMostOnce) {
+        append_dead_letter(state, message.clone(), "recipient_unreachable", true);
+        return Err(format!(
+            "recipient_unreachable:delivery={}:recipient={recipient_session_id}",
+            delivery.as_label()
+        ));
+    }
+
     ensure_mailbox(state, recipient_session_id)
         .unread
         .push(message.clone());
@@ -1167,6 +1446,7 @@ fn send_session_message(
             "recipient_session_id": recipient_session_id,
             "delivery": delivery.as_label(),
             "attempts": attempts,
+            "deferred": !recipient_reachable,
             "timestamp": now_iso(),
         }),
     );
@@ -1180,6 +1460,8 @@ fn send_session_message(
         "delivery": message.delivery.as_label(),
         "attempts": message.attempts,
         "dedupe_hit": false,
+        "deferred": !recipient_reachable,
+        "ttl_ms": ttl_ms,
     }))
 }
 
@@ -1318,6 +1600,7 @@ fn send_to_role(
         payload,
         delivery,
         false,
+        DEFAULT_MESSAGE_TTL_MS,
     )
 }
 
@@ -1767,6 +2050,7 @@ fn publish_channel_message(
             payload,
             delivery.clone(),
             false,
+            DEFAULT_MESSAGE_TTL_MS,
         )?;
         delivered.push(result);
     }
@@ -1970,10 +2254,11 @@ fn spawn_persistent_session(
     }
 
     let session_id = next_session_id(state, task, depth);
+    let (effective_budget, budget_parent_session_id, budget_reservation_tokens) =
+        reserve_budget_from_parent(state, parent_id, &session_id, options.token_budget)?;
     let now_ms = now_epoch_ms();
     let scaled_task = if options.adaptive_complexity {
-        options
-            .token_budget
+        effective_budget
             .map(|budget| scale_task_complexity(task, budget))
             .unwrap_or_else(|| task.to_string())
     } else {
@@ -2019,7 +2304,16 @@ fn spawn_persistent_session(
             execution_end_ms: now_ms,
             report_back_latency_ms: 0,
         }),
-        budget_telemetry: parse_budget_config(options, &session_id),
+        budget_telemetry: effective_budget.map(|max_tokens| {
+            BudgetTelemetry::new(
+                session_id.clone(),
+                TokenBudgetConfig {
+                    max_tokens,
+                    warning_threshold: options.token_warning_threshold,
+                    exhaustion_action: options.budget_exhaustion_action.clone(),
+                },
+            )
+        }),
         scaled_task: Some(scaled_task),
         budget_action_taken: None,
         role: options.role.clone(),
@@ -2029,6 +2323,9 @@ fn spawn_persistent_session(
         anomalies: Vec::new(),
         persistent: Some(runtime),
         background_worker,
+        budget_parent_session_id,
+        budget_reservation_tokens,
+        budget_reservation_settled: false,
     };
 
     let initial = perform_persistent_check_in(&mut metadata, "initial", false)?;
@@ -2066,11 +2363,18 @@ fn spawn_persistent_session(
 
     Ok(json!({
         "session_id": session_id,
+        "session_key": session_key(&session_id),
         "mode": if background_worker { "background" } else { "persistent" },
         "lifespan_sec": cfg.lifespan_sec,
         "check_in_interval_sec": cfg.check_in_interval_sec,
         "report_mode": cfg.report_mode.as_label(),
         "initial_check_in": initial,
+        "session_state": {
+            "session_id": session_id,
+            "session_key": session_key(&session_id),
+            "tool_access": default_session_tool_access(),
+            "tool_manifest": session_tool_manifest(state, state.sessions.get(&session_id).expect("session inserted")),
+        }
     }))
 }
 
@@ -2109,18 +2413,28 @@ fn spawn_single(
     let queue_wait_ms = now_epoch_ms().saturating_sub(request_received_ms);
     let spawn_initiated_ms = now_epoch_ms();
     let session_id = next_session_id(state, task, depth);
+    let (effective_budget, budget_parent_session_id, budget_reservation_tokens) =
+        reserve_budget_from_parent(state, parent_id, &session_id, options.token_budget)?;
     let spawn_completed_ms = now_epoch_ms();
 
     let scaled_task = if options.adaptive_complexity {
-        options
-            .token_budget
+        effective_budget
             .map(|budget| scale_task_complexity(task, budget))
             .unwrap_or_else(|| task.to_string())
     } else {
         task.to_string()
     };
-    let tool_plan = estimate_tool_plan(&scaled_task, options.token_budget);
-    let mut budget_telemetry = parse_budget_config(options, &session_id);
+    let tool_plan = estimate_tool_plan(&scaled_task, effective_budget);
+    let mut budget_telemetry = effective_budget.map(|max_tokens| {
+        BudgetTelemetry::new(
+            session_id.clone(),
+            TokenBudgetConfig {
+                max_tokens,
+                warning_threshold: options.token_warning_threshold,
+                exhaustion_action: options.budget_exhaustion_action.clone(),
+            },
+        )
+    });
     let mut budget_events = Vec::new();
     let mut budget_action_taken: Option<String> = None;
 
@@ -2169,8 +2483,12 @@ fn spawn_single(
                         anomalies: Vec::new(),
                         persistent: None,
                         background_worker: false,
+                        budget_parent_session_id: budget_parent_session_id.clone(),
+                        budget_reservation_tokens,
+                        budget_reservation_settled: false,
                     };
                     state.sessions.insert(session_id.clone(), failed_metadata);
+                    settle_budget_reservation(state, &session_id);
                     append_event(
                         state,
                         json!({
@@ -2249,6 +2567,9 @@ fn spawn_single(
         anomalies: Vec::new(),
         persistent: None,
         background_worker: false,
+        budget_parent_session_id,
+        budget_reservation_tokens,
+        budget_reservation_settled: false,
     };
 
     state.sessions.insert(session_id.clone(), metadata);
@@ -2270,6 +2591,7 @@ fn spawn_single(
             }
         }
     }
+    settle_budget_reservation(state, &session_id);
 
     let verification = if options.verify {
         match verify_session_reachable(state, &session_id, options.timeout_ms) {
@@ -2337,6 +2659,7 @@ fn spawn_single(
 
     Ok(json!({
         "session_id": session_id,
+        "session_key": session_key(&session_id),
         "parent_id": parent_id,
         "depth": depth,
         "verification": verification,
@@ -2344,6 +2667,12 @@ fn spawn_single(
         "metrics": metrics.as_json(),
         "budget_report": budget_telemetry.map(|telemetry| telemetry.generate_report()),
         "auto_publish_result": auto_publish_receipt,
+        "session_state": {
+            "session_id": session_id,
+            "session_key": session_key(&session_id),
+            "tool_access": default_session_tool_access(),
+            "tool_manifest": session_tool_manifest(state, state.sessions.get(&session_id).expect("session inserted")),
+        }
     }))
 }
 
@@ -2727,7 +3056,8 @@ fn run_test_budget(state: &mut SwarmState, argv: &[String]) -> Result<Value, Str
         return Err("budget_test_hard_enforcement_requires_fail_action".to_string());
     }
     let expect_fail = parse_bool_flag(argv, "expect-fail", assert_hard_enforcement);
-    let adaptive_complexity = parse_bool_flag(argv, "adaptive-complexity", !assert_hard_enforcement);
+    let adaptive_complexity =
+        parse_bool_flag(argv, "adaptive-complexity", !assert_hard_enforcement);
     let task = parse_flag(argv, "task").unwrap_or_else(|| {
         "Write a 10-page essay on quantum physics with detailed references".to_string()
     });
@@ -2867,6 +3197,7 @@ fn tick_persistent_sessions(
                     runtime.terminated_reason = Some("lifespan_expired".to_string());
                 }
                 mark_service_instance_unhealthy(state, &session_id);
+                settle_budget_reservation(state, &session_id);
                 finalized_sessions.push(session_id.clone());
                 result
             } else {
@@ -2965,6 +3296,7 @@ fn sessions_terminate(
         });
     }
     mark_service_instance_unhealthy(state, session_id);
+    settle_budget_reservation(state, session_id);
 
     Ok(json!({
         "ok": true,
@@ -2972,6 +3304,42 @@ fn sessions_terminate(
         "session_id": session_id,
         "graceful": graceful,
         "final_report": final_report,
+    }))
+}
+
+fn sessions_resume(state: &mut SwarmState, session_id: &str, now_ms: u64) -> Result<Value, String> {
+    let Some(session) = state.sessions.get_mut(session_id) else {
+        return Err(format!("unknown_session:{session_id}"));
+    };
+    if session.persistent.is_none() {
+        return Err(format!("session_not_persistent:{session_id}"));
+    }
+    session.reachable = true;
+    if let Some(runtime) = session.persistent.as_mut() {
+        runtime.last_check_in_ms = Some(now_ms);
+        if runtime.terminated_at_ms.is_none() {
+            session.status = if session.background_worker {
+                "background_running".to_string()
+            } else {
+                "persistent_running".to_string()
+            };
+            runtime.next_check_in_ms =
+                now_ms.saturating_add(runtime.config.check_in_interval_sec.saturating_mul(1000));
+        }
+    }
+    append_event(
+        state,
+        json!({
+            "type": "swarm_session_resumed",
+            "session_id": session_id,
+            "timestamp": now_iso(),
+        }),
+    );
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_resume",
+        "session_id": session_id,
+        "status": state.sessions.get(session_id).map(|row| row.status.clone()).unwrap_or_default(),
     }))
 }
 
@@ -3073,6 +3441,12 @@ fn sessions_state(
         .map(BudgetTelemetry::utilization)
         .unwrap_or(0.0);
     let mailbox = state.mailboxes.get(session_id);
+    let tool_manifest = session_tool_manifest(state, session);
+    let dead_letter_count = state
+        .dead_letters
+        .iter()
+        .filter(|row| row.message.recipient_session_id == session_id)
+        .count();
 
     Ok(json!({
         "ok": true,
@@ -3098,6 +3472,11 @@ fn sessions_state(
             "persistent": session.persistent.clone(),
             "report": session.report.clone(),
             "anomalies": session.anomalies.clone(),
+            "tool_manifest": tool_manifest,
+            "budget": session.budget_telemetry.as_ref().map(BudgetTelemetry::generate_report).unwrap_or(Value::Null),
+            "budget_parent_session_id": session.budget_parent_session_id.clone(),
+            "budget_reservation_tokens": session.budget_reservation_tokens,
+            "budget_reservation_settled": session.budget_reservation_settled,
         },
         "context": {
             "utilization_ratio": context_utilization,
@@ -3115,7 +3494,64 @@ fn sessions_state(
         "mailbox": {
             "unread": mailbox.map(|row| row.unread.len()).unwrap_or(0),
             "read": mailbox.map(|row| row.read.len()).unwrap_or(0),
+            "dead_lettered": dead_letter_count,
         }
+    }))
+}
+
+fn sessions_dead_letters(
+    state: &SwarmState,
+    session_id: Option<&str>,
+    retryable_only: bool,
+) -> Value {
+    let entries = state
+        .dead_letters
+        .iter()
+        .filter(|row| {
+            session_id
+                .map(|id| {
+                    row.message.recipient_session_id == id || row.message.sender_session_id == id
+                })
+                .unwrap_or(true)
+        })
+        .filter(|row| !retryable_only || row.retryable)
+        .cloned()
+        .collect::<Vec<_>>();
+    json!({
+        "ok": true,
+        "type": "swarm_runtime_dead_letters",
+        "dead_letter_count": entries.len(),
+        "dead_letters": entries,
+    })
+}
+
+fn sessions_retry_dead_letter(state: &mut SwarmState, message_id: &str) -> Result<Value, String> {
+    let Some(index) = state
+        .dead_letters
+        .iter()
+        .position(|row| row.message.message_id == message_id)
+    else {
+        return Err(format!("unknown_dead_letter_message:{message_id}"));
+    };
+    let entry = state.dead_letters.remove(index);
+    if !entry.retryable {
+        state.dead_letters.push(entry);
+        return Err(format!("dead_letter_not_retryable:{message_id}"));
+    }
+    let sent = send_session_message(
+        state,
+        &entry.message.sender_session_id,
+        &entry.message.recipient_session_id,
+        &entry.message.payload,
+        entry.message.delivery.clone(),
+        false,
+        entry.message.ttl_ms.max(DEFAULT_MESSAGE_TTL_MS),
+    )?;
+    Ok(json!({
+        "ok": true,
+        "type": "swarm_runtime_dead_letter_retry",
+        "message_id": message_id,
+        "retry_result": sent,
     }))
 }
 
@@ -3170,6 +3606,12 @@ fn queue_metrics_snapshot(state: &SwarmState) -> Value {
         .values()
         .map(|mailbox| mailbox.unread.len())
         .sum();
+    let dead_letter_count = state.dead_letters.len();
+    let backpressure_count = state
+        .dead_letters
+        .iter()
+        .filter(|row| row.reason == "mailbox_backpressure")
+        .count();
     let persistent_sessions = state
         .sessions
         .values()
@@ -3211,6 +3653,8 @@ fn queue_metrics_snapshot(state: &SwarmState) -> Value {
         "mailbox": {
             "unread_total": unread_messages,
             "mailbox_count": state.mailboxes.len(),
+            "dead_letter_total": dead_letter_count,
+            "backpressure_total": backpressure_count,
         }
     })
 }
@@ -3255,6 +3699,16 @@ fn queue_metrics_prometheus(state: &SwarmState, snapshot: &Value) -> String {
         .and_then(|row| row.get("unread_total"))
         .and_then(Value::as_u64)
         .unwrap_or(0);
+    let dead_letter_total = snapshot
+        .get("mailbox")
+        .and_then(|row| row.get("dead_letter_total"))
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+    let backpressure_total = snapshot
+        .get("mailbox")
+        .and_then(|row| row.get("backpressure_total"))
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
     let active_sessions = snapshot
         .get("session_counts")
         .and_then(|row| row.get("active"))
@@ -3292,6 +3746,14 @@ fn queue_metrics_prometheus(state: &SwarmState, snapshot: &Value) -> String {
         "# HELP swarm_runtime_unread_messages_total Total unread inter-agent messages.".to_string(),
         "# TYPE swarm_runtime_unread_messages_total gauge".to_string(),
         format!("swarm_runtime_unread_messages_total {unread_total}"),
+        "# HELP swarm_runtime_dead_letters_total Total dead-lettered inter-agent messages."
+            .to_string(),
+        "# TYPE swarm_runtime_dead_letters_total gauge".to_string(),
+        format!("swarm_runtime_dead_letters_total {dead_letter_total}"),
+        "# HELP swarm_runtime_mailbox_backpressure_total Total mailbox backpressure dead letters."
+            .to_string(),
+        "# TYPE swarm_runtime_mailbox_backpressure_total gauge".to_string(),
+        format!("swarm_runtime_mailbox_backpressure_total {backpressure_total}"),
         "# HELP swarm_runtime_active_sessions Total active sessions.".to_string(),
         "# TYPE swarm_runtime_active_sessions gauge".to_string(),
         format!("swarm_runtime_active_sessions {active_sessions}"),
@@ -3662,6 +4124,7 @@ fn run_test_communication(state: &mut SwarmState, argv: &[String]) -> Result<Val
         &generator_payload,
         delivery.clone(),
         parse_bool_flag(argv, "simulate-first-attempt-fail", false),
+        DEFAULT_MESSAGE_TTL_MS,
     )?;
 
     let filter_inbox = receive_session_messages(state, &filter_id, 1, true)?;
@@ -3693,6 +4156,7 @@ fn run_test_communication(state: &mut SwarmState, argv: &[String]) -> Result<Val
         &filter_payload,
         delivery.clone(),
         false,
+        DEFAULT_MESSAGE_TTL_MS,
     )?;
 
     let summarizer_inbox = receive_session_messages(state, &summarizer_id, 1, true)?;
@@ -3726,6 +4190,7 @@ fn run_test_communication(state: &mut SwarmState, argv: &[String]) -> Result<Val
         &summarizer_payload,
         delivery,
         false,
+        DEFAULT_MESSAGE_TTL_MS,
     )?;
 
     let validator_inbox = receive_session_messages(state, &validator_id, 1, true)?;
@@ -3904,6 +4369,9 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             return 2;
         }
     };
+    let now_ms = now_epoch_ms();
+    recover_persistent_sessions_after_reload(&mut state, now_ms);
+    drain_expired_messages(&mut state, now_ms);
 
     let auto_tick_enabled = parse_bool_flag(argv, "auto-tick", true);
     if auto_tick_enabled && cmd != "tick" && !persistent_session_ids(&state).is_empty() {
@@ -3919,6 +4387,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             "byzantine_test_mode": state.byzantine_test_mode,
             "session_count": state.sessions.len(),
             "result_count": state.result_registry.len(),
+            "dead_letter_count": state.dead_letters.len(),
             "event_count": state.events.len(),
             "max_depth": state
                 .sessions
@@ -4098,6 +4567,15 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                         Err("session_id_required".to_string())
                     }
                 }
+                "resume" => {
+                    if let Some(session_id) =
+                        parse_flag(argv, "session-id").filter(|value| !value.trim().is_empty())
+                    {
+                        sessions_resume(&mut state, &session_id, now_epoch_ms())
+                    } else {
+                        Err("session_id_required".to_string())
+                    }
+                }
                 "terminate" => {
                     if let Some(session_id) =
                         parse_flag(argv, "session-id").filter(|value| !value.trim().is_empty())
@@ -4164,6 +4642,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                             &message,
                             DeliveryGuarantee::from_flag(parse_flag(argv, "delivery")),
                             parse_bool_flag(argv, "simulate-first-attempt-fail", false),
+                            parse_u64_flag(argv, "ttl-ms", DEFAULT_MESSAGE_TTL_MS),
                         ),
                         (None, _) => Err("session_id_required".to_string()),
                         (_, None) => Err("message_required".to_string()),
@@ -4194,6 +4673,22 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                         }
                         (None, _) => Err("session_id_required".to_string()),
                         (_, None) => Err("message_id_required".to_string()),
+                    }
+                }
+                "dead-letter" => Ok(sessions_dead_letters(
+                    &state,
+                    parse_flag(argv, "session-id")
+                        .filter(|value| !value.trim().is_empty())
+                        .as_deref(),
+                    parse_bool_flag(argv, "retryable", false),
+                )),
+                "retry-dead-letter" => {
+                    if let Some(message_id) =
+                        parse_flag(argv, "message-id").filter(|value| !value.trim().is_empty())
+                    {
+                        sessions_retry_dead_letter(&mut state, &message_id)
+                    } else {
+                        Err("message_id_required".to_string())
                     }
                 }
                 "discover" => {
@@ -4764,6 +5259,7 @@ mod tests {
             "hello",
             DeliveryGuarantee::AtMostOnce,
             false,
+            DEFAULT_MESSAGE_TTL_MS,
         )
         .expect("sibling message should be delivered");
         assert_eq!(
@@ -4800,6 +5296,7 @@ mod tests {
             "dedupe-message",
             DeliveryGuarantee::ExactlyOnce,
             false,
+            DEFAULT_MESSAGE_TTL_MS,
         )
         .expect("first send");
         let second = send_session_message(
@@ -4809,6 +5306,7 @@ mod tests {
             "dedupe-message",
             DeliveryGuarantee::ExactlyOnce,
             false,
+            DEFAULT_MESSAGE_TTL_MS,
         )
         .expect("second send");
         assert_eq!(
