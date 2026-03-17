@@ -33,8 +33,13 @@ assert.strictEqual(payload.type, 'top50_roi_sweep');
 assert(fs.existsSync(QUEUE_JSON), 'expected refreshed queue json');
 const queue = JSON.parse(fs.readFileSync(QUEUE_JSON, 'utf8'));
 assert(queue.current_rust_percent >= 60, 'expected current rust percent to reflect live repo state');
+assert.strictEqual(queue.rust_percent, queue.current_rust_percent, 'expected compatibility rust_percent alias');
 assert(queue.bridge_wrappers_excluded > 0, 'expected bridge wrappers to be excluded');
 assert(queue.extension_surfaces_excluded > 0, 'expected skill/app extension surfaces to be excluded');
+assert(Array.isArray(queue.queue), 'expected compatibility queue alias');
+assert(Array.isArray(queue.top_candidates), 'expected compatibility top_candidates alias');
+assert.strictEqual(queue.queue.length, queue.lanes.length, 'expected queue alias to mirror lanes');
+assert.strictEqual(queue.top_candidates.length, queue.top.length, 'expected top_candidates alias to mirror top');
 assert(queue.top.every((lane) => fs.existsSync(path.join(ROOT, lane.path))), 'expected queue paths to exist');
 assert(queue.top.every((lane) => !lane.path.endsWith('gated_self_improvement_loop.ts')), 'expected thin bridge wrappers excluded');
 assert(

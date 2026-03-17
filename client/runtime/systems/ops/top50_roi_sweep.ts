@@ -177,13 +177,16 @@ function buildQueue(argv = []) {
     type: 'roi_top_queue',
     ts: nowIso(),
     target_rust_percent: 60,
+    rust_percent: payload.rust_percent,
     current_rust_percent: payload.rust_percent,
     target_already_met: payload.rust_percent >= 60,
     queue_size: lanes.length,
     bridge_wrappers_excluded: payload.runtime_scope.bridge_wrappers_excluded_from_queue,
     extension_surfaces_excluded: extensionSurfaceExcluded,
     stale_reference_repair: true,
+    queue: lanes,
     lanes,
+    top_candidates: lanes.slice(0, max),
     top: lanes.slice(0, max),
   };
 }

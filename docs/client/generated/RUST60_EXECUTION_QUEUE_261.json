@@ -1,15 +1,16 @@
 {
   "ok": true,
   "type": "roi_top_queue",
-  "ts": "2026-03-17T21:53:07.910Z",
+  "ts": "2026-03-17T22:10:26.128Z",
   "target_rust_percent": 60,
-  "current_rust_percent": 90.02,
+  "rust_percent": 90.08,
+  "current_rust_percent": 90.08,
   "target_already_met": true,
   "queue_size": 111,
   "bridge_wrappers_excluded": 146,
   "extension_surfaces_excluded": 4,
   "stale_reference_repair": true,
-  "lanes": [
+  "queue": [
     {
       "lane_id": "R60-0001",
       "rank": 1,
@@ -18,7 +19,7 @@
       "weight": 1.5,
       "impact_score": 586.5,
       "cumulative_migrated_ts_lines": 391,
-      "projected_rust_percent_after_lane": 90.156,
+      "projected_rust_percent_after_lane": 90.207,
       "status": "queued"
     },
     {
@@ -29,7 +30,7 @@
       "weight": 2.8,
       "impact_score": 456.4,
       "cumulative_migrated_ts_lines": 554,
-      "projected_rust_percent_after_lane": 90.21,
+      "projected_rust_percent_after_lane": 90.262,
       "status": "queued"
     },
     {
@@ -40,7 +41,7 @@
       "weight": 1.5,
       "impact_score": 438,
       "cumulative_migrated_ts_lines": 846,
-      "projected_rust_percent_after_lane": 90.308,
+      "projected_rust_percent_after_lane": 90.359,
       "status": "queued"
     },
     {
@@ -51,7 +52,7 @@
       "weight": 2.8,
       "impact_score": 431.2,
       "cumulative_migrated_ts_lines": 1000,
-      "projected_rust_percent_after_lane": 90.36,
+      "projected_rust_percent_after_lane": 90.411,
       "status": "queued"
     },
     {
@@ -62,7 +63,7 @@
       "weight": 1.5,
       "impact_score": 403.5,
       "cumulative_migrated_ts_lines": 1269,
-      "projected_rust_percent_after_lane": 90.45,
+      "projected_rust_percent_after_lane": 90.5,
       "status": "queued"
     },
     {
@@ -73,7 +74,7 @@
       "weight": 1.5,
       "impact_score": 388.5,
       "cumulative_migrated_ts_lines": 1528,
-      "projected_rust_percent_after_lane": 90.537,
+      "projected_rust_percent_after_lane": 90.587,
       "status": "queued"
     },
     {
@@ -84,7 +85,7 @@
       "weight": 2.2,
       "impact_score": 376.2,
       "cumulative_migrated_ts_lines": 1699,
-      "projected_rust_percent_after_lane": 90.594,
+      "projected_rust_percent_after_lane": 90.644,
       "status": "queued"
     },
     {
@@ -95,7 +96,7 @@
       "weight": 4.3,
       "impact_score": 369.8,
       "cumulative_migrated_ts_lines": 1785,
-      "projected_rust_percent_after_lane": 90.623,
+      "projected_rust_percent_after_lane": 90.672,
       "status": "queued"
     },
     {
@@ -106,7 +107,7 @@
       "weight": 1.5,
       "impact_score": 334.5,
       "cumulative_migrated_ts_lines": 2008,
-      "projected_rust_percent_after_lane": 90.698,
+      "projected_rust_percent_after_lane": 90.747,
       "status": "queued"
     },
     {
@@ -117,7 +118,7 @@
       "weight": 2.8,
       "impact_score": 330.4,
       "cumulative_migrated_ts_lines": 2126,
-      "projected_rust_percent_after_lane": 90.738,
+      "projected_rust_percent_after_lane": 90.786,
       "status": "queued"
     },
     {
@@ -128,7 +129,7 @@
       "weight": 2.2,
       "impact_score": 327.8,
       "cumulative_migrated_ts_lines": 2275,
-      "projected_rust_percent_after_lane": 90.788,
+      "projected_rust_percent_after_lane": 90.836,
       "status": "queued"
     },
     {
@@ -139,7 +140,7 @@
       "weight": 1.5,
       "impact_score": 324,
       "cumulative_migrated_ts_lines": 2491,
-      "projected_rust_percent_after_lane": 90.86,
+      "projected_rust_percent_after_lane": 90.908,
       "status": "queued"
     },
     {
@@ -150,7 +151,7 @@
       "weight": 2.2,
       "impact_score": 321.2,
       "cumulative_migrated_ts_lines": 2637,
-      "projected_rust_percent_after_lane": 90.909,
+      "projected_rust_percent_after_lane": 90.957,
       "status": "queued"
     },
     {
@@ -161,7 +162,7 @@
       "weight": 1.5,
       "impact_score": 321,
       "cumulative_migrated_ts_lines": 2851,
-      "projected_rust_percent_after_lane": 90.981,
+      "projected_rust_percent_after_lane": 91.028,
       "status": "queued"
     },
     {
@@ -172,7 +173,7 @@
       "weight": 2.2,
       "impact_score": 314.6,
       "cumulative_migrated_ts_lines": 2994,
-      "projected_rust_percent_after_lane": 91.029,
+      "projected_rust_percent_after_lane": 91.076,
       "status": "queued"
     },
     {
@@ -183,7 +184,7 @@
       "weight": 2.8,
       "impact_score": 305.2,
       "cumulative_migrated_ts_lines": 3103,
-      "projected_rust_percent_after_lane": 91.065,
+      "projected_rust_percent_after_lane": 91.112,
       "status": "queued"
     },
     {
@@ -194,7 +195,7 @@
       "weight": 1.5,
       "impact_score": 303,
       "cumulative_migrated_ts_lines": 3305,
-      "projected_rust_percent_after_lane": 91.133,
+      "projected_rust_percent_after_lane": 91.179,
       "status": "queued"
     },
     {
@@ -205,7 +206,7 @@
       "weight": 1.5,
       "impact_score": 297,
       "cumulative_migrated_ts_lines": 3503,
-      "projected_rust_percent_after_lane": 91.199,
+      "projected_rust_percent_after_lane": 91.246,
       "status": "queued"
     },
     {
@@ -216,7 +217,7 @@
       "weight": 2.8,
       "impact_score": 285.6,
       "cumulative_migrated_ts_lines": 3605,
-      "projected_rust_percent_after_lane": 91.234,
+      "projected_rust_percent_after_lane": 91.28,
       "status": "queued"
     },
     {
@@ -227,7 +228,7 @@
       "weight": 1.5,
       "impact_score": 283.5,
       "cumulative_migrated_ts_lines": 3794,
-      "projected_rust_percent_after_lane": 91.297,
+      "projected_rust_percent_after_lane": 91.343,
       "status": "queued"
     },
     {
@@ -238,7 +239,7 @@
       "weight": 2.2,
       "impact_score": 270.6,
       "cumulative_migrated_ts_lines": 3917,
-      "projected_rust_percent_after_lane": 91.338,
+      "projected_rust_percent_after_lane": 91.384,
       "status": "queued"
     },
     {
@@ -249,7 +250,7 @@
       "weight": 1.5,
       "impact_score": 268.5,
       "cumulative_migrated_ts_lines": 4096,
-      "projected_rust_percent_after_lane": 91.398,
+      "projected_rust_percent_after_lane": 91.443,
       "status": "queued"
     },
     {
@@ -260,7 +261,7 @@
       "weight": 2.2,
       "impact_score": 257.4,
       "cumulative_migrated_ts_lines": 4213,
-      "projected_rust_percent_after_lane": 91.437,
+      "projected_rust_percent_after_lane": 91.482,
       "status": "queued"
     },
     {
@@ -271,7 +272,7 @@
       "weight": 4.3,
       "impact_score": 253.7,
       "cumulative_migrated_ts_lines": 4272,
-      "projected_rust_percent_after_lane": 91.457,
+      "projected_rust_percent_after_lane": 91.502,
       "status": "queued"
     },
     {
@@ -282,7 +283,7 @@
       "weight": 1.5,
       "impact_score": 232.5,
       "cumulative_migrated_ts_lines": 4427,
-      "projected_rust_percent_after_lane": 91.509,
+      "projected_rust_percent_after_lane": 91.554,
       "status": "queued"
     },
     {
@@ -293,7 +294,7 @@
       "weight": 2.8,
       "impact_score": 224,
       "cumulative_migrated_ts_lines": 4507,
-      "projected_rust_percent_after_lane": 91.536,
+      "projected_rust_percent_after_lane": 91.58,
       "status": "queued"
     },
     {
@@ -304,7 +305,7 @@
       "weight": 1.5,
       "impact_score": 219,
       "cumulative_migrated_ts_lines": 4653,
-      "projected_rust_percent_after_lane": 91.585,
+      "projected_rust_percent_after_lane": 91.629,
       "status": "queued"
     },
     {
@@ -315,7 +316,7 @@
       "weight": 1.5,
       "impact_score": 214.5,
       "cumulative_migrated_ts_lines": 4796,
-      "projected_rust_percent_after_lane": 91.633,
+      "projected_rust_percent_after_lane": 91.677,
       "status": "queued"
     },
     {
@@ -326,7 +327,7 @@
       "weight": 1.5,
       "impact_score": 208.5,
       "cumulative_migrated_ts_lines": 4935,
-      "projected_rust_percent_after_lane": 91.68,
+      "projected_rust_percent_after_lane": 91.723,
       "status": "queued"
     },
     {
@@ -337,7 +338,7 @@
       "weight": 1.5,
       "impact_score": 196.5,
       "cumulative_migrated_ts_lines": 5066,
-      "projected_rust_percent_after_lane": 91.724,
+      "projected_rust_percent_after_lane": 91.767,
       "status": "queued"
     },
     {
@@ -348,7 +349,7 @@
       "weight": 2.1,
       "impact_score": 195.3,
       "cumulative_migrated_ts_lines": 5159,
-      "projected_rust_percent_after_lane": 91.755,
+      "projected_rust_percent_after_lane": 91.798,
       "status": "queued"
     },
     {
@@ -359,7 +360,7 @@
       "weight": 4.3,
       "impact_score": 189.2,
       "cumulative_migrated_ts_lines": 5203,
-      "projected_rust_percent_after_lane": 91.769,
+      "projected_rust_percent_after_lane": 91.813,
       "status": "queued"
     },
     {
@@ -370,7 +371,7 @@
       "weight": 1.5,
       "impact_score": 184.5,
       "cumulative_migrated_ts_lines": 5326,
-      "projected_rust_percent_after_lane": 91.811,
+      "projected_rust_percent_after_lane": 91.854,
       "status": "queued"
     },
     {
@@ -381,7 +382,7 @@
       "weight": 2.8,
       "impact_score": 165.2,
       "cumulative_migrated_ts_lines": 5385,
-      "projected_rust_percent_after_lane": 91.83,
+      "projected_rust_percent_after_lane": 91.873,
       "status": "queued"
     },
     {
@@ -392,7 +393,7 @@
       "weight": 1.5,
       "impact_score": 144,
       "cumulative_migrated_ts_lines": 5481,
-      "projected_rust_percent_after_lane": 91.863,
+      "projected_rust_percent_after_lane": 91.905,
       "status": "queued"
     },
     {
@@ -403,7 +404,7 @@
       "weight": 2.1,
       "impact_score": 140.7,
       "cumulative_migrated_ts_lines": 5548,
-      "projected_rust_percent_after_lane": 91.885,
+      "projected_rust_percent_after_lane": 91.928,
       "status": "queued"
     },
     {
@@ -414,7 +415,7 @@
       "weight": 2.1,
       "impact_score": 140.7,
       "cumulative_migrated_ts_lines": 5615,
-      "projected_rust_percent_after_lane": 91.908,
+      "projected_rust_percent_after_lane": 91.95,
       "status": "queued"
     },
     {
@@ -425,7 +426,7 @@
       "weight": 2.1,
       "impact_score": 138.6,
       "cumulative_migrated_ts_lines": 5681,
-      "projected_rust_percent_after_lane": 91.93,
+      "projected_rust_percent_after_lane": 91.972,
       "status": "queued"
     },
     {
@@ -436,7 +437,7 @@
       "weight": 2.8,
       "impact_score": 128.8,
       "cumulative_migrated_ts_lines": 5727,
-      "projected_rust_percent_after_lane": 91.945,
+      "projected_rust_percent_after_lane": 91.987,
       "status": "queued"
     },
     {
@@ -447,7 +448,7 @@
       "weight": 2.8,
       "impact_score": 126,
       "cumulative_migrated_ts_lines": 5772,
-      "projected_rust_percent_after_lane": 91.96,
+      "projected_rust_percent_after_lane": 92.002,
       "status": "queued"
     },
     {
@@ -458,7 +459,7 @@
       "weight": 2.8,
       "impact_score": 126,
       "cumulative_migrated_ts_lines": 5817,
-      "projected_rust_percent_after_lane": 91.975,
+      "projected_rust_percent_after_lane": 92.017,
       "status": "queued"
     },
     {
@@ -469,7 +470,7 @@
       "weight": 2.8,
       "impact_score": 117.6,
       "cumulative_migrated_ts_lines": 5859,
-      "projected_rust_percent_after_lane": 91.989,
+      "projected_rust_percent_after_lane": 92.031,
       "status": "queued"
     },
     {
@@ -480,7 +481,7 @@
       "weight": 1.5,
       "impact_score": 106.5,
       "cumulative_migrated_ts_lines": 5930,
-      "projected_rust_percent_after_lane": 92.013,
+      "projected_rust_percent_after_lane": 92.055,
       "status": "queued"
     },
     {
@@ -491,7 +492,7 @@
       "weight": 2.8,
       "impact_score": 103.6,
       "cumulative_migrated_ts_lines": 5967,
-      "projected_rust_percent_after_lane": 92.026,
+      "projected_rust_percent_after_lane": 92.067,
       "status": "queued"
     },
     {
@@ -502,7 +503,7 @@
       "weight": 1.5,
       "impact_score": 93,
       "cumulative_migrated_ts_lines": 6029,
-      "projected_rust_percent_after_lane": 92.046,
+      "projected_rust_percent_after_lane": 92.088,
       "status": "queued"
     },
     {
@@ -513,7 +514,7 @@
       "weight": 2.8,
       "impact_score": 89.6,
       "cumulative_migrated_ts_lines": 6061,
-      "projected_rust_percent_after_lane": 92.057,
+      "projected_rust_percent_after_lane": 92.099,
       "status": "queued"
     },
     {
@@ -524,7 +525,7 @@
       "weight": 2.8,
       "impact_score": 84,
       "cumulative_migrated_ts_lines": 6091,
-      "projected_rust_percent_after_lane": 92.067,
+      "projected_rust_percent_after_lane": 92.109,
       "status": "queued"
     },
     {
@@ -535,7 +536,7 @@
       "weight": 1.5,
       "impact_score": 79.5,
       "cumulative_migrated_ts_lines": 6144,
-      "projected_rust_percent_after_lane": 92.085,
+      "projected_rust_percent_after_lane": 92.126,
       "status": "queued"
     },
     {
@@ -546,7 +547,7 @@
       "weight": 1.5,
       "impact_score": 79.5,
       "cumulative_migrated_ts_lines": 6197,
-      "projected_rust_percent_after_lane": 92.103,
+      "projected_rust_percent_after_lane": 92.144,
       "status": "queued"
     },
     {
@@ -557,7 +558,7 @@
       "weight": 1.5,
       "impact_score": 64.5,
       "cumulative_migrated_ts_lines": 6240,
-      "projected_rust_percent_after_lane": 92.117,
+      "projected_rust_percent_after_lane": 92.158,
       "status": "queued"
     },
     {
@@ -568,7 +569,7 @@
       "weight": 1.5,
       "impact_score": 57,
       "cumulative_migrated_ts_lines": 6278,
-      "projected_rust_percent_after_lane": 92.13,
+      "projected_rust_percent_after_lane": 92.171,
       "status": "queued"
     },
     {
@@ -579,7 +580,7 @@
       "weight": 1.5,
       "impact_score": 55.5,
       "cumulative_migrated_ts_lines": 6315,
-      "projected_rust_percent_after_lane": 92.142,
+      "projected_rust_percent_after_lane": 92.184,
       "status": "queued"
     },
     {
@@ -590,7 +591,7 @@
       "weight": 1.5,
       "impact_score": 43.5,
       "cumulative_migrated_ts_lines": 6344,
-      "projected_rust_percent_after_lane": 92.152,
+      "projected_rust_percent_after_lane": 92.193,
       "status": "queued"
     },
     {
@@ -601,7 +602,7 @@
       "weight": 2.1,
       "impact_score": 39.9,
       "cumulative_migrated_ts_lines": 6363,
-      "projected_rust_percent_after_lane": 92.158,
+      "projected_rust_percent_after_lane": 92.2,
       "status": "queued"
     },
     {
@@ -612,7 +613,7 @@
       "weight": 2.1,
       "impact_score": 39.9,
       "cumulative_migrated_ts_lines": 6382,
-      "projected_rust_percent_after_lane": 92.165,
+      "projected_rust_percent_after_lane": 92.206,
       "status": "queued"
     },
     {
@@ -623,7 +624,7 @@
       "weight": 2.2,
       "impact_score": 39.6,
       "cumulative_migrated_ts_lines": 6400,
-      "projected_rust_percent_after_lane": 92.171,
+      "projected_rust_percent_after_lane": 92.212,
       "status": "queued"
     },
     {
@@ -634,7 +635,7 @@
       "weight": 2.2,
       "impact_score": 30.8,
       "cumulative_migrated_ts_lines": 6414,
-      "projected_rust_percent_after_lane": 92.176,
+      "projected_rust_percent_after_lane": 92.217,
       "status": "queued"
     },
     {
@@ -645,7 +646,7 @@
       "weight": 1.5,
       "impact_score": 28.5,
       "cumulative_migrated_ts_lines": 6433,
-      "projected_rust_percent_after_lane": 92.182,
+      "projected_rust_percent_after_lane": 92.223,
       "status": "queued"
     },
     {
@@ -656,7 +657,7 @@
       "weight": 2.1,
       "impact_score": 21,
       "cumulative_migrated_ts_lines": 6443,
-      "projected_rust_percent_after_lane": 92.185,
+      "projected_rust_percent_after_lane": 92.226,
       "status": "queued"
     },
     {
@@ -667,7 +668,7 @@
       "weight": 2.1,
       "impact_score": 21,
       "cumulative_migrated_ts_lines": 6453,
-      "projected_rust_percent_after_lane": 92.189,
+      "projected_rust_percent_after_lane": 92.23,
       "status": "queued"
     },
     {
@@ -678,7 +679,7 @@
       "weight": 2.1,
       "impact_score": 21,
       "cumulative_migrated_ts_lines": 6463,
-      "projected_rust_percent_after_lane": 92.192,
+      "projected_rust_percent_after_lane": 92.233,
       "status": "queued"
     },
     {
@@ -689,7 +690,7 @@
       "weight": 2.1,
       "impact_score": 21,
       "cumulative_migrated_ts_lines": 6473,
-      "projected_rust_percent_after_lane": 92.195,
+      "projected_rust_percent_after_lane": 92.236,
       "status": "queued"
     },
     {
@@ -700,7 +701,7 @@
       "weight": 2.1,
       "impact_score": 21,
       "cumulative_migrated_ts_lines": 6483,
-      "projected_rust_percent_after_lane": 92.199,
+      "projected_rust_percent_after_lane": 92.24,
       "status": "queued"
     },
     {
@@ -711,7 +712,7 @@
       "weight": 2.1,
       "impact_score": 21,
       "cumulative_migrated_ts_lines": 6493,
-      "projected_rust_percent_after_lane": 92.202,
+      "projected_rust_percent_after_lane": 92.243,
       "status": "queued"
     },
     {
@@ -722,7 +723,7 @@
       "weight": 2.1,
       "impact_score": 21,
       "cumulative_migrated_ts_lines": 6503,
-      "projected_rust_percent_after_lane": 92.205,
+      "projected_rust_percent_after_lane": 92.246,
       "status": "queued"
     },
     {
@@ -733,7 +734,7 @@
       "weight": 1.5,
       "impact_score": 18,
       "cumulative_migrated_ts_lines": 6515,
-      "projected_rust_percent_after_lane": 92.209,
+      "projected_rust_percent_after_lane": 92.25,
       "status": "queued"
     },
     {
@@ -744,7 +745,7 @@
       "weight": 2.2,
       "impact_score": 13.2,
       "cumulative_migrated_ts_lines": 6521,
-      "projected_rust_percent_after_lane": 92.211,
+      "projected_rust_percent_after_lane": 92.252,
       "status": "queued"
     },
     {
@@ -755,7 +756,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6526,
-      "projected_rust_percent_after_lane": 92.213,
+      "projected_rust_percent_after_lane": 92.254,
       "status": "queued"
     },
     {
@@ -766,7 +767,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6531,
-      "projected_rust_percent_after_lane": 92.215,
+      "projected_rust_percent_after_lane": 92.256,
       "status": "queued"
     },
     {
@@ -777,7 +778,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6536,
-      "projected_rust_percent_after_lane": 92.216,
+      "projected_rust_percent_after_lane": 92.257,
       "status": "queued"
     },
     {
@@ -788,7 +789,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6541,
-      "projected_rust_percent_after_lane": 92.218,
+      "projected_rust_percent_after_lane": 92.259,
       "status": "queued"
     },
     {
@@ -799,7 +800,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6546,
-      "projected_rust_percent_after_lane": 92.22,
+      "projected_rust_percent_after_lane": 92.261,
       "status": "queued"
     },
     {
@@ -810,7 +811,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6551,
-      "projected_rust_percent_after_lane": 92.222,
+      "projected_rust_percent_after_lane": 92.262,
       "status": "queued"
     },
     {
@@ -821,7 +822,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6556,
-      "projected_rust_percent_after_lane": 92.223,
+      "projected_rust_percent_after_lane": 92.264,
       "status": "queued"
     },
     {
@@ -832,7 +833,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6561,
-      "projected_rust_percent_after_lane": 92.225,
+      "projected_rust_percent_after_lane": 92.266,
       "status": "queued"
     },
     {
@@ -843,7 +844,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6566,
-      "projected_rust_percent_after_lane": 92.227,
+      "projected_rust_percent_after_lane": 92.267,
       "status": "queued"
     },
     {
@@ -854,7 +855,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6571,
-      "projected_rust_percent_after_lane": 92.228,
+      "projected_rust_percent_after_lane": 92.269,
       "status": "queued"
     },
     {
@@ -865,7 +866,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6576,
-      "projected_rust_percent_after_lane": 92.23,
+      "projected_rust_percent_after_lane": 92.271,
       "status": "queued"
     },
     {
@@ -876,7 +877,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6581,
-      "projected_rust_percent_after_lane": 92.232,
+      "projected_rust_percent_after_lane": 92.272,
       "status": "queued"
     },
     {
@@ -887,7 +888,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6586,
-      "projected_rust_percent_after_lane": 92.233,
+      "projected_rust_percent_after_lane": 92.274,
       "status": "queued"
     },
     {
@@ -898,7 +899,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6591,
-      "projected_rust_percent_after_lane": 92.235,
+      "projected_rust_percent_after_lane": 92.276,
       "status": "queued"
     },
     {
@@ -909,7 +910,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6596,
-      "projected_rust_percent_after_lane": 92.237,
+      "projected_rust_percent_after_lane": 92.277,
       "status": "queued"
     },
     {
@@ -920,7 +921,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6601,
-      "projected_rust_percent_after_lane": 92.238,
+      "projected_rust_percent_after_lane": 92.279,
       "status": "queued"
     },
     {
@@ -931,7 +932,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6606,
-      "projected_rust_percent_after_lane": 92.24,
+      "projected_rust_percent_after_lane": 92.281,
       "status": "queued"
     },
     {
@@ -942,7 +943,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6611,
-      "projected_rust_percent_after_lane": 92.242,
+      "projected_rust_percent_after_lane": 92.282,
       "status": "queued"
     },
     {
@@ -953,7 +954,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6616,
-      "projected_rust_percent_after_lane": 92.243,
+      "projected_rust_percent_after_lane": 92.284,
       "status": "queued"
     },
     {
@@ -964,7 +965,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6621,
-      "projected_rust_percent_after_lane": 92.245,
+      "projected_rust_percent_after_lane": 92.286,
       "status": "queued"
     },
     {
@@ -975,7 +976,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6626,
-      "projected_rust_percent_after_lane": 92.247,
+      "projected_rust_percent_after_lane": 92.287,
       "status": "queued"
     },
     {
@@ -986,7 +987,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6631,
-      "projected_rust_percent_after_lane": 92.248,
+      "projected_rust_percent_after_lane": 92.289,
       "status": "queued"
     },
     {
@@ -997,7 +998,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6636,
-      "projected_rust_percent_after_lane": 92.25,
+      "projected_rust_percent_after_lane": 92.291,
       "status": "queued"
     },
     {
@@ -1008,7 +1009,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6641,
-      "projected_rust_percent_after_lane": 92.252,
+      "projected_rust_percent_after_lane": 92.292,
       "status": "queued"
     },
     {
@@ -1019,7 +1020,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6646,
-      "projected_rust_percent_after_lane": 92.253,
+      "projected_rust_percent_after_lane": 92.294,
       "status": "queued"
     },
     {
@@ -1030,7 +1031,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6651,
-      "projected_rust_percent_after_lane": 92.255,
+      "projected_rust_percent_after_lane": 92.296,
       "status": "queued"
     },
     {
@@ -1041,7 +1042,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6656,
-      "projected_rust_percent_after_lane": 92.257,
+      "projected_rust_percent_after_lane": 92.297,
       "status": "queued"
     },
     {
@@ -1052,7 +1053,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6661,
-      "projected_rust_percent_after_lane": 92.258,
+      "projected_rust_percent_after_lane": 92.299,
       "status": "queued"
     },
     {
@@ -1063,7 +1064,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6666,
-      "projected_rust_percent_after_lane": 92.26,
+      "projected_rust_percent_after_lane": 92.301,
       "status": "queued"
     },
     {
@@ -1074,7 +1075,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6671,
-      "projected_rust_percent_after_lane": 92.262,
+      "projected_rust_percent_after_lane": 92.302,
       "status": "queued"
     },
     {
@@ -1085,7 +1086,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6676,
-      "projected_rust_percent_after_lane": 92.263,
+      "projected_rust_percent_after_lane": 92.304,
       "status": "queued"
     },
     {
@@ -1096,7 +1097,7 @@
       "weight": 2.2,
       "impact_score": 11,
       "cumulative_migrated_ts_lines": 6681,
-      "projected_rust_percent_after_lane": 92.265,
+      "projected_rust_percent_after_lane": 92.306,
       "status": "queued"
     },
     {
@@ -1107,7 +1108,7 @@
       "weight": 1.5,
       "impact_score": 9,
       "cumulative_migrated_ts_lines": 6687,
-      "projected_rust_percent_after_lane": 92.267,
+      "projected_rust_percent_after_lane": 92.308,
       "status": "queued"
     },
     {
@@ -1118,7 +1119,7 @@
       "weight": 1.5,
       "impact_score": 9,
       "cumulative_migrated_ts_lines": 6693,
-      "projected_rust_percent_after_lane": 92.269,
+      "projected_rust_percent_after_lane": 92.31,
       "status": "queued"
     },
     {
@@ -1129,7 +1130,7 @@
       "weight": 1.5,
       "impact_score": 9,
       "cumulative_migrated_ts_lines": 6699,
-      "projected_rust_percent_after_lane": 92.271,
+      "projected_rust_percent_after_lane": 92.312,
       "status": "queued"
     },
     {
@@ -1140,7 +1141,7 @@
       "weight": 1.5,
       "impact_score": 9,
       "cumulative_migrated_ts_lines": 6705,
-      "projected_rust_percent_after_lane": 92.273,
+      "projected_rust_percent_after_lane": 92.314,
       "status": "queued"
     },
     {
@@ -1151,7 +1152,7 @@
       "weight": 1.5,
       "impact_score": 9,
       "cumulative_migrated_ts_lines": 6711,
-      "projected_rust_percent_after_lane": 92.275,
+      "projected_rust_percent_after_lane": 92.316,
       "status": "queued"
     },
     {
@@ -1162,7 +1163,7 @@
       "weight": 1.5,
       "impact_score": 9,
       "cumulative_migrated_ts_lines": 6717,
-      "projected_rust_percent_after_lane": 92.277,
+      "projected_rust_percent_after_lane": 92.318,
       "status": "queued"
     },
     {
@@ -1173,7 +1174,7 @@
       "weight": 1.5,
       "impact_score": 9,
       "cumulative_migrated_ts_lines": 6723,
-      "projected_rust_percent_after_lane": 92.279,
+      "projected_rust_percent_after_lane": 92.32,
       "status": "queued"
     },
     {
@@ -1184,7 +1185,7 @@
       "weight": 1.5,
       "impact_score": 9,
       "cumulative_migrated_ts_lines": 6729,
-      "projected_rust_percent_after_lane": 92.281,
+      "projected_rust_percent_after_lane": 92.322,
       "status": "queued"
     },
     {
@@ -1195,7 +1196,7 @@
       "weight": 1.5,
       "impact_score": 9,
       "cumulative_migrated_ts_lines": 6735,
-      "projected_rust_percent_after_lane": 92.283,
+      "projected_rust_percent_after_lane": 92.324,
       "status": "queued"
     },
     {
@@ -1206,7 +1207,7 @@
       "weight": 1.5,
       "impact_score": 9,
       "cumulative_migrated_ts_lines": 6741,
-      "projected_rust_percent_after_lane": 92.285,
+      "projected_rust_percent_after_lane": 92.326,
       "status": "queued"
     },
     {
@@ -1217,7 +1218,7 @@
       "weight": 1.5,
       "impact_score": 7.5,
       "cumulative_migrated_ts_lines": 6746,
-      "projected_rust_percent_after_lane": 92.287,
+      "projected_rust_percent_after_lane": 92.327,
       "status": "queued"
     },
     {
@@ -1228,7 +1229,1452 @@
       "weight": 1.5,
       "impact_score": 7.5,
       "cumulative_migrated_ts_lines": 6751,
+      "projected_rust_percent_after_lane": 92.329,
+      "status": "queued"
+    }
+  ],
+  "lanes": [
+    {
+      "lane_id": "R60-0001",
+      "rank": 1,
+      "path": "core/layer1/memory_runtime/adaptive/focus_trigger_store.ts",
+      "loc": 391,
+      "weight": 1.5,
+      "impact_score": 586.5,
+      "cumulative_migrated_ts_lines": 391,
+      "projected_rust_percent_after_lane": 90.207,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0002",
+      "rank": 2,
+      "path": "client/runtime/lib/ops_domain_conduit_runner.ts",
+      "loc": 163,
+      "weight": 2.8,
+      "impact_score": 456.4,
+      "cumulative_migrated_ts_lines": 554,
+      "projected_rust_percent_after_lane": 90.262,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0003",
+      "rank": 3,
+      "path": "client/runtime/patches/websocket-client-patch.ts",
+      "loc": 292,
+      "weight": 1.5,
+      "impact_score": 438,
+      "cumulative_migrated_ts_lines": 846,
+      "projected_rust_percent_after_lane": 90.359,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0004",
+      "rank": 4,
+      "path": "client/runtime/lib/quorum_validator.ts",
+      "loc": 154,
+      "weight": 2.8,
+      "impact_score": 431.2,
+      "cumulative_migrated_ts_lines": 1000,
+      "projected_rust_percent_after_lane": 90.411,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0005",
+      "rank": 5,
+      "path": "client/cognition/orchestration/scratchpad.ts",
+      "loc": 269,
+      "weight": 1.5,
+      "impact_score": 403.5,
+      "cumulative_migrated_ts_lines": 1269,
+      "projected_rust_percent_after_lane": 90.5,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0006",
+      "rank": 6,
+      "path": "client/runtime/patches/websocket-server-patch.ts",
+      "loc": 259,
+      "weight": 1.5,
+      "impact_score": 388.5,
+      "cumulative_migrated_ts_lines": 1528,
+      "projected_rust_percent_after_lane": 90.587,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0007",
+      "rank": 7,
+      "path": "client/lib/mutation_provenance.ts",
+      "loc": 171,
+      "weight": 2.2,
+      "impact_score": 376.2,
+      "cumulative_migrated_ts_lines": 1699,
+      "projected_rust_percent_after_lane": 90.644,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0008",
+      "rank": 8,
+      "path": "client/runtime/systems/sensory/conversation_eye_synthesizer.ts",
+      "loc": 86,
+      "weight": 4.3,
+      "impact_score": 369.8,
+      "cumulative_migrated_ts_lines": 1785,
+      "projected_rust_percent_after_lane": 90.672,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0009",
+      "rank": 9,
+      "path": "client/cognition/orchestration/taskgroup.ts",
+      "loc": 223,
+      "weight": 1.5,
+      "impact_score": 334.5,
+      "cumulative_migrated_ts_lines": 2008,
+      "projected_rust_percent_after_lane": 90.747,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0010",
+      "rank": 10,
+      "path": "client/runtime/lib/action_receipts.ts",
+      "loc": 118,
+      "weight": 2.8,
+      "impact_score": 330.4,
+      "cumulative_migrated_ts_lines": 2126,
+      "projected_rust_percent_after_lane": 90.786,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0011",
+      "rank": 11,
+      "path": "client/lib/conduit_full_lifecycle_probe.ts",
+      "loc": 149,
+      "weight": 2.2,
+      "impact_score": 327.8,
+      "cumulative_migrated_ts_lines": 2275,
+      "projected_rust_percent_after_lane": 90.836,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0012",
+      "rank": 12,
+      "path": "core/layer1/memory_runtime/adaptive/habit_store.ts",
+      "loc": 216,
+      "weight": 1.5,
+      "impact_score": 324,
+      "cumulative_migrated_ts_lines": 2491,
+      "projected_rust_percent_after_lane": 90.908,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0013",
+      "rank": 13,
+      "path": "client/lib/trainability_matrix.ts",
+      "loc": 146,
+      "weight": 2.2,
+      "impact_score": 321.2,
+      "cumulative_migrated_ts_lines": 2637,
+      "projected_rust_percent_after_lane": 90.957,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0014",
+      "rank": 14,
+      "path": "core/layer1/memory_runtime/adaptive/reflex_store.ts",
+      "loc": 214,
+      "weight": 1.5,
+      "impact_score": 321,
+      "cumulative_migrated_ts_lines": 2851,
+      "projected_rust_percent_after_lane": 91.028,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0015",
+      "rank": 15,
+      "path": "client/lib/dynamic_burn_budget_signal.ts",
+      "loc": 143,
+      "weight": 2.2,
+      "impact_score": 314.6,
+      "cumulative_migrated_ts_lines": 2994,
+      "projected_rust_percent_after_lane": 91.076,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0016",
+      "rank": 16,
+      "path": "client/runtime/lib/policy_runtime.ts",
+      "loc": 109,
+      "weight": 2.8,
+      "impact_score": 305.2,
+      "cumulative_migrated_ts_lines": 3103,
+      "projected_rust_percent_after_lane": 91.112,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0017",
+      "rank": 17,
+      "path": "client/cognition/orchestration/scope.ts",
+      "loc": 202,
+      "weight": 1.5,
+      "impact_score": 303,
+      "cumulative_migrated_ts_lines": 3305,
+      "projected_rust_percent_after_lane": 91.179,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0018",
+      "rank": 18,
+      "path": "client/cognition/orchestration/completion.ts",
+      "loc": 198,
+      "weight": 1.5,
+      "impact_score": 297,
+      "cumulative_migrated_ts_lines": 3503,
+      "projected_rust_percent_after_lane": 91.246,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0019",
+      "rank": 19,
+      "path": "client/runtime/lib/moltbook_api.ts",
+      "loc": 102,
+      "weight": 2.8,
+      "impact_score": 285.6,
+      "cumulative_migrated_ts_lines": 3605,
+      "projected_rust_percent_after_lane": 91.28,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0020",
+      "rank": 20,
+      "path": "client/runtime/patches/websocket-heartbeat.ts",
+      "loc": 189,
+      "weight": 1.5,
+      "impact_score": 283.5,
+      "cumulative_migrated_ts_lines": 3794,
+      "projected_rust_percent_after_lane": 91.343,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0021",
+      "rank": 21,
+      "path": "client/lib/emergency_stop.ts",
+      "loc": 123,
+      "weight": 2.2,
+      "impact_score": 270.6,
+      "cumulative_migrated_ts_lines": 3917,
+      "projected_rust_percent_after_lane": 91.384,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0022",
+      "rank": 22,
+      "path": "core/layer1/memory_runtime/adaptive/catalog_store.ts",
+      "loc": 179,
+      "weight": 1.5,
+      "impact_score": 268.5,
+      "cumulative_migrated_ts_lines": 4096,
+      "projected_rust_percent_after_lane": 91.443,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0023",
+      "rank": 23,
+      "path": "client/lib/proposal_type_classifier.ts",
+      "loc": 117,
+      "weight": 2.2,
+      "impact_score": 257.4,
+      "cumulative_migrated_ts_lines": 4213,
+      "projected_rust_percent_after_lane": 91.482,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0024",
+      "rank": 24,
+      "path": "client/runtime/systems/memory/rust_memory_transition_lane.ts",
+      "loc": 59,
+      "weight": 4.3,
+      "impact_score": 253.7,
+      "cumulative_migrated_ts_lines": 4272,
+      "projected_rust_percent_after_lane": 91.502,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0025",
+      "rank": 25,
+      "path": "client/cognition/orchestration/partial.ts",
+      "loc": 155,
+      "weight": 1.5,
+      "impact_score": 232.5,
+      "cumulative_migrated_ts_lines": 4427,
+      "projected_rust_percent_after_lane": 91.554,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0026",
+      "rank": 26,
+      "path": "client/runtime/lib/state_artifact_contract.ts",
+      "loc": 80,
+      "weight": 2.8,
+      "impact_score": 224,
+      "cumulative_migrated_ts_lines": 4507,
+      "projected_rust_percent_after_lane": 91.58,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0027",
+      "rank": 27,
+      "path": "packages/protheus-npm/scripts/install.ts",
+      "loc": 146,
+      "weight": 1.5,
+      "impact_score": 219,
+      "cumulative_migrated_ts_lines": 4653,
+      "projected_rust_percent_after_lane": 91.629,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0028",
+      "rank": 28,
+      "path": "packages/protheus-edge/index.ts",
+      "loc": 143,
+      "weight": 1.5,
+      "impact_score": 214.5,
+      "cumulative_migrated_ts_lines": 4796,
+      "projected_rust_percent_after_lane": 91.677,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0029",
+      "rank": 29,
+      "path": "client/cognition/orchestration/coordinator.ts",
+      "loc": 139,
+      "weight": 1.5,
+      "impact_score": 208.5,
+      "cumulative_migrated_ts_lines": 4935,
+      "projected_rust_percent_after_lane": 91.723,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0030",
+      "rank": 30,
+      "path": "client/cognition/orchestration/checkpoint.ts",
+      "loc": 131,
+      "weight": 1.5,
+      "impact_score": 196.5,
+      "cumulative_migrated_ts_lines": 5066,
+      "projected_rust_percent_after_lane": 91.767,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0031",
+      "rank": 31,
+      "path": "adapters/importers/generic_yaml_importer.ts",
+      "loc": 93,
+      "weight": 2.1,
+      "impact_score": 195.3,
+      "cumulative_migrated_ts_lines": 5159,
+      "projected_rust_percent_after_lane": 91.798,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0032",
+      "rank": 32,
+      "path": "client/runtime/systems/ops/f100_readiness_remediation.ts",
+      "loc": 44,
+      "weight": 4.3,
+      "impact_score": 189.2,
+      "cumulative_migrated_ts_lines": 5203,
+      "projected_rust_percent_after_lane": 91.813,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0033",
+      "rank": 33,
+      "path": "packages/protheus-core/index.ts",
+      "loc": 123,
+      "weight": 1.5,
+      "impact_score": 184.5,
+      "cumulative_migrated_ts_lines": 5326,
+      "projected_rust_percent_after_lane": 91.854,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0034",
+      "rank": 34,
+      "path": "client/runtime/lib/runtime_path_registry.ts",
+      "loc": 59,
+      "weight": 2.8,
+      "impact_score": 165.2,
+      "cumulative_migrated_ts_lines": 5385,
+      "projected_rust_percent_after_lane": 91.873,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0035",
+      "rank": 35,
+      "path": "packages/protheus-npm/bin/protheus.ts",
+      "loc": 96,
+      "weight": 1.5,
+      "impact_score": 144,
+      "cumulative_migrated_ts_lines": 5481,
+      "projected_rust_percent_after_lane": 91.905,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0036",
+      "rank": 36,
+      "path": "adapters/importers/openfang_importer.ts",
+      "loc": 67,
+      "weight": 2.1,
+      "impact_score": 140.7,
+      "cumulative_migrated_ts_lines": 5548,
+      "projected_rust_percent_after_lane": 91.928,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0037",
+      "rank": 37,
+      "path": "adapters/importers/workflow_graph_importer.ts",
+      "loc": 67,
+      "weight": 2.1,
+      "impact_score": 140.7,
+      "cumulative_migrated_ts_lines": 5615,
+      "projected_rust_percent_after_lane": 91.95,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0038",
+      "rank": 38,
+      "path": "adapters/importers/generic_json_importer.ts",
+      "loc": 66,
+      "weight": 2.1,
+      "impact_score": 138.6,
+      "cumulative_migrated_ts_lines": 5681,
+      "projected_rust_percent_after_lane": 91.972,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0039",
+      "rank": 39,
+      "path": "client/runtime/lib/uid.ts",
+      "loc": 46,
+      "weight": 2.8,
+      "impact_score": 128.8,
+      "cumulative_migrated_ts_lines": 5727,
+      "projected_rust_percent_after_lane": 91.987,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0040",
+      "rank": 40,
+      "path": "client/runtime/lib/agent_passport_link.ts",
+      "loc": 45,
+      "weight": 2.8,
+      "impact_score": 126,
+      "cumulative_migrated_ts_lines": 5772,
+      "projected_rust_percent_after_lane": 92.002,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0041",
+      "rank": 41,
+      "path": "client/runtime/lib/tool_compactor_integration.ts",
+      "loc": 45,
+      "weight": 2.8,
+      "impact_score": 126,
+      "cumulative_migrated_ts_lines": 5817,
+      "projected_rust_percent_after_lane": 92.017,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0042",
+      "rank": 42,
+      "path": "client/runtime/lib/eyes_catalog.ts",
+      "loc": 42,
+      "weight": 2.8,
+      "impact_score": 117.6,
+      "cumulative_migrated_ts_lines": 5859,
+      "projected_rust_percent_after_lane": 92.031,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0043",
+      "rank": 43,
+      "path": "client/cognition/orchestration/cli_shared.ts",
+      "loc": 71,
+      "weight": 1.5,
+      "impact_score": 106.5,
+      "cumulative_migrated_ts_lines": 5930,
+      "projected_rust_percent_after_lane": 92.055,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0044",
+      "rank": 44,
+      "path": "client/runtime/lib/ts_entrypoint.ts",
+      "loc": 37,
+      "weight": 2.8,
+      "impact_score": 103.6,
+      "cumulative_migrated_ts_lines": 5967,
+      "projected_rust_percent_after_lane": 92.067,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0045",
+      "rank": 45,
+      "path": "client/cognition/orchestration/schema_runtime.ts",
+      "loc": 62,
+      "weight": 1.5,
+      "impact_score": 93,
+      "cumulative_migrated_ts_lines": 6029,
+      "projected_rust_percent_after_lane": 92.088,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0046",
+      "rank": 46,
+      "path": "client/runtime/lib/integrity_hash_utility.ts",
+      "loc": 32,
+      "weight": 2.8,
+      "impact_score": 89.6,
+      "cumulative_migrated_ts_lines": 6061,
+      "projected_rust_percent_after_lane": 92.099,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0047",
+      "rank": 47,
+      "path": "client/runtime/lib/command_output_compactor.ts",
+      "loc": 30,
+      "weight": 2.8,
+      "impact_score": 84,
+      "cumulative_migrated_ts_lines": 6091,
+      "projected_rust_percent_after_lane": 92.109,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0048",
+      "rank": 48,
+      "path": "core/layer1/memory_runtime/adaptive/uid.ts",
+      "loc": 53,
+      "weight": 1.5,
+      "impact_score": 79.5,
+      "cumulative_migrated_ts_lines": 6144,
+      "projected_rust_percent_after_lane": 92.126,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0049",
+      "rank": 49,
+      "path": "packages/protheus-core/core_profile_contract.ts",
+      "loc": 53,
+      "weight": 1.5,
+      "impact_score": 79.5,
+      "cumulative_migrated_ts_lines": 6197,
+      "projected_rust_percent_after_lane": 92.144,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0050",
+      "rank": 50,
+      "path": "packages/protheus-npm/scripts/smoke.ts",
+      "loc": 43,
+      "weight": 1.5,
+      "impact_score": 64.5,
+      "cumulative_migrated_ts_lines": 6240,
+      "projected_rust_percent_after_lane": 92.158,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0051",
+      "rank": 51,
+      "path": "client/cognition/shared/lib/legacy_retired_wrapper.ts",
+      "loc": 38,
+      "weight": 1.5,
+      "impact_score": 57,
+      "cumulative_migrated_ts_lines": 6278,
+      "projected_rust_percent_after_lane": 92.171,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0052",
+      "rank": 52,
+      "path": "client/cli/bin/protheus-graph.ts",
+      "loc": 37,
+      "weight": 1.5,
+      "impact_score": 55.5,
+      "cumulative_migrated_ts_lines": 6315,
+      "projected_rust_percent_after_lane": 92.184,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0053",
+      "rank": 53,
+      "path": "client/runtime/platform/api/donate_gpu.ts",
+      "loc": 29,
+      "weight": 1.5,
+      "impact_score": 43.5,
+      "cumulative_migrated_ts_lines": 6344,
+      "projected_rust_percent_after_lane": 92.193,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0054",
+      "rank": 54,
+      "path": "adapters/cognition/collectors/bird_x.ts",
+      "loc": 19,
+      "weight": 2.1,
+      "impact_score": 39.9,
+      "cumulative_migrated_ts_lines": 6363,
+      "projected_rust_percent_after_lane": 92.2,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0055",
+      "rank": 55,
+      "path": "adapters/cognition/collectors/ollama_search.ts",
+      "loc": 19,
+      "weight": 2.1,
+      "impact_score": 39.9,
+      "cumulative_migrated_ts_lines": 6382,
+      "projected_rust_percent_after_lane": 92.206,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0056",
+      "rank": 56,
+      "path": "client/lib/protheus_suite_tooling.ts",
+      "loc": 18,
+      "weight": 2.2,
+      "impact_score": 39.6,
+      "cumulative_migrated_ts_lines": 6400,
+      "projected_rust_percent_after_lane": 92.212,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0057",
+      "rank": 57,
+      "path": "client/lib/redaction_classification.ts",
+      "loc": 14,
+      "weight": 2.2,
+      "impact_score": 30.8,
+      "cumulative_migrated_ts_lines": 6414,
+      "projected_rust_percent_after_lane": 92.217,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0058",
+      "rank": 58,
+      "path": "vitest.config.ts",
+      "loc": 19,
+      "weight": 1.5,
+      "impact_score": 28.5,
+      "cumulative_migrated_ts_lines": 6433,
+      "projected_rust_percent_after_lane": 92.223,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0059",
+      "rank": 59,
+      "path": "adapters/cognition/skills/imap-smtp-email/scripts/imap.ts",
+      "loc": 10,
+      "weight": 2.1,
+      "impact_score": 21,
+      "cumulative_migrated_ts_lines": 6443,
+      "projected_rust_percent_after_lane": 92.226,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0060",
+      "rank": 60,
+      "path": "adapters/cognition/skills/imap-smtp-email/scripts/smtp.ts",
+      "loc": 10,
+      "weight": 2.1,
+      "impact_score": 21,
+      "cumulative_migrated_ts_lines": 6453,
+      "projected_rust_percent_after_lane": 92.23,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0061",
+      "rank": 61,
+      "path": "adapters/cognition/skills/moltbook/actuation_adapter.ts",
+      "loc": 10,
+      "weight": 2.1,
+      "impact_score": 21,
+      "cumulative_migrated_ts_lines": 6463,
+      "projected_rust_percent_after_lane": 92.233,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0062",
+      "rank": 62,
+      "path": "adapters/cognition/skills/moltbook/moltbook_publish_guard.ts",
+      "loc": 10,
+      "weight": 2.1,
+      "impact_score": 21,
+      "cumulative_migrated_ts_lines": 6473,
+      "projected_rust_percent_after_lane": 92.236,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0063",
+      "rank": 63,
+      "path": "adapters/cognition/skills/moltbook/proposal_template.ts",
+      "loc": 10,
+      "weight": 2.1,
+      "impact_score": 21,
+      "cumulative_migrated_ts_lines": 6483,
+      "projected_rust_percent_after_lane": 92.24,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0064",
+      "rank": 64,
+      "path": "adapters/cognition/skills/moltstack/scripts/publish.ts",
+      "loc": 10,
+      "weight": 2.1,
+      "impact_score": 21,
+      "cumulative_migrated_ts_lines": 6493,
+      "projected_rust_percent_after_lane": 92.243,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0065",
+      "rank": 65,
+      "path": "adapters/cognition/skills/moltstack/scripts/quality-check.ts",
+      "loc": 10,
+      "weight": 2.1,
+      "impact_score": 21,
+      "cumulative_migrated_ts_lines": 6503,
+      "projected_rust_percent_after_lane": 92.246,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0066",
+      "rank": 66,
+      "path": "client/types/node_compat.d.ts",
+      "loc": 12,
+      "weight": 1.5,
+      "impact_score": 18,
+      "cumulative_migrated_ts_lines": 6515,
+      "projected_rust_percent_after_lane": 92.25,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0067",
+      "rank": 67,
+      "path": "client/lib/ts_entrypoint.ts",
+      "loc": 6,
+      "weight": 2.2,
+      "impact_score": 13.2,
+      "cumulative_migrated_ts_lines": 6521,
+      "projected_rust_percent_after_lane": 92.252,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0068",
+      "rank": 68,
+      "path": "client/lib/action_envelope.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6526,
+      "projected_rust_percent_after_lane": 92.254,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0069",
+      "rank": 69,
+      "path": "client/lib/action_receipts.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6531,
+      "projected_rust_percent_after_lane": 92.256,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0070",
+      "rank": 70,
+      "path": "client/lib/agent_passport_link.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6536,
+      "projected_rust_percent_after_lane": 92.257,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0071",
+      "rank": 71,
+      "path": "client/lib/approval_gate.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6541,
+      "projected_rust_percent_after_lane": 92.259,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0072",
+      "rank": 72,
+      "path": "client/lib/command_output_compactor.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6546,
+      "projected_rust_percent_after_lane": 92.261,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0073",
+      "rank": 73,
+      "path": "client/lib/directive_resolver.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6551,
+      "projected_rust_percent_after_lane": 92.262,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0074",
+      "rank": 74,
+      "path": "client/lib/duality_seed.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6556,
+      "projected_rust_percent_after_lane": 92.264,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0075",
+      "rank": 75,
+      "path": "client/lib/egress_gateway.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6561,
+      "projected_rust_percent_after_lane": 92.266,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0076",
+      "rank": 76,
+      "path": "client/lib/exec_compacted.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6566,
+      "projected_rust_percent_after_lane": 92.267,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0077",
+      "rank": 77,
+      "path": "client/lib/eyes_catalog.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6571,
+      "projected_rust_percent_after_lane": 92.269,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0078",
+      "rank": 78,
+      "path": "client/lib/integrity_hash_utility.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6576,
+      "projected_rust_percent_after_lane": 92.271,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0079",
+      "rank": 79,
+      "path": "client/lib/legacy_alias_adapter.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6581,
+      "projected_rust_percent_after_lane": 92.272,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0080",
+      "rank": 80,
+      "path": "client/lib/legacy_conduit_proxy.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6586,
+      "projected_rust_percent_after_lane": 92.274,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0081",
+      "rank": 81,
+      "path": "client/lib/mech_suit_mode.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6591,
+      "projected_rust_percent_after_lane": 92.276,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0082",
+      "rank": 82,
+      "path": "client/lib/ops_domain_conduit_runner.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6596,
+      "projected_rust_percent_after_lane": 92.277,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0083",
+      "rank": 83,
+      "path": "client/lib/passport_iteration_chain.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6601,
+      "projected_rust_percent_after_lane": 92.279,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0084",
+      "rank": 84,
+      "path": "client/lib/policy_runtime.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6606,
+      "projected_rust_percent_after_lane": 92.281,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0085",
+      "rank": 85,
+      "path": "client/lib/queued_backlog_runtime.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6611,
+      "projected_rust_percent_after_lane": 92.282,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0086",
+      "rank": 86,
+      "path": "client/lib/quorum_validator.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6616,
+      "projected_rust_percent_after_lane": 92.284,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0087",
+      "rank": 87,
+      "path": "client/lib/runtime_path_registry.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6621,
+      "projected_rust_percent_after_lane": 92.286,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0088",
+      "rank": 88,
+      "path": "client/lib/secret_broker.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6626,
+      "projected_rust_percent_after_lane": 92.287,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0089",
+      "rank": 89,
+      "path": "client/lib/security_integrity.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6631,
       "projected_rust_percent_after_lane": 92.289,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0090",
+      "rank": 90,
+      "path": "client/lib/state_artifact_contract.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6636,
+      "projected_rust_percent_after_lane": 92.291,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0091",
+      "rank": 91,
+      "path": "client/lib/strategy_resolver.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6641,
+      "projected_rust_percent_after_lane": 92.292,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0092",
+      "rank": 92,
+      "path": "client/lib/success_criteria_compiler.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6646,
+      "projected_rust_percent_after_lane": 92.294,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0093",
+      "rank": 93,
+      "path": "client/lib/success_criteria_verifier.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6651,
+      "projected_rust_percent_after_lane": 92.296,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0094",
+      "rank": 94,
+      "path": "client/lib/ternary_belief_engine.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6656,
+      "projected_rust_percent_after_lane": 92.297,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0095",
+      "rank": 95,
+      "path": "client/lib/tool_compactor_integration.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6661,
+      "projected_rust_percent_after_lane": 92.299,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0096",
+      "rank": 96,
+      "path": "client/lib/tool_response_compactor.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6666,
+      "projected_rust_percent_after_lane": 92.301,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0097",
+      "rank": 97,
+      "path": "client/lib/ts_bootstrap.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6671,
+      "projected_rust_percent_after_lane": 92.302,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0098",
+      "rank": 98,
+      "path": "client/lib/uid.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6676,
+      "projected_rust_percent_after_lane": 92.304,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0099",
+      "rank": 99,
+      "path": "client/lib/upgrade_lane_runtime.ts",
+      "loc": 5,
+      "weight": 2.2,
+      "impact_score": 11,
+      "cumulative_migrated_ts_lines": 6681,
+      "projected_rust_percent_after_lane": 92.306,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0100",
+      "rank": 100,
+      "path": "client/cli/bin/protheus-bootstrap.ts",
+      "loc": 6,
+      "weight": 1.5,
+      "impact_score": 9,
+      "cumulative_migrated_ts_lines": 6687,
+      "projected_rust_percent_after_lane": 92.308,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0101",
+      "rank": 101,
+      "path": "client/cli/bin/protheus-econ.ts",
+      "loc": 6,
+      "weight": 1.5,
+      "impact_score": 9,
+      "cumulative_migrated_ts_lines": 6693,
+      "projected_rust_percent_after_lane": 92.31,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0102",
+      "rank": 102,
+      "path": "client/cli/bin/protheus-forge.ts",
+      "loc": 6,
+      "weight": 1.5,
+      "impact_score": 9,
+      "cumulative_migrated_ts_lines": 6699,
+      "projected_rust_percent_after_lane": 92.312,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0103",
+      "rank": 103,
+      "path": "client/cli/bin/protheus-mem.ts",
+      "loc": 6,
+      "weight": 1.5,
+      "impact_score": 9,
+      "cumulative_migrated_ts_lines": 6705,
+      "projected_rust_percent_after_lane": 92.314,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0104",
+      "rank": 104,
+      "path": "client/cli/bin/protheus-pinnacle.ts",
+      "loc": 6,
+      "weight": 1.5,
+      "impact_score": 9,
+      "cumulative_migrated_ts_lines": 6711,
+      "projected_rust_percent_after_lane": 92.316,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0105",
+      "rank": 105,
+      "path": "client/cli/bin/protheus-redlegion.ts",
+      "loc": 6,
+      "weight": 1.5,
+      "impact_score": 9,
+      "cumulative_migrated_ts_lines": 6717,
+      "projected_rust_percent_after_lane": 92.318,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0106",
+      "rank": 106,
+      "path": "client/cli/bin/protheus-soul.ts",
+      "loc": 6,
+      "weight": 1.5,
+      "impact_score": 9,
+      "cumulative_migrated_ts_lines": 6723,
+      "projected_rust_percent_after_lane": 92.32,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0107",
+      "rank": 107,
+      "path": "client/cli/bin/protheus-swarm.ts",
+      "loc": 6,
+      "weight": 1.5,
+      "impact_score": 9,
+      "cumulative_migrated_ts_lines": 6729,
+      "projected_rust_percent_after_lane": 92.322,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0108",
+      "rank": 108,
+      "path": "client/cli/bin/protheus-telemetry.ts",
+      "loc": 6,
+      "weight": 1.5,
+      "impact_score": 9,
+      "cumulative_migrated_ts_lines": 6735,
+      "projected_rust_percent_after_lane": 92.324,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0109",
+      "rank": 109,
+      "path": "client/cli/bin/protheus-vault.ts",
+      "loc": 6,
+      "weight": 1.5,
+      "impact_score": 9,
+      "cumulative_migrated_ts_lines": 6741,
+      "projected_rust_percent_after_lane": 92.326,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0110",
+      "rank": 110,
+      "path": "client/cognition/shared/adaptive/rsi/rsi_bootstrap.ts",
+      "loc": 5,
+      "weight": 1.5,
+      "impact_score": 7.5,
+      "cumulative_migrated_ts_lines": 6746,
+      "projected_rust_percent_after_lane": 92.327,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0111",
+      "rank": 111,
+      "path": "client/cognition/shared/adaptive/rsi/rsi_integrity_chain_guard.ts",
+      "loc": 5,
+      "weight": 1.5,
+      "impact_score": 7.5,
+      "cumulative_migrated_ts_lines": 6751,
+      "projected_rust_percent_after_lane": 92.329,
+      "status": "queued"
+    }
+  ],
+  "top_candidates": [
+    {
+      "lane_id": "R60-0001",
+      "rank": 1,
+      "path": "core/layer1/memory_runtime/adaptive/focus_trigger_store.ts",
+      "loc": 391,
+      "weight": 1.5,
+      "impact_score": 586.5,
+      "cumulative_migrated_ts_lines": 391,
+      "projected_rust_percent_after_lane": 90.207,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0002",
+      "rank": 2,
+      "path": "client/runtime/lib/ops_domain_conduit_runner.ts",
+      "loc": 163,
+      "weight": 2.8,
+      "impact_score": 456.4,
+      "cumulative_migrated_ts_lines": 554,
+      "projected_rust_percent_after_lane": 90.262,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0003",
+      "rank": 3,
+      "path": "client/runtime/patches/websocket-client-patch.ts",
+      "loc": 292,
+      "weight": 1.5,
+      "impact_score": 438,
+      "cumulative_migrated_ts_lines": 846,
+      "projected_rust_percent_after_lane": 90.359,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0004",
+      "rank": 4,
+      "path": "client/runtime/lib/quorum_validator.ts",
+      "loc": 154,
+      "weight": 2.8,
+      "impact_score": 431.2,
+      "cumulative_migrated_ts_lines": 1000,
+      "projected_rust_percent_after_lane": 90.411,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0005",
+      "rank": 5,
+      "path": "client/cognition/orchestration/scratchpad.ts",
+      "loc": 269,
+      "weight": 1.5,
+      "impact_score": 403.5,
+      "cumulative_migrated_ts_lines": 1269,
+      "projected_rust_percent_after_lane": 90.5,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0006",
+      "rank": 6,
+      "path": "client/runtime/patches/websocket-server-patch.ts",
+      "loc": 259,
+      "weight": 1.5,
+      "impact_score": 388.5,
+      "cumulative_migrated_ts_lines": 1528,
+      "projected_rust_percent_after_lane": 90.587,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0007",
+      "rank": 7,
+      "path": "client/lib/mutation_provenance.ts",
+      "loc": 171,
+      "weight": 2.2,
+      "impact_score": 376.2,
+      "cumulative_migrated_ts_lines": 1699,
+      "projected_rust_percent_after_lane": 90.644,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0008",
+      "rank": 8,
+      "path": "client/runtime/systems/sensory/conversation_eye_synthesizer.ts",
+      "loc": 86,
+      "weight": 4.3,
+      "impact_score": 369.8,
+      "cumulative_migrated_ts_lines": 1785,
+      "projected_rust_percent_after_lane": 90.672,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0009",
+      "rank": 9,
+      "path": "client/cognition/orchestration/taskgroup.ts",
+      "loc": 223,
+      "weight": 1.5,
+      "impact_score": 334.5,
+      "cumulative_migrated_ts_lines": 2008,
+      "projected_rust_percent_after_lane": 90.747,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0010",
+      "rank": 10,
+      "path": "client/runtime/lib/action_receipts.ts",
+      "loc": 118,
+      "weight": 2.8,
+      "impact_score": 330.4,
+      "cumulative_migrated_ts_lines": 2126,
+      "projected_rust_percent_after_lane": 90.786,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0011",
+      "rank": 11,
+      "path": "client/lib/conduit_full_lifecycle_probe.ts",
+      "loc": 149,
+      "weight": 2.2,
+      "impact_score": 327.8,
+      "cumulative_migrated_ts_lines": 2275,
+      "projected_rust_percent_after_lane": 90.836,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0012",
+      "rank": 12,
+      "path": "core/layer1/memory_runtime/adaptive/habit_store.ts",
+      "loc": 216,
+      "weight": 1.5,
+      "impact_score": 324,
+      "cumulative_migrated_ts_lines": 2491,
+      "projected_rust_percent_after_lane": 90.908,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0013",
+      "rank": 13,
+      "path": "client/lib/trainability_matrix.ts",
+      "loc": 146,
+      "weight": 2.2,
+      "impact_score": 321.2,
+      "cumulative_migrated_ts_lines": 2637,
+      "projected_rust_percent_after_lane": 90.957,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0014",
+      "rank": 14,
+      "path": "core/layer1/memory_runtime/adaptive/reflex_store.ts",
+      "loc": 214,
+      "weight": 1.5,
+      "impact_score": 321,
+      "cumulative_migrated_ts_lines": 2851,
+      "projected_rust_percent_after_lane": 91.028,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0015",
+      "rank": 15,
+      "path": "client/lib/dynamic_burn_budget_signal.ts",
+      "loc": 143,
+      "weight": 2.2,
+      "impact_score": 314.6,
+      "cumulative_migrated_ts_lines": 2994,
+      "projected_rust_percent_after_lane": 91.076,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0016",
+      "rank": 16,
+      "path": "client/runtime/lib/policy_runtime.ts",
+      "loc": 109,
+      "weight": 2.8,
+      "impact_score": 305.2,
+      "cumulative_migrated_ts_lines": 3103,
+      "projected_rust_percent_after_lane": 91.112,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0017",
+      "rank": 17,
+      "path": "client/cognition/orchestration/scope.ts",
+      "loc": 202,
+      "weight": 1.5,
+      "impact_score": 303,
+      "cumulative_migrated_ts_lines": 3305,
+      "projected_rust_percent_after_lane": 91.179,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0018",
+      "rank": 18,
+      "path": "client/cognition/orchestration/completion.ts",
+      "loc": 198,
+      "weight": 1.5,
+      "impact_score": 297,
+      "cumulative_migrated_ts_lines": 3503,
+      "projected_rust_percent_after_lane": 91.246,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0019",
+      "rank": 19,
+      "path": "client/runtime/lib/moltbook_api.ts",
+      "loc": 102,
+      "weight": 2.8,
+      "impact_score": 285.6,
+      "cumulative_migrated_ts_lines": 3605,
+      "projected_rust_percent_after_lane": 91.28,
+      "status": "queued"
+    },
+    {
+      "lane_id": "R60-0020",
+      "rank": 20,
+      "path": "client/runtime/patches/websocket-heartbeat.ts",
+      "loc": 189,
+      "weight": 1.5,
+      "impact_score": 283.5,
+      "cumulative_migrated_ts_lines": 3794,
+      "projected_rust_percent_after_lane": 91.343,
       "status": "queued"
     }
   ],
@@ -1241,7 +2687,7 @@
       "weight": 1.5,
       "impact_score": 586.5,
       "cumulative_migrated_ts_lines": 391,
-      "projected_rust_percent_after_lane": 90.156,
+      "projected_rust_percent_after_lane": 90.207,
       "status": "queued"
     },
     {
@@ -1252,7 +2698,7 @@
       "weight": 2.8,
       "impact_score": 456.4,
       "cumulative_migrated_ts_lines": 554,
-      "projected_rust_percent_after_lane": 90.21,
+      "projected_rust_percent_after_lane": 90.262,
       "status": "queued"
     },
     {
@@ -1263,7 +2709,7 @@
       "weight": 1.5,
       "impact_score": 438,
       "cumulative_migrated_ts_lines": 846,
-      "projected_rust_percent_after_lane": 90.308,
+      "projected_rust_percent_after_lane": 90.359,
       "status": "queued"
     },
     {
@@ -1274,7 +2720,7 @@
       "weight": 2.8,
       "impact_score": 431.2,
       "cumulative_migrated_ts_lines": 1000,
-      "projected_rust_percent_after_lane": 90.36,
+      "projected_rust_percent_after_lane": 90.411,
       "status": "queued"
     },
     {
@@ -1285,7 +2731,7 @@
       "weight": 1.5,
       "impact_score": 403.5,
       "cumulative_migrated_ts_lines": 1269,
-      "projected_rust_percent_after_lane": 90.45,
+      "projected_rust_percent_after_lane": 90.5,
       "status": "queued"
     },
     {
@@ -1296,7 +2742,7 @@
       "weight": 1.5,
       "impact_score": 388.5,
       "cumulative_migrated_ts_lines": 1528,
-      "projected_rust_percent_after_lane": 90.537,
+      "projected_rust_percent_after_lane": 90.587,
       "status": "queued"
     },
     {
@@ -1307,7 +2753,7 @@
       "weight": 2.2,
       "impact_score": 376.2,
       "cumulative_migrated_ts_lines": 1699,
-      "projected_rust_percent_after_lane": 90.594,
+      "projected_rust_percent_after_lane": 90.644,
       "status": "queued"
     },
     {
@@ -1318,7 +2764,7 @@
       "weight": 4.3,
       "impact_score": 369.8,
       "cumulative_migrated_ts_lines": 1785,
-      "projected_rust_percent_after_lane": 90.623,
+      "projected_rust_percent_after_lane": 90.672,
       "status": "queued"
     },
     {
@@ -1329,7 +2775,7 @@
       "weight": 1.5,
       "impact_score": 334.5,
       "cumulative_migrated_ts_lines": 2008,
-      "projected_rust_percent_after_lane": 90.698,
+      "projected_rust_percent_after_lane": 90.747,
       "status": "queued"
     },
     {
@@ -1340,7 +2786,7 @@
       "weight": 2.8,
       "impact_score": 330.4,
       "cumulative_migrated_ts_lines": 2126,
-      "projected_rust_percent_after_lane": 90.738,
+      "projected_rust_percent_after_lane": 90.786,
       "status": "queued"
     },
     {
@@ -1351,7 +2797,7 @@
       "weight": 2.2,
       "impact_score": 327.8,
       "cumulative_migrated_ts_lines": 2275,
-      "projected_rust_percent_after_lane": 90.788,
+      "projected_rust_percent_after_lane": 90.836,
       "status": "queued"
     },
     {
@@ -1362,7 +2808,7 @@
       "weight": 1.5,
       "impact_score": 324,
       "cumulative_migrated_ts_lines": 2491,
-      "projected_rust_percent_after_lane": 90.86,
+      "projected_rust_percent_after_lane": 90.908,
       "status": "queued"
     },
     {
@@ -1373,7 +2819,7 @@
       "weight": 2.2,
       "impact_score": 321.2,
       "cumulative_migrated_ts_lines": 2637,
-      "projected_rust_percent_after_lane": 90.909,
+      "projected_rust_percent_after_lane": 90.957,
       "status": "queued"
     },
     {
@@ -1384,7 +2830,7 @@
       "weight": 1.5,
       "impact_score": 321,
       "cumulative_migrated_ts_lines": 2851,
-      "projected_rust_percent_after_lane": 90.981,
+      "projected_rust_percent_after_lane": 91.028,
       "status": "queued"
     },
     {
@@ -1395,7 +2841,7 @@
       "weight": 2.2,
       "impact_score": 314.6,
       "cumulative_migrated_ts_lines": 2994,
-      "projected_rust_percent_after_lane": 91.029,
+      "projected_rust_percent_after_lane": 91.076,
       "status": "queued"
     },
     {
@@ -1406,7 +2852,7 @@
       "weight": 2.8,
       "impact_score": 305.2,
       "cumulative_migrated_ts_lines": 3103,
-      "projected_rust_percent_after_lane": 91.065,
+      "projected_rust_percent_after_lane": 91.112,
       "status": "queued"
     },
     {
@@ -1417,7 +2863,7 @@
       "weight": 1.5,
       "impact_score": 303,
       "cumulative_migrated_ts_lines": 3305,
-      "projected_rust_percent_after_lane": 91.133,
+      "projected_rust_percent_after_lane": 91.179,
       "status": "queued"
     },
     {
@@ -1428,7 +2874,7 @@
       "weight": 1.5,
       "impact_score": 297,
       "cumulative_migrated_ts_lines": 3503,
-      "projected_rust_percent_after_lane": 91.199,
+      "projected_rust_percent_after_lane": 91.246,
       "status": "queued"
     },
     {
@@ -1439,7 +2885,7 @@
       "weight": 2.8,
       "impact_score": 285.6,
       "cumulative_migrated_ts_lines": 3605,
-      "projected_rust_percent_after_lane": 91.234,
+      "projected_rust_percent_after_lane": 91.28,
       "status": "queued"
     },
     {
@@ -1450,7 +2896,7 @@
       "weight": 1.5,
       "impact_score": 283.5,
       "cumulative_migrated_ts_lines": 3794,
-      "projected_rust_percent_after_lane": 91.297,
+      "projected_rust_percent_after_lane": 91.343,
       "status": "queued"
     }
   ]
