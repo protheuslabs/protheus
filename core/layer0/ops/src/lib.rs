@@ -102,6 +102,7 @@ pub mod orchestration;
 pub mod organ_atrophy_controller;
 pub mod organism_layer;
 pub mod origin_integrity;
+pub mod outcome_fitness_kernel;
 pub mod parse_plane;
 pub mod passport_iteration_chain_kernel;
 pub mod perception_polish;

@@ -1,7 +1,11 @@
+#!/usr/bin/env node
 'use strict';
 
-const fs = require('fs');
+// Layer ownership: core/layer0/ops (authoritative)
+// Thin TypeScript wrapper only.
+
 const path = require('path');
+const { createOpsLaneBridge } = require('../runtime/lib/rust_lane_bridge.ts');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_POLICY_PATH = path.join(REPO_ROOT, 'local', 'state', 'adaptive', 'strategy', 'outcome_fitness.json');
@@ -25,248 +29,104 @@ const RANKING_WEIGHT_KEYS = new Set([
   'time_to_value',
   'risk_penalty'
 ]);
-const VALUE_CURRENCY_KEYS = new Set([
-  'revenue',
-  'delivery',
-  'user_value',
-  'quality',
-  'time_savings',
-  'learning'
-]);
 
-function normalizeProposalTypeKey(v) {
-  const key = String(v || '').trim().toLowerCase();
-  if (!key) return '';
-  return key
-    .replace(/[^a-z0-9_.:-]+/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .slice(0, 64);
+process.env.PROTHEUS_OPS_USE_PREBUILT = process.env.PROTHEUS_OPS_USE_PREBUILT || '0';
+process.env.PROTHEUS_OPS_LOCAL_TIMEOUT_MS = process.env.PROTHEUS_OPS_LOCAL_TIMEOUT_MS || '120000';
+const bridge = createOpsLaneBridge(__dirname, 'outcome_fitness', 'outcome-fitness-kernel');
+
+function encodeBase64(value) {
+  return Buffer.from(String(value == null ? '' : value), 'utf8').toString('base64');
 }
 
-function normalizeValueCurrencyToken(v) {
-  const key = String(v || '').trim().toLowerCase();
-  if (!key) return '';
-  const token = key
-    .replace(/[^a-z0-9_.:-]+/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .slice(0, 64);
-  if (!token) return '';
-  return VALUE_CURRENCY_KEYS.has(token) ? token : '';
-}
-
-function clampNumber(v, lo, hi, fallback) {
-  const n = Number(v);
-  if (!Number.isFinite(n)) return fallback;
-  if (n < lo) return lo;
-  if (n > hi) return hi;
-  return n;
-}
-
-function clampInt(v, lo, hi, fallback) {
-  const n = Number(v);
-  if (!Number.isFinite(n)) return fallback;
-  const i = Math.floor(n);
-  if (i < lo) return lo;
-  if (i > hi) return hi;
-  return i;
-}
-
-function readJsonSafe(filePath, fallback) {
-  try {
-    if (!fs.existsSync(filePath)) return fallback;
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch {
-    return fallback;
+function invoke(command, payload = {}, opts = {}) {
+  const out = bridge.run([
+    command,
+    `--payload-base64=${encodeBase64(JSON.stringify(payload || {}))}`
+  ]);
+  const receipt = out && out.payload && typeof out.payload === 'object' ? out.payload : null;
+  const payloadOut = receipt && receipt.payload && typeof receipt.payload === 'object'
+    ? receipt.payload
+    : receipt;
+  if (out.status !== 0) {
+    const message = payloadOut && typeof payloadOut.error === 'string'
+      ? payloadOut.error
+      : (out && out.stderr ? String(out.stderr).trim() : `outcome_fitness_kernel_${command}_failed`);
+    if (opts.throwOnError !== false) throw new Error(message || `outcome_fitness_kernel_${command}_failed`);
+    return { ok: false, error: message || `outcome_fitness_kernel_${command}_failed` };
   }
+  if (!payloadOut || typeof payloadOut !== 'object') {
+    const message = out && out.stderr
+      ? String(out.stderr).trim() || `outcome_fitness_kernel_${command}_bridge_failed`
+      : `outcome_fitness_kernel_${command}_bridge_failed`;
+    if (opts.throwOnError !== false) throw new Error(message);
+    return { ok: false, error: message };
+  }
+  return payloadOut;
 }
 
 function normalizeThresholdOverrides(raw) {
-  const src = raw && typeof raw === 'object' ? raw : {};
-  const out = {};
-  for (const [key, value] of Object.entries(src)) {
-    if (!THRESHOLD_KEYS.has(key)) continue;
-    const n = Number(value);
-    if (!Number.isFinite(n)) continue;
-    out[key] = n;
-  }
-  return out;
+  const out = invoke('normalize-threshold-overrides', raw && typeof raw === 'object' ? raw : {});
+  return out.normalized && typeof out.normalized === 'object' ? out.normalized : {};
 }
 
 function normalizeRankingWeights(raw) {
-  const src = (raw && typeof raw === 'object' ? raw : {}) as Record<string, any>;
-  const out = {};
-  let total = 0;
-  for (const key of RANKING_WEIGHT_KEYS) {
-    const n = Number(src[key]);
-    if (!Number.isFinite(n) || n < 0) continue;
-    out[key] = n;
-    total += n;
-  }
-  if (total <= 0) return null;
-  const normalized = {};
-  for (const [key, value] of Object.entries(out)) {
-    const n = Number(value);
-    normalized[key] = Number((n / total).toFixed(6));
-  }
-  return normalized;
+  const out = invoke('normalize-ranking-weights', raw && typeof raw === 'object' ? raw : {});
+  return out.normalized && typeof out.normalized === 'object' ? out.normalized : null;
 }
 
 function normalizeProposalTypeThresholdOffsets(raw) {
-  const src = raw && typeof raw === 'object' ? raw : {};
-  const out = {};
-  for (const [typeKeyRaw, value] of Object.entries(src)) {
-    const typeKey = normalizeProposalTypeKey(typeKeyRaw);
-    if (!typeKey) continue;
-    if (!value || typeof value !== 'object' || Array.isArray(value)) continue;
-    const normalized = normalizeThresholdOverrides(value);
-    if (!Object.keys(normalized).length) continue;
-    out[typeKey] = normalized;
-  }
-  return out;
+  const out = invoke(
+    'normalize-proposal-type-threshold-offsets',
+    raw && typeof raw === 'object' ? raw : {}
+  );
+  return out.normalized && typeof out.normalized === 'object' ? out.normalized : {};
 }
 
 function normalizePromotionPolicyOverrides(raw) {
-  const src = (raw && typeof raw === 'object' ? raw : {}) as Record<string, any>;
-  const out: Record<string, any> = {};
-  if (Object.prototype.hasOwnProperty.call(src, 'disable_legacy_fallback_after_quality_receipts')) {
-    out.disable_legacy_fallback_after_quality_receipts = clampInt(
-      src.disable_legacy_fallback_after_quality_receipts,
-      0,
-      10000,
-      10
-    );
-  }
-  if (Object.prototype.hasOwnProperty.call(src, 'max_success_criteria_quality_insufficient_rate')) {
-    out.max_success_criteria_quality_insufficient_rate = Number(
-      clampNumber(src.max_success_criteria_quality_insufficient_rate, 0, 1, 0.4).toFixed(3)
-    );
-  }
-  return out;
-}
-
-function normalizePromotionPolicyAudit(raw) {
-  const src = raw && typeof raw === 'object' ? raw : {};
-  const qualityLock = src.quality_lock && typeof src.quality_lock === 'object'
-    ? src.quality_lock
-    : {};
-  return {
-    quality_lock: {
-      active: qualityLock.active === true,
-      was_locked: qualityLock.was_locked === true,
-      stable_window_streak: clampInt(qualityLock.stable_window_streak, 0, 10000, 0),
-      unstable_window_streak: clampInt(qualityLock.unstable_window_streak, 0, 10000, 0),
-      min_stable_windows: clampInt(qualityLock.min_stable_windows, 0, 10000, 0),
-      release_unstable_windows: clampInt(qualityLock.release_unstable_windows, 0, 10000, 0),
-      min_realized_score: clampNumber(qualityLock.min_realized_score, 0, 100, 0),
-      min_quality_receipts: clampInt(qualityLock.min_quality_receipts, 0, 10000, 0),
-      max_insufficient_rate: Number(clampNumber(qualityLock.max_insufficient_rate, 0, 1, 1).toFixed(3))
-    }
-  };
+  const out = invoke(
+    'normalize-promotion-policy-overrides',
+    raw && typeof raw === 'object' ? raw : {}
+  );
+  return out.normalized && typeof out.normalized === 'object' ? out.normalized : {};
 }
 
 function normalizeValueCurrencyPolicyOverrides(raw) {
-  const src = raw && typeof raw === 'object' ? raw : {};
-  const defaultCurrency = normalizeValueCurrencyToken(src.default_currency);
-  const currencySrc = src.currency_overrides && typeof src.currency_overrides === 'object'
-    ? src.currency_overrides
-    : {};
-  const objectiveSrc = src.objective_overrides && typeof src.objective_overrides === 'object'
-    ? src.objective_overrides
-    : {};
+  const out = invoke(
+    'normalize-value-currency-policy-overrides',
+    raw && typeof raw === 'object' ? raw : {}
+  );
+  return out.normalized && typeof out.normalized === 'object'
+    ? out.normalized
+    : {
+        default_currency: null,
+        currency_overrides: {},
+        objective_overrides: {}
+      };
+}
 
-  const currencyOverrides = {};
-  for (const [rawKey, rowRaw] of Object.entries(currencySrc)) {
-    const currency = normalizeValueCurrencyToken(rawKey);
-    if (!currency) continue;
-    const row = rowRaw && typeof rowRaw === 'object' ? rowRaw as Record<string, any> : {} as Record<string, any>;
-    const ranking = row.ranking_weights && typeof row.ranking_weights === 'object'
-      ? normalizeRankingWeights(row.ranking_weights)
-      : normalizeRankingWeights(row);
-    if (!ranking) continue;
-    currencyOverrides[currency] = {
-      ranking_weights: ranking
-    };
-  }
+function normalizeProposalTypeKey(v) {
+  const out = invoke('normalize-proposal-type-key', { value: v });
+  return String(out.normalized || '').trim();
+}
 
-  const objectiveOverrides = {};
-  for (const [objectiveIdRaw, rowRaw] of Object.entries(objectiveSrc)) {
-    const objectiveId = String(objectiveIdRaw || '').trim();
-    if (!objectiveId) continue;
-    const row = rowRaw && typeof rowRaw === 'object' ? rowRaw as Record<string, any> : {} as Record<string, any>;
-    const ranking = row.ranking_weights && typeof row.ranking_weights === 'object'
-      ? normalizeRankingWeights(row.ranking_weights)
-      : normalizeRankingWeights(row);
-    const primaryCurrency = normalizeValueCurrencyToken(row.primary_currency);
-    if (!ranking && !primaryCurrency) continue;
-    objectiveOverrides[objectiveId] = {
-      primary_currency: primaryCurrency || null,
-      ranking_weights: ranking || null
-    };
-  }
-
-  return {
-    default_currency: defaultCurrency || null,
-    currency_overrides: currencyOverrides,
-    objective_overrides: objectiveOverrides
-  };
+function normalizeValueCurrencyToken(v) {
+  const out = invoke('normalize-value-currency-token', { value: v });
+  return String(out.normalized || '').trim();
 }
 
 function proposalTypeThresholdOffsetsFor(policy, proposalType) {
-  const typeKey = normalizeProposalTypeKey(proposalType);
-  if (!typeKey) return {};
-  const strategyPolicy = policy && policy.strategy_policy && typeof policy.strategy_policy === 'object'
-    ? policy.strategy_policy
-    : {};
-  const table = strategyPolicy.proposal_type_threshold_offsets && typeof strategyPolicy.proposal_type_threshold_offsets === 'object'
-    ? strategyPolicy.proposal_type_threshold_offsets
-    : {};
-  const row = table[typeKey];
-  if (!row || typeof row !== 'object' || Array.isArray(row)) return {};
-  return normalizeThresholdOverrides(row);
+  const out = invoke('proposal-type-threshold-offsets-for', {
+    policy: policy && typeof policy === 'object' ? policy : {},
+    proposal_type: proposalType
+  });
+  return out.offsets && typeof out.offsets === 'object' ? out.offsets : {};
 }
 
 function loadOutcomeFitnessPolicy(rootDir = REPO_ROOT, overridePath = null) {
-  const envPath = String(process.env.OUTCOME_FITNESS_POLICY_PATH || '').trim();
-  const filePath = overridePath
-    ? path.resolve(String(overridePath))
-    : (envPath
-      ? path.resolve(envPath)
-      : path.join(path.resolve(String(rootDir || REPO_ROOT)), 'local', 'state', 'adaptive', 'strategy', 'outcome_fitness.json'));
-  const raw = readJsonSafe(filePath, null);
-  const strategyPolicy = raw && raw.strategy_policy && typeof raw.strategy_policy === 'object'
-    ? raw.strategy_policy
-    : {};
-  const focusPolicy = raw && raw.focus_policy && typeof raw.focus_policy === 'object'
-    ? raw.focus_policy
-    : {};
-  const filterPolicy = raw && raw.proposal_filter_policy && typeof raw.proposal_filter_policy === 'object'
-    ? raw.proposal_filter_policy
-    : {};
-
-  return {
-    found: !!raw,
-    path: filePath,
-    ts: raw && raw.ts ? String(raw.ts) : null,
-    realized_outcome_score: clampNumber(raw && raw.realized_outcome_score, 0, 100, null),
-    strategy_policy: {
-      strategy_id: String(strategyPolicy.strategy_id || '').trim() || null,
-      threshold_overrides: normalizeThresholdOverrides(strategyPolicy.threshold_overrides),
-      ranking_weights_override: normalizeRankingWeights(strategyPolicy.ranking_weights_override),
-      proposal_type_threshold_offsets: normalizeProposalTypeThresholdOffsets(strategyPolicy.proposal_type_threshold_offsets),
-      promotion_policy_overrides: normalizePromotionPolicyOverrides(strategyPolicy.promotion_policy_overrides),
-      promotion_policy_audit: normalizePromotionPolicyAudit(strategyPolicy.promotion_policy_audit),
-      value_currency_policy_overrides: normalizeValueCurrencyPolicyOverrides(strategyPolicy.value_currency_policy_overrides)
-    },
-    focus_policy: {
-      min_focus_score_delta: clampInt(focusPolicy.min_focus_score_delta, -20, 20, 0)
-    },
-    proposal_filter_policy: {
-      require_success_criteria: filterPolicy.require_success_criteria !== false,
-      min_success_criteria_count: clampInt(filterPolicy.min_success_criteria_count, 0, 5, 1)
-    }
-  };
+  return invoke('load-policy', {
+    root_dir: rootDir,
+    override_path: overridePath
+  });
 }
 
 module.exports = {
@@ -283,4 +143,3 @@ module.exports = {
   normalizeValueCurrencyToken,
   proposalTypeThresholdOffsetsFor
 };
-export {};
