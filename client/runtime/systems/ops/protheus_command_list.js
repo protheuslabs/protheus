@@ -8,7 +8,9 @@ const COMMANDS = [
   { name: 'status', desc: 'Show daemon/control-plane status.' },
   { name: 'alpha-check', desc: 'Run alpha readiness checks.' },
   { name: 'session <status|register|resume|send|list>', desc: 'Manage command-center sessions.' },
+  { name: 'orchestration', desc: 'Rust-core orchestration invoke surface (coordinator/scratchpad/checkpoint).' },
   { name: 'swarm-runtime', desc: 'Core swarm runtime lanes.' },
+  { name: 'capability-profile', desc: 'Show hardware-sensed capability shedding profile.' },
   { name: 'autonomy:swarm:sessions:spawn', desc: 'Spawn a governed swarm session.' },
   { name: 'autonomy:swarm:sessions:send', desc: 'Send inter-agent message between sessions.' },
   { name: 'autonomy:swarm:sessions:receive', desc: 'Receive pending inter-agent messages.' },
@@ -72,4 +74,3 @@ if (require.main === module) {
 }
 
 module.exports = { run, COMMANDS };
-

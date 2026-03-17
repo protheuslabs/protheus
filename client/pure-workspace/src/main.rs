@@ -23,6 +23,9 @@ fn usage() {
     );
     println!("  protheus-pure-workspace research [status|fetch|diagnostics] [flags]");
     println!("  protheus-pure-workspace memory [status|write|query] [flags]");
+    println!("  protheus-pure-workspace orchestration <invoke|help> [flags]");
+    println!("  protheus-pure-workspace swarm-runtime <status|spawn|sessions|results|tick|metrics|test> [flags]");
+    println!("  protheus-pure-workspace capability-profile [--hardware-class=<mcu|legacy|standard|high>] [--memory-mb=<n>] [--cpu-cores=<n>] [--tiny-max=1|0]");
     println!("  protheus-pure-workspace probe [--sleep-ms=<n>] [--tiny-max=1|0]");
     println!("  protheus-pure-workspace benchmark-ping [--tiny-max=1|0]");
 }
@@ -306,6 +309,26 @@ fn main() {
                 passthrough.push("status".to_string());
             }
             let code = run_daemon("memory", &passthrough);
+            std::process::exit(code);
+        }
+        "orchestration" => {
+            let mut passthrough = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            if passthrough.is_empty() {
+                passthrough.push("help".to_string());
+            }
+            let code = run_daemon("orchestration", &passthrough);
+            std::process::exit(code);
+        }
+        "swarm-runtime" | "swarm" => {
+            let mut passthrough = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            if passthrough.is_empty() {
+                passthrough.push("status".to_string());
+            }
+            let code = run_daemon("swarm-runtime", &passthrough);
+            std::process::exit(code);
+        }
+        "capability-profile" => {
+            let code = run_daemon("capability-profile", &args[1..]);
             std::process::exit(code);
         }
         "benchmark-ping" => {}

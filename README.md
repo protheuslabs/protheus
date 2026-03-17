@@ -111,6 +111,23 @@ infring memory query --session-id=alpha --q=important --limit=5
 infring think --session-id=alpha --prompt="What should I do next?"
 ```
 
+## Mode Capability Matrix (Core Shedding Model)
+
+InfRing modes are layered, not forked: `tiny-max` and `pure` use the same Rust core authority, then shed capabilities based on hardware sensing when needed.
+
+`infring capability-profile` shows the active profile and any shed capabilities. You can force a test profile with `--hardware-class=<mcu|legacy|standard|high> --memory-mb=<n> --cpu-cores=<n>`.
+
+| Mode | Primary Goal | Intelligence Surface | Runtime Dependencies | Shedding Behavior |
+|---|---|---|---|---|
+| `InfRing (rich)` | Full operator UX + integrations | Full core intelligence + rich adapters | Rust + Node/TS client surfaces | Minimal shedding by default |
+| `InfRing (pure)` | Rust-only client with high intelligence parity | Core `think`, `research`, `memory`, `orchestration`, `swarm-runtime` | Rust only | Capability shedding only when hardware is constrained |
+| `InfRing (tiny-max)` | Run on anything while keeping max feasible intelligence | Same core lanes as pure, bounded by hardware class | Rust only (`no_std` profile lanes available) | Aggressive, explicit shedding (for example persistent swarm or heavy orchestration on MCU-class targets) |
+
+Tiny-max hardware classes:
+- `mcu`: strict floor (bounded memory hits, max swarm depth 1, no heavy orchestration ops, no `research fetch`).
+- `legacy`: moderate floor (bounded swarm depth, no persistent swarm).
+- `standard` / `high`: progressively restores capabilities up to full parity.
+
 Legacy command aliases remain supported with a deprecation notice.
 
 > **Note:** Full CLI surface requires Node.js 22+ (see `package.json#engines`). Rust fallback supports `help`, `list`, `status`, `version`, plus Pure Intelligence v1 commands (`think`, `research status|fetch|diagnostics`, `memory status|write|query`) when Node is unavailable. See `docs/TROUBLESHOOTING.md` for environment setup details.
