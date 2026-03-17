@@ -1,487 +1,170 @@
 // @ts-nocheck
-// Layer ownership: core/layer1/memory_runtime/adaptive (authoritative)
+// Layer ownership: core/layer0/ops (authoritative)
 'use strict';
 
-const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
-const { stableUid, isAlnum } = require('./uid.ts');
+const { createOpsLaneBridge } = require('../../../../client/runtime/lib/rust_lane_bridge.ts');
 
-const WORKSPACE_ROOT = process.env.PROTHEUS_WORKSPACE_ROOT
-  ? path.resolve(String(process.env.PROTHEUS_WORKSPACE_ROOT))
-  : path.resolve(__dirname, '..', '..', '..', '..');
-const RUNTIME_ROOT = process.env.PROTHEUS_RUNTIME_ROOT
-  ? path.resolve(String(process.env.PROTHEUS_RUNTIME_ROOT))
-  : path.join(WORKSPACE_ROOT, 'client', 'runtime');
-const REPO_ROOT = RUNTIME_ROOT;
-const ADAPTIVE_ROOT = path.join(RUNTIME_ROOT, 'adaptive');
-const ADAPTIVE_RUNTIME_ROOT = path.join(RUNTIME_ROOT, 'local', 'adaptive');
-const RUNTIME_ADAPTIVE_REL_PATHS = new Set([
-  'sensory/eyes/catalog.json',
-  'sensory/eyes/focus_triggers.json'
-]);
-const MUTATION_LOG_PATH = path.join(RUNTIME_ROOT, 'local', 'state', 'security', 'adaptive_mutations.jsonl');
-const ADAPTIVE_POINTERS_PATH = path.join(RUNTIME_ROOT, 'local', 'state', 'memory', 'adaptive_pointers.jsonl');
-const ADAPTIVE_POINTER_INDEX_PATH = path.join(RUNTIME_ROOT, 'local', 'state', 'memory', 'adaptive_pointer_index.json');
-const WRITE_LOCK_TIMEOUT_MS = Number(process.env.ADAPTIVE_WRITE_LOCK_TIMEOUT_MS || 8000);
-const WRITE_LOCK_RETRY_MS = Number(process.env.ADAPTIVE_WRITE_LOCK_RETRY_MS || 15);
-const WRITE_LOCK_STALE_MS = Number(process.env.ADAPTIVE_WRITE_LOCK_STALE_MS || 30000);
-
-function nowIso() {
-  return new Date().toISOString();
+function workspaceRoot() {
+  return process.env.PROTHEUS_WORKSPACE_ROOT
+    ? path.resolve(String(process.env.PROTHEUS_WORKSPACE_ROOT))
+    : path.resolve(__dirname, '..', '..', '..', '..');
 }
 
-function hash16(value) {
-  return crypto.createHash('sha256').update(String(value || ''), 'utf8').digest('hex').slice(0, 16);
+function runtimeRoot() {
+  return process.env.PROTHEUS_RUNTIME_ROOT
+    ? path.resolve(String(process.env.PROTHEUS_RUNTIME_ROOT))
+    : path.join(workspaceRoot(), 'client', 'runtime');
 }
 
-function normalizePathString(v) {
-  return String(v || '').replace(/\\/g, '/');
-}
+const REPO_ROOT = runtimeRoot();
+const ADAPTIVE_ROOT = path.join(REPO_ROOT, 'adaptive');
+const ADAPTIVE_RUNTIME_ROOT = path.join(REPO_ROOT, 'local', 'adaptive');
+const MUTATION_LOG_PATH = path.join(REPO_ROOT, 'local', 'state', 'security', 'adaptive_mutations.jsonl');
+const ADAPTIVE_POINTERS_PATH = path.join(REPO_ROOT, 'local', 'state', 'memory', 'adaptive_pointers.jsonl');
+const ADAPTIVE_POINTER_INDEX_PATH = path.join(REPO_ROOT, 'local', 'state', 'memory', 'adaptive_pointer_index.json');
+const MISSING_HASH_SENTINEL = '__missing__';
+const MUTATE_RETRIES = Number(process.env.ADAPTIVE_MUTATE_RETRIES || 8);
 
-function normalizeAdaptiveRel(v) {
-  return normalizePathString(String(v || ''))
-    .replace(/^\.?\//, '')
-    .replace(/^adaptive\//, '')
-    .replace(/\/+/g, '/')
-    .trim();
-}
+process.env.PROTHEUS_OPS_USE_PREBUILT = process.env.PROTHEUS_OPS_USE_PREBUILT || '0';
+process.env.PROTHEUS_OPS_LOCAL_TIMEOUT_MS = process.env.PROTHEUS_OPS_LOCAL_TIMEOUT_MS || '120000';
+const bridge = createOpsLaneBridge(__dirname, 'adaptive_layer_store', 'adaptive-layer-store-kernel');
 
-function relativeWithin(rootPath, targetPath) {
-  const rel = normalizePathString(path.relative(rootPath, targetPath));
-  if (rel === '') return '';
-  if (rel.startsWith('../') || rel === '..') return null;
-  return rel;
-}
-
-function isWithinAdaptiveRoot(targetPath) {
-  const abs = path.resolve(String(targetPath || ''));
-  return relativeWithin(ADAPTIVE_ROOT, abs) !== null || relativeWithin(ADAPTIVE_RUNTIME_ROOT, abs) !== null;
-}
-
-function resolveAdaptivePath(targetPath) {
-  const raw = String(targetPath || '').trim();
-  if (!raw) {
-    throw new Error('adaptive_store: target must be file path under adaptive/');
-  }
-
-  if (path.isAbsolute(raw)) {
-    const absPath = path.resolve(raw);
-    const sourceRel = relativeWithin(ADAPTIVE_ROOT, absPath);
-    if (sourceRel !== null) {
-      if (sourceRel === '') throw new Error('adaptive_store: target must be file path under adaptive/');
-      const rel = normalizeAdaptiveRel(sourceRel);
-      if (RUNTIME_ADAPTIVE_REL_PATHS.has(rel)) {
-        return { abs: path.join(ADAPTIVE_RUNTIME_ROOT, rel), rel };
-      }
-      return { abs: absPath, rel };
-    }
-
-    const runtimeRel = relativeWithin(ADAPTIVE_RUNTIME_ROOT, absPath);
-    if (runtimeRel === null || runtimeRel === '') {
-      throw new Error(`adaptive_store: target outside adaptive roots: ${absPath}`);
-    }
-    const rel = normalizeAdaptiveRel(runtimeRel);
-    if (!RUNTIME_ADAPTIVE_REL_PATHS.has(rel)) {
-      throw new Error(`adaptive_store: runtime path not allowed: ${absPath}`);
-    }
-    return { abs: absPath, rel };
-  }
-
-  const rel = normalizeAdaptiveRel(raw);
-  if (!rel) throw new Error('adaptive_store: target must be file path under adaptive/');
-  if (RUNTIME_ADAPTIVE_REL_PATHS.has(rel)) {
-    return { abs: path.join(ADAPTIVE_RUNTIME_ROOT, rel), rel };
-  }
-  const abs = path.resolve(ADAPTIVE_ROOT, rel);
-  const sourceRel = relativeWithin(ADAPTIVE_ROOT, abs);
-  if (sourceRel === null || sourceRel === '') {
-    throw new Error(`adaptive_store: target outside adaptive root: ${abs}`);
-  }
-  return { abs, rel: normalizeAdaptiveRel(sourceRel) };
+function encodeBase64(value) {
+  return Buffer.from(String(value == null ? '' : value), 'utf8').toString('base64');
 }
 
 function cloneJsonSafe(v) {
   return JSON.parse(JSON.stringify(v));
 }
 
-function sleepMs(ms) {
-  const dur = Math.max(0, Number(ms) || 0);
-  if (dur <= 0) return;
-  try {
-    const buf = new SharedArrayBuffer(4);
-    const view = new Int32Array(buf);
-    Atomics.wait(view, 0, 0, dur);
-    return;
-  } catch {
-    const end = Date.now() + dur;
-    while (Date.now() < end) {
-      // busy wait fallback for runtimes without Atomics.wait
-    }
+function normalizeObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? { ...value } : {};
+}
+
+function invoke(command, payload = {}, opts = {}) {
+  const out = bridge.run([
+    command,
+    `--payload-base64=${encodeBase64(JSON.stringify(normalizeObject(payload)))}`
+  ]);
+  const receipt = out && out.payload && typeof out.payload === 'object' ? out.payload : null;
+  const payloadOut = receipt && receipt.payload && typeof receipt.payload === 'object'
+    ? receipt.payload
+    : receipt;
+  if (out.status !== 0) {
+    const message = payloadOut && typeof payloadOut.error === 'string'
+      ? payloadOut.error
+      : (out && out.stderr ? String(out.stderr).trim() : `adaptive_layer_store_kernel_${command}_failed`);
+    if (opts.throwOnError !== false) throw new Error(message || `adaptive_layer_store_kernel_${command}_failed`);
+    return { ok: false, error: message || `adaptive_layer_store_kernel_${command}_failed` };
   }
-}
-
-function lockPathFor(absPath) {
-  return `${String(absPath)}.write.lock`;
-}
-
-function acquireWriteLock(absPath) {
-  const lockPath = lockPathFor(absPath);
-  const started = Date.now();
-  fs.mkdirSync(path.dirname(lockPath), { recursive: true });
-  while (true) {
-    try {
-      const fd = fs.openSync(lockPath, 'wx', 0o600);
-      try {
-        const body = JSON.stringify({
-          pid: process.pid,
-          ts: nowIso(),
-          path: absPath
-        });
-        fs.writeFileSync(fd, `${body}\n`, 'utf8');
-        fs.fsyncSync(fd);
-      } catch {
-        // lock content best-effort only
-      }
-      return { fd, lockPath, waited_ms: Date.now() - started };
-    } catch (err) {
-      if (!err || err.code !== 'EEXIST') throw err;
-      let stale = false;
-      try {
-        const st = fs.statSync(lockPath);
-        stale = (Date.now() - Number(st.mtimeMs || 0)) > WRITE_LOCK_STALE_MS;
-      } catch {
-        stale = false;
-      }
-      if (stale) {
-        try {
-          fs.rmSync(lockPath, { force: true });
-          continue;
-        } catch {
-          // continue retrying
-        }
-      }
-      if ((Date.now() - started) >= WRITE_LOCK_TIMEOUT_MS) {
-        throw new Error(`adaptive_store: write lock timeout for ${absPath}`);
-      }
-      sleepMs(WRITE_LOCK_RETRY_MS);
-    }
+  if (!payloadOut || typeof payloadOut !== 'object') {
+    const message = out && out.stderr
+      ? String(out.stderr).trim() || `adaptive_layer_store_kernel_${command}_bridge_failed`
+      : `adaptive_layer_store_kernel_${command}_bridge_failed`;
+    if (opts.throwOnError !== false) throw new Error(message);
+    return { ok: false, error: message };
   }
+  return payloadOut;
 }
 
-function releaseWriteLock(lock) {
-  if (!lock || typeof lock !== 'object') return;
-  try {
-    if (Number.isInteger(lock.fd)) fs.closeSync(lock.fd);
-  } catch {
-    // ignore
-  }
-  try {
-    if (lock.lockPath) fs.rmSync(lock.lockPath, { force: true });
-  } catch {
-    // ignore
-  }
+function resolveAdaptivePath(targetPath) {
+  const out = invoke('resolve-path', {
+    workspace_root: workspaceRoot(),
+    runtime_root: runtimeRoot(),
+    target_path: String(targetPath || '')
+  });
+  return { abs: String(out.abs || ''), rel: String(out.rel || '') };
 }
 
-function withSingleWriter(absPath, fn) {
-  const lock = acquireWriteLock(absPath);
-  try {
-    return fn(lock);
-  } finally {
-    releaseWriteLock(lock);
-  }
-}
-
-function appendMutationLog(event) {
-  try {
-    fs.mkdirSync(path.dirname(MUTATION_LOG_PATH), { recursive: true });
-    fs.appendFileSync(MUTATION_LOG_PATH, JSON.stringify(event) + '\n', 'utf8');
-  } catch {
-    // Must never block caller.
-  }
-}
-
-function readJsonSafe(filePath, fallback) {
-  try {
-    if (!fs.existsSync(filePath)) return fallback;
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch {
-    return fallback;
-  }
-}
-
-function normalizeTag(v) {
-  return String(v || '').toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32);
-}
-
-function cleanText(v, maxLen = 160) {
-  return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, maxLen);
-}
-
-function pointerIndexLoad() {
-  const base = readJsonSafe(ADAPTIVE_POINTER_INDEX_PATH, { version: '1.0', pointers: {} });
-  if (!base || typeof base !== 'object') return { version: '1.0', pointers: {} };
-  if (!base.pointers || typeof base.pointers !== 'object') base.pointers = {};
-  return base;
-}
-
-function pointerIndexSave(index) {
-  fs.mkdirSync(path.dirname(ADAPTIVE_POINTER_INDEX_PATH), { recursive: true });
-  fs.writeFileSync(ADAPTIVE_POINTER_INDEX_PATH, JSON.stringify({
-    version: '1.0',
-    updated_ts: nowIso(),
-    pointers: index && index.pointers && typeof index.pointers === 'object' ? index.pointers : {}
-  }, null, 2) + '\n', 'utf8');
-}
-
-function appendAdaptivePointerRows(rows) {
-  if (!Array.isArray(rows) || rows.length === 0) return { emitted: 0, skipped: 0 };
-  const index = pointerIndexLoad();
-  let emitted = 0;
-  let skipped = 0;
-  fs.mkdirSync(path.dirname(ADAPTIVE_POINTERS_PATH), { recursive: true });
-  for (const row of rows) {
-    const key = `${String(row.kind || '')}|${String(row.uid || '')}|${String(row.path_ref || '')}|${String(row.entity_id || '')}`;
-    const hash = hash16(JSON.stringify({
-      uid: row.uid,
-      kind: row.kind,
-      path_ref: row.path_ref,
-      entity_id: row.entity_id || null,
-      tags: row.tags || [],
-      summary: row.summary || '',
-      status: row.status || ''
-    }));
-    if (index.pointers[key] === hash) {
-      skipped++;
-      continue;
-    }
-    fs.appendFileSync(ADAPTIVE_POINTERS_PATH, JSON.stringify(row) + '\n', 'utf8');
-    index.pointers[key] = hash;
-    emitted++;
-  }
-  pointerIndexSave(index);
-  return { emitted, skipped };
-}
-
-function projectAdaptivePointers(relPath, obj, op, meta = {}) {
-  const ts = nowIso();
-  const pathRef = `adaptive/${String(relPath || '').replace(/\\/g, '/')}`;
-  const actor = String(meta.actor || process.env.USER || 'unknown').slice(0, 80);
-  const source = String(meta.source || '').slice(0, 120);
-  const reason = String(meta.reason || '').slice(0, 160);
-  const rows = [];
-
-  if (String(relPath) === 'sensory/eyes/catalog.json' && obj && Array.isArray(obj.eyes)) {
-    for (const eyeRaw of obj.eyes) {
-      if (!eyeRaw || typeof eyeRaw !== 'object') continue;
-      const eye = { ...eyeRaw };
-      const eyeId = cleanText(eye.id, 64);
-      const eyeUidCandidate = cleanText(eye.uid, 64);
-      const eyeUid = eyeUidCandidate && isAlnum(eyeUidCandidate)
-        ? eyeUidCandidate
-        : stableUid(`adaptive_eye|${eyeId}|v1`, { prefix: 'e', length: 24 });
-      const topicTags = Array.isArray(eye.topics)
-        ? eye.topics.map((t) => normalizeTag(t)).filter(Boolean).slice(0, 8)
-        : [];
-      const tags = Array.from(new Set(['adaptive', 'sensory', 'eyes', normalizeTag(eye.status || 'active'), ...topicTags])).filter(Boolean);
-      rows.push({
-        ts,
-        op,
-        source: 'adaptive_layer_store',
-        source_path: source || null,
-        reason: reason || null,
-        actor,
-        kind: 'adaptive_eye',
-        layer: 'sensory',
-        uid: eyeUid,
-        entity_id: eyeId || null,
-        status: cleanText(eye.status || 'active', 24),
-        tags,
-        summary: cleanText(eye.name || eye.id || 'Adaptive eye'),
-        path_ref: pathRef,
-        created_ts: cleanText(eye.created_ts || ts, 40),
-        updated_ts: ts
-      });
-    }
-    return rows;
-  }
-
-  if (obj && typeof obj === 'object') {
-    const uidCandidate = cleanText(obj.uid, 64);
-    const uid = uidCandidate && isAlnum(uidCandidate)
-      ? uidCandidate
-      : stableUid(`adaptive_blob|${relPath}|v1`, { prefix: 'a', length: 24 });
-    const segments = String(relPath || '').split('/').filter(Boolean);
-    const layer = segments.length ? normalizeTag(segments[0]) : 'adaptive';
-    const kind = `adaptive_${normalizeTag(segments.join('_') || 'blob')}`;
-    const tags = ['adaptive', layer].filter(Boolean);
-    rows.push({
-      ts,
-      op,
-      source: 'adaptive_layer_store',
-      source_path: source || null,
-      reason: reason || null,
-      actor,
-      kind,
-      layer,
-      uid,
-      entity_id: null,
-      status: 'active',
-      tags,
-      summary: cleanText(`Adaptive record: ${relPath}`),
-      path_ref: pathRef,
-      created_ts: ts,
-      updated_ts: ts
-    });
-  }
-  return rows;
-}
-
-function emitAdaptivePointers(relPath, obj, op, meta = {}) {
-  try {
-    const rows = projectAdaptivePointers(relPath, obj, op, meta);
-    return appendAdaptivePointerRows(rows);
-  } catch {
-    return { emitted: 0, skipped: 0 };
-  }
+function isWithinAdaptiveRoot(targetPath) {
+  const out = invoke('is-within-root', {
+    workspace_root: workspaceRoot(),
+    runtime_root: runtimeRoot(),
+    target_path: String(targetPath || '')
+  });
+  return out.within === true;
 }
 
 function readJson(targetPath, fallback = null) {
-  try {
-    const { abs } = resolveAdaptivePath(targetPath);
-    if (!fs.existsSync(abs)) return fallback;
-    return JSON.parse(fs.readFileSync(abs, 'utf8'));
-  } catch {
-    return fallback;
-  }
-}
-
-function atomicWriteJson(absPath, obj) {
-  fs.mkdirSync(path.dirname(absPath), { recursive: true });
-  const tmpPath = `${absPath}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  const body = JSON.stringify(obj, null, 2) + '\n';
-  let fd = null;
-  try {
-    fd = fs.openSync(tmpPath, 'w', 0o600);
-    fs.writeSync(fd, body, null, 'utf8');
-    fs.fsyncSync(fd);
-    fs.closeSync(fd);
-    fd = null;
-
-    fs.renameSync(tmpPath, absPath);
-
-    try {
-      const outFd = fs.openSync(absPath, 'r');
-      try { fs.fsyncSync(outFd); } finally { fs.closeSync(outFd); }
-    } catch {
-      // best-effort durability
-    }
-    try {
-      const dirFd = fs.openSync(path.dirname(absPath), 'r');
-      try { fs.fsyncSync(dirFd); } finally { fs.closeSync(dirFd); }
-    } catch {
-      // best-effort durability
-    }
-  } finally {
-    if (fd !== null) {
-      try { fs.closeSync(fd); } catch {}
-    }
-    try {
-      if (fs.existsSync(tmpPath)) fs.rmSync(tmpPath, { force: true });
-    } catch {
-      // best-effort cleanup
-    }
-  }
-}
-
-function setJson(targetPath, obj, meta = {}) {
-  const { abs, rel } = resolveAdaptivePath(targetPath);
-  return withSingleWriter(abs, (lock) => {
-    atomicWriteJson(abs, obj);
-    appendMutationLog({
-      ts: nowIso(),
-      op: 'set',
-      rel_path: rel,
-      actor: String(meta.actor || process.env.USER || 'unknown').slice(0, 80),
-      source: String(meta.source || '').slice(0, 120),
-      reason: String(meta.reason || 'unspecified').slice(0, 160),
-      lock_wait_ms: Number(lock && lock.waited_ms || 0),
-      value_hash: hash16(JSON.stringify(obj))
-    });
-    emitAdaptivePointers(rel, obj, 'set', meta);
-    return obj;
+  const out = invoke('read-json', {
+    workspace_root: workspaceRoot(),
+    runtime_root: runtimeRoot(),
+    target_path: String(targetPath || ''),
+    fallback
   });
+  return out.value == null ? fallback : out.value;
 }
 
 function ensureJson(targetPath, defaultValue, meta = {}) {
-  const { abs, rel } = resolveAdaptivePath(targetPath);
-  return withSingleWriter(abs, (lock) => {
-    if (fs.existsSync(abs)) {
-      try {
-        return JSON.parse(fs.readFileSync(abs, 'utf8'));
-      } catch {
-        // fallthrough to rewrite deterministic default
-      }
-    }
-    const next = typeof defaultValue === 'function' ? defaultValue() : defaultValue;
-    atomicWriteJson(abs, next);
-    appendMutationLog({
-      ts: nowIso(),
-      op: 'ensure',
-      rel_path: rel,
-      actor: String(meta.actor || process.env.USER || 'unknown').slice(0, 80),
-      source: String(meta.source || '').slice(0, 120),
-      reason: String(meta.reason || 'ensure_default').slice(0, 160),
-      lock_wait_ms: Number(lock && lock.waited_ms || 0),
-      value_hash: hash16(JSON.stringify(next))
-    });
-    emitAdaptivePointers(rel, next, 'ensure', meta);
-    return next;
+  const next = typeof defaultValue === 'function' ? defaultValue() : defaultValue;
+  const out = invoke('ensure-json', {
+    workspace_root: workspaceRoot(),
+    runtime_root: runtimeRoot(),
+    target_path: String(targetPath || ''),
+    default_value: next,
+    meta: normalizeObject(meta)
   });
+  return out.value;
+}
+
+function setJsonReceipt(targetPath, obj, meta = {}, opts = {}) {
+  const payload = {
+    workspace_root: workspaceRoot(),
+    runtime_root: runtimeRoot(),
+    target_path: String(targetPath || ''),
+    value: obj,
+    meta: normalizeObject(meta)
+  };
+  if (Object.prototype.hasOwnProperty.call(opts, 'expected_hash')) {
+    payload.expected_hash = opts.expected_hash;
+  }
+  const out = invoke('set-json', payload, { throwOnError: opts.throwOnError !== false });
+  return out;
+}
+
+function setJson(targetPath, obj, meta = {}) {
+  const out = setJsonReceipt(targetPath, obj, meta);
+  return out.value;
 }
 
 function mutateJson(targetPath, mutator, meta = {}) {
   if (typeof mutator !== 'function') {
     throw new Error('adaptive_store: mutator must be function');
   }
-  const { abs, rel } = resolveAdaptivePath(targetPath);
-  return withSingleWriter(abs, (lock) => {
-    const current = readJson(targetPath, null);
-    const base = current == null ? {} : cloneJsonSafe(current);
+  for (let attempt = 0; attempt < MUTATE_RETRIES; attempt += 1) {
+    const current = invoke('read-json', {
+      workspace_root: workspaceRoot(),
+      runtime_root: runtimeRoot(),
+      target_path: String(targetPath || ''),
+      fallback: null
+    });
+    const base = current.value == null ? {} : cloneJsonSafe(current.value);
     const mutated = mutator(base);
-    if (mutated == null || typeof mutated !== 'object') {
+    if (mutated == null || typeof mutated !== 'object' || Array.isArray(mutated)) {
       throw new Error('adaptive_store: mutator must return object');
     }
-    atomicWriteJson(abs, mutated);
-    appendMutationLog({
-      ts: nowIso(),
-      op: 'set',
-      rel_path: rel,
-      actor: String(meta.actor || process.env.USER || 'unknown').slice(0, 80),
-      source: String(meta.source || '').slice(0, 120),
-      reason: String(meta.reason || 'mutate').slice(0, 160),
-      lock_wait_ms: Number(lock && lock.waited_ms || 0),
-      value_hash: hash16(JSON.stringify(mutated))
+    const expectedHash = current.exists === true
+      ? String(current.current_hash || '')
+      : MISSING_HASH_SENTINEL;
+    const out = setJsonReceipt(targetPath, mutated, meta, {
+      expected_hash: expectedHash,
+      throwOnError: false
     });
-    emitAdaptivePointers(rel, mutated, 'set', meta);
-    return mutated;
-  });
+    if (out.conflict !== true) {
+      return out.value;
+    }
+  }
+  throw new Error('adaptive_store: mutate conflict retry exhausted');
 }
 
 function deletePath(targetPath, meta = {}) {
-  const { abs, rel } = resolveAdaptivePath(targetPath);
-  if (fs.existsSync(abs)) {
-    fs.rmSync(abs, { force: true });
-  }
-  appendMutationLog({
-    ts: nowIso(),
-    op: 'delete',
-    rel_path: rel,
-    actor: String(meta.actor || process.env.USER || 'unknown').slice(0, 80),
-    source: String(meta.source || '').slice(0, 120),
-    reason: String(meta.reason || 'delete').slice(0, 160)
+  invoke('delete-path', {
+    workspace_root: workspaceRoot(),
+    runtime_root: runtimeRoot(),
+    target_path: String(targetPath || ''),
+    meta: normalizeObject(meta)
   });
-  emitAdaptivePointers(rel, { uid: stableUid(`adaptive_blob|${rel}|v1`, { prefix: 'a', length: 24 }) }, 'delete', meta);
 }
 
 module.exports = {

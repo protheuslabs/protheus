@@ -164,6 +164,21 @@ fn main() {
             let exit = protheus_ops_core::secret_broker_kernel::run(&cwd, &rest);
             std::process::exit(exit);
         }
+        "passport-iteration-chain-kernel" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::passport_iteration_chain_kernel::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "egress-gateway-kernel" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::egress_gateway_kernel::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
+        "adaptive-layer-store-kernel" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::adaptive_layer_store_kernel::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
         "symbiosis-coherence-kernel" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::symbiosis_coherence_kernel::run(&cwd, &rest);

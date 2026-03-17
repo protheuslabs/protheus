@@ -2,246 +2,136 @@
 'use strict';
 export {};
 
-const fs = require('fs');
-const path = require('path');
-const {
-  ROOT,
-  nowIso,
-  cleanText,
-  normalizeToken,
-  readJson,
-  writeJsonAtomic,
-  appendJsonl,
-  resolvePath
-} = require('./queued_backlog_runtime.ts');
+// Layer ownership: core/layer0/ops (authoritative)
+// Thin TypeScript wrapper only. Network fetch remains local presentation logic.
 
-type AnyObj = Record<string, any>;
+const path = require('path');
+const { createOpsLaneBridge } = require('./rust_lane_bridge.ts');
 
 const DEFAULT_POLICY_REL = 'config/egress_gateway_policy.json';
 const DEFAULT_STATE_REL = 'local/state/security/egress_gateway/state.json';
 const DEFAULT_AUDIT_REL = 'local/state/security/egress_gateway/audit.jsonl';
 
+function runtimeRoot() {
+  if (process.env.PROTHEUS_RUNTIME_ROOT) {
+    return path.resolve(String(process.env.PROTHEUS_RUNTIME_ROOT));
+  }
+  return path.resolve(__dirname, '..');
+}
+
+function cleanText(v, maxLen = 260) {
+  return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, maxLen);
+}
+
+function normalizeToken(v, maxLen = 120) {
+  return cleanText(v, maxLen)
+    .toLowerCase()
+    .replace(/[^a-z0-9_.:/-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+const ROOT = runtimeRoot();
+
 class EgressGatewayError extends Error {
-  decision: AnyObj;
-  constructor(message: string, decision: AnyObj) {
+  constructor(message, decision) {
     super(message);
     this.name = 'EgressGatewayError';
-    this.decision = decision;
+    this.decision = decision && typeof decision === 'object' ? decision : {};
+    this.details = this.decision;
   }
+}
+
+function resolvePath(raw, fallbackRel) {
+  const value = cleanText(raw, 520);
+  if (!value) return path.join(ROOT, fallbackRel);
+  return path.isAbsolute(value) ? value : path.join(ROOT, value);
 }
 
 function policyPath() {
-  const raw = cleanText(process.env.EGRESS_GATEWAY_POLICY_PATH || '', 520);
-  return resolvePath(raw, DEFAULT_POLICY_REL);
+  return resolvePath(process.env.EGRESS_GATEWAY_POLICY_PATH, DEFAULT_POLICY_REL);
 }
 
 function statePath() {
-  const raw = cleanText(process.env.EGRESS_GATEWAY_STATE_PATH || '', 520);
-  return resolvePath(raw, DEFAULT_STATE_REL);
+  return resolvePath(process.env.EGRESS_GATEWAY_STATE_PATH, DEFAULT_STATE_REL);
 }
 
 function auditPath() {
-  const raw = cleanText(process.env.EGRESS_GATEWAY_AUDIT_PATH || '', 520);
-  return resolvePath(raw, DEFAULT_AUDIT_REL);
+  return resolvePath(process.env.EGRESS_GATEWAY_AUDIT_PATH, DEFAULT_AUDIT_REL);
 }
 
-function parseHost(rawUrl: unknown) {
-  try {
-    return new URL(String(rawUrl || '')).hostname.toLowerCase();
-  } catch {
-    return '';
+process.env.PROTHEUS_OPS_USE_PREBUILT = process.env.PROTHEUS_OPS_USE_PREBUILT || '0';
+process.env.PROTHEUS_OPS_LOCAL_TIMEOUT_MS = process.env.PROTHEUS_OPS_LOCAL_TIMEOUT_MS || '120000';
+const bridge = createOpsLaneBridge(__dirname, 'egress_gateway', 'egress-gateway-kernel');
+
+function encodeBase64(value) {
+  return Buffer.from(String(value == null ? '' : value), 'utf8').toString('base64');
+}
+
+function normalizeObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? { ...value } : {};
+}
+
+function invoke(command, payload = {}, opts = {}) {
+  const out = bridge.run([
+    command,
+    `--payload-base64=${encodeBase64(JSON.stringify(normalizeObject(payload)))}`
+  ]);
+  const receipt = out && out.payload && typeof out.payload === 'object' ? out.payload : null;
+  const payloadOut = receipt && receipt.payload && typeof receipt.payload === 'object'
+    ? receipt.payload
+    : receipt;
+  if (out.status !== 0) {
+    const message = payloadOut && typeof payloadOut.error === 'string'
+      ? payloadOut.error
+      : (out && out.stderr ? String(out.stderr).trim() : `egress_gateway_kernel_${command}_failed`);
+    if (opts.throwOnError !== false) throw new Error(message || `egress_gateway_kernel_${command}_failed`);
+    return { ok: false, error: message || `egress_gateway_kernel_${command}_failed` };
   }
-}
-
-function domainMatches(host: string, domain: string) {
-  const needle = String(domain || '').trim().toLowerCase();
-  if (!needle) return false;
-  return host === needle || host.endsWith(`.${needle}`);
-}
-
-function normalizeScopeRule(id: string, rawRule: AnyObj) {
-  const methods = Array.isArray(rawRule && rawRule.methods)
-    ? rawRule.methods.map((row: unknown) => normalizeToken(row, 20).toUpperCase()).filter(Boolean)
-    : ['GET'];
-  const domains = Array.isArray(rawRule && rawRule.domains)
-    ? rawRule.domains.map((row: unknown) => cleanText(row, 160).toLowerCase()).filter(Boolean)
-    : [];
-  return {
-    id: normalizeToken(id, 120),
-    methods,
-    domains,
-    require_runtime_allowlist: rawRule && rawRule.require_runtime_allowlist === true,
-    rate_caps: {
-      per_hour: Number(rawRule && rawRule.rate_caps && rawRule.rate_caps.per_hour) || null,
-      per_day: Number(rawRule && rawRule.rate_caps && rawRule.rate_caps.per_day) || null
-    }
-  };
+  if (!payloadOut || typeof payloadOut !== 'object') {
+    const message = out && out.stderr
+      ? String(out.stderr).trim() || `egress_gateway_kernel_${command}_bridge_failed`
+      : `egress_gateway_kernel_${command}_bridge_failed`;
+    if (opts.throwOnError !== false) throw new Error(message);
+    return { ok: false, error: message };
+  }
+  return payloadOut;
 }
 
 function loadPolicy() {
-  const src = readJson(policyPath(), {});
-  const scopesRaw = src.scopes && typeof src.scopes === 'object' ? src.scopes : {};
-  const scopes: AnyObj = {};
-  for (const [id, row] of Object.entries(scopesRaw)) {
-    const norm = normalizeScopeRule(id, row as AnyObj);
-    if (norm.id) scopes[norm.id] = norm;
-  }
-  return {
-    version: cleanText(src.version || '1.0', 32) || '1.0',
-    default_decision: normalizeToken(src.default_decision || 'deny', 10) || 'deny',
-    global_rate_caps: {
-      per_hour: Number(src.global_rate_caps && src.global_rate_caps.per_hour) || null,
-      per_day: Number(src.global_rate_caps && src.global_rate_caps.per_day) || null
-    },
-    scopes
-  };
+  const out = invoke('load-policy', {
+    root: ROOT,
+    policy_path: policyPath()
+  });
+  return out.policy || {};
 }
 
 function loadState() {
-  const src = readJson(statePath(), {});
-  return {
-    schema_id: 'egress_gateway_state',
-    schema_version: '1.0',
-    updated_at: cleanText(src.updated_at || '', 80) || null,
-    per_hour: src.per_hour && typeof src.per_hour === 'object' ? src.per_hour : {},
-    per_day: src.per_day && typeof src.per_day === 'object' ? src.per_day : {}
-  };
+  const out = invoke('load-state', {
+    root: ROOT,
+    state_path: statePath()
+  });
+  return out.state || {};
 }
 
-function writeState(next: AnyObj) {
-  writeJsonAtomic(statePath(), next);
+function authorizeEgress(input = {}) {
+  return invoke('authorize', {
+    root: ROOT,
+    policy_path: policyPath(),
+    state_path: statePath(),
+    audit_path: auditPath(),
+    scope: input.scope,
+    caller: input.caller,
+    runtime_allowlist: Array.isArray(input.runtime_allowlist) ? input.runtime_allowlist : [],
+    now_ms: input.now_ms,
+    apply: input.apply !== false,
+    url: cleanText(input.url, 2000),
+    method: normalizeToken(input.method || 'GET', 20).toUpperCase() || 'GET'
+  });
 }
 
-function resolveScopeRule(policy: AnyObj, scopeId: string) {
-  if (policy.scopes[scopeId]) return policy.scopes[scopeId];
-  if (scopeId.startsWith('sensory.collector.') && policy.scopes['sensory.collector.dynamic']) {
-    return policy.scopes['sensory.collector.dynamic'];
-  }
-  return null;
-}
-
-function countKey(scopeId: string, epochKey: string) {
-  return `${scopeId}:${epochKey}`;
-}
-
-function incrementCounter(bucket: AnyObj, key: string) {
-  bucket[key] = Number(bucket[key] || 0) + 1;
-}
-
-function checkCap(bucket: AnyObj, key: string, cap: number | null) {
-  if (!(Number(cap) > 0)) return { ok: true };
-  return { ok: Number(bucket[key] || 0) < Number(cap) };
-}
-
-function authorizeEgress(input: AnyObj) {
-  const policy = loadPolicy();
-  const scopeId = normalizeToken(input.scope || '', 160);
-  const method = normalizeToken(input.method || 'GET', 20).toUpperCase();
-  const caller = normalizeToken(input.caller || 'unknown', 120) || 'unknown';
-  const url = cleanText(input.url || '', 2000);
-  const host = parseHost(url);
-  const runtimeAllowlist = Array.isArray(input.runtime_allowlist)
-    ? input.runtime_allowlist.map((row: unknown) => cleanText(row, 160).toLowerCase()).filter(Boolean)
-    : [];
-  const nowMs = Number(input.now_ms) > 0 ? Number(input.now_ms) : Date.now();
-  const ts = new Date(nowMs).toISOString();
-  const hourKey = new Date(nowMs).toISOString().slice(0, 13);
-  const dayKey = new Date(nowMs).toISOString().slice(0, 10);
-  const apply = input.apply !== false;
-
-  const state = loadState();
-  const rule = resolveScopeRule(policy, scopeId);
-
-  const out: AnyObj = {
-    ok: true,
-    type: 'egress_gateway_decision',
-    ts,
-    scope: scopeId,
-    caller,
-    method,
-    url,
-    host,
-    allow: false,
-    reason: 'unknown'
-  };
-
-  if (!rule) {
-    out.allow = policy.default_decision === 'allow';
-    out.reason = out.allow ? 'default_allow' : 'scope_not_allowlisted';
-    return out;
-  }
-
-  if (!rule.methods.includes(method)) {
-    out.reason = 'method_not_allowlisted';
-    return out;
-  }
-
-  if (!host) {
-    out.reason = 'invalid_url';
-    return out;
-  }
-
-  if (rule.domains.length > 0 && !rule.domains.some((d: string) => domainMatches(host, d))) {
-    out.reason = 'domain_not_allowlisted';
-    return out;
-  }
-
-  if (rule.require_runtime_allowlist) {
-    if (!runtimeAllowlist.length) {
-      out.reason = 'runtime_allowlist_required';
-      return out;
-    }
-    const runtimeAllowed = runtimeAllowlist.some((d: string) => domainMatches(host, d));
-    if (!runtimeAllowed) {
-      out.reason = 'runtime_allowlist_blocked';
-      return out;
-    }
-  }
-
-  const scopeHourKey = countKey(scopeId, hourKey);
-  const scopeDayKey = countKey(scopeId, dayKey);
-  const globalHourKey = countKey('__global__', hourKey);
-  const globalDayKey = countKey('__global__', dayKey);
-
-  const scopeHourCap = checkCap(state.per_hour, scopeHourKey, rule.rate_caps.per_hour);
-  if (!scopeHourCap.ok) {
-    out.reason = 'scope_hour_cap_exceeded';
-    return out;
-  }
-  const scopeDayCap = checkCap(state.per_day, scopeDayKey, rule.rate_caps.per_day);
-  if (!scopeDayCap.ok) {
-    out.reason = 'scope_day_cap_exceeded';
-    return out;
-  }
-  const globalHourCap = checkCap(state.per_hour, globalHourKey, policy.global_rate_caps.per_hour);
-  if (!globalHourCap.ok) {
-    out.reason = 'global_hour_cap_exceeded';
-    return out;
-  }
-  const globalDayCap = checkCap(state.per_day, globalDayKey, policy.global_rate_caps.per_day);
-  if (!globalDayCap.ok) {
-    out.reason = 'global_day_cap_exceeded';
-    return out;
-  }
-
-  out.allow = true;
-  out.reason = 'ok';
-  out.scope_resolved = rule.id;
-
-  if (apply) {
-    incrementCounter(state.per_hour, scopeHourKey);
-    incrementCounter(state.per_day, scopeDayKey);
-    incrementCounter(state.per_hour, globalHourKey);
-    incrementCounter(state.per_day, globalDayKey);
-    state.updated_at = ts;
-    writeState(state);
-    appendJsonl(auditPath(), out);
-  }
-
-  return out;
-}
-
-async function egressFetch(url: string, init: AnyObj = {}, context: AnyObj = {}) {
+async function egressFetch(url, init = {}, context = {}) {
+  const method = normalizeToken(init.method || 'GET', 20).toUpperCase() || 'GET';
   const decision = authorizeEgress({
     scope: context.scope,
     caller: context.caller,
@@ -249,18 +139,50 @@ async function egressFetch(url: string, init: AnyObj = {}, context: AnyObj = {})
     now_ms: context.now_ms,
     apply: context.apply !== false,
     url,
-    method: normalizeToken(init.method || 'GET', 20).toUpperCase()
+    method
   });
   if (!decision.allow) {
-    throw new EgressGatewayError(`egress_denied:${decision.reason}`, decision);
+    throw new EgressGatewayError(`egress_denied:${decision.reason || decision.code || 'policy'}`, decision);
   }
-  return fetch(url, init);
+  const fetchImpl = globalThis.fetch;
+  if (typeof fetchImpl !== 'function') {
+    throw new Error('egress_fetch_unavailable');
+  }
+  const timeoutMs = Number(context.timeout_ms || context.timeoutMs || 0);
+  if (!(timeoutMs > 0)) {
+    return fetchImpl(url, init);
+  }
+  const controller = typeof AbortController === 'function' ? new AbortController() : null;
+  const timer = controller
+    ? setTimeout(() => controller.abort(new Error(`egress_fetch_timeout:${timeoutMs}`)), timeoutMs)
+    : null;
+  try {
+    const nextInit = controller ? { ...init, signal: controller.signal } : init;
+    return await fetchImpl(url, nextInit);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+async function egressFetchText(url, init = {}, context = {}) {
+  const res = await egressFetch(url, init, context);
+  const text = await res.text();
+  return {
+    status: Number(res.status || 0),
+    ok: !!res.ok,
+    text,
+    headers: typeof res.headers?.entries === 'function'
+      ? Object.fromEntries(Array.from(res.headers.entries()))
+      : {},
+    bytes: Buffer.byteLength(String(text || ''), 'utf8')
+  };
 }
 
 module.exports = {
   EgressGatewayError,
   authorizeEgress,
   egressFetch,
+  egressFetchText,
   loadPolicy,
   loadState
 };
