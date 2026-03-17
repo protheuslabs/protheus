@@ -3,7 +3,9 @@ param(
   [switch]$Minimal,
   [switch]$Pure,
   [switch]$TinyMax,
-  [switch]$Repair
+  [switch]$Repair,
+  [string]$InstallDir,
+  [string]$TmpDir
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,7 +16,24 @@ $DefaultApi = "https://api.github.com/repos/$RepoOwner/$RepoName/releases/latest
 $DefaultLatestUrl = "https://github.com/$RepoOwner/$RepoName/releases/latest"
 $DefaultBase = "https://github.com/$RepoOwner/$RepoName/releases/download"
 
-$InstallDir = if ($env:INFRING_INSTALL_DIR) { $env:INFRING_INSTALL_DIR } elseif ($env:PROTHEUS_INSTALL_DIR) { $env:PROTHEUS_INSTALL_DIR } else { Join-Path $HOME ".protheus\bin" }
+$InstallDir = if ($InstallDir) {
+  $InstallDir
+} elseif ($env:INFRING_INSTALL_DIR) {
+  $env:INFRING_INSTALL_DIR
+} elseif ($env:PROTHEUS_INSTALL_DIR) {
+  $env:PROTHEUS_INSTALL_DIR
+} else {
+  Join-Path $HOME ".protheus\bin"
+}
+$TmpDir = if ($TmpDir) {
+  $TmpDir
+} elseif ($env:INFRING_TMP_DIR) {
+  $env:INFRING_TMP_DIR
+} elseif ($env:PROTHEUS_TMP_DIR) {
+  $env:PROTHEUS_TMP_DIR
+} else {
+  $null
+}
 $RequestedVersion = if ($env:INFRING_VERSION) { $env:INFRING_VERSION } elseif ($env:PROTHEUS_VERSION) { $env:PROTHEUS_VERSION } else { "latest" }
 $ApiUrl = if ($env:INFRING_RELEASE_API_URL) { $env:INFRING_RELEASE_API_URL } elseif ($env:PROTHEUS_RELEASE_API_URL) { $env:PROTHEUS_RELEASE_API_URL } else { $DefaultApi }
 $LatestUrl = if ($env:INFRING_RELEASE_LATEST_URL) { $env:INFRING_RELEASE_LATEST_URL } elseif ($env:PROTHEUS_RELEASE_LATEST_URL) { $env:PROTHEUS_RELEASE_LATEST_URL } else { $DefaultLatestUrl }
@@ -55,6 +74,13 @@ if ($TinyMax) {
   $InstallFull = $false
 }
 if ($Repair) { $InstallRepair = $true }
+
+if ($TmpDir) {
+  New-Item -ItemType Directory -Force -Path $TmpDir | Out-Null
+  $env:TMPDIR = $TmpDir
+  $env:TEMP = $TmpDir
+  $env:TMP = $TmpDir
+}
 
 $script:SourceFallbackDir = $null
 $script:SourceFallbackTmp = $null

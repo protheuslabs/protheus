@@ -8,6 +8,7 @@ DEFAULT_LATEST_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/lates
 DEFAULT_BASE="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download"
 
 INSTALL_DIR="${INFRING_INSTALL_DIR:-${PROTHEUS_INSTALL_DIR:-$HOME/.local/bin}}"
+INSTALL_TMP_DIR="${INFRING_TMP_DIR:-${PROTHEUS_TMP_DIR:-${TMPDIR:-}}}"
 REQUESTED_VERSION="${INFRING_VERSION:-${PROTHEUS_VERSION:-latest}}"
 API_URL="${INFRING_RELEASE_API_URL:-${PROTHEUS_RELEASE_API_URL:-$DEFAULT_API}}"
 LATEST_URL="${INFRING_RELEASE_LATEST_URL:-${PROTHEUS_RELEASE_LATEST_URL:-$DEFAULT_LATEST_URL}}"
@@ -40,7 +41,8 @@ is_truthy() {
 }
 
 parse_install_args() {
-  for arg in "$@"; do
+  while [ "$#" -gt 0 ]; do
+    arg="$1"
     case "$arg" in
       --full)
         INSTALL_FULL=1
@@ -61,13 +63,37 @@ parse_install_args() {
       --repair)
         INSTALL_REPAIR=1
         ;;
+      --install-dir)
+        shift
+        if [ "$#" -eq 0 ]; then
+          echo "[infring install] --install-dir requires a value" >&2
+          exit 1
+        fi
+        INSTALL_DIR="$1"
+        ;;
+      --install-dir=*)
+        INSTALL_DIR="${arg#--install-dir=}"
+        ;;
+      --tmp-dir)
+        shift
+        if [ "$#" -eq 0 ]; then
+          echo "[infring install] --tmp-dir requires a value" >&2
+          exit 1
+        fi
+        INSTALL_TMP_DIR="$1"
+        ;;
+      --tmp-dir=*)
+        INSTALL_TMP_DIR="${arg#--tmp-dir=}"
+        ;;
       --help|-h)
-        echo "Usage: install.sh [--full|--minimal|--pure|--tiny-max|--repair]"
-        echo "  --full     install optional client runtime bundle when available"
-        echo "  --minimal  install daemon + CLI only (default)"
-        echo "  --pure     install pure Rust client + daemon only (no Node/TS surfaces)"
-        echo "  --tiny-max install tiny-max pure profile for old/embedded hardware targets"
-        echo "  --repair   clear stale install wrappers + workspace runtime state before install"
+        echo "Usage: install.sh [--full|--minimal|--pure|--tiny-max|--repair] [--install-dir PATH] [--tmp-dir PATH]"
+        echo "  --full            install optional client runtime bundle when available"
+        echo "  --minimal         install daemon + CLI only (default)"
+        echo "  --pure            install pure Rust client + daemon only (no Node/TS surfaces)"
+        echo "  --tiny-max        install tiny-max pure profile for old/embedded hardware targets"
+        echo "  --repair          clear stale install wrappers + workspace runtime state before install"
+        echo "  --install-dir     install wrappers/binaries into this directory"
+        echo "  --tmp-dir         use this temp directory for download/build staging"
         exit 0
         ;;
       *)
@@ -75,6 +101,7 @@ parse_install_args() {
         exit 1
         ;;
     esac
+    shift
   done
 }
 
@@ -418,6 +445,10 @@ write_wrapper() {
 main() {
   parse_install_args "$@"
 
+  if [ -n "${INSTALL_TMP_DIR:-}" ]; then
+    mkdir -p "$INSTALL_TMP_DIR"
+    export TMPDIR="$INSTALL_TMP_DIR"
+  fi
   mkdir -p "$INSTALL_DIR"
   if is_truthy "$INSTALL_REPAIR"; then
     echo "[infring install] repair mode enabled"
