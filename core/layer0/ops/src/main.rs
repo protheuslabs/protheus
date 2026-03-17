@@ -219,6 +219,11 @@ fn main() {
             let exit = protheus_ops_core::local_runtime_partitioner::run(&cwd, &rest);
             std::process::exit(exit);
         }
+        "strategy-store-kernel" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::strategy_store_kernel::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
         "rsi-ignition" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::rsi_ignition::run(&cwd, &rest);

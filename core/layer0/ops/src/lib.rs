@@ -130,6 +130,7 @@ pub mod snowball_plane;
 pub mod spawn_broker;
 pub mod spine;
 pub mod state_kernel;
+pub mod strategy_store_kernel;
 pub mod strategy_mode_governor;
 pub mod strategy_resolver;
 pub mod success_criteria_kernel;
