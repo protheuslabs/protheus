@@ -28,28 +28,64 @@ This repository is organized to run like an internal platform team: typed runtim
 
 ## Quick Start
 
-Install with one command (macOS/Linux):
+Default install (minimal mode, macOS/Linux):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.sh | sh
 ```
 
-Repair a stale local install/workspace before reinstalling:
+Install modes (macOS/Linux):
+
+- `--minimal` (default): daemon + CLI wrappers only
+- `--pure`: 100% Rust client + daemon, no Node/TS surfaces
+- `--tiny-max`: extreme low-resource pure profile
+- `--full`: includes optional published client runtime bundle
+- `--repair`: clears stale local wrappers/runtime state before install
 
 ```bash
+# Pure mode
+curl -fsSL https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.sh | sh -s -- --pure
+
+# Tiny-max mode
+curl -fsSL https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.sh | sh -s -- --tiny-max
+
+# Full mode
+curl -fsSL https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.sh | sh -s -- --full
+
+# Repair + reinstall in pure mode
 curl -fsSL https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.sh | sh -s -- --repair --pure
+```
+
+Install to specific paths (macOS/Linux):
+
+```bash
+# Flags
+curl -fsSL https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.sh | \
+  sh -s -- --pure --install-dir "$HOME/.openclaw/bin" --tmp-dir "$HOME/.openclaw/tmp"
+
+# Equivalent env vars
+INFRING_INSTALL_DIR="$HOME/.openclaw/bin" \
+INFRING_TMP_DIR="$HOME/.openclaw/tmp" \
+curl -fsSL https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.sh | sh -s -- --pure
 ```
 
 Windows (PowerShell):
 
 ```powershell
+# Default minimal install
 irm https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.ps1 | iex
+
+# Pure / tiny-max / full / repair
+irm https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.ps1 | iex -Pure
+irm https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.ps1 | iex -TinyMax
+irm https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.ps1 | iex -Full
+irm https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.ps1 | iex -Repair -Pure
 ```
 
-Windows repair + reinstall:
+Install to specific paths (Windows):
 
 ```powershell
-irm https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.ps1 | iex -Repair -Pure
+irm https://raw.githubusercontent.com/protheuslabs/InfRing/main/install.ps1 | iex -Pure -InstallDir "$HOME\\.openclaw\\bin" -TmpDir "$HOME\\.openclaw\\tmp"
 ```
 
 Then verify:
