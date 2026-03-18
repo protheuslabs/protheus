@@ -119,3 +119,25 @@ fn runtime_metrics_falls_back_to_top1_snapshot_when_runtime_floor_state_is_missi
         Some(61.2)
     );
 }
+
+#[test]
+fn stabilized_tasks_per_sec_discards_warmup_outliers() {
+    let mut samples = vec![2400.0, 2600.0, 7750.0, 7800.0, 7700.0, 7850.0, 7725.0]
+        .into_iter();
+    let median = stabilized_tasks_per_sec_with(5, 2, || samples.next().expect("sample"));
+    assert_eq!(median, 7750.0);
+}
+
+#[test]
+fn attach_shared_throughput_marks_shared_baseline_source() {
+    let mut measured = Map::<String, Value>::new();
+    attach_shared_throughput(&mut measured, 7777.0);
+    assert_eq!(
+        measured.get("tasks_per_sec").and_then(Value::as_f64),
+        Some(7777.0)
+    );
+    assert_eq!(
+        measured.get("throughput_source").and_then(Value::as_str),
+        Some(SHARED_THROUGHPUT_SOURCE)
+    );
+}

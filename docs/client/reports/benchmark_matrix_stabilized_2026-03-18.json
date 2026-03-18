@@ -1,71 +1,71 @@
 {
   "type": "competitive_benchmark_matrix_stabilized",
-  "ts": "2026-03-18T14:33:31.362Z",
+  "ts": "2026-03-18T17:04:05.128Z",
   "method": {
     "warmup_runs": 2,
     "measured_runs": 9,
     "aggregation": "median",
-    "notes": "Generated via repeated benchmark-matrix runs under low-background load."
+    "notes": "Generated via repeated target/release/protheus-ops benchmark-matrix runs under low-background load."
   },
   "medians": {
     "rich": {
-      "cold_start_ms": 7.247,
-      "idle_memory_mb": 10.672,
-      "install_size_mb": 14.034,
-      "tasks_per_sec": 7703.71
+      "cold_start_ms": 11.993,
+      "idle_memory_mb": 8.172,
+      "install_size_mb": 11.637,
+      "tasks_per_sec": 65938.85
     },
     "pure": {
-      "cold_start_ms": 3.008625,
-      "idle_memory_mb": 1.34375,
+      "cold_start_ms": 4.123792,
+      "idle_memory_mb": 1.359375,
       "install_size_mb": 0.67,
-      "tasks_per_sec": 7891.9
+      "tasks_per_sec": 65938.85
     },
     "tiny_max": {
-      "cold_start_ms": 2.881208,
-      "idle_memory_mb": 1.34375,
+      "cold_start_ms": 3.107334,
+      "idle_memory_mb": 1.359375,
       "install_size_mb": 0.483,
-      "tasks_per_sec": 7893.53
+      "tasks_per_sec": 65938.85
     }
   },
   "full_summary": {
     "rich": {
       "cold": {
-        "min": 6.965,
-        "max": 11.357,
-        "mean": 7.711444444444445,
-        "median": 7.247
+        "min": 6.916,
+        "max": 32.852,
+        "mean": 13.901444444444444,
+        "median": 11.993
       },
       "idle": {
-        "min": 10.672,
-        "max": 10.672,
-        "mean": 10.671999999999999,
-        "median": 10.672
+        "min": 8.156,
+        "max": 8.172,
+        "mean": 8.170222222222222,
+        "median": 8.172
       },
       "install": {
-        "min": 14.034,
-        "max": 14.034,
-        "mean": 14.034000000000002,
-        "median": 14.034
+        "min": 11.637,
+        "max": 11.637,
+        "mean": 11.637,
+        "median": 11.637
       },
       "tps": {
-        "min": 7311.36,
-        "max": 7931.54,
-        "mean": 7695.243333333334,
-        "median": 7703.71
+        "min": 45412.66,
+        "max": 81939.88,
+        "mean": 63967.647777777776,
+        "median": 65938.85
       }
     },
     "pure": {
       "cold": {
-        "min": 2.5673340000000002,
-        "max": 4.387459,
-        "mean": 3.0182965555555556,
-        "median": 3.008625
+        "min": 3.017584,
+        "max": 7.509792,
+        "mean": 5.155425999999999,
+        "median": 4.123792
       },
       "idle": {
-        "min": 1.34375,
-        "max": 1.34375,
-        "mean": 1.34375,
-        "median": 1.34375
+        "min": 1.359375,
+        "max": 1.359375,
+        "mean": 1.359375,
+        "median": 1.359375
       },
       "install": {
         "min": 0.67,
@@ -74,24 +74,24 @@
         "median": 0.67
       },
       "tps": {
-        "min": 6068.07,
-        "max": 7928.32,
-        "mean": 7499.078888888889,
-        "median": 7891.9
+        "min": 45412.66,
+        "max": 81939.88,
+        "mean": 63967.647777777776,
+        "median": 65938.85
       }
     },
     "tiny": {
       "cold": {
-        "min": 2.625041,
-        "max": 3.604,
-        "mean": 2.903537,
-        "median": 2.881208
+        "min": 2.677791,
+        "max": 6.2942919999999996,
+        "mean": 3.4209538888888886,
+        "median": 3.107334
       },
       "idle": {
-        "min": 1.34375,
-        "max": 1.34375,
-        "mean": 1.34375,
-        "median": 1.34375
+        "min": 1.359375,
+        "max": 1.359375,
+        "mean": 1.359375,
+        "median": 1.359375
       },
       "install": {
         "min": 0.483,
@@ -100,28 +100,28 @@
         "median": 0.483
       },
       "tps": {
-        "min": 6530.5,
-        "max": 7927.11,
-        "mean": 7544.268888888889,
-        "median": 7893.53
+        "min": 45412.66,
+        "max": 81939.88,
+        "mean": 63967.647777777776,
+        "median": 65938.85
       }
     }
   },
   "source_runs": [
-    "run-1.json",
-    "run-2.json",
     "run-3.json",
     "run-4.json",
     "run-5.json",
     "run-6.json",
     "run-7.json",
     "run-8.json",
-    "run-9.json"
+    "run-9.json",
+    "run-10.json",
+    "run-11.json"
   ],
   "environment": {
     "arch": "aarch64",
     "cpu_parallelism": 8,
-    "git_revision": "5a096b2a5f134712cd92d01e2b75d36d454b53d0",
+    "git_revision": "e0d19f4ad6f0f764565e13480cf9f84e33c5dd37",
     "os": "macos",
     "rustc_version": "rustc 1.93.1 (01f6ddf75 2026-02-11)",
     "workload_id": "live_hash_workload_v1"

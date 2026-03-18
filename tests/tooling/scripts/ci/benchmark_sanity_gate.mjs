@@ -119,7 +119,22 @@ function computeStepRatio(a, b) {
   return high / low;
 }
 
-function checkStepChanges(rows, policy, previous) {
+function throughputSource(report) {
+  return (
+    report?.projects?.OpenClaw?.runtime_metric_source?.tasks_source ??
+    null
+  );
+}
+
+function throughputSourceChanged(report, previous) {
+  const current = throughputSource(report);
+  const prior = previous?.shared_throughput_source ?? null;
+  if (!current) return false;
+  if (!prior) return true;
+  return current !== prior;
+}
+
+function checkStepChanges(rows, policy, previous, report) {
   const violations = [];
   if (!previous || typeof previous !== 'object') {
     return violations;
@@ -134,6 +149,9 @@ function checkStepChanges(rows, policy, previous) {
   for (const row of rows) {
     if (row.value == null) continue;
     if (exemptions.has(`${row.project}::${row.metric}`)) continue;
+    if (row.metric === 'tasks_per_sec' && throughputSourceChanged(report, previous)) {
+      continue;
+    }
     const prev = asFiniteNumber(projectMap?.[row.project]?.[row.metric]);
     if (prev == null) continue;
     const ratio = computeStepRatio(prev, row.value);
@@ -214,7 +232,7 @@ function main() {
     ...checkRequiredRows(rows),
     ...checkBounds(rows, policy),
     ...checkRuntimeSource(report, policy),
-    ...checkStepChanges(rows, policy, previous),
+    ...checkStepChanges(rows, policy, previous, report),
   ];
 
   const payload = {
@@ -248,6 +266,7 @@ function main() {
         {
           generated_at: payload.generated_at,
           source_report: reportPath,
+          shared_throughput_source: throughputSource(report),
           projects: latestStateRows(rows),
         },
         null,

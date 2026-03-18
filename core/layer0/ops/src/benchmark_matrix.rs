@@ -25,6 +25,10 @@ const STATE_HISTORY_REL: &str = "local/state/ops/competitive_benchmark_matrix/hi
 const MIN_BAR_WIDTH: usize = 10;
 const MAX_BAR_WIDTH: usize = 80;
 const DEFAULT_BAR_WIDTH: usize = 44;
+const SHARED_THROUGHPUT_SOURCE: &str = "live_hash_workload_v1_shared_pre_profile_baseline";
+const SHARED_THROUGHPUT_SAMPLE_MS: u64 = 800;
+const SHARED_THROUGHPUT_ROUNDS: usize = 5;
+const SHARED_THROUGHPUT_WARMUP_ROUNDS: usize = 2;
 
 #[derive(Clone, Copy)]
 struct Category {
@@ -418,6 +422,7 @@ fn measure_pure_workspace_profile(
     daemon_bin: Option<&str>,
     cold_start_args: &[&str],
     idle_probe_args: &[&str],
+    tasks_per_sec: f64,
 ) -> Result<Map<String, Value>, String> {
     let (cold_start_p50_ms, cold_start_p95_ms, cold_start_p99_ms) =
         sample_command_quantiles_ms(probe_bin, cold_start_args, 2, 9)?;
@@ -440,10 +445,7 @@ fn measure_pure_workspace_profile(
     measured.insert("idle_rss_p95_mb".to_string(), json!(idle_rss_p95_mb));
     measured.insert("idle_rss_p99_mb".to_string(), json!(idle_rss_p99_mb));
     measured.insert("install_size_mb".to_string(), json!(install_size_mb));
-    measured.insert(
-        "tasks_per_sec".to_string(),
-        json!(stabilized_tasks_per_sec(5, 800)),
-    );
+    attach_shared_throughput(&mut measured, tasks_per_sec);
     measured.insert("security_systems".to_string(), json!(83.0));
     measured.insert("channel_adapters".to_string(), json!(0.0));
     measured.insert("llm_providers".to_string(), json!(0.0));
@@ -451,10 +453,6 @@ fn measure_pure_workspace_profile(
     measured.insert(
         "data_source".to_string(),
         Value::String("pure_workspace_binary_probe".to_string()),
-    );
-    measured.insert(
-        "throughput_source".to_string(),
-        Value::String("live_hash_workload_v1".to_string()),
     );
     measured.insert(
         "probe_binary_path".to_string(),
@@ -475,6 +473,7 @@ fn measure_pure_workspace_profile(
 
 fn measure_pure_workspace(
     root: &Path,
+    tasks_per_sec: f64,
 ) -> Result<(Option<Map<String, Value>>, Option<Map<String, Value>>), String> {
     let pure_probe_bin = locate_binary(
         root,
@@ -513,6 +512,7 @@ fn measure_pure_workspace(
         daemon_bin_default.as_deref(),
         &["benchmark-ping"],
         &["probe", "--sleep-ms=450"],
+        tasks_per_sec,
     )?;
 
     let daemon_bin_tiny_max = locate_binary(
@@ -535,6 +535,7 @@ fn measure_pure_workspace(
         daemon_bin_tiny_max.as_deref(),
         &["benchmark-ping", "--tiny-max=1"],
         &["probe", "--sleep-ms=120", "--tiny-max=1"],
+        tasks_per_sec,
     )?;
 
     Ok((Some(default_profile), Some(tiny_max_profile)))
@@ -561,12 +562,37 @@ fn live_tasks_per_sec(sample_ms: u64) -> f64 {
     }
 }
 
-fn stabilized_tasks_per_sec(rounds: usize, sample_ms: u64) -> f64 {
+fn stabilized_tasks_per_sec_with<F>(
+    rounds: usize,
+    warmup_rounds: usize,
+    mut sample: F,
+) -> f64
+where
+    F: FnMut() -> f64,
+{
+    for _ in 0..warmup_rounds {
+        let _ = sample();
+    }
     let mut rows = Vec::<f64>::new();
     for _ in 0..rounds.max(1) {
-        rows.push(live_tasks_per_sec(sample_ms));
+        rows.push(sample());
     }
+    rows.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     ((percentile(&rows, 0.50) * 100.0).round()) / 100.0
+}
+
+fn stabilized_tasks_per_sec(rounds: usize, sample_ms: u64) -> f64 {
+    stabilized_tasks_per_sec_with(rounds, SHARED_THROUGHPUT_WARMUP_ROUNDS, || {
+        live_tasks_per_sec(sample_ms)
+    })
+}
+
+fn attach_shared_throughput(measured: &mut Map<String, Value>, tasks_per_sec: f64) {
+    measured.insert("tasks_per_sec".to_string(), json!(tasks_per_sec));
+    measured.insert(
+        "throughput_source".to_string(),
+        Value::String(SHARED_THROUGHPUT_SOURCE.to_string()),
+    );
 }
 
 fn runtime_metrics(
@@ -662,19 +688,18 @@ fn runtime_metrics(
 fn measure_openclaw(
     root: &Path,
     refresh_runtime: bool,
+    tasks_per_sec: f64,
 ) -> Result<(Map<String, Value>, Value), String> {
     let (cold_start_ms, idle_memory_mb, install_size_mb, mut runtime_json, mut runtime_source) =
         runtime_metrics(root, refresh_runtime)?;
     let security_systems = count_guard_checks(root)?;
     let channel_adapters = count_channel_adapters(root)?;
     let llm_providers = count_llm_providers(root)?;
-    let tasks_per_sec = stabilized_tasks_per_sec(5, 800);
-
     let mut measured = Map::<String, Value>::new();
     measured.insert("cold_start_ms".to_string(), json!(cold_start_ms));
     measured.insert("idle_memory_mb".to_string(), json!(idle_memory_mb));
     measured.insert("install_size_mb".to_string(), json!(install_size_mb));
-    measured.insert("tasks_per_sec".to_string(), json!(tasks_per_sec));
+    attach_shared_throughput(&mut measured, tasks_per_sec);
     measured.insert("security_systems".to_string(), json!(security_systems));
     measured.insert("channel_adapters".to_string(), json!(channel_adapters));
     measured.insert("llm_providers".to_string(), json!(llm_providers));
@@ -683,11 +708,6 @@ fn measure_openclaw(
         "data_source".to_string(),
         Value::String("runtime_efficiency_floor + policy counters".to_string()),
     );
-    measured.insert(
-        "throughput_source".to_string(),
-        Value::String("live_hash_workload_v1".to_string()),
-    );
-
     if let Some(metrics) = runtime_json
         .get_mut("metrics")
         .and_then(Value::as_object_mut)
@@ -697,10 +717,22 @@ fn measure_openclaw(
     if let Some(meta) = runtime_source.as_object_mut() {
         meta.insert(
             "tasks_source".to_string(),
-            Value::String("live_hash_workload_v1".to_string()),
+            Value::String(SHARED_THROUGHPUT_SOURCE.to_string()),
         );
-        meta.insert("tasks_sample_ms".to_string(), json!(800));
+        meta.insert(
+            "tasks_sample_ms".to_string(),
+            json!(SHARED_THROUGHPUT_SAMPLE_MS),
+        );
         meta.insert("tasks_work_factor".to_string(), json!(16));
+        meta.insert(
+            "tasks_phase".to_string(),
+            Value::String("pre_profile_sampling_shared".to_string()),
+        );
+        meta.insert("tasks_rounds".to_string(), json!(SHARED_THROUGHPUT_ROUNDS));
+        meta.insert(
+            "tasks_warmup_rounds".to_string(),
+            json!(SHARED_THROUGHPUT_WARMUP_ROUNDS),
+        );
     }
     measured.insert("runtime_metric_source".to_string(), runtime_source);
 
@@ -849,9 +881,13 @@ fn run_impl(
 ) -> Result<Value, String> {
     let snapshot_path = root.join(snapshot_rel);
     let snapshot = read_json(&snapshot_path)?;
+    let shared_tasks_per_sec =
+        stabilized_tasks_per_sec(SHARED_THROUGHPUT_ROUNDS, SHARED_THROUGHPUT_SAMPLE_MS);
 
-    let (openclaw_measured, runtime_receipt) = measure_openclaw(root, refresh_runtime)?;
-    let (pure_workspace_measured, pure_workspace_tiny_max_measured) = measure_pure_workspace(root)?;
+    let (openclaw_measured, runtime_receipt) =
+        measure_openclaw(root, refresh_runtime, shared_tasks_per_sec)?;
+    let (pure_workspace_measured, pure_workspace_tiny_max_measured) =
+        measure_pure_workspace(root, shared_tasks_per_sec)?;
     let projects = merge_projects(&snapshot, &openclaw_measured)?;
     let mut projects = projects;
     if let Some(ref pure) = pure_workspace_measured {

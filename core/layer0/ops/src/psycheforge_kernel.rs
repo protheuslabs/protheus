@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Layer ownership: core/layer0/ops (authoritative)
 
+use crate::contract_lane_utils as lane_utils;
 use crate::{deterministic_receipt_hash, now_iso, swarm_runtime};
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
@@ -18,40 +19,6 @@ const PROFILE_IDS: [&str; 7] = [
     "drift",
 ];
 
-fn parse_flag(argv: &[String], key: &str) -> Option<String> {
-    let pref = format!("--{key}=");
-    let long = format!("--{key}");
-    let mut idx = 0usize;
-    while idx < argv.len() {
-        let token = argv[idx].trim();
-        if let Some(value) = token.strip_prefix(&pref) {
-            return Some(value.to_string());
-        }
-        if token == long && idx + 1 < argv.len() {
-            return Some(argv[idx + 1].clone());
-        }
-        idx += 1;
-    }
-    None
-}
-
-fn parse_bool(raw: Option<String>, fallback: bool) -> bool {
-    match raw {
-        Some(value) => match value.trim().to_ascii_lowercase().as_str() {
-            "1" | "true" | "yes" | "on" => true,
-            "0" | "false" | "no" | "off" => false,
-            _ => fallback,
-        },
-        None => fallback,
-    }
-}
-
-fn parse_f64(raw: Option<String>, fallback: f64) -> f64 {
-    raw.and_then(|value| value.trim().parse::<f64>().ok())
-        .unwrap_or(fallback)
-        .clamp(0.0, 1.0)
-}
-
 fn state_root(root: &Path) -> PathBuf {
     root.join(STATE_ROOT)
 }
@@ -62,35 +29,6 @@ fn latest_path(root: &Path) -> PathBuf {
 
 fn history_path(root: &Path) -> PathBuf {
     state_root(root).join("history.jsonl")
-}
-
-fn ensure_parent(path: &Path) -> Result<(), String> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(|err| format!("mkdir_failed:{}:{err}", parent.display()))?;
-    }
-    Ok(())
-}
-
-fn write_json(path: &Path, payload: &Value) -> Result<(), String> {
-    ensure_parent(path)?;
-    let mut body = serde_json::to_string_pretty(payload)
-        .map_err(|err| format!("encode_json_failed:{}:{err}", path.display()))?;
-    body.push('\n');
-    fs::write(path, body).map_err(|err| format!("write_json_failed:{}:{err}", path.display()))
-}
-
-fn append_jsonl(path: &Path, payload: &Value) -> Result<(), String> {
-    ensure_parent(path)?;
-    let mut file = fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(path)
-        .map_err(|err| format!("open_jsonl_failed:{}:{err}", path.display()))?;
-    use std::io::Write;
-    let line = serde_json::to_string(payload)
-        .map_err(|err| format!("encode_jsonl_failed:{}:{err}", path.display()))?;
-    writeln!(file, "{line}")
-        .map_err(|err| format!("append_jsonl_failed:{}:{err}", path.display()))
 }
 
 fn score_keywords(haystack: &str, needles: &[&str]) -> f64 {
@@ -165,8 +103,8 @@ pub fn run(root: &Path, argv: &[String]) -> (Value, i32) {
         .first()
         .map(|value| value.trim().to_ascii_lowercase())
         .unwrap_or_else(|| "status".to_string());
-    let strict = parse_bool(parse_flag(argv, "strict"), true);
-    let sensitivity = parse_f64(parse_flag(argv, "sensitivity"), 0.5);
+    let strict = lane_utils::parse_bool(lane_utils::parse_flag(argv, "strict", false).as_deref(), true);
+    let sensitivity = lane_utils::parse_f64_clamped(lane_utils::parse_flag(argv, "sensitivity", false).as_deref(), 0.5, 0.0, 1.0);
 
     let mut payload = match command.as_str() {
         "status" => {
@@ -185,13 +123,13 @@ pub fn run(root: &Path, argv: &[String]) -> (Value, i32) {
             })
         }
         "profile" => {
-            let actor = parse_flag(argv, "actor").unwrap_or_else(|| "unknown_actor".to_string());
-            let session_id = parse_flag(argv, "session-id");
-            let prompt = parse_flag(argv, "prompt").unwrap_or_default();
-            let tool_input = parse_flag(argv, "tool-input").unwrap_or_default();
-            let handoff_pattern = parse_flag(argv, "handoff-pattern").unwrap_or_default();
-            let anomaly_score = parse_f64(parse_flag(argv, "anomaly-score"), 0.0);
-            let deviation = parse_f64(parse_flag(argv, "statistical-deviation"), 0.0);
+            let actor = lane_utils::parse_flag(argv, "actor", false).unwrap_or_else(|| "unknown_actor".to_string());
+            let session_id = lane_utils::parse_flag(argv, "session-id", false);
+            let prompt = lane_utils::parse_flag(argv, "prompt", false).unwrap_or_default();
+            let tool_input = lane_utils::parse_flag(argv, "tool-input", false).unwrap_or_default();
+            let handoff_pattern = lane_utils::parse_flag(argv, "handoff-pattern", false).unwrap_or_default();
+            let anomaly_score = lane_utils::parse_f64_clamped(lane_utils::parse_flag(argv, "anomaly-score", false).as_deref(), 0.0, 0.0, 1.0);
+            let deviation = lane_utils::parse_f64_clamped(lane_utils::parse_flag(argv, "statistical-deviation", false).as_deref(), 0.0, 0.0, 1.0);
             let text = format!("{}\n{}\n{}", prompt, tool_input, handoff_pattern);
             let profiles = classify_profiles(&text, anomaly_score, deviation, sensitivity);
             let primary = profiles.first().cloned().unwrap_or_else(|| json!({"profile":"probe","score":0.0}));
@@ -215,7 +153,7 @@ pub fn run(root: &Path, argv: &[String]) -> (Value, i32) {
                         format!("--anomaly-type={primary_profile}"),
                         format!("--reason=psycheforge:{primary_profile}"),
                     ];
-                    if let Some(state_path) = parse_flag(argv, "swarm-state-path") {
+                    if let Some(state_path) = lane_utils::parse_flag(argv, "swarm-state-path", false) {
                         thorn_args.push(format!("--state-path={state_path}"));
                     }
                     let (result, _) = swarm_runtime::run_thorn_contract(root, &thorn_args);
@@ -280,7 +218,7 @@ pub fn run(root: &Path, argv: &[String]) -> (Value, i32) {
     } else {
         0
     };
-    let _ = write_json(&latest_path(root), &payload);
-    let _ = append_jsonl(&history_path(root), &payload);
+    let _ = lane_utils::write_json(&latest_path(root), &payload);
+    let _ = lane_utils::append_jsonl(&history_path(root), &payload);
     (payload, exit)
 }

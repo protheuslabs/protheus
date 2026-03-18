@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 // Layer ownership: core/layer0/ops (authoritative)
 
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use base64::Engine;
 use serde_json::{json, Map, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::OnceLock;
 
-use crate::contract_lane_utils as lane_utils;
+use crate::contract_lane_utils::{
+    self as lane_utils, clean_text, clean_token, cli_error, cli_receipt, normalize_bridge_path,
+    payload_obj, print_json_line, rel_path as rel, repo_path,
+};
 use crate::{deterministic_receipt_hash, now_iso};
 
 const DEFAULT_STATE_REL: &str = "local/state/ops/crewai_bridge/latest.json";
@@ -32,77 +32,8 @@ fn usage() {
     println!("  protheus-ops crewai-bridge route-model [--payload-base64=<json>] [--state-path=<path>]");
 }
 
-fn cli_receipt(kind: &str, payload: Value) -> Value {
-    let ts = now_iso();
-    let ok = payload.get("ok").and_then(Value::as_bool).unwrap_or(true);
-    let mut out = json!({
-        "ok": ok,
-        "type": kind,
-        "ts": ts,
-        "date": ts[..10].to_string(),
-        "payload": payload,
-    });
-    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
-    out
-}
-
-fn cli_error(kind: &str, error: &str) -> Value {
-    let ts = now_iso();
-    let mut out = json!({
-        "ok": false,
-        "type": kind,
-        "ts": ts,
-        "date": ts[..10].to_string(),
-        "error": error,
-        "fail_closed": true,
-    });
-    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
-    out
-}
-
-fn print_json_line(value: &Value) {
-    println!(
-        "{}",
-        serde_json::to_string(value)
-            .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"encode_failed\"}".to_string())
-    );
-}
-
 fn payload_json(argv: &[String]) -> Result<Value, String> {
-    if let Some(raw) = lane_utils::parse_flag(argv, "payload", false) {
-        return serde_json::from_str::<Value>(&raw)
-            .map_err(|err| format!("crewai_bridge_payload_decode_failed:{err}"));
-    }
-    if let Some(raw_b64) = lane_utils::parse_flag(argv, "payload-base64", false) {
-        let bytes = BASE64_STANDARD
-            .decode(raw_b64.as_bytes())
-            .map_err(|err| format!("crewai_bridge_payload_base64_decode_failed:{err}"))?;
-        let text = String::from_utf8(bytes)
-            .map_err(|err| format!("crewai_bridge_payload_utf8_decode_failed:{err}"))?;
-        return serde_json::from_str::<Value>(&text)
-            .map_err(|err| format!("crewai_bridge_payload_decode_failed:{err}"));
-    }
-    Ok(json!({}))
-}
-
-fn payload_obj<'a>(value: &'a Value) -> &'a Map<String, Value> {
-    value.as_object().unwrap_or_else(|| {
-        static EMPTY: OnceLock<Map<String, Value>> = OnceLock::new();
-        EMPTY.get_or_init(Map::new)
-    })
-}
-
-fn repo_path(root: &Path, rel: &str) -> PathBuf {
-    let candidate = PathBuf::from(rel.trim());
-    if candidate.is_absolute() {
-        candidate
-    } else {
-        root.join(candidate)
-    }
-}
-
-fn rel(root: &Path, path: &Path) -> String {
-    lane_utils::rel_path(root, path)
+    lane_utils::payload_json(argv, "crewai_bridge")
 }
 
 fn state_path(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
@@ -243,14 +174,6 @@ fn stable_id(prefix: &str, basis: &Value) -> String {
     format!("{prefix}_{}_{}", to_base36(now_millis()), &digest[..12])
 }
 
-fn clean_text(raw: Option<&str>, max_len: usize) -> String {
-    lane_utils::clean_text(raw, max_len)
-}
-
-fn clean_token(raw: Option<&str>, fallback: &str) -> String {
-    lane_utils::clean_token(raw, fallback)
-}
-
 fn clean_tools(value: Option<&Value>) -> Vec<Value> {
     value
         .and_then(Value::as_array)
@@ -266,28 +189,6 @@ fn clean_tools(value: Option<&Value>) -> Vec<Value> {
             _ => None,
         })
         .collect()
-}
-
-fn safe_prefix_for_bridge(path: &str) -> bool {
-    ["adapters/", "client/runtime/", "client/lib/", "tests/"]
-        .iter()
-        .any(|prefix| path.starts_with(prefix))
-}
-
-fn normalize_bridge_path(root: &Path, raw: &str) -> Result<String, String> {
-    let candidate = raw.trim();
-    if candidate.is_empty() {
-        return Err("bridge_path_required".to_string());
-    }
-    if candidate.contains("..") {
-        return Err("unsafe_bridge_path_parent_reference".to_string());
-    }
-    let abs = repo_path(root, candidate);
-    let rel_path = rel(root, &abs);
-    if !safe_prefix_for_bridge(&rel_path) {
-        return Err("unsupported_bridge_path".to_string());
-    }
-    Ok(rel_path)
 }
 
 fn default_claim_evidence(id: &str, claim: &str) -> Value {

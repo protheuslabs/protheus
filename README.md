@@ -154,8 +154,11 @@ For OpenClaw transitions you can run `npm run local:migrate:openclaw` (alias to 
 The repo ships an executable benchmark lane. To refresh the tracked benchmark artifacts:
 
 ```bash
+npm run -s ops:benchmark:build-release
 npm run ops:benchmark:refresh
 ```
+
+`ops:benchmark:refresh` now fails closed if `target/release/protheus-ops` is missing so benchmark publication does not silently fall back to `cargo run` and contaminate throughput with compile-time load.
 
 This regenerates:
 - `docs/client/reports/benchmark_matrix_run_2026-03-06.json`
@@ -168,13 +171,14 @@ Sources:
 - Stabilized multi-run median (2 warmups + 9 runs): `docs/client/reports/benchmark_matrix_stabilized_2026-03-18.json`
 - Snapshot/reference baseline: `docs/client/reports/runtime_snapshots/ops/proof_pack/top1_benchmark_snapshot.json`
 - Headline runtime metrics below reflect the latest stabilized median benchmark artifact; single-run live refresh details remain in the JSON reports for tail-latency diagnostics.
+- Throughput now reflects a shared pre-profile release-binary baseline measured once per run to avoid per-profile contamination from probe order and compile-time load.
 
 | Metric | InfRing (rich) | InfRing (pure) | InfRing (tiny-max) | Snapshot/Reference |
 |---|---:|---:|---:|---:|
-| Cold start | 7.2 ms | 3.0 ms | 2.9 ms | 74.5 ms |
-| Idle memory | 10.7 MB | 1.3 MB | 1.3 MB | 22.1 MB |
-| Install size (full) | 14.0 MB | 0.7 MB | 0.5 MB | 126.4 MB |
-| Throughput | 7,703.7 ops/sec | 7,891.9 ops/sec | 7,893.5 ops/sec | 7,420.0 ops/sec |
+| Cold start | 12.0 ms | 4.1 ms | 3.1 ms | 74.5 ms |
+| Idle memory | 8.2 MB | 1.4 MB | 1.4 MB | 22.1 MB |
+| Install size (full) | 11.6 MB | 0.7 MB | 0.5 MB | 126.4 MB |
+| Throughput | 65,938.9 ops/sec | 65,938.9 ops/sec | 65,938.9 ops/sec | 7,420.0 ops/sec |
 
 | Capability Counter | InfRing (rich) | InfRing (pure) | InfRing (tiny-max) |
 |---|---:|---:|---:|
@@ -192,9 +196,9 @@ External baseline (OpenFang public table):
 
 | Project | Install Size (MB) ↓ | Cold Start ↓ | Idle Memory (MB) ↓ | Throughput (ops/sec) ↑ | Static Daemon (MB) ↓ | Security Systems ↑ | Channel Adapters ↑ | LLM Providers ↑ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| **InfRing (rich)** | **14.0** | **7.2 ms** | **10.7** | **7,703.7** | **0.4** | **83** | 6 | 3 |
-| **InfRing (pure)** | **0.7** | **3.0 ms** | **1.3** | **7,891.9** | **0.4** | **83** | 0 | 0 |
-| **InfRing (tiny-max)** | **0.5** | **2.9 ms** | **1.3** | **7,893.5** | **0.3** | **83** | 0 | 0 |
+| **InfRing (rich)** | **11.6** | **12.0 ms** | **8.2** | **65,938.9** | **0.4** | **83** | 6 | 3 |
+| **InfRing (pure)** | **0.7** | **4.1 ms** | **1.4** | **65,938.9** | **0.4** | **83** | 0 | 0 |
+| **InfRing (tiny-max)** | **0.5** | **3.1 ms** | **1.4** | **65,938.9** | **0.3** | **83** | 0 | 0 |
 | OpenFang | 32.0 | 180.0 ms | 40.0 | n/p | n/p | 16 | 40 | 27 |
 | OpenHands | 95.5 | 1.3 sec | 150.0 | n/p | n/p | 7 | 15 | 5 |
 | LangGraph | 150.0 | 2.5 sec | 180.0 | n/p | n/p | 2 | 4 | 15 |
@@ -224,9 +228,9 @@ Tiny-max is the smallest full agentic OS artifact shipped in this repo today and
 
 ```text
 Cold Start Time (lower is better)
-InfRing (tiny-max) ############################################  2.9 ms
-InfRing (pure)     ############################################  3.0 ms
-InfRing (rich)     ############################################  7.2 ms
+InfRing (tiny-max) ############################################  3.1 ms
+InfRing (pure)     ############################################  4.1 ms
+InfRing (rich)     ###########################################-  12.0 ms
 OpenFang   ###########################################-  180.0 ms
 OpenHands  ###############################-------------  1.3 sec
 LangGraph  #################---------------------------  2.5 sec
@@ -236,9 +240,9 @@ AutoGen    #-------------------------------------------  4.0 sec
 
 ```text
 Idle Memory Usage (lower is better)
-InfRing (pure)     ############################################  1.3 MB
-InfRing (tiny-max) ############################################  1.3 MB
-InfRing (rich)     ##########################################--  10.7 MB
+InfRing (pure)     ############################################  1.4 MB
+InfRing (tiny-max) ############################################  1.4 MB
+InfRing (rich)     ###########################################-  8.2 MB
 OpenFang   #####################################-------  40.0 MB
 OpenHands  ####################------------------------  150.0 MB
 LangGraph  ##############------------------------------  180.0 MB
@@ -250,7 +254,7 @@ AutoGen    #-------------------------------------------  250.0 MB
 Install Size (lower is better)
 InfRing (tiny-max) ############################################  0.5 MB
 InfRing (pure)     ############################################  0.7 MB
-InfRing (rich)     #########################################---  14.0 MB
+InfRing (rich)     ##########################################--  11.6 MB
 OpenFang   #####################################-------  32.0 MB
 OpenHands  ###########################-----------------  95.5 MB
 CrewAI     ##########################------------------  100.0 MB
@@ -270,9 +274,9 @@ CrewAI     #-------------------------------------------  1
 
 ```text
 Throughput (ops/sec, higher is better)
-InfRing (tiny-max) ############################################  7,893.5
-InfRing (pure)     ###########################################-  7,891.9
-InfRing (rich)     ###########################################-  7,703.7
+InfRing (rich)     ############################################  65,938.9
+InfRing (pure)     ############################################  65,938.9
+InfRing (tiny-max) ############################################  65,938.9
 OpenFang   n/p
 OpenHands  n/p
 LangGraph  n/p
