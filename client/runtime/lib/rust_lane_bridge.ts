@@ -223,12 +223,33 @@ function runLocalOpsDomainOnce(root, domain, passArgs, cliMode, inheritStdio, re
   const stdout = run.stdout || '';
   const stderr = `${run.stderr || ''}${run.error ? `\n${String(run.error && run.error.message ? run.error.message : run.error)}` : ''}`;
   const payload = cliMode && inheritStdio ? null : parseJsonPayload(stdout);
+  if (!payload && run.error) {
+    return {
+      ok: false,
+      status,
+      stdout,
+      stderr,
+      payload: {
+        ok: false,
+        type: 'ops_domain_spawn_error',
+        reason: String(run.error && run.error.message ? run.error.message : run.error),
+        raw_error_code: String(run.error.code || ''),
+        domain
+      },
+      error: run.error,
+      rust_command: resolved.command,
+      rust_args: [resolved.command, ...commandArgs],
+      timeout_ms: timeoutMs,
+      routed_via: 'core_local'
+    };
+  }
   return {
     ok: status === 0,
     status,
     stdout,
     stderr,
     payload,
+    error: run.error || null,
     rust_command: resolved.command,
     rust_args: [resolved.command, ...commandArgs],
     timeout_ms: timeoutMs,
@@ -238,6 +259,14 @@ function runLocalOpsDomainOnce(root, domain, passArgs, cliMode, inheritStdio, re
 
 function shouldRetryWithCargo(result) {
   if (!result || result.status === 0) return false;
+  const rawErrorCode = String(
+    (result.payload && result.payload.raw_error_code)
+      || (result.error && result.error.code)
+      || ''
+  ).toLowerCase();
+  if (rawErrorCode === 'enoent' || rawErrorCode === 'eacces') {
+    return true;
+  }
   const reason = String(
     (result.payload && result.payload.reason)
       || (result.payload && result.payload.error)

@@ -76,6 +76,7 @@ pub mod flow_plane;
 pub mod fluxlattice_program;
 pub mod focus_trigger_store_kernel;
 pub mod foundation_contract_gate;
+pub mod google_adk_bridge;
 pub mod government_plane;
 pub mod graph_toolkit;
 pub mod habit_store_kernel;

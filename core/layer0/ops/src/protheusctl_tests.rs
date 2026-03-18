@@ -720,6 +720,20 @@ fn core_shortcut_routes_assimilate_llamaindex_to_llamaindex_bridge() {
 }
 
 #[test]
+fn core_shortcut_routes_assimilate_google_adk_to_google_adk_bridge() {
+    let route = resolve_core_shortcuts(
+        "assimilate",
+        &["google-adk".to_string(), "--payload-base64=e30=".to_string()],
+    )
+    .expect("route");
+    assert_eq!(route.script_rel, "core://google-adk-bridge");
+    assert_eq!(
+        route.args,
+        vec!["register-tool-manifest", "--payload-base64=e30="]
+    );
+}
+
+#[test]
 fn core_shortcut_routes_parse_doc_to_parse_plane() {
     let route = resolve_core_shortcuts(
         "parse",
