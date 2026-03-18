@@ -911,6 +911,9 @@ fn main() {
         "crewai-bridge" => {
             exit_domain!(&cwd, &args, protheus_ops_core::crewai_bridge::run);
         }
+        "shannon-bridge" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::shannon_bridge::run);
+        }
         "metagpt-bridge" => {
             exit_domain!(&cwd, &args, protheus_ops_core::metagpt_bridge::run);
         }

@@ -165,6 +165,7 @@ pub mod seed_protocol;
 pub mod semantic_kernel_bridge;
 pub mod sensory_eyes_intake;
 pub mod settlement_program;
+pub mod shannon_bridge;
 pub mod shadow_budget_governance;
 pub mod skills_plane;
 pub mod snowball_plane;

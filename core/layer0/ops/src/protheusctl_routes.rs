@@ -818,6 +818,25 @@ pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route
                         forward_stdin: false,
                     })
                 }
+                "shannon" | "workflow://shannon" => {
+                    let args = if passthrough.is_empty()
+                        || passthrough
+                            .first()
+                            .map(|row| row.starts_with("--"))
+                            .unwrap_or(false)
+                    {
+                        let mut args = vec!["assimilate-intake".to_string()];
+                        args.extend(passthrough);
+                        args
+                    } else {
+                        passthrough
+                    };
+                    Some(Route {
+                        script_rel: "core://shannon-bridge".to_string(),
+                        args,
+                        forward_stdin: false,
+                    })
+                }
                 _ => None,
             }
         }
