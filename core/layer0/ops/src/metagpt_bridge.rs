@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 // Layer ownership: core/layer0/ops (authoritative)
 
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use base64::Engine;
 use serde_json::{json, Map, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::OnceLock;
 
-use crate::contract_lane_utils as lane_utils;
+use crate::contract_lane_utils::{
+    self as lane_utils, clean_text, clean_token, cli_error, cli_receipt,
+    normalize_bridge_path_clean, payload_obj, print_json_line, rel_path as rel, repo_path,
+};
 use crate::{deterministic_receipt_hash, now_iso};
 
 const DEFAULT_STATE_REL: &str = "local/state/ops/metagpt_bridge/latest.json";
@@ -29,73 +29,8 @@ fn usage() {
     println!("  protheus-ops metagpt-bridge ingest-config [--payload-base64=<json>] [--state-path=<path>]");
 }
 
-fn cli_receipt(kind: &str, payload: Value) -> Value {
-    let ts = now_iso();
-    let ok = payload.get("ok").and_then(Value::as_bool).unwrap_or(true);
-    let mut out = json!({
-        "ok": ok,
-        "type": kind,
-        "ts": ts,
-        "date": ts[..10].to_string(),
-        "payload": payload,
-    });
-    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
-    out
-}
-
-fn cli_error(kind: &str, error: &str) -> Value {
-    let ts = now_iso();
-    let mut out = json!({
-        "ok": false,
-        "type": kind,
-        "ts": ts,
-        "date": ts[..10].to_string(),
-        "error": error,
-        "fail_closed": true,
-    });
-    out["receipt_hash"] = Value::String(deterministic_receipt_hash(&out));
-    out
-}
-
-fn print_json_line(value: &Value) {
-    println!(
-        "{}",
-        serde_json::to_string(value)
-            .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"encode_failed\"}".to_string())
-    );
-}
-
 fn payload_json(argv: &[String]) -> Result<Value, String> {
-    if let Some(raw) = lane_utils::parse_flag(argv, "payload", false) {
-        return serde_json::from_str::<Value>(&raw)
-            .map_err(|err| format!("metagpt_bridge_payload_decode_failed:{err}"));
-    }
-    if let Some(raw_b64) = lane_utils::parse_flag(argv, "payload-base64", false) {
-        let bytes = BASE64_STANDARD
-            .decode(raw_b64.as_bytes())
-            .map_err(|err| format!("metagpt_bridge_payload_base64_decode_failed:{err}"))?;
-        let text = String::from_utf8(bytes)
-            .map_err(|err| format!("metagpt_bridge_payload_utf8_decode_failed:{err}"))?;
-        return serde_json::from_str::<Value>(&text)
-            .map_err(|err| format!("metagpt_bridge_payload_decode_failed:{err}"));
-    }
-    Ok(json!({}))
-}
-
-fn payload_obj<'a>(value: &'a Value) -> &'a Map<String, Value> {
-    value.as_object().unwrap_or_else(|| {
-        static EMPTY: OnceLock<Map<String, Value>> = OnceLock::new();
-        EMPTY.get_or_init(Map::new)
-    })
-}
-
-fn repo_path(root: &Path, rel: &str) -> PathBuf {
-    let candidate = PathBuf::from(rel.trim());
-    if candidate.is_absolute() { candidate } else { root.join(candidate) }
-}
-
-fn rel(root: &Path, path: &Path) -> String {
-    lane_utils::rel_path(root, path)
+    lane_utils::payload_json(argv, "metagpt_bridge")
 }
 
 fn state_path(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
@@ -203,20 +138,11 @@ fn stable_id(prefix: &str, basis: &Value) -> String {
     format!("{prefix}_{}_{}", to_base36(now_millis()), &digest[..12])
 }
 
-fn clean_text(raw: Option<&str>, max_len: usize) -> String { lane_utils::clean_text(raw, max_len) }
-fn clean_token(raw: Option<&str>, fallback: &str) -> String { lane_utils::clean_token(raw, fallback) }
 fn claim(id: &str, claim: &str) -> Value { json!([{"id": id, "claim": claim}]) }
 fn profile(raw: Option<&Value>) -> String { clean_token(raw.and_then(Value::as_str), "rich") }
 
 fn normalize_bridge_path(root: &Path, raw: &str) -> Result<String, String> {
-    let clean = clean_text(Some(raw), 260);
-    if !["adapters/", "client/runtime/", "client/lib/", "tests/"]
-        .iter()
-        .any(|prefix| clean.starts_with(prefix))
-    {
-        return Err("metagpt_bridge_path_outside_allowed_surface".to_string());
-    }
-    Ok(rel(root, &repo_path(root, &clean)))
+    normalize_bridge_path_clean(root, raw, "metagpt_bridge_path_outside_allowed_surface")
 }
 
 fn register_company(state: &mut Value, payload: &Map<String, Value>) -> Result<Value, String> {

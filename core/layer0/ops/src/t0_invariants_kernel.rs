@@ -2,6 +2,7 @@
 // Layer ownership: core/layer0/ops (authoritative)
 
 use crate::swarm_runtime;
+use crate::contract_lane_utils as lane_utils;
 use crate::deterministic_receipt_hash;
 use serde_json::{json, Value};
 use std::fs;
@@ -9,39 +10,6 @@ use std::path::{Path, PathBuf};
 
 const DIRECTIVE_PATH: &str = "client/runtime/config/directives/T0_invariants.yaml";
 const STATE_ROOT: &str = "core/local/state/ops/security_plane/t0_invariants";
-
-fn parse_flag(argv: &[String], key: &str) -> Option<String> {
-    let pref = format!("--{key}=");
-    let long = format!("--{key}");
-    let mut idx = 0usize;
-    while idx < argv.len() {
-        let token = argv[idx].trim();
-        if let Some(value) = token.strip_prefix(&pref) {
-            return Some(value.to_string());
-        }
-        if token == long && idx + 1 < argv.len() {
-            return Some(argv[idx + 1].clone());
-        }
-        idx += 1;
-    }
-    None
-}
-
-fn parse_bool(raw: Option<String>, fallback: bool) -> bool {
-    match raw {
-        Some(value) => match value.trim().to_ascii_lowercase().as_str() {
-            "1" | "true" | "yes" | "on" | "allow" | "enabled" => true,
-            "0" | "false" | "no" | "off" | "deny" | "disabled" => false,
-            _ => fallback,
-        },
-        None => fallback,
-    }
-}
-
-fn parse_u64(raw: Option<String>, fallback: u64) -> u64 {
-    raw.and_then(|value| value.trim().parse::<u64>().ok())
-        .unwrap_or(fallback)
-}
 
 fn state_root(root: &Path) -> PathBuf {
     root.join(STATE_ROOT)
@@ -53,35 +21,6 @@ fn latest_path(root: &Path) -> PathBuf {
 
 fn history_path(root: &Path) -> PathBuf {
     state_root(root).join("history.jsonl")
-}
-
-fn ensure_parent(path: &Path) -> Result<(), String> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(|err| format!("mkdir_failed:{}:{err}", parent.display()))?;
-    }
-    Ok(())
-}
-
-fn write_json(path: &Path, payload: &Value) -> Result<(), String> {
-    ensure_parent(path)?;
-    let mut body = serde_json::to_string_pretty(payload)
-        .map_err(|err| format!("encode_json_failed:{}:{err}", path.display()))?;
-    body.push('\n');
-    fs::write(path, body).map_err(|err| format!("write_json_failed:{}:{err}", path.display()))
-}
-
-fn append_jsonl(path: &Path, payload: &Value) -> Result<(), String> {
-    ensure_parent(path)?;
-    let mut file = fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(path)
-        .map_err(|err| format!("open_jsonl_failed:{}:{err}", path.display()))?;
-    use std::io::Write;
-    let line = serde_json::to_string(payload)
-        .map_err(|err| format!("encode_jsonl_failed:{}:{err}", path.display()))?;
-    writeln!(file, "{line}")
-        .map_err(|err| format!("append_jsonl_failed:{}:{err}", path.display()))
 }
 
 fn load_directive_doc(root: &Path) -> Value {
@@ -107,14 +46,14 @@ fn invariant_catalog() -> Vec<Value> {
 }
 
 fn evaluate_attempt(argv: &[String]) -> Value {
-    let receipts_enabled = parse_bool(parse_flag(argv, "receipts-enabled"), true);
-    let memory_scope_approved = parse_bool(parse_flag(argv, "memory-scope-approved"), true);
-    let shell_approved = parse_bool(parse_flag(argv, "shell-approved"), false);
-    let exfil_approved = parse_bool(parse_flag(argv, "exfil-approved"), false);
-    let core_safety_modify_approved = parse_bool(parse_flag(argv, "core-safety-modify-approved"), false);
-    let external_call_receipted = parse_bool(parse_flag(argv, "external-call-receipted"), true);
-    let budget_overrun = parse_bool(parse_flag(argv, "budget-overrun"), false);
-    let human_veto = parse_bool(parse_flag(argv, "human-veto"), false);
+    let receipts_enabled = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "receipts-enabled", false).as_deref(), true);
+    let memory_scope_approved = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "memory-scope-approved", false).as_deref(), true);
+    let shell_approved = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "shell-approved", false).as_deref(), false);
+    let exfil_approved = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "exfil-approved", false).as_deref(), false);
+    let core_safety_modify_approved = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "core-safety-modify-approved", false).as_deref(), false);
+    let external_call_receipted = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "external-call-receipted", false).as_deref(), true);
+    let budget_overrun = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "budget-overrun", false).as_deref(), false);
+    let human_veto = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "human-veto", false).as_deref(), false);
 
     let mut violations = Vec::<Value>::new();
     if !receipts_enabled {
@@ -123,16 +62,16 @@ fn evaluate_attempt(argv: &[String]) -> Value {
     if !memory_scope_approved {
         violations.push(json!({"id":"approved_memory_scopes_only","reason":"memory_scope_unapproved"}));
     }
-    if parse_bool(parse_flag(argv, "shell-exec"), false) && !shell_approved {
+    if lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "shell-exec", false).as_deref(), false) && !shell_approved {
         violations.push(json!({"id":"shell_requires_approval","reason":"shell_exec_without_approval"}));
     }
-    if parse_bool(parse_flag(argv, "external-exfil"), false) && !exfil_approved {
+    if lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "external-exfil", false).as_deref(), false) && !exfil_approved {
         violations.push(json!({"id":"no_exfil_outside_policy","reason":"exfil_outside_policy"}));
     }
-    if parse_bool(parse_flag(argv, "modify-safety-plane"), false) && !core_safety_modify_approved {
+    if lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "modify-safety-plane", false).as_deref(), false) && !core_safety_modify_approved {
         violations.push(json!({"id":"no_self_modify_safety_plane","reason":"safety_plane_modification_attempt"}));
     }
-    if parse_bool(parse_flag(argv, "external-call"), false) && !external_call_receipted {
+    if lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "external-call", false).as_deref(), false) && !external_call_receipted {
         violations.push(json!({"id":"external_calls_receipted","reason":"external_call_without_receipt"}));
     }
     if budget_overrun {
@@ -156,8 +95,8 @@ fn evaluate_attempt(argv: &[String]) -> Value {
 }
 
 fn persist(root: &Path, payload: &Value) {
-    let _ = write_json(&latest_path(root), payload);
-    let _ = append_jsonl(&history_path(root), payload);
+    let _ = lane_utils::write_json(&latest_path(root), payload);
+    let _ = lane_utils::append_jsonl(&history_path(root), payload);
 }
 
 fn append_ledger_event(root: &Path, action: &str, details: &Value) -> Value {
@@ -174,7 +113,7 @@ fn append_ledger_event(root: &Path, action: &str, details: &Value) -> Value {
 
 fn shutdown_receipt(root: &Path, argv: &[String], reason: &str) -> Value {
     let mut shutdown_argv = vec![format!("--reason={reason}")];
-    if let Some(state_path) = parse_flag(argv, "swarm-state-path") {
+    if let Some(state_path) = lane_utils::parse_flag(argv, "swarm-state-path", false) {
         shutdown_argv.push(format!("--state-path={state_path}"));
     }
     swarm_runtime::force_shutdown(root, &shutdown_argv).unwrap_or_else(|err| {
@@ -191,7 +130,7 @@ pub fn run(root: &Path, argv: &[String]) -> (Value, i32) {
         .first()
         .map(|value| value.trim().to_ascii_lowercase())
         .unwrap_or_else(|| "status".to_string());
-    let strict = parse_bool(parse_flag(argv, "strict"), true);
+    let strict = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "strict", false).as_deref(), true);
 
     let mut payload = match command.as_str() {
         "status" => {
@@ -227,7 +166,7 @@ pub fn run(root: &Path, argv: &[String]) -> (Value, i32) {
                     "t0_invariant_violation",
                     &json!({
                         "violations": violations,
-                        "action": parse_flag(argv, "action").unwrap_or_else(|| "unspecified".to_string()),
+                        "action": lane_utils::parse_flag(argv, "action", false).unwrap_or_else(|| "unspecified".to_string()),
                     }),
                 ))
             } else {
@@ -247,7 +186,7 @@ pub fn run(root: &Path, argv: &[String]) -> (Value, i32) {
             })
         }
         "fuzz" => {
-            let attempts = parse_u64(parse_flag(argv, "attempts"), 10_000).clamp(1, 100_000);
+            let attempts = lane_utils::parse_u64_clamped(lane_utils::parse_flag(argv, "attempts", false).as_deref(), 10_000, 1, 100_000);
             let mut blocked = 0u64;
             for idx in 0..attempts {
                 let scenario = match idx % 8 {
