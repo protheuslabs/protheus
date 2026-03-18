@@ -539,6 +539,11 @@ fn main() {
             let exit = protheus_ops_core::benchmark_matrix::run(&cwd, &rest);
             std::process::exit(exit);
         }
+        "fixed-microbenchmark" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::fixed_microbenchmark::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
         "f100-reliability-certification" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::f100_reliability_certification::run(&cwd, &rest);

@@ -75,6 +75,7 @@ pub mod execution_yield_recovery;
 pub mod f100_readiness_program;
 pub mod f100_reliability_certification;
 pub mod finance_plane;
+pub mod fixed_microbenchmark;
 pub mod flow_plane;
 pub mod fluxlattice_program;
 pub mod focus_trigger_store_kernel;
