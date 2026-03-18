@@ -92,6 +92,7 @@ pub mod importance;
 pub mod integrity_hash_utility_kernel;
 pub mod intelligence_nexus;
 pub mod inversion_controller;
+pub mod crewai_bridge;
 pub mod langgraph_bridge;
 pub mod langchain_bridge;
 pub mod legacy_retired_lane;

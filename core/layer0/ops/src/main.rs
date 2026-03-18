@@ -905,6 +905,9 @@ fn main() {
         "langchain-bridge" => {
             exit_domain!(&cwd, &args, protheus_ops_core::langchain_bridge::run);
         }
+        "crewai-bridge" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::crewai_bridge::run);
+        }
         "pydantic-ai-bridge" => {
             exit_domain!(&cwd, &args, protheus_ops_core::pydantic_ai_bridge::run);
         }

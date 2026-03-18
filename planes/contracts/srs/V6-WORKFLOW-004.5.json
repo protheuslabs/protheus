@@ -1,0 +1,39 @@
+{
+  "id": "V6-WORKFLOW-004.5",
+  "upgrade": "YAML and Declarative Crew Config Bridge Contract",
+  "section": "CrewAI Role-Based Hierarchical Crews Assimilation Source Coverage Intake (Doc `10jW_kdehmfj5Cpg9l2tVSwvHhFtkWcvqAxHTgR0pKlY`, 2026-03-17)",
+  "impact": 8,
+  "layer_map": "0/1/2/adapter/client",
+  "conduit_only_boundary": false,
+  "todo_bucket": "repair_lane",
+  "execution_contract": {
+    "runtime": "core/layer2/ops:srs_contract_runtime",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "local/state/ops/srs_contract_runtime/V6-WORKFLOW-004.5/latest.json",
+    "history_path": "local/state/ops/srs_contract_runtime/history.jsonl"
+  },
+  "deliverables": [
+    {
+      "type": "contract",
+      "path": "planes/contracts/srs/V6-WORKFLOW-004.5.json"
+    },
+    {
+      "type": "state_receipt",
+      "path": "local/state/ops/srs_contract_runtime/V6-WORKFLOW-004.5/latest.json"
+    },
+    {
+      "type": "execution_history",
+      "path": "local/state/ops/srs_contract_runtime/history.jsonl"
+    }
+  ],
+  "validation": {
+    "lane_command": "protheus-ops srs-contract-runtime run --id=V6-WORKFLOW-004.5",
+    "status_command": "protheus-ops srs-contract-runtime status --id=V6-WORKFLOW-004.5",
+    "fail_closed_on_missing_contract": true
+  },
+  "generated_from": {
+    "source": "manual_impl",
+    "generated_at": "2026-03-18T08:48:45Z",
+    "notes": "Normalize CrewAI YAML/config assets through a governed adapter bridge that emits deterministic intake receipts and fails closed on unsupported keys."
+  }
+}
