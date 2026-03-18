@@ -740,6 +740,17 @@ fn core_shortcut_routes_assimilate_google_adk_to_google_adk_bridge() {
 }
 
 #[test]
+fn core_shortcut_routes_assimilate_camel_to_camel_bridge() {
+    let route = resolve_core_shortcuts(
+        "assimilate",
+        &["camel".to_string(), "--payload-base64=e30=".to_string()],
+    )
+    .expect("route");
+    assert_eq!(route.script_rel, "core://camel-bridge");
+    assert_eq!(route.args, vec!["import-dataset", "--payload-base64=e30="]);
+}
+
+#[test]
 fn core_shortcut_routes_assimilate_haystack_to_haystack_bridge() {
     let route = resolve_core_shortcuts(
         "assimilate",

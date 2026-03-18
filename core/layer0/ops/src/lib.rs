@@ -52,6 +52,7 @@ pub mod binary_vuln_plane;
 pub mod business_plane;
 pub mod canyon_plane;
 pub mod catalog_store_kernel;
+pub mod camel_bridge;
 pub mod child_organ_runtime;
 pub mod collab_plane;
 pub mod company_plane;

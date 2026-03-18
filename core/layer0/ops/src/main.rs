@@ -887,6 +887,9 @@ fn main() {
         "policy-runtime-kernel" => {
             exit_domain!(&cwd, &args, protheus_ops_core::policy_runtime_kernel::run);
         }
+        "camel-bridge" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::camel_bridge::run);
+        }
         "semantic-kernel-bridge" => {
             exit_domain!(&cwd, &args, protheus_ops_core::semantic_kernel_bridge::run);
         }

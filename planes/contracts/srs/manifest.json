@@ -1,35 +1,11 @@
 {
   "ok": true,
   "type": "srs_contract_manifest",
-  "generated_at": "2026-03-18T05:05:13.095Z",
+  "generated_at": "2026-03-18T05:30:27.706Z",
   "source": "contract_dir_scan",
   "source_ref": "planes/contracts/srs/*.json",
-  "row_count": 1902,
+  "row_count": 1919,
   "entries": [
-    {
-      "id": "V10-ULTIMATE-001.1",
-      "contract": "planes/contracts/srs/V10-ULTIMATE-001.1.json"
-    },
-    {
-      "id": "V10-ULTIMATE-001.2",
-      "contract": "planes/contracts/srs/V10-ULTIMATE-001.2.json"
-    },
-    {
-      "id": "V10-ULTIMATE-001.3",
-      "contract": "planes/contracts/srs/V10-ULTIMATE-001.3.json"
-    },
-    {
-      "id": "V10-ULTIMATE-001.4",
-      "contract": "planes/contracts/srs/V10-ULTIMATE-001.4.json"
-    },
-    {
-      "id": "V10-ULTIMATE-001.5",
-      "contract": "planes/contracts/srs/V10-ULTIMATE-001.5.json"
-    },
-    {
-      "id": "V10-ULTIMATE-001.6",
-      "contract": "planes/contracts/srs/V10-ULTIMATE-001.6.json"
-    },
     {
       "id": "V1H-001",
       "contract": "planes/contracts/srs/V1H-001.json"
@@ -3695,10 +3671,6 @@
       "contract": "planes/contracts/srs/V6-APP-011.1.json"
     },
     {
-      "id": "V6-APP-011.10",
-      "contract": "planes/contracts/srs/V6-APP-011.10.json"
-    },
-    {
       "id": "V6-APP-011.2",
       "contract": "planes/contracts/srs/V6-APP-011.2.json"
     },
@@ -3729,6 +3701,10 @@
     {
       "id": "V6-APP-011.9",
       "contract": "planes/contracts/srs/V6-APP-011.9.json"
+    },
+    {
+      "id": "V6-APP-011.10",
+      "contract": "planes/contracts/srs/V6-APP-011.10.json"
     },
     {
       "id": "V6-APP-012.1",
@@ -3791,18 +3767,6 @@
       "contract": "planes/contracts/srs/V6-APP-017.1.json"
     },
     {
-      "id": "V6-APP-017.10",
-      "contract": "planes/contracts/srs/V6-APP-017.10.json"
-    },
-    {
-      "id": "V6-APP-017.11",
-      "contract": "planes/contracts/srs/V6-APP-017.11.json"
-    },
-    {
-      "id": "V6-APP-017.12",
-      "contract": "planes/contracts/srs/V6-APP-017.12.json"
-    },
-    {
       "id": "V6-APP-017.2",
       "contract": "planes/contracts/srs/V6-APP-017.2.json"
     },
@@ -3833,6 +3797,18 @@
     {
       "id": "V6-APP-017.9",
       "contract": "planes/contracts/srs/V6-APP-017.9.json"
+    },
+    {
+      "id": "V6-APP-017.10",
+      "contract": "planes/contracts/srs/V6-APP-017.10.json"
+    },
+    {
+      "id": "V6-APP-017.11",
+      "contract": "planes/contracts/srs/V6-APP-017.11.json"
+    },
+    {
+      "id": "V6-APP-017.12",
+      "contract": "planes/contracts/srs/V6-APP-017.12.json"
     },
     {
       "id": "V6-APP-018.1",
@@ -4219,18 +4195,6 @@
       "contract": "planes/contracts/srs/V6-COCKPIT-015.1.json"
     },
     {
-      "id": "V6-COCKPIT-015.10",
-      "contract": "planes/contracts/srs/V6-COCKPIT-015.10.json"
-    },
-    {
-      "id": "V6-COCKPIT-015.11",
-      "contract": "planes/contracts/srs/V6-COCKPIT-015.11.json"
-    },
-    {
-      "id": "V6-COCKPIT-015.12",
-      "contract": "planes/contracts/srs/V6-COCKPIT-015.12.json"
-    },
-    {
       "id": "V6-COCKPIT-015.2",
       "contract": "planes/contracts/srs/V6-COCKPIT-015.2.json"
     },
@@ -4263,6 +4227,18 @@
       "contract": "planes/contracts/srs/V6-COCKPIT-015.9.json"
     },
     {
+      "id": "V6-COCKPIT-015.10",
+      "contract": "planes/contracts/srs/V6-COCKPIT-015.10.json"
+    },
+    {
+      "id": "V6-COCKPIT-015.11",
+      "contract": "planes/contracts/srs/V6-COCKPIT-015.11.json"
+    },
+    {
+      "id": "V6-COCKPIT-015.12",
+      "contract": "planes/contracts/srs/V6-COCKPIT-015.12.json"
+    },
+    {
       "id": "V6-COCKPIT-016.1",
       "contract": "planes/contracts/srs/V6-COCKPIT-016.1.json"
     },
@@ -4285,10 +4261,6 @@
     {
       "id": "V6-COCKPIT-017.1",
       "contract": "planes/contracts/srs/V6-COCKPIT-017.1.json"
-    },
-    {
-      "id": "V6-COCKPIT-017.10",
-      "contract": "planes/contracts/srs/V6-COCKPIT-017.10.json"
     },
     {
       "id": "V6-COCKPIT-017.2",
@@ -4321,6 +4293,10 @@
     {
       "id": "V6-COCKPIT-017.9",
       "contract": "planes/contracts/srs/V6-COCKPIT-017.9.json"
+    },
+    {
+      "id": "V6-COCKPIT-017.10",
+      "contract": "planes/contracts/srs/V6-COCKPIT-017.10.json"
     },
     {
       "id": "V6-COCKPIT-018.1",
@@ -5967,10 +5943,6 @@
       "contract": "planes/contracts/srs/V6-OBSERVABILITY-004.1.json"
     },
     {
-      "id": "V6-OBSERVABILITY-004.10",
-      "contract": "planes/contracts/srs/V6-OBSERVABILITY-004.10.json"
-    },
-    {
       "id": "V6-OBSERVABILITY-004.2",
       "contract": "planes/contracts/srs/V6-OBSERVABILITY-004.2.json"
     },
@@ -6001,6 +5973,10 @@
     {
       "id": "V6-OBSERVABILITY-004.9",
       "contract": "planes/contracts/srs/V6-OBSERVABILITY-004.9.json"
+    },
+    {
+      "id": "V6-OBSERVABILITY-004.10",
+      "contract": "planes/contracts/srs/V6-OBSERVABILITY-004.10.json"
     },
     {
       "id": "V6-OBSERVABILITY-005.1",
@@ -6151,22 +6127,6 @@
       "contract": "planes/contracts/srs/V6-PERSIST-001.1.json"
     },
     {
-      "id": "V6-PERSIST-001.10",
-      "contract": "planes/contracts/srs/V6-PERSIST-001.10.json"
-    },
-    {
-      "id": "V6-PERSIST-001.11",
-      "contract": "planes/contracts/srs/V6-PERSIST-001.11.json"
-    },
-    {
-      "id": "V6-PERSIST-001.12",
-      "contract": "planes/contracts/srs/V6-PERSIST-001.12.json"
-    },
-    {
-      "id": "V6-PERSIST-001.13",
-      "contract": "planes/contracts/srs/V6-PERSIST-001.13.json"
-    },
-    {
       "id": "V6-PERSIST-001.2",
       "contract": "planes/contracts/srs/V6-PERSIST-001.2.json"
     },
@@ -6197,6 +6157,22 @@
     {
       "id": "V6-PERSIST-001.9",
       "contract": "planes/contracts/srs/V6-PERSIST-001.9.json"
+    },
+    {
+      "id": "V6-PERSIST-001.10",
+      "contract": "planes/contracts/srs/V6-PERSIST-001.10.json"
+    },
+    {
+      "id": "V6-PERSIST-001.11",
+      "contract": "planes/contracts/srs/V6-PERSIST-001.11.json"
+    },
+    {
+      "id": "V6-PERSIST-001.12",
+      "contract": "planes/contracts/srs/V6-PERSIST-001.12.json"
+    },
+    {
+      "id": "V6-PERSIST-001.13",
+      "contract": "planes/contracts/srs/V6-PERSIST-001.13.json"
     },
     {
       "id": "V6-PRIM-001",
@@ -6635,6 +6611,38 @@
       "contract": "planes/contracts/srs/V6-SKILLS-001.1.json"
     },
     {
+      "id": "V6-SKILLS-001.2",
+      "contract": "planes/contracts/srs/V6-SKILLS-001.2.json"
+    },
+    {
+      "id": "V6-SKILLS-001.3",
+      "contract": "planes/contracts/srs/V6-SKILLS-001.3.json"
+    },
+    {
+      "id": "V6-SKILLS-001.4",
+      "contract": "planes/contracts/srs/V6-SKILLS-001.4.json"
+    },
+    {
+      "id": "V6-SKILLS-001.5",
+      "contract": "planes/contracts/srs/V6-SKILLS-001.5.json"
+    },
+    {
+      "id": "V6-SKILLS-001.6",
+      "contract": "planes/contracts/srs/V6-SKILLS-001.6.json"
+    },
+    {
+      "id": "V6-SKILLS-001.7",
+      "contract": "planes/contracts/srs/V6-SKILLS-001.7.json"
+    },
+    {
+      "id": "V6-SKILLS-001.8",
+      "contract": "planes/contracts/srs/V6-SKILLS-001.8.json"
+    },
+    {
+      "id": "V6-SKILLS-001.9",
+      "contract": "planes/contracts/srs/V6-SKILLS-001.9.json"
+    },
+    {
       "id": "V6-SKILLS-001.10",
       "contract": "planes/contracts/srs/V6-SKILLS-001.10.json"
     },
@@ -6675,10 +6683,6 @@
       "contract": "planes/contracts/srs/V6-SKILLS-001.19.json"
     },
     {
-      "id": "V6-SKILLS-001.2",
-      "contract": "planes/contracts/srs/V6-SKILLS-001.2.json"
-    },
-    {
       "id": "V6-SKILLS-001.20",
       "contract": "planes/contracts/srs/V6-SKILLS-001.20.json"
     },
@@ -6689,34 +6693,6 @@
     {
       "id": "V6-SKILLS-001.22",
       "contract": "planes/contracts/srs/V6-SKILLS-001.22.json"
-    },
-    {
-      "id": "V6-SKILLS-001.3",
-      "contract": "planes/contracts/srs/V6-SKILLS-001.3.json"
-    },
-    {
-      "id": "V6-SKILLS-001.4",
-      "contract": "planes/contracts/srs/V6-SKILLS-001.4.json"
-    },
-    {
-      "id": "V6-SKILLS-001.5",
-      "contract": "planes/contracts/srs/V6-SKILLS-001.5.json"
-    },
-    {
-      "id": "V6-SKILLS-001.6",
-      "contract": "planes/contracts/srs/V6-SKILLS-001.6.json"
-    },
-    {
-      "id": "V6-SKILLS-001.7",
-      "contract": "planes/contracts/srs/V6-SKILLS-001.7.json"
-    },
-    {
-      "id": "V6-SKILLS-001.8",
-      "contract": "planes/contracts/srs/V6-SKILLS-001.8.json"
-    },
-    {
-      "id": "V6-SKILLS-001.9",
-      "contract": "planes/contracts/srs/V6-SKILLS-001.9.json"
     },
     {
       "id": "V6-SOVEREIGN-001.1",
@@ -7319,6 +7295,42 @@
       "contract": "planes/contracts/srs/V6-WORKFLOW-010.9.json"
     },
     {
+      "id": "V6-WORKFLOW-011.1",
+      "contract": "planes/contracts/srs/V6-WORKFLOW-011.1.json"
+    },
+    {
+      "id": "V6-WORKFLOW-011.2",
+      "contract": "planes/contracts/srs/V6-WORKFLOW-011.2.json"
+    },
+    {
+      "id": "V6-WORKFLOW-011.3",
+      "contract": "planes/contracts/srs/V6-WORKFLOW-011.3.json"
+    },
+    {
+      "id": "V6-WORKFLOW-011.4",
+      "contract": "planes/contracts/srs/V6-WORKFLOW-011.4.json"
+    },
+    {
+      "id": "V6-WORKFLOW-011.5",
+      "contract": "planes/contracts/srs/V6-WORKFLOW-011.5.json"
+    },
+    {
+      "id": "V6-WORKFLOW-011.6",
+      "contract": "planes/contracts/srs/V6-WORKFLOW-011.6.json"
+    },
+    {
+      "id": "V6-WORKFLOW-011.7",
+      "contract": "planes/contracts/srs/V6-WORKFLOW-011.7.json"
+    },
+    {
+      "id": "V6-WORKFLOW-011.8",
+      "contract": "planes/contracts/srs/V6-WORKFLOW-011.8.json"
+    },
+    {
+      "id": "V6-WORKFLOW-011.9",
+      "contract": "planes/contracts/srs/V6-WORKFLOW-011.9.json"
+    },
+    {
       "id": "V6-WORKFLOW-012.1",
       "contract": "planes/contracts/srs/V6-WORKFLOW-012.1.json"
     },
@@ -7349,6 +7361,38 @@
     {
       "id": "V6-WORKFLOW-012.8",
       "contract": "planes/contracts/srs/V6-WORKFLOW-012.8.json"
+    },
+    {
+      "id": "V6-WORKFLOW-013.1",
+      "contract": "planes/contracts/srs/V6-WORKFLOW-013.1.json"
+    },
+    {
+      "id": "V6-WORKFLOW-013.2",
+      "contract": "planes/contracts/srs/V6-WORKFLOW-013.2.json"
+    },
+    {
+      "id": "V6-WORKFLOW-013.3",
+      "contract": "planes/contracts/srs/V6-WORKFLOW-013.3.json"
+    },
+    {
+      "id": "V6-WORKFLOW-013.4",
+      "contract": "planes/contracts/srs/V6-WORKFLOW-013.4.json"
+    },
+    {
+      "id": "V6-WORKFLOW-013.5",
+      "contract": "planes/contracts/srs/V6-WORKFLOW-013.5.json"
+    },
+    {
+      "id": "V6-WORKFLOW-013.6",
+      "contract": "planes/contracts/srs/V6-WORKFLOW-013.6.json"
+    },
+    {
+      "id": "V6-WORKFLOW-013.7",
+      "contract": "planes/contracts/srs/V6-WORKFLOW-013.7.json"
+    },
+    {
+      "id": "V6-WORKFLOW-013.8",
+      "contract": "planes/contracts/srs/V6-WORKFLOW-013.8.json"
     },
     {
       "id": "V7-ASM-001",
@@ -7613,76 +7657,30 @@
     {
       "id": "V9-VIRAL-001.6",
       "contract": "planes/contracts/srs/V9-VIRAL-001.6.json"
-    }
-  ],
-  "contracts": [
-    {
-      "id": "V6-WORKFLOW-011.1",
-      "contract": "planes/contracts/srs/V6-WORKFLOW-011.1.json"
     },
     {
-      "id": "V6-WORKFLOW-011.2",
-      "contract": "planes/contracts/srs/V6-WORKFLOW-011.2.json"
+      "id": "V10-ULTIMATE-001.1",
+      "contract": "planes/contracts/srs/V10-ULTIMATE-001.1.json"
     },
     {
-      "id": "V6-WORKFLOW-011.3",
-      "contract": "planes/contracts/srs/V6-WORKFLOW-011.3.json"
+      "id": "V10-ULTIMATE-001.2",
+      "contract": "planes/contracts/srs/V10-ULTIMATE-001.2.json"
     },
     {
-      "id": "V6-WORKFLOW-011.4",
-      "contract": "planes/contracts/srs/V6-WORKFLOW-011.4.json"
+      "id": "V10-ULTIMATE-001.3",
+      "contract": "planes/contracts/srs/V10-ULTIMATE-001.3.json"
     },
     {
-      "id": "V6-WORKFLOW-011.5",
-      "contract": "planes/contracts/srs/V6-WORKFLOW-011.5.json"
+      "id": "V10-ULTIMATE-001.4",
+      "contract": "planes/contracts/srs/V10-ULTIMATE-001.4.json"
     },
     {
-      "id": "V6-WORKFLOW-011.6",
-      "contract": "planes/contracts/srs/V6-WORKFLOW-011.6.json"
+      "id": "V10-ULTIMATE-001.5",
+      "contract": "planes/contracts/srs/V10-ULTIMATE-001.5.json"
     },
     {
-      "id": "V6-WORKFLOW-011.7",
-      "contract": "planes/contracts/srs/V6-WORKFLOW-011.7.json"
-    },
-    {
-      "id": "V6-WORKFLOW-011.8",
-      "contract": "planes/contracts/srs/V6-WORKFLOW-011.8.json"
-    },
-    {
-      "id": "V6-WORKFLOW-011.9",
-      "contract": "planes/contracts/srs/V6-WORKFLOW-011.9.json"
-    },
-    {
-      "id": "V6-WORKFLOW-012.1",
-      "contract": "planes/contracts/srs/V6-WORKFLOW-012.1.json"
-    },
-    {
-      "id": "V6-WORKFLOW-012.2",
-      "contract": "planes/contracts/srs/V6-WORKFLOW-012.2.json"
-    },
-    {
-      "id": "V6-WORKFLOW-012.3",
-      "contract": "planes/contracts/srs/V6-WORKFLOW-012.3.json"
-    },
-    {
-      "id": "V6-WORKFLOW-012.4",
-      "contract": "planes/contracts/srs/V6-WORKFLOW-012.4.json"
-    },
-    {
-      "id": "V6-WORKFLOW-012.5",
-      "contract": "planes/contracts/srs/V6-WORKFLOW-012.5.json"
-    },
-    {
-      "id": "V6-WORKFLOW-012.6",
-      "contract": "planes/contracts/srs/V6-WORKFLOW-012.6.json"
-    },
-    {
-      "id": "V6-WORKFLOW-012.7",
-      "contract": "planes/contracts/srs/V6-WORKFLOW-012.7.json"
-    },
-    {
-      "id": "V6-WORKFLOW-012.8",
-      "contract": "planes/contracts/srs/V6-WORKFLOW-012.8.json"
+      "id": "V10-ULTIMATE-001.6",
+      "contract": "planes/contracts/srs/V10-ULTIMATE-001.6.json"
     }
   ]
 }
