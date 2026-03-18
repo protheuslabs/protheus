@@ -1,23 +1,24 @@
 # Security Layer Inventory
 
-Generated: 2026-03-07T16:55:21.331Z
+Generated: 2026-03-18T23:05:26.903Z
 
-This inventory maps each security layer to enforceable implementation paths, policy contracts, runtime guard checks, and test evidence.
+This inventory maps each security layer to enforceable implementation paths, policy contracts, guard-check references, and live runtime checks.
 
-| Layer | Implementation | Policy | Guard Checks | Test Evidence |
-|---|---|---|---|---|
-| `constitution_policy_core`<br>Constitution + policy contract enforcement | `docs/workspace/AGENT-CONSTITUTION.md`<br>`core/layer0/ops/src/contract_check.rs` | `client/runtime/config/guard_check_registry.json`<br>`client/runtime/config/directives/T0_invariants.yaml` | `contract_check`: `node client/runtime/systems/spine/contract_check.ts`<br>`formal_invariant_engine`: `node client/runtime/systems/security/formal_invariant_engine.ts run --strict=1`<br>`critical_path_formal_verifier`: `node client/runtime/systems/security/critical_path_formal_verifier.ts run --strict=1` | `core/layer0/ops/src/contract_check.rs`<br>`tests/client-memory-tools/critical_path_formal_verifier.test.js` |
-| `conduit_boundary`<br>Rust conduit boundary and command security | `core/layer2/conduit/src/lib.rs`<br>`core/layer2/conduit-security/src/lib.rs` | `client/runtime/config/guard_check_registry.json`<br>`client/runtime/config/runtime_scheduler_policy.json` | `formal_invariant_engine`: `node client/runtime/systems/security/formal_invariant_engine.ts run --strict=1`<br>`critical_path_formal_verifier`: `node client/runtime/systems/security/critical_path_formal_verifier.ts run --strict=1` | `core/layer2/conduit/tests/invariants.rs`<br>`core/layer2/conduit/tests/certification.rs` |
-| `sandbox_isolation_and_egress`<br>Sandbox isolation and egress guardrails | `client/runtime/systems/security/execution_sandbox_envelope.ts`<br>`client/runtime/systems/security/egress_gateway.ts` | `client/runtime/config/execution_sandbox_envelope_policy.json`<br>`client/runtime/config/egress_gateway_policy.json` | `execution_sandbox_envelope_status`: `node client/runtime/systems/security/execution_sandbox_envelope.ts status`<br>`repository_access_auditor_status`: `node client/runtime/systems/security/repository_access_auditor.ts status --strict=1` | `tests/client-memory-tools/execution_sandbox_envelope.test.js`<br>`tests/client-memory-tools/egress_gateway.test.js` |
-| `supply_chain_trust`<br>Supply-chain trust verification plane | `client/runtime/systems/security/supply_chain_trust_plane.ts` | `client/runtime/config/supply_chain_trust_policy.json` | `supply_chain_trust_plane`: `node client/runtime/systems/security/supply_chain_trust_plane.ts run --strict=1 --verify-only=1` | `tests/client-memory-tools/supply_chain_trust_plane.test.js` |
-| `key_lifecycle_and_pq`<br>Key lifecycle governance and post-quantum migration | `client/runtime/systems/security/key_lifecycle_governor.ts`<br>`client/runtime/systems/security/post_quantum_migration_lane.ts` | `client/runtime/config/key_lifecycle_policy.json`<br>`client/runtime/config/post_quantum_migration_policy.json` | `key_lifecycle_verify`: `node client/runtime/systems/security/key_lifecycle_governor.ts verify --strict=1`<br>`post_quantum_migration_status`: `node client/runtime/systems/security/post_quantum_migration_lane.ts status` | `tests/client-memory-tools/key_lifecycle_governor.test.js`<br>`tests/client-memory-tools/post_quantum_migration_lane.test.js` |
-| `heartbeat_terms_and_repo_access`<br>Secure heartbeat endpoint + operator terms + repo access | `client/runtime/systems/security/secure_heartbeat_endpoint.ts`<br>`client/runtime/systems/security/operator_terms_ack.ts`<br>`client/runtime/systems/security/repository_access_auditor.ts` | `client/runtime/config/secure_heartbeat_endpoint_policy.json`<br>`client/runtime/config/operator_terms_ack_policy.json`<br>`client/runtime/config/repository_access_policy.json` | `secure_heartbeat_endpoint_verify`: `node client/runtime/systems/security/secure_heartbeat_endpoint.ts verify --strict=1`<br>`operator_terms_ack_status`: `node client/runtime/systems/security/operator_terms_ack.ts status`<br>`repository_access_auditor_status`: `node client/runtime/systems/security/repository_access_auditor.ts status --strict=1` | `tests/client-memory-tools/secure_heartbeat_endpoint.test.js`<br>`tests/client-memory-tools/operator_terms_ack.test.js`<br>`tests/client-memory-tools/repository_access_auditor.test.js` |
-| `state_kernel_integrity`<br>State kernel integrity and replay guardrails | `client/runtime/systems/ops/state_kernel.ts`<br>`client/runtime/systems/ops/state_kernel_cutover.ts` | `client/runtime/config/state_kernel_policy.json`<br>`client/runtime/config/state_kernel_cutover_policy.json` | `state_kernel_status`: `node client/runtime/systems/ops/state_kernel.ts status`<br>`state_kernel_parity`: `node client/runtime/systems/ops/state_kernel.ts verify-parity`<br>`state_kernel_replay_verify`: `node client/runtime/systems/ops/state_kernel.ts replay-verify --profiles=phone,desktop,cluster`<br>`state_kernel_cutover_status`: `node client/runtime/systems/ops/state_kernel_cutover.ts status` | `tests/client-memory-tools/state_kernel.test.js` |
+| Layer | File/Guard Coverage | Runtime Checks |
+|---|---|---|
+| `constitution_policy_core`<br>Constitution + policy contract enforcement | missing paths: 0<br>missing guard ids: 0 | security-plane formal-invariant-engine ok<br>security-plane t0-invariants ok |
+| `conduit_boundary`<br>Rust conduit boundary and command security | missing paths: 0<br>missing guard ids: 0 | security-plane required-checks-policy-guard ok<br>security-plane mcp-a2a-venom-contract-gate ok |
+| `sandbox_isolation_and_egress`<br>Sandbox isolation and egress guardrails | missing paths: 0<br>missing guard ids: 0 | security-plane blast-radius-sentinel ok |
+| `supply_chain_trust`<br>Supply-chain trust verification plane | missing paths: 0<br>missing guard ids: 0 | security-plane supply-chain-reproducible-build-plane ok |
+| `key_lifecycle_and_pq`<br>Key lifecycle governance and post-quantum migration | missing paths: 0<br>missing guard ids: 0 | security-plane secrets-federation ok |
+| `heartbeat_terms_and_repo_access`<br>Secure heartbeat endpoint + operator terms + repo access | missing paths: 0<br>missing guard ids: 0 | security-plane repository-access-auditor ok |
+| `state_kernel_integrity`<br>State kernel integrity and replay guardrails | missing paths: 0<br>missing guard ids: 0 | state-kernel status ok |
 
 ## Verification Summary
 
 - Layers checked: 7
-- Missing paths: 41
+- Missing paths: 0
 - Missing guard checks: 0
-- Contract status: FAIL
-- Receipt hash: `86720c16ae5e896ba7e8860d8f1eb0472f477e9c633481cd67d646155b2b0c4a`
+- Runtime check failures: 0
+- Contract status: PASS
+- Receipt hash: `bee1921417c108d091d23dc6da1b57a5da7e11781617af8e7b17d03182534833`
