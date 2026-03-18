@@ -89,6 +89,7 @@ pub mod intelligence_nexus;
 pub mod integrity_hash_utility_kernel;
 pub mod inversion_controller;
 pub mod legacy_retired_lane;
+pub mod llamaindex_bridge;
 pub mod llm_economy_organ;
 pub mod local_runtime_partitioner;
 pub mod mcp_plane;

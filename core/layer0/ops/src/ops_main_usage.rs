@@ -32,6 +32,7 @@ pub(super) fn print_usage() {
     println!("  protheus-ops dynamic-burn-budget-signal-kernel <normalize-pressure|pressure-rank|cost-pressure|load-signal> [--payload-base64=<base64_json>]");
     println!("  protheus-ops policy-runtime-kernel <deep-merge|resolve-policy-path|load-policy-runtime|resolve-policy-value-path> [--payload-base64=<base64_json>]");
     println!("  protheus-ops semantic-kernel-bridge <status|register-service|register-plugin|invoke-plugin|collaborate|plan|register-vector-connector|retrieve|register-llm-connector|route-llm|validate-structured-output|emit-enterprise-event|register-dotnet-bridge|invoke-dotnet-bridge> [--payload-base64=<base64_json>] [--state-path=<path>] [--swarm-state-path=<path>]");
+    println!("  protheus-ops llamaindex-bridge <status|register-index|query|run-agent-workflow|ingest-multimodal|record-memory-eval|run-conditional-workflow|emit-trace|register-connector|connector-query> [--payload-base64=<base64_json>] [--state-path=<path>] [--swarm-state-path=<path>]");
     println!("  protheus-ops integrity-hash-utility-kernel <stable-stringify|sha256-hex|hash-file-sha256> [--payload-base64=<base64_json>]");
     println!("  protheus-ops redaction-classification-kernel <load-policy|classify-text|redact-text|classify-and-redact> [--payload-base64=<base64_json>]");
     println!("  protheus-ops runtime-path-registry-kernel <constants|normalize-for-root|resolve-canonical|resolve-client-state|resolve-core-state> [--payload-base64=<base64_json>]");

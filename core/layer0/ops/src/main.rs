@@ -898,6 +898,9 @@ fn main() {
                 protheus_ops_core::semantic_kernel_bridge::run
             );
         }
+        "llamaindex-bridge" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::llamaindex_bridge::run);
+        }
         "integrity-hash-utility-kernel" => {
             exit_domain!(
                 &cwd,

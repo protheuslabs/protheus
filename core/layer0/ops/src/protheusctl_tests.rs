@@ -706,6 +706,20 @@ fn core_shortcut_routes_assimilate_doc2dict_core_to_parse_plane() {
 }
 
 #[test]
+fn core_shortcut_routes_assimilate_llamaindex_to_llamaindex_bridge() {
+    let route = resolve_core_shortcuts(
+        "assimilate",
+        &["llamaindex".to_string(), "--payload-base64=e30=".to_string()],
+    )
+    .expect("route");
+    assert_eq!(route.script_rel, "core://llamaindex-bridge");
+    assert_eq!(
+        route.args,
+        vec!["register-connector", "--payload-base64=e30="]
+    );
+}
+
+#[test]
 fn core_shortcut_routes_parse_doc_to_parse_plane() {
     let route = resolve_core_shortcuts(
         "parse",
