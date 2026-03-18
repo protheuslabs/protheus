@@ -191,6 +191,7 @@ pub(super) fn print_usage() {
     println!("  protheus-ops company-layer-orchestration <run|status> [flags]");
     println!("  protheus-ops wifi-csi-engine <run|status> [flags]");
     println!("  protheus-ops biological-computing-adapter <run|status> [flags]");
+    println!("  protheus-ops dify-bridge <status|register-canvas|sync-knowledge-base|register-agent-app|publish-dashboard|route-provider|run-conditional-flow|record-audit-trace> [flags]");
     println!("  protheus-ops observability-automation-engine <workflow|status> [flags]");
     println!("  protheus-ops observability-slo-runbook-closure <incident|status> [flags]");
     println!("  protheus-ops persistent-background-runtime <schedule|status> [flags]");

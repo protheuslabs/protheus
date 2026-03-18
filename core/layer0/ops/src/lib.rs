@@ -63,6 +63,7 @@ pub mod conversation_eye_synthesizer_kernel;
 pub mod daemon_control;
 pub mod directive_kernel;
 pub mod dopamine_ambient;
+pub mod dify_bridge;
 pub mod dspy_bridge;
 pub mod duality_seed;
 pub mod dynamic_burn_budget_oracle;

@@ -899,6 +899,9 @@ fn main() {
         "haystack-bridge" => {
             exit_domain!(&cwd, &args, protheus_ops_core::haystack_bridge::run);
         }
+        "dify-bridge" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::dify_bridge::run);
+        }
         "langgraph-bridge" => {
             exit_domain!(&cwd, &args, protheus_ops_core::langgraph_bridge::run);
         }
