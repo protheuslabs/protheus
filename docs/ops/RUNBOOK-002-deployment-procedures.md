@@ -186,6 +186,9 @@ Deployments are automatically logged. View recent history:
 - Build deployment correlation with incident reports
 - Document rollback testing procedures for staging environment
 - Add checklist for database migration validation
+- Consider adding canary analysis automation for gradual rollouts
+- Review deployment timing recommendations for different regions
+- Document hotfix deployment communication templates in more detail
 
 ## Document History
 

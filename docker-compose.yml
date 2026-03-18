@@ -11,6 +11,9 @@ services:
       NODE_ENV: "production"
       SPINE_PUBLIC_BENCHMARK_ENABLED: "0"
     restart: unless-stopped
+    # NOTE(rohan): Using unless-stopped to allow manual intervention during incidents
+    # while still ensuring automatic recovery for transient failures.
+    # This balances operational flexibility with reliability requirements.
     read_only: true
     tmpfs:
       - /tmp
