@@ -905,6 +905,9 @@ fn main() {
         "pydantic-ai-bridge" => {
             exit_domain!(&cwd, &args, protheus_ops_core::pydantic_ai_bridge::run);
         }
+        "dspy-bridge" => {
+            exit_domain!(&cwd, &args, protheus_ops_core::dspy_bridge::run);
+        }
         "mastra-bridge" => {
             exit_domain!(&cwd, &args, protheus_ops_core::mastra_bridge::run);
         }
