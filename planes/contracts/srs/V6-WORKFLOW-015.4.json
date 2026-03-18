@@ -1,0 +1,39 @@
+{
+  "id": "V6-WORKFLOW-015.4",
+  "upgrade": "MCP / A2A / UI Protocol Bridge Contract",
+  "section": "Pydantic AI Type-Safe Structured Agents Assimilation Source Coverage Intake (Doc `1QijtkfhfaFMbtBuV-PGlTmbL2uoeKtGccbEAAKra9uE`, 2026-03-17)",
+  "impact": 9,
+  "layer_map": "0/1/2/adapter/client",
+  "conduit_only_boundary": false,
+  "todo_bucket": "repair_lane",
+  "execution_contract": {
+    "runtime": "core/layer2/ops:srs_contract_runtime",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "local/state/ops/srs_contract_runtime/V6-WORKFLOW-015.4/latest.json",
+    "history_path": "local/state/ops/srs_contract_runtime/history.jsonl"
+  },
+  "deliverables": [
+    {
+      "type": "contract",
+      "path": "planes/contracts/srs/V6-WORKFLOW-015.4.json"
+    },
+    {
+      "type": "state_receipt",
+      "path": "local/state/ops/srs_contract_runtime/V6-WORKFLOW-015.4/latest.json"
+    },
+    {
+      "type": "execution_history",
+      "path": "local/state/ops/srs_contract_runtime/history.jsonl"
+    }
+  ],
+  "validation": {
+    "lane_command": "protheus-ops srs-contract-runtime run --id=V6-WORKFLOW-015.4",
+    "status_command": "protheus-ops srs-contract-runtime status --id=V6-WORKFLOW-015.4",
+    "fail_closed_on_missing_contract": true
+  },
+  "generated_from": {
+    "source": "manual_impl",
+    "generated_at": "2026-03-18T06:46:25Z",
+    "notes": "Map MCP, A2A, and UI protocol events onto swarm/session and adapter primitives with receipted delivery plus explicit degradation when unsupported."
+  }
+}

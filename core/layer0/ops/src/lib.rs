@@ -127,6 +127,7 @@ pub mod persona_ambient;
 pub mod persona_schema_contract;
 pub mod personas_cli;
 pub mod policy_runtime_kernel;
+pub mod pydantic_ai_bridge;
 pub mod proposal_enricher;
 pub mod proposal_type_classifier_kernel;
 pub mod protheus_control_plane;

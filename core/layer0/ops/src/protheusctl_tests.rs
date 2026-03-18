@@ -779,6 +779,17 @@ fn core_shortcut_routes_assimilate_langchain_to_langchain_bridge() {
 }
 
 #[test]
+fn core_shortcut_routes_assimilate_pydantic_ai_to_pydantic_ai_bridge() {
+    let route = resolve_core_shortcuts(
+        "assimilate",
+        &["pydantic-ai".to_string(), "--payload-base64=e30=".to_string()],
+    )
+    .expect("route");
+    assert_eq!(route.script_rel, "core://pydantic-ai-bridge");
+    assert_eq!(route.args, vec!["register-agent", "--payload-base64=e30="]);
+}
+
+#[test]
 fn core_shortcut_routes_assimilate_mastra_to_mastra_bridge() {
     let route = resolve_core_shortcuts(
         "assimilate",
