@@ -7,6 +7,7 @@ use crate::v8_kernel::{
     write_receipt,
 };
 use crate::{clean, parse_args};
+use crate::directive_kernel;
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, HashSet};
 use std::fs;
@@ -30,6 +31,21 @@ fn usage() {
     println!("  protheus-ops snowball-plane compact [--cycle-id=<id>] [--strict=1|0]");
     println!(
         "      compact flags: [--benchmark-report=<path>] [--assimilations-json=<json>] [--reliability-before=<f>] [--reliability-after=<f>]"
+    );
+    println!(
+        "  protheus-ops snowball-plane fitness-review [--cycle-id=<id>] [--benchmark-report=<path>] [--assimilations-json=<json>] [--reliability-before=<f>] [--reliability-after=<f>] [--strict=1|0]"
+    );
+    println!(
+        "  protheus-ops snowball-plane archive-discarded [--cycle-id=<id>] [--strict=1|0]"
+    );
+    println!(
+        "  protheus-ops snowball-plane publish-benchmarks [--cycle-id=<id>] [--benchmark-report=<path>] [--readme-path=<path>] [--strict=1|0]"
+    );
+    println!(
+        "  protheus-ops snowball-plane promote [--cycle-id=<id>] [--allow-neutral=1|0] [--neutral-justification=<text>] [--strict=1|0]"
+    );
+    println!(
+        "  protheus-ops snowball-plane prime-update [--cycle-id=<id>] [--directive=<text>] [--signer=<id>] [--strict=1|0]"
     );
     println!(
         "  protheus-ops snowball-plane backlog-pack [--cycle-id=<id>] [--unresolved-json=<json>] [--strict=1|0]"
@@ -95,6 +111,38 @@ fn discarded_blob_dir(root: &Path, cycle_id: &str) -> PathBuf {
 
 fn prime_directive_compacted_state_path(root: &Path) -> PathBuf {
     state_root(root).join("prime_directive_compacted_state.json")
+}
+
+fn fitness_review_path(root: &Path, cycle_id: &str) -> PathBuf {
+    state_root(root)
+        .join("evolution")
+        .join(format!("{cycle_id}-fitness-review.json"))
+}
+
+fn promotion_path(root: &Path, cycle_id: &str) -> PathBuf {
+    state_root(root)
+        .join("promotion")
+        .join(format!("{cycle_id}.json"))
+}
+
+fn benchmark_publication_path(root: &Path, cycle_id: &str) -> PathBuf {
+    state_root(root)
+        .join("benchmark_publication")
+        .join(format!("{cycle_id}.json"))
+}
+
+fn readme_path(root: &Path, parsed: &crate::ParsedArgs) -> PathBuf {
+    let configured = parsed
+        .flags
+        .get("readme-path")
+        .map(String::as_str)
+        .unwrap_or("README.md");
+    let candidate = PathBuf::from(configured);
+    if candidate.is_absolute() {
+        candidate
+    } else {
+        root.join(candidate)
+    }
 }
 
 fn benchmark_report_path(root: &Path, parsed: &crate::ParsedArgs) -> PathBuf {
@@ -255,16 +303,31 @@ fn mode_delta(before: &Value, after: &Value) -> Value {
     let throughput_before = metric_from_mode(before, "tasks_per_sec");
     let throughput_after = metric_from_mode(after, "tasks_per_sec");
     let cold_improved = cold_before > 0.0 && cold_after > 0.0 && cold_after < cold_before;
+    let cold_regressed = cold_before > 0.0 && cold_after > 0.0 && cold_after > cold_before;
     let idle_improved = idle_before > 0.0 && idle_after > 0.0 && idle_after < idle_before;
+    let idle_regressed = idle_before > 0.0 && idle_after > 0.0 && idle_after > idle_before;
     let install_improved =
         install_before > 0.0 && install_after > 0.0 && install_after < install_before;
+    let install_regressed =
+        install_before > 0.0 && install_after > 0.0 && install_after > install_before;
     let throughput_improved =
         throughput_before > 0.0 && throughput_after > 0.0 && throughput_after > throughput_before;
+    let throughput_regressed =
+        throughput_before > 0.0 && throughput_after > 0.0 && throughput_after < throughput_before;
     let improved_count = [
         cold_improved,
         idle_improved,
         install_improved,
         throughput_improved,
+    ]
+    .iter()
+    .filter(|v| **v)
+    .count();
+    let regressed_count = [
+        cold_regressed,
+        idle_regressed,
+        install_regressed,
+        throughput_regressed,
     ]
     .iter()
     .filter(|v| **v)
@@ -279,10 +342,15 @@ fn mode_delta(before: &Value, after: &Value) -> Value {
         "tasks_per_sec_before": throughput_before,
         "tasks_per_sec_after": throughput_after,
         "cold_improved": cold_improved,
+        "cold_regressed": cold_regressed,
         "idle_improved": idle_improved,
+        "idle_regressed": idle_regressed,
         "install_improved": install_improved,
+        "install_regressed": install_regressed,
         "throughput_improved": throughput_improved,
-        "improved_count": improved_count
+        "throughput_regressed": throughput_regressed,
+        "improved_count": improved_count,
+        "regressed_count": regressed_count
     })
 }
 
@@ -314,11 +382,297 @@ fn benchmark_delta(before: &Value, after: &Value) -> Value {
             .get("improved_count")
             .and_then(Value::as_u64)
             .unwrap_or(0);
+    let regressed_total = openclaw
+        .get("regressed_count")
+        .and_then(Value::as_u64)
+        .unwrap_or(0)
+        + pure
+            .get("regressed_count")
+            .and_then(Value::as_u64)
+            .unwrap_or(0)
+        + tiny
+            .get("regressed_count")
+            .and_then(Value::as_u64)
+            .unwrap_or(0);
     json!({
         "openclaw": openclaw,
         "pure_workspace": pure,
         "pure_workspace_tiny_max": tiny,
-        "improved_metric_count": improved_total
+        "improved_metric_count": improved_total,
+        "regressed_metric_count": regressed_total
+    })
+}
+
+fn load_assimilation_plan(root: &Path, cycle_id: &str, parsed: &crate::ParsedArgs) -> Vec<Value> {
+    parse_json_flag(parsed.flags.get("assimilations-json"))
+        .and_then(|v| v.as_array().cloned())
+        .or_else(|| {
+            read_json(&assimilation_plan_path(root, cycle_id))
+                .and_then(|v| v.get("items").and_then(Value::as_array).cloned())
+        })
+        .unwrap_or_default()
+}
+
+fn first_failed_gate(gates: &Value) -> &'static str {
+    let checks = [
+        ("metrics", "metrics_no_gain"),
+        ("tiny_pure", "tiny_pure_not_strengthened"),
+        ("rsi_organism", "rsi_utility_not_improved"),
+        ("tiny_hardware", "tiny_hardware_not_supported"),
+        ("reliability", "reliability_regressed"),
+    ];
+    for (key, reason) in checks {
+        if gates.get(key).and_then(Value::as_bool) == Some(false) {
+            return reason;
+        }
+    }
+    "unknown_rejection_reason"
+}
+
+fn score_candidate(gates: &Value, bench_delta: &Value) -> f64 {
+    let improved = bench_delta
+        .get("improved_metric_count")
+        .and_then(Value::as_u64)
+        .unwrap_or(0) as f64;
+    let gate_score = ["metrics", "tiny_pure", "rsi_organism", "tiny_hardware", "reliability"]
+        .iter()
+        .filter(|key| gates.get(**key).and_then(Value::as_bool) == Some(true))
+        .count() as f64;
+    ((gate_score / 5.0) * 70.0) + improved.min(10.0) * 3.0
+}
+
+fn build_fitness_review(
+    _root: &Path,
+    cycle_id: &str,
+    bench_delta: &Value,
+    reliability_before: f64,
+    reliability_after: f64,
+    assimilation_plan: &[Value],
+) -> Value {
+    let reliability_gate_pass = reliability_after >= reliability_before;
+    let metrics_gate_pass = bench_delta
+        .get("improved_metric_count")
+        .and_then(Value::as_u64)
+        .unwrap_or(0)
+        > 0;
+    let tiny_strengthened = bench_delta
+        .pointer("/pure_workspace_tiny_max/improved_count")
+        .and_then(Value::as_u64)
+        .unwrap_or(0)
+        > 0
+        || bench_delta
+            .pointer("/pure_workspace/improved_count")
+            .and_then(Value::as_u64)
+            .unwrap_or(0)
+            > 0;
+
+    let mut survivors = Vec::<Value>::new();
+    let mut demoted = Vec::<Value>::new();
+    let mut rejected = Vec::<Value>::new();
+    for candidate in assimilation_plan {
+        if !candidate.is_object() {
+            continue;
+        }
+        let mut normalized = candidate.clone();
+        let lower = normalized
+            .get("idea")
+            .and_then(Value::as_str)
+            .or_else(|| normalized.get("id").and_then(Value::as_str))
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        let intelligence_fallback = lower.contains("rsi")
+            || lower.contains("organism")
+            || lower.contains("memory")
+            || lower.contains("planner")
+            || lower.contains("learn")
+            || lower.contains("inference");
+        let hardware_fallback = lower.contains("tiny")
+            || lower.contains("embedded")
+            || lower.contains("mcu")
+            || lower.contains("pure")
+            || lower.contains("low-power")
+            || lower.contains("edge");
+        let metric_gate = candidate_gate_bool(
+            &normalized,
+            &["metric_gain", "metrics_pass"],
+            metrics_gate_pass,
+        );
+        let tiny_gate = candidate_gate_bool(
+            &normalized,
+            &["pure_tiny_strength", "tiny_strengthened", "pure_mode_gain"],
+            tiny_strengthened,
+        );
+        let intelligence_gate = candidate_gate_bool(
+            &normalized,
+            &["intelligence_gain", "rsi_gain", "organism_gain"],
+            intelligence_fallback,
+        );
+        let hardware_gate = candidate_gate_bool(
+            &normalized,
+            &["tiny_hardware_fit", "hardware_fit", "embedded_fit"],
+            hardware_fallback,
+        );
+        let gates = json!({
+            "metrics": metric_gate,
+            "tiny_pure": tiny_gate,
+            "rsi_organism": intelligence_gate,
+            "tiny_hardware": hardware_gate,
+            "reliability": reliability_gate_pass
+        });
+        let all_pass = gates.as_object().map(|obj| {
+            obj.values()
+                .all(|value| value.as_bool().unwrap_or(false))
+        }).unwrap_or(false);
+        let demote = !all_pass
+            && !metric_gate
+            && (tiny_gate || intelligence_gate || hardware_gate)
+            && reliability_gate_pass;
+        let status = if all_pass {
+            "survivor"
+        } else if demote {
+            "demoted_optional"
+        } else {
+            "rejected"
+        };
+        let rejection_reason = if status == "survivor" {
+            "none"
+        } else {
+            first_failed_gate(&gates)
+        };
+        normalized["gate_results"] = gates.clone();
+        normalized["status"] = Value::String(status.to_string());
+        normalized["review_score"] = Value::from(score_candidate(&gates, bench_delta));
+        normalized["evaluated_at"] = Value::String(crate::now_iso());
+        normalized["rejection_reason"] = Value::String(rejection_reason.to_string());
+        normalized["resurrection_metadata"] = json!({
+            "cycle_id": cycle_id,
+            "recheck_after": "next_snowball_cycle",
+            "reason": rejection_reason
+        });
+        match status {
+            "survivor" => survivors.push(normalized),
+            "demoted_optional" => demoted.push(normalized),
+            _ => rejected.push(normalized),
+        }
+    }
+
+    json!({
+        "version": "v1",
+        "cycle_id": cycle_id,
+        "generated_at": crate::now_iso(),
+        "bench_delta": bench_delta,
+        "reliability": {
+            "before": reliability_before,
+            "after": reliability_after,
+            "pass": reliability_gate_pass
+        },
+        "summary": {
+            "survivor_count": survivors.len(),
+            "demoted_count": demoted.len(),
+            "rejected_count": rejected.len(),
+            "improved_metric_count": bench_delta.get("improved_metric_count").and_then(Value::as_u64).unwrap_or(0),
+            "regressed_metric_count": bench_delta.get("regressed_metric_count").and_then(Value::as_u64).unwrap_or(0),
+            "tiny_strengthened": tiny_strengthened
+        },
+        "survivors": survivors,
+        "demoted": demoted,
+        "rejected": rejected
+    })
+}
+
+fn load_review(root: &Path, cycle_id: &str) -> Option<Value> {
+    read_json(&fitness_review_path(root, cycle_id))
+}
+
+fn load_cycle_value(cycles: &Value, cycle_id: &str) -> Option<Value> {
+    cycles
+        .get("cycles")
+        .and_then(Value::as_object)
+        .and_then(|map| map.get(cycle_id))
+        .cloned()
+}
+
+fn format_with_commas(raw: f64) -> String {
+    let base = format!("{raw:.1}");
+    let parts = base.split('.').collect::<Vec<_>>();
+    let integer = parts.first().copied().unwrap_or("0");
+    let fraction = parts.get(1).copied().unwrap_or("0");
+    let mut out = String::new();
+    let bytes = integer.as_bytes();
+    for (idx, ch) in bytes.iter().enumerate() {
+        if idx > 0 && (bytes.len() - idx) % 3 == 0 {
+            out.push(',');
+        }
+        out.push(*ch as char);
+    }
+    out.push('.');
+    out.push_str(fraction);
+    out
+}
+
+fn readme_sync_summary(report: &Value, readme_text: &str) -> Value {
+    let snippets = [
+        (
+            "rich_cold_start",
+            format!(
+                "{:.1} ms",
+                report
+                    .pointer("/openclaw_measured/cold_start_ms")
+                    .and_then(Value::as_f64)
+                    .unwrap_or(0.0)
+            ),
+        ),
+        (
+            "rich_idle_memory",
+            format!(
+                "{:.1} MB",
+                report
+                    .pointer("/openclaw_measured/idle_memory_mb")
+                    .and_then(Value::as_f64)
+                    .unwrap_or(0.0)
+            ),
+        ),
+        (
+            "pure_throughput",
+            format!(
+                "{} ops/sec",
+                format_with_commas(
+                    report
+                        .pointer("/pure_workspace_measured/tasks_per_sec")
+                        .and_then(Value::as_f64)
+                        .unwrap_or(0.0)
+                )
+            ),
+        ),
+        (
+            "tiny_throughput",
+            format!(
+                "{} ops/sec",
+                format_with_commas(
+                    report
+                        .pointer("/pure_workspace_tiny_max_measured/tasks_per_sec")
+                        .and_then(Value::as_f64)
+                        .unwrap_or(0.0)
+                )
+            ),
+        ),
+    ];
+    let rows = snippets
+        .iter()
+        .map(|(name, snippet)| {
+            json!({
+                "name": name,
+                "snippet": snippet,
+                "present": readme_text.contains(snippet)
+            })
+        })
+        .collect::<Vec<_>>();
+    let synced = rows
+        .iter()
+        .all(|row| row.get("present").and_then(Value::as_bool) == Some(true));
+    json!({
+        "synced": synced,
+        "checks": rows
     })
 }
 
@@ -409,7 +763,19 @@ fn claim_ids_for_action(action: &str) -> Vec<&'static str> {
     match action {
         "start" => vec!["V6-APP-023.1", "V6-APP-023.5", "V6-APP-023.6"],
         "melt-refine" | "regress" => vec!["V6-APP-023.2", "V6-APP-023.5", "V6-APP-023.6"],
-        "compact" => vec!["V6-APP-023.3", "V6-APP-023.5", "V6-APP-023.6"],
+        "compact" => vec![
+            "V6-APP-023.3",
+            "V6-APP-023.7",
+            "V6-APP-023.9",
+            "V6-APP-023.11",
+            "V6-APP-023.5",
+            "V6-APP-023.6",
+        ],
+        "fitness-review" => vec!["V6-APP-023.7", "V6-APP-023.5", "V6-APP-023.6"],
+        "archive-discarded" => vec!["V6-APP-023.9"],
+        "publish-benchmarks" => vec!["V6-APP-023.10"],
+        "promote" => vec!["V6-APP-023.8"],
+        "prime-update" => vec!["V6-APP-023.11"],
         "backlog-pack" => vec!["V6-APP-023.4", "V6-APP-023.5", "V6-APP-023.6"],
         "control" | "status" => vec!["V6-APP-023.5", "V6-APP-023.6"],
         _ => vec!["V6-APP-023.5", "V6-APP-023.6"],
@@ -968,95 +1334,34 @@ fn run_compact(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
     let reliability_before = parse_f64(parsed.flags.get("reliability-before"), 1.0);
     let reliability_after = parse_f64(parsed.flags.get("reliability-after"), reliability_before);
     let reliability_gate_pass = reliability_after >= reliability_before;
-    let metrics_gate_pass = bench_delta
-        .get("improved_metric_count")
-        .and_then(Value::as_u64)
-        .unwrap_or(0)
-        > 0;
-    let tiny_strengthened = bench_delta
-        .pointer("/pure_workspace_tiny_max/improved_count")
-        .and_then(Value::as_u64)
-        .unwrap_or(0)
-        > 0
-        || bench_delta
-            .pointer("/pure_workspace/improved_count")
-            .and_then(Value::as_u64)
-            .unwrap_or(0)
-            > 0;
 
-    let assimilation_plan = parse_json_flag(parsed.flags.get("assimilations-json"))
-        .and_then(|v| v.as_array().cloned())
-        .or_else(|| {
-            read_json(&assimilation_plan_path(root, &cycle_id))
-                .and_then(|v| v.get("items").and_then(Value::as_array).cloned())
-        })
+    let assimilation_plan = load_assimilation_plan(root, &cycle_id, parsed);
+    let review = build_fitness_review(
+        root,
+        &cycle_id,
+        &bench_delta,
+        reliability_before,
+        reliability_after,
+        assimilation_plan.as_slice(),
+    );
+    let kept = review
+        .get("survivors")
+        .and_then(Value::as_array)
+        .cloned()
         .unwrap_or_default();
-    let mut kept = Vec::<Value>::new();
-    let mut discarded = Vec::<Value>::new();
-    for candidate in assimilation_plan {
-        if !candidate.is_object() {
-            continue;
-        }
-        let mut normalized = candidate.clone();
-        let lower = normalized
-            .get("idea")
-            .and_then(Value::as_str)
-            .or_else(|| normalized.get("id").and_then(Value::as_str))
-            .unwrap_or("")
-            .to_ascii_lowercase();
-        let intelligence_fallback = lower.contains("rsi")
-            || lower.contains("organism")
-            || lower.contains("memory")
-            || lower.contains("planner")
-            || lower.contains("learn")
-            || lower.contains("inference");
-        let hardware_fallback = lower.contains("tiny")
-            || lower.contains("embedded")
-            || lower.contains("mcu")
-            || lower.contains("pure")
-            || lower.contains("low-power")
-            || lower.contains("edge");
-        let metric_gate = candidate_gate_bool(
-            &normalized,
-            &["metric_gain", "metrics_pass"],
-            metrics_gate_pass,
-        );
-        let tiny_gate = candidate_gate_bool(
-            &normalized,
-            &["pure_tiny_strength", "tiny_strengthened", "pure_mode_gain"],
-            tiny_strengthened,
-        );
-        let intelligence_gate = candidate_gate_bool(
-            &normalized,
-            &["intelligence_gain", "rsi_gain", "organism_gain"],
-            intelligence_fallback,
-        );
-        let hardware_gate = candidate_gate_bool(
-            &normalized,
-            &["tiny_hardware_fit", "hardware_fit", "embedded_fit"],
-            hardware_fallback,
-        );
-        let keep =
-            metric_gate && tiny_gate && intelligence_gate && hardware_gate && reliability_gate_pass;
-        normalized["gate_results"] = json!({
-            "metrics": metric_gate,
-            "tiny_pure": tiny_gate,
-            "rsi_organism": intelligence_gate,
-            "tiny_hardware": hardware_gate,
-            "reliability": reliability_gate_pass
-        });
-        normalized["status"] = Value::String(if keep {
-            "kept".to_string()
-        } else {
-            "discarded".to_string()
-        });
-        normalized["evaluated_at"] = Value::String(crate::now_iso());
-        if keep {
-            kept.push(normalized);
-        } else {
-            discarded.push(normalized);
-        }
-    }
+    let mut discarded = review
+        .get("demoted")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    discarded.extend(
+        review
+            .get("rejected")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default(),
+    );
+    let _ = write_json(&fitness_review_path(root, &cycle_id), &review);
     let _ = write_json(
         &kept_path(root, &cycle_id),
         &json!({
@@ -1089,7 +1394,8 @@ fn run_compact(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
         "assimilation": {
             "kept_count": kept.len(),
             "discarded_count": discarded.len(),
-            "discarded_blob_index_path": discarded_blob_index_path(root, &cycle_id).display().to_string()
+            "discarded_blob_index_path": discarded_blob_index_path(root, &cycle_id).display().to_string(),
+            "fitness_review_path": fitness_review_path(root, &cycle_id).display().to_string()
         },
         "reliability": {
             "before": reliability_before,
@@ -1108,6 +1414,12 @@ fn run_compact(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
     next_cycle["stage"] = Value::String("compacted".to_string());
     next_cycle["benchmark_after"] = benchmark_after.clone();
     next_cycle["benchmark_delta"] = bench_delta.clone();
+    next_cycle["fitness_review"] = json!({
+        "path": fitness_review_path(root, &cycle_id).display().to_string(),
+        "survivor_count": review.pointer("/summary/survivor_count").and_then(Value::as_u64).unwrap_or(0),
+        "demoted_count": review.pointer("/summary/demoted_count").and_then(Value::as_u64).unwrap_or(0),
+        "rejected_count": review.pointer("/summary/rejected_count").and_then(Value::as_u64).unwrap_or(0)
+    });
     next_cycle["assimilation"] = json!({
         "kept_path": kept_path(root, &cycle_id).display().to_string(),
         "discarded_path": discarded_path(root, &cycle_id).display().to_string(),
@@ -1142,6 +1454,7 @@ fn run_compact(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
             "discarded_blob_count": discarded_blob_rows.len(),
             "kept_path": kept_path(root, &cycle_id).display().to_string(),
             "discarded_path": discarded_path(root, &cycle_id).display().to_string(),
+            "fitness_review_path": fitness_review_path(root, &cycle_id).display().to_string(),
             "discarded_blob_index": discarded_blob_index
         },
         "prime_directive_compacted_state": {
@@ -1158,14 +1471,31 @@ fn run_compact(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
                 }
             },
             {
-                "id": "V9-EVOLUTION-COMPACTION-001",
-                "claim": "snowball_compaction_assimilates_external_ideas_with_four_gate_scoring_and_binary_blob_archival_for_discarded_candidates",
+                "id": "V6-APP-023.7",
+                "claim": "snowball_compaction_scores_assimilations_against_runtime_metrics_reliability_tiny_modes_and_rsi_utility",
                 "evidence": {
                     "cycle_id": cycle_id,
                     "kept_count": kept.len(),
                     "discarded_count": discarded.len(),
-                    "discarded_blob_count": discarded_blob_rows.len(),
+                    "fitness_review_path": fitness_review_path(root, &cycle_id).display().to_string(),
                     "benchmark_report_path": benchmark_path.display().to_string()
+                }
+            },
+            {
+                "id": "V6-APP-023.9",
+                "claim": "snowball_compaction_archives_discarded_or_demoted_ideas_as_versioned_blob_artifacts_with_provenance",
+                "evidence": {
+                    "cycle_id": cycle_id,
+                    "discarded_blob_count": discarded_blob_rows.len(),
+                    "discarded_blob_index_path": discarded_blob_index_path(root, &cycle_id).display().to_string()
+                }
+            },
+            {
+                "id": "V6-APP-023.11",
+                "claim": "snowball_compaction_records_compacted_state_and_prime_directive_lineage_for_successful_cycles",
+                "evidence": {
+                    "cycle_id": cycle_id,
+                    "prime_state_path": prime_directive_compacted_state_path(root).display().to_string()
                 }
             },
             {
@@ -1182,6 +1512,514 @@ fn run_compact(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
                     "cycle_id": cycle_id,
                     "stage": next_cycle.get("stage").cloned().unwrap_or(Value::Null),
                     "snapshot_path": snapshot_path.display().to_string()
+                }
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
+    out
+}
+
+fn run_fitness_review(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
+    let mut cycles = load_cycles(root);
+    let cycle_id = active_or_requested_cycle(parsed, &cycles, "snowball-default");
+    let mut cycles_map = cycles
+        .get("cycles")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let cycle = load_cycle_value(&cycles, &cycle_id);
+    if strict && cycle.is_none() {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "snowball_plane_fitness_review",
+            "action": "fitness-review",
+            "errors": ["snowball_cycle_not_found"],
+            "cycle_id": cycle_id
+        });
+    }
+    let benchmark_path = benchmark_report_path(root, parsed);
+    let benchmark_after = load_benchmark_modes(&benchmark_path);
+    let benchmark_before = cycle
+        .as_ref()
+        .and_then(|v| v.get("benchmark_before"))
+        .cloned()
+        .unwrap_or_else(|| benchmark_after.clone());
+    let bench_delta = benchmark_delta(&benchmark_before, &benchmark_after);
+    let reliability_before = parse_f64(parsed.flags.get("reliability-before"), 1.0);
+    let reliability_after = parse_f64(parsed.flags.get("reliability-after"), reliability_before);
+    let review = build_fitness_review(
+        root,
+        &cycle_id,
+        &bench_delta,
+        reliability_before,
+        reliability_after,
+        load_assimilation_plan(root, &cycle_id, parsed).as_slice(),
+    );
+    let review_path = fitness_review_path(root, &cycle_id);
+    let _ = write_json(&review_path, &review);
+
+    let mut next_cycle = cycle.unwrap_or_else(|| json!({"cycle_id": cycle_id, "stage":"reviewed"}));
+    next_cycle["fitness_review"] = json!({
+        "path": review_path.display().to_string(),
+        "survivor_count": review.pointer("/summary/survivor_count").and_then(Value::as_u64).unwrap_or(0),
+        "demoted_count": review.pointer("/summary/demoted_count").and_then(Value::as_u64).unwrap_or(0),
+        "rejected_count": review.pointer("/summary/rejected_count").and_then(Value::as_u64).unwrap_or(0)
+    });
+    next_cycle["benchmark_after"] = benchmark_after;
+    next_cycle["benchmark_delta"] = bench_delta.clone();
+    next_cycle["updated_at"] = Value::String(crate::now_iso());
+    cycles_map.insert(cycle_id.clone(), next_cycle.clone());
+    cycles["cycles"] = Value::Object(cycles_map);
+    cycles["active_cycle_id"] = Value::String(cycle_id.clone());
+    cycles["updated_at"] = Value::String(crate::now_iso());
+    store_cycles(root, &cycles);
+
+    let mut out = json!({
+        "ok": true,
+        "strict": strict,
+        "type": "snowball_plane_fitness_review",
+        "lane": "core/layer0/ops",
+        "action": "fitness-review",
+        "cycle_id": cycle_id,
+        "review": review,
+        "artifact": {
+            "path": review_path.display().to_string(),
+            "sha256": sha256_hex_str(&read_json(&review_path).unwrap_or(Value::Null).to_string())
+        },
+        "claim_evidence": [
+            {
+                "id": "V6-APP-023.7",
+                "claim": "snowball_fitness_review_scores_assimilations_against_metrics_reliability_tiny_modes_and_rsi_utility",
+                "evidence": {
+                    "cycle_id": cycle_id,
+                    "survivor_count": next_cycle.pointer("/fitness_review/survivor_count").and_then(Value::as_u64).unwrap_or(0),
+                    "demoted_count": next_cycle.pointer("/fitness_review/demoted_count").and_then(Value::as_u64).unwrap_or(0),
+                    "rejected_count": next_cycle.pointer("/fitness_review/rejected_count").and_then(Value::as_u64).unwrap_or(0)
+                }
+            },
+            {
+                "id": "V6-APP-023.5",
+                "claim": "snowball_runtime_publishes_live_cycle_state_for_operator_controls",
+                "evidence": {"cycle_id": cycle_id}
+            },
+            {
+                "id": "V6-APP-023.6",
+                "claim": "snowball_status_and_compact_controls_surface_cycle_stage_batch_outcomes_and_regression_state",
+                "evidence": {"cycle_id": cycle_id, "has_review": true}
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
+    out
+}
+
+fn run_archive_discarded(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
+    let mut cycles = load_cycles(root);
+    let cycle_id = active_or_requested_cycle(parsed, &cycles, "snowball-default");
+    let mut cycles_map = cycles
+        .get("cycles")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let cycle = load_cycle_value(&cycles, &cycle_id);
+    let review = load_review(root, &cycle_id);
+    if strict && review.is_none() {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "snowball_plane_archive_discarded",
+            "action": "archive-discarded",
+            "errors": ["snowball_fitness_review_missing"],
+            "cycle_id": cycle_id
+        });
+    }
+    let review = review.unwrap_or_else(|| json!({}));
+    let mut discarded = review
+        .get("demoted")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    discarded.extend(
+        review
+            .get("rejected")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default(),
+    );
+    let (items, index) = archive_discarded_blobs(root, &cycle_id, discarded.as_slice());
+    let index_path = discarded_blob_index_path(root, &cycle_id);
+
+    let mut next_cycle = cycle.unwrap_or_else(|| json!({"cycle_id": cycle_id, "stage":"archived"}));
+    next_cycle["discarded_archive"] = json!({
+        "path": index_path.display().to_string(),
+        "count": items.len()
+    });
+    next_cycle["updated_at"] = Value::String(crate::now_iso());
+    cycles_map.insert(cycle_id.clone(), next_cycle.clone());
+    cycles["cycles"] = Value::Object(cycles_map);
+    cycles["active_cycle_id"] = Value::String(cycle_id.clone());
+    cycles["updated_at"] = Value::String(crate::now_iso());
+    store_cycles(root, &cycles);
+
+    let mut out = json!({
+        "ok": true,
+        "strict": strict,
+        "type": "snowball_plane_archive_discarded",
+        "lane": "core/layer0/ops",
+        "action": "archive-discarded",
+        "cycle_id": cycle_id,
+        "archive": index,
+        "claim_evidence": [
+            {
+                "id": "V6-APP-023.9",
+                "claim": "snowball_archives_discarded_and_demoted_ideas_as_versioned_blob_artifacts_with_resurrection_metadata",
+                "evidence": {
+                    "cycle_id": cycle_id,
+                    "discarded_blob_count": items.len(),
+                    "discarded_blob_index_path": index_path.display().to_string()
+                }
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
+    out
+}
+
+fn run_publish_benchmarks(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
+    let mut cycles = load_cycles(root);
+    let cycle_id = active_or_requested_cycle(parsed, &cycles, "snowball-default");
+    let mut cycles_map = cycles
+        .get("cycles")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let cycle = load_cycle_value(&cycles, &cycle_id);
+    if strict && cycle.is_none() {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "snowball_plane_publish_benchmarks",
+            "action": "publish-benchmarks",
+            "errors": ["snowball_cycle_not_found"],
+            "cycle_id": cycle_id
+        });
+    }
+    let benchmark_path = benchmark_report_path(root, parsed);
+    let report = read_json(&benchmark_path).unwrap_or(Value::Null);
+    let benchmark_after = benchmark_modes_from_report(&report);
+    let benchmark_before = cycle
+        .as_ref()
+        .and_then(|v| v.get("benchmark_before"))
+        .cloned()
+        .unwrap_or_else(|| benchmark_after.clone());
+    let delta = benchmark_delta(&benchmark_before, &benchmark_after);
+    let readme_path = readme_path(root, parsed);
+    let readme_text = fs::read_to_string(&readme_path).unwrap_or_default();
+    let sync = readme_sync_summary(&report, &readme_text);
+    let synced = sync.get("synced").and_then(Value::as_bool).unwrap_or(false);
+    let publication_path = benchmark_publication_path(root, &cycle_id);
+    let summary = json!({
+        "version": "v1",
+        "cycle_id": cycle_id,
+        "generated_at": crate::now_iso(),
+        "benchmark_report_path": benchmark_path.display().to_string(),
+        "readme_path": readme_path.display().to_string(),
+        "delta": delta,
+        "readme_sync": sync
+    });
+    let _ = write_json(&publication_path, &summary);
+
+    let mut next_cycle = cycle.unwrap_or_else(|| json!({"cycle_id": cycle_id, "stage":"published"}));
+    next_cycle["benchmark_publication"] = json!({
+        "path": publication_path.display().to_string(),
+        "readme_synced": synced
+    });
+    next_cycle["updated_at"] = Value::String(crate::now_iso());
+    cycles_map.insert(cycle_id.clone(), next_cycle);
+    cycles["cycles"] = Value::Object(cycles_map);
+    cycles["active_cycle_id"] = Value::String(cycle_id.clone());
+    cycles["updated_at"] = Value::String(crate::now_iso());
+    store_cycles(root, &cycles);
+
+    let ok = if strict { synced } else { true };
+    let mut out = json!({
+        "ok": ok,
+        "strict": strict,
+        "type": "snowball_plane_publish_benchmarks",
+        "lane": "core/layer0/ops",
+        "action": "publish-benchmarks",
+        "cycle_id": cycle_id,
+        "publication": summary,
+        "claim_evidence": [
+            {
+                "id": "V6-APP-023.10",
+                "claim": "snowball_benchmark_publication_emits_receipted_deltas_and_fails_closed_when_readme_evidence_is_stale",
+                "evidence": {
+                    "cycle_id": cycle_id,
+                    "publication_path": publication_path.display().to_string(),
+                    "readme_synced": synced
+                }
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
+    out
+}
+
+fn run_promote(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
+    let mut cycles = load_cycles(root);
+    let cycle_id = active_or_requested_cycle(parsed, &cycles, "snowball-default");
+    let mut cycles_map = cycles
+        .get("cycles")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let cycle = load_cycle_value(&cycles, &cycle_id);
+    if strict && cycle.is_none() {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "snowball_plane_promote",
+            "action": "promote",
+            "errors": ["snowball_cycle_not_found"],
+            "cycle_id": cycle_id
+        });
+    }
+    let review = load_review(root, &cycle_id).unwrap_or_else(|| json!({}));
+    let publication = read_json(&benchmark_publication_path(root, &cycle_id)).unwrap_or_else(|| json!({}));
+    let regression_pass = cycle
+        .as_ref()
+        .and_then(|v| v.pointer("/melt_refine/pass"))
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    let improved = review
+        .pointer("/summary/improved_metric_count")
+        .and_then(Value::as_u64)
+        .unwrap_or(0)
+        > 0;
+    let regressed = review
+        .pointer("/summary/regressed_metric_count")
+        .and_then(Value::as_u64)
+        .unwrap_or(0)
+        > 0;
+    let allow_neutral = parse_bool(parsed.flags.get("allow-neutral"), false);
+    let neutral_justification = clean(
+        parsed
+            .flags
+            .get("neutral-justification")
+            .cloned()
+            .unwrap_or_default(),
+        240,
+    );
+    let neutral_ok = allow_neutral && !neutral_justification.is_empty() && !regressed;
+    let publication_ok = publication
+        .pointer("/readme_sync/synced")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    let promoted = regression_pass && publication_ok && (improved || neutral_ok);
+    let rollback_pointer = json!({
+        "cycles_path": cycles_path(root).display().to_string(),
+        "cycle_id": cycle_id,
+        "snapshot_path": cycle
+            .as_ref()
+            .and_then(|v| v.pointer("/snapshot/path"))
+            .and_then(Value::as_str)
+            .unwrap_or("")
+    });
+    let survivors = review
+        .get("survivors")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let promotion = json!({
+        "version": "v1",
+        "cycle_id": cycle_id,
+        "generated_at": crate::now_iso(),
+        "promoted": promoted,
+        "regression_pass": regression_pass,
+        "publication_ok": publication_ok,
+        "improved": improved,
+        "neutral_ok": neutral_ok,
+        "neutral_justification": neutral_justification,
+        "survivors": survivors,
+        "rollback_pointer": rollback_pointer
+    });
+    let promotion_out = promotion_path(root, &cycle_id);
+    let _ = write_json(&promotion_out, &promotion);
+
+    let mut next_cycle = cycle.unwrap_or_else(|| json!({"cycle_id": cycle_id, "stage":"running"}));
+    next_cycle["promotion"] = json!({
+        "path": promotion_out.display().to_string(),
+        "promoted": promoted
+    });
+    next_cycle["stage"] = Value::String(if promoted { "promoted".to_string() } else { "rollback".to_string() });
+    next_cycle["updated_at"] = Value::String(crate::now_iso());
+    cycles_map.insert(cycle_id.clone(), next_cycle.clone());
+    cycles["cycles"] = Value::Object(cycles_map);
+    cycles["active_cycle_id"] = Value::String(cycle_id.clone());
+    cycles["updated_at"] = Value::String(crate::now_iso());
+    store_cycles(root, &cycles);
+
+    let ok = if strict { promoted } else { true };
+    let mut out = json!({
+        "ok": ok,
+        "strict": strict,
+        "type": "snowball_plane_promote",
+        "lane": "core/layer0/ops",
+        "action": "promote",
+        "cycle_id": cycle_id,
+        "promotion": promotion,
+        "claim_evidence": [
+            {
+                "id": "V6-APP-023.8",
+                "claim": "snowball_promotion_requires_regression_and_benchmark_publication_evidence_before_advancing_active_state",
+                "evidence": {
+                    "cycle_id": cycle_id,
+                    "promoted": promoted,
+                    "publication_ok": publication_ok,
+                    "regression_pass": regression_pass,
+                    "rollback_pointer": rollback_pointer
+                }
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
+    out
+}
+
+fn run_prime_update(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
+    let mut cycles = load_cycles(root);
+    let cycle_id = active_or_requested_cycle(parsed, &cycles, "snowball-default");
+    let mut cycles_map = cycles
+        .get("cycles")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let cycle = load_cycle_value(&cycles, &cycle_id);
+    let promotion = read_json(&promotion_path(root, &cycle_id)).unwrap_or_else(|| json!({}));
+    if strict
+        && promotion
+            .get("promoted")
+            .and_then(Value::as_bool)
+            != Some(true)
+    {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "snowball_plane_prime_update",
+            "action": "prime-update",
+            "errors": ["snowball_promotion_not_ready"],
+            "cycle_id": cycle_id
+        });
+    }
+    let archive_path = discarded_blob_index_path(root, &cycle_id);
+    let publication_path = benchmark_publication_path(root, &cycle_id);
+    if strict && !archive_path.exists() {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "snowball_plane_prime_update",
+            "action": "prime-update",
+            "errors": ["snowball_discarded_archive_missing"],
+            "cycle_id": cycle_id
+        });
+    }
+    if strict && !publication_path.exists() {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "snowball_plane_prime_update",
+            "action": "prime-update",
+            "errors": ["snowball_benchmark_publication_missing"],
+            "cycle_id": cycle_id
+        });
+    }
+    let archive = read_json(&archive_path).unwrap_or_else(|| json!({}));
+    let directive_text = parsed.flags.get("directive").cloned().unwrap_or_default();
+    let signer = clean(
+        parsed
+            .flags
+            .get("signer")
+            .cloned()
+            .unwrap_or_else(|| "snowball-plane".to_string()),
+        64,
+    );
+    let directive_result = if directive_text.trim().is_empty() {
+        Ok(None)
+    } else {
+        directive_kernel::append_compaction_directive_entry(
+            root,
+            directive_text.as_str(),
+            signer.as_str(),
+            None,
+            "snowball_compaction",
+        )
+        .map(Some)
+    };
+    if strict && directive_result.is_err() {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "snowball_plane_prime_update",
+            "action": "prime-update",
+            "errors": [directive_result.err().unwrap_or_else(|| "directive_append_failed".to_string())],
+            "cycle_id": cycle_id
+        });
+    }
+    let directive_entry = directive_result.ok().flatten();
+    let prime_state = json!({
+        "version": "v1",
+        "cycle_id": cycle_id,
+        "updated_at": crate::now_iso(),
+        "promotion_path": promotion_path(root, &cycle_id).display().to_string(),
+        "benchmark_publication_path": publication_path.display().to_string(),
+        "discarded_blob_index_path": archive_path.display().to_string(),
+        "promoted_survivors": promotion.get("survivors").cloned().unwrap_or_else(|| Value::Array(Vec::new())),
+        "discarded_artifacts": archive.get("items").cloned().unwrap_or_else(|| Value::Array(Vec::new())),
+        "directive_delta": directive_entry.clone().unwrap_or_else(|| json!({"applied": false})),
+        "active_state_delta": {
+            "previous_stage": cycle
+                .as_ref()
+                .and_then(|v| v.get("stage"))
+                .cloned()
+                .unwrap_or(Value::String("unknown".to_string())),
+            "next_stage": "prime-updated"
+        }
+    });
+    let prime_path = prime_directive_compacted_state_path(root);
+    let _ = write_json(&prime_path, &prime_state);
+
+    let mut next_cycle = cycle.unwrap_or_else(|| json!({"cycle_id": cycle_id, "stage":"promoted"}));
+    next_cycle["prime_directive_update"] = json!({
+        "path": prime_path.display().to_string(),
+        "directive_delta_applied": directive_entry.is_some()
+    });
+    next_cycle["stage"] = Value::String("prime-updated".to_string());
+    next_cycle["updated_at"] = Value::String(crate::now_iso());
+    cycles_map.insert(cycle_id.clone(), next_cycle.clone());
+    cycles["cycles"] = Value::Object(cycles_map);
+    cycles["active_cycle_id"] = Value::String(cycle_id.clone());
+    cycles["updated_at"] = Value::String(crate::now_iso());
+    store_cycles(root, &cycles);
+
+    let mut out = json!({
+        "ok": true,
+        "strict": strict,
+        "type": "snowball_plane_prime_update",
+        "lane": "core/layer0/ops",
+        "action": "prime-update",
+        "cycle_id": cycle_id,
+        "prime_directive_state": prime_state,
+        "claim_evidence": [
+            {
+                "id": "V6-APP-023.11",
+                "claim": "snowball_prime_update_records_promoted_survivors_discarded_artifacts_and_directive_deltas_through_prime_governance",
+                "evidence": {
+                    "cycle_id": cycle_id,
+                    "prime_state_path": prime_path.display().to_string(),
+                    "directive_delta_applied": directive_entry.is_some()
                 }
             }
         ]
@@ -1427,6 +2265,11 @@ fn dispatch(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
         "start" => run_start(root, parsed, strict),
         "melt-refine" | "melt" | "refine" | "regress" => run_melt_refine(root, parsed, strict),
         "compact" => run_compact(root, parsed, strict),
+        "fitness-review" => run_fitness_review(root, parsed, strict),
+        "archive-discarded" => run_archive_discarded(root, parsed, strict),
+        "publish-benchmarks" => run_publish_benchmarks(root, parsed, strict),
+        "promote" => run_promote(root, parsed, strict),
+        "prime-update" => run_prime_update(root, parsed, strict),
         "backlog-pack" | "backlog" => run_backlog_pack(root, parsed, strict),
         "control" => run_control(root, parsed, strict),
         _ => json!({

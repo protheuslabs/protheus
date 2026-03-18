@@ -47,6 +47,10 @@ assert(
   'expected thin swarm bridge wrapper to be excluded from live queue'
 );
 assert(
+  queue.top.every((lane) => lane.path !== 'client/runtime/systems/autonomy/swarm_repl_demo.ts'),
+  'expected thin demo shells to be excluded from live queue'
+);
+assert(
   queue.top.every((lane) => lane.path !== 'adapters/cognition/skills/moltbook/moltbook_api.ts'),
   'expected flexible skill surface to be excluded from live queue'
 );

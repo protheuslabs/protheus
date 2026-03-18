@@ -1,0 +1,38 @@
+{
+  "id": "V6-APP-023.8",
+  "upgrade": "Survivor-Only Compaction Promotion Contract",
+  "section": "Autonomous Snowball Orchestration Engine Source Coverage Intake (Doc `1OA9Hu3dx9iheyIW-7JGrR4hd8bVJt0TE21Bv_fRNeFg`, 2026-03-11)",
+  "impact": 10,
+  "layer_map": "0/1/2/app",
+  "conduit_only_boundary": false,
+  "todo_bucket": "execute_now",
+  "execution_contract": {
+    "runtime": "core/layer2/ops:srs_contract_runtime",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "local/state/ops/srs_contract_runtime/V6-APP-023.8/latest.json",
+    "history_path": "local/state/ops/srs_contract_runtime/history.jsonl"
+  },
+  "deliverables": [
+    {
+      "type": "contract",
+      "path": "planes/contracts/srs/V6-APP-023.8.json"
+    },
+    {
+      "type": "state_receipt",
+      "path": "local/state/ops/srs_contract_runtime/V6-APP-023.8/latest.json"
+    },
+    {
+      "type": "execution_history",
+      "path": "local/state/ops/srs_contract_runtime/history.jsonl"
+    }
+  ],
+  "validation": {
+    "lane_command": "npm run -s lane:v6-app-023.8:run",
+    "status_command": "protheus-ops srs-contract-runtime status --id=V6-APP-023.8",
+    "fail_closed_on_missing_contract": true
+  },
+  "generated_from": {
+    "source_queue": "core/local/artifacts/todo_execution_full_current.json",
+    "generated_at": "2026-03-17T00:00:00.000Z"
+  }
+}

@@ -915,6 +915,16 @@ fn append_directive_entry(
     Ok(payload)
 }
 
+pub(crate) fn append_compaction_directive_entry(
+    root: &Path,
+    directive_text: &str,
+    signer: &str,
+    parent_id: Option<&str>,
+    source: &str,
+) -> Result<Value, String> {
+    append_directive_entry(root, "derived", directive_text, signer, parent_id, None, source)
+}
+
 fn prime_rows(vault: &Value) -> Vec<Value> {
     vault
         .get("prime")

@@ -1,10 +1,10 @@
 {
   "ok": true,
   "type": "srs_contract_manifest",
-  "generated_at": "2026-03-18T07:09:55Z",
+  "generated_at": "2026-03-17T00:00:00.000Z",
   "source": "contract_dir_scan",
   "source_ref": "planes/contracts/srs/*.json",
-  "row_count": 1944,
+  "row_count": 1949,
   "entries": [
     {
       "id": "V10-ULTIMATE-001.1",
@@ -3923,6 +3923,14 @@
       "contract": "planes/contracts/srs/V6-APP-023.1.json"
     },
     {
+      "id": "V6-APP-023.10",
+      "contract": "planes/contracts/srs/V6-APP-023.10.json"
+    },
+    {
+      "id": "V6-APP-023.11",
+      "contract": "planes/contracts/srs/V6-APP-023.11.json"
+    },
+    {
       "id": "V6-APP-023.2",
       "contract": "planes/contracts/srs/V6-APP-023.2.json"
     },
@@ -3941,6 +3949,18 @@
     {
       "id": "V6-APP-023.6",
       "contract": "planes/contracts/srs/V6-APP-023.6.json"
+    },
+    {
+      "id": "V6-APP-023.7",
+      "contract": "planes/contracts/srs/V6-APP-023.7.json"
+    },
+    {
+      "id": "V6-APP-023.8",
+      "contract": "planes/contracts/srs/V6-APP-023.8.json"
+    },
+    {
+      "id": "V6-APP-023.9",
+      "contract": "planes/contracts/srs/V6-APP-023.9.json"
     },
     {
       "id": "V6-ARCH-001",

@@ -155,6 +155,7 @@ function hasAuthorityMarker(record) {
 
 function isExtensionSurface(record) {
   const relPath = String((record && record.path) || '');
+  const normalized = String((record && record.text) || '');
   return (
     relPath.startsWith('apps/') ||
     relPath.startsWith('packages/') ||
@@ -167,6 +168,10 @@ function isExtensionSurface(record) {
     relPath.startsWith('client/runtime/patches/') ||
     relPath.startsWith('client/runtime/systems/extensions/') ||
     relPath.startsWith('client/runtime/systems/marketplace/') ||
+    relPath.endsWith('_demo.ts') ||
+    relPath.includes('/demo/') ||
+    normalized.includes('thin demo shell only') ||
+    normalized.includes('optional REPL/demo ergonomics') ||
     relPath.endsWith('.d.ts') ||
     relPath.endsWith('.config.ts') ||
     relPath === 'vitest.config.ts'
