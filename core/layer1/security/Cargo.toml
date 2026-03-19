@@ -25,4 +25,4 @@ sha2 = "0.10"
 walkdir = "2.5"
 
 [dev-dependencies]
-tempfile = "3.13"
+tempfile = "3.27"
