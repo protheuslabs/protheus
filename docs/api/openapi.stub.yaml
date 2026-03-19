@@ -1,0 +1,44 @@
+openapi: 3.1.0
+info:
+  title: InfRing Runtime API Stub
+  version: 0.1.0
+  description: >-
+    Initial OpenAPI stub for contract-backed runtime/daemon interfaces.
+servers:
+  - url: http://localhost:7070
+paths:
+  /health:
+    get:
+      summary: Runtime health status
+      responses:
+        '200':
+          description: Health payload
+  /contracts/{id}/status:
+    get:
+      summary: Contract runtime status by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Contract status payload
+        '404':
+          description: Contract status not found
+components:
+  schemas:
+    ReceiptEnvelope:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        type:
+          type: string
+        receipt_hash:
+          type: string
+        claim_evidence:
+          type: array
+          items:
+            type: object
