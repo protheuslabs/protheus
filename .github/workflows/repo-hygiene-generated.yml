@@ -12,7 +12,7 @@ jobs:
       PROTHEUS_OPS_LOCAL_TIMEOUT_MS: "180000"
       PROTHEUS_OPS_DOMAIN_BRIDGE_TIMEOUT_MS: "60000"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
