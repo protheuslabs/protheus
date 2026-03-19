@@ -328,6 +328,46 @@ fn sample_command_quantiles_ms(
     ))
 }
 
+fn sample_dual_command_quantiles_ms(
+    program_a: &str,
+    args_a: &[&str],
+    program_b: &str,
+    args_b: &[&str],
+    warmup_runs: usize,
+    samples: usize,
+) -> Result<((f64, f64, f64), (f64, f64, f64)), String> {
+    for _ in 0..warmup_runs {
+        let _ = command_elapsed_ms(program_a, args_a)?;
+        let _ = command_elapsed_ms(program_b, args_b)?;
+    }
+
+    let mut rows_a = Vec::new();
+    let mut rows_b = Vec::new();
+    for idx in 0..samples.max(1) {
+        if idx % 2 == 0 {
+            rows_a.push(command_elapsed_ms(program_a, args_a)?);
+            rows_b.push(command_elapsed_ms(program_b, args_b)?);
+        } else {
+            rows_b.push(command_elapsed_ms(program_b, args_b)?);
+            rows_a.push(command_elapsed_ms(program_a, args_a)?);
+        }
+    }
+    rows_a.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    rows_b.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    Ok((
+        (
+            percentile(&rows_a, 0.50),
+            percentile(&rows_a, 0.95),
+            percentile(&rows_a, 0.99),
+        ),
+        (
+            percentile(&rows_b, 0.50),
+            percentile(&rows_b, 0.95),
+            percentile(&rows_b, 0.99),
+        ),
+    ))
+}
+
 fn sample_child_rss_mb(program: &str, args: &[&str]) -> Result<f64, String> {
     let mut child = Command::new(program)
         .args(args)
@@ -420,12 +460,18 @@ fn measure_pure_workspace_profile(
     probe_bin: &str,
     size_bin: &str,
     daemon_bin: Option<&str>,
+    cold_start_quantiles: Option<(f64, f64, f64)>,
     cold_start_args: &[&str],
     idle_probe_args: &[&str],
     tasks_per_sec: f64,
 ) -> Result<Map<String, Value>, String> {
-    let (cold_start_p50_ms, cold_start_p95_ms, cold_start_p99_ms) =
-        sample_command_quantiles_ms(probe_bin, cold_start_args, 2, 9)?;
+    let (cold_start_p50_ms, cold_start_p95_ms, cold_start_p99_ms) = cold_start_quantiles
+        .unwrap_or(sample_command_quantiles_ms(
+            probe_bin,
+            cold_start_args,
+            2,
+            9,
+        )?);
     let (idle_rss_p50_mb, idle_rss_p95_mb, idle_rss_p99_mb) =
         sample_child_rss_quantiles_mb(probe_bin, idle_probe_args, 1, 5)?;
     let mut install_size_mb = path_size_mb(root, size_bin);
@@ -504,12 +550,22 @@ fn measure_pure_workspace(
         ],
     );
 
+    let (pure_cold, tiny_cold) = sample_dual_command_quantiles_ms(
+        pure_probe_bin.as_str(),
+        &["benchmark-ping"],
+        pure_probe_bin.as_str(),
+        &["benchmark-ping", "--tiny-max=1"],
+        2,
+        9,
+    )?;
+
     let default_profile = measure_pure_workspace_profile(
         root,
         "pure",
         pure_probe_bin.as_str(),
         pure_size_bin.as_str(),
         daemon_bin_default.as_deref(),
+        Some(pure_cold),
         &["benchmark-ping"],
         &["probe", "--sleep-ms=450"],
         tasks_per_sec,
@@ -533,6 +589,7 @@ fn measure_pure_workspace(
         pure_probe_bin.as_str(),
         pure_size_bin.as_str(),
         daemon_bin_tiny_max.as_deref(),
+        Some(tiny_cold),
         &["benchmark-ping", "--tiny-max=1"],
         &["probe", "--sleep-ms=120", "--tiny-max=1"],
         tasks_per_sec,

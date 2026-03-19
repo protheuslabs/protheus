@@ -167,17 +167,17 @@ This regenerates:
 
 Sources:
 - Live control-plane run: `docs/client/reports/benchmark_matrix_run_2026-03-06.json`
-- Stabilized multi-run median (2 warmups + 9 runs): `docs/client/reports/benchmark_matrix_stabilized_2026-03-18.json`
+- Stabilized multi-run median (2 warmups + 9 runs): `docs/client/reports/benchmark_matrix_stabilized_2026-03-19.json`
 - Historical proof-pack reference (2026-03-14): `docs/client/reports/runtime_snapshots/ops/proof_pack/top1_benchmark_snapshot.json`
 - Headline runtime metrics below reflect the latest stabilized median benchmark artifact; single-run live refresh details remain in the JSON reports for tail-latency diagnostics.
 - Throughput now reflects a shared pre-profile release-binary baseline measured once per run to avoid per-profile contamination from probe order and compile-time load.
 
 | Metric | InfRing (rich) | InfRing (pure) | InfRing (tiny-max) | Historical Reference |
 |---|---:|---:|---:|---:|
-| Cold start | 4.6 ms | 1.7 ms | 1.8 ms | 74.5 ms |
-| Idle memory | 8.3 MB | 1.3 MB | 1.3 MB | 22.1 MB |
-| Install size (full) | 14.2 MB | 0.7 MB | 0.5 MB | 126.4 MB |
-| Throughput | 141,294 ops/sec | 141,294 ops/sec | 141,294 ops/sec | 7,420 ops/sec |
+| Cold start | 4.5 ms | 1.6 ms | 1.7 ms | 74.5 ms |
+| Idle memory | 8.2 MB | 1.4 MB | 1.4 MB | 22.1 MB |
+| Install size (full) | 14.3 MB | 0.7 MB | 0.5 MB | 126.4 MB |
+| Throughput | 145,474 ops/sec | 145,474 ops/sec | 145,474 ops/sec | 7,420 ops/sec |
 
 The historical reference column is an older proof-pack baseline used for internal assurance and regression comparison. It is not an additional InfRing runtime mode.
 
@@ -203,9 +203,9 @@ Copyable benchmark snapshot:
 ```text
 | Project | Published Footprint (MB) | Cold Start | Idle Memory (MB) | Throughput (ops/sec) | Static Daemon (MB) | Security Systems | Channel Adapters | LLM Providers |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| InfRing-rich | 14.2 | 4.6 ms | 8.3 | 141294 | 0.4 | 83 | 6 | 3 |
-| InfRing-pure | 0.7 | 1.7 ms | 1.3 | 141294 | 0.4 | 83 | 0 | 0 |
-| InfRing-tiny* | 0.5 | 1.8 ms | 1.3 | 141294 | 0.3 | 83 | 0 | 0 |
+| InfRing-rich | 14.3 | 4.5 ms | 8.2 | 145474 | 0.4 | 83 | 6 | 3 |
+| InfRing-pure | 0.7 | 1.6 ms | 1.4 | 145474 | 0.4 | 83 | 0 | 0 |
+| InfRing-tiny* | 0.5 | 1.7 ms | 1.4 | 145474 | 0.3 | 83 | 0 | 0 |
 | ZeroClaw* | 3.4 | 10.0 ms* | 5.0* | n/p | 3.4 | n/p | 9 | 28+ |
 | OpenFang | 32.0 | 180.0 ms | 40.0 | n/p | n/p | 16 | 40 | 27 |
 | OpenHands | 95.5 | 1.3 sec | 150.0 | n/p | n/p | 7 | 15 | 5 |
