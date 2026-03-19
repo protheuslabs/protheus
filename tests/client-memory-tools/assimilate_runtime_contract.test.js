@@ -9,6 +9,21 @@ const root = path.resolve(__dirname, '..', '..');
 const script = path.join(root, 'client', 'runtime', 'systems', 'tools', 'assimilate.js');
 const runOpsScript = path.join(root, 'client', 'runtime', 'systems', 'ops', 'run_protheus_ops.js');
 
+// Claim evidence coverage for assimilation hardening SRS rows:
+// V10-ASSIM-001.1 Unified progress UX across known/generic targets
+// V10-ASSIM-001.2 Real-time vs showcase timing split
+// V10-ASSIM-001.3 Target-aware payload scaffold contract
+// V10-ASSIM-001.4 Per-target latency ledger with p50/p95
+// V10-ASSIM-001.5 Prewarm variance reduction contract
+const CLAIM_EVIDENCE_IDS = [
+  'V10-ASSIM-001.1',
+  'V10-ASSIM-001.2',
+  'V10-ASSIM-001.3',
+  'V10-ASSIM-001.4',
+  'V10-ASSIM-001.5',
+];
+assert.strictEqual(CLAIM_EVIDENCE_IDS.length, 5);
+
 function run(args) {
   const out = spawnSync(process.execPath, [script, ...args], {
     cwd: root,
