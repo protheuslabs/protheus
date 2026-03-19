@@ -219,6 +219,11 @@ fn main() {
             let exit = protheus_ops_core::instinct_bridge::run(&cwd, &rest);
             std::process::exit(exit);
         }
+        "baremetal-substrate" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::baremetal_substrate::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
         "phone-runtime-bridge" => {
             let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
             let exit = protheus_ops_core::phone_runtime_bridge::run(&cwd, &rest);

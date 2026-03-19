@@ -10110,6 +10110,29 @@ Objective: add a governed independent-OS profile by formalizing Layer-3 OS templ
 | V6-SUBSTRATE-006.5 | existing-coverage-validated | App Compatibility Binding Contract to Universal Wrapper Lane | Independent OS mode must still run third-party apps without duplicating compatibility logic. | Bind OS-mode app execution to `V6-SUBSTRATE-007` wrapper contracts so external apps run through the same governed adapter runtime, with deterministic bridge receipts and no parallel wrapper implementation. | 8 | 0/1/2/3/adapter |
 | V6-SUBSTRATE-006.6 | existing-coverage-validated | Conduit-Only OS-Mode Boundary + Thin Surface Enforcement | OS install/boot/recovery workflows can bypass governance if implemented directly in client-side scripts. | Enforce conduit-only routing and adapter/core authority checks for all OS-mode actions; CI boundary tests reject client-owned install/boot/recover authority and require deterministic receipts on every path. | 10 | -1/0/1/2/3/adapter/client/app |
 
+## Bare-Metal Capabilities Core Extension Intake (Source `V10-BAREMETAL-001`, 2026-03-19)
+
+Source references:
+- User-provided SRS package: `V10-BAREMETAL-001 – self-booting kernel + drivers + scheduler + VM + FS + networking + kernel security`
+
+Notes:
+- This intake is additive and introduces a new `V10-BAREMETAL-001.*` family without mutating prior `V6-SUBSTRATE-006.*` contracts.
+- Runtime authority implemented in Rust via `core/layer0/ops/src/baremetal_substrate.rs` and exposed through `protheus-ops baremetal-substrate ...`.
+- Deterministic receipt/state/history flow implemented for every contract command; integration coverage added in `core/layer0/ops/tests/v10_baremetal_001_integration.rs`.
+- Thin CLI surfacing wired in `core/layer0/ops/src/main.rs` and usage docs in `core/layer0/ops/src/ops_main_usage.rs`.
+
+Objective: establish an executable bare-metal substrate authority lane that enforces boot/scheduling/memory/filesystem/network/security invariants through fail-closed Rust contracts with deterministic receipts.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V10-BAREMETAL-001 | done | Bare-Metal AI-Native OS Substrate Program Contract | Bare-metal sovereignty needs one governed runtime program that unifies kernel boot, scheduling, memory, storage, networking, and security under receipt-first authority. | Implemented authoritative lane `baremetal-substrate` in `core/layer0/ops/src/baremetal_substrate.rs` with deterministic state/history receipts and wired dispatch in `core/layer0/ops/src/main.rs`; validated by `cargo test --manifest-path core/layer0/ops/Cargo.toml --test v10_baremetal_001_integration` and runnable CLI `protheus-ops baremetal-substrate status`. | 10 | -1/0/1/2/3/client/adapter |
+| V10-BAREMETAL-001.1 | done | Kernel-Level Boot + Driver Probe Contract | Bare-metal bring-up is non-credible unless boot path and direct driver probes are enforced with strict readiness budgets. | Implemented `boot-kernel` command in `core/layer0/ops/src/baremetal_substrate.rs` with architecture whitelist, strict `<5s` boot budget enforcement, and direct CPU/GPU/storage/network driver probe gates; verified in `core/layer0/ops/tests/v10_baremetal_001_integration.rs`. | 10 | -1/0/1/2 |
+| V10-BAREMETAL-001.2 | done | Preemptive Priority Scheduler Contract | Large swarm execution on bare metal requires deterministic preemption, priority isolation, and thorn-cell containment caps. | Implemented `schedule` command with enforced `<1ms` preemption budget, throughput-degradation ceiling, and thorn-cell `<=10%` cap; receipt evidence emitted and verified in `core/layer0/ops/tests/v10_baremetal_001_integration.rs`. | 10 | 0/1/2 |
+| V10-BAREMETAL-001.3 | done | Virtual Memory Manager Contract | Running high context counts on constrained hardware requires deterministic swap/overcommit/zero-copy policy enforcement. | Implemented `memory-manager` command enforcing swap requirements for high context pressure, overcommit ceiling, and fail-closed OOM-risk rejection; validated by integration lane `core/layer0/ops/tests/v10_baremetal_001_integration.rs`. | 9 | -1/0/1/2 |
+| V10-BAREMETAL-001.4 | done | Append-Only Filesystem Ledger Contract | Forensic reliability requires append-only, hash-linked filesystem events with offline verifiability. | Implemented `fs-driver` append-only path with hash-chained ledger rows and deterministic ledger-head tracking in `core/layer0/ops/src/baremetal_substrate.rs`; verified ledger chain artifacts in `core/layer0/ops/tests/v10_baremetal_001_integration.rs`. | 10 | 0/1/2/adapter |
+| V10-BAREMETAL-001.5 | done | Zero-Trust Networking Stack Contract | Native networking needs policy-gated packet handling and strict air-gap enforcement to avoid hidden exfil paths. | Implemented `network-stack` command with zero-trust allow/deny packet receipts and fail-closed air-gap violation rejection; validated by success and deny-path tests in `core/layer0/ops/tests/v10_baremetal_001_integration.rs`. | 10 | -1/0/1/2/adapter |
+| V10-BAREMETAL-001.6 | done | Kernel Security Model Contract | Bare-metal authority is unsafe unless namespaces/capabilities and constitutional invariants are enforced before execution. | Implemented `security-model` command enforcing required invariant set, namespace escape rejection, human-veto fail-close, and syscall denial receipts in `core/layer0/ops/src/baremetal_substrate.rs`; validated in `core/layer0/ops/tests/v10_baremetal_001_integration.rs`. | 10 | 0/1/2/3 |
+
 ## Autonomous Snowball Orchestration Engine Source Coverage Intake (Doc `1OA9Hu3dx9iheyIW-7JGrR4hd8bVJt0TE21Bv_fRNeFg`, 2026-03-11)
 
 Source references:

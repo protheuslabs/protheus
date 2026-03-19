@@ -47,6 +47,7 @@ pub mod backlog_registry;
 pub mod backlog_runtime_anchor;
 pub mod benchmark_autonomy_gate;
 pub mod benchmark_matrix;
+pub mod baremetal_substrate;
 pub mod binary_blob_runtime;
 pub mod binary_vuln_plane;
 pub mod business_plane;
