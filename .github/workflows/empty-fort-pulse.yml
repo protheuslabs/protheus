@@ -38,7 +38,7 @@ jobs:
 
       - name: Create pulse PR (optional apply mode)
         if: ${{ github.event.inputs.apply == 'true' }}
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           commit-message: 'chore(empty-fort): pulse maintenance update'
           title: 'chore(empty-fort): pulse maintenance update'
