@@ -1709,8 +1709,9 @@ mod tests {
     use conduit_security::{CapabilityTokenAuthority, MessageSigner, RateLimitPolicy, RateLimiter};
     use serde_json::Value;
     use std::fs;
-    use std::io::{BufReader, Cursor};
+    use std::io::{BufRead, BufReader, Cursor, Write};
     use std::path::PathBuf;
+    use std::time::Duration;
 
     fn test_policy_paths() -> (PathBuf, PathBuf, tempfile::TempDir) {
         let temp = tempfile::tempdir().expect("tempdir");
@@ -2219,5 +2220,54 @@ mod tests {
             }
             _ => panic!("expected system_feedback event"),
         }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn unix_socket_server_roundtrip_returns_validated_response() {
+        use std::os::unix::net::UnixStream;
+        use std::thread;
+
+        let policy = test_policy();
+        let socket_dir = tempfile::tempdir().expect("tempdir");
+        let socket_path = socket_dir.path().join("conduit-test.sock");
+        let envelope = signed_envelope(&policy, TsCommand::GetSystemStatus);
+        let envelope_json = serde_json::to_string(&envelope).expect("serialize envelope");
+        let socket_path_for_server = socket_path.clone();
+        let policy_for_server = policy.clone();
+
+        let server = thread::spawn(move || {
+            let gate = RegistryPolicyGate::new(policy_for_server.clone());
+            let mut security = test_security(&policy_for_server);
+            let mut handler = EchoCommandHandler;
+            super::run_unix_socket_server(&socket_path_for_server, &gate, &mut security, &mut handler)
+                .expect("unix socket server run");
+        });
+
+        let mut client = None;
+        for _ in 0..30 {
+            match UnixStream::connect(&socket_path) {
+                Ok(stream) => {
+                    client = Some(stream);
+                    break;
+                }
+                Err(_) => thread::sleep(Duration::from_millis(20)),
+            }
+        }
+        let mut stream = client.expect("connect unix socket");
+        stream
+            .write_all(format!("{envelope_json}\n").as_bytes())
+            .expect("write command");
+        stream.shutdown(std::net::Shutdown::Write).expect("shutdown write");
+
+        let mut response_line = String::new();
+        let mut reader = BufReader::new(stream);
+        reader.read_line(&mut response_line).expect("read response");
+        let response: super::ResponseEnvelope =
+            serde_json::from_str(response_line.trim()).expect("response json");
+        assert!(response.validation.ok);
+        assert_eq!(response.request_id, envelope.request_id);
+
+        server.join().expect("server join");
     }
 }
