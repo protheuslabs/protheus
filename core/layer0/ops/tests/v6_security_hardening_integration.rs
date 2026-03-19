@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use protheus_ops_core::security_plane;
+use protheus_ops_core::{assimilation_controller, security_plane};
 use serde_json::Value;
 use std::fs;
 use std::path::Path;
@@ -100,6 +100,112 @@ fn v6_sec_010_scan_lane_detects_injection_and_emits_receipts() {
         clean_latest.get("blocked").and_then(Value::as_bool),
         Some(false)
     );
+}
+
+#[test]
+fn v7_asm_003_security_plane_grant_revoke_writes_capability_hash_chain() {
+    let _guard = env_guard();
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let root = tmp.path();
+
+    let policy_path = root.join("capability_switchboard_policy.json");
+    write_file(
+        &policy_path,
+        r#"{
+  "version": "1.0",
+  "require_dual_control": false,
+  "policy_root": {"required": false, "scope": "capability_switchboard_toggle"},
+  "switches": {
+    "autonomy": {"default_enabled": true, "security_locked": false, "require_policy_root": false, "description": "Core autonomy execution lane"}
+  }
+}"#,
+    );
+
+    std::env::set_var(
+        "CAPABILITY_SWITCHBOARD_POLICY_PATH",
+        policy_path.display().to_string(),
+    );
+    std::env::set_var(
+        "CAPABILITY_SWITCHBOARD_POLICY_ROOT_SCRIPT",
+        root.join("missing_policy_root_script.js").display().to_string(),
+    );
+
+    let revoke_exit = security_plane::run(
+        root,
+        &[
+            "capability-switchboard".to_string(),
+            "set".to_string(),
+            "--switch=autonomy".to_string(),
+            "--state=off".to_string(),
+            "--strict=1".to_string(),
+        ],
+    );
+    assert_eq!(revoke_exit, 0);
+    let revoke_latest = read_json(&latest_path(root));
+    assert_eq!(
+        revoke_latest
+            .get("grant_revoke_receipt")
+            .and_then(|v| v.get("action"))
+            .and_then(Value::as_str),
+        Some("revoke")
+    );
+    assert_eq!(
+        revoke_latest
+            .get("capability_hash_chain_ledger")
+            .and_then(|v| v.get("ok"))
+            .and_then(Value::as_bool),
+        Some(true)
+    );
+    assert_claim(&revoke_latest, "V7-ASM-003");
+
+    let grant_exit = security_plane::run(
+        root,
+        &[
+            "capability-switchboard".to_string(),
+            "set".to_string(),
+            "--switch=autonomy".to_string(),
+            "--state=on".to_string(),
+            "--strict=1".to_string(),
+        ],
+    );
+    assert_eq!(grant_exit, 0);
+    let grant_latest = read_json(&latest_path(root));
+    assert_eq!(
+        grant_latest
+            .get("grant_revoke_receipt")
+            .and_then(|v| v.get("action"))
+            .and_then(Value::as_str),
+        Some("grant")
+    );
+    assert_claim(&grant_latest, "V7-ASM-003");
+
+    let verify_exit = assimilation_controller::run(
+        root,
+        &[
+            "capability-ledger".to_string(),
+            "--op=verify".to_string(),
+            "--strict=1".to_string(),
+        ],
+    );
+    assert_eq!(
+        verify_exit, 0,
+        "capability hash-chain should verify after grant/revoke writes"
+    );
+    let verify_latest = root
+        .join("local")
+        .join("state")
+        .join("ops")
+        .join("assimilation_controller")
+        .join("latest.json");
+    let verify_payload = read_json(&verify_latest);
+    assert_eq!(verify_payload.get("ok").and_then(Value::as_bool), Some(true));
+    assert_eq!(
+        verify_payload.get("chain_valid").and_then(Value::as_bool),
+        Some(true)
+    );
+
+    std::env::remove_var("CAPABILITY_SWITCHBOARD_POLICY_PATH");
+    std::env::remove_var("CAPABILITY_SWITCHBOARD_POLICY_ROOT_SCRIPT");
 }
 
 #[test]

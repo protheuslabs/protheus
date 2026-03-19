@@ -362,3 +362,81 @@ fn v8_skill_002_enforces_backward_compatibility_and_forced_migration_receipts() 
         Some("compat-skill")
     );
 }
+
+#[test]
+fn v8_skill_002_run_gate_fails_closed_on_registry_version_drift() {
+    let fixture = stage_fixture_root();
+    let root = fixture.path();
+    let skills_root = root
+        .join("client")
+        .join("runtime")
+        .join("systems")
+        .join("skills")
+        .join("packages");
+    fs::create_dir_all(&skills_root).expect("mkdir skills root");
+
+    let create_exit = skills_plane::run(
+        root,
+        &[
+            "create".to_string(),
+            "--strict=1".to_string(),
+            "--name=run-gate-skill".to_string(),
+            format!("--skills-root={}", skills_root.display()),
+        ],
+    );
+    assert_eq!(create_exit, 0);
+
+    let skill_dir = skills_root.join("run-gate-skill");
+    let install_exit = skills_plane::run(
+        root,
+        &[
+            "install".to_string(),
+            "--strict=1".to_string(),
+            format!("--skill-path={}", skill_dir.display()),
+        ],
+    );
+    assert_eq!(install_exit, 0);
+
+    let registry_path = root
+        .join("core")
+        .join("local")
+        .join("state")
+        .join("ops")
+        .join("skills_plane")
+        .join("registry.json");
+    let mut registry = read_json(&registry_path);
+    registry["installed"]["run-gate-skill"]["version"] = Value::String("v0".to_string());
+    fs::write(
+        &registry_path,
+        serde_json::to_string_pretty(&registry).expect("encode registry"),
+    )
+    .expect("write registry");
+
+    let run_exit = skills_plane::run(
+        root,
+        &[
+            "run".to_string(),
+            "--strict=1".to_string(),
+            "--skill=run-gate-skill".to_string(),
+            "--input=smoke".to_string(),
+        ],
+    );
+    assert_eq!(run_exit, 1, "strict run should fail on compat gate drift");
+    let latest = read_json(&latest_path(root));
+    assert_eq!(latest.get("type").and_then(Value::as_str), Some("skills_plane_run"));
+    assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(false));
+    assert!(
+        latest
+            .get("errors")
+            .and_then(Value::as_array)
+            .map(|rows| rows
+                .iter()
+                .any(|row| row
+                    .as_str()
+                    .unwrap_or_default()
+                    .starts_with("backward_compat_gate_failed:")))
+            .unwrap_or(false),
+        "run should fail with backward compatibility gate error"
+    );
+    assert_claim(&latest, "V8-SKILL-002");
+}

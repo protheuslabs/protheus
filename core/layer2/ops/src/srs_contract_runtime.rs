@@ -583,7 +583,28 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::{Mutex, OnceLock};
     use tempfile::tempdir;
+
+    fn env_lock() -> &'static Mutex<()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+    }
+
+    fn env_guard() -> std::sync::MutexGuard<'static, ()> {
+        env_lock()
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner())
+    }
+
+    #[cfg(unix)]
+    fn write_dispatch_script(path: &Path, body: &str) {
+        use std::os::unix::fs::PermissionsExt;
+        fs::write(path, body).expect("write script");
+        let mut perms = fs::metadata(path).expect("metadata").permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(path, perms).expect("set perms");
+    }
 
     #[test]
     fn execute_contract_writes_latest_and_history() {
@@ -657,5 +678,120 @@ mod tests {
         assert_eq!(targets.len(), 2);
         assert!(targets.iter().any(|row| row.plane == "canyon-plane"));
         assert!(targets.iter().any(|row| row.plane == "skills-plane"));
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn execute_contract_dispatches_runtime_lanes_when_enabled() {
+        let _guard = env_guard();
+        let tmp = tempdir().expect("tmp");
+        let root = tmp.path();
+        let id = "V7-TEST-901.1";
+        let cpath = root.join(CONTRACT_ROOT).join(format!("{id}.json"));
+        if let Some(parent) = cpath.parent() {
+            fs::create_dir_all(parent).expect("mkdir");
+        }
+        fs::write(
+            &cpath,
+            serde_json::to_string_pretty(&json!({
+                "id": id,
+                "upgrade": "Dispatch Contract",
+                "layer_map": "0/1/2",
+                "deliverables": [
+                    {"type":"runtime_lane","path":"core/layer0/ops/src/canyon_plane.rs"},
+                    {"type":"runtime_lane","path":"core/layer0/ops/src/skills_plane.rs"}
+                ]
+            }))
+            .expect("encode"),
+        )
+        .expect("write contract");
+
+        let dispatch_bin = root.join("mock_dispatch_ok.sh");
+        write_dispatch_script(
+            &dispatch_bin,
+            r#"#!/bin/sh
+printf '{"ok":true,"type":"mock_plane_status","plane":"%s"}\n' "$1"
+"#,
+        );
+
+        std::env::set_var("PROTHEUS_SRS_DISPATCH_BIN", dispatch_bin.display().to_string());
+        let receipt = execute_contract_with_options(root, id, true, true).expect("execute");
+        std::env::remove_var("PROTHEUS_SRS_DISPATCH_BIN");
+
+        assert_eq!(receipt.get("ok").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            receipt.pointer("/dispatch/target_count").and_then(Value::as_u64),
+            Some(2)
+        );
+        assert_eq!(
+            receipt.pointer("/dispatch/failed").and_then(Value::as_u64),
+            Some(0)
+        );
+        assert!(
+            receipt
+                .pointer("/dispatch/results")
+                .and_then(Value::as_array)
+                .map(|rows| rows
+                    .iter()
+                    .all(|row| row.get("ok").and_then(Value::as_bool) == Some(true)))
+                .unwrap_or(false),
+            "dispatch results should all pass"
+        );
+        assert!(
+            receipt
+                .get("claim_evidence")
+                .and_then(Value::as_array)
+                .map(|rows| rows
+                    .iter()
+                    .any(|row| row.get("id").and_then(Value::as_str)
+                        == Some("srs_contract_runtime_dispatch")))
+                .unwrap_or(false),
+            "missing srs_contract_runtime_dispatch claim"
+        );
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn execute_contract_dispatch_strict_fails_when_target_fails() {
+        let _guard = env_guard();
+        let tmp = tempdir().expect("tmp");
+        let root = tmp.path();
+        let id = "V7-TEST-901.2";
+        let cpath = root.join(CONTRACT_ROOT).join(format!("{id}.json"));
+        if let Some(parent) = cpath.parent() {
+            fs::create_dir_all(parent).expect("mkdir");
+        }
+        fs::write(
+            &cpath,
+            serde_json::to_string_pretty(&json!({
+                "id": id,
+                "upgrade": "Dispatch Contract Fail",
+                "layer_map": "0/1/2",
+                "deliverables": [
+                    {"type":"runtime_lane","path":"core/layer0/ops/src/canyon_plane.rs"}
+                ]
+            }))
+            .expect("encode"),
+        )
+        .expect("write contract");
+
+        let dispatch_bin = root.join("mock_dispatch_fail.sh");
+        write_dispatch_script(
+            &dispatch_bin,
+            r#"#!/bin/sh
+printf '{"ok":false,"type":"mock_plane_status"}\n'
+exit 1
+"#,
+        );
+
+        std::env::set_var("PROTHEUS_SRS_DISPATCH_BIN", dispatch_bin.display().to_string());
+        let receipt = execute_contract_with_options(root, id, true, true).expect("execute");
+        std::env::remove_var("PROTHEUS_SRS_DISPATCH_BIN");
+
+        assert_eq!(receipt.get("ok").and_then(Value::as_bool), Some(false));
+        assert_eq!(
+            receipt.pointer("/dispatch/failed").and_then(Value::as_u64),
+            Some(1)
+        );
     }
 }
