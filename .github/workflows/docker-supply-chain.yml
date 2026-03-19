@@ -50,7 +50,7 @@ jobs:
           syft "docker:protheus:${{ steps.meta.outputs.tag }}" -o spdx-json=client/runtime/local/state/release/sbom/protheus-image.spdx.json
 
       - name: Upload Docker SBOM
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: docker-sbom-${{ steps.meta.outputs.tag }}
           path: client/runtime/local/state/release/sbom/protheus-image.spdx.json

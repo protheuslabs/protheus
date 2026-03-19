@@ -30,7 +30,7 @@ jobs:
           node tests/tooling/scripts/empty_fort_visuals.js --release-tag="$TAG" --out-dir=artifacts/empty-fort
 
       - name: Upload metrics artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: empty-fort-visual-metrics-${{ github.run_id }}
           path: artifacts/empty-fort/
