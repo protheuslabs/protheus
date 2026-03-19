@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 protheus-layer1-memory-runtime = { path = "../../layer1/memory_runtime" }
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.39", features = ["bundled"] }
 sqlite-vec = "0.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
