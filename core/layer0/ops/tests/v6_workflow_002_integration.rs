@@ -124,7 +124,10 @@ fn workflow_002_langgraph_bridge_emits_receipted_graph_checkpoint_hitl_subgraph_
         inspection_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
         Some("V6-WORKFLOW-002.3")
     );
-    assert_eq!(inspection_receipt["payload"]["inspection"]["change_applied"], json!(true));
+    assert_eq!(
+        inspection_receipt["payload"]["inspection"]["change_applied"],
+        json!(true)
+    );
 
     assert_eq!(
         run_bridge(
@@ -155,7 +158,10 @@ fn workflow_002_langgraph_bridge_emits_receipted_graph_checkpoint_hitl_subgraph_
         coordination_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
         Some("V6-WORKFLOW-002.4")
     );
-    assert_eq!(coordination_receipt["payload"]["coordination"]["degraded"], json!(true));
+    assert_eq!(
+        coordination_receipt["payload"]["coordination"]["degraded"],
+        json!(true)
+    );
     assert_eq!(
         coordination_receipt["payload"]["coordination"]["child_sessions"]
             .as_array()

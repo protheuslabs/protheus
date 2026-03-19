@@ -66,7 +66,10 @@ fn workflow_014_chains_agents_memory_integrations_prompt_traces_and_checkpoints_
             root.path(),
             &[
                 "execute-chain".to_string(),
-                format!("--payload={}", json!({"chain_id": chain_id, "profile": "pure"})),
+                format!(
+                    "--payload={}",
+                    json!({"chain_id": chain_id, "profile": "pure"})
+                ),
                 format!("--state-path={}", state_path.display()),
                 format!("--history-path={}", history_path.display()),
                 format!("--swarm-state-path={}", swarm_state_path.display()),
@@ -75,7 +78,10 @@ fn workflow_014_chains_agents_memory_integrations_prompt_traces_and_checkpoints_
         0
     );
     let run_receipt = latest_receipt(&state_path);
-    assert_eq!(run_receipt["payload"]["run"]["degraded"].as_bool(), Some(true));
+    assert_eq!(
+        run_receipt["payload"]["run"]["degraded"].as_bool(),
+        Some(true)
+    );
     assert_eq!(
         run_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
         Some("V6-WORKFLOW-014.1")
@@ -165,7 +171,10 @@ fn workflow_014_chains_agents_memory_integrations_prompt_traces_and_checkpoints_
         0
     );
     let recall_receipt = latest_receipt(&state_path);
-    assert_eq!(recall_receipt["payload"]["recall"]["degraded"].as_bool(), Some(true));
+    assert_eq!(
+        recall_receipt["payload"]["recall"]["degraded"].as_bool(),
+        Some(true)
+    );
     assert_eq!(
         recall_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
         Some("V6-WORKFLOW-014.3")
@@ -221,7 +230,10 @@ fn workflow_014_chains_agents_memory_integrations_prompt_traces_and_checkpoints_
         0
     );
     let prompt_receipt = latest_receipt(&state_path);
-    assert_eq!(prompt_receipt["payload"]["route"]["degraded"].as_bool(), Some(true));
+    assert_eq!(
+        prompt_receipt["payload"]["route"]["degraded"].as_bool(),
+        Some(true)
+    );
     assert_eq!(
         prompt_receipt["payload"]["route"]["selected_provider"].as_str(),
         Some("openai-compatible")
@@ -280,13 +292,18 @@ fn workflow_014_chains_agents_memory_integrations_prompt_traces_and_checkpoints_
         0
     );
     let checkpoint_receipt = latest_receipt(&state_path);
-    assert_eq!(checkpoint_receipt["payload"]["checkpoint"]["degraded"].as_bool(), Some(true));
+    assert_eq!(
+        checkpoint_receipt["payload"]["checkpoint"]["degraded"].as_bool(),
+        Some(true)
+    );
     assert_eq!(
         checkpoint_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
         Some("V6-WORKFLOW-014.7")
     );
 
-    let output_dir = root.path().join("client/runtime/local/state/langchain-shell");
+    let output_dir = root
+        .path()
+        .join("client/runtime/local/state/langchain-shell");
     assert_eq!(
         run_bridge(
             root.path(),

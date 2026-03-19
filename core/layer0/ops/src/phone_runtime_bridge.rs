@@ -31,11 +31,25 @@ fn payload_json(argv: &[String]) -> Result<Value, String> {
 }
 
 fn state_path(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
-    path_flag(root, argv, payload, "state-path", "state_path", DEFAULT_STATE_REL)
+    path_flag(
+        root,
+        argv,
+        payload,
+        "state-path",
+        "state_path",
+        DEFAULT_STATE_REL,
+    )
 }
 
 fn history_path(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
-    path_flag(root, argv, payload, "history-path", "history_path", DEFAULT_HISTORY_REL)
+    path_flag(
+        root,
+        argv,
+        payload,
+        "history-path",
+        "history_path",
+        DEFAULT_HISTORY_REL,
+    )
 }
 
 fn background_state_path(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
@@ -82,15 +96,30 @@ fn ensure_state_shape(value: &mut Value) {
         *value = default_state();
         return;
     }
-    for key in ["battery_events", "sensor_events", "interaction_modes", "background_events", "profiles"] {
+    for key in [
+        "battery_events",
+        "sensor_events",
+        "interaction_modes",
+        "background_events",
+        "profiles",
+    ] {
         if !value.get(key).map(Value::is_object).unwrap_or(false) {
             value[key] = json!({});
         }
     }
-    if !value.get("background_state").map(Value::is_object).unwrap_or(false) {
-        value["background_state"] = json!({"mode": "idle", "handoff": "edge", "drain_budget_pct_24h": 4.0});
+    if !value
+        .get("background_state")
+        .map(Value::is_object)
+        .unwrap_or(false)
+    {
+        value["background_state"] =
+            json!({"mode": "idle", "handoff": "edge", "drain_budget_pct_24h": 4.0});
     }
-    if value.get("schema_version").and_then(Value::as_str).is_none() {
+    if value
+        .get("schema_version")
+        .and_then(Value::as_str)
+        .is_none()
+    {
         value["schema_version"] = json!("phone_runtime_bridge_state_v1");
     }
 }
@@ -191,7 +220,11 @@ fn battery_schedule(state: &mut Value, payload: &Map<String, Value>) -> Result<V
     }))
 }
 
-fn sensor_intake(state: &mut Value, sensor_state_path: &Path, payload: &Map<String, Value>) -> Result<Value, String> {
+fn sensor_intake(
+    state: &mut Value,
+    sensor_state_path: &Path,
+    payload: &Map<String, Value>,
+) -> Result<Value, String> {
     let requested = payload
         .get("requested_sensors")
         .and_then(Value::as_array)
@@ -229,7 +262,8 @@ fn sensor_intake(state: &mut Value, sensor_state_path: &Path, payload: &Map<Stri
         "policy_authority": "sensory_and_eyes",
     });
     if let Some(parent) = sensor_state_path.parent() {
-        fs::create_dir_all(parent).map_err(|err| format!("phone_runtime_bridge_sensor_dir_create_failed:{err}"))?;
+        fs::create_dir_all(parent)
+            .map_err(|err| format!("phone_runtime_bridge_sensor_dir_create_failed:{err}"))?;
     }
     lane_utils::write_json(sensor_state_path, &record)?;
     let event_id = record["event_id"].as_str().unwrap().to_string();
@@ -249,7 +283,10 @@ fn interaction_mode(state: &mut Value, payload: &Map<String, Value>) -> Result<V
     let modality = clean_token(payload.get("modality").and_then(Value::as_str), "text");
     let target_latency_ms = parse_u64(payload.get("target_latency_ms"), 200, 50, 10_000);
     let local_model_available = parse_bool(payload.get("local_model_available"), false);
-    let notification_lane = clean_token(payload.get("notification_lane").and_then(Value::as_str), "notify");
+    let notification_lane = clean_token(
+        payload.get("notification_lane").and_then(Value::as_str),
+        "notify",
+    );
     let (transport, degraded, reason_code) = if modality == "voice" && !local_model_available {
         ("text-fallback", true, "voice_local_model_unavailable")
     } else if modality == "voice" && target_latency_ms > 350 {
@@ -279,18 +316,34 @@ fn interaction_mode(state: &mut Value, payload: &Map<String, Value>) -> Result<V
     }))
 }
 
-fn background_daemon(state: &mut Value, background_state_path: &Path, payload: &Map<String, Value>) -> Result<Value, String> {
+fn background_daemon(
+    state: &mut Value,
+    background_state_path: &Path,
+    payload: &Map<String, Value>,
+) -> Result<Value, String> {
     let action = clean_token(payload.get("action").and_then(Value::as_str), "status");
     let platform = clean_token(payload.get("platform").and_then(Value::as_str), "android");
     let handoff = clean_token(payload.get("handoff").and_then(Value::as_str), "edge");
     let drain_budget_pct_24h = parse_u64(payload.get("drain_budget_pct_24h"), 4, 1, 20) as f64;
     let wake_reason = clean_text(payload.get("wake_reason").and_then(Value::as_str), 120);
-    let current = state.get("background_state").cloned().unwrap_or_else(|| json!({}));
+    let current = state
+        .get("background_state")
+        .cloned()
+        .unwrap_or_else(|| json!({}));
     let mode = match action.as_str() {
-        "wake" => if drain_budget_pct_24h > 5.0 { "reduced" } else { "wake" },
+        "wake" => {
+            if drain_budget_pct_24h > 5.0 {
+                "reduced"
+            } else {
+                "wake"
+            }
+        }
         "pause" => "pause",
         "idle" => "idle",
-        _ => current.get("mode").and_then(Value::as_str).unwrap_or("idle"),
+        _ => current
+            .get("mode")
+            .and_then(Value::as_str)
+            .unwrap_or("idle"),
     };
     let record = json!({
         "event_id": stable_id("phonebg", &json!({"action": action, "platform": platform, "mode": mode})),
@@ -305,7 +358,8 @@ fn background_daemon(state: &mut Value, background_state_path: &Path, payload: &
     });
     state["background_state"] = record.clone();
     if let Some(parent) = background_state_path.parent() {
-        fs::create_dir_all(parent).map_err(|err| format!("phone_runtime_bridge_background_dir_create_failed:{err}"))?;
+        fs::create_dir_all(parent)
+            .map_err(|err| format!("phone_runtime_bridge_background_dir_create_failed:{err}"))?;
     }
     lane_utils::write_json(background_state_path, &record)?;
     let event_id = record["event_id"].as_str().unwrap().to_string();
@@ -327,7 +381,11 @@ fn phone_profile(state: &mut Value, payload: &Map<String, Value>) -> Result<Valu
     let memory_mb = parse_u64(payload.get("memory_mb"), 3072, 256, 65_536);
     let cpu_cores = parse_u64(payload.get("cpu_cores"), 4, 1, 64);
     let battery_pct = parse_u64(payload.get("battery_pct"), 100, 0, 100);
-    let selected_profile = if memory_mb < 1536 || cpu_cores <= 2 || battery_pct <= 15 || device_class == "legacy-phone" {
+    let selected_profile = if memory_mb < 1536
+        || cpu_cores <= 2
+        || battery_pct <= 15
+        || device_class == "legacy-phone"
+    {
         "tiny-max"
     } else if memory_mb < 4096 || cpu_cores < 4 || battery_pct <= 35 {
         "pure"
@@ -335,7 +393,12 @@ fn phone_profile(state: &mut Value, payload: &Map<String, Value>) -> Result<Valu
         "rich"
     };
     let shed_capabilities = match selected_profile {
-        "tiny-max" => vec!["vision", "swarm_parallelism", "background_audio", "high_freq_tracing"],
+        "tiny-max" => vec![
+            "vision",
+            "swarm_parallelism",
+            "background_audio",
+            "high_freq_tracing",
+        ],
         "pure" => vec!["vision", "swarm_parallelism"],
         _ => Vec::new(),
     };

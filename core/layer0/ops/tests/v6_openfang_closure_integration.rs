@@ -13,7 +13,9 @@ fn env_lock() -> &'static Mutex<()> {
 }
 
 fn env_guard() -> std::sync::MutexGuard<'static, ()> {
-    env_lock().lock().unwrap_or_else(|poison| poison.into_inner())
+    env_lock()
+        .lock()
+        .unwrap_or_else(|poison| poison.into_inner())
 }
 
 fn security_latest(root: &Path) -> PathBuf {
@@ -108,7 +110,10 @@ fn v6_sec_t0_001_blocks_violation_and_fuzzes_fail_closed() {
         target.get("status").and_then(Value::as_str),
         Some("shutdown_t0")
     );
-    assert_eq!(target.get("reachable").and_then(Value::as_bool), Some(false));
+    assert_eq!(
+        target.get("reachable").and_then(Value::as_bool),
+        Some(false)
+    );
 
     let fuzz_exit = security_plane::run(
         root,
@@ -121,7 +126,10 @@ fn v6_sec_t0_001_blocks_violation_and_fuzzes_fail_closed() {
     );
     assert_eq!(fuzz_exit, 0);
     let fuzz_latest = read_json(&security_latest(root));
-    assert_eq!(fuzz_latest.get("false_negatives").and_then(Value::as_u64), Some(0));
+    assert_eq!(
+        fuzz_latest.get("false_negatives").and_then(Value::as_u64),
+        Some(0)
+    );
 }
 
 #[test]
@@ -172,13 +180,11 @@ fn v6_sec_thorn_001_quarantines_and_self_destructs() {
     assert_eq!(exit, 0);
     let latest = read_json(&security_latest(root));
     assert_claim(&latest, "V6-SEC-THORN-001");
-    assert!(
-        latest
-            .get("replacement_sessions")
-            .and_then(Value::as_array)
-            .map(|rows| !rows.is_empty())
-            .unwrap_or(false)
-    );
+    assert!(latest
+        .get("replacement_sessions")
+        .and_then(Value::as_array)
+        .map(|rows| !rows.is_empty())
+        .unwrap_or(false));
     let state_quarantine = read_json(&swarm_state(root));
     let target = state_quarantine
         .get("sessions")
@@ -206,7 +212,10 @@ fn v6_sec_thorn_001_quarantines_and_self_destructs() {
         .and_then(|v| v.get(&target_id))
         .cloned()
         .expect("restored session");
-    assert_eq!(restored.get("reachable").and_then(Value::as_bool), Some(true));
+    assert_eq!(
+        restored.get("reachable").and_then(Value::as_bool),
+        Some(true)
+    );
     let destroyed = state_release
         .get("sessions")
         .and_then(Value::as_object)
@@ -246,7 +255,10 @@ fn v6_sec_ledger_001_appends_exports_and_detects_tamper() {
 
     let (verify_payload, verify_code) = run_black_box_ledger(root, &["verify".to_string()]);
     assert_eq!(verify_code, 0, "{verify_payload}");
-    assert_eq!(verify_payload.get("valid").and_then(Value::as_bool), Some(true));
+    assert_eq!(
+        verify_payload.get("valid").and_then(Value::as_bool),
+        Some(true)
+    );
 
     let export_path = root.join("offline-ledger-export.json");
     let (export_payload, export_code) = run_black_box_ledger(
@@ -261,8 +273,11 @@ fn v6_sec_ledger_001_appends_exports_and_detects_tamper() {
 
     let mut export = read_json(&export_path);
     export["entries"][0]["entry_hash"] = Value::String("tampered".to_string());
-    fs::write(&export_path, serde_json::to_string_pretty(&export).expect("encode tamper"))
-        .expect("write tamper export");
+    fs::write(
+        &export_path,
+        serde_json::to_string_pretty(&export).expect("encode tamper"),
+    )
+    .expect("write tamper export");
     let (offline_payload, offline_code) = run_black_box_ledger(
         root,
         &[
@@ -319,7 +334,10 @@ fn v6_sec_psyche_001_profiles_and_auto_quarantines() {
     assert_eq!(exit, 0);
     let latest = read_json(&security_latest(root));
     assert_claim(&latest, "V6-SEC-PSYCHE-001");
-    assert_eq!(latest.get("high_threat").and_then(Value::as_bool), Some(true));
+    assert_eq!(
+        latest.get("high_threat").and_then(Value::as_bool),
+        Some(true)
+    );
     assert!(latest.get("quarantine").is_some());
 }
 
@@ -343,7 +361,10 @@ fn v8_mcp_001_client_server_and_template_suite_execute() {
     );
     let client_latest = read_json(&mcp_latest(root));
     assert_claim(&client_latest, "V8-MCP-001");
-    assert_eq!(client_latest.get("type").and_then(Value::as_str), Some("mcp_plane_client"));
+    assert_eq!(
+        client_latest.get("type").and_then(Value::as_str),
+        Some("mcp_plane_client")
+    );
 
     assert_eq!(
         mcp_plane::run(
@@ -358,16 +379,24 @@ fn v8_mcp_001_client_server_and_template_suite_execute() {
         0
     );
     let server_latest = read_json(&mcp_latest(root));
-    assert_eq!(server_latest.get("type").and_then(Value::as_str), Some("mcp_plane_server"));
+    assert_eq!(
+        server_latest.get("type").and_then(Value::as_str),
+        Some("mcp_plane_server")
+    );
     assert_claim(&server_latest, "V8-MCP-001");
 
     assert_eq!(
-        mcp_plane::run(root, &["template-suite".to_string(), "--strict=1".to_string()]),
+        mcp_plane::run(
+            root,
+            &["template-suite".to_string(), "--strict=1".to_string()]
+        ),
         0
     );
     let templates_latest = read_json(&mcp_latest(root));
     assert_eq!(
-        templates_latest.get("template_count").and_then(Value::as_u64),
+        templates_latest
+            .get("template_count")
+            .and_then(Value::as_u64),
         Some(25)
     );
     assert_claim(&templates_latest, "V8-MCP-001");

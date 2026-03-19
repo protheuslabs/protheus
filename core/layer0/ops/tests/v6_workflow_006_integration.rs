@@ -24,7 +24,8 @@ fn latest_receipt(state_path: &Path) -> Value {
 }
 
 #[test]
-fn workflow_006_metagpt_bridge_emits_receipted_company_sop_pr_debate_requirements_oversight_trace_and_config() {
+fn workflow_006_metagpt_bridge_emits_receipted_company_sop_pr_debate_requirements_oversight_trace_and_config(
+) {
     let root = tempfile::tempdir().expect("tempdir");
     let state_path = root.path().join("state/metagpt/latest.json");
     let history_path = root.path().join("state/metagpt/history.jsonl");
@@ -56,8 +57,14 @@ fn workflow_006_metagpt_bridge_emits_receipted_company_sop_pr_debate_requirement
         0
     );
     let company_receipt = latest_receipt(&state_path);
-    assert_eq!(company_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-006.1"));
-    let company_id = company_receipt["payload"]["company"]["company_id"].as_str().unwrap().to_string();
+    assert_eq!(
+        company_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-006.1")
+    );
+    let company_id = company_receipt["payload"]["company"]["company_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     assert_eq!(
         run_bridge(
@@ -85,7 +92,10 @@ fn workflow_006_metagpt_bridge_emits_receipted_company_sop_pr_debate_requirement
         0
     );
     let sop_receipt = latest_receipt(&state_path);
-    assert_eq!(sop_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-006.2"));
+    assert_eq!(
+        sop_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-006.2")
+    );
 
     assert_eq!(
         run_bridge(
@@ -110,8 +120,14 @@ fn workflow_006_metagpt_bridge_emits_receipted_company_sop_pr_debate_requirement
         0
     );
     let pr_receipt = latest_receipt(&state_path);
-    assert_eq!(pr_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-006.3"));
-    assert_eq!(pr_receipt["payload"]["pr_simulation"]["review_required"], json!(true));
+    assert_eq!(
+        pr_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-006.3")
+    );
+    assert_eq!(
+        pr_receipt["payload"]["pr_simulation"]["review_required"],
+        json!(true)
+    );
 
     assert_eq!(
         run_bridge(
@@ -136,7 +152,10 @@ fn workflow_006_metagpt_bridge_emits_receipted_company_sop_pr_debate_requirement
         0
     );
     let debate_receipt = latest_receipt(&state_path);
-    assert_eq!(debate_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-006.4"));
+    assert_eq!(
+        debate_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-006.4")
+    );
     assert_eq!(debate_receipt["payload"]["debate"]["degraded"], json!(true));
     assert_eq!(debate_receipt["payload"]["debate"]["rounds"], json!(2));
 
@@ -161,8 +180,16 @@ fn workflow_006_metagpt_bridge_emits_receipted_company_sop_pr_debate_requirement
         0
     );
     let plan_receipt = latest_receipt(&state_path);
-    assert_eq!(plan_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-006.5"));
-    assert_eq!(plan_receipt["payload"]["requirements_plan"]["stories"].as_array().map(|v| v.len()), Some(2));
+    assert_eq!(
+        plan_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-006.5")
+    );
+    assert_eq!(
+        plan_receipt["payload"]["requirements_plan"]["stories"]
+            .as_array()
+            .map(|v| v.len()),
+        Some(2)
+    );
 
     assert_eq!(
         run_bridge(
@@ -186,7 +213,10 @@ fn workflow_006_metagpt_bridge_emits_receipted_company_sop_pr_debate_requirement
         0
     );
     let oversight_receipt = latest_receipt(&state_path);
-    assert_eq!(oversight_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-006.6"));
+    assert_eq!(
+        oversight_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-006.6")
+    );
     assert!(approval_queue_path.exists());
 
     assert_eq!(
@@ -211,7 +241,10 @@ fn workflow_006_metagpt_bridge_emits_receipted_company_sop_pr_debate_requirement
         0
     );
     let trace_receipt = latest_receipt(&state_path);
-    assert_eq!(trace_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-006.7"));
+    assert_eq!(
+        trace_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-006.7")
+    );
     assert!(trace_path.exists());
 
     assert_eq!(
@@ -233,6 +266,12 @@ fn workflow_006_metagpt_bridge_emits_receipted_company_sop_pr_debate_requirement
         0
     );
     let config_receipt = latest_receipt(&state_path);
-    assert_eq!(config_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-006.8"));
-    assert_eq!(config_receipt["payload"]["config"]["bridge_path"], json!("adapters/protocol/metagpt_config_bridge.ts"));
+    assert_eq!(
+        config_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-006.8")
+    );
+    assert_eq!(
+        config_receipt["payload"]["config"]["bridge_path"],
+        json!("adapters/protocol/metagpt_config_bridge.ts")
+    );
 }

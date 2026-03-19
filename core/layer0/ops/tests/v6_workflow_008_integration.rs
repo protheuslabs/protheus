@@ -104,12 +104,10 @@ fn workflow_008_service_plugin_planner_and_connectors_emit_receipts() {
         0
     );
     let plugin_receipt = latest_receipt(&state_path);
-    assert!(
-        plugin_receipt["payload"]["invocation"]["rendered"]
-            .as_str()
-            .unwrap_or_default()
-            .contains("semantic kernel")
-    );
+    assert!(plugin_receipt["payload"]["invocation"]["rendered"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("semantic kernel"));
 
     let plan_payload = json!({
         "service_id": service_id,
@@ -136,12 +134,10 @@ fn workflow_008_service_plugin_planner_and_connectors_emit_receipts() {
         plan_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
         Some("V6-WORKFLOW-008.4")
     );
-    assert!(
-        plan_receipt["payload"]["plan"]["steps"]
-            .as_array()
-            .map(|rows| rows.len() >= 2)
-            .unwrap_or(false)
-    );
+    assert!(plan_receipt["payload"]["plan"]["steps"]
+        .as_array()
+        .map(|rows| rows.len() >= 2)
+        .unwrap_or(false));
 
     let vector_payload = json!({
         "name": "sk-memory",
@@ -189,12 +185,10 @@ fn workflow_008_service_plugin_planner_and_connectors_emit_receipts() {
         0
     );
     let retrieve_receipt = latest_receipt(&state_path);
-    assert!(
-        retrieve_receipt["payload"]["results"]
-            .as_array()
-            .map(|rows| !rows.is_empty())
-            .unwrap_or(false)
-    );
+    assert!(retrieve_receipt["payload"]["results"]
+        .as_array()
+        .map(|rows| !rows.is_empty())
+        .unwrap_or(false));
 
     let llm_payload = json!({
         "name": "sk-azure-openai",
@@ -239,7 +233,10 @@ fn workflow_008_service_plugin_planner_and_connectors_emit_receipts() {
         0
     );
     let route_receipt = latest_receipt(&state_path);
-    assert_eq!(route_receipt["payload"]["route"]["modality"].as_str(), Some("vision"));
+    assert_eq!(
+        route_receipt["payload"]["route"]["modality"].as_str(),
+        Some("vision")
+    );
 }
 
 #[test]
@@ -360,7 +357,10 @@ fn workflow_008_collaboration_structured_output_enterprise_and_dotnet_are_receip
         0
     );
     let enterprise_receipt = latest_receipt(&state_path);
-    assert_eq!(enterprise_receipt["payload"]["event"]["cloud"].as_str(), Some("azure"));
+    assert_eq!(
+        enterprise_receipt["payload"]["event"]["cloud"].as_str(),
+        Some("azure")
+    );
 
     let dotnet_payload = json!({
         "name": "semantic-kernel-dotnet",
@@ -404,5 +404,8 @@ fn workflow_008_collaboration_structured_output_enterprise_and_dotnet_are_receip
         0
     );
     let dotnet_receipt = latest_receipt(&state_path);
-    assert_eq!(dotnet_receipt["payload"]["invocation"]["mode"].as_str(), Some("dry_run"));
+    assert_eq!(
+        dotnet_receipt["payload"]["invocation"]["mode"].as_str(),
+        Some("dry_run")
+    );
 }

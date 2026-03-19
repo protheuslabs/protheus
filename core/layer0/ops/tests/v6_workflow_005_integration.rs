@@ -23,7 +23,8 @@ fn latest_receipt(state_path: &Path) -> Value {
 }
 
 #[test]
-fn workflow_005_dify_bridge_emits_receipted_canvas_rag_app_dashboard_provider_flow_and_audit_trace() {
+fn workflow_005_dify_bridge_emits_receipted_canvas_rag_app_dashboard_provider_flow_and_audit_trace()
+{
     let root = tempfile::tempdir().expect("tempdir");
     let state_path = root.path().join("state/dify/latest.json");
     let history_path = root.path().join("state/dify/history.jsonl");
@@ -59,8 +60,14 @@ fn workflow_005_dify_bridge_emits_receipted_canvas_rag_app_dashboard_provider_fl
         0
     );
     let canvas_receipt = latest_receipt(&state_path);
-    assert_eq!(canvas_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-005.1"));
-    let canvas_id = canvas_receipt["payload"]["canvas"]["canvas_id"].as_str().unwrap().to_string();
+    assert_eq!(
+        canvas_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-005.1")
+    );
+    let canvas_id = canvas_receipt["payload"]["canvas"]["canvas_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     assert_eq!(
         run_bridge(
@@ -88,8 +95,14 @@ fn workflow_005_dify_bridge_emits_receipted_canvas_rag_app_dashboard_provider_fl
         0
     );
     let kb_receipt = latest_receipt(&state_path);
-    assert_eq!(kb_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-005.2"));
-    assert_eq!(kb_receipt["payload"]["knowledge_base"]["degraded"], json!(true));
+    assert_eq!(
+        kb_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-005.2")
+    );
+    assert_eq!(
+        kb_receipt["payload"]["knowledge_base"]["degraded"],
+        json!(true)
+    );
 
     assert_eq!(
         run_bridge(
@@ -116,8 +129,16 @@ fn workflow_005_dify_bridge_emits_receipted_canvas_rag_app_dashboard_provider_fl
         0
     );
     let app_receipt = latest_receipt(&state_path);
-    assert_eq!(app_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-005.3"));
-    assert_eq!(app_receipt["payload"]["agent_app"]["denied_tools"].as_array().map(|v| v.len()), Some(1));
+    assert_eq!(
+        app_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-005.3")
+    );
+    assert_eq!(
+        app_receipt["payload"]["agent_app"]["denied_tools"]
+            .as_array()
+            .map(|v| v.len()),
+        Some(1)
+    );
 
     assert_eq!(
         run_bridge(
@@ -142,7 +163,10 @@ fn workflow_005_dify_bridge_emits_receipted_canvas_rag_app_dashboard_provider_fl
         0
     );
     let dashboard_receipt = latest_receipt(&state_path);
-    assert_eq!(dashboard_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-005.4"));
+    assert_eq!(
+        dashboard_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-005.4")
+    );
     assert!(dashboard_dir.exists());
 
     assert_eq!(
@@ -168,8 +192,14 @@ fn workflow_005_dify_bridge_emits_receipted_canvas_rag_app_dashboard_provider_fl
         0
     );
     let route_receipt = latest_receipt(&state_path);
-    assert_eq!(route_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-005.5"));
-    assert_eq!(route_receipt["payload"]["provider_route"]["selected_route"]["route_kind"], json!("local_model"));
+    assert_eq!(
+        route_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-005.5")
+    );
+    assert_eq!(
+        route_receipt["payload"]["provider_route"]["selected_route"]["route_kind"],
+        json!("local_model")
+    );
 
     assert_eq!(
         run_bridge(
@@ -200,11 +230,20 @@ fn workflow_005_dify_bridge_emits_receipted_canvas_rag_app_dashboard_provider_fl
         0
     );
     let flow_receipt = latest_receipt(&state_path);
-    assert_eq!(flow_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-005.6"));
+    assert_eq!(
+        flow_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-005.6")
+    );
     assert_eq!(flow_receipt["payload"]["flow_run"]["degraded"], json!(true));
     assert_eq!(flow_receipt["payload"]["flow_run"]["iterations"], json!(2));
-    assert_eq!(flow_receipt["payload"]["flow_run"]["selected_branch"]["target"], json!("retrieve"));
-    assert_eq!(flow_receipt["payload"]["flow_run"]["handoff_target"], json!("support_agent"));
+    assert_eq!(
+        flow_receipt["payload"]["flow_run"]["selected_branch"]["target"],
+        json!("retrieve")
+    );
+    assert_eq!(
+        flow_receipt["payload"]["flow_run"]["handoff_target"],
+        json!("support_agent")
+    );
     let swarm_record = read_json(&swarm_state_path);
     assert_eq!(swarm_record["selected_target"], json!("retrieve"));
     assert_eq!(swarm_record["iterations"], json!(2));
@@ -233,6 +272,9 @@ fn workflow_005_dify_bridge_emits_receipted_canvas_rag_app_dashboard_provider_fl
         0
     );
     let trace_receipt = latest_receipt(&state_path);
-    assert_eq!(trace_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-005.7"));
+    assert_eq!(
+        trace_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-005.7")
+    );
     assert!(trace_path.exists());
 }

@@ -30,7 +30,9 @@ fn usage() {
     println!("  protheus-ops mcp-plane status");
     println!("  protheus-ops mcp-plane capability-matrix [--server-capabilities=a,b] [--server-capabilities-file=<path>] [--strict=1|0]");
     println!("  protheus-ops mcp-plane client [--server-capabilities=a,b] [--server-capabilities-file=<path>] [--strict=1|0]");
-    println!("  protheus-ops mcp-plane server --agent=<id> [--tools=a,b] [--max-rps=<n>] [--strict=1|0]");
+    println!(
+        "  protheus-ops mcp-plane server --agent=<id> [--tools=a,b] [--max-rps=<n>] [--strict=1|0]"
+    );
     println!("  protheus-ops mcp-plane workflow --op=<start|pause|resume|retry|status> [--workflow-id=<id>] [--checkpoint-json=<json>|--checkpoint-path=<path>] [--reason=<text>] [--strict=1|0]");
     println!(
         "  protheus-ops mcp-plane expose --agent=<id> [--tools=a,b] [--max-rps=<n>] [--strict=1|0]"
@@ -1223,7 +1225,10 @@ fn run_interop_status(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> 
     };
     let templates = run_template_suite(root, parsed, strict);
     let ok = client.get("ok").and_then(Value::as_bool).unwrap_or(false)
-        && templates.get("ok").and_then(Value::as_bool).unwrap_or(false)
+        && templates
+            .get("ok")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
         && server
             .as_ref()
             .map(|row| row.get("ok").and_then(Value::as_bool).unwrap_or(false))

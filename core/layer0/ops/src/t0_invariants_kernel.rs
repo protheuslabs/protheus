@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Layer ownership: core/layer0/ops (authoritative)
 
-use crate::swarm_runtime;
 use crate::contract_lane_utils as lane_utils;
 use crate::deterministic_receipt_hash;
+use crate::swarm_runtime;
 use serde_json::{json, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -46,36 +46,81 @@ fn invariant_catalog() -> Vec<Value> {
 }
 
 fn evaluate_attempt(argv: &[String]) -> Value {
-    let receipts_enabled = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "receipts-enabled", false).as_deref(), true);
-    let memory_scope_approved = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "memory-scope-approved", false).as_deref(), true);
-    let shell_approved = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "shell-approved", false).as_deref(), false);
-    let exfil_approved = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "exfil-approved", false).as_deref(), false);
-    let core_safety_modify_approved = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "core-safety-modify-approved", false).as_deref(), false);
-    let external_call_receipted = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "external-call-receipted", false).as_deref(), true);
-    let budget_overrun = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "budget-overrun", false).as_deref(), false);
-    let human_veto = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "human-veto", false).as_deref(), false);
+    let receipts_enabled = lane_utils::parse_bool_extended(
+        lane_utils::parse_flag(argv, "receipts-enabled", false).as_deref(),
+        true,
+    );
+    let memory_scope_approved = lane_utils::parse_bool_extended(
+        lane_utils::parse_flag(argv, "memory-scope-approved", false).as_deref(),
+        true,
+    );
+    let shell_approved = lane_utils::parse_bool_extended(
+        lane_utils::parse_flag(argv, "shell-approved", false).as_deref(),
+        false,
+    );
+    let exfil_approved = lane_utils::parse_bool_extended(
+        lane_utils::parse_flag(argv, "exfil-approved", false).as_deref(),
+        false,
+    );
+    let core_safety_modify_approved = lane_utils::parse_bool_extended(
+        lane_utils::parse_flag(argv, "core-safety-modify-approved", false).as_deref(),
+        false,
+    );
+    let external_call_receipted = lane_utils::parse_bool_extended(
+        lane_utils::parse_flag(argv, "external-call-receipted", false).as_deref(),
+        true,
+    );
+    let budget_overrun = lane_utils::parse_bool_extended(
+        lane_utils::parse_flag(argv, "budget-overrun", false).as_deref(),
+        false,
+    );
+    let human_veto = lane_utils::parse_bool_extended(
+        lane_utils::parse_flag(argv, "human-veto", false).as_deref(),
+        false,
+    );
 
     let mut violations = Vec::<Value>::new();
     if !receipts_enabled {
         violations.push(json!({"id":"no_disable_receipts","reason":"receipts_disabled"}));
     }
     if !memory_scope_approved {
-        violations.push(json!({"id":"approved_memory_scopes_only","reason":"memory_scope_unapproved"}));
+        violations
+            .push(json!({"id":"approved_memory_scopes_only","reason":"memory_scope_unapproved"}));
     }
-    if lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "shell-exec", false).as_deref(), false) && !shell_approved {
-        violations.push(json!({"id":"shell_requires_approval","reason":"shell_exec_without_approval"}));
+    if lane_utils::parse_bool_extended(
+        lane_utils::parse_flag(argv, "shell-exec", false).as_deref(),
+        false,
+    ) && !shell_approved
+    {
+        violations
+            .push(json!({"id":"shell_requires_approval","reason":"shell_exec_without_approval"}));
     }
-    if lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "external-exfil", false).as_deref(), false) && !exfil_approved {
+    if lane_utils::parse_bool_extended(
+        lane_utils::parse_flag(argv, "external-exfil", false).as_deref(),
+        false,
+    ) && !exfil_approved
+    {
         violations.push(json!({"id":"no_exfil_outside_policy","reason":"exfil_outside_policy"}));
     }
-    if lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "modify-safety-plane", false).as_deref(), false) && !core_safety_modify_approved {
+    if lane_utils::parse_bool_extended(
+        lane_utils::parse_flag(argv, "modify-safety-plane", false).as_deref(),
+        false,
+    ) && !core_safety_modify_approved
+    {
         violations.push(json!({"id":"no_self_modify_safety_plane","reason":"safety_plane_modification_attempt"}));
     }
-    if lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "external-call", false).as_deref(), false) && !external_call_receipted {
-        violations.push(json!({"id":"external_calls_receipted","reason":"external_call_without_receipt"}));
+    if lane_utils::parse_bool_extended(
+        lane_utils::parse_flag(argv, "external-call", false).as_deref(),
+        false,
+    ) && !external_call_receipted
+    {
+        violations.push(
+            json!({"id":"external_calls_receipted","reason":"external_call_without_receipt"}),
+        );
     }
     if budget_overrun {
-        violations.push(json!({"id":"budget_overrun_terminates","reason":"budget_overrun_detected"}));
+        violations
+            .push(json!({"id":"budget_overrun_terminates","reason":"budget_overrun_detected"}));
     }
     if human_veto {
         violations.push(json!({"id":"human_veto_overrides_all","reason":"human_veto_asserted"}));
@@ -105,7 +150,10 @@ fn append_ledger_event(root: &Path, action: &str, details: &Value) -> Value {
         "--actor=t0_invariants".to_string(),
         format!("--action={action}"),
         "--source=t0_invariants".to_string(),
-        format!("--details-json={}", serde_json::to_string(details).unwrap_or_else(|_| "{}".to_string())),
+        format!(
+            "--details-json={}",
+            serde_json::to_string(details).unwrap_or_else(|_| "{}".to_string())
+        ),
     ];
     let (payload, _) = infring_layer1_security::run_black_box_ledger(root, &argv);
     payload
@@ -130,7 +178,10 @@ pub fn run(root: &Path, argv: &[String]) -> (Value, i32) {
         .first()
         .map(|value| value.trim().to_ascii_lowercase())
         .unwrap_or_else(|| "status".to_string());
-    let strict = lane_utils::parse_bool_extended(lane_utils::parse_flag(argv, "strict", false).as_deref(), true);
+    let strict = lane_utils::parse_bool_extended(
+        lane_utils::parse_flag(argv, "strict", false).as_deref(),
+        true,
+    );
 
     let mut payload = match command.as_str() {
         "status" => {
@@ -186,16 +237,33 @@ pub fn run(root: &Path, argv: &[String]) -> (Value, i32) {
             })
         }
         "fuzz" => {
-            let attempts = lane_utils::parse_u64_clamped(lane_utils::parse_flag(argv, "attempts", false).as_deref(), 10_000, 1, 100_000);
+            let attempts = lane_utils::parse_u64_clamped(
+                lane_utils::parse_flag(argv, "attempts", false).as_deref(),
+                10_000,
+                1,
+                100_000,
+            );
             let mut blocked = 0u64;
             for idx in 0..attempts {
                 let scenario = match idx % 8 {
                     0 => vec!["--receipts-enabled=0".to_string()],
                     1 => vec!["--memory-scope-approved=0".to_string()],
-                    2 => vec!["--shell-exec=1".to_string(), "--shell-approved=0".to_string()],
-                    3 => vec!["--external-exfil=1".to_string(), "--exfil-approved=0".to_string()],
-                    4 => vec!["--modify-safety-plane=1".to_string(), "--core-safety-modify-approved=0".to_string()],
-                    5 => vec!["--external-call=1".to_string(), "--external-call-receipted=0".to_string()],
+                    2 => vec![
+                        "--shell-exec=1".to_string(),
+                        "--shell-approved=0".to_string(),
+                    ],
+                    3 => vec![
+                        "--external-exfil=1".to_string(),
+                        "--exfil-approved=0".to_string(),
+                    ],
+                    4 => vec![
+                        "--modify-safety-plane=1".to_string(),
+                        "--core-safety-modify-approved=0".to_string(),
+                    ],
+                    5 => vec![
+                        "--external-call=1".to_string(),
+                        "--external-call-receipted=0".to_string(),
+                    ],
                     6 => vec!["--budget-overrun=1".to_string()],
                     _ => vec!["--human-veto=1".to_string()],
                 };

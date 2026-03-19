@@ -76,9 +76,7 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         println!(
             "  protheus-ops directive-kernel validate-action-envelope [--payload-base64=<base64_json>]"
         );
-        println!(
-            "  protheus-ops directive-kernel tier-conflict [--payload-base64=<base64_json>]"
-        );
+        println!("  protheus-ops directive-kernel tier-conflict [--payload-base64=<base64_json>]");
         return 0;
     }
 
@@ -727,7 +725,10 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 );
             }
         };
-        let envelope = payload.get("action_envelope").cloned().unwrap_or(Value::Null);
+        let envelope = payload
+            .get("action_envelope")
+            .cloned()
+            .unwrap_or(Value::Null);
         let validation = match validate_action_envelope(root, &envelope) {
             Ok(value) => value,
             Err(err) => {

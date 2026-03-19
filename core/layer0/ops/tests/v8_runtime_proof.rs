@@ -529,7 +529,10 @@ fn v8_mcp_001_runtime_proof_exercises_client_server_and_template_suite() {
         0
     );
     assert_eq!(
-        mcp_plane::run(&root, &["template-suite".to_string(), "--strict=1".to_string()]),
+        mcp_plane::run(
+            &root,
+            &["template-suite".to_string(), "--strict=1".to_string()]
+        ),
         0
     );
     assert_eq!(

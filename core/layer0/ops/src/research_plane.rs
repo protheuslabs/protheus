@@ -4,11 +4,11 @@
 use crate::research_batch6;
 use crate::research_batch7;
 use crate::research_batch8;
-use crate::{crawl_console, crawl_middleware, crawl_pipeline, crawl_signals, crawl_spider};
 use crate::v8_kernel::{
     parse_bool, parse_u64, read_json, scoped_state_root, sha256_hex_str, write_receipt,
 };
 use crate::{clean, parse_args, ParsedArgs};
+use crate::{crawl_console, crawl_middleware, crawl_pipeline, crawl_signals, crawl_spider};
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
 use serde_json::{json, Value};
@@ -1132,12 +1132,8 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         "pipeline" | "crawl-pipeline" | "crawl_pipeline" => {
             crawl_pipeline::run(root, &parsed, strict)
         }
-        "signals" | "crawl-signals" | "crawl_signals" => {
-            crawl_signals::run(root, &parsed, strict)
-        }
-        "console" | "crawl-console" | "crawl_console" => {
-            crawl_console::run(root, &parsed, strict)
-        }
+        "signals" | "crawl-signals" | "crawl_signals" => crawl_signals::run(root, &parsed, strict),
+        "console" | "crawl-console" | "crawl_console" => crawl_console::run(root, &parsed, strict),
         "template-governance" | "template_governance" => {
             research_batch6::run_template_governance(root, &parsed, strict)
         }

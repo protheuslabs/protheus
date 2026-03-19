@@ -93,11 +93,13 @@ fn ultimate_002_instinct_bridge_models_activates_and_refines() {
         activation_receipt["payload"]["activation"]["selected_profile"],
         json!("tiny-max")
     );
-    assert!(activation_receipt["payload"]["activation"]["rejected_capabilities"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .any(|row| row["capability"] == json!("swarm")));
+    assert!(
+        activation_receipt["payload"]["activation"]["rejected_capabilities"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|row| row["capability"] == json!("swarm"))
+    );
 
     assert_eq!(
         run_bridge(

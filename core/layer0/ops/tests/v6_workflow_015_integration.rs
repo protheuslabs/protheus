@@ -24,7 +24,8 @@ fn latest_receipt(state_path: &Path) -> Value {
 }
 
 #[test]
-fn workflow_015_typed_agents_validation_protocol_durable_approval_observability_graph_stream_and_eval_emit_receipts() {
+fn workflow_015_typed_agents_validation_protocol_durable_approval_observability_graph_stream_and_eval_emit_receipts(
+) {
     let root = tempfile::tempdir().expect("tempdir");
     let state_path = root.path().join("state/pydantic-ai/latest.json");
     let history_path = root.path().join("state/pydantic-ai/history.jsonl");
@@ -54,8 +55,14 @@ fn workflow_015_typed_agents_validation_protocol_durable_approval_observability_
         0
     );
     let agent_receipt = latest_receipt(&state_path);
-    assert_eq!(agent_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-015.1"));
-    let agent_id = agent_receipt["payload"]["agent"]["agent_id"].as_str().expect("agent id").to_string();
+    assert_eq!(
+        agent_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-015.1")
+    );
+    let agent_id = agent_receipt["payload"]["agent"]["agent_id"]
+        .as_str()
+        .expect("agent id")
+        .to_string();
 
     assert_eq!(
         run_bridge(
@@ -80,8 +87,14 @@ fn workflow_015_typed_agents_validation_protocol_durable_approval_observability_
         0
     );
     let validation_receipt = latest_receipt(&state_path);
-    assert_eq!(validation_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-015.2"));
-    assert_eq!(validation_receipt["payload"]["validation"]["status"].as_str(), Some("retry"));
+    assert_eq!(
+        validation_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-015.2")
+    );
+    assert_eq!(
+        validation_receipt["payload"]["validation"]["status"].as_str(),
+        Some("retry")
+    );
 
     assert_eq!(
         run_bridge(
@@ -109,8 +122,14 @@ fn workflow_015_typed_agents_validation_protocol_durable_approval_observability_
         0
     );
     let tool_receipt = latest_receipt(&state_path);
-    assert_eq!(tool_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-015.3"));
-    let tool_id = tool_receipt["payload"]["tool_context"]["tool_id"].as_str().expect("tool id").to_string();
+    assert_eq!(
+        tool_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-015.3")
+    );
+    let tool_id = tool_receipt["payload"]["tool_context"]["tool_id"]
+        .as_str()
+        .expect("tool id")
+        .to_string();
 
     assert_eq!(
         run_bridge(
@@ -134,8 +153,14 @@ fn workflow_015_typed_agents_validation_protocol_durable_approval_observability_
         0
     );
     let approval_receipt = latest_receipt(&state_path);
-    assert_eq!(approval_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-015.6"));
-    let action_id = approval_receipt["payload"]["approval"]["action_id"].as_str().expect("action id").to_string();
+    assert_eq!(
+        approval_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-015.6")
+    );
+    let action_id = approval_receipt["payload"]["approval"]["action_id"]
+        .as_str()
+        .expect("action id")
+        .to_string();
 
     assert_eq!(
         run_bridge(
@@ -177,7 +202,10 @@ fn workflow_015_typed_agents_validation_protocol_durable_approval_observability_
         0
     );
     let invoke_receipt = latest_receipt(&state_path);
-    assert_eq!(invoke_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-015.3"));
+    assert_eq!(
+        invoke_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-015.3")
+    );
 
     assert_eq!(
         run_bridge(
@@ -202,8 +230,14 @@ fn workflow_015_typed_agents_validation_protocol_durable_approval_observability_
         0
     );
     let runtime_receipt = latest_receipt(&state_path);
-    assert_eq!(runtime_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-015.9"));
-    let bridge_id = runtime_receipt["payload"]["runtime_bridge"]["bridge_id"].as_str().expect("bridge id").to_string();
+    assert_eq!(
+        runtime_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-015.9")
+    );
+    let bridge_id = runtime_receipt["payload"]["runtime_bridge"]["bridge_id"]
+        .as_str()
+        .expect("bridge id")
+        .to_string();
 
     assert_eq!(
         run_bridge(
@@ -229,7 +263,10 @@ fn workflow_015_typed_agents_validation_protocol_durable_approval_observability_
         0
     );
     let protocol_receipt = latest_receipt(&state_path);
-    assert_eq!(protocol_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-015.4"));
+    assert_eq!(
+        protocol_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-015.4")
+    );
 
     assert_eq!(
         run_bridge(
@@ -258,8 +295,14 @@ fn workflow_015_typed_agents_validation_protocol_durable_approval_observability_
         0
     );
     let durable_receipt = latest_receipt(&state_path);
-    assert_eq!(durable_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-015.5"));
-    let session_id = durable_receipt["payload"]["durable_run"]["session_id"].as_str().expect("session id").to_string();
+    assert_eq!(
+        durable_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-015.5")
+    );
+    let session_id = durable_receipt["payload"]["durable_run"]["session_id"]
+        .as_str()
+        .expect("session id")
+        .to_string();
 
     assert_eq!(
         run_bridge(
@@ -277,7 +320,10 @@ fn workflow_015_typed_agents_validation_protocol_durable_approval_observability_
         0
     );
     let logfire_receipt = latest_receipt(&state_path);
-    assert_eq!(logfire_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-015.7"));
+    assert_eq!(
+        logfire_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-015.7")
+    );
 
     assert_eq!(
         run_bridge(
@@ -304,7 +350,10 @@ fn workflow_015_typed_agents_validation_protocol_durable_approval_observability_
         0
     );
     let graph_receipt = latest_receipt(&state_path);
-    assert_eq!(graph_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-015.8"));
+    assert_eq!(
+        graph_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-015.8")
+    );
 
     assert_eq!(
         run_bridge(
@@ -329,7 +378,10 @@ fn workflow_015_typed_agents_validation_protocol_durable_approval_observability_
         0
     );
     let stream_receipt = latest_receipt(&state_path);
-    assert_eq!(stream_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-015.9"));
+    assert_eq!(
+        stream_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-015.9")
+    );
 
     assert_eq!(
         run_bridge(
@@ -347,5 +399,8 @@ fn workflow_015_typed_agents_validation_protocol_durable_approval_observability_
         0
     );
     let eval_receipt = latest_receipt(&state_path);
-    assert_eq!(eval_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-015.10"));
+    assert_eq!(
+        eval_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-015.10")
+    );
 }

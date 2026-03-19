@@ -25,7 +25,8 @@ fn find_session_id_by_task(state: &Value, task: &str) -> String {
                     .and_then(|value| value.get("task"))
                     .and_then(Value::as_str);
                 let session_task = row.get("task").and_then(Value::as_str);
-                (report_task == Some(task) || session_task == Some(task)).then(|| session_id.clone())
+                (report_task == Some(task) || session_task == Some(task))
+                    .then(|| session_id.clone())
             })
         })
         .expect("session id by task")

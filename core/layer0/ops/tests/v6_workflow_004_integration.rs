@@ -24,7 +24,8 @@ fn latest_receipt(state_path: &Path) -> Value {
 }
 
 #[test]
-fn workflow_004_crewai_bridge_emits_receipted_crew_process_flow_memory_config_delegation_review_trace_benchmark_and_model_route() {
+fn workflow_004_crewai_bridge_emits_receipted_crew_process_flow_memory_config_delegation_review_trace_benchmark_and_model_route(
+) {
     let root = tempfile::tempdir().expect("tempdir");
     let state_path = root.path().join("state/crewai/latest.json");
     let history_path = root.path().join("state/crewai/history.jsonl");
@@ -58,8 +59,14 @@ fn workflow_004_crewai_bridge_emits_receipted_crew_process_flow_memory_config_de
         0
     );
     let crew_receipt = latest_receipt(&state_path);
-    assert_eq!(crew_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-004.1"));
-    let crew_id = crew_receipt["payload"]["crew"]["crew_id"].as_str().unwrap().to_string();
+    assert_eq!(
+        crew_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-004.1")
+    );
+    let crew_id = crew_receipt["payload"]["crew"]["crew_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     assert_eq!(
         run_bridge(
@@ -87,9 +94,18 @@ fn workflow_004_crewai_bridge_emits_receipted_crew_process_flow_memory_config_de
         0
     );
     let process_receipt = latest_receipt(&state_path);
-    assert_eq!(process_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-004.2"));
-    let run_id = process_receipt["payload"]["process_run"]["run_id"].as_str().unwrap().to_string();
-    assert_eq!(process_receipt["payload"]["process_run"]["degraded"], json!(true));
+    assert_eq!(
+        process_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-004.2")
+    );
+    let run_id = process_receipt["payload"]["process_run"]["run_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    assert_eq!(
+        process_receipt["payload"]["process_run"]["degraded"],
+        json!(true)
+    );
 
     assert_eq!(
         run_bridge(
@@ -118,7 +134,10 @@ fn workflow_004_crewai_bridge_emits_receipted_crew_process_flow_memory_config_de
         0
     );
     let flow_receipt = latest_receipt(&state_path);
-    assert_eq!(flow_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-004.3"));
+    assert_eq!(
+        flow_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-004.3")
+    );
 
     assert_eq!(
         run_bridge(
@@ -145,7 +164,10 @@ fn workflow_004_crewai_bridge_emits_receipted_crew_process_flow_memory_config_de
         0
     );
     let memory_receipt = latest_receipt(&state_path);
-    assert_eq!(memory_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-004.4"));
+    assert_eq!(
+        memory_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-004.4")
+    );
 
     assert_eq!(
         run_bridge(
@@ -165,7 +187,10 @@ fn workflow_004_crewai_bridge_emits_receipted_crew_process_flow_memory_config_de
         0
     );
     let config_receipt = latest_receipt(&state_path);
-    assert_eq!(config_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-004.5"));
+    assert_eq!(
+        config_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-004.5")
+    );
 
     assert_eq!(
         run_bridge(
@@ -190,7 +215,10 @@ fn workflow_004_crewai_bridge_emits_receipted_crew_process_flow_memory_config_de
         0
     );
     let delegation_receipt = latest_receipt(&state_path);
-    assert_eq!(delegation_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-004.6"));
+    assert_eq!(
+        delegation_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-004.6")
+    );
 
     assert_eq!(
         run_bridge(
@@ -215,7 +243,10 @@ fn workflow_004_crewai_bridge_emits_receipted_crew_process_flow_memory_config_de
         0
     );
     let review_receipt = latest_receipt(&state_path);
-    assert_eq!(review_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-004.7"));
+    assert_eq!(
+        review_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-004.7")
+    );
     assert!(approval_queue_path.exists());
 
     assert_eq!(
@@ -242,7 +273,10 @@ fn workflow_004_crewai_bridge_emits_receipted_crew_process_flow_memory_config_de
         0
     );
     let trace_receipt = latest_receipt(&state_path);
-    assert_eq!(trace_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-004.8"));
+    assert_eq!(
+        trace_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-004.8")
+    );
     assert!(trace_path.exists());
 
     assert_eq!(
@@ -264,8 +298,14 @@ fn workflow_004_crewai_bridge_emits_receipted_crew_process_flow_memory_config_de
         0
     );
     let benchmark_receipt = latest_receipt(&state_path);
-    assert_eq!(benchmark_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-004.9"));
-    assert_eq!(benchmark_receipt["payload"]["benchmark"]["parity_ok"], json!(true));
+    assert_eq!(
+        benchmark_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-004.9")
+    );
+    assert_eq!(
+        benchmark_receipt["payload"]["benchmark"]["parity_ok"],
+        json!(true)
+    );
 
     assert_eq!(
         run_bridge(
@@ -289,6 +329,12 @@ fn workflow_004_crewai_bridge_emits_receipted_crew_process_flow_memory_config_de
         0
     );
     let route_receipt = latest_receipt(&state_path);
-    assert_eq!(route_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V6-WORKFLOW-004.10"));
-    assert_eq!(route_receipt["payload"]["model_route"]["degraded"], json!(false));
+    assert_eq!(
+        route_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V6-WORKFLOW-004.10")
+    );
+    assert_eq!(
+        route_receipt["payload"]["model_route"]["degraded"],
+        json!(false)
+    );
 }

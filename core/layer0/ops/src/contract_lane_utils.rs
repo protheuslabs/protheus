@@ -256,7 +256,11 @@ pub fn normalize_bridge_path(root: &Path, raw: &str) -> Result<String, String> {
     Ok(rel_path)
 }
 
-pub fn normalize_bridge_path_clean(root: &Path, raw: &str, unsupported_error: &str) -> Result<String, String> {
+pub fn normalize_bridge_path_clean(
+    root: &Path,
+    raw: &str,
+    unsupported_error: &str,
+) -> Result<String, String> {
     let clean = clean_text(Some(raw), 260);
     if !bridge_surface_prefix_allowed(&clean) {
         return Err(unsupported_error.to_string());

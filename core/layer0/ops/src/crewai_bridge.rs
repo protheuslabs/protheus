@@ -22,14 +22,18 @@ fn usage() {
     println!("  protheus-ops crewai-bridge status [--state-path=<path>]");
     println!("  protheus-ops crewai-bridge register-crew [--payload-base64=<json>] [--state-path=<path>]");
     println!("  protheus-ops crewai-bridge run-process [--payload-base64=<json>] [--state-path=<path>] [--swarm-state-path=<path>]");
-    println!("  protheus-ops crewai-bridge run-flow [--payload-base64=<json>] [--state-path=<path>]");
+    println!(
+        "  protheus-ops crewai-bridge run-flow [--payload-base64=<json>] [--state-path=<path>]"
+    );
     println!("  protheus-ops crewai-bridge memory-bridge [--payload-base64=<json>] [--state-path=<path>]");
     println!("  protheus-ops crewai-bridge ingest-config [--payload-base64=<json>] [--state-path=<path>]");
     println!("  protheus-ops crewai-bridge route-delegation [--payload-base64=<json>] [--state-path=<path>] [--swarm-state-path=<path>]");
     println!("  protheus-ops crewai-bridge review-crew [--payload-base64=<json>] [--state-path=<path>] [--approval-queue-path=<path>]");
     println!("  protheus-ops crewai-bridge record-amp-trace [--payload-base64=<json>] [--state-path=<path>] [--trace-path=<path>]");
     println!("  protheus-ops crewai-bridge benchmark-parity [--payload-base64=<json>] [--state-path=<path>]");
-    println!("  protheus-ops crewai-bridge route-model [--payload-base64=<json>] [--state-path=<path>]");
+    println!(
+        "  protheus-ops crewai-bridge route-model [--payload-base64=<json>] [--state-path=<path>]"
+    );
 }
 
 fn payload_json(argv: &[String]) -> Result<Value, String> {
@@ -38,35 +42,60 @@ fn payload_json(argv: &[String]) -> Result<Value, String> {
 
 fn state_path(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
     lane_utils::parse_flag(argv, "state-path", false)
-        .or_else(|| payload.get("state_path").and_then(Value::as_str).map(ToString::to_string))
+        .or_else(|| {
+            payload
+                .get("state_path")
+                .and_then(Value::as_str)
+                .map(ToString::to_string)
+        })
         .map(|raw| repo_path(root, &raw))
         .unwrap_or_else(|| root.join(DEFAULT_STATE_REL))
 }
 
 fn history_path(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
     lane_utils::parse_flag(argv, "history-path", false)
-        .or_else(|| payload.get("history_path").and_then(Value::as_str).map(ToString::to_string))
+        .or_else(|| {
+            payload
+                .get("history_path")
+                .and_then(Value::as_str)
+                .map(ToString::to_string)
+        })
         .map(|raw| repo_path(root, &raw))
         .unwrap_or_else(|| root.join(DEFAULT_HISTORY_REL))
 }
 
 fn swarm_state_path(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
     lane_utils::parse_flag(argv, "swarm-state-path", false)
-        .or_else(|| payload.get("swarm_state_path").and_then(Value::as_str).map(ToString::to_string))
+        .or_else(|| {
+            payload
+                .get("swarm_state_path")
+                .and_then(Value::as_str)
+                .map(ToString::to_string)
+        })
         .map(|raw| repo_path(root, &raw))
         .unwrap_or_else(|| root.join(DEFAULT_SWARM_STATE_REL))
 }
 
 fn approval_queue_path(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
     lane_utils::parse_flag(argv, "approval-queue-path", false)
-        .or_else(|| payload.get("approval_queue_path").and_then(Value::as_str).map(ToString::to_string))
+        .or_else(|| {
+            payload
+                .get("approval_queue_path")
+                .and_then(Value::as_str)
+                .map(ToString::to_string)
+        })
         .map(|raw| repo_path(root, &raw))
         .unwrap_or_else(|| root.join(DEFAULT_APPROVAL_QUEUE_REL))
 }
 
 fn trace_path(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
     lane_utils::parse_flag(argv, "trace-path", false)
-        .or_else(|| payload.get("trace_path").and_then(Value::as_str).map(ToString::to_string))
+        .or_else(|| {
+            payload
+                .get("trace_path")
+                .and_then(Value::as_str)
+                .map(ToString::to_string)
+        })
         .map(|raw| repo_path(root, &raw))
         .unwrap_or_else(|| root.join(DEFAULT_TRACE_REL))
 }
@@ -111,7 +140,11 @@ fn ensure_state_shape(value: &mut Value) {
     if !value.get("traces").map(Value::is_array).unwrap_or(false) {
         value["traces"] = json!([]);
     }
-    if value.get("schema_version").and_then(Value::as_str).is_none() {
+    if value
+        .get("schema_version")
+        .and_then(Value::as_str)
+        .is_none()
+    {
         value["schema_version"] = json!("crewai_bridge_state_v1");
     }
 }
@@ -134,14 +167,20 @@ fn as_object_mut<'a>(value: &'a mut Value, key: &str) -> &'a mut Map<String, Val
     if !value.get(key).map(Value::is_object).unwrap_or(false) {
         value[key] = json!({});
     }
-    value.get_mut(key).and_then(Value::as_object_mut).expect("object")
+    value
+        .get_mut(key)
+        .and_then(Value::as_object_mut)
+        .expect("object")
 }
 
 fn as_array_mut<'a>(value: &'a mut Value, key: &str) -> &'a mut Vec<Value> {
     if !value.get(key).map(Value::is_array).unwrap_or(false) {
         value[key] = json!([]);
     }
-    value.get_mut(key).and_then(Value::as_array_mut).expect("array")
+    value
+        .get_mut(key)
+        .and_then(Value::as_array_mut)
+        .expect("array")
 }
 
 fn now_millis() -> u128 {
@@ -228,7 +267,8 @@ fn load_review_queue(path: &Path) -> Value {
 
 fn save_review_queue(path: &Path, queue: &Value) -> Result<(), String> {
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(|err| format!("crewai_review_queue_parent_create_failed:{err}"))?;
+        fs::create_dir_all(parent)
+            .map_err(|err| format!("crewai_review_queue_parent_create_failed:{err}"))?;
     }
     let encoded = serde_yaml::to_string(queue)
         .map_err(|err| format!("crewai_review_queue_encode_failed:{err}"))?;
@@ -264,11 +304,18 @@ fn normalize_task(task: &Value, idx: usize) -> Value {
 }
 
 fn select_agent_for_task(agents: &[Value], task: &Value) -> Option<Value> {
-    let role_hint = task.get("role_hint").and_then(Value::as_str).unwrap_or_default();
-    let required_tool = task.get("required_tool").and_then(Value::as_str).unwrap_or_default();
+    let role_hint = task
+        .get("role_hint")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    let required_tool = task
+        .get("required_tool")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
     if !required_tool.is_empty() {
         if let Some(agent) = agents.iter().find(|agent| {
-            agent.get("tools")
+            agent
+                .get("tools")
                 .and_then(Value::as_array)
                 .map(|rows| rows.iter().any(|row| row.as_str() == Some(required_tool)))
                 .unwrap_or(false)
@@ -277,7 +324,10 @@ fn select_agent_for_task(agents: &[Value], task: &Value) -> Option<Value> {
         }
     }
     if !role_hint.is_empty() {
-        if let Some(agent) = agents.iter().find(|agent| agent.get("role").and_then(Value::as_str) == Some(role_hint)) {
+        if let Some(agent) = agents
+            .iter()
+            .find(|agent| agent.get("role").and_then(Value::as_str) == Some(role_hint))
+        {
             return Some(agent.clone());
         }
     }
@@ -292,7 +342,10 @@ fn allowed_route(route: &Value, trigger_event: &str, context: &Map<String, Value
         return false;
     }
     if let Some(condition) = obj.get("condition").and_then(Value::as_object) {
-        let field = condition.get("field").and_then(Value::as_str).unwrap_or_default();
+        let field = condition
+            .get("field")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
         if field.is_empty() {
             return default_route;
         }
@@ -320,7 +373,11 @@ fn top_level_unsupported_keys(obj: &Map<String, Value>) -> Vec<String> {
 }
 
 fn register_crew(state: &mut Value, payload: &Map<String, Value>) -> Result<Value, String> {
-    let agents = payload.get("agents").and_then(Value::as_array).cloned().unwrap_or_default();
+    let agents = payload
+        .get("agents")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
     if agents.is_empty() {
         return Err("crewai_agents_required".to_string());
     }
@@ -334,7 +391,11 @@ fn register_crew(state: &mut Value, payload: &Map<String, Value>) -> Result<Valu
         "goal": clean_text(payload.get("goal").and_then(Value::as_str), 180),
         "registered_at": now_iso(),
     });
-    let crew_id = crew.get("crew_id").and_then(Value::as_str).unwrap().to_string();
+    let crew_id = crew
+        .get("crew_id")
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
     as_object_mut(state, "crews").insert(crew_id, crew.clone());
     Ok(json!({
         "ok": true,
@@ -343,7 +404,11 @@ fn register_crew(state: &mut Value, payload: &Map<String, Value>) -> Result<Valu
     }))
 }
 
-fn run_process(state: &mut Value, swarm_state_path: &Path, payload: &Map<String, Value>) -> Result<Value, String> {
+fn run_process(
+    state: &mut Value,
+    swarm_state_path: &Path,
+    payload: &Map<String, Value>,
+) -> Result<Value, String> {
     let crew_id = clean_token(payload.get("crew_id").and_then(Value::as_str), "");
     if crew_id.is_empty() {
         return Err("crewai_process_crew_id_required".to_string());
@@ -354,14 +419,32 @@ fn run_process(state: &mut Value, swarm_state_path: &Path, payload: &Map<String,
         .and_then(|rows| rows.get(&crew_id))
         .cloned()
         .ok_or_else(|| format!("unknown_crewai_crew:{crew_id}"))?;
-    let tasks = payload.get("tasks").and_then(Value::as_array).cloned().unwrap_or_default();
+    let tasks = payload
+        .get("tasks")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
     if tasks.is_empty() {
         return Err("crewai_process_tasks_required".to_string());
     }
-    let normalized_tasks: Vec<Value> = tasks.iter().enumerate().map(|(idx, row)| normalize_task(row, idx)).collect();
-    let agents = crew.get("agents").and_then(Value::as_array).cloned().unwrap_or_default();
+    let normalized_tasks: Vec<Value> = tasks
+        .iter()
+        .enumerate()
+        .map(|(idx, row)| normalize_task(row, idx))
+        .collect();
+    let agents = crew
+        .get("agents")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
     let profile = clean_token(payload.get("profile").and_then(Value::as_str), "rich");
-    let process_type = clean_token(payload.get("process_type").and_then(Value::as_str).or_else(|| crew.get("process_type").and_then(Value::as_str)), "sequential");
+    let process_type = clean_token(
+        payload
+            .get("process_type")
+            .and_then(Value::as_str)
+            .or_else(|| crew.get("process_type").and_then(Value::as_str)),
+        "sequential",
+    );
     let max_children = match profile.as_str() {
         "tiny-max" => 1usize,
         "pure" => 2usize,
@@ -369,8 +452,14 @@ fn run_process(state: &mut Value, swarm_state_path: &Path, payload: &Map<String,
     };
     let degraded = normalized_tasks.len() > max_children;
     let selected_tasks: Vec<Value> = normalized_tasks.into_iter().take(max_children).collect();
-    let run_id = stable_id("crrun", &json!({"crew_id": crew_id, "process_type": process_type, "tasks": selected_tasks}));
-    let manager_role = crew.get("manager_role").and_then(Value::as_str).unwrap_or("manager");
+    let run_id = stable_id(
+        "crrun",
+        &json!({"crew_id": crew_id, "process_type": process_type, "tasks": selected_tasks}),
+    );
+    let manager_role = crew
+        .get("manager_role")
+        .and_then(Value::as_str)
+        .unwrap_or("manager");
     let manager = agents
         .iter()
         .find(|agent| agent.get("role").and_then(Value::as_str) == Some(manager_role))
@@ -408,7 +497,11 @@ fn run_process(state: &mut Value, swarm_state_path: &Path, payload: &Map<String,
         }),
     );
     for child in &child_sessions {
-        let session_id = child.get("session_id").and_then(Value::as_str).unwrap().to_string();
+        let session_id = child
+            .get("session_id")
+            .and_then(Value::as_str)
+            .unwrap()
+            .to_string();
         sessions.insert(
             session_id.clone(),
             json!({
@@ -436,7 +529,11 @@ fn run_process(state: &mut Value, swarm_state_path: &Path, payload: &Map<String,
         "task_count": selected_tasks.len(),
         "executed_at": now_iso(),
     });
-    let record_id = record.get("run_id").and_then(Value::as_str).unwrap().to_string();
+    let record_id = record
+        .get("run_id")
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
     as_object_mut(state, "process_runs").insert(record_id, record.clone());
     Ok(json!({
         "ok": true,
@@ -457,18 +554,40 @@ fn run_flow(state: &mut Value, payload: &Map<String, Value>) -> Result<Value, St
         .cloned()
         .ok_or_else(|| format!("unknown_crewai_crew:{crew_id}"))?;
     let flow_name = clean_token(payload.get("flow_name").and_then(Value::as_str), "flow");
-    let trigger_event = clean_token(payload.get("trigger_event").and_then(Value::as_str), "start");
-    let routes = payload.get("routes").and_then(Value::as_array).cloned().unwrap_or_default();
+    let trigger_event = clean_token(
+        payload.get("trigger_event").and_then(Value::as_str),
+        "start",
+    );
+    let routes = payload
+        .get("routes")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
     if routes.is_empty() {
         return Err("crewai_flow_routes_required".to_string());
     }
-    let context = payload.get("context").and_then(Value::as_object).cloned().unwrap_or_default();
-    let selected = routes.iter().find(|route| allowed_route(route, &trigger_event, &context)).cloned();
+    let context = payload
+        .get("context")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let selected = routes
+        .iter()
+        .find(|route| allowed_route(route, &trigger_event, &context))
+        .cloned();
     let Some(route) = selected else {
         return Err("crewai_flow_no_matching_route_fail_closed".to_string());
     };
-    let decorators = payload.get("decorators").and_then(Value::as_array).cloned().unwrap_or_default();
-    let listeners = payload.get("listeners").and_then(Value::as_array).cloned().unwrap_or_default();
+    let decorators = payload
+        .get("decorators")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let listeners = payload
+        .get("listeners")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
     let record = json!({
         "flow_run_id": stable_id("crflow", &json!({"crew_id": crew_id, "flow_name": flow_name, "trigger_event": trigger_event})),
         "crew_id": crew_id,
@@ -480,7 +599,11 @@ fn run_flow(state: &mut Value, payload: &Map<String, Value>) -> Result<Value, St
         "context": context,
         "executed_at": now_iso(),
     });
-    let record_id = record.get("flow_run_id").and_then(Value::as_str).unwrap().to_string();
+    let record_id = record
+        .get("flow_run_id")
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
     as_object_mut(state, "flow_runs").insert(record_id, record.clone());
     Ok(json!({
         "ok": true,
@@ -500,7 +623,11 @@ fn memory_bridge(state: &mut Value, payload: &Map<String, Value>) -> Result<Valu
         .and_then(|rows| rows.get(&crew_id))
         .cloned()
         .ok_or_else(|| format!("unknown_crewai_crew:{crew_id}"))?;
-    let memories = payload.get("memories").and_then(Value::as_array).cloned().unwrap_or_default();
+    let memories = payload
+        .get("memories")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
     let normalized: Vec<Value> = memories
         .iter()
         .enumerate()
@@ -518,7 +645,15 @@ fn memory_bridge(state: &mut Value, payload: &Map<String, Value>) -> Result<Valu
     let recall_hits: Vec<Value> = normalized
         .iter()
         .filter(|row| {
-            query.is_empty() || row.get("text").and_then(Value::as_str).map(|text| text.to_ascii_lowercase().contains(&query.to_ascii_lowercase())).unwrap_or(false)
+            query.is_empty()
+                || row
+                    .get("text")
+                    .and_then(Value::as_str)
+                    .map(|text| {
+                        text.to_ascii_lowercase()
+                            .contains(&query.to_ascii_lowercase())
+                    })
+                    .unwrap_or(false)
         })
         .take(5)
         .cloned()
@@ -533,7 +668,11 @@ fn memory_bridge(state: &mut Value, payload: &Map<String, Value>) -> Result<Valu
         "recall_hits": recall_hits,
         "stored_at": now_iso(),
     });
-    let record_id = record.get("memory_run_id").and_then(Value::as_str).unwrap().to_string();
+    let record_id = record
+        .get("memory_run_id")
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
     as_object_mut(state, "memory_records").insert(record_id, record.clone());
     Ok(json!({
         "ok": true,
@@ -543,23 +682,43 @@ fn memory_bridge(state: &mut Value, payload: &Map<String, Value>) -> Result<Valu
 }
 
 fn parse_config_payload(payload: &Map<String, Value>) -> Result<Value, String> {
-    if let Some(raw_yaml) = payload.get("config_yaml").and_then(Value::as_str).or_else(|| payload.get("yaml").and_then(Value::as_str)) {
+    if let Some(raw_yaml) = payload
+        .get("config_yaml")
+        .and_then(Value::as_str)
+        .or_else(|| payload.get("yaml").and_then(Value::as_str))
+    {
         return serde_yaml::from_str::<Value>(raw_yaml)
             .map_err(|err| format!("crewai_config_yaml_parse_failed:{err}"));
     }
-    Ok(payload.get("config_json").cloned().unwrap_or_else(|| json!({})))
+    Ok(payload
+        .get("config_json")
+        .cloned()
+        .unwrap_or_else(|| json!({})))
 }
 
-fn ingest_config(root: &Path, state: &mut Value, payload: &Map<String, Value>) -> Result<Value, String> {
+fn ingest_config(
+    root: &Path,
+    state: &mut Value,
+    payload: &Map<String, Value>,
+) -> Result<Value, String> {
     let config = parse_config_payload(payload)?;
-    let config_obj = config.as_object().cloned().ok_or_else(|| "crewai_config_object_required".to_string())?;
+    let config_obj = config
+        .as_object()
+        .cloned()
+        .ok_or_else(|| "crewai_config_object_required".to_string())?;
     let unsupported_keys = top_level_unsupported_keys(&config_obj);
     if !unsupported_keys.is_empty() {
-        return Err(format!("crewai_config_unsupported_keys_fail_closed:{}", unsupported_keys.join(",")));
+        return Err(format!(
+            "crewai_config_unsupported_keys_fail_closed:{}",
+            unsupported_keys.join(",")
+        ));
     }
     let adapter_path = normalize_bridge_path(
         root,
-        payload.get("bridge_path").and_then(Value::as_str).unwrap_or("adapters/protocol/crewai_tool_bridge.ts"),
+        payload
+            .get("bridge_path")
+            .and_then(Value::as_str)
+            .unwrap_or("adapters/protocol/crewai_tool_bridge.ts"),
     )?;
     let manifest = json!({
         "config_id": stable_id("crcfg", &json!({"config": config, "adapter": adapter_path})),
@@ -578,7 +737,11 @@ fn ingest_config(root: &Path, state: &mut Value, payload: &Map<String, Value>) -
         "config": config,
         "ingested_at": now_iso(),
     });
-    let config_id = manifest.get("config_id").and_then(Value::as_str).unwrap().to_string();
+    let config_id = manifest
+        .get("config_id")
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
     as_object_mut(state, "configs").insert(config_id, manifest.clone());
     Ok(json!({
         "ok": true,
@@ -587,7 +750,12 @@ fn ingest_config(root: &Path, state: &mut Value, payload: &Map<String, Value>) -
     }))
 }
 
-fn route_delegation(root: &Path, state: &mut Value, swarm_state_path: &Path, payload: &Map<String, Value>) -> Result<Value, String> {
+fn route_delegation(
+    root: &Path,
+    state: &mut Value,
+    swarm_state_path: &Path,
+    payload: &Map<String, Value>,
+) -> Result<Value, String> {
     let crew_id = clean_token(payload.get("crew_id").and_then(Value::as_str), "");
     if crew_id.is_empty() {
         return Err("crewai_delegation_crew_id_required".to_string());
@@ -598,21 +766,36 @@ fn route_delegation(root: &Path, state: &mut Value, swarm_state_path: &Path, pay
         .and_then(|rows| rows.get(&crew_id))
         .cloned()
         .ok_or_else(|| format!("unknown_crewai_crew:{crew_id}"))?;
-    let task = normalize_task(&json!({
-        "task_id": payload.get("task_id").cloned().unwrap_or_else(|| json!(null)),
-        "name": payload.get("task_name").cloned().unwrap_or_else(|| json!("delegate")),
-        "description": payload.get("task").cloned().unwrap_or_else(|| json!(null)),
-        "role_hint": payload.get("role_hint").cloned().unwrap_or_else(|| json!(null)),
-        "required_tool": payload.get("required_tool").cloned().unwrap_or_else(|| json!(null)),
-    }), 0);
+    let task = normalize_task(
+        &json!({
+            "task_id": payload.get("task_id").cloned().unwrap_or_else(|| json!(null)),
+            "name": payload.get("task_name").cloned().unwrap_or_else(|| json!("delegate")),
+            "description": payload.get("task").cloned().unwrap_or_else(|| json!(null)),
+            "role_hint": payload.get("role_hint").cloned().unwrap_or_else(|| json!(null)),
+            "required_tool": payload.get("required_tool").cloned().unwrap_or_else(|| json!(null)),
+        }),
+        0,
+    );
     let profile = clean_token(payload.get("profile").and_then(Value::as_str), "rich");
     let adapter_path = normalize_bridge_path(
         root,
-        payload.get("bridge_path").and_then(Value::as_str).unwrap_or("adapters/protocol/crewai_tool_bridge.ts"),
+        payload
+            .get("bridge_path")
+            .and_then(Value::as_str)
+            .unwrap_or("adapters/protocol/crewai_tool_bridge.ts"),
     )?;
-    let agents = crew.get("agents").and_then(Value::as_array).cloned().unwrap_or_default();
-    let selected_agent = select_agent_for_task(&agents, &task).ok_or_else(|| "crewai_no_agent_available".to_string())?;
-    let mut selected_tools = selected_agent.get("tools").and_then(Value::as_array).cloned().unwrap_or_default();
+    let agents = crew
+        .get("agents")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let selected_agent = select_agent_for_task(&agents, &task)
+        .ok_or_else(|| "crewai_no_agent_available".to_string())?;
+    let mut selected_tools = selected_agent
+        .get("tools")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
     let mut degraded = false;
     if profile == "pure" && selected_tools.len() > 2 {
         selected_tools.truncate(2);
@@ -622,7 +805,11 @@ fn route_delegation(root: &Path, state: &mut Value, swarm_state_path: &Path, pay
         if selected_tools.len() > 1 {
             selected_tools.truncate(1);
         }
-        if selected_agent.get("multimodal").and_then(Value::as_bool).unwrap_or(false) {
+        if selected_agent
+            .get("multimodal")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+        {
             degraded = true;
         }
     }
@@ -652,7 +839,11 @@ fn route_delegation(root: &Path, state: &mut Value, swarm_state_path: &Path, pay
         "degraded": degraded,
         "delegated_at": now_iso(),
     });
-    let record_id = record.get("delegation_id").and_then(Value::as_str).unwrap().to_string();
+    let record_id = record
+        .get("delegation_id")
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
     as_object_mut(state, "delegations").insert(record_id, record.clone());
     Ok(json!({
         "ok": true,
@@ -661,7 +852,11 @@ fn route_delegation(root: &Path, state: &mut Value, swarm_state_path: &Path, pay
     }))
 }
 
-fn review_crew(state: &mut Value, approval_queue_path: &Path, payload: &Map<String, Value>) -> Result<Value, String> {
+fn review_crew(
+    state: &mut Value,
+    approval_queue_path: &Path,
+    payload: &Map<String, Value>,
+) -> Result<Value, String> {
     let crew_id = clean_token(payload.get("crew_id").and_then(Value::as_str), "");
     if crew_id.is_empty() {
         return Err("crewai_review_crew_id_required".to_string());
@@ -684,7 +879,11 @@ fn review_crew(state: &mut Value, approval_queue_path: &Path, payload: &Map<Stri
     let mut queue = load_review_queue(approval_queue_path);
     as_array_mut(&mut queue, "entries").push(review.clone());
     save_review_queue(approval_queue_path, &queue)?;
-    let review_id = review.get("review_id").and_then(Value::as_str).unwrap().to_string();
+    let review_id = review
+        .get("review_id")
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
     as_object_mut(state, "reviews").insert(review_id, review.clone());
     Ok(json!({
         "ok": true,
@@ -694,7 +893,12 @@ fn review_crew(state: &mut Value, approval_queue_path: &Path, payload: &Map<Stri
     }))
 }
 
-fn record_amp_trace(root: &Path, state: &mut Value, trace_path: &Path, payload: &Map<String, Value>) -> Result<Value, String> {
+fn record_amp_trace(
+    root: &Path,
+    state: &mut Value,
+    trace_path: &Path,
+    payload: &Map<String, Value>,
+) -> Result<Value, String> {
     let crew_id = clean_token(payload.get("crew_id").and_then(Value::as_str), "");
     if crew_id.is_empty() {
         return Err("crewai_trace_crew_id_required".to_string());
@@ -727,10 +931,23 @@ fn record_amp_trace(root: &Path, state: &mut Value, trace_path: &Path, payload: 
 
 fn benchmark_parity(state: &mut Value, payload: &Map<String, Value>) -> Result<Value, String> {
     let profile = clean_token(payload.get("profile").and_then(Value::as_str), "rich");
-    let metrics = payload.get("metrics").and_then(Value::as_object).cloned().ok_or_else(|| "crewai_benchmark_metrics_required".to_string())?;
-    let cold_start_ms = metrics.get("cold_start_ms").and_then(Value::as_f64).unwrap_or(0.0);
-    let throughput_ops_sec = metrics.get("throughput_ops_sec").and_then(Value::as_f64).unwrap_or(0.0);
-    let memory_mb = metrics.get("memory_mb").and_then(Value::as_f64).unwrap_or(0.0);
+    let metrics = payload
+        .get("metrics")
+        .and_then(Value::as_object)
+        .cloned()
+        .ok_or_else(|| "crewai_benchmark_metrics_required".to_string())?;
+    let cold_start_ms = metrics
+        .get("cold_start_ms")
+        .and_then(Value::as_f64)
+        .unwrap_or(0.0);
+    let throughput_ops_sec = metrics
+        .get("throughput_ops_sec")
+        .and_then(Value::as_f64)
+        .unwrap_or(0.0);
+    let memory_mb = metrics
+        .get("memory_mb")
+        .and_then(Value::as_f64)
+        .unwrap_or(0.0);
     let targets = payload.get("targets").and_then(Value::as_object).cloned().unwrap_or_else(|| {
         match profile.as_str() {
             "tiny-max" => json!({"max_cold_start_ms": 8.0, "min_throughput_ops_sec": 3000.0, "max_memory_mb": 8.0}).as_object().cloned().unwrap(),
@@ -738,9 +955,21 @@ fn benchmark_parity(state: &mut Value, payload: &Map<String, Value>) -> Result<V
             _ => json!({"max_cold_start_ms": 20.0, "min_throughput_ops_sec": 2000.0, "max_memory_mb": 64.0}).as_object().cloned().unwrap(),
         }
     });
-    let parity_ok = cold_start_ms <= targets.get("max_cold_start_ms").and_then(Value::as_f64).unwrap_or(f64::MAX)
-        && throughput_ops_sec >= targets.get("min_throughput_ops_sec").and_then(Value::as_f64).unwrap_or(0.0)
-        && memory_mb <= targets.get("max_memory_mb").and_then(Value::as_f64).unwrap_or(f64::MAX);
+    let parity_ok = cold_start_ms
+        <= targets
+            .get("max_cold_start_ms")
+            .and_then(Value::as_f64)
+            .unwrap_or(f64::MAX)
+        && throughput_ops_sec
+            >= targets
+                .get("min_throughput_ops_sec")
+                .and_then(Value::as_f64)
+                .unwrap_or(0.0)
+        && memory_mb
+            <= targets
+                .get("max_memory_mb")
+                .and_then(Value::as_f64)
+                .unwrap_or(f64::MAX);
     let record = json!({
         "benchmark_id": stable_id("crbench", &json!({"profile": profile, "metrics": metrics})),
         "profile": profile,
@@ -749,7 +978,11 @@ fn benchmark_parity(state: &mut Value, payload: &Map<String, Value>) -> Result<V
         "parity_ok": parity_ok,
         "recorded_at": now_iso(),
     });
-    let record_id = record.get("benchmark_id").and_then(Value::as_str).unwrap().to_string();
+    let record_id = record
+        .get("benchmark_id")
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
     as_object_mut(state, "benchmarks").insert(record_id, record.clone());
     Ok(json!({
         "ok": true,
@@ -758,22 +991,42 @@ fn benchmark_parity(state: &mut Value, payload: &Map<String, Value>) -> Result<V
     }))
 }
 
-fn route_model(root: &Path, state: &mut Value, payload: &Map<String, Value>) -> Result<Value, String> {
+fn route_model(
+    root: &Path,
+    state: &mut Value,
+    payload: &Map<String, Value>,
+) -> Result<Value, String> {
     let profile = clean_token(payload.get("profile").and_then(Value::as_str), "rich");
     let modality = clean_token(payload.get("modality").and_then(Value::as_str), "text");
     let adapter_path = normalize_bridge_path(
         root,
-        payload.get("bridge_path").and_then(Value::as_str).unwrap_or("adapters/protocol/crewai_tool_bridge.ts"),
+        payload
+            .get("bridge_path")
+            .and_then(Value::as_str)
+            .unwrap_or("adapters/protocol/crewai_tool_bridge.ts"),
     )?;
-    let local_models = payload.get("local_models").and_then(Value::as_array).cloned().unwrap_or_default();
-    let providers = payload.get("providers").and_then(Value::as_array).cloned().unwrap_or_default();
+    let local_models = payload
+        .get("local_models")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let providers = payload
+        .get("providers")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
     let supported = match profile.as_str() {
         "tiny-max" => matches!(modality.as_str(), "text"),
         "pure" => matches!(modality.as_str(), "text" | "image"),
         _ => true,
     };
     let degraded = !supported;
-    let selected_route = if payload.get("prefer_local").and_then(Value::as_bool).unwrap_or(true) && !local_models.is_empty() {
+    let selected_route = if payload
+        .get("prefer_local")
+        .and_then(Value::as_bool)
+        .unwrap_or(true)
+        && !local_models.is_empty()
+    {
         json!({"route_kind": "local_model", "target": local_models.first().cloned().unwrap_or_else(|| json!(null))})
     } else if !providers.is_empty() {
         json!({"route_kind": "provider", "target": providers.first().cloned().unwrap_or_else(|| json!(null))})
@@ -791,7 +1044,11 @@ fn route_model(root: &Path, state: &mut Value, payload: &Map<String, Value>) -> 
         "degraded": degraded,
         "routed_at": now_iso(),
     });
-    let record_id = record.get("route_id").and_then(Value::as_str).unwrap().to_string();
+    let record_id = record
+        .get("route_id")
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
     as_object_mut(state, "model_routes").insert(record_id, record.clone());
     Ok(json!({
         "ok": true,
@@ -862,7 +1119,10 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             return 0;
         }
         _ => {
-            print_json_line(&cli_error("crewai_bridge_error", &format!("unknown_crewai_bridge_command:{command}")));
+            print_json_line(&cli_error(
+                "crewai_bridge_error",
+                &format!("unknown_crewai_bridge_command:{command}"),
+            ));
             return 1;
         }
     };

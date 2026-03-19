@@ -33,7 +33,10 @@ fn history_path(root: &Path) -> PathBuf {
 
 fn score_keywords(haystack: &str, needles: &[&str]) -> f64 {
     let lower = haystack.to_ascii_lowercase();
-    let hits = needles.iter().filter(|needle| lower.contains(**needle)).count();
+    let hits = needles
+        .iter()
+        .filter(|needle| lower.contains(**needle))
+        .count();
     if needles.is_empty() {
         0.0
     } else {
@@ -41,15 +44,108 @@ fn score_keywords(haystack: &str, needles: &[&str]) -> f64 {
     }
 }
 
-fn classify_profiles(text: &str, anomaly_score: f64, deviation: f64, sensitivity: f64) -> Vec<Value> {
+fn classify_profiles(
+    text: &str,
+    anomaly_score: f64,
+    deviation: f64,
+    sensitivity: f64,
+) -> Vec<Value> {
     let mut scores = BTreeMap::<&str, f64>::new();
-    scores.insert("probe", score_keywords(text, &["scan", "probe", "enumerate", "discover", "map endpoint", "list tools"]));
-    scores.insert("exfil", score_keywords(text, &["exfil", "dump secrets", "export data", "send outside", "leak", "upload archive"]));
-    scores.insert("escalation", score_keywords(text, &["sudo", "root", "admin", "elevate", "bypass approval", "privilege escalation"]));
-    scores.insert("denial", score_keywords(text, &["saturate", "fork bomb", "overwhelm", "deny service", "wipe", "kill all"]));
-    scores.insert("impersonation", score_keywords(text, &["impersonate", "spoof", "pretend to be", "session hijack", "steal token"]));
-    scores.insert("jailbreak", score_keywords(text, &["ignore previous instructions", "system override", "disable safety", "unrestricted", "developer mode"]));
-    scores.insert("drift", score_keywords(text, &["drift", "handoff storm", "identity mismatch", "policy violation", "off objective"]));
+    scores.insert(
+        "probe",
+        score_keywords(
+            text,
+            &[
+                "scan",
+                "probe",
+                "enumerate",
+                "discover",
+                "map endpoint",
+                "list tools",
+            ],
+        ),
+    );
+    scores.insert(
+        "exfil",
+        score_keywords(
+            text,
+            &[
+                "exfil",
+                "dump secrets",
+                "export data",
+                "send outside",
+                "leak",
+                "upload archive",
+            ],
+        ),
+    );
+    scores.insert(
+        "escalation",
+        score_keywords(
+            text,
+            &[
+                "sudo",
+                "root",
+                "admin",
+                "elevate",
+                "bypass approval",
+                "privilege escalation",
+            ],
+        ),
+    );
+    scores.insert(
+        "denial",
+        score_keywords(
+            text,
+            &[
+                "saturate",
+                "fork bomb",
+                "overwhelm",
+                "deny service",
+                "wipe",
+                "kill all",
+            ],
+        ),
+    );
+    scores.insert(
+        "impersonation",
+        score_keywords(
+            text,
+            &[
+                "impersonate",
+                "spoof",
+                "pretend to be",
+                "session hijack",
+                "steal token",
+            ],
+        ),
+    );
+    scores.insert(
+        "jailbreak",
+        score_keywords(
+            text,
+            &[
+                "ignore previous instructions",
+                "system override",
+                "disable safety",
+                "unrestricted",
+                "developer mode",
+            ],
+        ),
+    );
+    scores.insert(
+        "drift",
+        score_keywords(
+            text,
+            &[
+                "drift",
+                "handoff storm",
+                "identity mismatch",
+                "policy violation",
+                "off objective",
+            ],
+        ),
+    );
 
     let mut rows = PROFILE_IDS
         .iter()
@@ -73,7 +169,12 @@ fn classify_profiles(text: &str, anomaly_score: f64, deviation: f64, sensitivity
     rows
 }
 
-fn high_threat(primary_profile: &str, primary_score: f64, anomaly_score: f64, deviation: f64) -> bool {
+fn high_threat(
+    primary_profile: &str,
+    primary_score: f64,
+    anomaly_score: f64,
+    deviation: f64,
+) -> bool {
     if primary_score >= 0.82 {
         return true;
     }
@@ -92,7 +193,10 @@ fn append_ledger_event(root: &Path, action: &str, details: &Value) -> Value {
         "--actor=psycheforge".to_string(),
         format!("--action={action}"),
         "--source=psycheforge".to_string(),
-        format!("--details-json={}", serde_json::to_string(details).unwrap_or_else(|_| "{}".to_string())),
+        format!(
+            "--details-json={}",
+            serde_json::to_string(details).unwrap_or_else(|_| "{}".to_string())
+        ),
     ];
     let (payload, _) = infring_layer1_security::run_black_box_ledger(root, &argv);
     payload
@@ -103,8 +207,16 @@ pub fn run(root: &Path, argv: &[String]) -> (Value, i32) {
         .first()
         .map(|value| value.trim().to_ascii_lowercase())
         .unwrap_or_else(|| "status".to_string());
-    let strict = lane_utils::parse_bool(lane_utils::parse_flag(argv, "strict", false).as_deref(), true);
-    let sensitivity = lane_utils::parse_f64_clamped(lane_utils::parse_flag(argv, "sensitivity", false).as_deref(), 0.5, 0.0, 1.0);
+    let strict = lane_utils::parse_bool(
+        lane_utils::parse_flag(argv, "strict", false).as_deref(),
+        true,
+    );
+    let sensitivity = lane_utils::parse_f64_clamped(
+        lane_utils::parse_flag(argv, "sensitivity", false).as_deref(),
+        0.5,
+        0.0,
+        1.0,
+    );
 
     let mut payload = match command.as_str() {
         "status" => {
@@ -123,16 +235,31 @@ pub fn run(root: &Path, argv: &[String]) -> (Value, i32) {
             })
         }
         "profile" => {
-            let actor = lane_utils::parse_flag(argv, "actor", false).unwrap_or_else(|| "unknown_actor".to_string());
+            let actor = lane_utils::parse_flag(argv, "actor", false)
+                .unwrap_or_else(|| "unknown_actor".to_string());
             let session_id = lane_utils::parse_flag(argv, "session-id", false);
             let prompt = lane_utils::parse_flag(argv, "prompt", false).unwrap_or_default();
             let tool_input = lane_utils::parse_flag(argv, "tool-input", false).unwrap_or_default();
-            let handoff_pattern = lane_utils::parse_flag(argv, "handoff-pattern", false).unwrap_or_default();
-            let anomaly_score = lane_utils::parse_f64_clamped(lane_utils::parse_flag(argv, "anomaly-score", false).as_deref(), 0.0, 0.0, 1.0);
-            let deviation = lane_utils::parse_f64_clamped(lane_utils::parse_flag(argv, "statistical-deviation", false).as_deref(), 0.0, 0.0, 1.0);
+            let handoff_pattern =
+                lane_utils::parse_flag(argv, "handoff-pattern", false).unwrap_or_default();
+            let anomaly_score = lane_utils::parse_f64_clamped(
+                lane_utils::parse_flag(argv, "anomaly-score", false).as_deref(),
+                0.0,
+                0.0,
+                1.0,
+            );
+            let deviation = lane_utils::parse_f64_clamped(
+                lane_utils::parse_flag(argv, "statistical-deviation", false).as_deref(),
+                0.0,
+                0.0,
+                1.0,
+            );
             let text = format!("{}\n{}\n{}", prompt, tool_input, handoff_pattern);
             let profiles = classify_profiles(&text, anomaly_score, deviation, sensitivity);
-            let primary = profiles.first().cloned().unwrap_or_else(|| json!({"profile":"probe","score":0.0}));
+            let primary = profiles
+                .first()
+                .cloned()
+                .unwrap_or_else(|| json!({"profile":"probe","score":0.0}));
             let primary_score = primary.get("score").and_then(Value::as_f64).unwrap_or(0.0);
             let primary_profile = primary
                 .get("profile")
@@ -153,7 +280,9 @@ pub fn run(root: &Path, argv: &[String]) -> (Value, i32) {
                         format!("--anomaly-type={primary_profile}"),
                         format!("--reason=psycheforge:{primary_profile}"),
                     ];
-                    if let Some(state_path) = lane_utils::parse_flag(argv, "swarm-state-path", false) {
+                    if let Some(state_path) =
+                        lane_utils::parse_flag(argv, "swarm-state-path", false)
+                    {
                         thorn_args.push(format!("--state-path={state_path}"));
                     }
                     let (result, _) = swarm_runtime::run_thorn_contract(root, &thorn_args);

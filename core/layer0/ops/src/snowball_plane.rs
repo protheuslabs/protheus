@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Layer ownership: core/layer0/ops::snowball_plane (authoritative)
 
+use crate::directive_kernel;
 use crate::v8_kernel::{
     append_jsonl, attach_conduit, build_conduit_enforcement, conduit_bypass_requested,
     load_json_or, parse_bool, parse_u64, read_json, scoped_state_root, sha256_hex_str, write_json,
     write_receipt,
 };
 use crate::{clean, parse_args};
-use crate::directive_kernel;
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, HashSet};
 use std::fs;
@@ -35,9 +35,7 @@ fn usage() {
     println!(
         "  protheus-ops snowball-plane fitness-review [--cycle-id=<id>] [--benchmark-report=<path>] [--assimilations-json=<json>] [--reliability-before=<f>] [--reliability-after=<f>] [--strict=1|0]"
     );
-    println!(
-        "  protheus-ops snowball-plane archive-discarded [--cycle-id=<id>] [--strict=1|0]"
-    );
+    println!("  protheus-ops snowball-plane archive-discarded [--cycle-id=<id>] [--strict=1|0]");
     println!(
         "  protheus-ops snowball-plane publish-benchmarks [--cycle-id=<id>] [--benchmark-report=<path>] [--readme-path=<path>] [--strict=1|0]"
     );
@@ -434,10 +432,16 @@ fn score_candidate(gates: &Value, bench_delta: &Value) -> f64 {
         .get("improved_metric_count")
         .and_then(Value::as_u64)
         .unwrap_or(0) as f64;
-    let gate_score = ["metrics", "tiny_pure", "rsi_organism", "tiny_hardware", "reliability"]
-        .iter()
-        .filter(|key| gates.get(**key).and_then(Value::as_bool) == Some(true))
-        .count() as f64;
+    let gate_score = [
+        "metrics",
+        "tiny_pure",
+        "rsi_organism",
+        "tiny_hardware",
+        "reliability",
+    ]
+    .iter()
+    .filter(|key| gates.get(**key).and_then(Value::as_bool) == Some(true))
+    .count() as f64;
     ((gate_score / 5.0) * 70.0) + improved.min(10.0) * 3.0
 }
 
@@ -519,10 +523,10 @@ fn build_fitness_review(
             "tiny_hardware": hardware_gate,
             "reliability": reliability_gate_pass
         });
-        let all_pass = gates.as_object().map(|obj| {
-            obj.values()
-                .all(|value| value.as_bool().unwrap_or(false))
-        }).unwrap_or(false);
+        let all_pass = gates
+            .as_object()
+            .map(|obj| obj.values().all(|value| value.as_bool().unwrap_or(false)))
+            .unwrap_or(false);
         let demote = !all_pass
             && !metric_gate
             && (tiny_gate || intelligence_gate || hardware_gate)
@@ -1731,7 +1735,8 @@ fn run_publish_benchmarks(root: &Path, parsed: &crate::ParsedArgs, strict: bool)
     });
     let _ = write_json(&publication_path, &summary);
 
-    let mut next_cycle = cycle.unwrap_or_else(|| json!({"cycle_id": cycle_id, "stage":"published"}));
+    let mut next_cycle =
+        cycle.unwrap_or_else(|| json!({"cycle_id": cycle_id, "stage":"published"}));
     next_cycle["benchmark_publication"] = json!({
         "path": publication_path.display().to_string(),
         "readme_synced": synced
@@ -1788,7 +1793,8 @@ fn run_promote(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
         });
     }
     let review = load_review(root, &cycle_id).unwrap_or_else(|| json!({}));
-    let publication = read_json(&benchmark_publication_path(root, &cycle_id)).unwrap_or_else(|| json!({}));
+    let publication =
+        read_json(&benchmark_publication_path(root, &cycle_id)).unwrap_or_else(|| json!({}));
     let regression_pass = cycle
         .as_ref()
         .and_then(|v| v.pointer("/melt_refine/pass"))
@@ -1854,7 +1860,11 @@ fn run_promote(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
         "path": promotion_out.display().to_string(),
         "promoted": promoted
     });
-    next_cycle["stage"] = Value::String(if promoted { "promoted".to_string() } else { "rollback".to_string() });
+    next_cycle["stage"] = Value::String(if promoted {
+        "promoted".to_string()
+    } else {
+        "rollback".to_string()
+    });
     next_cycle["updated_at"] = Value::String(crate::now_iso());
     cycles_map.insert(cycle_id.clone(), next_cycle.clone());
     cycles["cycles"] = Value::Object(cycles_map);
@@ -1899,12 +1909,7 @@ fn run_prime_update(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Va
         .unwrap_or_default();
     let cycle = load_cycle_value(&cycles, &cycle_id);
     let promotion = read_json(&promotion_path(root, &cycle_id)).unwrap_or_else(|| json!({}));
-    if strict
-        && promotion
-            .get("promoted")
-            .and_then(Value::as_bool)
-            != Some(true)
-    {
+    if strict && promotion.get("promoted").and_then(Value::as_bool) != Some(true) {
         return json!({
             "ok": false,
             "strict": strict,

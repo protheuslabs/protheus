@@ -51,8 +51,14 @@ fn phone_001_runtime_bridge_schedules_sensors_interaction_background_and_profile
         0
     );
     let battery_receipt = latest_receipt(&state_path);
-    assert_eq!(battery_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V10-PHONE-001.1"));
-    assert_eq!(battery_receipt["payload"]["battery_event"]["selected_profile"], json!("tiny-max"));
+    assert_eq!(
+        battery_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V10-PHONE-001.1")
+    );
+    assert_eq!(
+        battery_receipt["payload"]["battery_event"]["selected_profile"],
+        json!("tiny-max")
+    );
 
     assert_eq!(
         run_bridge(
@@ -78,8 +84,16 @@ fn phone_001_runtime_bridge_schedules_sensors_interaction_background_and_profile
         0
     );
     let sensor_receipt = latest_receipt(&state_path);
-    assert_eq!(sensor_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V10-PHONE-001.2"));
-    assert_eq!(sensor_receipt["payload"]["sensor_event"]["accepted"].as_array().map(|v| v.len()), Some(1));
+    assert_eq!(
+        sensor_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V10-PHONE-001.2")
+    );
+    assert_eq!(
+        sensor_receipt["payload"]["sensor_event"]["accepted"]
+            .as_array()
+            .map(|v| v.len()),
+        Some(1)
+    );
     assert!(sensor_state_path.exists());
 
     assert_eq!(
@@ -103,8 +117,14 @@ fn phone_001_runtime_bridge_schedules_sensors_interaction_background_and_profile
         0
     );
     let interaction_receipt = latest_receipt(&state_path);
-    assert_eq!(interaction_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V10-PHONE-001.3"));
-    assert_eq!(interaction_receipt["payload"]["interaction_mode"]["transport"], json!("text-fallback"));
+    assert_eq!(
+        interaction_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V10-PHONE-001.3")
+    );
+    assert_eq!(
+        interaction_receipt["payload"]["interaction_mode"]["transport"],
+        json!("text-fallback")
+    );
 
     assert_eq!(
         run_bridge(
@@ -123,13 +143,19 @@ fn phone_001_runtime_bridge_schedules_sensors_interaction_background_and_profile
                 ),
                 format!("--state-path={}", state_path.display()),
                 format!("--history-path={}", history_path.display()),
-                format!("--background-state-path={}", background_state_path.display()),
+                format!(
+                    "--background-state-path={}",
+                    background_state_path.display()
+                ),
             ],
         ),
         0
     );
     let background_receipt = latest_receipt(&state_path);
-    assert_eq!(background_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V10-PHONE-001.4"));
+    assert_eq!(
+        background_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V10-PHONE-001.4")
+    );
     assert!(background_state_path.exists());
 
     assert_eq!(
@@ -154,8 +180,14 @@ fn phone_001_runtime_bridge_schedules_sensors_interaction_background_and_profile
         0
     );
     let profile_receipt = latest_receipt(&state_path);
-    assert_eq!(profile_receipt["payload"]["claim_evidence"][0]["id"].as_str(), Some("V10-PHONE-001.5"));
-    assert_eq!(profile_receipt["payload"]["phone_profile"]["selected_profile"], json!("tiny-max"));
+    assert_eq!(
+        profile_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
+        Some("V10-PHONE-001.5")
+    );
+    assert_eq!(
+        profile_receipt["payload"]["phone_profile"]["selected_profile"],
+        json!("tiny-max")
+    );
 
     assert_eq!(
         run_bridge(

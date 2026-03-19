@@ -48,7 +48,10 @@ fn runtime_efficiency_core_lazy_path_stays_receipted_and_live() {
         "--strict=0".to_string(),
     ]);
     let out = run_runtime_efficiency_floor(root.path(), &parsed).expect("runtime floor run");
-    assert_eq!(out.exit_code, 0, "runtime floor should run in non-strict mode");
+    assert_eq!(
+        out.exit_code, 0,
+        "runtime floor should run in non-strict mode"
+    );
     assert_eq!(
         out.json
             .pointer("/cold_start/engine")
@@ -64,4 +67,3 @@ fn runtime_efficiency_core_lazy_path_stays_receipted_and_live() {
         "expected process idle RSS mode"
     );
 }
-

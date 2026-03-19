@@ -24,4 +24,3 @@ pub fn run(root: &Path, parsed: &ParsedArgs, strict: bool) -> Value {
     });
     out
 }
-

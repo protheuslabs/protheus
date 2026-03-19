@@ -123,7 +123,12 @@ fn workflow_009_indexes_agents_ingestion_memory_routing_traces_and_connectors_em
         workflow_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
         Some("V6-WORKFLOW-009.2")
     );
-    assert_eq!(workflow_receipt["payload"]["workflow"]["handoffs"].as_array().map(|rows| rows.len()), Some(2));
+    assert_eq!(
+        workflow_receipt["payload"]["workflow"]["handoffs"]
+            .as_array()
+            .map(|rows| rows.len()),
+        Some(2)
+    );
 
     let ingestion_payload = json!({
         "loader_name": "llamaindex-pdf-loader",
@@ -145,7 +150,10 @@ fn workflow_009_indexes_agents_ingestion_memory_routing_traces_and_connectors_em
         0
     );
     let ingestion_receipt = latest_receipt(&state_path);
-    assert_eq!(ingestion_receipt["payload"]["ingestion"]["degraded"].as_bool(), Some(true));
+    assert_eq!(
+        ingestion_receipt["payload"]["ingestion"]["degraded"].as_bool(),
+        Some(true)
+    );
 
     let evaluation_payload = json!({
         "memory_key": "incident-memory",
@@ -169,7 +177,10 @@ fn workflow_009_indexes_agents_ingestion_memory_routing_traces_and_connectors_em
         0
     );
     let eval_receipt = latest_receipt(&state_path);
-    assert_eq!(eval_receipt["payload"]["evaluation"]["recall"].as_f64(), Some(0.5));
+    assert_eq!(
+        eval_receipt["payload"]["evaluation"]["recall"].as_f64(),
+        Some(0.5)
+    );
 
     let conditional_payload = json!({
         "name": "llamaindex-router",
@@ -193,7 +204,10 @@ fn workflow_009_indexes_agents_ingestion_memory_routing_traces_and_connectors_em
         0
     );
     let conditional_receipt = latest_receipt(&state_path);
-    assert_eq!(conditional_receipt["payload"]["workflow"]["visited"][0]["matched"].as_bool(), Some(true));
+    assert_eq!(
+        conditional_receipt["payload"]["workflow"]["visited"][0]["matched"].as_bool(),
+        Some(true)
+    );
 
     let trace_payload = json!({
         "trace_id": "llx-trace-1",
@@ -214,7 +228,10 @@ fn workflow_009_indexes_agents_ingestion_memory_routing_traces_and_connectors_em
         0
     );
     let trace_receipt = latest_receipt(&state_path);
-    assert_eq!(trace_receipt["payload"]["trace"]["trace_id"].as_str(), Some("llx-trace-1"));
+    assert_eq!(
+        trace_receipt["payload"]["trace"]["trace_id"].as_str(),
+        Some("llx-trace-1")
+    );
 
     let connector_payload = json!({
         "name": "llamaindex-mcp",
@@ -282,10 +299,16 @@ fn workflow_009_indexes_agents_ingestion_memory_routing_traces_and_connectors_em
         latest_receipt(&state_path)
     };
     assert_eq!(status_receipt["payload"]["indexes"].as_u64(), Some(1));
-    assert_eq!(status_receipt["payload"]["agent_workflows"].as_u64(), Some(1));
+    assert_eq!(
+        status_receipt["payload"]["agent_workflows"].as_u64(),
+        Some(1)
+    );
     assert_eq!(status_receipt["payload"]["ingestions"].as_u64(), Some(1));
     assert_eq!(status_receipt["payload"]["evaluations"].as_u64(), Some(1));
-    assert_eq!(status_receipt["payload"]["conditional_workflows"].as_u64(), Some(1));
+    assert_eq!(
+        status_receipt["payload"]["conditional_workflows"].as_u64(),
+        Some(1)
+    );
     assert_eq!(status_receipt["payload"]["traces"].as_u64(), Some(1));
     assert_eq!(status_receipt["payload"]["connectors"].as_u64(), Some(1));
 }

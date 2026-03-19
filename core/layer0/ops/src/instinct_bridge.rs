@@ -28,15 +28,36 @@ fn payload_json(argv: &[String]) -> Result<Value, String> {
 }
 
 fn state_path(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
-    path_flag(root, argv, payload, "state-path", "state_path", DEFAULT_STATE_REL)
+    path_flag(
+        root,
+        argv,
+        payload,
+        "state-path",
+        "state_path",
+        DEFAULT_STATE_REL,
+    )
 }
 
 fn history_path(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
-    path_flag(root, argv, payload, "history-path", "history_path", DEFAULT_HISTORY_REL)
+    path_flag(
+        root,
+        argv,
+        payload,
+        "history-path",
+        "history_path",
+        DEFAULT_HISTORY_REL,
+    )
 }
 
 fn lineage_path(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
-    path_flag(root, argv, payload, "lineage-path", "lineage_path", DEFAULT_LINEAGE_REL)
+    path_flag(
+        root,
+        argv,
+        payload,
+        "lineage-path",
+        "lineage_path",
+        DEFAULT_LINEAGE_REL,
+    )
 }
 
 fn default_state() -> Value {
@@ -60,10 +81,18 @@ fn ensure_state_shape(value: &mut Value) {
             value[key] = json!({});
         }
     }
-    if !value.get("self_model").map(Value::is_object).unwrap_or(false) {
+    if !value
+        .get("self_model")
+        .map(Value::is_object)
+        .unwrap_or(false)
+    {
         value["self_model"] = json!({});
     }
-    if value.get("schema_version").and_then(Value::as_str).is_none() {
+    if value
+        .get("schema_version")
+        .and_then(Value::as_str)
+        .is_none()
+    {
         value["schema_version"] = json!("instinct_bridge_state_v1");
     }
 }
@@ -122,7 +151,12 @@ fn stable_id(prefix: &str, basis: &Value) -> String {
     format!("{prefix}_{}_{}", to_base36(now_millis()), &digest[..12])
 }
 
-fn preferred_profiles(memory_mb: u64, cpu_cores: u64, battery_pct: u64, platform: &str) -> Vec<String> {
+fn preferred_profiles(
+    memory_mb: u64,
+    cpu_cores: u64,
+    battery_pct: u64,
+    platform: &str,
+) -> Vec<String> {
     let mut profiles = BTreeSet::new();
     profiles.insert("tiny-max".to_string());
     profiles.insert("pure".to_string());
@@ -207,7 +241,10 @@ fn cold_start_model(state: &mut Value, payload: &Map<String, Value>) -> Result<V
 }
 
 fn activate(state: &mut Value, payload: &Map<String, Value>) -> Result<Value, String> {
-    let self_model = state.get("self_model").cloned().unwrap_or_else(|| json!({}));
+    let self_model = state
+        .get("self_model")
+        .cloned()
+        .unwrap_or_else(|| json!({}));
     if !self_model.is_object() || self_model.as_object().map(|m| m.is_empty()).unwrap_or(true) {
         return Err("instinct_bridge_self_model_missing".to_string());
     }
@@ -224,9 +261,12 @@ fn activate(state: &mut Value, payload: &Map<String, Value>) -> Result<Value, St
     let battery_pct = parse_u64(payload.get("battery_pct"), fallback_battery_pct, 0, 100);
     let low_power = parse_bool(payload.get("low_power"), battery_pct <= 25);
     let network_available = parse_bool(payload.get("network_available"), true);
-    let want_swarm = requested.iter().any(|row| row == "swarm") || parse_bool(payload.get("want_swarm"), true);
-    let want_provenance = requested.iter().any(|row| row == "provenance") || parse_bool(payload.get("want_provenance"), true);
-    let want_memory = requested.iter().any(|row| row == "memory") || parse_bool(payload.get("want_memory"), true);
+    let want_swarm =
+        requested.iter().any(|row| row == "swarm") || parse_bool(payload.get("want_swarm"), true);
+    let want_provenance = requested.iter().any(|row| row == "provenance")
+        || parse_bool(payload.get("want_provenance"), true);
+    let want_memory =
+        requested.iter().any(|row| row == "memory") || parse_bool(payload.get("want_memory"), true);
 
     let selected_profile = if low_power || battery_pct <= 15 {
         "tiny-max".to_string()
@@ -235,7 +275,10 @@ fn activate(state: &mut Value, payload: &Map<String, Value>) -> Result<Value, St
     } else if supported_profiles.iter().any(|row| row == "pure") {
         "pure".to_string()
     } else {
-        supported_profiles.first().cloned().unwrap_or_else(|| "pure".to_string())
+        supported_profiles
+            .first()
+            .cloned()
+            .unwrap_or_else(|| "pure".to_string())
     };
 
     let mut activated = vec![format!("profile:{selected_profile}")];
@@ -248,10 +291,15 @@ fn activate(state: &mut Value, payload: &Map<String, Value>) -> Result<Value, St
         }
     }
     if want_provenance {
-        if adapters.iter().any(|row| row.contains("provenance") || row.contains("receipt")) {
+        if adapters
+            .iter()
+            .any(|row| row.contains("provenance") || row.contains("receipt"))
+        {
             activated.push("provenance".to_string());
         } else {
-            rejected.push(json!({"capability": "provenance", "reason_code": "provenance_adapter_missing"}));
+            rejected.push(
+                json!({"capability": "provenance", "reason_code": "provenance_adapter_missing"}),
+            );
         }
     }
     if want_swarm {
@@ -290,11 +338,21 @@ fn activate(state: &mut Value, payload: &Map<String, Value>) -> Result<Value, St
 }
 
 fn f64_from_value(value: &Value) -> Option<f64> {
-    value.as_f64().or_else(|| value.as_i64().map(|v| v as f64)).or_else(|| value.as_u64().map(|v| v as f64))
+    value
+        .as_f64()
+        .or_else(|| value.as_i64().map(|v| v as f64))
+        .or_else(|| value.as_u64().map(|v| v as f64))
 }
 
-fn refine(state: &mut Value, lineage_path: &Path, payload: &Map<String, Value>) -> Result<Value, String> {
-    let mut self_model = state.get("self_model").cloned().unwrap_or_else(|| json!({}));
+fn refine(
+    state: &mut Value,
+    lineage_path: &Path,
+    payload: &Map<String, Value>,
+) -> Result<Value, String> {
+    let mut self_model = state
+        .get("self_model")
+        .cloned()
+        .unwrap_or_else(|| json!({}));
     if !self_model.is_object() || self_model.as_object().map(|m| m.is_empty()).unwrap_or(true) {
         return Err("instinct_bridge_self_model_missing".to_string());
     }
@@ -333,7 +391,13 @@ fn refine(state: &mut Value, lineage_path: &Path, payload: &Map<String, Value>) 
         let success = parse_bool(row.get("success"), true);
         let latency_ms = parse_u64(row.get("latency_ms"), 0, 0, 60_000);
         let base = confidence_map.get(&key).copied().unwrap_or(0.5);
-        let latency_delta = if latency_ms > 0 && latency_ms > 1200 { -0.03 } else if latency_ms > 0 && latency_ms < 300 { 0.02 } else { 0.0 };
+        let latency_delta = if latency_ms > 0 && latency_ms > 1200 {
+            -0.03
+        } else if latency_ms > 0 && latency_ms < 300 {
+            0.02
+        } else {
+            0.0
+        };
         let delta = if success { 0.05 } else { -0.08 } + latency_delta;
         let updated = (base + delta).clamp(0.0, 1.0);
         confidence_map.insert(key.clone(), updated);

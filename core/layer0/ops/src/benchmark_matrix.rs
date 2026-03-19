@@ -465,13 +465,9 @@ fn measure_pure_workspace_profile(
     idle_probe_args: &[&str],
     tasks_per_sec: f64,
 ) -> Result<Map<String, Value>, String> {
-    let (cold_start_p50_ms, cold_start_p95_ms, cold_start_p99_ms) = cold_start_quantiles
-        .unwrap_or(sample_command_quantiles_ms(
-            probe_bin,
-            cold_start_args,
-            2,
-            9,
-        )?);
+    let (cold_start_p50_ms, cold_start_p95_ms, cold_start_p99_ms) = cold_start_quantiles.unwrap_or(
+        sample_command_quantiles_ms(probe_bin, cold_start_args, 2, 9)?,
+    );
     let (idle_rss_p50_mb, idle_rss_p95_mb, idle_rss_p99_mb) =
         sample_child_rss_quantiles_mb(probe_bin, idle_probe_args, 1, 5)?;
     let mut install_size_mb = path_size_mb(root, size_bin);
@@ -619,11 +615,7 @@ fn live_tasks_per_sec(sample_ms: u64) -> f64 {
     }
 }
 
-fn stabilized_tasks_per_sec_with<F>(
-    rounds: usize,
-    warmup_rounds: usize,
-    mut sample: F,
-) -> f64
+fn stabilized_tasks_per_sec_with<F>(rounds: usize, warmup_rounds: usize, mut sample: F) -> f64
 where
     F: FnMut() -> f64,
 {

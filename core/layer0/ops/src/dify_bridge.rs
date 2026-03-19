@@ -24,7 +24,9 @@ fn usage() {
     println!("  protheus-ops dify-bridge sync-knowledge-base [--payload-base64=<json>] [--state-path=<path>]");
     println!("  protheus-ops dify-bridge register-agent-app [--payload-base64=<json>] [--state-path=<path>]");
     println!("  protheus-ops dify-bridge publish-dashboard [--payload-base64=<json>] [--state-path=<path>] [--dashboard-dir=<path>]");
-    println!("  protheus-ops dify-bridge route-provider [--payload-base64=<json>] [--state-path=<path>]");
+    println!(
+        "  protheus-ops dify-bridge route-provider [--payload-base64=<json>] [--state-path=<path>]"
+    );
     println!("  protheus-ops dify-bridge run-conditional-flow [--payload-base64=<json>] [--state-path=<path>] [--swarm-state-path=<path>]");
     println!("  protheus-ops dify-bridge record-audit-trace [--payload-base64=<json>] [--state-path=<path>] [--trace-path=<path>]");
 }
@@ -35,35 +37,60 @@ fn payload_json(argv: &[String]) -> Result<Value, String> {
 
 fn state_path(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
     lane_utils::parse_flag(argv, "state-path", false)
-        .or_else(|| payload.get("state_path").and_then(Value::as_str).map(ToString::to_string))
+        .or_else(|| {
+            payload
+                .get("state_path")
+                .and_then(Value::as_str)
+                .map(ToString::to_string)
+        })
         .map(|raw| repo_path(root, &raw))
         .unwrap_or_else(|| root.join(DEFAULT_STATE_REL))
 }
 
 fn history_path(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
     lane_utils::parse_flag(argv, "history-path", false)
-        .or_else(|| payload.get("history_path").and_then(Value::as_str).map(ToString::to_string))
+        .or_else(|| {
+            payload
+                .get("history_path")
+                .and_then(Value::as_str)
+                .map(ToString::to_string)
+        })
         .map(|raw| repo_path(root, &raw))
         .unwrap_or_else(|| root.join(DEFAULT_HISTORY_REL))
 }
 
 fn swarm_state_path(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
     lane_utils::parse_flag(argv, "swarm-state-path", false)
-        .or_else(|| payload.get("swarm_state_path").and_then(Value::as_str).map(ToString::to_string))
+        .or_else(|| {
+            payload
+                .get("swarm_state_path")
+                .and_then(Value::as_str)
+                .map(ToString::to_string)
+        })
         .map(|raw| repo_path(root, &raw))
         .unwrap_or_else(|| root.join(DEFAULT_SWARM_STATE_REL))
 }
 
 fn trace_path(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
     lane_utils::parse_flag(argv, "trace-path", false)
-        .or_else(|| payload.get("trace_path").and_then(Value::as_str).map(ToString::to_string))
+        .or_else(|| {
+            payload
+                .get("trace_path")
+                .and_then(Value::as_str)
+                .map(ToString::to_string)
+        })
         .map(|raw| repo_path(root, &raw))
         .unwrap_or_else(|| root.join(DEFAULT_TRACE_REL))
 }
 
 fn dashboard_dir(root: &Path, argv: &[String], payload: &Map<String, Value>) -> PathBuf {
     lane_utils::parse_flag(argv, "dashboard-dir", false)
-        .or_else(|| payload.get("dashboard_dir").and_then(Value::as_str).map(ToString::to_string))
+        .or_else(|| {
+            payload
+                .get("dashboard_dir")
+                .and_then(Value::as_str)
+                .map(ToString::to_string)
+        })
         .map(|raw| repo_path(root, &raw))
         .unwrap_or_else(|| root.join(DEFAULT_DASHBOARD_REL))
 }
@@ -99,10 +126,18 @@ fn ensure_state_shape(value: &mut Value) {
             value[key] = json!({});
         }
     }
-    if !value.get("audit_traces").map(Value::is_array).unwrap_or(false) {
+    if !value
+        .get("audit_traces")
+        .map(Value::is_array)
+        .unwrap_or(false)
+    {
         value["audit_traces"] = json!([]);
     }
-    if value.get("schema_version").and_then(Value::as_str).is_none() {
+    if value
+        .get("schema_version")
+        .and_then(Value::as_str)
+        .is_none()
+    {
         value["schema_version"] = json!("dify_bridge_state_v1");
     }
 }
@@ -125,14 +160,20 @@ fn as_object_mut<'a>(value: &'a mut Value, key: &str) -> &'a mut Map<String, Val
     if !value.get(key).map(Value::is_object).unwrap_or(false) {
         value[key] = json!({});
     }
-    value.get_mut(key).and_then(Value::as_object_mut).expect("object")
+    value
+        .get_mut(key)
+        .and_then(Value::as_object_mut)
+        .expect("object")
 }
 
 fn as_array_mut<'a>(value: &'a mut Value, key: &str) -> &'a mut Vec<Value> {
     if !value.get(key).map(Value::is_array).unwrap_or(false) {
         value[key] = json!([]);
     }
-    value.get_mut(key).and_then(Value::as_array_mut).expect("array")
+    value
+        .get_mut(key)
+        .and_then(Value::as_array_mut)
+        .expect("array")
 }
 
 fn now_millis() -> u128 {
@@ -182,11 +223,19 @@ fn register_canvas(state: &mut Value, payload: &Map<String, Value>) -> Result<Va
     if name.is_empty() {
         return Err("dify_canvas_name_required".to_string());
     }
-    let nodes = payload.get("nodes").and_then(Value::as_array).cloned().unwrap_or_default();
+    let nodes = payload
+        .get("nodes")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
     if nodes.is_empty() {
         return Err("dify_canvas_nodes_required".to_string());
     }
-    let edges = payload.get("edges").and_then(Value::as_array).cloned().unwrap_or_default();
+    let edges = payload
+        .get("edges")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
     let canvas = json!({
         "canvas_id": stable_id("difycanvas", &json!({"name": name, "nodes": nodes, "edges": edges})),
         "name": name,
@@ -198,7 +247,11 @@ fn register_canvas(state: &mut Value, payload: &Map<String, Value>) -> Result<Va
         "edges": edges,
         "created_at": now_iso(),
     });
-    let id = canvas.get("canvas_id").and_then(Value::as_str).unwrap().to_string();
+    let id = canvas
+        .get("canvas_id")
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
     as_object_mut(state, "canvases").insert(id, canvas.clone());
     Ok(json!({
         "ok": true,
@@ -207,14 +260,25 @@ fn register_canvas(state: &mut Value, payload: &Map<String, Value>) -> Result<Va
     }))
 }
 
-fn sync_knowledge_base(root: &Path, state: &mut Value, payload: &Map<String, Value>) -> Result<Value, String> {
+fn sync_knowledge_base(
+    root: &Path,
+    state: &mut Value,
+    payload: &Map<String, Value>,
+) -> Result<Value, String> {
     let profile = profile(payload.get("profile"));
-    let name = clean_text(payload.get("knowledge_base_name").and_then(Value::as_str), 120);
+    let name = clean_text(
+        payload.get("knowledge_base_name").and_then(Value::as_str),
+        120,
+    );
     if name.is_empty() {
         return Err("dify_knowledge_base_name_required".to_string());
     }
     let query = clean_text(payload.get("query").and_then(Value::as_str), 120);
-    let documents = payload.get("documents").and_then(Value::as_array).cloned().unwrap_or_default();
+    let documents = payload
+        .get("documents")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
     let adapter_path = normalize_bridge_path(
         root,
         payload
@@ -222,14 +286,27 @@ fn sync_knowledge_base(root: &Path, state: &mut Value, payload: &Map<String, Val
             .and_then(Value::as_str)
             .unwrap_or("adapters/protocol/dify_connector_bridge.ts"),
     )?;
-    let multimodal = documents.iter().any(|row| row.get("modality").and_then(Value::as_str).unwrap_or("text") != "text");
+    let multimodal = documents.iter().any(|row| {
+        row.get("modality")
+            .and_then(Value::as_str)
+            .unwrap_or("text")
+            != "text"
+    });
     let degraded = matches!(profile.as_str(), "tiny-max") && multimodal;
     let query_lower = query.to_ascii_lowercase();
     let retrieval_hits: Vec<Value> = documents
         .iter()
         .filter(|row| {
-            let title = row.get("title").and_then(Value::as_str).unwrap_or("").to_ascii_lowercase();
-            let text = row.get("text").and_then(Value::as_str).unwrap_or("").to_ascii_lowercase();
+            let title = row
+                .get("title")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_ascii_lowercase();
+            let text = row
+                .get("text")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_ascii_lowercase();
             query_lower.is_empty() || title.contains(&query_lower) || text.contains(&query_lower)
         })
         .take(3)
@@ -247,7 +324,11 @@ fn sync_knowledge_base(root: &Path, state: &mut Value, payload: &Map<String, Val
         "degraded": degraded,
         "synced_at": now_iso(),
     });
-    let id = record.get("knowledge_base_id").and_then(Value::as_str).unwrap().to_string();
+    let id = record
+        .get("knowledge_base_id")
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
     as_object_mut(state, "knowledge_bases").insert(id, record.clone());
     Ok(json!({
         "ok": true,
@@ -256,7 +337,11 @@ fn sync_knowledge_base(root: &Path, state: &mut Value, payload: &Map<String, Val
     }))
 }
 
-fn register_agent_app(root: &Path, state: &mut Value, payload: &Map<String, Value>) -> Result<Value, String> {
+fn register_agent_app(
+    root: &Path,
+    state: &mut Value,
+    payload: &Map<String, Value>,
+) -> Result<Value, String> {
     let app_name = clean_text(payload.get("app_name").and_then(Value::as_str), 120);
     if app_name.is_empty() {
         return Err("dify_agent_app_name_required".to_string());
@@ -268,9 +353,21 @@ fn register_agent_app(root: &Path, state: &mut Value, payload: &Map<String, Valu
             .and_then(Value::as_str)
             .unwrap_or("adapters/protocol/dify_connector_bridge.ts"),
     )?;
-    let tools = payload.get("tools").and_then(Value::as_array).cloned().unwrap_or_default();
-    let plugins = payload.get("plugins").and_then(Value::as_array).cloned().unwrap_or_default();
-    let modalities = payload.get("modalities").and_then(Value::as_array).cloned().unwrap_or_else(|| vec![json!("text")]);
+    let tools = payload
+        .get("tools")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let plugins = payload
+        .get("plugins")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let modalities = payload
+        .get("modalities")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_else(|| vec![json!("text")]);
     let denied_tools: Vec<Value> = tools
         .iter()
         .filter(|row| {
@@ -300,7 +397,11 @@ fn register_agent_app(root: &Path, state: &mut Value, payload: &Map<String, Valu
         "denied_tools": denied_tools,
         "registered_at": now_iso(),
     });
-    let id = app.get("app_id").and_then(Value::as_str).unwrap().to_string();
+    let id = app
+        .get("app_id")
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
     as_object_mut(state, "agent_apps").insert(id, app.clone());
     Ok(json!({
         "ok": true,
@@ -309,14 +410,23 @@ fn register_agent_app(root: &Path, state: &mut Value, payload: &Map<String, Valu
     }))
 }
 
-fn publish_dashboard(root: &Path, state: &mut Value, dashboard_dir: &Path, payload: &Map<String, Value>) -> Result<Value, String> {
+fn publish_dashboard(
+    root: &Path,
+    state: &mut Value,
+    dashboard_dir: &Path,
+    payload: &Map<String, Value>,
+) -> Result<Value, String> {
     let dashboard_name = clean_text(payload.get("dashboard_name").and_then(Value::as_str), 120);
     if dashboard_name.is_empty() {
         return Err("dify_dashboard_name_required".to_string());
     }
     let team = clean_token(payload.get("team").and_then(Value::as_str), "default-team");
-    let environment = clean_token(payload.get("environment").and_then(Value::as_str), "staging");
-    fs::create_dir_all(dashboard_dir).map_err(|err| format!("dify_dashboard_dir_create_failed:{err}"))?;
+    let environment = clean_token(
+        payload.get("environment").and_then(Value::as_str),
+        "staging",
+    );
+    fs::create_dir_all(dashboard_dir)
+        .map_err(|err| format!("dify_dashboard_dir_create_failed:{err}"))?;
     let record = json!({
         "dashboard_id": stable_id("difydash", &json!({"dashboard_name": dashboard_name, "team": team, "environment": environment})),
         "dashboard_name": dashboard_name,
@@ -327,10 +437,15 @@ fn publish_dashboard(root: &Path, state: &mut Value, dashboard_dir: &Path, paylo
         "shell_path": rel(root, dashboard_dir),
         "published_at": now_iso(),
     });
-    let id = record.get("dashboard_id").and_then(Value::as_str).unwrap().to_string();
+    let id = record
+        .get("dashboard_id")
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
     fs::write(
         dashboard_dir.join(format!("{id}.json")),
-        serde_json::to_string_pretty(&record).map_err(|err| format!("dify_dashboard_encode_failed:{err}"))?,
+        serde_json::to_string_pretty(&record)
+            .map_err(|err| format!("dify_dashboard_encode_failed:{err}"))?,
     )
     .map_err(|err| format!("dify_dashboard_write_failed:{err}"))?;
     as_object_mut(state, "dashboards").insert(id, record.clone());
@@ -341,7 +456,11 @@ fn publish_dashboard(root: &Path, state: &mut Value, dashboard_dir: &Path, paylo
     }))
 }
 
-fn route_provider(root: &Path, state: &mut Value, payload: &Map<String, Value>) -> Result<Value, String> {
+fn route_provider(
+    root: &Path,
+    state: &mut Value,
+    payload: &Map<String, Value>,
+) -> Result<Value, String> {
     let profile = profile(payload.get("profile"));
     let modality = clean_token(payload.get("modality").and_then(Value::as_str), "text");
     let adapter_path = normalize_bridge_path(
@@ -351,14 +470,27 @@ fn route_provider(root: &Path, state: &mut Value, payload: &Map<String, Value>) 
             .and_then(Value::as_str)
             .unwrap_or("adapters/protocol/dify_connector_bridge.ts"),
     )?;
-    let local_models = payload.get("local_models").and_then(Value::as_array).cloned().unwrap_or_default();
-    let providers = payload.get("providers").and_then(Value::as_array).cloned().unwrap_or_default();
+    let local_models = payload
+        .get("local_models")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let providers = payload
+        .get("providers")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
     let supports_modality = match profile.as_str() {
         "tiny-max" => modality == "text",
         "pure" => matches!(modality.as_str(), "text" | "image"),
         _ => true,
     };
-    let selected_route = if payload.get("prefer_local").and_then(Value::as_bool).unwrap_or(true) && !local_models.is_empty() {
+    let selected_route = if payload
+        .get("prefer_local")
+        .and_then(Value::as_bool)
+        .unwrap_or(true)
+        && !local_models.is_empty()
+    {
         json!({"route_kind": "local_model", "target": local_models.first().cloned().unwrap_or_else(|| json!(null))})
     } else if !providers.is_empty() {
         json!({"route_kind": "provider", "target": providers.first().cloned().unwrap_or_else(|| json!(null))})
@@ -376,7 +508,11 @@ fn route_provider(root: &Path, state: &mut Value, payload: &Map<String, Value>) 
         "degraded": !supports_modality,
         "routed_at": now_iso(),
     });
-    let id = route.get("route_id").and_then(Value::as_str).unwrap().to_string();
+    let id = route
+        .get("route_id")
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
     as_object_mut(state, "provider_routes").insert(id, route.clone());
     Ok(json!({
         "ok": true,
@@ -386,7 +522,9 @@ fn route_provider(root: &Path, state: &mut Value, payload: &Map<String, Value>) 
 }
 
 fn matches_condition(context: &Map<String, Value>, condition: Option<&Map<String, Value>>) -> bool {
-    let Some(condition) = condition else { return false; };
+    let Some(condition) = condition else {
+        return false;
+    };
     let field = condition.get("field").and_then(Value::as_str).unwrap_or("");
     if field.is_empty() {
         return false;
@@ -398,14 +536,27 @@ fn matches_condition(context: &Map<String, Value>, condition: Option<&Map<String
     }
 }
 
-fn run_conditional_flow(root: &Path, state: &mut Value, swarm_state_path: &Path, payload: &Map<String, Value>) -> Result<Value, String> {
+fn run_conditional_flow(
+    root: &Path,
+    state: &mut Value,
+    swarm_state_path: &Path,
+    payload: &Map<String, Value>,
+) -> Result<Value, String> {
     let flow_name = clean_text(payload.get("flow_name").and_then(Value::as_str), 120);
     if flow_name.is_empty() {
         return Err("dify_flow_name_required".to_string());
     }
     let profile = profile(payload.get("profile"));
-    let context = payload.get("context").and_then(Value::as_object).cloned().unwrap_or_default();
-    let branches = payload.get("branches").and_then(Value::as_array).cloned().unwrap_or_default();
+    let context = payload
+        .get("context")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let branches = payload
+        .get("branches")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
     let selected_branch = branches
         .iter()
         .find(|row| {
@@ -416,8 +567,15 @@ fn run_conditional_flow(root: &Path, state: &mut Value, swarm_state_path: &Path,
         })
         .cloned()
         .unwrap_or_else(|| json!({"id": "default", "target": "complete", "default": true}));
-    let loop_cfg = payload.get("loop").and_then(Value::as_object).cloned().unwrap_or_default();
-    let mut iterations = loop_cfg.get("max_iterations").and_then(Value::as_u64).unwrap_or(1);
+    let loop_cfg = payload
+        .get("loop")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let mut iterations = loop_cfg
+        .get("max_iterations")
+        .and_then(Value::as_u64)
+        .unwrap_or(1);
     if let Some(condition) = loop_cfg.get("continue_while").and_then(Value::as_object) {
         if !matches_condition(&context, Some(condition)) {
             iterations = 1;
@@ -435,7 +593,9 @@ fn run_conditional_flow(root: &Path, state: &mut Value, swarm_state_path: &Path,
             rows.iter().find_map(|row| {
                 let cond = row.get("when").and_then(Value::as_object);
                 if matches_condition(&context, cond) {
-                    row.get("target").and_then(Value::as_str).map(ToString::to_string)
+                    row.get("target")
+                        .and_then(Value::as_str)
+                        .map(ToString::to_string)
                 } else {
                     None
                 }
@@ -462,7 +622,11 @@ fn run_conditional_flow(root: &Path, state: &mut Value, swarm_state_path: &Path,
         "degraded": degraded,
         "executed_at": now_iso(),
     });
-    let id = record.get("flow_run_id").and_then(Value::as_str).unwrap().to_string();
+    let id = record
+        .get("flow_run_id")
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
     as_object_mut(state, "flow_runs").insert(id, record.clone());
     Ok(json!({
         "ok": true,
@@ -471,7 +635,12 @@ fn run_conditional_flow(root: &Path, state: &mut Value, swarm_state_path: &Path,
     }))
 }
 
-fn record_audit_trace(root: &Path, state: &mut Value, trace_path: &Path, payload: &Map<String, Value>) -> Result<Value, String> {
+fn record_audit_trace(
+    root: &Path,
+    state: &mut Value,
+    trace_path: &Path,
+    payload: &Map<String, Value>,
+) -> Result<Value, String> {
     let bridge_path = normalize_bridge_path(
         root,
         payload
@@ -543,7 +712,9 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         "register-agent-app" => register_agent_app(root, &mut state, payload),
         "publish-dashboard" => publish_dashboard(root, &mut state, &dashboard_dir, payload),
         "route-provider" => route_provider(root, &mut state, payload),
-        "run-conditional-flow" => run_conditional_flow(root, &mut state, &swarm_state_path, payload),
+        "run-conditional-flow" => {
+            run_conditional_flow(root, &mut state, &swarm_state_path, payload)
+        }
         "record-audit-trace" => record_audit_trace(root, &mut state, &trace_path, payload),
         _ => Err(format!("unknown_dify_bridge_command:{command}")),
     };

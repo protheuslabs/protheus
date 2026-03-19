@@ -106,7 +106,11 @@ fn ensure_state_shape(value: &mut Value) {
             value[key] = json!([]);
         }
     }
-    if value.get("schema_version").and_then(Value::as_str).is_none() {
+    if value
+        .get("schema_version")
+        .and_then(Value::as_str)
+        .is_none()
+    {
         value["schema_version"] = json!("langgraph_bridge_state_v1");
     }
 }
@@ -181,17 +185,35 @@ fn default_claim_evidence(id: &str, claim: &str) -> Value {
 
 fn semantic_claim(id: &str) -> &'static str {
     match id {
-        "V6-WORKFLOW-002.1" => "langgraph_nodes_edges_and_cycles_register_as_governed_receipted_graphs",
-        "V6-WORKFLOW-002.2" => "langgraph_checkpoints_and_time_travel_replay_route_through_receipted_persistence",
-        "V6-WORKFLOW-002.3" => "langgraph_hitl_state_inspection_and_intervention_remain_governed_and_receipted",
-        "V6-WORKFLOW-002.4" => "langgraph_subgraphs_and_nested_agents_reuse_authoritative_swarm_lineage",
-        "V6-WORKFLOW-002.5" => "langgraph_traces_fold_into_native_observability_without_duplicate_telemetry_stacks",
-        "V6-WORKFLOW-002.6" => "langgraph_streaming_and_conditional_edges_remain_receipted_and_fail_closed",
+        "V6-WORKFLOW-002.1" => {
+            "langgraph_nodes_edges_and_cycles_register_as_governed_receipted_graphs"
+        }
+        "V6-WORKFLOW-002.2" => {
+            "langgraph_checkpoints_and_time_travel_replay_route_through_receipted_persistence"
+        }
+        "V6-WORKFLOW-002.3" => {
+            "langgraph_hitl_state_inspection_and_intervention_remain_governed_and_receipted"
+        }
+        "V6-WORKFLOW-002.4" => {
+            "langgraph_subgraphs_and_nested_agents_reuse_authoritative_swarm_lineage"
+        }
+        "V6-WORKFLOW-002.5" => {
+            "langgraph_traces_fold_into_native_observability_without_duplicate_telemetry_stacks"
+        }
+        "V6-WORKFLOW-002.6" => {
+            "langgraph_streaming_and_conditional_edges_remain_receipted_and_fail_closed"
+        }
         _ => "langgraph_bridge_claim",
     }
 }
 
-fn emit_native_trace(root: &Path, trace_path: &Path, trace_id: &str, stage: &str, message: &str) -> Result<(), String> {
+fn emit_native_trace(
+    root: &Path,
+    trace_path: &Path,
+    trace_id: &str,
+    stage: &str,
+    message: &str,
+) -> Result<(), String> {
     lane_utils::append_jsonl(
         trace_path,
         &json!({
@@ -256,7 +278,10 @@ fn condition_matches(condition: &Value, context: &Map<String, Value>) -> bool {
 }
 
 fn register_graph(state: &mut Value, payload: &Map<String, Value>) -> Result<Value, String> {
-    let name = clean_token(payload.get("name").and_then(Value::as_str), "langgraph-graph");
+    let name = clean_token(
+        payload.get("name").and_then(Value::as_str),
+        "langgraph-graph",
+    );
     let nodes = payload
         .get("nodes")
         .and_then(Value::as_array)
@@ -276,7 +301,12 @@ fn register_graph(state: &mut Value, payload: &Map<String, Value>) -> Result<Val
         payload
             .get("entry_node")
             .and_then(Value::as_str)
-            .or_else(|| normalized_nodes.first().and_then(|row| row.get("id")).and_then(Value::as_str)),
+            .or_else(|| {
+                normalized_nodes
+                    .first()
+                    .and_then(|row| row.get("id"))
+                    .and_then(Value::as_str)
+            }),
         "start",
     );
     let graph = json!({
@@ -291,7 +321,11 @@ fn register_graph(state: &mut Value, payload: &Map<String, Value>) -> Result<Val
         "conditional_edge_count": normalized_edges.iter().filter(|row| row.get("condition").map(|v| !v.is_null()).unwrap_or(false)).count(),
         "registered_at": now_iso(),
     });
-    let graph_id = graph.get("graph_id").and_then(Value::as_str).unwrap().to_string();
+    let graph_id = graph
+        .get("graph_id")
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
     as_object_mut(state, "graphs").insert(graph_id, graph.clone());
     Ok(json!({
         "ok": true,
@@ -357,10 +391,12 @@ fn inspect_state(state: &mut Value, payload: &Map<String, Value>) -> Result<Valu
             .cloned()
     };
     let graph_id = clean_token(
-        payload
-            .get("graph_id")
-            .and_then(Value::as_str)
-            .or_else(|| checkpoint.as_ref().and_then(|row| row.get("graph_id")).and_then(Value::as_str)),
+        payload.get("graph_id").and_then(Value::as_str).or_else(|| {
+            checkpoint
+                .as_ref()
+                .and_then(|row| row.get("graph_id"))
+                .and_then(Value::as_str)
+        }),
         "",
     );
     if graph_id.is_empty() {
@@ -431,7 +467,10 @@ fn coordinate_subgraph(
     };
     let degraded = requested.len() > max_children;
     let subgraphs: Vec<Value> = requested.into_iter().take(max_children).collect();
-    let coordinator_id = stable_id("lgsession", &json!({"graph_id": graph_id, "role": "coordinator"}));
+    let coordinator_id = stable_id(
+        "lgsession",
+        &json!({"graph_id": graph_id, "role": "coordinator"}),
+    );
     let child_rows: Vec<Value> = subgraphs
         .iter()
         .enumerate()
@@ -464,7 +503,11 @@ fn coordinate_subgraph(
         }),
     );
     for child in &child_rows {
-        let session_id = child.get("session_id").and_then(Value::as_str).unwrap().to_string();
+        let session_id = child
+            .get("session_id")
+            .and_then(Value::as_str)
+            .unwrap()
+            .to_string();
         sessions.insert(
             session_id.clone(),
             json!({
@@ -489,7 +532,11 @@ fn coordinate_subgraph(
         "child_sessions": child_rows,
         "coordinated_at": now_iso(),
     });
-    let record_id = record.get("coordination_id").and_then(Value::as_str).unwrap().to_string();
+    let record_id = record
+        .get("coordination_id")
+        .and_then(Value::as_str)
+        .unwrap()
+        .to_string();
     as_object_mut(state, "subgraphs").insert(record_id, record.clone());
     Ok(json!({
         "ok": true,
@@ -528,9 +575,18 @@ fn record_trace(
     emit_native_trace(
         root,
         trace_path,
-        trace.get("trace_id").and_then(Value::as_str).unwrap_or("langgraph-trace"),
-        trace.get("stage").and_then(Value::as_str).unwrap_or("transition"),
-        trace.get("message").and_then(Value::as_str).unwrap_or("trace"),
+        trace
+            .get("trace_id")
+            .and_then(Value::as_str)
+            .unwrap_or("langgraph-trace"),
+        trace
+            .get("stage")
+            .and_then(Value::as_str)
+            .unwrap_or("transition"),
+        trace
+            .get("message")
+            .and_then(Value::as_str)
+            .unwrap_or("trace"),
     )?;
     as_array_mut(state, "traces").push(trace.clone());
     Ok(json!({
@@ -541,7 +597,8 @@ fn record_trace(
 }
 
 fn outgoing_edges(graph: &Value, from: &str) -> Vec<Value> {
-    graph.get("edges")
+    graph
+        .get("edges")
         .and_then(Value::as_array)
         .cloned()
         .unwrap_or_default()
@@ -551,9 +608,13 @@ fn outgoing_edges(graph: &Value, from: &str) -> Vec<Value> {
 }
 
 fn node_exists(graph: &Value, node_id: &str) -> bool {
-    graph.get("nodes")
+    graph
+        .get("nodes")
         .and_then(Value::as_array)
-        .map(|rows| rows.iter().any(|row| row.get("id").and_then(Value::as_str) == Some(node_id)))
+        .map(|rows| {
+            rows.iter()
+                .any(|row| row.get("id").and_then(Value::as_str) == Some(node_id))
+        })
         .unwrap_or(false)
 }
 
@@ -565,7 +626,10 @@ fn select_edge(edges: &[Value], context: &Map<String, Value>) -> Option<Value> {
     }) {
         return Some(row.clone());
     }
-    edges.iter().find(|row| row.get("default").and_then(Value::as_bool).unwrap_or(false)).cloned()
+    edges
+        .iter()
+        .find(|row| row.get("default").and_then(Value::as_bool).unwrap_or(false))
+        .cloned()
 }
 
 fn stream_graph(state: &mut Value, payload: &Map<String, Value>) -> Result<Value, String> {

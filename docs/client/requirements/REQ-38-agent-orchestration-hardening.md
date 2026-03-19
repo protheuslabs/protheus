@@ -202,3 +202,15 @@ Out of scope:
 - REQ-15-002 (Dynamic sub-agent spawning) should reference REQ-38-007 for task group metadata
 - REQ-12-008 (Swarm observability receipts) should reference REQ-38-005 for standardized finding schema
 - REQ-36 (Smart Memory) scratchpad implementation may share patterns with REQ-38-002
+
+## Companion Evidence Updates
+
+### 2026-03-19: Swarm Runtime Companion Update
+
+- Repair-lane execution now routes by contract runtime (`srs_contract_runtime` vs `runtime_systems`) to prevent stale path failures and ensure deterministic contract receipts for swarm-adjacent lanes.
+- Ranked ROI lane execution was expanded and verified at 300-lane scale with deterministic lane-only execution controls.
+- Current evidence references:
+  - `core/layer0/ops/src/swarm_runtime.rs`
+  - `tests/tooling/scripts/ci/srs_repair_lane_runner.mjs`
+  - `tests/tooling/scripts/ci/roi100_moves_runner.mjs`
+  - `core/layer0/ops/tests/v6_openfang_closure_integration.rs`

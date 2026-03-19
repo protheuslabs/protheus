@@ -89,7 +89,8 @@ fn v6_app_batch18_snowball_governance_lanes_are_receipted() {
     let fixture = stage_fixture_root();
     let root = fixture.path();
     let workspace = workspace_root();
-    let benchmark_report = workspace.join("docs/client/reports/benchmark_matrix_run_2026-03-06.json");
+    let benchmark_report =
+        workspace.join("docs/client/reports/benchmark_matrix_run_2026-03-06.json");
     let benchmark_json = read_json(&benchmark_report);
     let readme_path = root.join("README.md");
     fs::write(
@@ -165,7 +166,10 @@ fn v6_app_batch18_snowball_governance_lanes_are_receipted() {
     );
     assert_eq!(compact_exit, 0);
     let compact_latest = read_json(&snowball_latest_path(root));
-    assert_eq!(compact_latest.get("type").and_then(Value::as_str), Some("snowball_plane_compact"));
+    assert_eq!(
+        compact_latest.get("type").and_then(Value::as_str),
+        Some("snowball_plane_compact")
+    );
     assert_claim(&compact_latest, "V6-APP-023.7");
     assert_claim(&compact_latest, "V6-APP-023.9");
     assert_claim(&compact_latest, "V6-APP-023.11");
@@ -184,7 +188,10 @@ fn v6_app_batch18_snowball_governance_lanes_are_receipted() {
     );
     assert_eq!(review_exit, 0);
     let review_latest = read_json(&snowball_latest_path(root));
-    assert_eq!(review_latest.get("type").and_then(Value::as_str), Some("snowball_plane_fitness_review"));
+    assert_eq!(
+        review_latest.get("type").and_then(Value::as_str),
+        Some("snowball_plane_fitness_review")
+    );
     assert_claim(&review_latest, "V6-APP-023.7");
     let review_path = review_latest
         .pointer("/artifact/path")
@@ -202,7 +209,10 @@ fn v6_app_batch18_snowball_governance_lanes_are_receipted() {
     );
     assert_eq!(archive_exit, 0);
     let archive_latest = read_json(&snowball_latest_path(root));
-    assert_eq!(archive_latest.get("type").and_then(Value::as_str), Some("snowball_plane_archive_discarded"));
+    assert_eq!(
+        archive_latest.get("type").and_then(Value::as_str),
+        Some("snowball_plane_archive_discarded")
+    );
     assert_claim(&archive_latest, "V6-APP-023.9");
     let archive_items = archive_latest
         .pointer("/archive/items")
@@ -223,7 +233,10 @@ fn v6_app_batch18_snowball_governance_lanes_are_receipted() {
     );
     assert_eq!(publish_exit, 0);
     let publish_latest = read_json(&snowball_latest_path(root));
-    assert_eq!(publish_latest.get("type").and_then(Value::as_str), Some("snowball_plane_publish_benchmarks"));
+    assert_eq!(
+        publish_latest.get("type").and_then(Value::as_str),
+        Some("snowball_plane_publish_benchmarks")
+    );
     assert_claim(&publish_latest, "V6-APP-023.10");
     assert_eq!(
         publish_latest
@@ -244,7 +257,10 @@ fn v6_app_batch18_snowball_governance_lanes_are_receipted() {
     );
     assert_eq!(promote_exit, 0);
     let promote_latest = read_json(&snowball_latest_path(root));
-    assert_eq!(promote_latest.get("type").and_then(Value::as_str), Some("snowball_plane_promote"));
+    assert_eq!(
+        promote_latest.get("type").and_then(Value::as_str),
+        Some("snowball_plane_promote")
+    );
     assert_claim(&promote_latest, "V6-APP-023.8");
     assert_eq!(
         promote_latest
@@ -266,7 +282,10 @@ fn v6_app_batch18_snowball_governance_lanes_are_receipted() {
     std::env::remove_var("DIRECTIVE_KERNEL_SIGNING_KEY");
     assert_eq!(prime_exit, 0);
     let prime_latest = read_json(&snowball_latest_path(root));
-    assert_eq!(prime_latest.get("type").and_then(Value::as_str), Some("snowball_plane_prime_update"));
+    assert_eq!(
+        prime_latest.get("type").and_then(Value::as_str),
+        Some("snowball_plane_prime_update")
+    );
     assert_claim(&prime_latest, "V6-APP-023.11");
     assert_eq!(
         prime_latest

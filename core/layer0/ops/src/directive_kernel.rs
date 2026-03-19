@@ -135,7 +135,8 @@ fn validate_tier1_directive_quality(content: &str, directive_id: &str) -> Value 
         .and_then(Value::as_object)
         .map(|value| !value.is_empty())
         .unwrap_or(false);
-    if !definitions_present || !yaml_timebound_signal_present(definitions.unwrap_or(&Value::Null), content)
+    if !definitions_present
+        || !yaml_timebound_signal_present(definitions.unwrap_or(&Value::Null), content)
     {
         missing.push("intent.definitions_timebound".to_string());
         questions.push("What explicit time-bound target or review horizon applies?".to_string());
@@ -200,7 +201,8 @@ fn validate_tier1_directive_quality(content: &str, directive_id: &str) -> Value 
         .unwrap_or(false);
     if !additional_gates {
         missing.push("approval_policy.additional_gates".to_string());
-        questions.push("Which additional approval gates are required for Tier 1 actions?".to_string());
+        questions
+            .push("Which additional approval gates are required for Tier 1 actions?".to_string());
     }
 
     json!({
@@ -218,7 +220,10 @@ fn load_active_directives(
 ) -> Result<Vec<Value>, String> {
     let active_path = active_directives_path(root);
     if !active_path.exists() {
-        return Err(format!("active_directives_missing:{}", active_path.display()));
+        return Err(format!(
+            "active_directives_missing:{}",
+            active_path.display()
+        ));
     }
 
     let active_content = fs::read_to_string(&active_path)
@@ -574,7 +579,10 @@ fn validate_action_envelope(root: &Path, envelope: &Value) -> Result<Value, Stri
     }
 
     let action_text = format!("{action_type} {summary}");
-    if let Some(rows) = constraints.get("approval_required").and_then(Value::as_array) {
+    if let Some(rows) = constraints
+        .get("approval_required")
+        .and_then(Value::as_array)
+    {
         'approval_rows: for row in rows {
             let Some(obj) = row.as_object() else {
                 continue;
@@ -611,7 +619,10 @@ fn validate_action_envelope(root: &Path, envelope: &Value) -> Result<Value, Stri
         .unwrap_or(false)
         == false
     {
-        if let Some(domains) = constraints.get("high_stakes_domains").and_then(Value::as_array) {
+        if let Some(domains) = constraints
+            .get("high_stakes_domains")
+            .and_then(Value::as_array)
+        {
             for domain in domains {
                 let Some(domain_text) = domain.as_str() else {
                     continue;
@@ -620,8 +631,10 @@ fn validate_action_envelope(root: &Path, envelope: &Value) -> Result<Value, Stri
                     continue;
                 }
                 out["requires_approval"] = Value::Bool(true);
-                out["approval_reason"] =
-                    Value::String(format!("High-stakes domain '{}' requires approval", domain_text));
+                out["approval_reason"] = Value::String(format!(
+                    "High-stakes domain '{}' requires approval",
+                    domain_text
+                ));
                 break;
             }
         }
@@ -922,7 +935,15 @@ pub(crate) fn append_compaction_directive_entry(
     parent_id: Option<&str>,
     source: &str,
 ) -> Result<Value, String> {
-    append_directive_entry(root, "derived", directive_text, signer, parent_id, None, source)
+    append_directive_entry(
+        root,
+        "derived",
+        directive_text,
+        signer,
+        parent_id,
+        None,
+        source,
+    )
 }
 
 fn prime_rows(vault: &Value) -> Vec<Value> {
@@ -1831,7 +1852,8 @@ approval_policy:
         let root = temp_root("active_directives");
         write_active_directive_fixture(&root);
 
-        let directives = load_active_directives(&root, false, false).expect("load active directives");
+        let directives =
+            load_active_directives(&root, false, false).expect("load active directives");
         assert_eq!(directives.len(), 2);
 
         let merged = merge_active_constraints(&directives);

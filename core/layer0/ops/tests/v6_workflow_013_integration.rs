@@ -24,7 +24,8 @@ fn latest_receipt(state_path: &Path) -> Value {
 }
 
 #[test]
-fn workflow_013_society_world_dataset_conversation_benchmark_tools_and_observability_emit_receipts() {
+fn workflow_013_society_world_dataset_conversation_benchmark_tools_and_observability_emit_receipts()
+{
     let root = tempfile::tempdir().expect("tempdir");
     let state_path = root.path().join("state/camel/latest.json");
     let history_path = root.path().join("state/camel/history.jsonl");
@@ -66,7 +67,10 @@ fn workflow_013_society_world_dataset_conversation_benchmark_tools_and_observabi
             root.path(),
             &[
                 "run-society".to_string(),
-                format!("--payload={}", json!({"society_id": society_id, "profile": "pure"})),
+                format!(
+                    "--payload={}",
+                    json!({"society_id": society_id, "profile": "pure"})
+                ),
                 format!("--state-path={}", state_path.display()),
                 format!("--history-path={}", history_path.display()),
                 format!("--swarm-state-path={}", swarm_state_path.display()),
@@ -75,7 +79,10 @@ fn workflow_013_society_world_dataset_conversation_benchmark_tools_and_observabi
         0
     );
     let run_receipt = latest_receipt(&state_path);
-    assert_eq!(run_receipt["payload"]["run"]["degraded"].as_bool(), Some(true));
+    assert_eq!(
+        run_receipt["payload"]["run"]["degraded"].as_bool(),
+        Some(true)
+    );
     assert_eq!(
         run_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
         Some("V6-WORKFLOW-013.2")
@@ -86,17 +93,20 @@ fn workflow_013_society_world_dataset_conversation_benchmark_tools_and_observabi
             root.path(),
             &[
                 "simulate-world".to_string(),
-                format!("--payload={}", json!({
-                    "world_name": "billing-world",
-                    "profile": "pure",
-                    "seed_state": {"region": "us-west"},
-                    "events": [
-                        {"id": "e1", "kind": "incident"},
-                        {"id": "e2", "kind": "rumor"},
-                        {"id": "e3", "kind": "update"}
-                    ],
-                    "agents_informed": ["planner", "researcher"]
-                })),
+                format!(
+                    "--payload={}",
+                    json!({
+                        "world_name": "billing-world",
+                        "profile": "pure",
+                        "seed_state": {"region": "us-west"},
+                        "events": [
+                            {"id": "e1", "kind": "incident"},
+                            {"id": "e2", "kind": "rumor"},
+                            {"id": "e3", "kind": "update"}
+                        ],
+                        "agents_informed": ["planner", "researcher"]
+                    })
+                ),
                 format!("--state-path={}", state_path.display()),
                 format!("--history-path={}", history_path.display()),
             ],
@@ -104,7 +114,10 @@ fn workflow_013_society_world_dataset_conversation_benchmark_tools_and_observabi
         0
     );
     let world_receipt = latest_receipt(&state_path);
-    assert_eq!(world_receipt["payload"]["simulation"]["degraded"].as_bool(), Some(true));
+    assert_eq!(
+        world_receipt["payload"]["simulation"]["degraded"].as_bool(),
+        Some(true)
+    );
     assert_eq!(
         world_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
         Some("V6-WORKFLOW-013.3")
@@ -115,14 +128,17 @@ fn workflow_013_society_world_dataset_conversation_benchmark_tools_and_observabi
             root.path(),
             &[
                 "import-dataset".to_string(),
-                format!("--payload={}", json!({
-                    "name": "incident-dataset",
-                    "dataset_kind": "society",
-                    "records": [
-                        {"prompt": "triage", "completion": "collect evidence"},
-                        {"prompt": "respond", "completion": "draft summary"}
-                    ]
-                })),
+                format!(
+                    "--payload={}",
+                    json!({
+                        "name": "incident-dataset",
+                        "dataset_kind": "society",
+                        "records": [
+                            {"prompt": "triage", "completion": "collect evidence"},
+                            {"prompt": "respond", "completion": "draft summary"}
+                        ]
+                    })
+                ),
                 format!("--state-path={}", state_path.display()),
                 format!("--history-path={}", history_path.display()),
             ],
@@ -140,18 +156,21 @@ fn workflow_013_society_world_dataset_conversation_benchmark_tools_and_observabi
             root.path(),
             &[
                 "route-conversation".to_string(),
-                format!("--payload={}", json!({
-                    "name": "incident-chat",
-                    "profile": "pure",
-                    "code_prompt": "def solve(issue): return issue",
-                    "turns": [
-                        {"speaker": "planner", "text": "collect data"},
-                        {"speaker": "researcher", "text": "billing service down"},
-                        {"speaker": "critic", "text": "watch customer impact"},
-                        {"speaker": "planner", "text": "draft mitigation"}
-                    ],
-                    "language_routes": ["python", "markdown"]
-                })),
+                format!(
+                    "--payload={}",
+                    json!({
+                        "name": "incident-chat",
+                        "profile": "pure",
+                        "code_prompt": "def solve(issue): return issue",
+                        "turns": [
+                            {"speaker": "planner", "text": "collect data"},
+                            {"speaker": "researcher", "text": "billing service down"},
+                            {"speaker": "critic", "text": "watch customer impact"},
+                            {"speaker": "planner", "text": "draft mitigation"}
+                        ],
+                        "language_routes": ["python", "markdown"]
+                    })
+                ),
                 format!("--state-path={}", state_path.display()),
                 format!("--history-path={}", history_path.display()),
                 format!("--swarm-state-path={}", swarm_state_path.display()),
@@ -160,7 +179,10 @@ fn workflow_013_society_world_dataset_conversation_benchmark_tools_and_observabi
         0
     );
     let convo_receipt = latest_receipt(&state_path);
-    assert_eq!(convo_receipt["payload"]["conversation"]["degraded"].as_bool(), Some(true));
+    assert_eq!(
+        convo_receipt["payload"]["conversation"]["degraded"].as_bool(),
+        Some(true)
+    );
     assert_eq!(
         convo_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
         Some("V6-WORKFLOW-013.5")
@@ -171,16 +193,19 @@ fn workflow_013_society_world_dataset_conversation_benchmark_tools_and_observabi
             root.path(),
             &[
                 "record-crab-benchmark".to_string(),
-                format!("--payload={}", json!({
-                    "name": "incident-crab",
-                    "profile": "pure",
-                    "tasks": ["ocr", "retrieval"],
-                    "artifacts": [
-                        {"media_type": "image/png", "path": "adapters/assets/incident.png"},
-                        {"media_type": "text/plain", "path": "adapters/assets/incident.txt"}
-                    ],
-                    "metrics": {"success": 0.82}
-                })),
+                format!(
+                    "--payload={}",
+                    json!({
+                        "name": "incident-crab",
+                        "profile": "pure",
+                        "tasks": ["ocr", "retrieval"],
+                        "artifacts": [
+                            {"media_type": "image/png", "path": "adapters/assets/incident.png"},
+                            {"media_type": "text/plain", "path": "adapters/assets/incident.txt"}
+                        ],
+                        "metrics": {"success": 0.82}
+                    })
+                ),
                 format!("--state-path={}", state_path.display()),
                 format!("--history-path={}", history_path.display()),
             ],
@@ -188,7 +213,10 @@ fn workflow_013_society_world_dataset_conversation_benchmark_tools_and_observabi
         0
     );
     let benchmark_receipt = latest_receipt(&state_path);
-    assert_eq!(benchmark_receipt["payload"]["benchmark"]["degraded"].as_bool(), Some(true));
+    assert_eq!(
+        benchmark_receipt["payload"]["benchmark"]["degraded"].as_bool(),
+        Some(true)
+    );
     assert_eq!(
         benchmark_receipt["payload"]["claim_evidence"][0]["id"].as_str(),
         Some("V6-WORKFLOW-013.6")
@@ -199,14 +227,17 @@ fn workflow_013_society_world_dataset_conversation_benchmark_tools_and_observabi
             root.path(),
             &[
                 "register-tool-gateway".to_string(),
-                format!("--payload={}", json!({
-                    "name": "incident-tools",
-                    "bridge_path": "adapters/protocol/camel_connector_bridge.ts",
-                    "tools": [
-                        {"name": "search", "supported_profiles": ["rich", "pure"]},
-                        {"name": "email", "supported_profiles": ["rich", "pure"], "requires_approval": true}
-                    ]
-                })),
+                format!(
+                    "--payload={}",
+                    json!({
+                        "name": "incident-tools",
+                        "bridge_path": "adapters/protocol/camel_connector_bridge.ts",
+                        "tools": [
+                            {"name": "search", "supported_profiles": ["rich", "pure"]},
+                            {"name": "email", "supported_profiles": ["rich", "pure"], "requires_approval": true}
+                        ]
+                    })
+                ),
                 format!("--state-path={}", state_path.display()),
                 format!("--history-path={}", history_path.display()),
             ],
@@ -224,13 +255,16 @@ fn workflow_013_society_world_dataset_conversation_benchmark_tools_and_observabi
             root.path(),
             &[
                 "invoke-tool-gateway".to_string(),
-                format!("--payload={}", json!({
-                    "gateway_id": gateway_id,
-                    "tool_name": "email",
-                    "profile": "pure",
-                    "approved": false,
-                    "args": {"subject": "incident"}
-                })),
+                format!(
+                    "--payload={}",
+                    json!({
+                        "gateway_id": gateway_id,
+                        "tool_name": "email",
+                        "profile": "pure",
+                        "approved": false,
+                        "args": {"subject": "incident"}
+                    })
+                ),
                 format!("--state-path={}", state_path.display()),
                 format!("--history-path={}", history_path.display()),
             ],
@@ -252,14 +286,17 @@ fn workflow_013_society_world_dataset_conversation_benchmark_tools_and_observabi
             root.path(),
             &[
                 "record-scaling-observation".to_string(),
-                format!("--payload={}", json!({
-                    "society_id": society_id,
-                    "agent_count": 128,
-                    "message_count": 4096,
-                    "coherence": 0.33,
-                    "risk_signals": ["herding", "feedback_loop"],
-                    "metrics": {"entropy": 0.71}
-                })),
+                format!(
+                    "--payload={}",
+                    json!({
+                        "society_id": society_id,
+                        "agent_count": 128,
+                        "message_count": 4096,
+                        "coherence": 0.33,
+                        "risk_signals": ["herding", "feedback_loop"],
+                        "metrics": {"entropy": 0.71}
+                    })
+                ),
                 format!("--state-path={}", state_path.display()),
                 format!("--history-path={}", history_path.display()),
             ],
@@ -282,10 +319,13 @@ fn workflow_013_society_world_dataset_conversation_benchmark_tools_and_observabi
             root.path(),
             &[
                 "assimilate-intake".to_string(),
-                format!("--payload={}", json!({
-                    "package_name": "camel-shell",
-                    "output_dir": output_dir
-                })),
+                format!(
+                    "--payload={}",
+                    json!({
+                        "package_name": "camel-shell",
+                        "output_dir": output_dir
+                    })
+                ),
                 format!("--state-path={}", state_path.display()),
                 format!("--history-path={}", history_path.display()),
             ],
@@ -315,17 +355,25 @@ fn workflow_013_society_world_dataset_conversation_benchmark_tools_and_observabi
         Some(1)
     );
     assert_eq!(
-        state["world_simulations"].as_object().map(|rows| rows.len()),
+        state["world_simulations"]
+            .as_object()
+            .map(|rows| rows.len()),
         Some(1)
     );
-    assert_eq!(state["datasets"].as_object().map(|rows| rows.len()), Some(1));
+    assert_eq!(
+        state["datasets"].as_object().map(|rows| rows.len()),
+        Some(1)
+    );
     assert_eq!(
         state["conversation_routes"]
             .as_object()
             .map(|rows| rows.len()),
         Some(1)
     );
-    assert_eq!(state["benchmarks"].as_object().map(|rows| rows.len()), Some(1));
+    assert_eq!(
+        state["benchmarks"].as_object().map(|rows| rows.len()),
+        Some(1)
+    );
     assert_eq!(
         state["tool_gateways"].as_object().map(|rows| rows.len()),
         Some(1)

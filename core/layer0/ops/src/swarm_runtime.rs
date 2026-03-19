@@ -743,10 +743,14 @@ fn usage() {
     println!("  protheus-ops swarm-runtime sessions terminate --session-id=<id> [--graceful=1|0] [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime sessions metrics --session-id=<id> [--timeline=1|0] [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime sessions state --session-id=<id> [--timeline=1|0] [--tool-history-limit=<n>] [--state-path=<path>]");
-    println!("  protheus-ops swarm-runtime sessions bootstrap --session-id=<id> [--state-path=<path>]");
+    println!(
+        "  protheus-ops swarm-runtime sessions bootstrap --session-id=<id> [--state-path=<path>]"
+    );
     println!("  protheus-ops swarm-runtime sessions handoff --session-id=<sender> --target-session-id=<recipient> --reason=<text> [--importance=<0..1>] [--context-json=<json>] [--network-id=<id>] [--state-path=<path>]");
     println!("  protheus-ops swarm-runtime sessions context-put --session-id=<id> --context-json=<json> [--merge=1|0] [--state-path=<path>]");
-    println!("  protheus-ops swarm-runtime sessions context-get --session-id=<id> [--state-path=<path>]");
+    println!(
+        "  protheus-ops swarm-runtime sessions context-get --session-id=<id> [--state-path=<path>]"
+    );
     println!(
         "  protheus-ops swarm-runtime sessions anomalies --session-id=<id> [--state-path=<path>]"
     );
@@ -1321,7 +1325,11 @@ fn set_service_health(state: &mut SwarmState, session_id: &str, healthy: bool) {
     }
 }
 
-fn thorn_replacement_sessions(state: &SwarmState, target_id: &str, role: Option<&str>) -> Vec<String> {
+fn thorn_replacement_sessions(
+    state: &SwarmState,
+    target_id: &str,
+    role: Option<&str>,
+) -> Vec<String> {
     let Some(role) = role else {
         return Vec::new();
     };
@@ -1441,13 +1449,13 @@ fn quarantine_into_thorn(
         if target.status == "quarantined_thorn" {
             return Err(format!("session_already_quarantined:{target_id}"));
         }
-        (
-            target.depth,
-            target.role.clone(),
-            target.status.clone(),
-        )
+        (target.depth, target.role.clone(), target.status.clone())
     };
-    let thorn_id = next_session_id(state, &format!("thorn:{target_id}"), target_depth.saturating_add(1));
+    let thorn_id = next_session_id(
+        state,
+        &format!("thorn:{target_id}"),
+        target_depth.saturating_add(1),
+    );
     let replacement_sessions = thorn_replacement_sessions(state, target_id, target_role.as_deref());
 
     {
@@ -1459,7 +1467,9 @@ fn quarantine_into_thorn(
         target.quarantine_previous_status = Some(target_status.clone());
         target.status = "quarantined_thorn".to_string();
         target.quarantine_reason = Some(reason.to_string());
-        target.anomalies.push(format!("thorn:{anomaly_type}:{reason}"));
+        target
+            .anomalies
+            .push(format!("thorn:{anomaly_type}:{reason}"));
         target.context_vars.insert(
             "thorn_quarantine".to_string(),
             json!({
@@ -1507,7 +1517,10 @@ fn quarantine_into_thorn(
             ),
             ("anomaly_type".to_string(), json!(anomaly_type)),
             ("reason".to_string(), json!(reason)),
-            ("replacement_sessions".to_string(), json!(replacement_sessions.clone())),
+            (
+                "replacement_sessions".to_string(),
+                json!(replacement_sessions.clone()),
+            ),
         ]),
         context_mode: Some("thorn_quarantine".to_string()),
         handoff_ids: Vec::new(),
@@ -1920,8 +1933,8 @@ fn build_spawn_options(argv: &[String]) -> SpawnOptions {
     options.metrics_detailed = metrics_detailed;
     options.simulate_unreachable = parse_bool_flag(argv, "simulate-unreachable", false);
     options.byzantine = parse_bool_flag(argv, "byzantine", false);
-    options.corruption_type = parse_flag(argv, "corruption-type")
-        .unwrap_or_else(|| "data_falsification".to_string());
+    options.corruption_type =
+        parse_flag(argv, "corruption-type").unwrap_or_else(|| "data_falsification".to_string());
     options.token_budget = token_budget;
     options.token_warning_threshold = token_warning_threshold;
     options.budget_exhaustion_action =
@@ -1934,8 +1947,8 @@ fn build_spawn_options(argv: &[String]) -> SpawnOptions {
     options.agent_label = parse_flag(argv, "agent-label")
         .or_else(|| parse_flag(argv, "label"))
         .filter(|value| !value.trim().is_empty());
-    options.result_value = parse_flag(argv, "result-value")
-        .and_then(|value| value.trim().parse::<f64>().ok());
+    options.result_value =
+        parse_flag(argv, "result-value").and_then(|value| value.trim().parse::<f64>().ok());
     options.result_text = parse_flag(argv, "result-text").filter(|value| !value.trim().is_empty());
     options.result_confidence = parse_f64_flag(argv, "result-confidence", 1.0).clamp(0.0, 1.0);
     options.verification_status = parse_flag(argv, "verification-status")
@@ -2373,11 +2386,7 @@ fn apply_context_update(
     for (key, value) in effective_map {
         session.context_vars.insert(clean_text(&key, 64), value);
     }
-    session.context_mode = Some(
-        degraded_mode
-            .unwrap_or("full")
-            .to_string(),
-    );
+    session.context_mode = Some(degraded_mode.unwrap_or("full").to_string());
 
     let receipt = json!({
         "source": source,
@@ -2592,9 +2601,10 @@ fn register_json_schema_tool(
             "unsafe_bridge_denied": true,
         }
     });
-    state
-        .tool_registry
-        .insert(tool_manifest_storage_key(session_id, &tool_name), manifest.clone());
+    state.tool_registry.insert(
+        tool_manifest_storage_key(session_id, &tool_name),
+        manifest.clone(),
+    );
     if let Some(session) = state.sessions.get_mut(session_id) {
         if !session
             .registered_tool_ids
@@ -2699,15 +2709,7 @@ fn invoke_registered_tool(
                 .and_then(Value::as_f64)
                 .unwrap_or(0.5);
             let context = args_obj.get("context").cloned();
-            register_handoff(
-                state,
-                session_id,
-                target,
-                reason,
-                importance,
-                context,
-                None,
-            )?
+            register_handoff(state, session_id, target, reason, importance, context, None)?
         }
         "sessions_context_put" => {
             let context = args_obj
@@ -2715,7 +2717,10 @@ fn invoke_registered_tool(
                 .cloned()
                 .or_else(|| args_obj.get("context_json").cloned())
                 .unwrap_or_else(|| Value::Object(Map::new()));
-            let merge = args_obj.get("merge").and_then(Value::as_bool).unwrap_or(true);
+            let merge = args_obj
+                .get("merge")
+                .and_then(Value::as_bool)
+                .unwrap_or(true);
             let session = state
                 .sessions
                 .get_mut(session_id)
@@ -3051,7 +3056,9 @@ fn execute_turns(
         "turns": receipts,
         "completed_at": now_iso(),
     });
-    state.turn_registry.insert(run_id.clone(), run_receipt.clone());
+    state
+        .turn_registry
+        .insert(run_id.clone(), run_receipt.clone());
     if let Some(session) = state.sessions.get_mut(session_id) {
         if !session.turn_run_ids.iter().any(|row| row == &run_id) {
             session.turn_run_ids.push(run_id.clone());
@@ -5199,7 +5206,9 @@ fn sessions_state(
             state
                 .tool_registry
                 .values()
-                .find(|row| row.get("manifest_id").and_then(Value::as_str) == Some(tool_id.as_str()))
+                .find(|row| {
+                    row.get("manifest_id").and_then(Value::as_str) == Some(tool_id.as_str())
+                })
                 .cloned()
         })
         .collect::<Vec<_>>();
