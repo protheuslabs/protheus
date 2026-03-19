@@ -14,7 +14,7 @@ hex = "0.4"
 napi = { version = "2", features = ["napi8"] }
 napi-derive = "2"
 aes-gcm = "0.10"
-rand = "0.8"
+rand = "0.10"
 time = { version = "0.3", features = ["formatting", "parsing"] }
 
 [dev-dependencies]
