@@ -5,7 +5,7 @@ export {};
 // Thin TypeScript wrapper only.
 
 const path = require('path');
-const { createConduitLaneModule } = require('./direct_conduit_lane_bridge.ts');
+const { createConduitLaneModule } = require('./direct_conduit_lane_bridge.js');
 const __directConduitLane = createConduitLaneModule('LIB_STRATEGY_RESOLVER');
 void __directConduitLane;
 

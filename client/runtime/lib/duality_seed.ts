@@ -5,7 +5,7 @@ export {};
 // Layer ownership: core/layer2/autonomy (authoritative)
 // Thin TypeScript wrapper only.
 
-const { createConduitLaneModule } = require('./direct_conduit_lane_bridge.ts');
+const { createConduitLaneModule } = require('./direct_conduit_lane_bridge.js');
 const __directConduitLane = createConduitLaneModule('LIB_DUALITY_SEED');
 void __directConduitLane;
 
