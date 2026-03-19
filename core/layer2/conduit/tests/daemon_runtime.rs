@@ -71,6 +71,29 @@ fn signed_envelope(policy: &ConduitPolicy, request_id: &str) -> CommandEnvelope 
     }
 }
 
+fn retarget_command(
+    policy: &ConduitPolicy,
+    envelope: &mut CommandEnvelope,
+    command: TsCommand,
+    client_id: &str,
+) {
+    envelope.command = command;
+    envelope.security = ConduitSecurityContext::from_policy(
+        policy,
+        "msg-k1",
+        "msg-secret",
+        "tok-k1",
+        "tok-secret",
+    )
+    .mint_security_metadata(
+        client_id,
+        &envelope.request_id,
+        envelope.ts_ms,
+        &envelope.command,
+        60_000,
+    );
+}
+
 fn spawn_daemon(policy_path: &std::path::Path) -> std::process::Child {
     Command::new(env!("CARGO_BIN_EXE_conduit_daemon"))
         .env("CONDUIT_POLICY_PATH", policy_path)
@@ -168,22 +191,13 @@ fn conduit_daemon_routes_edge_status_bridge_contract() {
     let (policy, temp) = policy_fixture();
     let policy_path = write_policy_file(&temp, policy.clone(), conduit::MAX_CONDUIT_MESSAGE_TYPES);
     let mut envelope = signed_envelope(&policy, "daemon-edge-status");
-    envelope.command = TsCommand::StartAgent {
-        agent_id: "edge_status".to_string(),
-    };
-    envelope.security = ConduitSecurityContext::from_policy(
+    retarget_command(
         &policy,
-        "msg-k1",
-        "msg-secret",
-        "tok-k1",
-        "tok-secret",
-    )
-    .mint_security_metadata(
+        &mut envelope,
+        TsCommand::StartAgent {
+            agent_id: "edge_status".to_string(),
+        },
         "daemon-it",
-        &envelope.request_id,
-        envelope.ts_ms,
-        &envelope.command,
-        60_000,
     );
 
     let (output, response) = run_daemon_with_envelope(&policy_path, &envelope);
@@ -202,22 +216,13 @@ fn conduit_daemon_fail_closes_invalid_edge_json_bridge_payload() {
     let (policy, temp) = policy_fixture();
     let policy_path = write_policy_file(&temp, policy.clone(), conduit::MAX_CONDUIT_MESSAGE_TYPES);
     let mut envelope = signed_envelope(&policy, "daemon-edge-json-invalid");
-    envelope.command = TsCommand::StartAgent {
-        agent_id: "edge_json:{bad".to_string(),
-    };
-    envelope.security = ConduitSecurityContext::from_policy(
+    retarget_command(
         &policy,
-        "msg-k1",
-        "msg-secret",
-        "tok-k1",
-        "tok-secret",
-    )
-    .mint_security_metadata(
+        &mut envelope,
+        TsCommand::StartAgent {
+            agent_id: "edge_json:{bad".to_string(),
+        },
         "daemon-it",
-        &envelope.request_id,
-        envelope.ts_ms,
-        &envelope.command,
-        60_000,
     );
 
     let (output, response) = run_daemon_with_envelope(&policy_path, &envelope);
@@ -231,6 +236,68 @@ fn conduit_daemon_fail_closes_invalid_edge_json_bridge_payload() {
         } => {
             assert_eq!(status, "edge_bridge_error");
             assert_eq!(violation_reason.as_deref(), Some("edge_bridge_parse_failed"));
+        }
+        other => panic!("unexpected event: {other:?}"),
+    }
+}
+
+#[test]
+fn conduit_daemon_emits_legacy_lane_receipt_for_lane_prefixed_agent() {
+    let (policy, temp) = policy_fixture();
+    let policy_path = write_policy_file(&temp, policy.clone(), conduit::MAX_CONDUIT_MESSAGE_TYPES);
+    let mut envelope = signed_envelope(&policy, "daemon-legacy-lane");
+    retarget_command(
+        &policy,
+        &mut envelope,
+        TsCommand::StartAgent {
+            agent_id: "lane:  lane-42.alpha ".to_string(),
+        },
+        "daemon-it",
+    );
+
+    let (output, response) = run_daemon_with_envelope(&policy_path, &envelope);
+    assert!(output.status.success());
+    assert!(response.validation.ok);
+    match response.event {
+        conduit::RustEvent::SystemFeedback { status, detail, .. } => {
+            assert_eq!(status, "legacy_lane_receipt");
+            assert_eq!(
+                detail
+                    .get("lane_receipt")
+                    .and_then(|v| v.get("ok"))
+                    .and_then(serde_json::Value::as_bool),
+                Some(true)
+            );
+        }
+        other => panic!("unexpected event: {other:?}"),
+    }
+}
+
+#[test]
+fn conduit_daemon_routes_edge_inference_prefix_to_backend_contract() {
+    let (policy, temp) = policy_fixture();
+    let policy_path = write_policy_file(&temp, policy.clone(), conduit::MAX_CONDUIT_MESSAGE_TYPES);
+    let mut envelope = signed_envelope(&policy, "daemon-edge-inference");
+    retarget_command(
+        &policy,
+        &mut envelope,
+        TsCommand::StartAgent {
+            agent_id: "edge_inference:hello tiny edge world".to_string(),
+        },
+        "daemon-it",
+    );
+
+    let (output, response) = run_daemon_with_envelope(&policy_path, &envelope);
+    assert!(output.status.success());
+    assert!(response.validation.ok);
+    match response.event {
+        conduit::RustEvent::SystemFeedback {
+            status,
+            violation_reason,
+            ..
+        } => {
+            assert_eq!(status, "edge_backend_unavailable");
+            assert_eq!(violation_reason.as_deref(), Some("edge_feature_disabled"));
         }
         other => panic!("unexpected event: {other:?}"),
     }
