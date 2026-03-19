@@ -1,0 +1,47 @@
+{
+  "id": "V6-MEMORY-003",
+  "upgrade": "Markdown vault projection over Epistemic Objects + graph links",
+  "section": "Graph-Aware Markdown Memory Vault Intake (ClawVault, 2026-03-11)",
+  "impact": 8,
+  "layer_map": "1/2/client",
+  "conduit_only_boundary": false,
+  "todo_bucket": "repair_lane",
+  "execution_contract": {
+    "runtime": "core/layer2/ops:srs_contract_runtime",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "local/state/ops/srs_contract_runtime/V6-MEMORY-003/latest.json",
+    "history_path": "local/state/ops/srs_contract_runtime/history.jsonl"
+  },
+  "deliverables": [
+    {
+      "type": "contract",
+      "path": "planes/contracts/srs/V6-MEMORY-003.json"
+    },
+    {
+      "type": "state_receipt",
+      "path": "local/state/ops/srs_contract_runtime/V6-MEMORY-003/latest.json"
+    },
+    {
+      "type": "execution_history",
+      "path": "local/state/ops/srs_contract_runtime/history.jsonl"
+    }
+  ],
+  "validation": {
+    "lane_command": "protheus-ops srs-contract-runtime run --id=V6-MEMORY-003",
+    "status_command": "protheus-ops srs-contract-runtime status --id=V6-MEMORY-003",
+    "fail_closed_on_missing_contract": true
+  },
+  "generated_from": {
+    "source": "audit_gap_repair_memory_parent_contracts_from_V6-MEMORY-003.1",
+    "generated_at": "2026-03-19T20:55:54.879Z",
+    "parent_scope": {
+      "child_contracts": [
+        "planes/contracts/srs/V6-MEMORY-003.1.json",
+        "planes/contracts/srs/V6-MEMORY-003.2.json",
+        "planes/contracts/srs/V6-MEMORY-003.3.json",
+        "planes/contracts/srs/V6-MEMORY-003.4.json",
+        "planes/contracts/srs/V6-MEMORY-003.5.json"
+      ]
+    }
+  }
+}

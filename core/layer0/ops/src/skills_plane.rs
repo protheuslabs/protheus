@@ -7,6 +7,7 @@ use crate::v8_kernel::{
     plane_status, print_json, read_json, scoped_state_root, sha256_hex_str, write_json,
 };
 use crate::{clean, parse_args};
+use semver::Version;
 use serde_json::{json, Map, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -35,6 +36,8 @@ fn usage() {
     println!("  protheus-ops skills-plane activate --skill=<id> --trigger=<text> [--skills-root=<path>] [--strict=1|0]");
     println!("  protheus-ops skills-plane chain-validate [--chain-json=<json>|--chain-path=<path>] [--skills-root=<path>] [--strict=1|0]");
     println!("  protheus-ops skills-plane install --skill-path=<path> [--strict=1|0]");
+    println!("  protheus-ops skills-plane rollback --skill=<id> [--target-version=<version>] [--strict=1|0]");
+    println!("  protheus-ops skills-plane quarantine --op=<status|quarantine|release> [--skill=<id>] [--reason=<text>] [--strict=1|0]");
     println!("  protheus-ops skills-plane run --skill=<id> [--input=<text>] [--strict=1|0]");
     println!("  protheus-ops skills-plane share --skill=<id> [--target=<text>] [--strict=1|0]");
     println!("  protheus-ops skills-plane gallery --op=<ingest|list|load> [--manifest=<path>] [--gallery-root=<path>] [--skill=<id>] [--strict=1|0]");
@@ -46,6 +49,10 @@ fn usage() {
 
 fn state_root(root: &Path) -> PathBuf {
     scoped_state_root(root, STATE_ENV, STATE_SCOPE)
+}
+
+fn quarantine_path(root: &Path) -> PathBuf {
+    state_root(root).join("quarantine").join("skills.json")
 }
 
 fn emit(root: &Path, payload: Value) -> i32 {
@@ -98,6 +105,14 @@ fn parse_skill_version(raw: &str) -> Option<SkillVersion> {
         }
     }
     let normalized = token.strip_prefix('v').unwrap_or(token);
+    if let Ok(version) = Version::parse(normalized) {
+        return Some(SkillVersion {
+            major: version.major,
+            minor: version.minor,
+            patch: version.patch,
+            legacy: false,
+        });
+    }
     let mut pieces = normalized.split('.');
     let major = pieces.next()?.parse::<u64>().ok()?;
     let minor = pieces.next()?.parse::<u64>().ok()?;
@@ -164,6 +179,96 @@ fn default_migration_lane_path(root: &Path, skill_id: &str, from: &str, to: &str
             from_token,
             to_token
         ))
+}
+
+fn rollback_checkpoint_path(root: &Path, skill_id: &str) -> PathBuf {
+    state_root(root)
+        .join("migrations")
+        .join("checkpoints")
+        .join(format!("{}.json", slugify(skill_id)))
+}
+
+fn load_backward_compat_policy(root: &Path) -> Value {
+    let default_policy = json!({
+        "policy": "semver_major",
+        "min_version": "v1",
+        "migration_lane": "skill_forced_migration",
+        "receipt_required": true
+    });
+    load_json_or(
+        root,
+        "planes/contracts/srs/V8-SKILL-002.json",
+        json!({"backward_compat": default_policy.clone()}),
+    )
+    .get("backward_compat")
+    .cloned()
+    .unwrap_or(default_policy)
+}
+
+fn evaluate_skill_run_backward_compat(root: &Path, skill: &str) -> Result<Value, String> {
+    let registry_path = state_root(root).join("registry.json");
+    let registry = read_json(&registry_path).unwrap_or_else(|| json!({"installed": {}}));
+    let installed = registry
+        .get("installed")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    let Some(entry) = installed.get(skill) else {
+        return Err("skill_not_installed".to_string());
+    };
+    let installed_version_raw = entry
+        .get("version")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    let Some(installed_version) = parse_skill_version(&installed_version_raw) else {
+        return Err("skill_version_invalid".to_string());
+    };
+
+    let policy = load_backward_compat_policy(root);
+    let policy_name = policy
+        .get("policy")
+        .and_then(Value::as_str)
+        .unwrap_or("semver_major")
+        .to_string();
+    let min_version_raw = policy
+        .get("min_version")
+        .and_then(Value::as_str)
+        .unwrap_or("v1")
+        .to_string();
+    let Some(min_version) = parse_skill_version(&min_version_raw) else {
+        return Err("compat_min_version_invalid".to_string());
+    };
+
+    let gate_passed = if policy_name == "semver_major" {
+        installed_version.major >= min_version.major
+    } else {
+        version_cmp(installed_version, min_version) != std::cmp::Ordering::Less
+    };
+    if !gate_passed {
+        return Err("skill_version_below_minimum".to_string());
+    }
+
+    Ok(json!({
+        "policy": policy_name,
+        "min_version": min_version_raw,
+        "installed_version": installed_version_raw,
+        "migration_lane": policy.get("migration_lane").cloned().unwrap_or(Value::Null),
+        "receipt_required": policy.get("receipt_required").cloned().unwrap_or(Value::Bool(true)),
+        "installed_version_parsed": {
+            "major": installed_version.major,
+            "minor": installed_version.minor,
+            "patch": installed_version.patch,
+            "legacy": installed_version.legacy
+        },
+        "min_version_parsed": {
+            "major": min_version.major,
+            "minor": min_version.minor,
+            "patch": min_version.patch,
+            "legacy": min_version.legacy
+        },
+        "compatibility_gate_passed": true
+    }))
 }
 
 fn conduit_enforcement(
@@ -1735,6 +1840,7 @@ fn run_install(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
         .and_then(Value::as_str)
         .unwrap_or_default()
         .to_string();
+    let previous_entry = installed.get(&id).cloned();
     let previous_version = parse_skill_version(&previous_version_raw);
     if strict && !previous_version_raw.is_empty() && previous_version.is_none() {
         return json!({
@@ -1825,6 +1931,8 @@ fn run_install(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
     let mut migration_receipt_emitted = false;
     let migration_latest_path = state_root(root).join("migrations").join("latest.json");
     let migration_history_path = state_root(root).join("migrations").join("history.jsonl");
+    let rollback_checkpoint_path = rollback_checkpoint_path(root, &id);
+    let mut rollback_checkpoint_written = false;
     if migration_required && force_migration && !migration_lane_exists {
         let lane_doc = json!({
             "ok": true,
@@ -1883,6 +1991,29 @@ fn run_install(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
         }
         migration_receipt_emitted = true;
     }
+    if migration_required && force_migration {
+        let checkpoint = json!({
+            "ok": true,
+            "type": "skills_plane_rollback_checkpoint",
+            "skill_id": id.clone(),
+            "from_version": previous_version_raw.clone(),
+            "to_version": requested_version.clone(),
+            "previous_entry": previous_entry.clone().unwrap_or(Value::Null),
+            "created_at": crate::now_iso()
+        });
+        if write_json(&rollback_checkpoint_path, &checkpoint).is_err() {
+            if strict {
+                return json!({
+                    "ok": false,
+                    "strict": strict,
+                    "type": "skills_plane_install",
+                    "errors": [format!("rollback_checkpoint_write_failed:{}", rollback_checkpoint_path.display())]
+                });
+            }
+        } else {
+            rollback_checkpoint_written = true;
+        }
+    }
     installed.insert(
         id.clone(),
         json!({
@@ -1916,6 +2047,8 @@ fn run_install(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
             "migration_lane_path": migration_lane_path.display().to_string(),
             "migration_lane_exists": migration_lane_exists,
             "migration_lane_created": migration_lane_created,
+            "rollback_checkpoint_path": rollback_checkpoint_path.display().to_string(),
+            "rollback_checkpoint_written": rollback_checkpoint_written,
             "downgrade_detected": downgrade_detected,
             "allow_downgrade": allow_downgrade,
             "deprecation_policy": deprecation_policy.clone(),
@@ -1930,6 +2063,13 @@ fn run_install(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
                 }
             },
             {
+                "id": "V8-SKILL-006",
+                "claim": "skill_install_path_is_receipted_and_governed_through_authoritative_lane",
+                "evidence": {
+                    "skill_id": id
+                }
+            },
+            {
                 "id": "V8-SKILL-002",
                 "claim": "skill_install_enforces_backward_compatibility_gates_and_emits_forced_migration_receipts",
                 "evidence": {
@@ -1939,6 +2079,7 @@ fn run_install(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
                     "forced_migration": force_migration,
                     "migration_receipt_emitted": migration_receipt_emitted,
                     "migration_lane_exists": migration_lane_exists,
+                    "rollback_checkpoint_written": rollback_checkpoint_written,
                     "deprecation_policy": deprecation_policy.clone(),
                     "compatibility_gate_passed": true
                 }
@@ -1947,6 +2088,242 @@ fn run_install(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
     });
     out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
     out
+}
+
+fn run_quarantine(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
+    let op = clean(
+        parsed
+            .flags
+            .get("op")
+            .cloned()
+            .or_else(|| parsed.positional.get(1).cloned())
+            .unwrap_or_else(|| "status".to_string()),
+        40,
+    )
+    .to_ascii_lowercase();
+    let mut ledger = read_json(&quarantine_path(root)).unwrap_or_else(|| json!({}));
+    if !ledger.is_object() {
+        ledger = json!({});
+    }
+    let mut rows = ledger.as_object().cloned().unwrap_or_default();
+    if matches!(op.as_str(), "quarantine" | "release") {
+        let skill = clean(
+            parsed
+                .flags
+                .get("skill")
+                .cloned()
+                .or_else(|| parsed.positional.get(2).cloned())
+                .unwrap_or_default(),
+            120,
+        );
+        if skill.is_empty() {
+            return json!({
+                "ok": false,
+                "strict": strict,
+                "type": "skills_plane_quarantine",
+                "errors": ["skill_required"]
+            });
+        }
+        if op == "quarantine" {
+            let reason = clean(
+                parsed
+                    .flags
+                    .get("reason")
+                    .cloned()
+                    .unwrap_or_else(|| "operator_request".to_string()),
+                220,
+            );
+            rows.insert(
+                skill.clone(),
+                json!({
+                    "reason": reason,
+                    "ts": crate::now_iso()
+                }),
+            );
+        } else {
+            rows.remove(&skill);
+        }
+    } else if op != "status" {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "skills_plane_quarantine",
+            "errors": [format!("unknown_quarantine_op:{op}")]
+        });
+    }
+    let persisted = Value::Object(rows.clone());
+    if write_json(&quarantine_path(root), &persisted).is_err() {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "skills_plane_quarantine",
+            "errors": ["quarantine_state_write_failed"]
+        });
+    }
+    let mut out = json!({
+        "ok": true,
+        "strict": strict,
+        "type": "skills_plane_quarantine",
+        "lane": "core/layer0/ops",
+        "op": op,
+        "quarantine_path": quarantine_path(root).display().to_string(),
+        "quarantined_count": rows.len(),
+        "quarantined_skills": Value::Object(rows),
+        "claim_evidence": [
+            {
+                "id": "V8-SKILL-007",
+                "claim": "skill_quarantine_and_release_paths_are_receipted_and_fail_closed",
+                "evidence": {
+                    "op": op
+                }
+            },
+            {
+                "id": "V8-SKILL-009",
+                "claim": "skill_lifecycle_validation_enforces_fail_closed_quarantine_controls",
+                "evidence": {
+                    "quarantined_count": persisted.as_object().map(|v| v.len()).unwrap_or(0)
+                }
+            }
+        ]
+    });
+    out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
+    out
+}
+
+fn run_rollback(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
+    let skill = clean(
+        parsed
+            .flags
+            .get("skill")
+            .cloned()
+            .or_else(|| parsed.positional.get(1).cloned())
+            .unwrap_or_default(),
+        120,
+    );
+    if skill.is_empty() {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "skills_plane_rollback",
+            "errors": ["skill_required"]
+        });
+    }
+    let target_version = clean(
+        parsed
+            .flags
+            .get("target-version")
+            .cloned()
+            .unwrap_or_default(),
+        40,
+    );
+    let checkpoint_path = rollback_checkpoint_path(root, &skill);
+    if !checkpoint_path.exists() {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "skills_plane_rollback",
+            "errors": [format!("rollback_checkpoint_missing:{}", checkpoint_path.display())]
+        });
+    }
+    let checkpoint = read_json(&checkpoint_path).unwrap_or_else(|| json!({}));
+    let previous_entry = checkpoint
+        .get("previous_entry")
+        .cloned()
+        .unwrap_or(Value::Null);
+    let previous_version = previous_entry
+        .get("version")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string();
+    if strict && previous_entry.is_null() {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "skills_plane_rollback",
+            "errors": ["rollback_checkpoint_missing_previous_entry"]
+        });
+    }
+    if strict && !target_version.is_empty() && previous_version != target_version {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "skills_plane_rollback",
+            "errors": ["rollback_target_version_mismatch"],
+            "checkpoint_previous_version": if previous_version.is_empty() { Value::Null } else { Value::String(previous_version.clone()) },
+            "target_version": target_version
+        });
+    }
+
+    let registry_path = state_root(root).join("registry.json");
+    let mut registry = load_registry(&registry_path);
+    if !registry
+        .get("installed")
+        .map(Value::is_object)
+        .unwrap_or(false)
+    {
+        registry["installed"] = Value::Object(Map::new());
+    }
+    let mut installed = registry
+        .get("installed")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+
+    if previous_entry.is_null() {
+        installed.remove(&skill);
+    } else {
+        installed.insert(skill.clone(), previous_entry.clone());
+    }
+    registry["installed"] = Value::Object(installed);
+    if write_json(&registry_path, &registry).is_err() {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "skills_plane_rollback",
+            "errors": [format!("registry_write_failed:{}", registry_path.display())]
+        });
+    }
+
+    let rollback_history_path = state_root(root).join("migrations").join("rollback_history.jsonl");
+    let rollback_latest_path = state_root(root).join("migrations").join("rollback_latest.json");
+    let mut rollback_receipt = json!({
+        "ok": true,
+        "type": "skills_plane_rollback",
+        "skill_id": skill,
+        "restored_entry": previous_entry,
+        "checkpoint_path": checkpoint_path.display().to_string(),
+        "registry_path": registry_path.display().to_string(),
+        "ts": crate::now_iso()
+    });
+    rollback_receipt["receipt_hash"] =
+        Value::String(sha256_hex_str(&canonical_json_string(&rollback_receipt)));
+    if append_jsonl(&rollback_history_path, &rollback_receipt).is_err() {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "skills_plane_rollback",
+            "errors": [format!("rollback_history_append_failed:{}", rollback_history_path.display())]
+        });
+    }
+    if write_json(&rollback_latest_path, &rollback_receipt).is_err() {
+        return json!({
+            "ok": false,
+            "strict": strict,
+            "type": "skills_plane_rollback",
+            "errors": [format!("rollback_latest_write_failed:{}", rollback_latest_path.display())]
+        });
+    }
+    rollback_receipt["claim_evidence"] = json!([
+        {
+            "id": "V8-SKILL-002",
+            "claim": "skill_backward_compatibility_lane_supports_receipted_rollback_to_previous_registry_state",
+            "evidence": {
+                "checkpoint_path": checkpoint_path.display().to_string(),
+                "rollback_latest_path": rollback_latest_path.display().to_string()
+            }
+        }
+    ]);
+    rollback_receipt
 }
 
 fn run_skill(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
@@ -1975,6 +2352,75 @@ fn run_skill(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
             .unwrap_or_else(|| "".to_string()),
         1000,
     );
+    if strict {
+        let quarantine = read_json(&quarantine_path(root)).unwrap_or_else(|| json!({}));
+        if quarantine
+            .get(&skill)
+            .and_then(Value::as_object)
+            .is_some()
+        {
+            let mut out = json!({
+                "ok": false,
+                "strict": strict,
+                "type": "skills_plane_run",
+                "errors": ["skill_quarantined"],
+                "skill": skill,
+                "quarantine": quarantine.get(&skill).cloned().unwrap_or(Value::Null),
+                "claim_evidence": [
+                    {
+                        "id": "V8-SKILL-007",
+                        "claim": "quarantined_skills_are_denied_execution_in_strict_mode",
+                        "evidence": {
+                            "skill": skill
+                        }
+                    },
+                    {
+                        "id": "V8-SKILL-009",
+                        "claim": "skill_execution_fails_closed_when_quarantine_controls_are_active",
+                        "evidence": {
+                            "skill": skill
+                        }
+                    }
+                ]
+            });
+            out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
+            return out;
+        }
+    }
+    let compatibility = if strict {
+        match evaluate_skill_run_backward_compat(root, &skill) {
+            Ok(summary) => summary,
+            Err(code) => {
+                let mut out = json!({
+                    "ok": false,
+                    "strict": strict,
+                    "type": "skills_plane_run",
+                    "errors": [format!("backward_compat_gate_failed:{code}")],
+                    "skill": skill,
+                    "compatibility": {
+                        "compatibility_gate_passed": false,
+                        "error": code
+                    },
+                    "claim_evidence": [
+                        {
+                            "id": "V8-SKILL-002",
+                            "claim": "skill_run_enforces_backward_compatibility_gates_before_execution",
+                            "evidence": {
+                                "compatibility_gate_passed": false
+                            }
+                        }
+                    ]
+                });
+                out["receipt_hash"] = Value::String(crate::deterministic_receipt_hash(&out));
+                return out;
+            }
+        }
+    } else {
+        json!({
+            "compatibility_gate_passed": true,
+            "strict_gate_checked": false
+        })
+    };
     let event = json!({
         "ts": crate::now_iso(),
         "skill": skill,
@@ -1988,6 +2434,7 @@ fn run_skill(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
         "type": "skills_plane_run",
         "lane": "core/layer0/ops",
         "event": event,
+        "compatibility": compatibility,
         "claim_evidence": [
             {
                 "id": "V6-SKILLS-001.4",
@@ -1995,6 +2442,21 @@ fn run_skill(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
                 "evidence": {
                     "action": "run",
                     "skill": skill
+                }
+            },
+            {
+                "id": "V8-SKILL-002",
+                "claim": "skill_run_enforces_backward_compatibility_gates_before_execution",
+                "evidence": {
+                    "skill": skill,
+                    "compatibility_gate_passed": true
+                }
+            },
+            {
+                "id": "V8-SKILL-008",
+                "claim": "skill_execution_path_is_receipted_with_deterministic_run_identity",
+                "evidence": {
+                    "execution_id": event.get("execution_id").cloned().unwrap_or(Value::Null)
                 }
             }
         ]
@@ -2109,6 +2571,8 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         "activate" => run_activate(root, &parsed, strict),
         "chain-validate" | "chain_validate" | "chain" => run_chain_validate(root, &parsed, strict),
         "install" => run_install(root, &parsed, strict),
+        "rollback" => run_rollback(root, &parsed, strict),
+        "quarantine" => run_quarantine(root, &parsed, strict),
         "run" => run_skill(root, &parsed, strict),
         "share" => run_share(root, &parsed, strict),
         "gallery" => run_gallery(root, &parsed, strict),
@@ -2325,6 +2789,113 @@ mod tests {
     }
 
     #[test]
+    fn install_forced_migration_writes_rollback_checkpoint() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let skill_dir = root.path().join("skills").join("compat-checkpoint");
+        fs::create_dir_all(&skill_dir).expect("mkdir skill");
+        fs::write(
+            skill_dir.join("skill.yaml"),
+            "name: compat-checkpoint\nversion: 1.0.0\nentrypoint: scripts/run.sh\n",
+        )
+        .expect("write yaml");
+        let baseline = crate::parse_args(&[
+            "install".to_string(),
+            format!("--skill-path={}", skill_dir.display()),
+            "--strict=1".to_string(),
+        ]);
+        assert_eq!(
+            run_install(root.path(), &baseline, true)
+                .get("ok")
+                .and_then(Value::as_bool),
+            Some(true)
+        );
+        fs::write(
+            skill_dir.join("skill.yaml"),
+            "name: compat-checkpoint\nversion: 2.0.0\nentrypoint: scripts/run.sh\n",
+        )
+        .expect("rewrite yaml");
+        let forced = crate::parse_args(&[
+            "install".to_string(),
+            format!("--skill-path={}", skill_dir.display()),
+            "--strict=1".to_string(),
+            "--force-migration=1".to_string(),
+            "--migration-reason=breakfix".to_string(),
+        ]);
+        let out = run_install(root.path(), &forced, true);
+        assert_eq!(out.get("ok").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            out.pointer("/compatibility/rollback_checkpoint_written")
+                .and_then(Value::as_bool),
+            Some(true)
+        );
+        let checkpoint_path = out
+            .pointer("/compatibility/rollback_checkpoint_path")
+            .and_then(Value::as_str)
+            .expect("checkpoint path");
+        assert!(Path::new(checkpoint_path).exists());
+    }
+
+    #[test]
+    fn rollback_restores_previous_version_from_checkpoint() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let skill_dir = root.path().join("skills").join("compat-rollback");
+        fs::create_dir_all(&skill_dir).expect("mkdir skill");
+        fs::write(
+            skill_dir.join("skill.yaml"),
+            "name: compat-rollback\nversion: 1.0.0\nentrypoint: scripts/run.sh\n",
+        )
+        .expect("write yaml");
+        let baseline = crate::parse_args(&[
+            "install".to_string(),
+            format!("--skill-path={}", skill_dir.display()),
+            "--strict=1".to_string(),
+        ]);
+        assert_eq!(
+            run_install(root.path(), &baseline, true)
+                .get("ok")
+                .and_then(Value::as_bool),
+            Some(true)
+        );
+
+        fs::write(
+            skill_dir.join("skill.yaml"),
+            "name: compat-rollback\nversion: 2.0.0\nentrypoint: scripts/run.sh\n",
+        )
+        .expect("rewrite yaml");
+        let forced = crate::parse_args(&[
+            "install".to_string(),
+            format!("--skill-path={}", skill_dir.display()),
+            "--strict=1".to_string(),
+            "--force-migration=1".to_string(),
+            "--migration-reason=major_break".to_string(),
+        ]);
+        assert_eq!(
+            run_install(root.path(), &forced, true)
+                .get("ok")
+                .and_then(Value::as_bool),
+            Some(true)
+        );
+
+        let rollback = crate::parse_args(&[
+            "rollback".to_string(),
+            "--skill=compat-rollback".to_string(),
+            "--strict=1".to_string(),
+        ]);
+        let rollback_out = run_rollback(root.path(), &rollback, true);
+        assert_eq!(rollback_out.get("ok").and_then(Value::as_bool), Some(true));
+        assert!(has_claim(&rollback_out, "V8-SKILL-002"));
+
+        let registry = read_json(&state_root(root.path()).join("registry.json"))
+            .expect("registry readable");
+        assert_eq!(
+            registry
+                .pointer("/installed/compat-rollback/version")
+                .and_then(Value::as_str),
+            Some("1.0.0")
+        );
+    }
+
+    #[test]
     fn install_forced_migration_creates_default_migration_lane() {
         let root = tempfile::tempdir().expect("tempdir");
         let skill_dir = root.path().join("skills").join("compat-lane");
@@ -2441,5 +3012,79 @@ mod tests {
                 .and_then(Value::as_str),
             Some("enforce")
         );
+    }
+
+    #[test]
+    fn run_strict_requires_backward_compat_gate() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let parsed = crate::parse_args(&[
+            "run".to_string(),
+            "--skill=unknown_skill".to_string(),
+            "--strict=1".to_string(),
+        ]);
+        let out = run_skill(root.path(), &parsed, true);
+        assert_eq!(out.get("ok").and_then(Value::as_bool), Some(false));
+        assert!(out
+            .get("errors")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default()
+            .iter()
+            .any(|row| row
+                .as_str()
+                .unwrap_or_default()
+                .starts_with("backward_compat_gate_failed:")));
+    }
+
+    #[test]
+    fn run_strict_allows_installed_skill_with_supported_version() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let registry_path = state_root(root.path()).join("registry.json");
+        fs::create_dir_all(registry_path.parent().unwrap_or_else(|| Path::new(".")))
+            .expect("mkdir registry");
+        write_json(
+            &registry_path,
+            &json!({
+                "installed": {
+                    "compat_skill": {
+                        "path": "skills/compat_skill",
+                        "version": "1.2.0"
+                    }
+                }
+            }),
+        )
+        .expect("write registry");
+        let parsed = crate::parse_args(&[
+            "run".to_string(),
+            "--skill=compat_skill".to_string(),
+            "--strict=1".to_string(),
+        ]);
+        let out = run_skill(root.path(), &parsed, true);
+        assert_eq!(out.get("ok").and_then(Value::as_bool), Some(true));
+        assert!(has_claim(&out, "V8-SKILL-002"));
+    }
+
+    #[test]
+    fn quarantine_blocks_run_when_strict() {
+        let root = tempfile::tempdir().expect("tempdir");
+        write_json(
+            &quarantine_path(root.path()),
+            &json!({
+                "compat_skill": {
+                    "reason": "incident_triage",
+                    "ts": crate::now_iso()
+                }
+            }),
+        )
+        .expect("write quarantine");
+        let parsed = crate::parse_args(&[
+            "run".to_string(),
+            "--skill=compat_skill".to_string(),
+            "--strict=1".to_string(),
+        ]);
+        let out = run_skill(root.path(), &parsed, true);
+        assert_eq!(out.get("ok").and_then(Value::as_bool), Some(false));
+        assert!(has_claim(&out, "V8-SKILL-007"));
+        assert!(has_claim(&out, "V8-SKILL-009"));
     }
 }

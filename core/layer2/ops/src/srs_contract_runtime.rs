@@ -5,6 +5,7 @@ use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 const CONTRACT_ROOT: &str = "planes/contracts/srs";
 const STATE_ROOT: &str = "local/state/ops/srs_contract_runtime";
@@ -78,6 +79,16 @@ fn parse_id(argv: &[String]) -> Option<String> {
         })
         .map(|v| v.trim().to_ascii_uppercase())
         .filter(|v| !v.is_empty())
+}
+
+fn parse_bool(raw: Option<String>, fallback: bool) -> bool {
+    match raw {
+        Some(value) => matches!(
+            value.trim().to_ascii_lowercase().as_str(),
+            "1" | "true" | "yes" | "on"
+        ),
+        None => fallback,
+    }
 }
 
 fn normalize_id(raw: &str) -> Option<String> {
@@ -168,6 +179,128 @@ fn validate_contract_shape(id: &str, contract: &Value) -> Result<(), String> {
     Ok(())
 }
 
+#[derive(Clone, Debug)]
+struct DispatchTarget {
+    plane: String,
+    source_path: String,
+    argv: Vec<String>,
+}
+
+fn runtime_lane_to_domain(path: &str) -> Option<&'static str> {
+    match path.trim() {
+        "core/layer0/ops/src/business_plane.rs" => Some("business-plane"),
+        "core/layer0/ops/src/canyon_plane.rs" => Some("canyon-plane"),
+        "core/layer0/ops/src/f100_readiness_program.rs" => Some("f100-readiness-program"),
+        "core/layer0/ops/src/nexus_plane.rs" => Some("nexus-plane"),
+        "core/layer0/ops/src/runtime_systems.rs" => Some("runtime-systems"),
+        "core/layer0/ops/src/security_plane.rs" => Some("security-plane"),
+        "core/layer0/ops/src/skills_plane.rs" => Some("skills-plane"),
+        "core/layer0/ops/src/workflow_controller.rs" => Some("workflow-controller"),
+        "core/layer0/ops/src/workflow_executor.rs" => Some("workflow-executor"),
+        _ => None,
+    }
+}
+
+fn runtime_lane_targets(contract: &Value) -> Vec<DispatchTarget> {
+    let mut targets = Vec::<DispatchTarget>::new();
+    let mut seen = std::collections::BTreeSet::<String>::new();
+    let deliverables = contract
+        .get("deliverables")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    for row in &deliverables {
+        if row.get("type").and_then(Value::as_str) != Some("runtime_lane") {
+            continue;
+        }
+        let Some(path) = row.get("path").and_then(Value::as_str) else {
+            continue;
+        };
+        let Some(domain) = runtime_lane_to_domain(path) else {
+            continue;
+        };
+        if !seen.insert(domain.to_string()) {
+            continue;
+        }
+        targets.push(DispatchTarget {
+            plane: domain.to_string(),
+            source_path: path.to_string(),
+            argv: vec![domain.to_string(), "status".to_string()],
+        });
+    }
+    targets
+}
+
+fn parse_json_payload(raw: &[u8]) -> Option<Value> {
+    let body = String::from_utf8_lossy(raw);
+    let trimmed = body.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    if let Ok(value) = serde_json::from_str::<Value>(trimmed) {
+        return Some(value);
+    }
+    for line in trimmed.lines().rev() {
+        let line_trim = line.trim();
+        if line_trim.is_empty() {
+            continue;
+        }
+        if let Ok(value) = serde_json::from_str::<Value>(line_trim) {
+            return Some(value);
+        }
+    }
+    None
+}
+
+fn run_dispatch_target(
+    root: &Path,
+    target: &DispatchTarget,
+    dispatch_strict: bool,
+    dispatch_bin: &str,
+) -> Value {
+    let mut command = Command::new(dispatch_bin);
+    command.current_dir(root);
+    for arg in &target.argv {
+        command.arg(arg);
+    }
+    if dispatch_strict {
+        command.arg("--strict=1");
+    }
+    match command.output() {
+        Ok(output) => {
+            let parsed = parse_json_payload(&output.stdout);
+            let exit_code = output.status.code().unwrap_or(1);
+            let parsed_ok = parsed
+                .as_ref()
+                .and_then(|value| value.get("ok"))
+                .and_then(Value::as_bool)
+                .unwrap_or(output.status.success());
+            let mut stdout_hasher = Sha256::new();
+            stdout_hasher.update(&output.stdout);
+            let stdout_sha256 = format!("sha256:{}", hex::encode(stdout_hasher.finalize()));
+            json!({
+                "ok": output.status.success() && parsed_ok,
+                "plane": target.plane,
+                "source_path": target.source_path,
+                "argv": target.argv,
+                "dispatch_bin": dispatch_bin,
+                "exit_code": exit_code,
+                "stdout_sha256": stdout_sha256,
+                "stderr": String::from_utf8_lossy(&output.stderr),
+                "receipt": parsed.unwrap_or(Value::Null)
+            })
+        }
+        Err(err) => json!({
+            "ok": false,
+            "plane": target.plane,
+            "source_path": target.source_path,
+            "argv": target.argv,
+            "dispatch_bin": dispatch_bin,
+            "error": format!("dispatch_spawn_failed:{err}")
+        }),
+    }
+}
+
 fn with_hash(mut payload: Value) -> Value {
     payload["receipt_hash"] = Value::String(deterministic_receipt_hash(&payload));
     payload
@@ -178,6 +311,15 @@ pub fn contract_exists(root: &Path, id: &str) -> bool {
 }
 
 pub fn execute_contract(root: &Path, id: &str) -> Result<Value, String> {
+    execute_contract_with_options(root, id, true, false)
+}
+
+fn execute_contract_with_options(
+    root: &Path,
+    id: &str,
+    dispatch_enabled: bool,
+    dispatch_strict: bool,
+) -> Result<Value, String> {
     let normalized_id = id.trim().to_ascii_uppercase();
     if normalized_id.is_empty() {
         return Err("missing_id".to_string());
@@ -197,9 +339,33 @@ pub fn execute_contract(root: &Path, id: &str) -> Result<Value, String> {
     hasher.update(contract_bytes);
     let contract_digest = format!("sha256:{}", hex::encode(hasher.finalize()));
     let now_ms = now_epoch_ms();
+    let dispatch_targets = if dispatch_enabled {
+        runtime_lane_targets(&contract)
+    } else {
+        Vec::new()
+    };
+    let dispatch_bin = std::env::var("PROTHEUS_SRS_DISPATCH_BIN")
+        .ok()
+        .filter(|row| !row.trim().is_empty())
+        .unwrap_or_else(|| "protheus-ops".to_string());
+    let mut dispatch_results = Vec::<Value>::new();
+    let mut dispatch_failed = 0usize;
+    for target in &dispatch_targets {
+        let row = run_dispatch_target(root, target, dispatch_strict, &dispatch_bin);
+        if row.get("ok").and_then(Value::as_bool) != Some(true) {
+            dispatch_failed += 1;
+        }
+        dispatch_results.push(row);
+    }
+    let dispatch_ok = dispatch_failed == 0;
+    let receipt_ok = if dispatch_strict {
+        dispatch_ok
+    } else {
+        true
+    };
 
     let receipt = with_hash(json!({
-        "ok": true,
+        "ok": receipt_ok,
         "type": "srs_contract_runtime_receipt",
         "lane": "srs_contract_runtime",
         "id": normalized_id,
@@ -207,6 +373,14 @@ pub fn execute_contract(root: &Path, id: &str) -> Result<Value, String> {
         "contract_path": cpath.to_string_lossy(),
         "contract_digest": contract_digest,
         "contract": contract,
+        "dispatch": {
+            "enabled": dispatch_enabled,
+            "strict": dispatch_strict,
+            "dispatch_bin": dispatch_bin,
+            "target_count": dispatch_targets.len(),
+            "failed": dispatch_failed,
+            "results": dispatch_results
+        },
         "claim_evidence": [
             {
                 "id": normalized_id,
@@ -214,6 +388,15 @@ pub fn execute_contract(root: &Path, id: &str) -> Result<Value, String> {
                 "evidence": {
                     "lane": "core/layer2/ops:srs_contract_runtime",
                     "state_root": STATE_ROOT
+                }
+            },
+            {
+                "id": "srs_contract_runtime_dispatch",
+                "claim": "runtime_lane_deliverables_dispatch_to_authoritative_plane_status_commands_with_receipt_aggregation",
+                "evidence": {
+                    "target_count": dispatch_targets.len(),
+                    "dispatch_failed": dispatch_failed,
+                    "dispatch_strict": dispatch_strict
                 }
             }
         ]
@@ -253,6 +436,8 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
 
     match cmd.as_str() {
         "run-many" | "run-batch" => {
+            let dispatch_enabled = parse_bool(parse_flag(argv, "dispatch"), true);
+            let dispatch_strict = parse_bool(parse_flag(argv, "dispatch-strict"), false);
             let ids = match parse_id_list(root, argv) {
                 Ok(rows) => rows,
                 Err(code) => {
@@ -270,12 +455,17 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             let mut executed = 0usize;
             let mut failed = 0usize;
             for id in &ids {
-                match execute_contract(root, id) {
+                match execute_contract_with_options(root, id, dispatch_enabled, dispatch_strict) {
                     Ok(receipt) => {
-                        executed += 1;
+                        let ok = receipt.get("ok").and_then(Value::as_bool).unwrap_or(false);
+                        if ok {
+                            executed += 1;
+                        } else {
+                            failed += 1;
+                        }
                         results.push(json!({
                             "id": id,
-                            "ok": true,
+                            "ok": ok,
                             "receipt_hash": receipt.get("receipt_hash").cloned().unwrap_or(Value::Null)
                         }));
                     }
@@ -310,6 +500,8 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
             }
         }
         "run" => {
+            let dispatch_enabled = parse_bool(parse_flag(argv, "dispatch"), true);
+            let dispatch_strict = parse_bool(parse_flag(argv, "dispatch-strict"), false);
             let Some(id) = parse_id(argv) else {
                 print_json_line(&with_hash(json!({
                     "ok": false,
@@ -319,10 +511,14 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
                 })));
                 return 2;
             };
-            match execute_contract(root, &id) {
+            match execute_contract_with_options(root, &id, dispatch_enabled, dispatch_strict) {
                 Ok(out) => {
                     print_json_line(&out);
-                    0
+                    if out.get("ok").and_then(Value::as_bool).unwrap_or(false) {
+                        0
+                    } else {
+                        1
+                    }
                 }
                 Err(err) => {
                     print_json_line(&with_hash(json!({
@@ -445,5 +641,21 @@ mod tests {
                 "V6-TEST-100.3".to_string()
             ]
         );
+    }
+
+    #[test]
+    fn runtime_lane_targets_map_known_planes() {
+        let contract = json!({
+            "deliverables": [
+                {"type":"runtime_lane","path":"core/layer0/ops/src/canyon_plane.rs"},
+                {"type":"runtime_lane","path":"core/layer0/ops/src/skills_plane.rs"},
+                {"type":"runtime_lane","path":"core/layer0/ops/src/unknown_plane.rs"},
+                {"type":"runtime_lane","path":"core/layer0/ops/src/canyon_plane.rs"}
+            ]
+        });
+        let targets = runtime_lane_targets(&contract);
+        assert_eq!(targets.len(), 2);
+        assert!(targets.iter().any(|row| row.plane == "canyon-plane"));
+        assert!(targets.iter().any(|row| row.plane == "skills-plane"));
     }
 }

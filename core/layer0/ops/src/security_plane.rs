@@ -957,6 +957,14 @@ fn run_scan_command(root: &Path, argv: &[String], strict: bool) -> (Value, i32) 
             }
         }]
     });
+    let _ = run_security_contract_command(
+        root,
+        argv,
+        strict,
+        "scan",
+        "V6-SEC-010",
+        &[],
+    );
     (out, if strict && blocked { 2 } else { 0 })
 }
 
@@ -1004,6 +1012,14 @@ fn run_blast_radius_command(root: &Path, argv: &[String], strict: bool) -> (Valu
                 }
             }]
         });
+        let _ = run_security_contract_command(
+            root,
+            argv,
+            strict,
+            "blast-radius-status",
+            "V6-SEC-012",
+            &[],
+        );
         return (out, 0);
     }
 
@@ -1044,12 +1060,28 @@ fn run_blast_radius_command(root: &Path, argv: &[String], strict: bool) -> (Valu
             }
         }]
     });
+    let _ = run_security_contract_command(
+        root,
+        argv,
+        strict,
+        "blast-radius-record",
+        "V6-SEC-012",
+        &[],
+    );
     (out, if strict && blocked { 2 } else { 0 })
 }
 
-fn run_remediation_command(root: &Path, _argv: &[String], strict: bool) -> (Value, i32) {
+fn run_remediation_command(root: &Path, argv: &[String], strict: bool) -> (Value, i32) {
     let latest = read_json(&scanner_latest_path(root));
     let Some(scan_doc) = latest else {
+        let _ = run_security_contract_command(
+            root,
+            argv,
+            strict,
+            "remediate",
+            "V6-SEC-011",
+            &[],
+        );
         let out = json!({
             "ok": false,
             "type": "security_plane_auto_remediation",
@@ -1131,6 +1163,14 @@ fn run_remediation_command(root: &Path, _argv: &[String], strict: bool) -> (Valu
             }
         }]
     });
+    let _ = run_security_contract_command(
+        root,
+        argv,
+        strict,
+        "remediate",
+        "V6-SEC-011",
+        &[],
+    );
     (out, if strict && promotion_blocked { 2 } else { 0 })
 }
 
@@ -1532,6 +1572,14 @@ fn run_secrets_federation_command(root: &Path, argv: &[String], strict: bool) ->
     let lease_seconds = parse_u64(parse_flag(argv, "lease-seconds"), 3600);
     let supported = ["vault", "aws", "1password", "onepassword"];
     if strict && !supported.contains(&provider.as_str()) {
+        let _ = run_security_contract_command(
+            root,
+            argv,
+            strict,
+            "secrets-federation",
+            "V6-SEC-016",
+            &[],
+        );
         let out = json!({
             "ok": false,
             "type": "security_plane_secrets_federation",
@@ -1572,6 +1620,14 @@ fn run_secrets_federation_command(root: &Path, argv: &[String], strict: bool) ->
                     "claim": "external_secrets_federation_fails_closed_when_secret_material_is_missing",
                     "evidence": {"provider": provider, "secret_path": secret_path}
                 }]);
+                let _ = run_security_contract_command(
+                    root,
+                    argv,
+                    strict,
+                    "secrets-federation",
+                    "V6-SEC-016",
+                    &[],
+                );
                 return (out, if strict { 2 } else { 0 });
             };
             let ts = now_iso();
@@ -1663,6 +1719,14 @@ fn run_secrets_federation_command(root: &Path, argv: &[String], strict: bool) ->
     }
 
     write_secret_state(root, &handles);
+    let _ = run_security_contract_command(
+        root,
+        argv,
+        strict,
+        "secrets-federation",
+        "V6-SEC-016",
+        &[],
+    );
     append_jsonl(
         &secrets_events_path(root),
         &json!({
@@ -1750,12 +1814,76 @@ fn wrap_capability_event(root: &Path, command: &str, argv: &[String], payload: V
         "runtime_capability_change": action.is_some()
     });
     out["infring_capability_event"] = event.clone();
+    let mut capability_hash_chain_ok = Value::Null;
     if let Some(action) = action {
+        let capability = parse_flag(argv, "capability")
+            .or_else(|| {
+                out.get("capability")
+                    .and_then(Value::as_str)
+                    .map(|row| row.to_string())
+            })
+            .or_else(|| parse_flag(argv, "policy"))
+            .unwrap_or_else(|| "global".to_string());
+        let subject = parse_flag(argv, "subject")
+            .or_else(|| {
+                out.get("subject")
+                    .and_then(Value::as_str)
+                    .map(|row| row.to_string())
+            })
+            .unwrap_or_else(|| "global".to_string());
+        let reason = parse_flag(argv, "reason").unwrap_or_else(|| {
+            format!(
+                "{}:{}",
+                clean(command, 80),
+                out.get("type").and_then(Value::as_str).unwrap_or("runtime_change")
+            )
+        });
         out["grant_revoke_receipt"] = json!({
             "action": action,
             "ts": now_iso(),
             "source": "security_plane_runtime"
         });
+        match crate::assimilation_controller::append_capability_hash_chain_event(
+            root,
+            out.get("grant_revoke_receipt")
+                .and_then(|row| row.get("action"))
+                .and_then(Value::as_str)
+                .unwrap_or("observe"),
+            &capability,
+            &subject,
+            &reason,
+        ) {
+            Ok(event_row) => {
+                capability_hash_chain_ok = Value::Bool(true);
+                out["capability_hash_chain_ledger"] = json!({
+                    "ok": true,
+                    "capability": capability,
+                    "subject": subject,
+                    "event": event_row
+                });
+            }
+            Err(err) => {
+                capability_hash_chain_ok = Value::Bool(false);
+                out["capability_hash_chain_ledger"] = json!({
+                    "ok": false,
+                    "error": err,
+                    "capability": capability,
+                    "subject": subject
+                });
+                if strict {
+                    out["ok"] = Value::Bool(false);
+                    let mut errs = out
+                        .get("errors")
+                        .and_then(Value::as_array)
+                        .cloned()
+                        .unwrap_or_default();
+                    errs.push(Value::String(
+                        "capability_hash_chain_append_failed".to_string(),
+                    ));
+                    out["errors"] = Value::Array(errs);
+                }
+            }
+        }
     }
 
     let mut claim_rows = out
@@ -1777,6 +1905,14 @@ fn wrap_capability_event(root: &Path, command: &str, argv: &[String], payload: V
             "claim": "runtime_capability_changes_emit_grant_revoke_receipts",
             "evidence": {
                 "command": clean(command, 120)
+            }
+        }));
+        claim_rows.push(json!({
+            "id": "V7-ASM-003",
+            "claim": "runtime_capability_changes_are_written_to_capability_hash_chain_ledger",
+            "evidence": {
+                "command": clean(command, 120),
+                "capability_hash_chain_ok": capability_hash_chain_ok
             }
         }));
     }

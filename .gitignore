@@ -249,6 +249,7 @@ DECISIONS_INDEX.md
 DECISION_SNIPS.md
 SRS_*_AUDIT_REPORT*.md
 audit_reports/
+audit_docs/
 
 # Local/simulated operator scratch (not source-of-truth)
 local/

@@ -719,76 +719,7 @@ fn read_capability_ledger_events(path: &Path) -> Vec<Value> {
         .collect::<Vec<_>>()
 }
 
-fn run_capability_ledger_receipt(root: &Path, argv: &[String], strict: bool) -> Value {
-    let op = parse_flag(argv, "op")
-        .or_else(|| first_non_flag(argv, 1))
-        .unwrap_or_else(|| "status".to_string())
-        .to_ascii_lowercase();
-    let events_path = capability_ledger_events_path(root);
-    let mut events = read_capability_ledger_events(&events_path);
-    let mut errors = Vec::<String>::new();
-
-    if matches!(op.as_str(), "grant" | "revoke") {
-        let capability = parse_flag(argv, "capability")
-            .unwrap_or_default()
-            .trim()
-            .to_ascii_lowercase();
-        let subject = parse_flag(argv, "subject")
-            .unwrap_or_else(|| "global".to_string())
-            .trim()
-            .to_ascii_lowercase();
-        let reason = parse_flag(argv, "reason")
-            .unwrap_or_else(|| "operator_request".to_string())
-            .trim()
-            .to_string();
-        if !is_token_id(&capability) {
-            errors.push("capability_id_invalid".to_string());
-        }
-        if !is_token_id(&subject) {
-            errors.push("subject_id_invalid".to_string());
-        }
-
-        if errors.is_empty() {
-            let previous_hash = events
-                .last()
-                .and_then(|row| row.get("event_hash"))
-                .and_then(Value::as_str)
-                .unwrap_or("GENESIS")
-                .to_string();
-            let seq = (events.len() as u64).saturating_add(1);
-            let event_ts = now_iso();
-            let event_body = json!({
-                "seq": seq,
-                "ts": event_ts,
-                "op": op,
-                "capability": capability,
-                "subject": subject,
-                "reason": reason
-            });
-            let merged = serde_json::to_string(&event_body).unwrap_or_default();
-            let event_hash = receipt_hash(
-                &json!({"previous_hash": previous_hash, "event": event_body, "merged": merged}),
-            );
-            let event = json!({
-                "seq": seq,
-                "ts": event_ts,
-                "op": op,
-                "capability": capability,
-                "subject": subject,
-                "reason": reason,
-                "previous_hash": previous_hash,
-                "event_hash": event_hash
-            });
-            if let Err(err) = append_jsonl(&events_path, &event) {
-                errors.push(err);
-            } else {
-                events.push(event);
-            }
-        }
-    } else if !matches!(op.as_str(), "verify" | "status") {
-        errors.push(format!("unknown_capability_ledger_op:{op}"));
-    }
-
+fn capability_ledger_verify(events: &[Value]) -> (Vec<String>, String) {
     let mut verify_errors = Vec::<String>::new();
     let mut expected_prev = "GENESIS".to_string();
     for (idx, row) in events.iter().enumerate() {
@@ -824,6 +755,99 @@ fn run_capability_ledger_receipt(root: &Path, argv: &[String], strict: bool) -> 
         }
         expected_prev = observed.to_string();
     }
+    (verify_errors, expected_prev)
+}
+
+pub fn append_capability_hash_chain_event(
+    root: &Path,
+    op: &str,
+    capability: &str,
+    subject: &str,
+    reason: &str,
+) -> Result<Value, String> {
+    let op_clean = op.trim().to_ascii_lowercase();
+    if op_clean != "grant" && op_clean != "revoke" {
+        return Err("capability_ledger_op_invalid".to_string());
+    }
+    if !is_token_id(capability) {
+        return Err("capability_id_invalid".to_string());
+    }
+    if !is_token_id(subject) {
+        return Err("subject_id_invalid".to_string());
+    }
+    let events_path = capability_ledger_events_path(root);
+    let events = read_capability_ledger_events(&events_path);
+    let previous_hash = events
+        .last()
+        .and_then(|row| row.get("event_hash"))
+        .and_then(Value::as_str)
+        .unwrap_or("GENESIS")
+        .to_string();
+    let seq = (events.len() as u64).saturating_add(1);
+    let event_ts = now_iso();
+    let event_body = json!({
+        "seq": seq,
+        "ts": event_ts,
+        "op": op_clean,
+        "capability": capability.trim().to_ascii_lowercase(),
+        "subject": subject.trim().to_ascii_lowercase(),
+        "reason": reason.trim()
+    });
+    let merged = serde_json::to_string(&event_body).unwrap_or_default();
+    let event_hash = receipt_hash(
+        &json!({"previous_hash": previous_hash, "event": event_body, "merged": merged}),
+    );
+    let event = json!({
+        "seq": seq,
+        "ts": event_ts,
+        "op": op_clean,
+        "capability": capability.trim().to_ascii_lowercase(),
+        "subject": subject.trim().to_ascii_lowercase(),
+        "reason": reason.trim(),
+        "previous_hash": previous_hash,
+        "event_hash": event_hash
+    });
+    append_jsonl(&events_path, &event)?;
+    Ok(event)
+}
+
+fn run_capability_ledger_receipt(root: &Path, argv: &[String], strict: bool) -> Value {
+    let op = parse_flag(argv, "op")
+        .or_else(|| first_non_flag(argv, 1))
+        .unwrap_or_else(|| "status".to_string())
+        .to_ascii_lowercase();
+    let events_path = capability_ledger_events_path(root);
+    let mut events = read_capability_ledger_events(&events_path);
+    let mut errors = Vec::<String>::new();
+    let mut latest_event = Value::Null;
+
+    if matches!(op.as_str(), "grant" | "revoke") {
+        let capability = parse_flag(argv, "capability")
+            .unwrap_or_default()
+            .trim()
+            .to_ascii_lowercase();
+        let subject = parse_flag(argv, "subject")
+            .unwrap_or_else(|| "global".to_string())
+            .trim()
+            .to_ascii_lowercase();
+        let reason = parse_flag(argv, "reason")
+            .unwrap_or_else(|| "operator_request".to_string())
+            .trim()
+            .to_string();
+        match append_capability_hash_chain_event(root, &op, &capability, &subject, &reason) {
+            Ok(event) => {
+                latest_event = event.clone();
+                events.push(event);
+            }
+            Err(err) => {
+                errors.push(err);
+            }
+        }
+    } else if !matches!(op.as_str(), "verify" | "status") {
+        errors.push(format!("unknown_capability_ledger_op:{op}"));
+    }
+
+    let (verify_errors, expected_prev) = capability_ledger_verify(&events);
     let chain_valid = verify_errors.is_empty();
     if op == "verify" {
         errors.extend(verify_errors.clone());
@@ -839,6 +863,7 @@ fn run_capability_ledger_receipt(root: &Path, argv: &[String], strict: bool) -> 
         "events_path": events_path.display().to_string(),
         "event_count": events.len(),
         "tip_hash": expected_prev,
+        "latest_event": latest_event,
         "chain_valid": chain_valid,
         "verify_errors": verify_errors,
         "errors": errors,
@@ -846,6 +871,14 @@ fn run_capability_ledger_receipt(root: &Path, argv: &[String], strict: bool) -> 
             {
                 "id": "V7-ASSIMILATE-001.3",
                 "claim": "capability_grant_revoke_events_are_hash_chained_and_verifier_detects_tamper",
+                "evidence": {
+                    "event_count": events.len(),
+                    "chain_valid": chain_valid
+                }
+            },
+            {
+                "id": "V7-ASM-003",
+                "claim": "capability_grant_revoke_hash_chain_ledger_is_integrated_with_active_runtime_events",
                 "evidence": {
                     "event_count": events.len(),
                     "chain_valid": chain_valid
