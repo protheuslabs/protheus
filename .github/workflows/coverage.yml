@@ -44,7 +44,7 @@ jobs:
           node -e "const fs=require('fs');const s=JSON.parse(fs.readFileSync('coverage/combined-summary.json','utf8'));if(s.combined_lines_pct<75){console.error('coverage gate failed:',s.combined_lines_pct);process.exit(1);}console.log('coverage gate passed:',s.combined_lines_pct);"
 
       - name: Upload coverage artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-artifacts
           path: |

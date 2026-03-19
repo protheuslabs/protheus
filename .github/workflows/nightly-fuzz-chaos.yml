@@ -41,7 +41,7 @@ jobs:
           node scripts/ci/nightly_fuzz_chaos_report.mjs
 
       - name: Upload fuzz + chaos report artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nightly-fuzz-chaos-report
           path: artifacts/nightly_fuzz_chaos_report_*.json
