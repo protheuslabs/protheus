@@ -302,3 +302,68 @@ fn conduit_daemon_routes_edge_inference_prefix_to_backend_contract() {
         other => panic!("unexpected event: {other:?}"),
     }
 }
+
+#[test]
+fn conduit_daemon_returns_legacy_lane_error_for_invalid_lane_identifier() {
+    let (policy, temp) = policy_fixture();
+    let policy_path = write_policy_file(&temp, policy.clone(), conduit::MAX_CONDUIT_MESSAGE_TYPES);
+    let mut envelope = signed_envelope(&policy, "daemon-legacy-lane-invalid");
+    retarget_command(
+        &policy,
+        &mut envelope,
+        TsCommand::StartAgent {
+            agent_id: "lane: !!!".to_string(),
+        },
+        "daemon-it",
+    );
+
+    let (output, response) = run_daemon_with_envelope(&policy_path, &envelope);
+    assert!(output.status.success());
+    assert!(response.validation.ok);
+    match response.event {
+        conduit::RustEvent::SystemFeedback { status, detail, .. } => {
+            assert_eq!(status, "legacy_lane_error");
+            assert_eq!(
+                detail
+                    .get("lane_receipt")
+                    .and_then(|v| v.get("ok"))
+                    .and_then(serde_json::Value::as_bool),
+                Some(false)
+            );
+            assert_eq!(
+                detail
+                    .get("lane_receipt")
+                    .and_then(|v| v.get("error"))
+                    .and_then(serde_json::Value::as_str),
+                Some("lane_id_missing_or_invalid")
+            );
+        }
+        other => panic!("unexpected event: {other:?}"),
+    }
+}
+
+#[test]
+fn conduit_daemon_falls_back_to_agent_lifecycle_for_standard_start_agent() {
+    let (policy, temp) = policy_fixture();
+    let policy_path = write_policy_file(&temp, policy.clone(), conduit::MAX_CONDUIT_MESSAGE_TYPES);
+    let mut envelope = signed_envelope(&policy, "daemon-start-agent-fallback");
+    retarget_command(
+        &policy,
+        &mut envelope,
+        TsCommand::StartAgent {
+            agent_id: "agent-standard-42".to_string(),
+        },
+        "daemon-it",
+    );
+
+    let (output, response) = run_daemon_with_envelope(&policy_path, &envelope);
+    assert!(output.status.success());
+    assert!(response.validation.ok);
+    match response.event {
+        conduit::RustEvent::AgentLifecycle { state, agent_id } => {
+            assert_eq!(state, conduit::AgentLifecycleState::Started);
+            assert_eq!(agent_id, "agent-standard-42");
+        }
+        other => panic!("unexpected event: {other:?}"),
+    }
+}
