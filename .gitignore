@@ -407,3 +407,6 @@ state/client/memory/snapshots/*.jsonl
 # Python runtime cache
 __pycache__/
 *.pyc
+
+# HMAN preparation materials (sensitive auditor/vendor communications)
+/hman-prep/
