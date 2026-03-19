@@ -35,7 +35,7 @@ Generated: 2026-03-08T05:19:04.541Z
 | `enterprise_support_template_present` | `file_exists` | `docs/client/ENTERPRISE_SUPPORT_ENVELOPE_TEMPLATE.md` | PASS | `ok` |
 | `case_study_template_present` | `file_exists` | `docs/client/REFERENCE_CUSTOMER_CASE_STUDY_TEMPLATE.md` | PASS | `ok` |
 | `legal_packet_checklist_present` | `file_exists` | `docs/client/LEGAL_ENTERPRISE_PACKET_CHECKLIST.md` | PASS | `ok` |
-| `a_plus_gate_script_present` | `file_exists` | `client/runtime/systems/ops/f100_a_plus_readiness_gate.ts` | PASS | `ok` |
+| `a_plus_gate_rust_lane_present` | `file_exists` | `core/layer0/ops/src/f100_reliability_certification.rs` | PASS | `ok` |
 | `human_split_compliance_certs` | `file_contains` | `docs/client/HUMAN_ONLY_ACTIONS.md` | PASS | `ok` |
 
 ## Summary

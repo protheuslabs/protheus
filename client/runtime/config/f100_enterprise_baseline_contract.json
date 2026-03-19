@@ -172,9 +172,9 @@
       "path": "docs/client/LEGAL_ENTERPRISE_PACKET_CHECKLIST.md"
     },
     {
-      "id": "a_plus_gate_script_present",
+      "id": "a_plus_gate_rust_lane_present",
       "type": "file_exists",
-      "path": "client/runtime/systems/ops/f100_a_plus_readiness_gate.ts"
+      "path": "core/layer0/ops/src/f100_reliability_certification.rs"
     },
     {
       "id": "human_split_compliance_certs",

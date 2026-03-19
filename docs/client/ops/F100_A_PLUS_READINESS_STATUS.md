@@ -4,7 +4,7 @@ Generated: 2026-03-08T05:22:11.440Z
 
 | Check | Status | Expected | Actual | Source |
 |---|---|---|---|---|
-| `enterprise_baseline_contract_pass` | PASS | `baseline.ok == true` | `true` | `client/runtime/state/ops/f100_enterprise_baseline_gate/latest.json` |
+| `enterprise_baseline_contract_pass` | PASS | `baseline.ok == true` | `true` | `local/state/ops/f100_readiness_program/v6_f100_012/latest.json` |
 | `combined_coverage_threshold` | FAIL | `combined_lines_pct >= 90` | `77.63` | `docs/client/reports/coverage_baseline_2026-03-06.json` |
 | `semantic_release_cadence` | FAIL | `v* tags >= 9` | `0` | `git tag -l v*` |
 | `release_slsa_attestation_enabled` | PASS | `release workflow contains actions/attest-build-provenance@v2` | `present` | `.github/workflows/release-security-artifacts.yml` |

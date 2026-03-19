@@ -32,8 +32,8 @@ jobs:
       - name: Install npm dependencies
         run: npm ci --include=dev
 
-      - name: Generate A+ readiness scorecard (non-blocking legacy wrapper)
-        run: node tests/client-memory-tools/f100_a_plus_readiness_gate.test.js
+      - name: Generate A+ readiness scorecard (Rust authoritative)
+        run: npm run -s ops:f100-a-plus:run
 
       - name: Upload A+ readiness artifacts
         if: always()
@@ -42,4 +42,4 @@ jobs:
           name: f100-a-plus-readiness
           path: |
             docs/client/ops/F100_A_PLUS_READINESS_STATUS.md
-            local/state/ops/f100_a_plus_readiness_gate/latest.json
+            local/state/ops/f100_reliability_certification/latest.json

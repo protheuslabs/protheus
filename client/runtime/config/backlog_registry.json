@@ -13444,7 +13444,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Added `client/runtime/config/f100_enterprise_baseline_contract.json` and `client/runtime/systems/ops/f100_enterprise_baseline_gate.ts` (strict/status modes) with state receipt output + markdown status, CI workflow `.github/workflows/f100-enterprise-baseline.yml`, npm scripts, and regression test `tests/client-memory-tools/f100_enterprise_baseline_gate.test.js`.",
+      "acceptance": "Added `client/runtime/config/f100_enterprise_baseline_contract.json` and Rust-authoritative lane `protheus-ops f100-readiness-program run-all/status` (`core/layer0/ops/src/f100_readiness_program.rs`) with deterministic receipt output under `local/state/ops/f100_readiness_program/`; CI workflow `.github/workflows/f100-enterprise-baseline.yml` runs the Rust lane via npm script.",
       "class": "backlog",
       "dependencies": [],
       "id": "V6-F100-039",
@@ -13534,7 +13534,7 @@
       "wave": "V6"
     },
     {
-      "acceptance": "Added `client/runtime/systems/ops/f100_a_plus_readiness_gate.ts` with status artifact `docs/client/ops/F100_A_PLUS_READINESS_STATUS.md`, npm scripts, regression test, and CI workflow `.github/workflows/f100-a-plus-scorecard.yml` (non-blocking artifact mode). Regression revalidation pending: restore non-backlog implementation evidence and/or executable verification receipts.",
+      "acceptance": "Added Rust-authoritative lane `protheus-ops f100-reliability-certification run/status` (`core/layer0/ops/src/f100_reliability_certification.rs`) with deterministic status receipts under `local/state/ops/f100_reliability_certification/`; CI workflow `.github/workflows/f100-a-plus-scorecard.yml` runs the Rust lane via npm script.",
       "class": "backlog",
       "dependencies": [],
       "id": "V6-F100-A-007",
