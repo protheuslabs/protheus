@@ -1,0 +1,143 @@
+{
+  "type": "competitive_benchmark_matrix_stabilized_preflight",
+  "ts": "2026-03-20T06:15:37.049Z",
+  "method": {
+    "warmup_runs": 2,
+    "measured_runs": 9,
+    "aggregation": "median",
+    "preflight_required": true,
+    "throughput_uncached": false,
+    "preflight_max_load_per_core_override": 2,
+    "accepted_with_retry": true
+  },
+  "source_runs": [
+    "run-1.json",
+    "run-2.json",
+    "run-3.json",
+    "run-4.json",
+    "run-5.json",
+    "run-6.json",
+    "run-7.json",
+    "run-8.json",
+    "run-9.json",
+    "run-10.json",
+    "run-11.json"
+  ],
+  "medians": {
+    "rich": {
+      "cold_start_ms": 4.434,
+      "idle_memory_mb": 8.203,
+      "install_size_mb": 14.899,
+      "tasks_per_sec": 145813.91
+    },
+    "pure": {
+      "cold_start_ms": 1.6326669999999999,
+      "idle_memory_mb": 1.359375,
+      "install_size_mb": 1.054,
+      "tasks_per_sec": 145813.91
+    },
+    "tiny_max": {
+      "cold_start_ms": 1.6008330000000002,
+      "idle_memory_mb": 1.359375,
+      "install_size_mb": 0.445,
+      "tasks_per_sec": 145813.91
+    }
+  },
+  "ranges": {
+    "rich": {
+      "cold": {
+        "median": 4.434,
+        "min": 4.114,
+        "max": 4.654
+      },
+      "idle": {
+        "median": 8.203,
+        "min": 8.203,
+        "max": 8.203
+      },
+      "install": {
+        "median": 14.899,
+        "min": 14.899,
+        "max": 14.899
+      },
+      "tps": {
+        "median": 145813.91,
+        "min": 145089.76,
+        "max": 146184.98
+      }
+    },
+    "pure": {
+      "cold": {
+        "median": 1.6326669999999999,
+        "min": 1.5270839999999999,
+        "max": 1.780166
+      },
+      "idle": {
+        "median": 1.359375,
+        "min": 1.359375,
+        "max": 1.359375
+      },
+      "install": {
+        "median": 1.054,
+        "min": 1.054,
+        "max": 1.054
+      },
+      "tps": {
+        "median": 145813.91,
+        "min": 145089.76,
+        "max": 146184.98
+      }
+    },
+    "tiny": {
+      "cold": {
+        "median": 1.6008330000000002,
+        "min": 1.503875,
+        "max": 1.81975
+      },
+      "idle": {
+        "median": 1.359375,
+        "min": 1.359375,
+        "max": 1.359375
+      },
+      "install": {
+        "median": 0.445,
+        "min": 0.445,
+        "max": 0.445
+      },
+      "tps": {
+        "median": 145813.91,
+        "min": 145089.76,
+        "max": 146184.98
+      }
+    }
+  },
+  "preflight": {
+    "max_load_per_core": 2,
+    "max_noise_cv_pct": 12.5,
+    "load_per_core_peak_median": 1.069,
+    "noise_cv_pct_median": 0.87,
+    "load_per_core_peak_max": 1.112,
+    "noise_cv_pct_max": 9.33
+  },
+  "baseline_reference": "docs/client/reports/benchmark_matrix_stabilized_2026-03-19.json",
+  "delta_vs_baseline_pct": {
+    "rich": {
+      "cold_start_ms_pct": -1.2911843276936739,
+      "idle_memory_mb_pct": 0.3793441018110475,
+      "install_size_mb_pct": 4.561723629728392,
+      "tasks_per_sec_pct": 0.233022984305467
+    },
+    "pure": {
+      "cold_start_ms_pct": 2.4525864043479317,
+      "idle_memory_mb_pct": 1.1627906976744187,
+      "install_size_mb_pct": 57.31343283582089,
+      "tasks_per_sec_pct": 0.233022984305467
+    },
+    "tiny_max": {
+      "cold_start_ms_pct": -2.5021971268949454,
+      "idle_memory_mb_pct": 1.1627906976744187,
+      "install_size_mb_pct": -7.867494824016559,
+      "tasks_per_sec_pct": 0.233022984305467
+    }
+  }
+}

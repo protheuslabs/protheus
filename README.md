@@ -167,17 +167,18 @@ This regenerates:
 
 Sources:
 - Live control-plane run: `docs/client/reports/benchmark_matrix_run_2026-03-06.json`
-- Stabilized multi-run median (2 warmups + 9 runs): `docs/client/reports/benchmark_matrix_stabilized_2026-03-19.json`
+- Stabilized multi-run median (2 warmups + 9 runs): `docs/client/reports/benchmark_matrix_stabilized_preflight_2026-03-20.json`
 - Historical proof-pack reference (2026-03-14): `docs/client/reports/runtime_snapshots/ops/proof_pack/top1_benchmark_snapshot.json`
 - Headline runtime metrics below reflect the latest stabilized median benchmark artifact; single-run live refresh details remain in the JSON reports for tail-latency diagnostics.
 - Throughput now reflects a shared pre-profile release-binary baseline measured once per run to avoid per-profile contamination from probe order and compile-time load.
+- The 2026-03-20 stabilized artifact ran with preflight enabled and a temporary host-load override (`--preflight-max-load-per-core=2.0`); noise-gate preflight remained fail-closed.
 
 | Metric | InfRing (rich) | InfRing (pure) | InfRing (tiny-max) | Historical Reference |
 |---|---:|---:|---:|---:|
-| Cold start | 4.5 ms | 1.6 ms | 1.7 ms | 74.5 ms |
+| Cold start | 4.4 ms | 1.6 ms | 1.6 ms | 74.5 ms |
 | Idle memory | 8.2 MB | 1.4 MB | 1.4 MB | 22.1 MB |
-| Install size (full) | 14.3 MB | 0.7 MB | 0.5 MB | 126.4 MB |
-| Throughput | 145,474 ops/sec | 145,474 ops/sec | 145,474 ops/sec | 7,420 ops/sec |
+| Install size (full) | 14.9 MB | 1.1 MB | 0.4 MB | 126.4 MB |
+| Throughput | 145,814 ops/sec | 145,814 ops/sec | 145,814 ops/sec | 7,420 ops/sec |
 
 The historical reference column is an older proof-pack baseline used for internal assurance and regression comparison. It is not an additional InfRing runtime mode.
 
@@ -203,9 +204,9 @@ Copyable benchmark snapshot:
 ```text
 | Project | Published Footprint (MB) | Cold Start | Idle Memory (MB) | Throughput (ops/sec) | Static Daemon (MB) | Security Systems | Channel Adapters | LLM Providers |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| InfRing-rich | 14.3 | 4.5 ms | 8.2 | 145474 | 0.4 | 83 | 6 | 3 |
-| InfRing-pure | 0.7 | 1.6 ms | 1.4 | 145474 | 0.4 | 83 | 0 | 0 |
-| InfRing-tiny* | 0.5 | 1.7 ms | 1.4 | 145474 | 0.3 | 83 | 0 | 0 |
+| InfRing-rich | 14.9 | 4.4 ms | 8.2 | 145814 | 0.4 | 83 | 6 | 3 |
+| InfRing-pure | 1.1 | 1.6 ms | 1.4 | 145814 | 0.4 | 83 | 0 | 0 |
+| InfRing-tiny* | 0.4 | 1.6 ms | 1.4 | 145814 | 0.3 | 83 | 0 | 0 |
 | ZeroClaw* | 3.4 | 10.0 ms* | 5.0* | n/p | 3.4 | n/p | 9 | 28+ |
 | OpenFang | 32.0 | 180.0 ms | 40.0 | n/p | n/p | 16 | 40 | 27 |
 | OpenHands | 95.5 | 1.3 sec | 150.0 | n/p | n/p | 7 | 15 | 5 |
@@ -243,43 +244,43 @@ Bars use log scaling for wide-range lower-is-better metrics (cold start, memory,
 #### Cold Start Time (lower is better)
 
 ```text
-InfRing-pure    ████████████████████████████████████████████████████████████████  ~2 ms
-InfRing-tiny*   ███████████████████████████████████████████████████████████████░  ~2 ms
-InfRing-rich    ██████████████████████████████████████████████████████████░░░░░░  ~5 ms
-ZeroClaw        ██████████████████████████████████████████████████████░░░░░░░░░░  10 ms*
-OpenFang        ████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  180 ms
-OpenHands       ███████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  1 sec
-LangGraph       █████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  2 sec
-CrewAI          ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  3 sec
-AutoGen         █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  4 sec
+InfRing-pure    ███████████████████████████████████████████████████████████████  ~2 ms
+InfRing-tiny*   ███████████████████████████████████████████████████████████████  ~2 ms
+InfRing-rich    ██████████████████████████████████████████████████████████░░░░░  ~4 ms
+ZeroClaw        ██████████████████████████████████████████████████████░░░░░░░░░  10 ms*
+OpenFang        ████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  180 ms
+OpenHands       ███████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  1 sec
+LangGraph       █████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  2 sec
+CrewAI          ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  3 sec
+AutoGen         █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  4 sec
 ```
 
 #### Idle Memory Usage (lower is better)
 
 ```text
-InfRing-pure    ████████████████████████████████████████████████████████████████  ~2 MB
-InfRing-tiny*   ████████████████████████████████████████████████████████████████  ~2 MB
-ZeroClaw        █████████████████████████████████████████████████░░░░░░░░░░░░░░░  5 MB*
-InfRing-rich    ███████████████████████████████████████████░░░░░░░░░░░░░░░░░░░░░  ~9 MB
-OpenFang        ███████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  40 MB
-OpenHands       ███████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  150 MB
-LangGraph       █████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  180 MB
-CrewAI          ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  200 MB
-AutoGen         █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  250 MB
+InfRing-pure    ███████████████████████████████████████████████████████████████  ~2 MB
+InfRing-tiny*   ███████████████████████████████████████████████████████████████  ~2 MB
+ZeroClaw        █████████████████████████████████████████████████░░░░░░░░░░░░░░  5 MB*
+InfRing-rich    ███████████████████████████████████████████░░░░░░░░░░░░░░░░░░░░  ~9 MB
+OpenFang        ███████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  40 MB
+OpenHands       ███████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  150 MB
+LangGraph       █████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  180 MB
+CrewAI          ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  200 MB
+AutoGen         █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  250 MB
 ```
 
 #### Published Footprint (lower is better)
 
 ```text
-InfRing-tiny*   ████████████████████████████████████████████████████████████████  ~1 MB
-InfRing-pure    ████████████████████████████████████████████████████████████░░░░  ~1 MB
-ZeroClaw        ████████████████████████████████████████████░░░░░░░░░░░░░░░░░░░░  3 MB
-InfRing-rich    ████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  ~15 MB
-OpenFang        ████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  32 MB
-OpenHands       █████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  95 MB
-CrewAI          ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  100 MB
-LangGraph       ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  150 MB
-AutoGen         █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  200 MB
+InfRing-tiny*   ███████████████████████████████████████████████████████████████  ~1 MB
+InfRing-pure    ████████████████████████████████████████████████████████████░░░  ~1 MB
+ZeroClaw        ████████████████████████████████████████████░░░░░░░░░░░░░░░░░░░  3 MB
+InfRing-rich    ████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  ~15 MB
+OpenFang        ████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  32 MB
+OpenHands       █████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  95 MB
+CrewAI          ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  100 MB
+LangGraph       ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  150 MB
+AutoGen         █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  200 MB
 ```
 
 ## Alpha Readiness Checklist
