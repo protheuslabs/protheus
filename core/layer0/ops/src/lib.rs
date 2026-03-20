@@ -68,6 +68,7 @@ pub mod crawl_signals;
 pub mod crawl_spider;
 pub mod crewai_bridge;
 pub mod daemon_control;
+pub mod dashboard_ui;
 pub mod dify_bridge;
 pub mod directive_kernel;
 pub mod dopamine_ambient;

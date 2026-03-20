@@ -127,7 +127,9 @@ fn v7_asm_003_security_plane_grant_revoke_writes_capability_hash_chain() {
     );
     std::env::set_var(
         "CAPABILITY_SWITCHBOARD_POLICY_ROOT_SCRIPT",
-        root.join("missing_policy_root_script.js").display().to_string(),
+        root.join("missing_policy_root_script.js")
+            .display()
+            .to_string(),
     );
 
     let revoke_exit = security_plane::run(
@@ -198,7 +200,10 @@ fn v7_asm_003_security_plane_grant_revoke_writes_capability_hash_chain() {
         .join("assimilation_controller")
         .join("latest.json");
     let verify_payload = read_json(&verify_latest);
-    assert_eq!(verify_payload.get("ok").and_then(Value::as_bool), Some(true));
+    assert_eq!(
+        verify_payload.get("ok").and_then(Value::as_bool),
+        Some(true)
+    );
     assert_eq!(
         verify_payload.get("chain_valid").and_then(Value::as_bool),
         Some(true)
@@ -754,10 +759,7 @@ fn v6_sec_remediate_fails_closed_when_scan_is_missing_in_strict_mode() {
     let tmp = tempfile::tempdir().expect("tempdir");
     let root = tmp.path();
 
-    let exit = security_plane::run(
-        root,
-        &["remediate".to_string(), "--strict=1".to_string()],
-    );
+    let exit = security_plane::run(root, &["remediate".to_string(), "--strict=1".to_string()]);
     assert_eq!(exit, 2, "strict remediation must fail without a prior scan");
 
     let latest = read_json(&latest_path(root));

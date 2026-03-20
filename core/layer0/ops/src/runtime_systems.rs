@@ -1417,10 +1417,8 @@ fn roi_sweep_payload(root: &Path, args: &[String]) -> Result<Value, String> {
         400,
         profiles.len(),
     );
-    let apply = lane_utils::parse_bool(
-        lane_utils::parse_flag(args, "apply", true).as_deref(),
-        true,
-    );
+    let apply =
+        lane_utils::parse_bool(lane_utils::parse_flag(args, "apply", true).as_deref(), true);
     let strict = lane_utils::parse_bool(
         lane_utils::parse_flag(args, "strict", true).as_deref(),
         true,

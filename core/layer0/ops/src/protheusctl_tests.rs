@@ -87,6 +87,42 @@ fn core_shortcut_routes_alpha_check_flags_default_to_run_subcommand() {
 }
 
 #[test]
+fn dashboard_runtime_flags_detect_node_override() {
+    assert!(is_node_dashboard_flag("--node-ui"));
+    assert!(is_node_dashboard_flag("--legacy-node-ui=1"));
+    assert!(!is_node_dashboard_flag("--node-ui=0"));
+}
+
+#[test]
+fn dashboard_runtime_flag_split_preserves_non_override_args() {
+    let (force_node, args) = split_dashboard_runtime_flags(vec![
+        "--node-ui".to_string(),
+        "--host=127.0.0.1".to_string(),
+        "--port=4173".to_string(),
+    ]);
+    assert!(force_node);
+    assert_eq!(args, vec!["--host=127.0.0.1", "--port=4173"]);
+}
+
+#[test]
+fn status_dashboard_token_strip_removes_wrapper_flags() {
+    let args = strip_status_dashboard_tokens(vec![
+        "--dashboard".to_string(),
+        "--web".to_string(),
+        "--host=127.0.0.1".to_string(),
+        "--port=4173".to_string(),
+    ]);
+    assert_eq!(args, vec!["--host=127.0.0.1", "--port=4173"]);
+}
+
+#[test]
+fn core_shortcut_routes_start_to_daemon_control() {
+    let route = resolve_core_shortcuts("start", &["--mode=persistent".to_string()]).expect("route");
+    assert_eq!(route.script_rel, "core://daemon-control");
+    assert_eq!(route.args, vec!["start", "--mode=persistent"]);
+}
+
+#[test]
 fn core_shortcut_routes_chat_with_files() {
     let route = resolve_core_shortcuts(
         "chat",

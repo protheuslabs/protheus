@@ -30,6 +30,27 @@ fn has_prefix_flag(args: &[String], key: &str) -> bool {
 
 pub(super) fn resolve_core_shortcuts(cmd: &str, rest: &[String]) -> Option<Route> {
     match cmd {
+        "start" | "boot" => Some(Route {
+            script_rel: "core://daemon-control".to_string(),
+            args: std::iter::once("start".to_string())
+                .chain(rest.iter().cloned())
+                .collect(),
+            forward_stdin: false,
+        }),
+        "stop" => Some(Route {
+            script_rel: "core://daemon-control".to_string(),
+            args: std::iter::once("stop".to_string())
+                .chain(rest.iter().cloned())
+                .collect(),
+            forward_stdin: false,
+        }),
+        "restart" => Some(Route {
+            script_rel: "core://daemon-control".to_string(),
+            args: std::iter::once("restart".to_string())
+                .chain(rest.iter().cloned())
+                .collect(),
+            forward_stdin: false,
+        }),
         "rag" => Some(Route {
             script_rel: "core://rag".to_string(),
             args: if rest.is_empty() {

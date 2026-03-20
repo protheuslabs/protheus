@@ -2384,8 +2384,12 @@ fn run_rollback(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value 
         });
     }
 
-    let rollback_history_path = state_root(root).join("migrations").join("rollback_history.jsonl");
-    let rollback_latest_path = state_root(root).join("migrations").join("rollback_latest.json");
+    let rollback_history_path = state_root(root)
+        .join("migrations")
+        .join("rollback_history.jsonl");
+    let rollback_latest_path = state_root(root)
+        .join("migrations")
+        .join("rollback_latest.json");
     let mut rollback_receipt = json!({
         "ok": true,
         "type": "skills_plane_rollback",
@@ -2454,11 +2458,7 @@ fn run_skill(root: &Path, parsed: &crate::ParsedArgs, strict: bool) -> Value {
     );
     if strict {
         let quarantine = read_json(&quarantine_path(root)).unwrap_or_else(|| json!({}));
-        if quarantine
-            .get(&skill)
-            .and_then(Value::as_object)
-            .is_some()
-        {
+        if quarantine.get(&skill).and_then(Value::as_object).is_some() {
             let mut out = json!({
                 "ok": false,
                 "strict": strict,
@@ -3032,8 +3032,8 @@ mod tests {
         assert_eq!(rollback_out.get("ok").and_then(Value::as_bool), Some(true));
         assert!(has_claim(&rollback_out, "V8-SKILL-002"));
 
-        let registry = read_json(&state_root(root.path()).join("registry.json"))
-            .expect("registry readable");
+        let registry =
+            read_json(&state_root(root.path()).join("registry.json")).expect("registry readable");
         assert_eq!(
             registry
                 .pointer("/installed/compat-rollback/version")
@@ -3252,10 +3252,7 @@ mod tests {
             }),
         )
         .expect("write registry");
-        let parsed = crate::parse_args(&[
-            "run".to_string(),
-            "--skill=compat_skill".to_string(),
-        ]);
+        let parsed = crate::parse_args(&["run".to_string(), "--skill=compat_skill".to_string()]);
         let out = run_skill(root.path(), &parsed, false);
         assert_eq!(out.get("ok").and_then(Value::as_bool), Some(true));
         assert!(has_claim(&out, "V8-SKILL-002"));

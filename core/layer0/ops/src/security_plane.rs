@@ -957,14 +957,7 @@ fn run_scan_command(root: &Path, argv: &[String], strict: bool) -> (Value, i32) 
             }
         }]
     });
-    let _ = run_security_contract_command(
-        root,
-        argv,
-        strict,
-        "scan",
-        "V6-SEC-010",
-        &[],
-    );
+    let _ = run_security_contract_command(root, argv, strict, "scan", "V6-SEC-010", &[]);
     (out, if strict && blocked { 2 } else { 0 })
 }
 
@@ -1060,28 +1053,15 @@ fn run_blast_radius_command(root: &Path, argv: &[String], strict: bool) -> (Valu
             }
         }]
     });
-    let _ = run_security_contract_command(
-        root,
-        argv,
-        strict,
-        "blast-radius-record",
-        "V6-SEC-012",
-        &[],
-    );
+    let _ =
+        run_security_contract_command(root, argv, strict, "blast-radius-record", "V6-SEC-012", &[]);
     (out, if strict && blocked { 2 } else { 0 })
 }
 
 fn run_remediation_command(root: &Path, argv: &[String], strict: bool) -> (Value, i32) {
     let latest = read_json(&scanner_latest_path(root));
     let Some(scan_doc) = latest else {
-        let _ = run_security_contract_command(
-            root,
-            argv,
-            strict,
-            "remediate",
-            "V6-SEC-011",
-            &[],
-        );
+        let _ = run_security_contract_command(root, argv, strict, "remediate", "V6-SEC-011", &[]);
         let out = json!({
             "ok": false,
             "type": "security_plane_auto_remediation",
@@ -1163,14 +1143,7 @@ fn run_remediation_command(root: &Path, argv: &[String], strict: bool) -> (Value
             }
         }]
     });
-    let _ = run_security_contract_command(
-        root,
-        argv,
-        strict,
-        "remediate",
-        "V6-SEC-011",
-        &[],
-    );
+    let _ = run_security_contract_command(root, argv, strict, "remediate", "V6-SEC-011", &[]);
     (out, if strict && promotion_blocked { 2 } else { 0 })
 }
 
@@ -1719,14 +1692,8 @@ fn run_secrets_federation_command(root: &Path, argv: &[String], strict: bool) ->
     }
 
     write_secret_state(root, &handles);
-    let _ = run_security_contract_command(
-        root,
-        argv,
-        strict,
-        "secrets-federation",
-        "V6-SEC-016",
-        &[],
-    );
+    let _ =
+        run_security_contract_command(root, argv, strict, "secrets-federation", "V6-SEC-016", &[]);
     append_jsonl(
         &secrets_events_path(root),
         &json!({
@@ -1835,7 +1802,9 @@ fn wrap_capability_event(root: &Path, command: &str, argv: &[String], payload: V
             format!(
                 "{}:{}",
                 clean(command, 80),
-                out.get("type").and_then(Value::as_str).unwrap_or("runtime_change")
+                out.get("type")
+                    .and_then(Value::as_str)
+                    .unwrap_or("runtime_change")
             )
         });
         out["grant_revoke_receipt"] = json!({

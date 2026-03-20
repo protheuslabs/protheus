@@ -624,6 +624,11 @@ fn main() {
             let exit = protheus_ops_core::daemon_control::run(&cwd, &rest);
             std::process::exit(exit);
         }
+        "dashboard-ui" => {
+            let rest = args.iter().skip(1).cloned().collect::<Vec<_>>();
+            let exit = protheus_ops_core::dashboard_ui::run(&cwd, &rest);
+            std::process::exit(exit);
+        }
         "command-center-session" => {
             exit_domain!(
                 &cwd,

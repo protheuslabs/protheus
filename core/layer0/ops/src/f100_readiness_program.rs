@@ -1445,8 +1445,7 @@ mod tests {
             &json!({"contract":"ok"}).to_string(),
         );
         write_text(
-            &tmp
-                .path()
+            &tmp.path()
                 .join("local/state/security/multi_tenant_isolation_adversarial/latest.json"),
             &json!({
                 "cross_tenant_leaks": 0,
@@ -1499,24 +1498,22 @@ mod tests {
         let tmp = tempdir().expect("tmp");
         setup_policy(tmp.path());
         write_text(
-            &tmp.path().join("client/runtime/config/oncall_incident_policy.json"),
+            &tmp.path()
+                .join("client/runtime/config/oncall_incident_policy.json"),
             &json!({"policy":"v1"}).to_string(),
         );
         write_text(
-            &tmp
-                .path()
+            &tmp.path()
                 .join("local/state/ops/oncall_gameday/latest.json"),
             &json!({"mtta_minutes":4.0,"mttr_minutes":20.0}).to_string(),
         );
         write_text(
-            &tmp
-                .path()
+            &tmp.path()
                 .join("docs/observability/runbooks/INCIDENT_COMMAND.md"),
             "runbook\n",
         );
         write_text(
-            &tmp
-                .path()
+            &tmp.path()
                 .join("docs/observability/runbooks/POSTMORTEM_TEMPLATE.md"),
             "runbook\n",
         );

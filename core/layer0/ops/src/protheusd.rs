@@ -35,6 +35,10 @@ fn usage() {
     println!("  infringd subscribe [--strict=1|0]");
     println!("  infringd tick [--strict=1|0]");
     println!("  infringd diagnostics [--strict=1|0]");
+    println!("    start/restart optional dashboard flags:");
+    println!("      --dashboard-autoboot=1|0 (default: 1)");
+    println!("      --dashboard-open=1|0     (default: 1)");
+    println!("      --dashboard-host=<ip> --dashboard-port=<n>");
     println!("  infringd think --prompt=<text> [--session-id=<id>] [--memory-limit=<n>]");
     println!("  infringd research <status|fetch|diagnostics> [flags]");
     println!("  infringd memory <status|write|query> [flags]");

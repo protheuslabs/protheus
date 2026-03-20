@@ -282,9 +282,10 @@ Updated: 2026-03-20 08:47 America/Denver
   - Net wrapper source reduction: ~14.98 KB; targeted wrapper regression tests passing.
   - Stabilized post-compaction benchmark resample captured (`docs/client/reports/benchmark_matrix_resample_post_compaction_2026-03-20.json`); final sign-off still pending due shared baseline drift on throughput/install.
 
-31. `P1-DASHBOARD-WASM-001` Migrate dashboard runtime to Rust/WASM no-Node serving path after React/Tailwind parity freeze. `STATUS: QUEUED`
+31. `P1-DASHBOARD-WASM-001` Migrate dashboard runtime to Rust/WASM no-Node serving path after React/Tailwind parity freeze. `STATUS: IN_PROGRESS`
 - Context:
-- Current dashboard launch is TypeScript/Node-hosted for fast delivery (`infring dashboard`, `status --dashboard --web`), but long-term sovereignty target is no-Node runtime hosting.
+- Rust-core host cutover is now live for default launch (`infring dashboard`, `infring status --dashboard`, `infringd start` autoboot), while legacy Node path remains explicit opt-in (`--node-ui`) for fallback compatibility.
+- Remaining work is WASM packaging + parity hardening so no Node-hosted fallback is required in normal operator flows.
 - Linked SRS:
 - `V6-DASHBOARD-001.1` through `V6-DASHBOARD-001.10` (runtime host hardening follow-through).
 - Exit criteria:
@@ -313,6 +314,13 @@ Updated: 2026-03-20 08:47 America/Denver
 - Pane and section UI interactions emit deterministic UI receipts (`dashboard.ui.toggleControls`, `dashboard.ui.toggleSection`).
 - Fallback renderer preserves the same chat-first behavior when React/ESM path is unavailable.
 - Validate via dashboard regression + security/sovereignty checks.
+- Progress (2026-03-20):
+  - Added top-left light/dark switch in dashboard header (persisted to local storage).
+  - Added dedicated side-pane tab model with first-class `Swarm/Agent Management` tab.
+  - Added receipted controls-tab switch action (`dashboard.ui.switchControlsTab`) in dashboard runtime.
+  - Hardened chat-first default state keys (`*_v2`) so first-load remains clean chat mode even after prior UI iterations.
+  - Added keyboard-intuitive UX (`Enter` send, `Esc` close controls, `Cmd/Ctrl+K` focus chat) and quick action chip path to open/route into swarm controls.
+  - Added canonical regression profile doc at `docs/workspace/INFRING_DASHBOARD_UI_SPEC.md` and linked SRS guardrail requiring spec updates on dashboard behavior changes.
 
 ## Executed in this pass
 - Added `tests/tooling/scripts/ci/srs_actionable_map.mjs` to produce canonical remaining-work mapping and executability buckets.

@@ -180,6 +180,39 @@ fn v6_apps_batch16_chat_surfaces_and_code_engineer_are_receipted() {
 }
 
 #[test]
+fn v6_apps_batch16_chat_ui_run_accepts_input_flag() {
+    let fixture = stage_fixture_root();
+    let root = fixture.path();
+    let msg = "dashboard input path smoke";
+    let exit = app_plane::run(
+        root,
+        &[
+            "run".to_string(),
+            "--strict=1".to_string(),
+            "--app=chat-ui".to_string(),
+            "--session-id=ui-input-flag".to_string(),
+            format!("--input={msg}"),
+        ],
+    );
+    assert_eq!(exit, 0);
+    let latest = read_json(&latest_path(root));
+    assert_eq!(
+        latest.get("type").and_then(Value::as_str),
+        Some("app_plane_chat_ui")
+    );
+    let turn = latest.get("turn").cloned().unwrap_or(Value::Null);
+    assert_eq!(turn.get("user").and_then(Value::as_str), Some(msg));
+    let assistant = turn
+        .get("assistant")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    assert!(
+        assistant.contains(msg),
+        "assistant response should include routed input text"
+    );
+}
+
+#[test]
 fn v6_apps_batch16_rejects_bypass_when_strict() {
     let fixture = stage_fixture_root();
     let root = fixture.path();

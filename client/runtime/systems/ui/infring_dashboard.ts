@@ -85,6 +85,32 @@ function rebrandOpenclawText(text) {
     .replace(/\bopenclaw\b/g, 'infring');
 }
 
+function transpileForkTypeScript(source, fileName) {
+  const output = ts.transpileModule(String(source || ''), {
+    compilerOptions: {
+      target: ts.ScriptTarget.ES2020,
+      module: ts.ModuleKind.None,
+      sourceMap: false,
+      inlineSourceMap: false,
+      removeComments: false,
+    },
+    fileName,
+    reportDiagnostics: false,
+  });
+  return String(output && output.outputText ? output.outputText : '');
+}
+
+function readForkScript(basePathNoExt) {
+  const tsPath = path.resolve(OPENCLAW_FORK_STATIC_DIR, `${basePathNoExt}.ts`);
+  if (fileExists(tsPath)) {
+    const source = readText(tsPath, '');
+    if (source) return transpileForkTypeScript(source, tsPath);
+  }
+
+  const jsPath = path.resolve(OPENCLAW_FORK_STATIC_DIR, `${basePathNoExt}.js`);
+  return readText(jsPath, '');
+}
+
 function buildOpenclawForkHtml() {
   const head = readText(path.resolve(OPENCLAW_FORK_STATIC_DIR, 'index_head.html'), '');
   const body = readText(path.resolve(OPENCLAW_FORK_STATIC_DIR, 'index_body.html'), '');
@@ -97,8 +123,8 @@ function buildOpenclawForkHtml() {
   const vendorHighlight = readText(path.resolve(OPENCLAW_FORK_STATIC_DIR, 'vendor/highlight.min.js'), '');
   const vendorChart = readText(path.resolve(OPENCLAW_FORK_STATIC_DIR, 'vendor/chart.umd.min.js'), '');
   const vendorAlpine = readText(path.resolve(OPENCLAW_FORK_STATIC_DIR, 'vendor/alpine.min.js'), '');
-  const apiJs = readText(path.resolve(OPENCLAW_FORK_STATIC_DIR, 'js/api.js'), '');
-  const appJs = readText(path.resolve(OPENCLAW_FORK_STATIC_DIR, 'js/app.js'), '');
+  const apiJs = readForkScript('js/api');
+  const appJs = readForkScript('js/app');
   const pageScripts = [
     'overview',
     'chat',
@@ -118,7 +144,7 @@ function buildOpenclawForkHtml() {
     'comms',
     'runtime',
   ]
-    .map((name) => readText(path.resolve(OPENCLAW_FORK_STATIC_DIR, `js/pages/${name}.js`), ''))
+    .map((name) => readForkScript(`js/pages/${name}`))
     .filter(Boolean)
     .join('\n');
 

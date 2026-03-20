@@ -351,7 +351,7 @@ function buildMoves(options = {}) {
     for (const script of [
       'test:security:truth-gate',
       'ops:dependency-boundary:check',
-      'ops:client-layer:boundary',
+      'test:ops:dashboard-ui',
     ]) {
       push({
         title: `NPM ${script}`,

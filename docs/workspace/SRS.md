@@ -9487,12 +9487,13 @@ Notes:
   - Layer `2`: live aggregation, replay, and dashboard-state orchestration
   - `client`/`app`: dashboard UI and command surfaces only, non-authoritative
 - Implementation update (2026-03-20):
-  - Added first-class TypeScript dashboard surface at `client/runtime/systems/ui/infring_dashboard.ts` with WebSocket live stream, lane-backed snapshot/action APIs, and deterministic UI action receipts under `client/runtime/local/state/ui/infring_dashboard/`.
-  - Added TypeScript React client shell at `client/runtime/systems/ui/infring_dashboard_client.tsx` + styling at `client/runtime/systems/ui/infring_dashboard.css`.
-  - CLI launch paths: `infring dashboard`, `infring status --dashboard --web`, and `npm run dashboard:serve`.
-  - Rust/WASM no-Node host cutover is explicitly queued in `docs/workspace/TODO.md` as `P1-DASHBOARD-WASM-001` to preserve sovereign-runtime target without blocking current client delivery.
-  - UX/perf pass shipped: command-deck-first layout, integrated chat panel over `app-plane run/history`, card-first fleet controls with quick actions, global search, and virtualized receipts/logs/memory explorer surfaces to reduce long-list render cost.
-  - Compatibility hardening shipped: inline no-module fallback renderer + fallback chat actions so the dashboard remains operable when external ESM/CDN imports fail.
+  - Rust-core dashboard host lane is authoritative at `core/layer0/ops/src/dashboard_ui.rs` (`protheus-ops dashboard-ui <serve|snapshot|status>`), and default CLI launch routes to core host (`infring dashboard`, `infring status --dashboard`); legacy Node host remains explicit opt-in via `--node-ui`.
+  - Daemon startup path now supports dashboard auto-boot/open flags (`infringd start|restart --dashboard-autoboot=1|0 --dashboard-open=1|0 --dashboard-host=<ip> --dashboard-port=<n>`), with deterministic start/status/stop receipts and health probe contract (`/healthz`).
+  - Chat-first shell is now the default first-load mode: advanced controls hidden by default, top-left light/dark switch, chat composer at primary focus, and quick actions (`New Agent`, `New Swarm`, `Assimilate Codex`, `Run Benchmark`, `Open Controls`, `Swarm Tab`).
+  - Advanced controls are accessible via side pane tabs (`Swarm`, `Audit`, `Ops`, `Settings`) with first-class `Swarm / Agent Management` surface and deterministic UI action receipts for pane/tab interactions.
+  - Keyboard affordance contract is active (`Enter` send, `Esc` close controls, `Cmd/Ctrl+K` focus chat) with persisted UI state keys (`infring_dashboard_*`) for theme/drawer/tab.
+  - Compatibility hardening remains mandatory: dashboard must keep operating through local inline shell + lane-backed snapshot/action APIs even when external ESM/CDN loading paths fail.
+  - Canonical UI behavior and regression smoke profile is defined in `docs/workspace/INFRING_DASHBOARD_UI_SPEC.md`.
 
 Objective: deliver a unified control-plane dashboard that combines agent/scope visibility, live graphing, memory exploration, marketplace operations, logs/receipts, channel monitoring, and APM in one receipt-first surface.
 
@@ -9527,10 +9528,13 @@ Objective: default dashboard boot to a clean OpenFang/OpenClaw-style chat interf
 
 | ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
 | --- | --- | --- | --- | --- | --- | --- |
-| V6-DASHBOARD-006.1 | in_progress | Default Boot State: Minimal Chat UI | First impressions degrade when operators are dropped into dense control surfaces instead of familiar chat-first interaction. | First load shows full-width chat surface with top bar, message stream, input composer, typing/status affordances, and no advanced panes visible by default. | 10 | 1/2/client/app |
-| V6-DASHBOARD-006.2 | in_progress | Collapsible Side Pane for Advanced Controls | Power features must stay available without overwhelming first-time users. | Side pane is hidden by default, opens/closes via top-bar control with smooth slide behavior, exposes all advanced dashboard sections as collapsed accordion groups, and persists open/closed state in local storage. | 10 | 1/2/client/app |
-| V6-DASHBOARD-006.3 | in_progress | Non-Overwhelming Onboarding + Quick Actions | Users need clear immediate affordances to start using the system without reading internal docs. | First-load welcome guidance, chat placeholder guidance, and quick action chips (`New Agent`, `New Swarm`, `Assimilate`, `Run Benchmark`, `Open Controls`) are present and usable from chat view. | 9 | 1/2/client/app |
-| V6-DASHBOARD-006.4 | in_progress | Simple Visual Polish + Performance Envelope | Minimal interfaces still fail if they are janky, inaccessible, or visually noisy. | Chat-first mode remains responsive/mobile-safe with reduced-motion friendly transitions, no feature clutter in default view, and deterministic receipt trails for core UI pane/section interactions. | 9 | 1/2/client/app |
+| V6-DASHBOARD-006.1 | in_progress | Default Boot State: Minimal Chat UI | First impressions degrade when operators are dropped into dense control surfaces instead of familiar chat-first interaction. | First load shows full-width chat surface with top bar, top-left light/dark switch, mode/status hint, message stream, input composer, typing/status affordances, and no advanced pane visible by default. | 10 | 1/2/client/app |
+| V6-DASHBOARD-006.2 | in_progress | Collapsible Side Pane for Advanced Controls | Power features must stay available without overwhelming first-time users. | Side pane is hidden by default, opens/closes via top-bar control with slide behavior, keeps `Chat` + `Swarm / Agent Management` first, and exposes simple accordion panes (`Chat`, `Swarm / Agent Management`, `Runtime Health`, `Receipts & Audit`, `Logs`, `Settings`) with persisted drawer + pane state in local storage. | 10 | 1/2/client/app |
+| V6-DASHBOARD-006.3 | in_progress | Non-Overwhelming Onboarding + Quick Actions | Users need clear immediate affordances to start using the system without reading internal docs. | First-load guidance and chat placeholder are visible, with quick actions from chat view for `New Agent`, `New Swarm`, `Assimilate Codex`, `Run Benchmark`, `Open Controls`, and `Swarm Tab`. | 9 | 1/2/client/app |
+| V6-DASHBOARD-006.4 | in_progress | Simple Visual Polish + Performance Envelope | Minimal interfaces still fail if they are janky, inaccessible, or visually noisy. | Chat-first mode remains responsive/mobile-safe with reduced-motion friendly transitions, standard light/dark palettes (no premium/neon dependency), keyboard affordances (`Enter`, `Esc`, `Cmd/Ctrl+K`), fallback-safe rendering, and deterministic receipt trails for core UI interactions (`dashboard.ui.toggleControls`, `dashboard.ui.toggleSection`, `dashboard.ui.switchControlsTab`). | 9 | 1/2/client/app |
+
+Regression-proof note:
+- Any dashboard UX/control-plane behavior change that affects first-load experience, controls drawer semantics, quick actions, or keyboard flows must update `docs/workspace/INFRING_DASHBOARD_UI_SPEC.md` in the same change.
 
 ## Blind-Spot Hardening Intake Source Coverage (Doc `1rhlsnMmcJ2u3C3_QJgSkhK__SF0e27qTyeTFG7xagL8`, 2026-03-18)
 

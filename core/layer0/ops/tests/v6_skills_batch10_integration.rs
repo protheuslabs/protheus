@@ -291,7 +291,10 @@ fn v8_skill_002_enforces_backward_compatibility_and_forced_migration_receipts() 
     );
     assert_eq!(install_v2_without_force, 1);
     let blocked_latest = read_json(&latest_path(root));
-    assert_eq!(blocked_latest.get("ok").and_then(Value::as_bool), Some(false));
+    assert_eq!(
+        blocked_latest.get("ok").and_then(Value::as_bool),
+        Some(false)
+    );
     assert!(blocked_latest
         .get("errors")
         .and_then(Value::as_array)
@@ -423,18 +426,19 @@ fn v8_skill_002_run_gate_fails_closed_on_registry_version_drift() {
     );
     assert_eq!(run_exit, 1, "strict run should fail on compat gate drift");
     let latest = read_json(&latest_path(root));
-    assert_eq!(latest.get("type").and_then(Value::as_str), Some("skills_plane_run"));
+    assert_eq!(
+        latest.get("type").and_then(Value::as_str),
+        Some("skills_plane_run")
+    );
     assert_eq!(latest.get("ok").and_then(Value::as_bool), Some(false));
     assert!(
         latest
             .get("errors")
             .and_then(Value::as_array)
-            .map(|rows| rows
-                .iter()
-                .any(|row| row
-                    .as_str()
-                    .unwrap_or_default()
-                    .starts_with("backward_compat_gate_failed:")))
+            .map(|rows| rows.iter().any(|row| row
+                .as_str()
+                .unwrap_or_default()
+                .starts_with("backward_compat_gate_failed:")))
             .unwrap_or(false),
         "run should fail with backward compatibility gate error"
     );

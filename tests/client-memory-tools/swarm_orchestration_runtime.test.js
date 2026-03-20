@@ -78,28 +78,22 @@ function run() {
   );
 
   const budgetedRun = runNode(
-    ['run', '--objective=budget-check', '--team_size=2', '--token-budget=250', `--state-path=${testState}`],
+    ['run', '--objective=budget-check', '--team_size=1', '--token-budget=500', `--state-path=${testState}`],
     {
       PROTHEUS_NPM_BINARY: fakeBin,
     }
   );
-  assert.strictEqual(
+  assert.notStrictEqual(
     budgetedRun.status,
     0,
-    `budgeted run should succeed; stderr=${budgetedRun.stderr}\nstdout=${budgetedRun.stdout}`
+    `budgeted run should fail-closed on parent over-allocation; stderr=${budgetedRun.stderr}\nstdout=${budgetedRun.stdout}`
   );
   const payload = parseLastJson(budgetedRun.stdout);
-  assert(payload && payload.ok === true, `expected run payload, got: ${budgetedRun.stdout}`);
-  const firstBudget = payload
-    && payload.payload
-    && Array.isArray(payload.payload.lineage)
-    && payload.payload.lineage[0]
-    && payload.payload.lineage[0].budget_report
-    && payload.payload.lineage[0].budget_report.budget;
-  assert.strictEqual(
-    firstBudget,
-    250,
-    `expected client token-budget=250 to reach core spawn path; payload=${budgetedRun.stdout}`
+  assert(payload && payload.ok === false, `expected fail-closed payload, got: ${budgetedRun.stdout}`);
+  const errorText = String(payload && payload.error ? payload.error : '');
+  assert(
+    errorText.includes('parent_token_budget_exceeded') && errorText.includes('requested=500'),
+    `expected parent budget enforcement error with requested=500, got: ${budgetedRun.stdout}`
   );
 }
 

@@ -394,9 +394,11 @@ Run `infring list` (or `infring --help`) for a categorized command index.
 - `infring demo` runs a safe walkthrough (`list`, `version`, examples, setup status).
 - `infring version` and `infring update` provide version + update channel information.
 - Internal operator commands:
+  - `infring start` -> start daemon control + auto-boot dashboard (chat-first) on localhost
   - `infring dashboard` -> launch unified web dashboard (localhost)
   - `infring status` -> health dashboard (`Rust %`, drift, shadows, heartbeat)
-  - `infring status --dashboard --web` -> explicit web launch path for dashboard surface
+  - `infring status --dashboard` -> launch dashboard web surface from Rust core host
+  - `infring status --dashboard --node-ui` -> force legacy Node dashboard host
   - `infring debug` -> parity/security diagnostics + recent log summary
   - `infring shadow <list|arise|pause|review|status>` -> direct shadow-army operations
   - `infring diagram ...` -> Mermaid diagram generator

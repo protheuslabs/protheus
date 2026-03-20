@@ -219,6 +219,7 @@ fn code_engineer_runs_path(root: &Path) -> PathBuf {
 
 fn message_from_parsed(parsed: &crate::ParsedArgs, start_pos: usize, fallback: &str) -> String {
     let from_flag = parsed.flags.get("message").cloned();
+    let from_input = parsed.flags.get("input").cloned();
     let from_prompt = parsed.flags.get("prompt").cloned();
     let from_positional = if parsed.positional.len() > start_pos {
         parsed.positional[start_pos..].join(" ")
@@ -226,7 +227,7 @@ fn message_from_parsed(parsed: &crate::ParsedArgs, start_pos: usize, fallback: &
         String::new()
     };
     clean(
-        from_flag.or(from_prompt).unwrap_or_else(|| {
+        from_flag.or(from_input).or(from_prompt).unwrap_or_else(|| {
             if from_positional.trim().is_empty() {
                 fallback.to_string()
             } else {
