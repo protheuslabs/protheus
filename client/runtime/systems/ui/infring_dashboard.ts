@@ -12,6 +12,7 @@ const { ROOT, resolveBinary } = require('../ops/run_protheus_ops.js');
 
 const DASHBOARD_DIR = __dirname;
 const CLIENT_TS_PATH = path.resolve(DASHBOARD_DIR, 'infring_dashboard_client.tsx');
+const FALLBACK_TS_PATH = path.resolve(DASHBOARD_DIR, 'infring_dashboard_fallback.ts');
 const CSS_PATH = path.resolve(DASHBOARD_DIR, 'infring_dashboard.css');
 const STATE_DIR = path.resolve(ROOT, 'client/runtime/local/state/ui/infring_dashboard');
 const ACTION_DIR = path.resolve(STATE_DIR, 'actions');
@@ -483,6 +484,7 @@ function htmlShell() {
 <body>
   <div id="root"></div>
   <script type="module" src="/assets/infring_dashboard_client.js"></script>
+  <script defer src="/assets/infring_dashboard_fallback.js"></script>
 </body>
 </html>`;
 }
@@ -501,6 +503,23 @@ function transpileClientTs() {
       removeComments: false,
     },
     fileName: CLIENT_TS_PATH,
+    reportDiagnostics: false,
+  }).outputText;
+}
+
+function transpileFallbackTs() {
+  const source = readText(FALLBACK_TS_PATH, '');
+  if (!source) {
+    throw new Error(`missing_fallback_source:${path.relative(ROOT, FALLBACK_TS_PATH)}`);
+  }
+  return ts.transpileModule(source, {
+    compilerOptions: {
+      module: ts.ModuleKind.ES2022,
+      target: ts.ScriptTarget.ES2022,
+      sourceMap: false,
+      removeComments: false,
+    },
+    fileName: FALLBACK_TS_PATH,
     reportDiagnostics: false,
   }).outputText;
 }
@@ -549,6 +568,7 @@ function runServe(flags) {
   const html = htmlShell();
   const css = readText(CSS_PATH, '');
   const clientJs = transpileClientTs();
+  const fallbackJs = transpileFallbackTs();
   let latestSnapshot = buildSnapshot(flags);
   writeSnapshotReceipt(latestSnapshot);
   let updating = false;
@@ -568,6 +588,10 @@ function runServe(flags) {
       }
       if (req.method === 'GET' && pathname === '/assets/infring_dashboard_client.js') {
         sendText(res, 200, clientJs, 'text/javascript; charset=utf-8');
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/assets/infring_dashboard_fallback.js') {
+        sendText(res, 200, fallbackJs, 'text/javascript; charset=utf-8');
         return;
       }
       if (req.method === 'GET' && pathname === '/api/dashboard/snapshot') {

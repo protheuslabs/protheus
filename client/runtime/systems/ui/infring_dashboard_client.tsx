@@ -596,4 +596,5 @@ const rootNode = document.getElementById('root');
 if (!rootNode) {
   throw new Error('dashboard_root_missing');
 }
+rootNode.setAttribute('data-dashboard-hydrated', 'react');
 createRoot(rootNode).render(<App />);
