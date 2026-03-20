@@ -52,4 +52,34 @@ describe('local simulation churn patterns', () => {
     expect(payload.summary.local_simulation_churn).toBe(3);
     expect(payload.summary.other).toBe(0);
   });
+
+  test('classifies benchmark report artifacts as generated report churn', () => {
+    const repoRoot = createFixtureRepo();
+    tempDirs.push(repoRoot);
+
+    const reportPath = path.join(
+      repoRoot,
+      'docs',
+      'client',
+      'reports',
+      'benchmark_matrix_run_2026-03-06.json',
+    );
+    fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+    fs.writeFileSync(reportPath, '{"run":"current"}\n');
+    execSync('git add .', { cwd: repoRoot });
+    execSync('git commit -qm "seed report"', { cwd: repoRoot });
+
+    fs.writeFileSync(reportPath, '{"run":"drift"}\n');
+    fs.writeFileSync(
+      path.join(repoRoot, 'docs', 'client', 'reports', 'benchmark_matrix_resample_2026-03-19.json'),
+      '{"resample":"noise"}\n',
+    );
+
+    const result = runGuard(repoRoot, ['--strict=1']);
+    expect(result.status).toBe(1);
+
+    const payload = JSON.parse(result.stderr);
+    expect(payload.summary.generated_report_churn).toBe(2);
+    expect(payload.summary.other).toBe(0);
+  });
 });

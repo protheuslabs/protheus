@@ -33,6 +33,27 @@
         "docs/observability/runbooks/POSTMORTEM_TEMPLATE.md"
       ]
     },
+    "V7-F100-005": {
+      "profile_path": "client/runtime/config/one_million_performance_profile.json"
+    },
+    "V7-F100-006": {
+      "contract_path": "client/runtime/config/multi_tenant_isolation_contract.json",
+      "adversarial_path": "local/state/security/multi_tenant_isolation_adversarial/latest.json"
+    },
+    "V7-F100-007": {
+      "registry_path": "client/runtime/config/api_cli_contract_registry.json",
+      "required_deprecation_days": 90
+    },
+    "V7-F100-008": {
+      "incident_policy_path": "client/runtime/config/oncall_incident_policy.json",
+      "gameday_path": "local/state/ops/oncall_gameday/latest.json",
+      "target_mtta_minutes": 5,
+      "target_mttr_minutes": 30,
+      "required_docs": [
+        "docs/observability/runbooks/INCIDENT_COMMAND.md",
+        "docs/observability/runbooks/POSTMORTEM_TEMPLATE.md"
+      ]
+    },
     "V6-F100-009": {
       "bootstrap_script": "tests/tooling/scripts/onboarding/protheus_onboarding_bootstrap.sh",
       "metrics_path": "local/state/ops/onboarding_portal/success_metrics.json",

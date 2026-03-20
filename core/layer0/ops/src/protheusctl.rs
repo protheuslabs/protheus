@@ -711,9 +711,10 @@ fn route_edge(rest: &[String]) -> Route {
                 .map(|v| v.trim().to_ascii_lowercase())
                 .unwrap_or_else(|| "status".to_string());
             Route {
-                script_rel: "client/runtime/systems/ops/mobile_competitive_benchmark_matrix.js"
+                script_rel: "client/runtime/systems/ops/run_protheus_ops.js"
                     .to_string(),
-                args: std::iter::once(action)
+                args: std::iter::once("benchmark-matrix".to_string())
+                    .chain(std::iter::once(action))
                     .chain(rest.iter().skip(2).cloned())
                     .collect(),
                 forward_stdin: false,

@@ -522,7 +522,14 @@ const MEMORY_BANK_IDS: &[&str] = &[
     "V8-MEMORY-BANK-002.8",
 ];
 
-const F100_IDS: &[&str] = &["V7-F100-002.3", "V7-F100-002.7"];
+const F100_IDS: &[&str] = &[
+    "V7-F100-002.3",
+    "V7-F100-002.7",
+    "V7-F100-005",
+    "V7-F100-006",
+    "V7-F100-007",
+    "V7-F100-008",
+];
 
 const V5_HOLD_IDS: &[&str] = &[
     "V5-HOLD-001",

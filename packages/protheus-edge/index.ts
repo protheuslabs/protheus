@@ -70,7 +70,10 @@ function edgeWrapper(command: string, options: Record<string, any> = {}) {
 }
 
 function edgeBenchmark(command: string, options: Record<string, any> = {}) {
-  return runNodeScript('client/runtime/systems/ops/mobile_competitive_benchmark_matrix.ts', [command, ...toFlags(options)]);
+  return runNodeScript(
+    'client/runtime/systems/ops/run_protheus_ops.js',
+    ['benchmark-matrix', command, ...toFlags(options)]
+  );
 }
 
 function mobileTop(options: Record<string, any> = {}) {

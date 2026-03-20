@@ -137,3 +137,101 @@ fn attach_shared_throughput_marks_shared_baseline_source() {
         Some(SHARED_THROUGHPUT_SOURCE)
     );
 }
+
+#[test]
+fn benchmark_preflight_report_blocks_high_load() {
+    let config = BenchmarkPreflightConfig {
+        enabled: true,
+        max_load_per_core: 0.9,
+        max_noise_cv_pct: 12.5,
+        noise_sample_ms: 250,
+        noise_rounds: 3,
+    };
+    let report = benchmark_preflight_report(
+        config,
+        true,
+        8,
+        12.0,
+        10.0,
+        8.0,
+        &[100_000.0, 101_000.0, 99_000.0],
+    );
+    assert_eq!(report.get("ok").and_then(Value::as_bool), Some(false));
+    let blockers = report
+        .get("blockers")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    assert!(
+        blockers.iter().any(|value| {
+            value
+                .as_str()
+                .map(|text| text.starts_with("host_load_per_core_exceeded:"))
+                .unwrap_or(false)
+        }),
+        "expected host load blocker, got: {blockers:?}"
+    );
+}
+
+#[test]
+fn benchmark_preflight_report_blocks_high_noise_cv() {
+    let config = BenchmarkPreflightConfig {
+        enabled: true,
+        max_load_per_core: 0.9,
+        max_noise_cv_pct: 5.0,
+        noise_sample_ms: 250,
+        noise_rounds: 3,
+    };
+    let report = benchmark_preflight_report(
+        config,
+        false,
+        8,
+        1.0,
+        1.0,
+        1.0,
+        &[40_000.0, 10_000.0, 40_000.0],
+    );
+    assert_eq!(report.get("ok").and_then(Value::as_bool), Some(false));
+    let blockers = report
+        .get("blockers")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    assert!(
+        blockers.iter().any(|value| {
+            value
+                .as_str()
+                .map(|text| text.starts_with("throughput_noise_cv_exceeded:"))
+                .unwrap_or(false)
+        }),
+        "expected noise cv blocker, got: {blockers:?}"
+    );
+}
+
+#[test]
+fn benchmark_preflight_report_passes_within_thresholds() {
+    let config = BenchmarkPreflightConfig {
+        enabled: true,
+        max_load_per_core: 0.9,
+        max_noise_cv_pct: 12.5,
+        noise_sample_ms: 250,
+        noise_rounds: 3,
+    };
+    let report = benchmark_preflight_report(
+        config,
+        true,
+        8,
+        3.2,
+        3.6,
+        3.0,
+        &[100_000.0, 104_000.0, 102_000.0],
+    );
+    assert_eq!(report.get("ok").and_then(Value::as_bool), Some(true));
+    assert_eq!(
+        report
+            .get("blockers")
+            .and_then(Value::as_array)
+            .map(|rows| rows.len()),
+        Some(0)
+    );
+}

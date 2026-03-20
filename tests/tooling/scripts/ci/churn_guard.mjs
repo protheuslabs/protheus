@@ -72,6 +72,8 @@ function classifyPath(path) {
   }
   if (
     /^core\/local\/artifacts\/.*_current\.json$/i.test(path) ||
+    /^docs\/client\/reports\/benchmark_matrix_run_[^/]+\.json$/i.test(path) ||
+    /^docs\/client\/reports\/benchmark_matrix_resample[^/]*\.json$/i.test(path) ||
     (/^docs\/workspace\/SRS_.*CURRENT\.md$/i.test(path) || /^local\/workspace\/reports\/SRS_.*CURRENT\.md$/i.test(path)) ||
     path === 'docs/workspace/BLOCKED_EXTERNAL_EVIDENCE_STATUS.md' ||
     path === 'local/workspace/reports/BLOCKED_EXTERNAL_EVIDENCE_STATUS.md' ||
@@ -280,6 +282,7 @@ function main() {
   summary.clean_pass =
     summary.local_simulation_churn === 0 &&
     summary.lensmap_churn === 0 &&
+    summary.generated_report_churn === 0 &&
     (summary.governance_doc_churn === 0 || args.allowGovernanceDocChurn) &&
     summary.swarm_surface_churn === 0 &&
     summary.swarm_companion_gaps === 0 &&

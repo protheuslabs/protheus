@@ -54,7 +54,21 @@ function runAsMain(mod, argv = []) {
   process.exit(Number.isFinite(Number(out && out.status)) ? Number(out.status) : 1);
 }
 
+function createLegacyRetiredModuleForFile(filePath) {
+  const path = require('path');
+  const laneId = laneIdFromRuntimePath(filePath);
+  return createLegacyRetiredModule(path.dirname(filePath), path.basename(filePath), laneId);
+}
+
+function bindLegacyRetiredModule(filePath, currentModule, argv = process.argv.slice(2)) {
+  const mod = createLegacyRetiredModuleForFile(filePath);
+  if (currentModule && require.main === currentModule) runAsMain(mod, argv);
+  return mod;
+}
+
 module.exports = {
+  bindLegacyRetiredModule,
+  createLegacyRetiredModuleForFile,
   createLegacyRetiredModule,
   laneIdFromRuntimePath,
   normalizeLaneId,

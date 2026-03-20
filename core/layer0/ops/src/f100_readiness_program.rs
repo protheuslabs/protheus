@@ -22,6 +22,10 @@ const EXECUTABLE_LANES: &[&str] = &[
     "V6-F100-012",
     "V6-F100-035",
     "V6-F100-036",
+    "V7-F100-005",
+    "V7-F100-006",
+    "V7-F100-007",
+    "V7-F100-008",
 ];
 
 #[derive(Debug, Clone)]
@@ -36,7 +40,9 @@ struct Policy {
 
 fn usage() {
     println!("Usage:");
-    println!("  protheus-ops f100-readiness-program run --lane=<V6-F100-XXX> [--strict=1|0] [--apply=1|0] [--policy=<path>]");
+    println!(
+        "  protheus-ops f100-readiness-program run --lane=<V6-F100-XXX|V7-F100-XXX> [--strict=1|0] [--apply=1|0] [--policy=<path>]"
+    );
     println!("  protheus-ops f100-readiness-program run-all [--strict=1|0] [--apply=1|0] [--policy=<path>]");
     println!("  protheus-ops f100-readiness-program status --lane=<V6-F100-XXX> [--policy=<path>]");
 }
@@ -250,7 +256,13 @@ fn lane_004_compliance_bundle(root: &Path, policy: &Policy) -> Value {
 }
 
 fn lane_005_million_user(root: &Path, policy: &Policy) -> Value {
-    let lane_policy = get_lane_policy(policy, "V6-F100-005")
+    lane_005_million_user_with_id(root, policy, "V6-F100-005")
+}
+
+fn lane_005_million_user_with_id(root: &Path, policy: &Policy, lane: &str) -> Value {
+    let lane_policy = get_lane_policy(policy, lane)
+        .or_else(|| get_lane_policy(policy, "V6-F100-005"))
+        .or_else(|| get_lane_policy(policy, "V7-F100-005"))
         .cloned()
         .unwrap_or_else(|| json!({}));
     let profile_path = resolve_path(
@@ -299,7 +311,7 @@ fn lane_005_million_user(root: &Path, policy: &Policy) -> Value {
 
     json!({
         "ok": ok,
-        "lane": "V6-F100-005",
+        "lane": lane,
         "type": "f100_one_million_harness",
         "profile_path": profile_path,
         "checks": checks,
@@ -317,7 +329,13 @@ fn lane_005_million_user(root: &Path, policy: &Policy) -> Value {
 }
 
 fn lane_006_multi_tenant(root: &Path, policy: &Policy) -> Value {
-    let lane_policy = get_lane_policy(policy, "V6-F100-006")
+    lane_006_multi_tenant_with_id(root, policy, "V6-F100-006")
+}
+
+fn lane_006_multi_tenant_with_id(root: &Path, policy: &Policy, lane: &str) -> Value {
+    let lane_policy = get_lane_policy(policy, lane)
+        .or_else(|| get_lane_policy(policy, "V6-F100-006"))
+        .or_else(|| get_lane_policy(policy, "V7-F100-006"))
         .cloned()
         .unwrap_or_else(|| json!({}));
     let contract_path = resolve_path(
@@ -344,7 +362,7 @@ fn lane_006_multi_tenant(root: &Path, policy: &Policy) -> Value {
 
     json!({
         "ok": ok,
-        "lane": "V6-F100-006",
+        "lane": lane,
         "type": "f100_multi_tenant_isolation",
         "contract_path": contract_path,
         "adversarial_path": adversarial_path,
@@ -363,7 +381,13 @@ fn lane_006_multi_tenant(root: &Path, policy: &Policy) -> Value {
 }
 
 fn lane_007_interface_lifecycle(root: &Path, policy: &Policy) -> Value {
-    let lane_policy = get_lane_policy(policy, "V6-F100-007")
+    lane_007_interface_lifecycle_with_id(root, policy, "V6-F100-007")
+}
+
+fn lane_007_interface_lifecycle_with_id(root: &Path, policy: &Policy, lane: &str) -> Value {
+    let lane_policy = get_lane_policy(policy, lane)
+        .or_else(|| get_lane_policy(policy, "V6-F100-007"))
+        .or_else(|| get_lane_policy(policy, "V7-F100-007"))
         .cloned()
         .unwrap_or_else(|| json!({}));
     let registry_path = resolve_path(
@@ -427,7 +451,7 @@ fn lane_007_interface_lifecycle(root: &Path, policy: &Policy) -> Value {
 
     json!({
         "ok": ok,
-        "lane": "V6-F100-007",
+        "lane": lane,
         "type": "f100_interface_lifecycle",
         "registry_path": registry_path,
         "checks": checks
@@ -435,7 +459,13 @@ fn lane_007_interface_lifecycle(root: &Path, policy: &Policy) -> Value {
 }
 
 fn lane_008_oncall(root: &Path, policy: &Policy) -> Value {
-    let lane_policy = get_lane_policy(policy, "V6-F100-008")
+    lane_008_oncall_with_id(root, policy, "V6-F100-008")
+}
+
+fn lane_008_oncall_with_id(root: &Path, policy: &Policy, lane: &str) -> Value {
+    let lane_policy = get_lane_policy(policy, lane)
+        .or_else(|| get_lane_policy(policy, "V6-F100-008"))
+        .or_else(|| get_lane_policy(policy, "V7-F100-008"))
         .cloned()
         .unwrap_or_else(|| json!({}));
     let policy_path = resolve_path(
@@ -484,7 +514,7 @@ fn lane_008_oncall(root: &Path, policy: &Policy) -> Value {
 
     json!({
         "ok": ok,
-        "lane": "V6-F100-008",
+        "lane": lane,
         "type": "f100_oncall_incident_command",
         "checks": checks,
         "incident_policy_path": policy_path,
@@ -1023,6 +1053,10 @@ fn run_lane(root: &Path, policy: &Policy, lane: &str, apply: bool) -> Value {
         "V6-F100-006" => lane_006_multi_tenant(root, policy),
         "V6-F100-007" => lane_007_interface_lifecycle(root, policy),
         "V6-F100-008" => lane_008_oncall(root, policy),
+        "V7-F100-005" => lane_005_million_user_with_id(root, policy, "V7-F100-005"),
+        "V7-F100-006" => lane_006_multi_tenant_with_id(root, policy, "V7-F100-006"),
+        "V7-F100-007" => lane_007_interface_lifecycle_with_id(root, policy, "V7-F100-007"),
+        "V7-F100-008" => lane_008_oncall_with_id(root, policy, "V7-F100-008"),
         "V6-F100-009" => lane_009_onboarding(root, policy),
         "V6-F100-010" => lane_010_architecture_pack(root, policy),
         "V6-F100-011" => lane_011_surface_consistency(root, policy),
@@ -1278,6 +1312,27 @@ mod tests {
                 "lanes": {
                     "V6-F100-005": {
                         "profile_path": "client/runtime/config/one_million_performance_profile.json"
+                    },
+                    "V7-F100-005": {
+                        "profile_path": "client/runtime/config/one_million_performance_profile.json"
+                    },
+                    "V7-F100-006": {
+                        "contract_path": "client/runtime/config/multi_tenant_isolation_contract.json",
+                        "adversarial_path": "local/state/security/multi_tenant_isolation_adversarial/latest.json"
+                    },
+                    "V7-F100-007": {
+                        "registry_path": "client/runtime/config/api_cli_contract_registry.json",
+                        "required_deprecation_days": 90
+                    },
+                    "V7-F100-008": {
+                        "incident_policy_path": "client/runtime/config/oncall_incident_policy.json",
+                        "gameday_path": "local/state/ops/oncall_gameday/latest.json",
+                        "target_mtta_minutes": 5,
+                        "target_mttr_minutes": 30,
+                        "required_docs": [
+                            "docs/observability/runbooks/INCIDENT_COMMAND.md",
+                            "docs/observability/runbooks/POSTMORTEM_TEMPLATE.md"
+                        ]
                     }
                 }
             })
@@ -1338,6 +1393,138 @@ mod tests {
             &[
                 "run".to_string(),
                 "--lane=V6-F100-012".to_string(),
+                "--strict=1".to_string(),
+            ],
+        );
+        assert_eq!(code, 0);
+    }
+
+    #[test]
+    fn v7_million_user_lane_uses_v7_policy() {
+        let tmp = tempdir().expect("tmp");
+        setup_policy(tmp.path());
+        write_text(
+            &tmp.path()
+                .join("client/runtime/config/one_million_performance_profile.json"),
+            &json!({
+                "budgets": {
+                    "p95_ms": 250,
+                    "p99_ms": 500,
+                    "error_rate": 0.01,
+                    "saturation_pct": 80,
+                    "cost_per_request_usd": 0.05
+                },
+                "observed": {
+                    "p95_ms": 120,
+                    "p99_ms": 220,
+                    "error_rate": 0.001,
+                    "saturation_pct": 60,
+                    "cost_per_request_usd": 0.01
+                }
+            })
+            .to_string(),
+        );
+        let code = run(
+            tmp.path(),
+            &[
+                "run".to_string(),
+                "--lane=V7-F100-005".to_string(),
+                "--strict=1".to_string(),
+            ],
+        );
+        assert_eq!(code, 0);
+    }
+
+    #[test]
+    fn v7_multi_tenant_lane_uses_v7_contracts() {
+        let tmp = tempdir().expect("tmp");
+        setup_policy(tmp.path());
+        write_text(
+            &tmp.path()
+                .join("client/runtime/config/multi_tenant_isolation_contract.json"),
+            &json!({"contract":"ok"}).to_string(),
+        );
+        write_text(
+            &tmp
+                .path()
+                .join("local/state/security/multi_tenant_isolation_adversarial/latest.json"),
+            &json!({
+                "cross_tenant_leaks": 0,
+                "delete_export_pass": true,
+                "classification_enforced": true
+            })
+            .to_string(),
+        );
+        let code = run(
+            tmp.path(),
+            &[
+                "run".to_string(),
+                "--lane=V7-F100-006".to_string(),
+                "--strict=1".to_string(),
+            ],
+        );
+        assert_eq!(code, 0);
+    }
+
+    #[test]
+    fn v7_interface_lifecycle_lane_uses_v7_registry() {
+        let tmp = tempdir().expect("tmp");
+        setup_policy(tmp.path());
+        write_text(
+            &tmp.path()
+                .join("client/runtime/config/api_cli_contract_registry.json"),
+            &json!({
+                "api_contracts": [
+                    {"name":"agents-v1","version":"1.2.0","status":"stable"}
+                ],
+                "cli_contracts": [
+                    {"name":"shell-v1","version":"2.0.0","status":"stable"}
+                ]
+            })
+            .to_string(),
+        );
+        let code = run(
+            tmp.path(),
+            &[
+                "run".to_string(),
+                "--lane=V7-F100-007".to_string(),
+                "--strict=1".to_string(),
+            ],
+        );
+        assert_eq!(code, 0);
+    }
+
+    #[test]
+    fn v7_oncall_lane_uses_v7_sla_paths() {
+        let tmp = tempdir().expect("tmp");
+        setup_policy(tmp.path());
+        write_text(
+            &tmp.path().join("client/runtime/config/oncall_incident_policy.json"),
+            &json!({"policy":"v1"}).to_string(),
+        );
+        write_text(
+            &tmp
+                .path()
+                .join("local/state/ops/oncall_gameday/latest.json"),
+            &json!({"mtta_minutes":4.0,"mttr_minutes":20.0}).to_string(),
+        );
+        write_text(
+            &tmp
+                .path()
+                .join("docs/observability/runbooks/INCIDENT_COMMAND.md"),
+            "runbook\n",
+        );
+        write_text(
+            &tmp
+                .path()
+                .join("docs/observability/runbooks/POSTMORTEM_TEMPLATE.md"),
+            "runbook\n",
+        );
+        let code = run(
+            tmp.path(),
+            &[
+                "run".to_string(),
+                "--lane=V7-F100-008".to_string(),
                 "--strict=1".to_string(),
             ],
         );

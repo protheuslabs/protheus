@@ -1,6 +1,6 @@
 # TODO (Maintenance + Policy + SRS Execution Order)
 
-Updated: 2026-03-15 12:30 America/Denver
+Updated: 2026-03-19 22:21 America/Denver
 
 ## Ordering policy
 - Priority first (`P0` > `P1` > `P2` > `P3`)
@@ -213,6 +213,74 @@ Updated: 2026-03-15 12:30 America/Denver
 - Partial-result retrieval (session-history + checkpoint fallback + retry/continue/abort decisions) is authoritative in `core/layer0/ops/src/orchestration.rs`; `client/cognition/orchestration/partial.ts` is a thin wrapper.
 - All tests passing: `npm run -s test:cognition:orchestration`.
 - Integration test: full orchestration flow in `tests/client/cognition/coordinator.test.js` with scope + task-group completion assertions.
+
+25. `P0-AUDIT-SEC-001` Close remaining automatable security implementation-depth gaps (fail-closed and branch coverage), not just receipt presence. `STATUS: QUEUED`
+- Context:
+- Latest audit highlights call out depth/branch coverage gaps across security, skills backward-compat, and conduit strict-mode fail-closed paths.
+- Linked audit docs:
+- `audit_docs/TEST_COVERAGE_REQS_2026-03-19.md`
+- Exit criteria:
+- Add missing regression tests for fail-closed/error branches in:
+  - `core/layer0/ops/src/security_plane.rs`
+  - `core/layer0/ops/src/skills_plane.rs`
+  - `core/layer2/conduit/src/lib.rs`
+- `cargo test` suites for those modules pass.
+- `npm run -s ops:srs:full:regression` remains `fail=0`, `warn=0`.
+
+26. `P0-DOCS-API-001` Close documentation maturity gaps for regression insurance (API + security + deployment + ADR hygiene). `STATUS: QUEUED`
+- Context:
+- Documentation audits still list API reference completeness as partial and OpenAPI as a stub.
+- Linked audit docs:
+- `audit_docs/DOCUMENTATION_REQS_2026-03-19.md`
+- Exit criteria:
+- Replace `docs/api/openapi.stub.yaml` with authoritative generated/maintained API spec.
+- Ensure runbook/deployment/security docs cross-link from a single operator index.
+- Add/refresh ADR index coverage for new architecture/security decisions.
+
+27. `P1-PERF-THROUGHPUT-001` Recover throughput headroom with measured, reproducible benchmarks (without benchmark theater). `STATUS: QUEUED`
+- Context:
+- Performance audit shows throughput target lag vs stretch goal while cold start/idle memory are healthy.
+- Linked audit docs:
+- `audit_docs/PERFORMANCE_REQS_2026-03-19.md`
+- Exit criteria:
+- Identify and land at least one authoritative throughput optimization in Rust core.
+- Publish before/after benchmark artifacts with reproducible command path.
+- Keep cold start/idle/install non-regressive within agreed tolerance.
+
+28. `P0-HMAN-TRACK-001` Keep non-automatable audit blockers visible and packetized for operator action. `STATUS: QUEUED`
+- Context:
+- Human-only/certification/hardware items are outside automatable closure but must stay tracked.
+- Exit criteria:
+- Maintain explicit status board + evidence packet readiness for:
+  - `HMAN-026/027` (certification),
+  - `HMAN-081/082/083/084` (hardware validation approvals),
+  - `HMAN-086/087` (third-party/high-assurance verification),
+  - `HMAN-092` (MCU proof flash session).
+- No hidden blockers: all remain visible in reports with exact required evidence.
+
+29. `P0-EVOLUTION-COMPACTION-001` Prepare V9 ruthless compaction round with hard guardrails before code surgery. `STATUS: QUEUED`
+- Scope:
+- `V9-EVOLUTION-COMPACTION-001`
+- Prep artifact:
+- `docs/client/reports/V9_EVOLUTION_COMPACTION_PREP_2026-03-19.md`
+- Exit criteria:
+- Baseline frozen: cold start / idle / install / throughput artifacts captured.
+- Duplicate-parallel logic inventory generated (core authority first).
+- Merge order defined by ROI and safety invariants.
+- Regression gate bundle defined (tests + SRS/DoD gates + benchmark refresh).
+
+30. `P1-EVOLUTION-COMPACTION-002` Execute V9 ruthless compaction pass only if net measurable win and zero safety regressions. `STATUS: IN_PROGRESS`
+- Scope:
+- Collapse duplicate/near-duplicate code to smallest reusable primitives; preserve behavior.
+- Exit criteria:
+- Full regression + sovereignty/security checks pass.
+- Benchmark delta is neutral-to-positive on target metrics (cold/idle/install/throughput).
+- Commit only when net system quality improves and no fail-closed invariants are weakened.
+- Progress (2026-03-20):
+  - Shared legacy wrapper binders added in `client/runtime/lib/legacy_retired_wrapper.ts`.
+  - 58 duplicated TS wrappers + 62 duplicated JS wrappers compacted to shared primitives.
+  - Net wrapper source reduction: ~14.98 KB; targeted wrapper regression tests passing.
+  - Stabilized post-compaction benchmark resample captured (`docs/client/reports/benchmark_matrix_resample_post_compaction_2026-03-20.json`); final sign-off still pending due shared baseline drift on throughput/install.
 
 ## Executed in this pass
 - Added `tests/tooling/scripts/ci/srs_actionable_map.mjs` to produce canonical remaining-work mapping and executability buckets.

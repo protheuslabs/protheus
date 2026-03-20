@@ -13,6 +13,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
+use sysinfo::System;
 use walkdir::WalkDir;
 
 const LANE_ID: &str = "benchmark_matrix";
@@ -29,6 +30,33 @@ const SHARED_THROUGHPUT_SOURCE: &str = "live_hash_workload_v1_shared_pre_profile
 const SHARED_THROUGHPUT_SAMPLE_MS: u64 = 800;
 const SHARED_THROUGHPUT_ROUNDS: usize = 5;
 const SHARED_THROUGHPUT_WARMUP_ROUNDS: usize = 2;
+const SHARED_THROUGHPUT_DEFAULT_UNCACHED: bool = true;
+const BENCHMARK_PREFLIGHT_ENABLED_DEFAULT: bool = true;
+const BENCHMARK_PREFLIGHT_MAX_LOAD_PER_CORE_DEFAULT: f64 = 0.90;
+const BENCHMARK_PREFLIGHT_MAX_NOISE_CV_PCT_DEFAULT: f64 = 12.5;
+const BENCHMARK_PREFLIGHT_NOISE_SAMPLE_MS_DEFAULT: u64 = 250;
+const BENCHMARK_PREFLIGHT_NOISE_ROUNDS_DEFAULT: usize = 3;
+
+#[derive(Clone)]
+struct ThroughputSampling {
+    tasks_per_sec: f64,
+    warmup_samples: Vec<f64>,
+    measured_samples: Vec<f64>,
+    stddev: f64,
+    min: f64,
+    max: f64,
+    uncached: bool,
+    workload_seed: String,
+}
+
+#[derive(Clone, Copy)]
+struct BenchmarkPreflightConfig {
+    enabled: bool,
+    max_load_per_core: f64,
+    max_noise_cv_pct: f64,
+    noise_sample_ms: u64,
+    noise_rounds: usize,
+}
 
 #[derive(Clone, Copy)]
 struct Category {
@@ -86,10 +114,10 @@ const CATEGORIES: [Category; 7] = [
 fn usage() {
     println!("Usage:");
     println!(
-        "  protheus-ops benchmark-matrix run [--snapshot=<path>] [--refresh-runtime=1|0] [--bar-width=44]"
+        "  protheus-ops benchmark-matrix run [--snapshot=<path>] [--refresh-runtime=1|0] [--bar-width=44] [--throughput-uncached=1|0] [--benchmark-preflight=1|0] [--preflight-max-load-per-core=0.90] [--preflight-max-noise-cv-pct=12.5] [--preflight-noise-sample-ms=250] [--preflight-noise-rounds=3]"
     );
     println!(
-        "  protheus-ops benchmark-matrix status [--snapshot=<path>] [--refresh-runtime=1|0] [--bar-width=44]"
+        "  protheus-ops benchmark-matrix status [--snapshot=<path>] [--refresh-runtime=1|0] [--bar-width=44] [--throughput-uncached=1|0] [--benchmark-preflight=1|0] [--preflight-max-load-per-core=0.90] [--preflight-max-noise-cv-pct=12.5] [--preflight-noise-sample-ms=250] [--preflight-noise-rounds=3]"
     );
 }
 
@@ -106,6 +134,24 @@ fn parse_bar_width(raw: Option<&str>) -> usize {
         .and_then(|v| v.trim().parse::<usize>().ok())
         .unwrap_or(DEFAULT_BAR_WIDTH);
     n.clamp(MIN_BAR_WIDTH, MAX_BAR_WIDTH)
+}
+
+fn parse_u64_flag(raw: Option<&str>, fallback: u64, min: u64, max: u64) -> u64 {
+    raw.and_then(|v| v.trim().parse::<u64>().ok())
+        .unwrap_or(fallback)
+        .clamp(min, max)
+}
+
+fn parse_usize_flag(raw: Option<&str>, fallback: usize, min: usize, max: usize) -> usize {
+    raw.and_then(|v| v.trim().parse::<usize>().ok())
+        .unwrap_or(fallback)
+        .clamp(min, max)
+}
+
+fn parse_f64_flag(raw: Option<&str>, fallback: f64, min: f64, max: f64) -> f64 {
+    raw.and_then(|v| v.trim().parse::<f64>().ok())
+        .unwrap_or(fallback)
+        .clamp(min, max)
 }
 
 fn read_json(path: &Path) -> Result<Value, String> {
@@ -611,29 +657,203 @@ fn live_tasks_per_sec(sample_ms: u64) -> f64 {
     if secs <= 0.0 {
         0.0
     } else {
-        ((tasks as f64 / secs) * 100.0).round() / 100.0
+        tasks as f64 / secs
     }
 }
 
-fn stabilized_tasks_per_sec_with<F>(rounds: usize, warmup_rounds: usize, mut sample: F) -> f64
+fn pre_sample_cache_bust(workload_seed: &str, round_idx: usize) {
+    let mut digest = Sha256::digest(format!("{workload_seed}:{round_idx}").as_bytes());
+    for _ in 0..64 {
+        let next = Sha256::digest(digest.as_slice());
+        black_box(next.as_slice());
+        digest = next;
+    }
+}
+
+fn stable_stddev(samples: &[f64]) -> f64 {
+    if samples.len() <= 1 {
+        return 0.0;
+    }
+    let mean = samples.iter().copied().sum::<f64>() / samples.len() as f64;
+    let variance = samples
+        .iter()
+        .map(|value| {
+            let delta = *value - mean;
+            delta * delta
+        })
+        .sum::<f64>()
+        / samples.len() as f64;
+    variance.sqrt()
+}
+
+fn benchmark_preflight_report(
+    config: BenchmarkPreflightConfig,
+    throughput_uncached: bool,
+    cpu_parallelism: usize,
+    load_one: f64,
+    load_five: f64,
+    load_fifteen: f64,
+    noise_samples: &[f64],
+) -> Value {
+    let cpu_parallelism = cpu_parallelism.max(1);
+    let load_per_core_one = load_one / cpu_parallelism as f64;
+    let load_per_core_five = load_five / cpu_parallelism as f64;
+    let load_per_core_peak = load_per_core_one.max(load_per_core_five);
+    let mean_noise = if noise_samples.is_empty() {
+        0.0
+    } else {
+        noise_samples.iter().copied().sum::<f64>() / noise_samples.len() as f64
+    };
+    let stddev_noise = stable_stddev(noise_samples);
+    let noise_cv_pct = if mean_noise <= f64::EPSILON {
+        100.0
+    } else {
+        (stddev_noise / mean_noise) * 100.0
+    };
+
+    let mut blockers = Vec::<String>::new();
+    if load_per_core_peak > config.max_load_per_core {
+        blockers.push(format!(
+            "host_load_per_core_exceeded:{}>{}",
+            ((load_per_core_peak * 1000.0).round()) / 1000.0,
+            config.max_load_per_core
+        ));
+    }
+    if noise_cv_pct > config.max_noise_cv_pct {
+        blockers.push(format!(
+            "throughput_noise_cv_exceeded:{}>{}",
+            ((noise_cv_pct * 100.0).round()) / 100.0,
+            config.max_noise_cv_pct
+        ));
+    }
+
+    json!({
+        "ok": blockers.is_empty(),
+        "enabled": config.enabled,
+        "throughput_uncached": throughput_uncached,
+        "cpu_parallelism": cpu_parallelism,
+        "load_average_one": ((load_one * 1000.0).round()) / 1000.0,
+        "load_average_five": ((load_five * 1000.0).round()) / 1000.0,
+        "load_average_fifteen": ((load_fifteen * 1000.0).round()) / 1000.0,
+        "load_per_core_one": ((load_per_core_one * 1000.0).round()) / 1000.0,
+        "load_per_core_five": ((load_per_core_five * 1000.0).round()) / 1000.0,
+        "load_per_core_peak": ((load_per_core_peak * 1000.0).round()) / 1000.0,
+        "max_load_per_core": config.max_load_per_core,
+        "noise_sample_ms": config.noise_sample_ms,
+        "noise_rounds": config.noise_rounds,
+        "noise_samples_ops_per_sec": noise_samples
+            .iter()
+            .map(|value| json!(((value * 100.0).round()) / 100.0))
+            .collect::<Vec<Value>>(),
+        "noise_mean_ops_per_sec": ((mean_noise * 100.0).round()) / 100.0,
+        "noise_stddev_ops_per_sec": ((stddev_noise * 100.0).round()) / 100.0,
+        "noise_cv_pct": ((noise_cv_pct * 100.0).round()) / 100.0,
+        "max_noise_cv_pct": config.max_noise_cv_pct,
+        "blockers": blockers
+    })
+}
+
+fn benchmark_preflight(config: BenchmarkPreflightConfig, throughput_uncached: bool) -> Value {
+    if !config.enabled {
+        return json!({
+            "ok": true,
+            "enabled": false,
+            "skipped": true,
+            "reason": "benchmark_preflight_disabled"
+        });
+    }
+
+    let cpu_parallelism = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(1)
+        .max(1);
+    let load = System::load_average();
+
+    let mut sample_idx = 0usize;
+    let workload_seed = if throughput_uncached {
+        format!("benchmark_preflight_uncached_seed_{}", now_iso())
+    } else {
+        "benchmark_preflight_cached".to_string()
+    };
+    let mut noise_samples = Vec::<f64>::new();
+    for _ in 0..config.noise_rounds.max(1) {
+        if throughput_uncached {
+            pre_sample_cache_bust(workload_seed.as_str(), sample_idx);
+        }
+        sample_idx = sample_idx.saturating_add(1);
+        noise_samples.push(live_tasks_per_sec(config.noise_sample_ms.max(100)));
+    }
+
+    benchmark_preflight_report(
+        config,
+        throughput_uncached,
+        cpu_parallelism,
+        load.one,
+        load.five,
+        load.fifteen,
+        &noise_samples,
+    )
+}
+
+fn stabilized_tasks_per_sec_samples_with<F>(
+    rounds: usize,
+    warmup_rounds: usize,
+    mut sample: F,
+) -> ThroughputSampling
 where
     F: FnMut() -> f64,
 {
+    let mut warmup_samples = Vec::<f64>::new();
     for _ in 0..warmup_rounds {
-        let _ = sample();
+        warmup_samples.push(sample());
     }
     let mut rows = Vec::<f64>::new();
     for _ in 0..rounds.max(1) {
         rows.push(sample());
     }
-    rows.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-    ((percentile(&rows, 0.50) * 100.0).round()) / 100.0
+    let mut sorted = rows.clone();
+    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let median = percentile(&sorted, 0.50);
+    let min = sorted.first().copied().unwrap_or(0.0);
+    let max = sorted.last().copied().unwrap_or(0.0);
+    ThroughputSampling {
+        tasks_per_sec: ((median * 100.0).round()) / 100.0,
+        warmup_samples,
+        measured_samples: rows,
+        stddev: stable_stddev(&sorted),
+        min,
+        max,
+        uncached: SHARED_THROUGHPUT_DEFAULT_UNCACHED,
+        workload_seed: String::new(),
+    }
 }
 
-fn stabilized_tasks_per_sec(rounds: usize, sample_ms: u64) -> f64 {
-    stabilized_tasks_per_sec_with(rounds, SHARED_THROUGHPUT_WARMUP_ROUNDS, || {
-        live_tasks_per_sec(sample_ms)
-    })
+#[cfg(test)]
+fn stabilized_tasks_per_sec_with<F>(rounds: usize, warmup_rounds: usize, sample: F) -> f64
+where
+    F: FnMut() -> f64,
+{
+    stabilized_tasks_per_sec_samples_with(rounds, warmup_rounds, sample).tasks_per_sec
+}
+
+fn stabilized_tasks_per_sec(rounds: usize, sample_ms: u64, uncached: bool) -> ThroughputSampling {
+    let workload_seed = if uncached {
+        format!("live_hash_workload_v1_uncached_seed_{}", now_iso())
+    } else {
+        "live_hash_workload_v1_cached".to_string()
+    };
+    let mut sample_idx = 0usize;
+    let mut sampling =
+        stabilized_tasks_per_sec_samples_with(rounds, SHARED_THROUGHPUT_WARMUP_ROUNDS, || {
+            if uncached {
+                pre_sample_cache_bust(workload_seed.as_str(), sample_idx);
+            }
+            sample_idx = sample_idx.saturating_add(1);
+            live_tasks_per_sec(sample_ms)
+        });
+    sampling.uncached = uncached;
+    sampling.workload_seed = workload_seed;
+    sampling
 }
 
 fn attach_shared_throughput(measured: &mut Map<String, Value>, tasks_per_sec: f64) {
@@ -641,6 +861,52 @@ fn attach_shared_throughput(measured: &mut Map<String, Value>, tasks_per_sec: f6
     measured.insert(
         "throughput_source".to_string(),
         Value::String(SHARED_THROUGHPUT_SOURCE.to_string()),
+    );
+}
+
+fn attach_shared_throughput_sampling(
+    measured: &mut Map<String, Value>,
+    sampling: &ThroughputSampling,
+) {
+    measured.insert(
+        "throughput_sampling_warmup_ops_per_sec".to_string(),
+        Value::Array(
+            sampling
+                .warmup_samples
+                .iter()
+                .map(|value| json!(((value * 100.0).round()) / 100.0))
+                .collect(),
+        ),
+    );
+    measured.insert(
+        "throughput_sampling_measured_ops_per_sec".to_string(),
+        Value::Array(
+            sampling
+                .measured_samples
+                .iter()
+                .map(|value| json!(((value * 100.0).round()) / 100.0))
+                .collect(),
+        ),
+    );
+    measured.insert(
+        "throughput_sampling_stddev_ops_per_sec".to_string(),
+        json!(((sampling.stddev * 100.0).round()) / 100.0),
+    );
+    measured.insert(
+        "throughput_sampling_min_ops_per_sec".to_string(),
+        json!(((sampling.min * 100.0).round()) / 100.0),
+    );
+    measured.insert(
+        "throughput_sampling_max_ops_per_sec".to_string(),
+        json!(((sampling.max * 100.0).round()) / 100.0),
+    );
+    measured.insert(
+        "throughput_uncached".to_string(),
+        Value::Bool(sampling.uncached),
+    );
+    measured.insert(
+        "throughput_workload_seed".to_string(),
+        Value::String(clean(&sampling.workload_seed, 160)),
     );
 }
 
@@ -737,7 +1003,7 @@ fn runtime_metrics(
 fn measure_openclaw(
     root: &Path,
     refresh_runtime: bool,
-    tasks_per_sec: f64,
+    throughput_sampling: &ThroughputSampling,
 ) -> Result<(Map<String, Value>, Value), String> {
     let (cold_start_ms, idle_memory_mb, install_size_mb, mut runtime_json, mut runtime_source) =
         runtime_metrics(root, refresh_runtime)?;
@@ -748,7 +1014,8 @@ fn measure_openclaw(
     measured.insert("cold_start_ms".to_string(), json!(cold_start_ms));
     measured.insert("idle_memory_mb".to_string(), json!(idle_memory_mb));
     measured.insert("install_size_mb".to_string(), json!(install_size_mb));
-    attach_shared_throughput(&mut measured, tasks_per_sec);
+    attach_shared_throughput(&mut measured, throughput_sampling.tasks_per_sec);
+    attach_shared_throughput_sampling(&mut measured, throughput_sampling);
     measured.insert("security_systems".to_string(), json!(security_systems));
     measured.insert("channel_adapters".to_string(), json!(channel_adapters));
     measured.insert("llm_providers".to_string(), json!(llm_providers));
@@ -761,12 +1028,23 @@ fn measure_openclaw(
         .get_mut("metrics")
         .and_then(Value::as_object_mut)
     {
-        metrics.insert("tasks_per_sec".to_string(), json!(tasks_per_sec));
+        metrics.insert(
+            "tasks_per_sec".to_string(),
+            json!(throughput_sampling.tasks_per_sec),
+        );
     }
     if let Some(meta) = runtime_source.as_object_mut() {
         meta.insert(
             "tasks_source".to_string(),
             Value::String(SHARED_THROUGHPUT_SOURCE.to_string()),
+        );
+        meta.insert(
+            "tasks_uncached".to_string(),
+            Value::Bool(throughput_sampling.uncached),
+        );
+        meta.insert(
+            "tasks_workload_seed".to_string(),
+            Value::String(clean(&throughput_sampling.workload_seed, 160)),
         );
         meta.insert(
             "tasks_sample_ms".to_string(),
@@ -927,16 +1205,36 @@ fn run_impl(
     snapshot_rel: &str,
     refresh_runtime: bool,
     bar_width: usize,
+    throughput_uncached: bool,
+    preflight_config: BenchmarkPreflightConfig,
 ) -> Result<Value, String> {
     let snapshot_path = root.join(snapshot_rel);
     let snapshot = read_json(&snapshot_path)?;
-    let shared_tasks_per_sec =
-        stabilized_tasks_per_sec(SHARED_THROUGHPUT_ROUNDS, SHARED_THROUGHPUT_SAMPLE_MS);
+    let benchmark_preflight = benchmark_preflight(preflight_config, throughput_uncached);
+    if benchmark_preflight
+        .get("ok")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+        == false
+    {
+        return Err(format!(
+            "benchmark_preflight_failed:{}",
+            clean(
+                &serde_json::to_string(&benchmark_preflight).unwrap_or_else(|_| "{}".to_string()),
+                2000
+            )
+        ));
+    }
+    let shared_throughput_sampling = stabilized_tasks_per_sec(
+        SHARED_THROUGHPUT_ROUNDS,
+        SHARED_THROUGHPUT_SAMPLE_MS,
+        throughput_uncached,
+    );
 
     let (openclaw_measured, runtime_receipt) =
-        measure_openclaw(root, refresh_runtime, shared_tasks_per_sec)?;
+        measure_openclaw(root, refresh_runtime, &shared_throughput_sampling)?;
     let (pure_workspace_measured, pure_workspace_tiny_max_measured) =
-        measure_pure_workspace(root, shared_tasks_per_sec)?;
+        measure_pure_workspace(root, shared_throughput_sampling.tasks_per_sec)?;
     let projects = merge_projects(&snapshot, &openclaw_measured)?;
     let mut projects = projects;
     if let Some(ref pure) = pure_workspace_measured {
@@ -988,6 +1286,29 @@ fn run_impl(
             .map(Value::Object)
             .unwrap_or(Value::Null),
         "runtime_receipt": runtime_receipt,
+        "benchmark_preflight": benchmark_preflight,
+        "shared_throughput_sampling": {
+            "tasks_per_sec": shared_throughput_sampling.tasks_per_sec,
+            "rounds": SHARED_THROUGHPUT_ROUNDS,
+            "warmup_rounds": SHARED_THROUGHPUT_WARMUP_ROUNDS,
+            "sample_ms": SHARED_THROUGHPUT_SAMPLE_MS,
+            "source": SHARED_THROUGHPUT_SOURCE,
+            "uncached": shared_throughput_sampling.uncached,
+            "workload_seed": clean(&shared_throughput_sampling.workload_seed, 160),
+            "warmup_samples_ops_per_sec": shared_throughput_sampling
+                .warmup_samples
+                .iter()
+                .map(|value| json!(((value * 100.0).round()) / 100.0))
+                .collect::<Vec<Value>>(),
+            "measured_samples_ops_per_sec": shared_throughput_sampling
+                .measured_samples
+                .iter()
+                .map(|value| json!(((value * 100.0).round()) / 100.0))
+                .collect::<Vec<Value>>(),
+            "stddev_ops_per_sec": ((shared_throughput_sampling.stddev * 100.0).round()) / 100.0,
+            "min_ops_per_sec": ((shared_throughput_sampling.min * 100.0).round()) / 100.0,
+            "max_ops_per_sec": ((shared_throughput_sampling.max * 100.0).round()) / 100.0
+        },
         "projects": Value::Object(projects),
         "categories": categories,
         "ascii_report": ascii_report,
@@ -1033,6 +1354,26 @@ fn run_impl(
                 "evidence": {
                     "environment_fingerprint_present": true
                 }
+            },
+            {
+                "id": "competitive_benchmark_matrix_uncached_throughput_sampling",
+                "claim": "shared_throughput_baseline_runs optional uncached pre-sample cache-bust and exposes round-level spread",
+                "evidence": {
+                    "throughput_uncached": throughput_uncached,
+                    "throughput_rounds": SHARED_THROUGHPUT_ROUNDS,
+                    "throughput_warmup_rounds": SHARED_THROUGHPUT_WARMUP_ROUNDS
+                }
+            },
+            {
+                "id": "competitive_benchmark_matrix_preflight_gate",
+                "claim": "benchmark publication fails closed when host load or throughput jitter exceed bounded preflight thresholds",
+                "evidence": {
+                    "preflight_enabled": preflight_config.enabled,
+                    "max_load_per_core": preflight_config.max_load_per_core,
+                    "max_noise_cv_pct": preflight_config.max_noise_cv_pct,
+                    "noise_sample_ms": preflight_config.noise_sample_ms,
+                    "noise_rounds": preflight_config.noise_rounds
+                }
             }
         ]
     });
@@ -1075,10 +1416,65 @@ pub fn run(root: &Path, argv: &[String]) -> i32 {
         parsed.flags.get("refresh-runtime").map(String::as_str),
         refresh_default,
     );
+    let throughput_uncached = parse_bool_flag(
+        parsed.flags.get("throughput-uncached").map(String::as_str),
+        SHARED_THROUGHPUT_DEFAULT_UNCACHED,
+    );
+    let preflight_enabled = parse_bool_flag(
+        parsed.flags.get("benchmark-preflight").map(String::as_str),
+        BENCHMARK_PREFLIGHT_ENABLED_DEFAULT,
+    );
+    let preflight_config = BenchmarkPreflightConfig {
+        enabled: preflight_enabled,
+        max_load_per_core: parse_f64_flag(
+            parsed
+                .flags
+                .get("preflight-max-load-per-core")
+                .map(String::as_str),
+            BENCHMARK_PREFLIGHT_MAX_LOAD_PER_CORE_DEFAULT,
+            0.01,
+            8.0,
+        ),
+        max_noise_cv_pct: parse_f64_flag(
+            parsed
+                .flags
+                .get("preflight-max-noise-cv-pct")
+                .map(String::as_str),
+            BENCHMARK_PREFLIGHT_MAX_NOISE_CV_PCT_DEFAULT,
+            0.01,
+            100.0,
+        ),
+        noise_sample_ms: parse_u64_flag(
+            parsed
+                .flags
+                .get("preflight-noise-sample-ms")
+                .map(String::as_str),
+            BENCHMARK_PREFLIGHT_NOISE_SAMPLE_MS_DEFAULT,
+            100,
+            5_000,
+        ),
+        noise_rounds: parse_usize_flag(
+            parsed
+                .flags
+                .get("preflight-noise-rounds")
+                .map(String::as_str),
+            BENCHMARK_PREFLIGHT_NOISE_ROUNDS_DEFAULT,
+            1,
+            20,
+        ),
+    };
     let bar_width = parse_bar_width(parsed.flags.get("bar-width").map(String::as_str));
 
     match cmd.as_str() {
-        "run" | "status" => match run_impl(root, &cmd, &snapshot_rel, refresh_runtime, bar_width) {
+        "run" | "status" => match run_impl(
+            root,
+            &cmd,
+            &snapshot_rel,
+            refresh_runtime,
+            bar_width,
+            throughput_uncached,
+            preflight_config,
+        ) {
             Ok(out) => {
                 println!(
                     "{}",
