@@ -302,6 +302,18 @@ Updated: 2026-03-20 08:47 America/Denver
 - Remove external CDN dependency path by shipping local bundled frontend modules/CSS with equivalent behavior.
 - Publish before/after interaction latency + scroll-jank evidence in benchmark report.
 
+33. `P0-DASHBOARD-CHATFIRST-006` Lock in simplified first-load chat UI with hidden advanced controls pane (`V6-DASHBOARD-006.*`). `STATUS: IN_PROGRESS`
+- Context:
+- Operators and new users reported first-load overwhelm and low intuitiveness in dense dashboard layouts.
+- Linked SRS:
+- `V6-DASHBOARD-006.1` through `V6-DASHBOARD-006.4`.
+- Exit criteria:
+- First load defaults to clean chat-only surface with no advanced panes visible.
+- Advanced controls are one-click accessible in collapsible side pane and remain collapsed by default.
+- Pane and section UI interactions emit deterministic UI receipts (`dashboard.ui.toggleControls`, `dashboard.ui.toggleSection`).
+- Fallback renderer preserves the same chat-first behavior when React/ESM path is unavailable.
+- Validate via dashboard regression + security/sovereignty checks.
+
 ## Executed in this pass
 - Added `tests/tooling/scripts/ci/srs_actionable_map.mjs` to produce canonical remaining-work mapping and executability buckets.
 - Reviewed enforcer policy and kept DoD evidence gates strict.

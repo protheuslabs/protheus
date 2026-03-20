@@ -9509,6 +9509,29 @@ Objective: deliver a unified control-plane dashboard that combines agent/scope v
 | V6-DASHBOARD-001.9 | done | Settings + Governance Control Contract | Safety and operator trust degrade unless global and per-agent controls are explicit, scoped, and auditable. | Add global/per-agent/per-channel settings editors (model, budgets, permissions, memory scope, safety toggles) with strict policy gating and deterministic config-change receipts. | 9 | 0/1/2/client/app |
 | V6-DASHBOARD-001.10 | done | Performance + Reliability Envelope Contract | Dashboard value collapses if UX latency, startup, mobile usability, and offline behavior are inconsistent. | Enforce non-functional targets for load/update latency, WebSocket-first realtime updates, offline cache behavior, mobile responsiveness, and fail-closed conduit-only execution paths. | 10 | 0/1/2/client/app |
 
+## Simplified First-Load Dashboard Extension Intake (Docs `1S3-H4G4R1bBBtWIN5WX_7yD_gMdb_5MHvHBkt30hs-k` + `1Aegff87diqP1piog54qjAmWyPrxLOMO4CCoAuOWfmlU`, 2026-03-20)
+
+Source references:
+- https://docs.google.com/document/d/1S3-H4G4R1bBBtWIN5WX_7yD_gMdb_5MHvHBkt30hs-k/edit?usp=sharing
+- https://docs.google.com/document/d/1Aegff87diqP1piog54qjAmWyPrxLOMO4CCoAuOWfmlU/edit?usp=sharing
+
+Notes:
+- Normalization: adds a focused UX extension family `V6-DASHBOARD-006.*` for first-load cognitive simplicity while preserving full advanced controls in the existing dashboard authority model.
+- Primitive-first constraint: no new authority plane is introduced; all mutating UI actions remain conduit-routed and receipt-backed through existing lane dispatch paths.
+- Relationship to existing contracts:
+  - complements (does not replace) `V6-DASHBOARD-001.*` broad surface contracts,
+  - strengthens first-load usability and discoverability expectations for non-operator users,
+  - keeps advanced controls accessible in one-click collapsible pane with deterministic action receipts.
+
+Objective: default dashboard boot to a clean OpenFang/OpenClaw-style chat interface, with all advanced control surfaces hidden in a collapsible side pane by default.
+
+| ID | Status | Upgrade | Why | Exit Criteria | Impact (1-10) | Layer Map |
+| --- | --- | --- | --- | --- | --- | --- |
+| V6-DASHBOARD-006.1 | in_progress | Default Boot State: Minimal Chat UI | First impressions degrade when operators are dropped into dense control surfaces instead of familiar chat-first interaction. | First load shows full-width chat surface with top bar, message stream, input composer, typing/status affordances, and no advanced panes visible by default. | 10 | 1/2/client/app |
+| V6-DASHBOARD-006.2 | in_progress | Collapsible Side Pane for Advanced Controls | Power features must stay available without overwhelming first-time users. | Side pane is hidden by default, opens/closes via top-bar control with smooth slide behavior, exposes all advanced dashboard sections as collapsed accordion groups, and persists open/closed state in local storage. | 10 | 1/2/client/app |
+| V6-DASHBOARD-006.3 | in_progress | Non-Overwhelming Onboarding + Quick Actions | Users need clear immediate affordances to start using the system without reading internal docs. | First-load welcome guidance, chat placeholder guidance, and quick action chips (`New Agent`, `New Swarm`, `Assimilate`, `Run Benchmark`, `Open Controls`) are present and usable from chat view. | 9 | 1/2/client/app |
+| V6-DASHBOARD-006.4 | in_progress | Simple Visual Polish + Performance Envelope | Minimal interfaces still fail if they are janky, inaccessible, or visually noisy. | Chat-first mode remains responsive/mobile-safe with reduced-motion friendly transitions, no feature clutter in default view, and deterministic receipt trails for core UI pane/section interactions. | 9 | 1/2/client/app |
+
 ## Blind-Spot Hardening Intake Source Coverage (Doc `1rhlsnMmcJ2u3C3_QJgSkhK__SF0e27qTyeTFG7xagL8`, 2026-03-18)
 
 Source references:

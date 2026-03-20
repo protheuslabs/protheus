@@ -406,6 +406,44 @@ function writeActionReceipt(action, payload, laneResult) {
 function runAction(action, payload) {
   const normalizedAction = cleanText(action, 80);
   const data = payload && typeof payload === 'object' ? payload : {};
+  if (normalizedAction === 'dashboard.ui.toggleControls') {
+    const open = !!(data && data.open);
+    const ts = nowIso();
+    const eventPayload = { event: 'toggle_controls', open, ts };
+    return {
+      ok: true,
+      status: 0,
+      argv: ['dashboard.ui.toggleControls'],
+      payload: {
+        ok: true,
+        type: 'infring_dashboard_ui_event',
+        event: eventPayload.event,
+        open: eventPayload.open,
+        ts: eventPayload.ts,
+        receipt_hash: sha256(JSON.stringify(eventPayload)),
+      },
+    };
+  }
+  if (normalizedAction === 'dashboard.ui.toggleSection') {
+    const section = cleanText(data.section || 'unknown', 80) || 'unknown';
+    const open = !!(data && data.open);
+    const ts = nowIso();
+    const eventPayload = { event: 'toggle_section', section, open, ts };
+    return {
+      ok: true,
+      status: 0,
+      argv: ['dashboard.ui.toggleSection'],
+      payload: {
+        ok: true,
+        type: 'infring_dashboard_ui_event',
+        event: eventPayload.event,
+        section: eventPayload.section,
+        open: eventPayload.open,
+        ts: eventPayload.ts,
+        receipt_hash: sha256(JSON.stringify(eventPayload)),
+      },
+    };
+  }
   if (normalizedAction === 'app.switchProvider') {
     const provider = cleanText(data.provider || 'openai', 60) || 'openai';
     const model = cleanText(data.model || 'gpt-5', 100) || 'gpt-5';
