@@ -316,10 +316,11 @@ fn spawn_dashboard(root: &Path, cfg: &DashboardLaunchConfig) -> Result<u32, Stri
     let log_err = log
         .try_clone()
         .map_err(|err| format!("dashboard_log_clone_failed:{err}"))?;
-    let exe = std::env::current_exe().map_err(|err| format!("current_exe_failed:{err}"))?;
-    let dashboard_exe = resolve_dashboard_executable(&exe);
-    let child = Command::new(dashboard_exe)
-        .arg("dashboard-ui")
+    // Canonical dashboard surface: TypeScript pipeline (OpenClaw-fork UI + chat-first controls).
+    // This replaces the legacy Rust fallback dashboard shell to avoid split UI surfaces.
+    let child = Command::new("node")
+        .arg("client/runtime/lib/ts_entrypoint.ts")
+        .arg("client/runtime/systems/ui/infring_dashboard.ts")
         .arg("serve")
         .arg(format!("--host={}", cfg.host))
         .arg(format!("--port={}", cfg.port))
