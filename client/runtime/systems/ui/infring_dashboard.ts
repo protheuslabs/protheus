@@ -701,6 +701,113 @@ function configuredOllamaModel(snapshot) {
   return cleanText(raw, 120) || OLLAMA_MODEL_FALLBACK;
 }
 
+function configuredProvider(snapshot) {
+  const raw =
+    snapshot &&
+    snapshot.app &&
+    snapshot.app.settings &&
+    snapshot.app.settings.provider
+      ? String(snapshot.app.settings.provider)
+      : '';
+  return cleanText(raw, 80) || 'openai';
+}
+
+function parseOllamaModelList() {
+  if (!commandExists(OLLAMA_BIN)) return [];
+  try {
+    const proc = spawnSync(OLLAMA_BIN, ['list'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      stdio: 'pipe',
+      timeout: 6000,
+      maxBuffer: 2 * 1024 * 1024,
+    });
+    if (!proc || proc.status !== 0) return [];
+    const out = String(proc.stdout || '');
+    const lines = out.split('\n').map((row) => row.trim()).filter(Boolean);
+    const models = [];
+    for (const line of lines) {
+      if (/^name\s+/i.test(line)) continue;
+      const parts = line.split(/\s+/);
+      const id = cleanText(parts[0] || '', 120);
+      if (!id || id.toLowerCase() === 'name') continue;
+      models.push(id);
+    }
+    return Array.from(new Set(models));
+  } catch {
+    return [];
+  }
+}
+
+function buildDashboardModels(snapshot) {
+  const rows = [];
+  rows.push({
+    id: 'auto',
+    provider: 'auto',
+    display_name: 'Auto',
+    tier: 'Balanced',
+    available: true,
+    supports_tools: true,
+    supports_vision: false,
+  });
+  const configured = configuredOllamaModel(snapshot);
+  const fromOllama = parseOllamaModelList();
+  const merged = Array.from(new Set([configured, OLLAMA_MODEL_FALLBACK, ...fromOllama].filter(Boolean)));
+  for (const id of merged) {
+    rows.push({
+      id,
+      provider: 'ollama',
+      display_name: id,
+      tier: 'Balanced',
+      available: true,
+      supports_tools: true,
+      supports_vision: false,
+    });
+  }
+  return rows;
+}
+
+function modelOverrideFromState(state) {
+  const raw = cleanText(state && state.model_override ? state.model_override : '', 120).toLowerCase();
+  if (!raw || raw === 'auto') return 'auto';
+  return cleanText(state && state.model_override ? state.model_override : '', 120) || 'auto';
+}
+
+function readAgentModelOverride(agentId) {
+  const state = readJson(agentSessionPath(agentId), null);
+  return modelOverrideFromState(state);
+}
+
+function providerForModelName(modelName, fallbackProvider = 'ollama') {
+  const value = cleanText(modelName || '', 120);
+  if (!value) return cleanText(fallbackProvider || 'ollama', 80) || 'ollama';
+  if (value.toLowerCase() === 'auto') return 'auto';
+  if (value.startsWith('ollama/')) return 'ollama';
+  if (value.includes('/')) return cleanText(value.split('/')[0], 80) || cleanText(fallbackProvider || 'ollama', 80);
+  return cleanText(fallbackProvider || 'ollama', 80) || 'ollama';
+}
+
+function effectiveAgentModel(agentId, snapshot) {
+  const override = readAgentModelOverride(agentId);
+  const defaultModel = configuredOllamaModel(snapshot);
+  const defaultProvider = configuredProvider(snapshot);
+  if (override === 'auto') {
+    return { selected: 'auto', provider: 'auto', runtime_model: defaultModel, runtime_provider: defaultProvider };
+  }
+  const normalized = cleanText(override, 120) || defaultModel;
+  const runtimeModel = normalized.startsWith('ollama/')
+    ? cleanText(normalized.replace(/^ollama\//, ''), 120) || defaultModel
+    : normalized.includes('/')
+      ? defaultModel
+      : normalized;
+  return {
+    selected: normalized,
+    provider: providerForModelName(normalized, 'ollama'),
+    runtime_model: runtimeModel,
+    runtime_provider: 'ollama',
+  };
+}
+
 function runOllamaPrompt(model, prompt) {
   const selectedModel = cleanText(model || OLLAMA_MODEL_FALLBACK, 120) || OLLAMA_MODEL_FALLBACK;
   try {
@@ -804,7 +911,7 @@ function buildToolFollowupPrompt({ agent, input, toolStep }) {
   ].join('\n');
 }
 
-function runLlmChatWithCli(agent, session, input, snapshot) {
+function runLlmChatWithCli(agent, session, input, snapshot, requestedModel = '') {
   const deterministic = tryDeterministicRepoAnswer(input);
   if (deterministic) {
     return {
@@ -817,7 +924,8 @@ function runLlmChatWithCli(agent, session, input, snapshot) {
     };
   }
 
-  let model = configuredOllamaModel(snapshot);
+  const requested = cleanText(requestedModel || '', 120);
+  let model = requested || configuredOllamaModel(snapshot);
   const toolSteps = [];
   const prompt = buildToolPrompt({ agent, session, input, toolSteps });
   let llm = runOllamaPrompt(model, prompt);
@@ -988,6 +1096,7 @@ function normalizeSessionState(state, snapshot) {
   );
   const fallback = {
     active_session_id: 'default',
+    model_override: 'auto',
     sessions: [
       {
         session_id: 'default',
@@ -999,6 +1108,7 @@ function normalizeSessionState(state, snapshot) {
     ],
   };
   const normalized = state && typeof state === 'object' ? state : fallback;
+  normalized.model_override = modelOverrideFromState(normalized);
   if (!Array.isArray(normalized.sessions) || normalized.sessions.length === 0) {
     normalized.sessions = fallback.sessions;
   }
@@ -1500,12 +1610,9 @@ function compatAgentsFromSnapshot(snapshot) {
     Array.isArray(snapshot.collab.dashboard.agents)
       ? snapshot.collab.dashboard.agents
       : [];
-  const model =
-    snapshot && snapshot.app && snapshot.app.settings && snapshot.app.settings.model
-      ? String(snapshot.app.settings.model)
-      : 'gpt-5';
   return rows.map((row, idx) => {
     const id = cleanText(row && row.shadow ? row.shadow : `agent-${idx + 1}`, 120) || `agent-${idx + 1}`;
+    const modelState = effectiveAgentModel(id, snapshot);
     const status = cleanText(row && row.status ? row.status : 'running', 40) || 'running';
     const state =
       status === 'paused' || status === 'stopped' ? status : status === 'error' ? 'error' : 'running';
@@ -1513,7 +1620,9 @@ function compatAgentsFromSnapshot(snapshot) {
       id,
       name: id,
       state,
-      model_name: model,
+      model_name: modelState.selected,
+      model_provider: modelState.provider,
+      runtime_model: modelState.runtime_model,
       role: cleanText(row && row.role ? row.role : 'analyst', 60) || 'analyst',
       identity: { emoji: '🤖', archetype: 'assistant' },
       capabilities: [],
@@ -1767,6 +1876,13 @@ function runServe(flags) {
         });
         return;
       }
+      if (req.method === 'GET' && pathname === '/api/models') {
+        sendJson(res, 200, {
+          ok: true,
+          models: buildDashboardModels(latestSnapshot),
+        });
+        return;
+      }
       if (req.method === 'GET' && pathname === '/api/agents') {
         sendJson(res, 200, compatAgentsFromSnapshot(latestSnapshot));
         return;
@@ -1828,7 +1944,14 @@ function runServe(flags) {
           const state = loadAgentSession(agentId, latestSnapshot);
           const session = activeSession(state);
           const chatSessionId = runtimeChatSessionId(agentId, session.session_id);
-          const llmResult = runLlmChatWithCli(agent, session, input, latestSnapshot);
+          const modelState = effectiveAgentModel(agentId, latestSnapshot);
+          const llmResult = runLlmChatWithCli(
+            agent,
+            session,
+            input,
+            latestSnapshot,
+            modelState.runtime_model
+          );
           let laneResult;
           let tools = [];
           let assistantRaw = '';
@@ -1847,6 +1970,8 @@ function runServe(flags) {
                 ok: true,
                 type: 'infring_dashboard_ollama_chat',
                 model: llmResult.model || OLLAMA_MODEL_FALLBACK,
+                selected_model: modelState.selected,
+                provider: modelState.provider,
                 response: assistantRaw,
                 tools,
                 iterations,
@@ -1931,6 +2056,30 @@ function runServe(flags) {
             output_tokens: outputTokens,
             cost_usd: 0,
             iterations,
+          });
+          return;
+        }
+        if (req.method === 'PUT' && parts[3] === 'model') {
+          const payload = await bodyJson(req);
+          const agent = compatAgentsFromSnapshot(latestSnapshot).find((row) => row.id === agentId);
+          if (!agent) {
+            sendJson(res, 404, { ok: false, error: 'agent_not_found', id: agentId });
+            return;
+          }
+          const requested = cleanText(
+            payload && payload.model != null ? payload.model : '',
+            120
+          );
+          const state = loadAgentSession(agentId, latestSnapshot);
+          state.model_override = requested && requested.toLowerCase() !== 'auto' ? requested : 'auto';
+          saveAgentSession(agentId, state);
+          const resolved = effectiveAgentModel(agentId, latestSnapshot);
+          sendJson(res, 200, {
+            ok: true,
+            id: agentId,
+            model: resolved.selected,
+            provider: resolved.provider,
+            runtime_model: resolved.runtime_model,
           });
           return;
         }
