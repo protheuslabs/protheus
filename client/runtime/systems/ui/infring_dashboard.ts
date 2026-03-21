@@ -40,6 +40,7 @@ const TOOL_ITERATION_LIMIT = 1;
 const TOOL_OUTPUT_LIMIT = 5000;
 const CLI_MODE_SAFE = 'safe';
 const CLI_MODE_FULL_INFRING = 'full_infring';
+const DEFAULT_CLI_MODE = CLI_MODE_FULL_INFRING;
 const EFFECTIVE_LOC_EXTENSIONS = new Set([
   '.rs',
   '.ts',
@@ -119,7 +120,7 @@ const OPS_READ_ONLY = new Set([
   'runtime-systems',
   'dashboard-ui',
 ]);
-let ACTIVE_CLI_MODE = CLI_MODE_SAFE;
+let ACTIVE_CLI_MODE = DEFAULT_CLI_MODE;
 
 function nowIso() {
   return new Date().toISOString();
@@ -324,7 +325,7 @@ function parseJsonLoose(raw) {
 
 function normalizeCliMode(value) {
   const raw = cleanText(value || '', 80).toLowerCase();
-  if (!raw) return CLI_MODE_SAFE;
+  if (!raw) return DEFAULT_CLI_MODE;
   if (raw === 'full' || raw === 'full_infring' || raw === 'full-infring') {
     return CLI_MODE_FULL_INFRING;
   }
@@ -339,7 +340,7 @@ function parseFlags(argv = []) {
     team: DEFAULT_TEAM,
     refreshMs: DEFAULT_REFRESH_MS,
     pretty: true,
-    cliMode: normalizeCliMode(process.env.INFRING_DASHBOARD_CLI_MODE || ''),
+    cliMode: normalizeCliMode(process.env.INFRING_DASHBOARD_CLI_MODE || DEFAULT_CLI_MODE),
   };
 
   let modeSet = false;
