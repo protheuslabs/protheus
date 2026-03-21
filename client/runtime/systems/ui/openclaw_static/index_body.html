@@ -1037,7 +1037,7 @@
                 </button>
                   </template>
               <button x-show="!isMessageDayCollapsed(msg)" class="chat-map-item" :data-msg-dom-id="messageDomId(msg, idx)" :class="['role-' + (msg.role || 'agent'), isLongMessagePreview(msg) ? 'long-message' : '', isSelectedMessage(msg, idx) ? 'selected-linked' : '', isHoveredMessage(msg, idx) ? 'hover-linked' : '']" @mouseenter="setMapItemHover(msg, idx)" @mouseleave="clearMapItemHover()" @click="jumpToMessage(msg, idx)" :aria-label="'Jump to message ' + (idx + 1)">
-                <span class="chat-map-item-main">
+                <span class="chat-map-item-main" x-show="messageMapMarkerType(msg) !== 'model'">
                   <span class="chat-map-bar"></span>
                 </span>
                 <span class="chat-map-tool-row" x-show="messageMapMarkerType(msg) === 'model'">
@@ -1390,7 +1390,7 @@
                     </button>
                   </template>
                   <button x-show="!isMessageDayCollapsed(msg)" class="chat-map-item" :data-msg-dom-id="messageDomId(msg, idx)" :class="['role-' + (msg.role || 'agent'), isLongMessagePreview(msg) ? 'long-message' : '', isSelectedMessage(msg, idx) ? 'selected-linked' : '', isHoveredMessage(msg, idx) ? 'hover-linked' : '']" @mouseenter="setMapItemHover(msg, idx)" @mouseleave="clearMapItemHover()" @click="jumpToMessage(msg, idx)" :aria-label="'Jump to message ' + (idx + 1)">
-                    <span class="chat-map-item-main">
+                    <span class="chat-map-item-main" x-show="messageMapMarkerType(msg) !== 'model'">
                       <span class="chat-map-bar"></span>
                     </span>
                     <span class="chat-map-tool-row" x-show="messageMapMarkerType(msg) === 'model'">

@@ -36,7 +36,7 @@ const TEXT_EXTENSIONS = new Set(['.html', '.css', '.js', '.json', '.txt', '.svg'
 const OLLAMA_BIN = 'ollama';
 const OLLAMA_MODEL_FALLBACK = 'qwen2.5:3b';
 const OLLAMA_TIMEOUT_MS = 45000;
-const TOOL_ITERATION_LIMIT = 1;
+const TOOL_ITERATION_LIMIT = 4;
 const TOOL_OUTPUT_LIMIT = 5000;
 const CLI_MODE_SAFE = 'safe';
 const CLI_MODE_FULL_INFRING = 'full_infring';
@@ -869,13 +869,17 @@ function promptTranscript(session) {
     .join('\n');
 }
 
-function buildToolPrompt({ agent, session, input, toolSteps = [] }) {
-  const transcript = promptTranscript(session) || '(empty)';
-  const toolHistory = toolSteps.length
+function formatToolHistory(toolSteps = []) {
+  return toolSteps.length
     ? toolSteps
         .map((step, idx) => `#${idx + 1} ${step.input}\nexit=${step.exit_code}\n${step.result}`)
         .join('\n\n')
     : '(none)';
+}
+
+function buildToolPrompt({ agent, session, input, toolSteps = [] }) {
+  const transcript = promptTranscript(session) || '(empty)';
+  const toolHistory = formatToolHistory(toolSteps);
   const agentName = cleanText(agent && (agent.name || agent.id) ? agent.name || agent.id : 'master-agent', 80);
   const fullInfring = ACTIVE_CLI_MODE === CLI_MODE_FULL_INFRING;
   return [
@@ -884,6 +888,9 @@ function buildToolPrompt({ agent, session, input, toolSteps = [] }) {
     'You can ask for a CLI command when needed.',
     'If the user asks for opinion, explanation, or casual chat, answer directly without tools.',
     'Only request a tool call when factual repo/runtime data is required.',
+    `You may use at most ${TOOL_ITERATION_LIMIT} tool calls before giving a final answer.`,
+    'Never claim inability without first attempting a valid tool call when tools are needed.',
+    'Do not mention underlying base-model identity; respond as Infring runtime assistant.',
     'Return ONLY one JSON object with no markdown.',
     'Final answer schema:',
     '{"type":"final","response":"<text response to user>"}',
@@ -902,21 +909,20 @@ function buildToolPrompt({ agent, session, input, toolSteps = [] }) {
   ].join('\n');
 }
 
-function buildToolFollowupPrompt({ agent, input, toolStep }) {
+function buildToolFollowupPrompt({ agent, input, toolSteps = [] }) {
   const agentName = cleanText(agent && (agent.name || agent.id) ? agent.name || agent.id : 'master-agent', 80);
-  const toolSummary = toolStep
-    ? `Tool: ${toolStep.input}\nExit: ${toolStep.exit_code}\nOutput:\n${cleanText(toolStep.result || '', 3600)}`
-    : 'Tool: (none)';
+  const toolSummary = formatToolHistory(toolSteps);
   return [
     'You are Infring runtime chat assistant.',
     `Active agent: ${agentName}`,
-    'Use the tool result to answer the user clearly.',
+    'Use the tool result history to answer the user clearly.',
+    'Do not disclose base-model identity.',
     'Return ONLY one JSON object with no markdown.',
     '{"type":"final","response":"<answer>"}',
     '',
     `User request:\n${cleanText(input, 3200)}`,
     '',
-    toolSummary,
+    `Tool history:\n${toolSummary}`,
   ].join('\n');
 }
 
@@ -936,48 +942,64 @@ function runLlmChatWithCli(agent, session, input, snapshot, requestedModel = '')
   const requested = cleanText(requestedModel || '', 120);
   let model = requested || configuredOllamaModel(snapshot);
   const toolSteps = [];
-  const prompt = buildToolPrompt({ agent, session, input, toolSteps });
-  let llm = runOllamaPrompt(model, prompt);
-  if (!llm.ok && model !== OLLAMA_MODEL_FALLBACK) {
-    model = OLLAMA_MODEL_FALLBACK;
-    llm = runOllamaPrompt(model, prompt);
-  }
-  if (!llm.ok) {
-    return {
-      ok: false,
-      error: cleanText(llm.error || 'ollama_run_failed', 260),
-      status: llm.status || 1,
-      tools: toolSteps,
-    };
-  }
+  let iterations = 0;
+  let lastLlmOutput = '';
 
-  const directive = extractJsonDirective(llm.output);
-  if (!directive) {
-    return {
-      ok: true,
-      status: 0,
-      response: cleanText(llm.output, 4000),
-      model,
-      tools: [],
-      iterations: 1,
-    };
-  }
+  while (iterations <= TOOL_ITERATION_LIMIT) {
+    const prompt = buildToolPrompt({ agent, session, input, toolSteps });
+    let llm = runOllamaPrompt(model, prompt);
+    if (!llm.ok && model !== OLLAMA_MODEL_FALLBACK) {
+      model = OLLAMA_MODEL_FALLBACK;
+      llm = runOllamaPrompt(model, prompt);
+    }
+    if (!llm.ok) {
+      return {
+        ok: false,
+        error: cleanText(llm.error || 'ollama_run_failed', 260),
+        status: llm.status || 1,
+        tools: toolSteps,
+      };
+    }
 
-  if (directive.type === 'final') {
-    return {
-      ok: true,
-      status: 0,
-      response: cleanText(directive.response || llm.output, 4000),
-      model,
-      tools: [],
-      iterations: 1,
-    };
-  }
+    iterations += 1;
+    lastLlmOutput = llm.output;
+    const directive = extractJsonDirective(llm.output);
+    if (!directive) {
+      return {
+        ok: true,
+        status: 0,
+        response: cleanText(llm.output, 4000),
+        model,
+        tools: toolSteps,
+        iterations,
+      };
+    }
 
-  if (directive.type === 'tool_call') {
+    if (directive.type === 'final') {
+      return {
+        ok: true,
+        status: 0,
+        response: cleanText(directive.response || llm.output, 4000),
+        model,
+        tools: toolSteps,
+        iterations,
+      };
+    }
+
+    if (directive.type !== 'tool_call') {
+      return {
+        ok: true,
+        status: 0,
+        response: cleanText(llm.output, 4000) || 'No response produced by the model.',
+        model,
+        tools: toolSteps,
+        iterations,
+      };
+    }
+
     const toolStep = runCliTool(directive.command, directive.args);
     const normalizedTool = {
-      id: `tool-${Date.now()}-0`,
+      id: `tool-${Date.now()}-${toolSteps.length}`,
       name: toolStep.name,
       input: toolStep.input,
       result: toolStep.result,
@@ -988,51 +1010,46 @@ function runLlmChatWithCli(agent, session, input, snapshot, requestedModel = '')
     };
     toolSteps.push(normalizedTool);
 
-    const followPrompt = buildToolFollowupPrompt({ agent, input, toolStep: normalizedTool });
-    let follow = runOllamaPrompt(model, followPrompt);
-    if (!follow.ok && model !== OLLAMA_MODEL_FALLBACK) {
-      model = OLLAMA_MODEL_FALLBACK;
-      follow = runOllamaPrompt(model, followPrompt);
-    }
-    let finalResponse = '';
-    if (follow.ok) {
-      const followDirective = extractJsonDirective(follow.output);
-      if (followDirective && followDirective.type === 'final') {
-        finalResponse = cleanText(followDirective.response || follow.output, 4000);
-      } else {
-        finalResponse = cleanText(follow.output, 4000);
+    if (toolSteps.length >= TOOL_ITERATION_LIMIT) {
+      const followPrompt = buildToolFollowupPrompt({ agent, input, toolSteps });
+      let follow = runOllamaPrompt(model, followPrompt);
+      if (!follow.ok && model !== OLLAMA_MODEL_FALLBACK) {
+        model = OLLAMA_MODEL_FALLBACK;
+        follow = runOllamaPrompt(model, followPrompt);
       }
+      let finalResponse = '';
+      if (follow.ok) {
+        const followDirective = extractJsonDirective(follow.output);
+        if (followDirective && followDirective.type === 'final') {
+          finalResponse = cleanText(followDirective.response || follow.output, 4000);
+        } else {
+          finalResponse = cleanText(follow.output, 4000);
+        }
+      }
+      if (!finalResponse) {
+        const last = toolSteps[toolSteps.length - 1];
+        finalResponse = last && last.is_error
+          ? `Tool execution failed: ${last.result}`
+          : cleanText((last && last.result) || lastLlmOutput || 'No response produced by the model.', 4000);
+      }
+      return {
+        ok: true,
+        status: 0,
+        response: finalResponse,
+        model,
+        tools: toolSteps,
+        iterations: iterations + 1,
+      };
     }
-    if (!finalResponse) {
-      finalResponse = toolStep.is_error
-        ? `Tool execution failed: ${toolStep.result}`
-        : cleanText(toolStep.result, 4000);
-    }
-    return {
-      ok: true,
-      status: 0,
-      response: finalResponse,
-      model,
-      tools: toolSteps.map((row) => ({
-        id: row.id,
-        name: row.name,
-        input: row.input,
-        result: row.result,
-        is_error: row.is_error,
-        running: false,
-        expanded: false,
-      })),
-      iterations: 2,
-    };
   }
 
   return {
     ok: true,
     status: 0,
-    response: cleanText(llm.output, 4000) || 'No response produced by the model.',
+    response: cleanText(lastLlmOutput, 4000) || 'No response produced by the model.',
     model,
-    tools: [],
-    iterations: 1,
+    tools: toolSteps,
+    iterations,
   };
 }
 
@@ -1230,6 +1247,136 @@ function sessionList(state) {
     updated_at: session.updated_at || nowIso(),
     active: session.session_id === state.active_session_id,
   }));
+}
+
+function runAgentMessage(agentId, input, snapshot) {
+  const agent = compatAgentsFromSnapshot(snapshot).find((row) => row.id === agentId);
+  if (!agent) {
+    return { ok: false, status: 404, error: 'agent_not_found', id: agentId };
+  }
+  const cleanInput = cleanText(input || '', 4000);
+  if (!cleanInput) {
+    return { ok: false, status: 400, error: 'message_required' };
+  }
+
+  const state = loadAgentSession(agentId, snapshot);
+  const session = activeSession(state);
+  const chatSessionId = runtimeChatSessionId(agentId, session.session_id);
+  const modelState = effectiveAgentModel(agentId, snapshot);
+  const startedAtMs = Date.now();
+  const llmResult = runLlmChatWithCli(agent, session, cleanInput, snapshot, modelState.runtime_model);
+
+  let laneResult;
+  let tools = [];
+  let assistantRaw = '';
+  let iterations = 1;
+  let backend = 'ollama';
+  let usedModel = modelState.runtime_model || OLLAMA_MODEL_FALLBACK;
+
+  if (llmResult && llmResult.ok) {
+    tools = Array.isArray(llmResult.tools) ? llmResult.tools : [];
+    assistantRaw = String(llmResult.response || '');
+    iterations = parsePositiveInt(llmResult.iterations || 1, 1, 1, 8);
+    usedModel = cleanText(llmResult.model || usedModel || OLLAMA_MODEL_FALLBACK, 120) || OLLAMA_MODEL_FALLBACK;
+    laneResult = {
+      ok: true,
+      status: 0,
+      stdout: '',
+      stderr: '',
+      argv: ['ollama', 'run', usedModel],
+      payload: {
+        ok: true,
+        type: 'infring_dashboard_ollama_chat',
+        model: usedModel,
+        selected_model: modelState.selected,
+        provider: modelState.provider,
+        response: assistantRaw,
+        tools,
+        iterations,
+        session_id: chatSessionId,
+      },
+    };
+  } else {
+    backend = 'app-plane';
+    laneResult = runLane([
+      'app-plane',
+      'run',
+      '--app=chat-ui',
+      `--session-id=${chatSessionId}`,
+      `--input=${cleanInput}`,
+    ]);
+    const payloadObj = laneResult && laneResult.payload && typeof laneResult.payload === 'object'
+      ? laneResult.payload
+      : null;
+    const assistantFromLane =
+      payloadObj &&
+      typeof payloadObj.response === 'string'
+        ? payloadObj.response
+        : payloadObj &&
+          payloadObj.turn &&
+          typeof payloadObj.turn.assistant === 'string'
+          ? payloadObj.turn.assistant
+          : '';
+    assistantRaw = String(assistantFromLane || '');
+    if (!assistantRaw) {
+      const failures = [];
+      if (llmResult && llmResult.error) {
+        failures.push(`ollama: ${cleanText(llmResult.error, 180)}`);
+      }
+      if (laneResult && !laneResult.ok) {
+        const laneDetail = cleanText(
+          String(laneResult.stderr || laneResult.stdout || laneResult.status || 'failed'),
+          180
+        );
+        failures.push(`app-plane: ${laneDetail}`);
+      }
+      assistantRaw =
+        failures.length > 0
+          ? `I couldn't reach a chat model backend (${failures.join('; ')}). Start Ollama or configure app-plane and try again.`
+          : 'I could not produce a response from the chat backend. Please try again.';
+      laneResult = {
+        ok: true,
+        status: 0,
+        stdout: '',
+        stderr: '',
+        argv: ['chat-backend', 'fallback-message'],
+        payload: {
+          ok: true,
+          type: 'infring_dashboard_chat_backend_unavailable',
+          response: assistantRaw,
+          session_id: chatSessionId,
+        },
+      };
+    }
+  }
+
+  const assistant = assistantRaw.slice(0, 4000);
+  const inputTokens = Math.max(1, Math.round(String(cleanInput).length / 4));
+  const outputTokens = Math.max(1, Math.round(String(assistant || '').length / 4));
+  const durationMs = Math.max(0, Date.now() - startedAtMs);
+  const durationLabel = durationMs < 1000
+    ? `${Math.round(durationMs)}ms`
+    : `${(durationMs / 1000).toFixed(durationMs < 10000 ? 1 : 0)}s`;
+  const meta = `${inputTokens} in / ${outputTokens} out | ${durationLabel}`;
+
+  return {
+    ok: !!laneResult.ok,
+    status: laneResult.ok ? 200 : 400,
+    input: cleanInput,
+    laneResult,
+    agent,
+    session_id: chatSessionId,
+    response: assistant,
+    tools,
+    iterations,
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    cost_usd: 0,
+    meta,
+    duration_ms: durationMs,
+    model: usedModel,
+    backend,
+  };
 }
 
 function recentFiles(rootDir, { limit = 25, maxDepth = 4, include }) {
@@ -1946,136 +2093,41 @@ function runServe(flags) {
         }
         if (req.method === 'POST' && parts[3] === 'message') {
           const payload = await bodyJson(req);
-          const agent = compatAgentsFromSnapshot(latestSnapshot).find((row) => row.id === agentId);
-          if (!agent) {
+          const input = payload && (payload.input || payload.message || payload.prompt || payload.text)
+            ? payload.input || payload.message || payload.prompt || payload.text
+            : '';
+          const turn = runAgentMessage(agentId, input, latestSnapshot);
+          if (!turn.ok && turn.error === 'agent_not_found') {
             sendJson(res, 404, { ok: false, error: 'agent_not_found', id: agentId });
             return;
           }
-          const input = cleanText(
-            payload && (payload.input || payload.message || payload.prompt || payload.text)
-              ? payload.input || payload.message || payload.prompt || payload.text
-              : '',
-            4000
-          );
-          if (!input) {
+          if (!turn.ok && turn.error === 'message_required') {
             sendJson(res, 400, { ok: false, error: 'message_required' });
             return;
           }
-          const state = loadAgentSession(agentId, latestSnapshot);
-          const session = activeSession(state);
-          const chatSessionId = runtimeChatSessionId(agentId, session.session_id);
-          const modelState = effectiveAgentModel(agentId, latestSnapshot);
-          const llmResult = runLlmChatWithCli(
-            agent,
-            session,
-            input,
-            latestSnapshot,
-            modelState.runtime_model
-          );
-          let laneResult;
-          let tools = [];
-          let assistantRaw = '';
-          let iterations = 1;
-          if (llmResult && llmResult.ok) {
-            tools = Array.isArray(llmResult.tools) ? llmResult.tools : [];
-            assistantRaw = String(llmResult.response || '');
-            iterations = parsePositiveInt(llmResult.iterations || 1, 1, 1, 8);
-            laneResult = {
-              ok: true,
-              status: 0,
-              stdout: '',
-              stderr: '',
-              argv: ['ollama', 'run', llmResult.model || OLLAMA_MODEL_FALLBACK],
-              payload: {
-                ok: true,
-                type: 'infring_dashboard_ollama_chat',
-                model: llmResult.model || OLLAMA_MODEL_FALLBACK,
-                selected_model: modelState.selected,
-                provider: modelState.provider,
-                response: assistantRaw,
-                tools,
-                iterations,
-                session_id: chatSessionId,
-              },
-            };
-          } else {
-            laneResult = runLane([
-              'app-plane',
-              'run',
-              '--app=chat-ui',
-              `--session-id=${chatSessionId}`,
-              `--input=${input}`,
-            ]);
-            const payloadObj = laneResult && laneResult.payload && typeof laneResult.payload === 'object'
-              ? laneResult.payload
-              : null;
-            const assistantFromLane =
-              payloadObj &&
-              typeof payloadObj.response === 'string'
-                ? payloadObj.response
-                : payloadObj &&
-                  payloadObj.turn &&
-                  typeof payloadObj.turn.assistant === 'string'
-                  ? payloadObj.turn.assistant
-                  : '';
-            assistantRaw = String(assistantFromLane || '');
-            if (!assistantRaw) {
-              const failures = [];
-              if (llmResult && llmResult.error) {
-                failures.push(`ollama: ${cleanText(llmResult.error, 180)}`);
-              }
-              if (laneResult && !laneResult.ok) {
-                const laneDetail = cleanText(
-                  String(laneResult.stderr || laneResult.stdout || laneResult.status || 'failed'),
-                  180
-                );
-                failures.push(`app-plane: ${laneDetail}`);
-              }
-              assistantRaw =
-                failures.length > 0
-                  ? `I couldn't reach a chat model backend (${failures.join('; ')}). Start Ollama or configure app-plane and try again.`
-                  : 'I could not produce a response from the chat backend. Please try again.';
-              laneResult = {
-                ok: true,
-                status: 0,
-                stdout: '',
-                stderr: '',
-                argv: ['chat-backend', 'fallback-message'],
-                payload: {
-                  ok: true,
-                  type: 'infring_dashboard_chat_backend_unavailable',
-                  response: assistantRaw,
-                  session_id: chatSessionId,
-                },
-              };
-            }
-          }
           writeActionReceipt(
             'app.chat',
-            { input, agent_id: agentId, session_id: chatSessionId, cli_mode: ACTIVE_CLI_MODE },
-            laneResult
+            { input: turn.input, agent_id: agentId, session_id: turn.session_id, cli_mode: ACTIVE_CLI_MODE },
+            turn.laneResult
           );
           latestSnapshot = buildSnapshot(flags);
           writeSnapshotReceipt(latestSnapshot);
-          const assistant = assistantRaw.slice(0, 4000);
-          const inputTokens = Math.max(1, Math.round(String(input).length / 4));
-          const outputTokens = Math.max(1, Math.round(String(assistant || '').length / 4));
-          const meta = `${inputTokens} in / ${outputTokens} out`;
-          appendAgentConversation(agentId, latestSnapshot, input, assistant, meta, tools);
-          sendJson(res, laneResult.ok ? 200 : 400, {
-            ok: !!laneResult.ok,
+          appendAgentConversation(agentId, latestSnapshot, turn.input, turn.response, turn.meta, turn.tools);
+          sendJson(res, turn.status, {
+            ok: turn.ok,
             agent_id: agentId,
-            session_id: chatSessionId,
-            response: assistant,
-            tools,
+            session_id: turn.session_id,
+            response: turn.response,
+            tools: turn.tools,
             turn: {
               role: 'agent',
-              text: assistant,
+              text: turn.response,
             },
-            input_tokens: inputTokens,
-            output_tokens: outputTokens,
-            cost_usd: 0,
-            iterations,
+            input_tokens: turn.input_tokens,
+            output_tokens: turn.output_tokens,
+            cost_usd: turn.cost_usd,
+            iterations: turn.iterations,
+            duration_ms: turn.duration_ms,
           });
           return;
         }
@@ -2249,24 +2301,162 @@ function runServe(flags) {
   });
 
   const wss = new WebSocketServer({ noServer: true });
+  const agentWss = new WebSocketServer({ noServer: true });
   const wsClients = new Set();
+  const agentWsClients = new Map();
+
+  const sendWs = (socket, payload) => {
+    if (!socket || socket.readyState !== 1) return;
+    try {
+      socket.send(JSON.stringify(payload));
+    } catch {}
+  };
+
   wss.on('connection', (socket) => {
     wsClients.add(socket);
-    socket.send(JSON.stringify({ type: 'snapshot', snapshot: latestSnapshot }));
+    sendWs(socket, { type: 'snapshot', snapshot: latestSnapshot });
     socket.on('close', () => {
       wsClients.delete(socket);
     });
   });
 
-  server.on('upgrade', (req, socket, head) => {
-    const reqUrl = new URL(req.url || '/', `http://${flags.host}:${flags.port}`);
-    if (reqUrl.pathname !== '/ws') {
-      socket.destroy();
+  agentWss.on('connection', (socket, req, meta) => {
+    const agentId = cleanText(meta && meta.agentId ? meta.agentId : '', 140);
+    if (!agentId) {
+      try { socket.close(1008, 'agent_required'); } catch {}
       return;
     }
-    wss.handleUpgrade(req, socket, head, (ws) => {
-      wss.emit('connection', ws, req);
+    agentWsClients.set(socket, agentId);
+    sendWs(socket, { type: 'connected', agent_id: agentId, ts: nowIso() });
+
+    socket.on('message', async (raw) => {
+      let payload = null;
+      try {
+        payload = JSON.parse(String(raw || '{}'));
+      } catch {
+        sendWs(socket, { type: 'error', content: 'Invalid websocket payload.' });
+        return;
+      }
+      const eventType = cleanText(payload && payload.type ? payload.type : '', 40).toLowerCase();
+      if (eventType === 'ping') {
+        sendWs(socket, { type: 'pong', ts: nowIso() });
+        return;
+      }
+      if (eventType === 'command') {
+        const command = cleanText(payload && payload.command ? payload.command : '', 40).toLowerCase();
+        if (command === 'context') {
+          const state = loadAgentSession(agentId, latestSnapshot);
+          const session = activeSession(state);
+          const messages = Array.isArray(session.messages) ? session.messages : [];
+          const approxTokens = Math.max(
+            0,
+            messages.reduce((sum, row) => sum + Math.round(String(row && row.content ? row.content : '').length / 4), 0)
+          );
+          sendWs(socket, {
+            type: 'command_result',
+            message: `Context usage: ${messages.length} messages, ~${approxTokens} tokens.`,
+            context_pressure: approxTokens > 8000 ? 'high' : approxTokens > 3000 ? 'medium' : 'low',
+          });
+          return;
+        }
+        if (command === 'verbose') {
+          sendWs(socket, {
+            type: 'command_result',
+            message: 'Verbose mode is available in this dashboard and controlled client-side.',
+          });
+          return;
+        }
+        if (command === 'queue') {
+          sendWs(socket, {
+            type: 'command_result',
+            message: 'Queue status: active websocket mode.',
+          });
+          return;
+        }
+        sendWs(socket, { type: 'command_result', message: `Unsupported command: ${command || 'unknown'}` });
+        return;
+      }
+      if (eventType !== 'message') {
+        sendWs(socket, { type: 'error', content: 'Unsupported websocket event type.' });
+        return;
+      }
+
+      const input = payload && (payload.content || payload.input || payload.message)
+        ? payload.content || payload.input || payload.message
+        : '';
+      const turn = runAgentMessage(agentId, input, latestSnapshot);
+      if (!turn.ok && turn.error === 'message_required') {
+        sendWs(socket, { type: 'error', content: 'Message required.' });
+        return;
+      }
+      if (!turn.ok && turn.error === 'agent_not_found') {
+        sendWs(socket, { type: 'error', content: 'Agent not found.' });
+        return;
+      }
+
+      sendWs(socket, { type: 'phase', phase: 'thinking', detail: 'Thinking...' });
+      const wsTools = Array.isArray(turn.tools) ? turn.tools : [];
+      for (const tool of wsTools) {
+        sendWs(socket, { type: 'tool_start', tool: tool.name || 'tool' });
+        sendWs(socket, {
+          type: 'tool_end',
+          tool: tool.name || 'tool',
+          input: tool.input || '',
+        });
+        sendWs(socket, {
+          type: 'tool_result',
+          tool: tool.name || 'tool',
+          result: tool.result || '',
+          is_error: !!tool.is_error,
+        });
+      }
+
+      writeActionReceipt(
+        'app.chat',
+        { input: turn.input, agent_id: agentId, session_id: turn.session_id, cli_mode: ACTIVE_CLI_MODE },
+        turn.laneResult
+      );
+      latestSnapshot = buildSnapshot(flags);
+      writeSnapshotReceipt(latestSnapshot);
+      appendAgentConversation(agentId, latestSnapshot, turn.input, turn.response, turn.meta, turn.tools);
+
+      sendWs(socket, {
+        type: 'response',
+        content: turn.response,
+        input_tokens: turn.input_tokens,
+        output_tokens: turn.output_tokens,
+        cost_usd: turn.cost_usd,
+        iterations: turn.iterations,
+        duration_ms: turn.duration_ms,
+      });
     });
+
+    socket.on('close', () => {
+      agentWsClients.delete(socket);
+    });
+  });
+
+  server.on('upgrade', (req, socket, head) => {
+    const reqUrl = new URL(req.url || '/', `http://${flags.host}:${flags.port}`);
+    if (reqUrl.pathname === '/ws') {
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        wss.emit('connection', ws, req);
+      });
+      return;
+    }
+    const agentMatch = reqUrl.pathname.match(/^\/api\/agents\/([^/]+)\/ws$/);
+    if (agentMatch && agentMatch[1]) {
+      const agentId = cleanText(decodeURIComponent(agentMatch[1]), 140);
+      if (!agentId) {
+        socket.destroy();
+        return;
+      }
+      agentWss.handleUpgrade(req, socket, head, (ws) => {
+        agentWss.emit('connection', ws, req, { agentId });
+      });
+      return;
+    }
+    socket.destroy();
   });
 
   const interval = setInterval(() => {
@@ -2321,6 +2511,11 @@ function runServe(flags) {
   const shutdown = () => {
     clearInterval(interval);
     for (const client of wsClients) {
+      try {
+        client.close();
+      } catch {}
+    }
+    for (const client of agentWsClients.keys()) {
       try {
         client.close();
       } catch {}
