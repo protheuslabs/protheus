@@ -30,6 +30,20 @@ function agentsPage() {
     filterState: 'all',
     loading: true,
     loadError: '',
+    lifecycleLoading: false,
+    agentLifecycle: {
+      active_agents: [],
+      terminated_recent: [],
+      idle_agents: 0,
+      idle_threshold: 0,
+      idle_alert: false,
+      defaults: {
+        default_expiry_seconds: 3600,
+        auto_expire_on_complete: true,
+        max_idle_agents: 5,
+      },
+    },
+    _lifecycleTimer: null,
     spawnForm: {
       name: '',
       provider: 'groq',
@@ -235,6 +249,28 @@ function agentsPage() {
       return this.agents.filter(function(a) { return a.state !== 'Running'; }).length;
     },
 
+    get activeLifecycleAgents() {
+      var rows = this.agentLifecycle && Array.isArray(this.agentLifecycle.active_agents)
+        ? this.agentLifecycle.active_agents
+        : [];
+      return rows;
+    },
+
+    get terminatedAgents() {
+      var rows = this.agentLifecycle && Array.isArray(this.agentLifecycle.terminated_recent)
+        ? this.agentLifecycle.terminated_recent
+        : [];
+      return rows.slice(0, 20);
+    },
+
+    get idleAgentAlertText() {
+      var idle = Number(this.agentLifecycle && this.agentLifecycle.idle_agents || 0);
+      var threshold = Number(this.agentLifecycle && this.agentLifecycle.idle_threshold || 0);
+      if (!threshold) return '';
+      if (idle <= threshold) return '';
+      return idle + ' idle agents above threshold ' + threshold;
+    },
+
     // -- Templates computed --
     get categories() {
       var cats = { 'All': true };
@@ -274,16 +310,108 @@ function agentsPage() {
       return p ? p.auth_status === 'configured' : false;
     },
 
+    contractForAgent(agent) {
+      if (!agent || typeof agent !== 'object') return null;
+      if (agent.contract && typeof agent.contract === 'object') return agent.contract;
+      var id = String(agent.id || '');
+      if (!id) return null;
+      var rows = this.activeLifecycleAgents;
+      for (var i = 0; i < rows.length; i++) {
+        var row = rows[i] || {};
+        if (String(row.id || '') !== id) continue;
+        if (row.contract && typeof row.contract === 'object') return row.contract;
+      }
+      return null;
+    },
+
+    formatDurationMs(ms) {
+      var raw = Number(ms || 0);
+      if (!Number.isFinite(raw) || raw <= 0) return '0s';
+      var sec = Math.max(0, Math.floor(raw / 1000));
+      var hour = Math.floor(sec / 3600);
+      var min = Math.floor((sec % 3600) / 60);
+      var rem = sec % 60;
+      if (hour > 0) return hour + 'h ' + (min > 0 ? min + 'm' : '');
+      if (min > 0) return min + 'm ' + (rem > 0 ? rem + 's' : '');
+      return rem + 's';
+    },
+
+    formatIsoTimestamp(value) {
+      var ts = String(value || '').trim();
+      if (!ts) return '';
+      var ms = Date.parse(ts);
+      if (!Number.isFinite(ms)) return '';
+      return new Date(ms).toLocaleString();
+    },
+
+    formatAgentContractLine(agent) {
+      var contract = this.contractForAgent(agent);
+      if (!contract) return '';
+      var status = String(contract.status || 'active').replace(/_/g, ' ');
+      var remaining = contract.remaining_ms;
+      if (remaining == null || remaining === '') {
+        return 'contract ' + status;
+      }
+      return 'contract ' + status + ' · ' + this.formatDurationMs(remaining) + ' left';
+    },
+
+    async loadLifecycle() {
+      this.lifecycleLoading = true;
+      try {
+        var snapshot = await OpenFangAPI.get('/api/dashboard/snapshot');
+        var lifecycle = snapshot && snapshot.agent_lifecycle && typeof snapshot.agent_lifecycle === 'object'
+          ? snapshot.agent_lifecycle
+          : null;
+        if (lifecycle) {
+          this.agentLifecycle = lifecycle;
+        }
+        if (!lifecycle || !Array.isArray(lifecycle.terminated_recent) || lifecycle.terminated_recent.length === 0) {
+          var terminated = await OpenFangAPI.get('/api/agents/terminated');
+          if (terminated && Array.isArray(terminated.entries)) {
+            this.agentLifecycle = {
+              ...(this.agentLifecycle || {}),
+              terminated_recent: terminated.entries,
+            };
+          }
+        }
+      } catch (e) {
+        // keep last-known lifecycle state to avoid UI flicker
+      }
+      this.lifecycleLoading = false;
+    },
+
+    async reviveTerminated(entry) {
+      var row = entry && typeof entry === 'object' ? entry : {};
+      var agentId = String(row.agent_id || '').trim();
+      if (!agentId) return;
+      try {
+        await OpenFangAPI.post('/api/agents/' + encodeURIComponent(agentId) + '/revive', {
+          role: row.role || 'analyst'
+        });
+        OpenFangToast.success('Revived ' + agentId);
+        await Alpine.store('app').refreshAgents();
+        await this.loadLifecycle();
+      } catch (e) {
+        OpenFangToast.error('Failed to revive ' + agentId + ': ' + (e && e.message ? e.message : 'unknown_error'));
+      }
+    },
+
     async init() {
       var self = this;
       this.loading = true;
       this.loadError = '';
       try {
         await Alpine.store('app').refreshAgents();
+        await this.loadLifecycle();
       } catch(e) {
         this.loadError = e.message || 'Could not load agents. Is the daemon running?';
       }
       this.loading = false;
+
+      if (this._lifecycleTimer) clearInterval(this._lifecycleTimer);
+      this._lifecycleTimer = setInterval(function() {
+        self.loadLifecycle();
+      }, 4000);
 
       // If a pending agent was set (e.g. from wizard or redirect), open chat inline
       var store = Alpine.store('app');
@@ -303,6 +431,7 @@ function agentsPage() {
       this.loadError = '';
       try {
         await Alpine.store('app').refreshAgents();
+        await this.loadLifecycle();
       } catch(e) {
         this.loadError = e.message || 'Could not load agents.';
       }
@@ -373,6 +502,7 @@ function agentsPage() {
           OpenFangToast.success('Agent "' + agent.name + '" stopped');
           self.showDetailModal = false;
           await Alpine.store('app').refreshAgents();
+          await self.loadLifecycle();
         } catch(e) {
           OpenFangToast.error('Failed to stop agent: ' + e.message);
         }
@@ -380,6 +510,7 @@ function agentsPage() {
     },
 
     killAllAgents() {
+      var self = this;
       var list = this.filteredAgents;
       if (!list.length) return;
       OpenFangToast.confirm('Stop All Agents', 'Stop ' + list.length + ' agent(s)? All agents will be shut down.', async function() {
@@ -390,6 +521,7 @@ function agentsPage() {
           } catch(e) { errors.push(list[i].name + ': ' + e.message); }
         }
         await Alpine.store('app').refreshAgents();
+        await self.loadLifecycle();
         if (errors.length) {
           OpenFangToast.error('Some agents failed to stop: ' + errors.join(', '));
         } else {
@@ -469,6 +601,7 @@ function agentsPage() {
         agent.mode = mode;
         OpenFangToast.success('Mode set to ' + mode);
         await Alpine.store('app').refreshAgents();
+        await this.loadLifecycle();
       } catch(e) {
         OpenFangToast.error('Failed to set mode: ' + e.message);
       }
@@ -506,6 +639,7 @@ function agentsPage() {
           this.spawnStep = 1;
           OpenFangToast.success('Agent "' + (res.name || 'new') + '" spawned');
           await Alpine.store('app').refreshAgents();
+          await this.loadLifecycle();
           this.chatWithAgent({ id: res.agent_id, name: res.name, model_provider: '?', model_name: '?' });
         } else {
           OpenFangToast.error('Spawn failed: ' + (res.error || 'Unknown error'));
@@ -572,6 +706,7 @@ function agentsPage() {
         await OpenFangAPI.patch('/api/agents/' + this.detailAgent.id + '/config', this.configForm);
         OpenFangToast.success('Config updated');
         await Alpine.store('app').refreshAgents();
+        await this.loadLifecycle();
       } catch(e) {
         OpenFangToast.error('Failed to save config: ' + e.message);
       }
@@ -586,6 +721,7 @@ function agentsPage() {
         if (res.agent_id) {
           OpenFangToast.success('Cloned as "' + res.name + '"');
           await Alpine.store('app').refreshAgents();
+          await this.loadLifecycle();
           this.showDetailModal = false;
         }
       } catch(e) {
@@ -602,6 +738,7 @@ function agentsPage() {
           if (res.agent_id) {
             OpenFangToast.success('Agent "' + (res.name || name) + '" spawned from template');
             await Alpine.store('app').refreshAgents();
+            await this.loadLifecycle();
             this.chatWithAgent({ id: res.agent_id, name: res.name || name, model_provider: '?', model_name: '?' });
           }
         }
@@ -633,6 +770,7 @@ function agentsPage() {
         OpenFangToast.success('Model changed' + providerInfo + ' (memory reset)');
         this.editingModel = false;
         await Alpine.store('app').refreshAgents();
+        await this.loadLifecycle();
         // Refresh detailAgent
         var agents = Alpine.store('app').agents;
         for (var i = 0; i < agents.length; i++) {
@@ -654,6 +792,7 @@ function agentsPage() {
         OpenFangToast.success('Provider changed to ' + (resp && resp.provider ? resp.provider : this.newProviderValue.trim()));
         this.editingProvider = false;
         await Alpine.store('app').refreshAgents();
+        await this.loadLifecycle();
         var agents = Alpine.store('app').agents;
         for (var i = 0; i < agents.length; i++) {
           if (agents[i].id === this.detailAgent.id) { this.detailAgent = agents[i]; break; }
@@ -761,6 +900,7 @@ function agentsPage() {
         if (res.agent_id) {
           OpenFangToast.success('Agent "' + t.name + '" spawned');
           await Alpine.store('app').refreshAgents();
+          await this.loadLifecycle();
           this.chatWithAgent({ id: res.agent_id, name: t.name, model_provider: t.provider, model_name: t.model });
         }
       } catch(e) {

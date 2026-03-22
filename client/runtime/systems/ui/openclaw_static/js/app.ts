@@ -178,6 +178,14 @@ document.addEventListener('alpine:init', function() {
       try {
         var agents = await OpenFangAPI.get('/api/agents');
         this.agents = Array.isArray(agents) ? agents : [];
+        if (this.activeAgentId) {
+          var stillActive = this.agents.some(function(agent) {
+            return agent && agent.id === this.activeAgentId;
+          }.bind(this));
+          if (!stillActive) {
+            this.activeAgentId = null;
+          }
+        }
         this.agentCount = this.agents.length;
       } catch(e) { /* silent */ }
     },

@@ -1,0 +1,30 @@
+{
+  "id": "V6-AGENT-LIFECYCLE-001.2",
+  "upgrade": "Auto-Termination Enforcement",
+  "section": "V6-AGENT-LIFECYCLE-001",
+  "impact": 10,
+  "layer_map": "0/1/2",
+  "conduit_only_boundary": false,
+  "todo_bucket": "repair_lane",
+  "execution_contract": {
+    "runtime": "core/layer2/ops:srs_contract_runtime",
+    "deterministic_receipt_required": true,
+    "mutable_state_path": "local/state/ops/srs_contract_runtime/V6-AGENT-LIFECYCLE-001.2/latest.json",
+    "history_path": "local/state/ops/srs_contract_runtime/history.jsonl"
+  },
+  "deliverables": [
+    { "type": "contract", "path": "planes/contracts/srs/V6-AGENT-LIFECYCLE-001.2.json" },
+    { "type": "runtime", "path": "client/runtime/systems/ui/infring_dashboard.ts" },
+    { "type": "test", "path": "tests/client-memory-tools/infring_dashboard_llm_runtime_e2e.test.js" }
+  ],
+  "validation": {
+    "lane_command": "protheus-ops srs-contract-runtime run --id=V6-AGENT-LIFECYCLE-001.2",
+    "status_command": "protheus-ops srs-contract-runtime status --id=V6-AGENT-LIFECYCLE-001.2",
+    "fail_closed_on_missing_contract": true
+  },
+  "generated_from": {
+    "source": "manual_impl",
+    "generated_at": "2026-03-22T00:00:00Z",
+    "notes": "Adds scheduler-cycle contract enforcement with timeout/task/manual termination, lane termination attempts, socket closure, archival, and lifecycle receipts."
+  }
+}

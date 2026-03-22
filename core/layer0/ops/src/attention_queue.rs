@@ -211,6 +211,65 @@ fn severity_rank(raw: &str) -> i64 {
     }
 }
 
+fn attention_lane_rank(raw: &str) -> i64 {
+    match raw.trim().to_ascii_lowercase().as_str() {
+        "critical" => 3,
+        "standard" => 2,
+        "background" => 1,
+        _ => 2,
+    }
+}
+
+fn classify_attention_lane(
+    source: &str,
+    source_type: &str,
+    severity: &str,
+    summary: &str,
+    band: &str,
+) -> String {
+    let normalized_severity = normalize_severity(Some(severity));
+    let normalized_band = band.trim().to_ascii_lowercase();
+    let normalized_source = source.trim().to_ascii_lowercase();
+    let normalized_source_type = source_type.trim().to_ascii_lowercase();
+    let normalized_summary = summary.trim().to_ascii_lowercase();
+    let is_critical_summary = normalized_summary.contains("fail")
+        || normalized_summary.contains("error")
+        || normalized_summary.contains("critical")
+        || normalized_summary.contains("degraded")
+        || normalized_summary.contains("alert")
+        || normalized_summary.contains("benchmark_sanity")
+        || normalized_summary.contains("backpressure")
+        || normalized_summary.contains("throttle")
+        || normalized_summary.contains("stale");
+    if normalized_severity == "critical"
+        || normalized_severity == "warn"
+        || normalized_band == "p0"
+        || normalized_band == "p1"
+        || is_critical_summary
+    {
+        return "critical".to_string();
+    }
+    let background_source = normalized_source_type.contains("receipt")
+        || normalized_source_type.contains("audit")
+        || normalized_source_type.contains("timeline")
+        || normalized_source_type.contains("history")
+        || normalized_source_type.contains("log")
+        || normalized_source_type.contains("trace")
+        || normalized_source.contains("receipt")
+        || normalized_source.contains("audit")
+        || normalized_source.contains("timeline")
+        || normalized_source.contains("history")
+        || normalized_source.contains("log")
+        || normalized_source.contains("trace");
+    let background_band =
+        normalized_severity == "info" && (normalized_band == "p3" || normalized_band == "p4");
+    if background_source || background_band {
+        "background".to_string()
+    } else {
+        "standard".to_string()
+    }
+}
+
 fn parse_ts_ms(raw: &str) -> Option<i64> {
     chrono::DateTime::parse_from_rfc3339(raw)
         .ok()
@@ -390,6 +449,14 @@ fn event_priority(row: &Value) -> i64 {
         .clamp(1, 1000)
 }
 
+fn event_attention_lane_rank(row: &Value) -> i64 {
+    let lane = row
+        .get("queue_lane")
+        .and_then(Value::as_str)
+        .unwrap_or("standard");
+    attention_lane_rank(lane)
+}
+
 fn event_deadline_ts_ms(row: &Value) -> i64 {
     let direct = row
         .get("deadline_at")
@@ -418,8 +485,9 @@ fn event_attention_key(row: &Value) -> String {
 
 fn sort_active_rows(rows: &mut [Value]) {
     rows.sort_by(|a, b| {
-        event_band_rank(b)
-            .cmp(&event_band_rank(a))
+        event_attention_lane_rank(b)
+            .cmp(&event_attention_lane_rank(a))
+            .then_with(|| event_band_rank(b).cmp(&event_band_rank(a)))
             .then_with(|| event_priority(b).cmp(&event_priority(a)))
             .then_with(|| {
                 event_score(b)
@@ -627,6 +695,7 @@ fn normalize_event(event: &Value, contract: &AttentionContract) -> Result<Value,
         .as_ref()
         .map(|row| row.priority)
         .unwrap_or(importance_fallback.priority);
+    let queue_lane = classify_attention_lane(&source, &source_type, &severity, &summary, &band);
     let ttl_ms = contract.ttl_hours.saturating_mul(60 * 60 * 1000);
     let event_ts_ms = parse_ts_ms(&ts).unwrap_or_else(|| Utc::now().timestamp_millis());
     let expires_at = ts_ms_to_iso(event_ts_ms.saturating_add(ttl_ms));
@@ -675,6 +744,7 @@ fn normalize_event(event: &Value, contract: &AttentionContract) -> Result<Value,
         "priority": priority,
         "score": score,
         "band": band,
+        "queue_lane": queue_lane,
         "summary": summary,
         "attention_key": attention_key,
         "ttl_hours": contract.ttl_hours,
@@ -823,6 +893,7 @@ fn update_latest(
             "priority": evt.get("priority").cloned().unwrap_or(Value::Number(20.into())),
             "score": evt.get("score").cloned().unwrap_or(Value::Number(serde_json::Number::from_f64(0.0).unwrap_or(0.into()))),
             "band": evt.get("band").cloned().unwrap_or(Value::String("p4".to_string())),
+            "queue_lane": evt.get("queue_lane").cloned().unwrap_or(Value::String("standard".to_string())),
             "initiative_action": evt.get("initiative_action").cloned().unwrap_or(Value::String("silent".to_string()))
         });
     }
@@ -1012,6 +1083,21 @@ fn next(root: &Path, flags: &BTreeMap<String, String>, auto_ack: bool) -> i32 {
     }
 
     let cursor_after = if auto_ack { end } else { cursor_offset };
+    let mut batch_lane_counts: BTreeMap<String, usize> = BTreeMap::new();
+    for row in &events {
+        let lane = row
+            .pointer("/event/queue_lane")
+            .and_then(Value::as_str)
+            .unwrap_or("standard")
+            .trim()
+            .to_ascii_lowercase();
+        let key = if lane == "critical" || lane == "background" {
+            lane
+        } else {
+            "standard".to_string()
+        };
+        *batch_lane_counts.entry(key).or_insert(0) += 1;
+    }
     let mut out = json!({
         "ok": true,
         "type": if auto_ack { "attention_queue_drain" } else { "attention_queue_next" },
@@ -1026,6 +1112,7 @@ fn next(root: &Path, flags: &BTreeMap<String, String>, auto_ack: bool) -> i32 {
         "cursor_offset": cursor_offset,
         "cursor_offset_after": cursor_after,
         "batch_count": events.len(),
+        "batch_lane_counts": batch_lane_counts,
         "acked": auto_ack && !events.is_empty(),
         "acked_through_index": acked_through_index,
         "events": events,
@@ -1291,12 +1378,17 @@ fn enqueue(root: &Path, flags: &BTreeMap<String, String>) -> i32 {
             .get("severity")
             .and_then(Value::as_str)
             .unwrap_or("info");
+        let queue_lane = event
+            .get("queue_lane")
+            .and_then(Value::as_str)
+            .unwrap_or("standard");
         let sev_rank = severity_rank(severity);
         let event_band = event.get("band").and_then(Value::as_str).unwrap_or("p4");
         let high_importance = band_rank(event_band) >= band_rank("p2");
         let at_or_over_cap = queue_depth_before >= contract.max_queue_depth;
-        let should_drop_for_backpressure =
-            at_or_over_cap && sev_rank < drop_rank && !high_importance;
+        let should_drop_for_backpressure = at_or_over_cap
+            && (queue_lane.eq_ignore_ascii_case("background")
+                || (sev_rank < drop_rank && !high_importance));
         if should_drop_for_backpressure {
             action = "dropped_backpressure".to_string();
             queued = false;
@@ -1341,6 +1433,7 @@ fn enqueue(root: &Path, flags: &BTreeMap<String, String>) -> i32 {
             "priority": event.get("priority").cloned().unwrap_or(Value::Number(20.into())),
             "score": event.get("score").cloned().unwrap_or(Value::Number(serde_json::Number::from_f64(0.0).unwrap_or(0.into()))),
             "band": event.get("band").cloned().unwrap_or(Value::String("p4".to_string())),
+            "queue_lane": event.get("queue_lane").cloned().unwrap_or(Value::String("standard".to_string())),
             "summary": event.get("summary").cloned().unwrap_or(Value::String("attention_event".to_string())),
             "attention_key": event.get("attention_key").cloned().unwrap_or(Value::String("".to_string())),
             "escalate_required": event.get("escalate_required").cloned().unwrap_or(Value::Bool(false)),
@@ -1367,6 +1460,7 @@ fn enqueue(root: &Path, flags: &BTreeMap<String, String>) -> i32 {
             "priority": event.get("priority").cloned().unwrap_or(Value::Number(20.into())),
             "score": event.get("score").cloned().unwrap_or(Value::Number(serde_json::Number::from_f64(0.0).unwrap_or(0.into()))),
             "band": event.get("band").cloned().unwrap_or(Value::String("p4".to_string())),
+            "queue_lane": event.get("queue_lane").cloned().unwrap_or(Value::String("standard".to_string())),
             "attention_key": event.get("attention_key").cloned().unwrap_or(Value::String("".to_string())),
             "escalate_required": event.get("escalate_required").cloned().unwrap_or(Value::Bool(false)),
             "initiative_action": event.get("initiative_action").cloned().unwrap_or(Value::String("silent".to_string())),
@@ -1386,12 +1480,28 @@ fn enqueue(root: &Path, flags: &BTreeMap<String, String>) -> i32 {
 fn status(root: &Path) -> i32 {
     let contract = load_contract(root);
     let (active_rows, expired_pruned) = load_active_queue(&contract);
+    let mut lane_counts: BTreeMap<String, usize> = BTreeMap::new();
+    for row in &active_rows {
+        let lane = row
+            .get("queue_lane")
+            .and_then(Value::as_str)
+            .unwrap_or("standard")
+            .trim()
+            .to_ascii_lowercase();
+        let key = if lane == "critical" || lane == "background" {
+            lane
+        } else {
+            "standard".to_string()
+        };
+        *lane_counts.entry(key).or_insert(0) += 1;
+    }
     let latest = read_json(&contract.latest_path).unwrap_or_else(|| json!({}));
     let mut out = json!({
         "ok": true,
         "type": "attention_queue_status",
         "ts": now_iso(),
         "queue_depth": active_rows.len(),
+        "lane_counts": lane_counts,
         "expired_pruned": expired_pruned,
         "attention_contract": contract_snapshot(&contract),
         "latest": latest
@@ -1612,6 +1722,40 @@ mod tests {
         assert_eq!(
             queue[2].get("attention_key").and_then(Value::as_str),
             Some("prio-low")
+        );
+    }
+
+    #[test]
+    fn enqueue_assigns_tiered_queue_lanes() {
+        let dir = tempdir().expect("tempdir");
+        write_policy(dir.path(), 64, "critical");
+        let background = json!({
+            "ts": now_iso(),
+            "source": "ops_logs",
+            "source_type": "receipt_timeline",
+            "severity": "info",
+            "summary": "routine timeline heartbeat",
+            "attention_key": "lane-background"
+        });
+        let critical = json!({
+            "ts": now_iso(),
+            "source": "security",
+            "source_type": "integrity_fault",
+            "severity": "critical",
+            "summary": "critical policy failure",
+            "attention_key": "lane-critical"
+        });
+        assert_eq!(enqueue_event(dir.path(), &background), 0);
+        assert_eq!(enqueue_event(dir.path(), &critical), 0);
+        let queue = read_jsonl(&dir.path().join("local/state/attention/queue.jsonl"));
+        assert_eq!(queue.len(), 2);
+        assert_eq!(
+            queue[0].get("queue_lane").and_then(Value::as_str),
+            Some("critical")
+        );
+        assert_eq!(
+            queue[1].get("queue_lane").and_then(Value::as_str),
+            Some("background")
         );
     }
 

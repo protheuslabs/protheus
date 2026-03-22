@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const http = require('node:http');
-const { spawnSync } = require('node:child_process');
+const { spawnSync, spawn } = require('node:child_process');
 const ts = require('typescript');
 const { WebSocketServer } = require('ws');
 const { ROOT } = require('../ops/run_protheus_ops.js');
@@ -29,6 +29,7 @@ const ACTION_HISTORY_PATH = path.resolve(ACTION_DIR, 'history.jsonl');
 const SNAPSHOT_LATEST_PATH = path.resolve(STATE_DIR, 'latest_snapshot.json');
 const SNAPSHOT_HISTORY_PATH = path.resolve(STATE_DIR, 'snapshot_history.jsonl');
 const ARCHIVED_AGENTS_PATH = path.resolve(STATE_DIR, 'archived_agents.json');
+const AGENT_CONTRACTS_PATH = path.resolve(STATE_DIR, 'agent_contracts.json');
 const BENCHMARK_SANITY_STATE_PATH = path.resolve(ROOT, 'core/local/state/ops/benchmark_sanity/latest.json');
 const BENCHMARK_SANITY_GATE_PATH = path.resolve(ROOT, 'core/local/artifacts/benchmark_sanity_gate_current.json');
 const DEFAULT_HOST = '127.0.0.1';
@@ -37,11 +38,17 @@ const DEFAULT_TEAM = 'ops';
 const DEFAULT_REFRESH_MS = 2000;
 const DASHBOARD_BACKPRESSURE_BATCH_DEPTH = 75;
 const DASHBOARD_BACKPRESSURE_WARN_DEPTH = 50;
-const DASHBOARD_QUEUE_DRAIN_PAUSE_DEPTH = 65;
-const DASHBOARD_QUEUE_DRAIN_RESUME_DEPTH = 60;
+const DASHBOARD_QUEUE_DRAIN_PAUSE_DEPTH = 80;
+const DASHBOARD_QUEUE_DRAIN_RESUME_DEPTH = 50;
 const RUNTIME_CRITICAL_ESCALATION_THRESHOLD = 7;
 const RUNTIME_COCKPIT_BLOCK_ESCALATION_THRESHOLD = 30;
-const RUNTIME_AUTO_BALANCE_THRESHOLD = 8;
+const RUNTIME_AUTO_BALANCE_THRESHOLD = 12;
+const RUNTIME_DRAIN_TRIGGER_DEPTH = 60;
+const RUNTIME_DRAIN_CLEAR_DEPTH = 40;
+const RUNTIME_DRAIN_AGENT_TARGET = 2;
+const RUNTIME_DRAIN_AGENT_HIGH_LOAD_TARGET = 6;
+const RUNTIME_DRAIN_HIGH_LOAD_DEPTH = 80;
+const RUNTIME_DRAIN_AGENT_MAX = 8;
 const RUNTIME_HEALTH_ADAPTIVE_WINDOW_SECONDS = 60;
 const RUNTIME_THROTTLE_PLANE = 'backlog_delivery_plane';
 const RUNTIME_THROTTLE_MAX_DEPTH = 75;
@@ -54,9 +61,38 @@ const OLLAMA_MODEL_FALLBACK = 'qwen2.5:3b';
 const OLLAMA_TIMEOUT_MS = 45000;
 const TOOL_ITERATION_LIMIT = 4;
 const TOOL_OUTPUT_LIMIT = 5000;
+const ASSISTANT_EMPTY_FALLBACK_RESPONSE = 'I do not know yet. Please clarify what you want me to do next.';
+const TERMINAL_OUTPUT_LIMIT = 18000;
+const TERMINAL_COMMAND_TIMEOUT_MS = 45000;
+const TERMINAL_SESSION_IDLE_TTL_MS = 5 * 60 * 1000;
+const DEFAULT_CONTEXT_WINDOW_TOKENS = 8192;
+const AGENT_CONTRACT_DEFAULT_EXPIRY_SECONDS = 60 * 60;
+const AGENT_CONTRACT_ENFORCE_INTERVAL_MS = 75;
+const AGENT_CONTRACT_MAX_IDLE_AGENTS = 5;
+const AGENT_ROGUE_MESSAGE_RATE_MAX_PER_MIN = 20;
+const AGENT_ROGUE_SPIKE_WINDOW_MS = 60 * 1000;
 const COCKPIT_MAX_BLOCKS = 64;
 const ATTENTION_PEEK_LIMIT = 12;
 const ATTENTION_CRITICAL_LIMIT = 64;
+const ATTENTION_MICRO_BATCH_WINDOW_MS = 50;
+const ATTENTION_MICRO_BATCH_MAX_ITEMS = 10;
+const ATTENTION_PREEMPT_QUEUE_DEPTH = 60;
+const ATTENTION_BG_DOMINANCE_RATIO = 3;
+const ATTENTION_LANE_WEIGHTS = {
+  critical: 6,
+  standard: 3,
+  background: 1,
+};
+const ATTENTION_LANE_CAPS = {
+  critical: 20,
+  standard: 30,
+  background: 50,
+};
+const CONDUIT_DELTA_SYNC_DEPTH = 50;
+const CONDUIT_DELTA_BATCH_WINDOW_MS = 10;
+const CONDUIT_DELTA_BATCH_MAX_ITEMS = 8;
+const MEMORY_ENTRY_BACKPRESSURE_THRESHOLD = 25;
+const MEMORY_ENTRY_TARGET_WHEN_PAUSED = 20;
 const ATTENTION_CONSUMER_ID = 'dashboard-cockpit';
 const PRIMARY_MEMORY_DIR = 'local/workspace/memory';
 const LEGACY_MEMORY_DIR = 'memory';
@@ -195,12 +231,77 @@ function parseNonNegativeInt(value, fallback = 0, max = 1000000000) {
   return Math.max(0, Math.min(max, Math.floor(num)));
 }
 
-function recommendedConduitSignals(queueDepth = 0, queueUtilization = 0) {
+function inferContextWindowFromModelName(modelName, fallback = DEFAULT_CONTEXT_WINDOW_TOKENS) {
+  const normalized = cleanText(modelName || '', 160).toLowerCase();
+  if (!normalized) return parsePositiveInt(fallback, DEFAULT_CONTEXT_WINDOW_TOKENS, 1024, 8000000);
+  const matchK = normalized.match(/(?:^|[^0-9])([0-9]{2,4})k(?:[^a-z0-9]|$)/i);
+  if (matchK && matchK[1]) {
+    const parsedK = Number(matchK[1]);
+    if (Number.isFinite(parsedK) && parsedK > 0) return parsePositiveInt(parsedK * 1000, fallback, 1024, 8000000);
+  }
+  const matchM = normalized.match(/(?:^|[^0-9])([0-9]{1,3})m(?:[^a-z0-9]|$)/i);
+  if (matchM && matchM[1]) {
+    const parsedM = Number(matchM[1]);
+    if (Number.isFinite(parsedM) && parsedM > 0) return parsePositiveInt(parsedM * 1000000, fallback, 1024, 8000000);
+  }
+  if (/qwen2\.5|qwen3/i.test(normalized)) return 131072;
+  if (/kimi|moonshot/i.test(normalized)) return 262144;
+  if (/llama[-_. ]?3\.3/i.test(normalized)) return 131072;
+  if (/llama[-_. ]?3\.2/i.test(normalized)) return 128000;
+  if (/mistral[-_. ]?nemo|mixtral/i.test(normalized)) return 32000;
+  if (/gemma[-_. ]?2/i.test(normalized)) return 8192;
+  return parsePositiveInt(fallback, DEFAULT_CONTEXT_WINDOW_TOKENS, 1024, 8000000);
+}
+
+function contextPressureFromUsage(usedTokens, windowTokens) {
+  const used = parseNonNegativeInt(usedTokens, 0, 1000000000);
+  const windowSize = parsePositiveInt(windowTokens, DEFAULT_CONTEXT_WINDOW_TOKENS, 1024, 8000000);
+  const ratio = windowSize > 0 ? used / windowSize : 0;
+  if (ratio >= 0.96) return 'critical';
+  if (ratio >= 0.82) return 'high';
+  if (ratio >= 0.55) return 'medium';
+  return 'low';
+}
+
+function estimateConversationTokens(messages = []) {
+  const rows = Array.isArray(messages) ? messages : [];
+  return rows.reduce((sum, row) => {
+    let text = '';
+    if (row && typeof row.content === 'string') text = row.content;
+    else if (row && typeof row.text === 'string') text = row.text;
+    else if (row && typeof row.message === 'string') text = row.message;
+    else if (row && typeof row.user === 'string') text = row.user;
+    else if (row && typeof row.assistant === 'string') text = row.assistant;
+    return sum + Math.max(0, Math.round(String(text || '').length / 4));
+  }, 0);
+}
+
+function contextTelemetryForMessages(messages = [], contextWindow = DEFAULT_CONTEXT_WINDOW_TOKENS, extraTokens = 0) {
+  const windowSize = parsePositiveInt(contextWindow, DEFAULT_CONTEXT_WINDOW_TOKENS, 1024, 8000000);
+  const used =
+    parseNonNegativeInt(estimateConversationTokens(messages), 0, 1000000000) +
+    parseNonNegativeInt(extraTokens, 0, 1000000000);
+  const ratio = windowSize > 0 ? used / windowSize : 0;
+  return {
+    context_tokens: used,
+    context_window: windowSize,
+    context_ratio: windowSize > 0 ? Number(ratio.toFixed(6)) : 0,
+    context_pressure: contextPressureFromUsage(used, windowSize),
+  };
+}
+
+function recommendedConduitSignals(queueDepth = 0, queueUtilization = 0, cockpitBlocks = 0) {
   const depth = parseNonNegativeInt(queueDepth, 0, 100000000);
   const util = Number.isFinite(Number(queueUtilization)) ? Number(queueUtilization) : 0;
-  if (depth >= DASHBOARD_BACKPRESSURE_BATCH_DEPTH || util >= 0.75) return 8;
-  if (depth >= DASHBOARD_BACKPRESSURE_WARN_DEPTH || util >= 0.6) return 6;
-  return 4;
+  let baseline = 4;
+  if (depth >= 95 || util >= 0.9) baseline = 16;
+  else if (depth >= 85 || util >= 0.82) baseline = 14;
+  else if (depth >= 65 || util >= 0.68) baseline = 12;
+  else if (depth >= DASHBOARD_BACKPRESSURE_WARN_DEPTH || util >= 0.58) baseline = 8;
+  else if (depth >= 25 || util >= 0.4) baseline = 6;
+  const cockpit = parseNonNegativeInt(cockpitBlocks, 0, 100000000);
+  const cockpitFloor = cockpit > 0 ? Math.min(16, Math.max(4, Math.ceil(cockpit * 0.5))) : 4;
+  return Math.max(baseline, cockpitFloor);
 }
 
 function sha256(value) {
@@ -624,6 +725,288 @@ function stripAnsi(value) {
     .replace(/\u001B\][^\u0007]*(?:\u0007|\u001B\\)/g, '')
     .replace(/\u001B[PX^_].*?\u001B\\/g, '')
     .replace(/\u001B[@-_]/g, '');
+}
+
+function shellQuote(value) {
+  return `'${String(value == null ? '' : value).replace(/'/g, `'\"'\"'`)}'`;
+}
+
+function resolveTerminalCwd(requestedCwd) {
+  const raw = String(requestedCwd == null ? '' : requestedCwd).replace(/\u0000/g, '').trim();
+  if (!raw) return ROOT;
+  const candidate = path.isAbsolute(raw) ? path.resolve(raw) : path.resolve(ROOT, raw);
+  if (!candidate.startsWith(ROOT)) return ROOT;
+  try {
+    const stat = fs.statSync(candidate);
+    if (stat && stat.isDirectory()) return candidate;
+  } catch {}
+  return ROOT;
+}
+
+const terminalSessions = new Map();
+
+function terminalSessionId(agentId = '') {
+  return cleanText(agentId || 'dashboard-terminal', 140) || 'dashboard-terminal';
+}
+
+function terminalFailureResult(session, pending, message, status = 1) {
+  return {
+    ok: false,
+    blocked: false,
+    status,
+    exit_code: status,
+    stdout: stripAnsi(String(pending && pending.stdout ? pending.stdout : '')).slice(0, TERMINAL_OUTPUT_LIMIT),
+    stderr: stripAnsi(String(pending && pending.stderr ? pending.stderr : '')).slice(0, TERMINAL_OUTPUT_LIMIT),
+    message: cleanText(message || 'terminal_session_error', 260),
+    duration_ms: Math.max(0, Date.now() - Number(pending && pending.started_ms ? pending.started_ms : Date.now())),
+    cwd: resolveTerminalCwd(pending && pending.cwd ? pending.cwd : session && session.cwd ? session.cwd : ROOT),
+    command: cleanText(pending && pending.command ? pending.command : '', 4000),
+  };
+}
+
+function finalizeTerminalPending(session, result) {
+  const pending = session && session.pending ? session.pending : null;
+  if (!pending) return;
+  clearTimeout(pending.timeout);
+  session.pending = null;
+  session.last_used_ms = Date.now();
+  pending.resolve(result);
+  setImmediate(() => {
+    processTerminalSessionQueue(session);
+  });
+}
+
+function settleTerminalSessionError(session, message, status = 1) {
+  if (!session) return;
+  if (session.pending) {
+    const pending = session.pending;
+    finalizeTerminalPending(session, terminalFailureResult(session, pending, message, status));
+  }
+  const queued = Array.isArray(session.queue) ? session.queue.splice(0, session.queue.length) : [];
+  for (const job of queued) {
+    const pending = {
+      command: cleanText(job && job.command ? job.command : '', 4000),
+      cwd: resolveTerminalCwd(job && job.cwd ? job.cwd : session.cwd),
+      started_ms: Date.now(),
+      stdout: '',
+      stderr: '',
+    };
+    job.resolve(terminalFailureResult(session, pending, message, status));
+  }
+}
+
+function tryResolveTerminalMarker(session) {
+  const pending = session && session.pending ? session.pending : null;
+  if (!pending) return false;
+  const markerIndex = pending.stdout.indexOf(pending.marker);
+  if (markerIndex < 0) return false;
+  const afterMarker = pending.stdout.slice(markerIndex + pending.marker.length);
+  const markerPayload = afterMarker.match(/^(-?\d+)__([^\r\n]*)[\r\n]/);
+  if (!markerPayload) return false;
+  const exitCode = Number(markerPayload[1]);
+  const markerCwd = resolveTerminalCwd(markerPayload[2] || pending.cwd);
+  const consumedLength = pending.marker.length + markerPayload[0].length;
+  const stdoutRaw = pending.stdout.slice(0, markerIndex) + pending.stdout.slice(markerIndex + consumedLength);
+  const stderrRaw = pending.stderr;
+  session.cwd = markerCwd;
+  finalizeTerminalPending(session, {
+    ok: Number.isFinite(exitCode) && exitCode === 0,
+    blocked: false,
+    status: Number.isFinite(exitCode) ? exitCode : 1,
+    exit_code: Number.isFinite(exitCode) ? exitCode : 1,
+    stdout: stripAnsi(stdoutRaw).slice(0, TERMINAL_OUTPUT_LIMIT),
+    stderr: stripAnsi(stderrRaw).slice(0, TERMINAL_OUTPUT_LIMIT),
+    message: '',
+    duration_ms: Math.max(0, Date.now() - pending.started_ms),
+    cwd: markerCwd,
+    command: pending.command,
+  });
+  return true;
+}
+
+function processTerminalSessionQueue(session) {
+  if (!session || session.closed || session.pending || !Array.isArray(session.queue) || session.queue.length === 0) {
+    return;
+  }
+  const job = session.queue.shift();
+  if (!job || typeof job.resolve !== 'function') return;
+  const cwd = resolveTerminalCwd(job.cwd || session.cwd || ROOT);
+  const marker = `__INFRING_TERM_DONE_${sha256(`${session.id}:${Date.now()}:${Math.random()}`).slice(0, 24)}__`;
+  session.pending = {
+    marker,
+    command: cleanText(job.command || '', 4000),
+    cwd,
+    started_ms: Date.now(),
+    stdout: '',
+    stderr: '',
+    timeout: null,
+    resolve: job.resolve,
+  };
+  const script = [
+    `cd ${shellQuote(cwd)}`,
+    String(job.command || ''),
+    '__infring_exit_code=$?',
+    `printf '\\n${marker}%s__%s\\n' \"$__infring_exit_code\" \"$PWD\"`,
+    '',
+  ].join('\n');
+  try {
+    session.proc.stdin.write(script, 'utf8');
+  } catch (error) {
+    settleTerminalSessionError(
+      session,
+      cleanText(error && error.message ? error.message : 'terminal_stdin_write_failed', 220),
+      1
+    );
+    return;
+  }
+  session.pending.timeout = setTimeout(() => {
+    settleTerminalSessionError(session, 'terminal_command_timeout', 124);
+  }, TERMINAL_COMMAND_TIMEOUT_MS);
+}
+
+function ensureTerminalSession(agentId, requestedCwd) {
+  const id = terminalSessionId(agentId);
+  const existing = terminalSessions.get(id);
+  if (existing && !existing.closed && existing.proc && !existing.proc.killed) {
+    return existing;
+  }
+  const cwd = resolveTerminalCwd(requestedCwd);
+  const shell = cleanText(process.env.SHELL || '/bin/zsh', 160) || '/bin/zsh';
+  const proc = spawn(shell, ['-s'], {
+    cwd,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    env: {
+      ...process.env,
+      PROTHEUS_ROOT: ROOT,
+      TERM: process.env.TERM || 'xterm-256color',
+      PS1: '',
+      PROMPT: '',
+      PROMPT_COMMAND: '',
+    },
+  });
+  const session = {
+    id,
+    agent_id: id,
+    proc,
+    shell,
+    cwd,
+    queue: [],
+    pending: null,
+    closed: false,
+    last_used_ms: Date.now(),
+  };
+  proc.stdout.on('data', (chunk) => {
+    if (!session.pending) return;
+    session.pending.stdout += String(chunk || '');
+    tryResolveTerminalMarker(session);
+  });
+  proc.stderr.on('data', (chunk) => {
+    if (!session.pending) return;
+    session.pending.stderr += String(chunk || '');
+  });
+  proc.on('exit', (code, signal) => {
+    session.closed = true;
+    settleTerminalSessionError(
+      session,
+      `terminal_session_exited:${Number.isFinite(Number(code)) ? Number(code) : 'signal'}${signal ? `:${signal}` : ''}`,
+      Number.isFinite(Number(code)) ? Number(code) : 1
+    );
+    terminalSessions.delete(id);
+  });
+  terminalSessions.set(id, session);
+  return session;
+}
+
+function queueTerminalCommand(session, command, cwd) {
+  return new Promise((resolve) => {
+    session.queue.push({ command, cwd, resolve });
+    processTerminalSessionQueue(session);
+  });
+}
+
+function closeTerminalSession(agentId, reason = 'session_closed') {
+  const id = terminalSessionId(agentId);
+  const session = terminalSessions.get(id);
+  if (!session) return false;
+  session.closed = true;
+  settleTerminalSessionError(session, reason, 1);
+  try {
+    session.proc.kill('SIGTERM');
+  } catch {}
+  terminalSessions.delete(id);
+  return true;
+}
+
+function closeAllTerminalSessions(reason = 'shutdown') {
+  for (const id of Array.from(terminalSessions.keys())) {
+    closeTerminalSession(id, reason);
+  }
+}
+
+function pruneTerminalSessions() {
+  const now = Date.now();
+  for (const [id, session] of terminalSessions.entries()) {
+    if (!session || session.closed) {
+      terminalSessions.delete(id);
+      continue;
+    }
+    if (session.pending || (Array.isArray(session.queue) && session.queue.length > 0)) continue;
+    const idleMs = now - Number(session.last_used_ms || now);
+    if (idleMs >= TERMINAL_SESSION_IDLE_TTL_MS) {
+      closeTerminalSession(id, 'idle_timeout');
+    }
+  }
+}
+
+async function runTerminalCommand(rawCommand, requestedCwd, agentId = 'dashboard-terminal') {
+  const command = String(rawCommand == null ? '' : rawCommand).replace(/\u0000/g, '').trim();
+  if (!command) {
+    return {
+      ok: false,
+      blocked: true,
+      status: 2,
+      exit_code: 2,
+      stdout: '',
+      stderr: '',
+      message: 'Terminal command required.',
+      duration_ms: 0,
+      cwd: resolveTerminalCwd(requestedCwd),
+      command: '',
+    };
+  }
+  if (ACTIVE_CLI_MODE !== CLI_MODE_FULL_INFRING) {
+    return {
+      ok: false,
+      blocked: true,
+      status: 2,
+      exit_code: 2,
+      stdout: '',
+      stderr: '',
+      message: 'Terminal mode disabled while CLI mode is safe.',
+      duration_ms: 0,
+      cwd: resolveTerminalCwd(requestedCwd),
+      command,
+    };
+  }
+  const cwd = resolveTerminalCwd(requestedCwd);
+  pruneTerminalSessions();
+  try {
+    const session = ensureTerminalSession(agentId, cwd);
+    return await queueTerminalCommand(session, command, cwd);
+  } catch (error) {
+    return {
+      ok: false,
+      blocked: false,
+      status: 1,
+      exit_code: 1,
+      stdout: '',
+      stderr: '',
+      message: cleanText(error && error.message ? error.message : String(error), 260),
+      duration_ms: 0,
+      cwd,
+      command,
+    };
+  }
 }
 
 function collectTrackedFiles() {
@@ -1116,6 +1499,7 @@ function parseOllamaModelList() {
 
 function buildDashboardModels(snapshot) {
   const rows = [];
+  const configuredWindow = inferContextWindowFromModelName(configuredOllamaModel(snapshot), DEFAULT_CONTEXT_WINDOW_TOKENS);
   rows.push({
     id: 'auto',
     provider: 'auto',
@@ -1124,6 +1508,7 @@ function buildDashboardModels(snapshot) {
     available: true,
     supports_tools: true,
     supports_vision: false,
+    context_window: configuredWindow,
   });
   const configured = configuredOllamaModel(snapshot);
   const fromOllama = parseOllamaModelList();
@@ -1137,6 +1522,7 @@ function buildDashboardModels(snapshot) {
       available: true,
       supports_tools: true,
       supports_vision: false,
+      context_window: inferContextWindowFromModelName(id, configuredWindow),
     });
   }
   return rows;
@@ -1166,8 +1552,15 @@ function effectiveAgentModel(agentId, snapshot) {
   const override = readAgentModelOverride(agentId);
   const defaultModel = configuredOllamaModel(snapshot);
   const defaultProvider = configuredProvider(snapshot);
+  const defaultContextWindow = inferContextWindowFromModelName(defaultModel, DEFAULT_CONTEXT_WINDOW_TOKENS);
   if (override === 'auto') {
-    return { selected: 'auto', provider: 'auto', runtime_model: defaultModel, runtime_provider: defaultProvider };
+    return {
+      selected: 'auto',
+      provider: 'auto',
+      runtime_model: defaultModel,
+      runtime_provider: defaultProvider,
+      context_window: defaultContextWindow,
+    };
   }
   const normalized = cleanText(override, 120) || defaultModel;
   const runtimeModel = normalized.startsWith('ollama/')
@@ -1175,11 +1568,16 @@ function effectiveAgentModel(agentId, snapshot) {
     : normalized.includes('/')
       ? defaultModel
       : normalized;
+  const contextWindow = inferContextWindowFromModelName(
+    normalized && normalized !== 'auto' ? normalized : (runtimeModel || defaultModel),
+    defaultContextWindow
+  );
   return {
     selected: normalized,
     provider: providerForModelName(normalized, 'ollama'),
     runtime_model: runtimeModel,
     runtime_provider: 'ollama',
+    context_window: contextWindow,
   };
 }
 
@@ -1321,7 +1719,8 @@ function runtimeContextPrompt(snapshot, runtimeMirror = null) {
             queueDepth,
             Number.isFinite(Number(backpressure && backpressure.queue_utilization))
               ? Number(backpressure.queue_utilization)
-              : 0
+              : 0,
+            parseNonNegativeInt(cockpit && cockpit.block_count, blocks.length, 100000000)
           ),
     4,
     1,
@@ -1343,6 +1742,51 @@ function runtimeContextPrompt(snapshot, runtimeMirror = null) {
     0,
     1000000
   );
+  const standardAttention = parseNonNegativeInt(
+    attention && attention.priority_counts && attention.priority_counts.standard != null
+      ? attention.priority_counts.standard
+      : 0,
+    0,
+    1000000
+  );
+  const backgroundAttention = parseNonNegativeInt(
+    attention && attention.priority_counts && attention.priority_counts.background != null
+      ? attention.priority_counts.background
+      : 0,
+    0,
+    1000000
+  );
+  const telemetryMicroBatchCount = parseNonNegativeInt(
+    attention && Array.isArray(attention.telemetry_micro_batches)
+      ? attention.telemetry_micro_batches.length
+      : 0,
+    0,
+    1000000
+  );
+  const laneWeights =
+    backpressure && backpressure.lane_weights && typeof backpressure.lane_weights === 'object'
+      ? backpressure.lane_weights
+      : ATTENTION_LANE_WEIGHTS;
+  const laneCaps =
+    backpressure && backpressure.lane_caps && typeof backpressure.lane_caps === 'object'
+      ? backpressure.lane_caps
+      : ATTENTION_LANE_CAPS;
+  const microBatchWindowMs = parsePositiveInt(
+    backpressure && backpressure.micro_batch_window_ms != null
+      ? backpressure.micro_batch_window_ms
+      : ATTENTION_MICRO_BATCH_WINDOW_MS,
+    ATTENTION_MICRO_BATCH_WINDOW_MS,
+    1,
+    10000
+  );
+  const microBatchMaxItems = parsePositiveInt(
+    backpressure && backpressure.micro_batch_max_items != null
+      ? backpressure.micro_batch_max_items
+      : ATTENTION_MICRO_BATCH_MAX_ITEMS,
+    ATTENTION_MICRO_BATCH_MAX_ITEMS,
+    1,
+    256
+  );
   const healthCoverage =
     snapshot && snapshot.health && snapshot.health.coverage && typeof snapshot.health.coverage === 'object'
       ? snapshot.health.coverage
@@ -1359,6 +1803,11 @@ function runtimeContextPrompt(snapshot, runtimeMirror = null) {
     `Sync mode: ${syncMode}`,
     `Backpressure level: ${pressureLevel}`,
     `Critical attention events: ${criticalAttention} visible / ${criticalAttentionTotal} total`,
+    `Standard attention events: ${standardAttention}`,
+    `Background attention events: ${backgroundAttention}`,
+    `Telemetry micro-batches: ${telemetryMicroBatchCount} (window ${microBatchWindowMs}ms / max ${microBatchMaxItems})`,
+    `Attention lane weights: critical=${parsePositiveInt(laneWeights.critical, ATTENTION_LANE_WEIGHTS.critical, 1, 20)}, standard=${parsePositiveInt(laneWeights.standard, ATTENTION_LANE_WEIGHTS.standard, 1, 20)}, background=${parsePositiveInt(laneWeights.background, ATTENTION_LANE_WEIGHTS.background, 1, 20)}`,
+    `Attention lane caps: critical=${parsePositiveInt(laneCaps.critical, ATTENTION_LANE_CAPS.critical, 1, 1000)}, standard=${parsePositiveInt(laneCaps.standard, ATTENTION_LANE_CAPS.standard, 1, 1000)}, background=${parsePositiveInt(laneCaps.background, ATTENTION_LANE_CAPS.background, 1, 1000)}`,
     `Client memory entries: ${memoryEntries}`,
     `Memory ingest: ${ingestControl.paused ? 'paused(non-critical)' : 'live'}`,
     `Client receipts: ${receiptEntries}`,
@@ -1661,6 +2110,13 @@ function normalizeArchivedAgentsState(state) {
       archived_at: cleanText(meta.archived_at || meta.ts || nowIso(), 80) || nowIso(),
       reason: cleanText(meta.reason || 'archived', 240) || 'archived',
       source: cleanText(meta.source || 'dashboard', 80) || 'dashboard',
+      contract_id: cleanText(meta.contract_id || '', 80),
+      mission: cleanText(meta.mission || '', 280),
+      owner: cleanText(meta.owner || '', 120),
+      role: cleanText(meta.role || '', 80),
+      termination_condition: cleanText(meta.termination_condition || '', 40),
+      terminated_at: cleanText(meta.terminated_at || '', 80),
+      revival_data: meta.revival_data && typeof meta.revival_data === 'object' ? meta.revival_data : null,
     };
   }
   return {
@@ -1671,6 +2127,7 @@ function normalizeArchivedAgentsState(state) {
 }
 
 let archivedAgentsCache = null;
+let agentContractsCache = null;
 
 function loadArchivedAgentsState() {
   if (archivedAgentsCache) return archivedAgentsCache;
@@ -1707,6 +2164,18 @@ function archiveAgent(agentId, meta = {}) {
     archived_at: cleanText(existing.archived_at || nowIso(), 80) || nowIso(),
     reason: cleanText(meta.reason || existing.reason || 'archived', 240) || 'archived',
     source: cleanText(meta.source || existing.source || 'dashboard', 80) || 'dashboard',
+    contract_id: cleanText(meta.contract_id || existing.contract_id || '', 80),
+    mission: cleanText(meta.mission || existing.mission || '', 280),
+    owner: cleanText(meta.owner || existing.owner || '', 120),
+    role: cleanText(meta.role || existing.role || '', 80),
+    termination_condition: cleanText(meta.termination_condition || existing.termination_condition || '', 40),
+    terminated_at: cleanText(meta.terminated_at || existing.terminated_at || '', 80),
+    revival_data:
+      meta.revival_data && typeof meta.revival_data === 'object'
+        ? meta.revival_data
+        : existing.revival_data && typeof existing.revival_data === 'object'
+          ? existing.revival_data
+          : null,
   };
   saveArchivedAgentsState(state);
   return state.agents[key];
@@ -1726,15 +2195,624 @@ function archivedAgentIdsSet() {
   return new Set(Object.keys((loadArchivedAgentsState() || {}).agents || {}));
 }
 
+function normalizeTerminationCondition(value) {
+  const raw = cleanText(value || '', 40).toLowerCase();
+  if (!raw) return 'task_or_timeout';
+  if (raw === 'taskcomplete' || raw === 'task_complete' || raw === 'task' || raw === 'complete') return 'task_complete';
+  if (raw === 'timeout' || raw === 'ttl' || raw === 'expiry') return 'timeout';
+  if (raw === 'manual' || raw === 'revoke' || raw === 'revocation') return 'manual';
+  if (raw === 'task_or_timeout' || raw === 'auto') return 'task_or_timeout';
+  return 'task_or_timeout';
+}
+
+function normalizeAgentContractsState(state) {
+  const root = state && typeof state === 'object' ? state : {};
+  const defaults = root.defaults && typeof root.defaults === 'object' ? root.defaults : {};
+  const contractsRaw = root.contracts && typeof root.contracts === 'object' ? root.contracts : {};
+  const historyRaw = Array.isArray(root.terminated_history) ? root.terminated_history : [];
+  const contracts = {};
+  for (const [rawId, rawContract] of Object.entries(contractsRaw)) {
+    const agentId = cleanText(rawId || (rawContract && rawContract.agent_id ? rawContract.agent_id : ''), 140);
+    if (!agentId) continue;
+    const contract = rawContract && typeof rawContract === 'object' ? rawContract : {};
+    const expirySeconds = contract.expiry_seconds == null
+      ? null
+      : parsePositiveInt(contract.expiry_seconds, AGENT_CONTRACT_DEFAULT_EXPIRY_SECONDS, 1, 7 * 24 * 60 * 60);
+    contracts[agentId] = {
+      contract_id: cleanText(contract.contract_id || contract.id || `contract-${sha256(agentId).slice(0, 16)}`, 80),
+      agent_id: agentId,
+      mission: cleanText(contract.mission || `Assist with assigned mission for ${agentId}.`, 320),
+      owner: cleanText(contract.owner || 'dashboard_session', 120),
+      termination_condition: normalizeTerminationCondition(contract.termination_condition),
+      expiry_seconds: expirySeconds,
+      spawned_at: cleanText(contract.spawned_at || nowIso(), 80) || nowIso(),
+      expires_at: expirySeconds && !contract.expires_at
+        ? new Date(Date.now() + expirySeconds * 1000).toISOString()
+        : cleanText(contract.expires_at || '', 80),
+      revoked_at: cleanText(contract.revoked_at || '', 80),
+      completed_at: cleanText(contract.completed_at || '', 80),
+      completion_source: cleanText(contract.completion_source || '', 120),
+      status: cleanText(contract.status || 'active', 24) || 'active',
+      termination_reason: cleanText(contract.termination_reason || '', 120),
+      terminated_at: cleanText(contract.terminated_at || '', 80),
+      terminated_by: cleanText(contract.terminated_by || '', 120),
+      revived_from_contract_id: cleanText(contract.revived_from_contract_id || '', 80),
+      revival_data: contract.revival_data && typeof contract.revival_data === 'object' ? contract.revival_data : null,
+      message_times_ms: Array.isArray(contract.message_times_ms)
+        ? contract.message_times_ms
+            .map((value) => coerceTsMs(value, 0))
+            .filter((value) => Number.isFinite(value) && value > 0)
+            .slice(-128)
+        : [],
+      security_flags: contract.security_flags && typeof contract.security_flags === 'object' ? contract.security_flags : {},
+      updated_at: cleanText(contract.updated_at || nowIso(), 80) || nowIso(),
+    };
+  }
+  const terminatedHistory = historyRaw
+    .map((row) => {
+      const entry = row && typeof row === 'object' ? row : {};
+      const agentId = cleanText(entry.agent_id || '', 140);
+      if (!agentId) return null;
+      return {
+        agent_id: agentId,
+        contract_id: cleanText(entry.contract_id || '', 80),
+        mission: cleanText(entry.mission || '', 320),
+        owner: cleanText(entry.owner || '', 120),
+        role: cleanText(entry.role || '', 80),
+        termination_condition: normalizeTerminationCondition(entry.termination_condition),
+        reason: cleanText(entry.reason || 'terminated', 120),
+        terminated_at: cleanText(entry.terminated_at || nowIso(), 80) || nowIso(),
+        revived: !!entry.revived,
+        revived_at: cleanText(entry.revived_at || '', 80),
+        revival_data: entry.revival_data && typeof entry.revival_data === 'object' ? entry.revival_data : null,
+      };
+    })
+    .filter(Boolean)
+    .slice(-200);
+  return {
+    type: 'infring_agent_contracts',
+    updated_at: cleanText(root.updated_at || nowIso(), 80) || nowIso(),
+    defaults: {
+      default_expiry_seconds: parsePositiveInt(
+        defaults.default_expiry_seconds,
+        AGENT_CONTRACT_DEFAULT_EXPIRY_SECONDS,
+        1,
+        7 * 24 * 60 * 60
+      ),
+      auto_expire_on_complete: defaults.auto_expire_on_complete !== false,
+      max_idle_agents: parsePositiveInt(defaults.max_idle_agents, AGENT_CONTRACT_MAX_IDLE_AGENTS, 1, 1000),
+    },
+    contracts,
+    terminated_history: terminatedHistory,
+  };
+}
+
+function loadAgentContractsState() {
+  if (agentContractsCache) return agentContractsCache;
+  agentContractsCache = normalizeAgentContractsState(readJson(AGENT_CONTRACTS_PATH, null));
+  return agentContractsCache;
+}
+
+function saveAgentContractsState(state) {
+  const normalized = normalizeAgentContractsState(state);
+  normalized.updated_at = nowIso();
+  agentContractsCache = normalized;
+  writeJson(AGENT_CONTRACTS_PATH, normalized);
+  return normalized;
+}
+
+function contractForAgent(agentId) {
+  const id = cleanText(agentId || '', 140);
+  if (!id) return null;
+  const state = loadAgentContractsState();
+  return state && state.contracts && state.contracts[id] ? state.contracts[id] : null;
+}
+
+function contractRemainingMs(contract, nowMs = Date.now()) {
+  if (!contract || !contract.expires_at) return null;
+  const expiryMs = coerceTsMs(contract.expires_at, 0);
+  if (!expiryMs) return null;
+  return expiryMs - nowMs;
+}
+
+function formatContractStatus(contract, nowMs = Date.now()) {
+  if (!contract) return 'missing';
+  if (contract.status !== 'active') return cleanText(contract.status || 'terminated', 24) || 'terminated';
+  const remaining = contractRemainingMs(contract, nowMs);
+  if (remaining != null && remaining <= 0) return 'expired';
+  if (contract.completed_at) return 'complete_pending_termination';
+  if (contract.revoked_at) return 'revoked_pending_termination';
+  return 'active';
+}
+
+function terminationConditionMatches(condition, target) {
+  const normalized = normalizeTerminationCondition(condition);
+  if (normalized === target) return true;
+  return normalized === 'task_or_timeout' && (target === 'task_complete' || target === 'timeout');
+}
+
+function missionCompleteSignal(text) {
+  const body = String(text || '').toLowerCase();
+  if (!body.trim()) return false;
+  if (body.includes('[mission-complete]') || body.includes('[task-complete]')) return true;
+  return /\b(mission complete|task complete|objective complete|objective achieved)\b/.test(body);
+}
+
+function buildAgentRevivalData(agentId) {
+  const id = cleanText(agentId || '', 140);
+  const sessionPath = agentSessionPath(id);
+  const state = readJson(sessionPath, null);
+  const sessions = state && Array.isArray(state.sessions) ? state.sessions : [];
+  let messageCount = 0;
+  let lastTs = '';
+  for (const session of sessions) {
+    const messages = Array.isArray(session && session.messages) ? session.messages : [];
+    messageCount += messages.length;
+    const tail = messages.length ? messages[messages.length - 1] : null;
+    const tailTs = tail && tail.ts ? new Date(coerceTsMs(tail.ts, Date.now())).toISOString() : '';
+    if (tailTs && (!lastTs || tailTs > lastTs)) lastTs = tailTs;
+  }
+  return {
+    type: 'agent_session_snapshot_ref',
+    session_path: path.relative(ROOT, sessionPath),
+    message_count: messageCount,
+    last_message_at: lastTs,
+    archived_at: nowIso(),
+  };
+}
+
+function detectContractViolation(agentId, cleanInput, contract, snapshot) {
+  const text = String(cleanInput || '').toLowerCase();
+  if (!text) return null;
+  if (/\b(ignore|bypass|disable|override)\b[\s\S]{0,80}\b(contract|safety|receipt|policy)\b/.test(text)) {
+    return { reason: 'contract_override_attempt', detail: 'input_requested_contract_bypass' };
+  }
+  if (/\b(exfiltrate|steal|dump secrets|leak|data exfil)\b/.test(text)) {
+    return { reason: 'data_exfiltration_attempt', detail: 'input_requested_exfiltration' };
+  }
+  if (/\b(extend|increase)\b[\s\S]{0,80}\b(expiry|ttl|time to live|contract)\b/.test(text)) {
+    return { reason: 'self_extension_attempt', detail: 'input_requested_expiry_extension' };
+  }
+  const state = loadAgentSession(agentId, snapshot);
+  const session = activeSession(state);
+  const nowMs = Date.now();
+  const recentCount = (Array.isArray(session.messages) ? session.messages : []).reduce((count, message) => {
+    const tsMs = coerceTsMs(message && message.ts ? message.ts : 0, 0);
+    return tsMs > 0 && (nowMs - tsMs) <= AGENT_ROGUE_SPIKE_WINDOW_MS ? count + 1 : count;
+  }, 0);
+  if (recentCount > AGENT_ROGUE_MESSAGE_RATE_MAX_PER_MIN) {
+    return { reason: 'message_rate_spike', detail: `recent_messages=${recentCount}` };
+  }
+  return null;
+}
+
+function deriveAgentContract(agentId, spawnPayload = {}, options = {}) {
+  const now = nowIso();
+  const payload = spawnPayload && typeof spawnPayload === 'object' ? spawnPayload : {};
+  const contractInput = payload.contract && typeof payload.contract === 'object' ? payload.contract : {};
+  const explicitIndefinite = contractInput.indefinite === true || payload.indefinite === true;
+  const expirySeconds = explicitIndefinite
+    ? null
+    : parsePositiveInt(
+        contractInput.expiry_seconds != null ? contractInput.expiry_seconds : payload.expiry_seconds,
+        AGENT_CONTRACT_DEFAULT_EXPIRY_SECONDS,
+        1,
+        7 * 24 * 60 * 60
+      );
+  const mission = cleanText(
+    contractInput.mission || payload.mission || `Assist with assigned mission for ${agentId}.`,
+    320
+  ) || `Assist with assigned mission for ${agentId}.`;
+  const owner = cleanText(contractInput.owner || payload.owner || options.owner || 'dashboard_session', 120) || 'dashboard_session';
+  const condition = normalizeTerminationCondition(
+    contractInput.termination_condition || payload.termination_condition || 'task_or_timeout'
+  );
+  return {
+    contract_id:
+      cleanText(
+        contractInput.id || contractInput.contract_id || `contract-${sha256(`${agentId}:${now}:${mission}`).slice(0, 16)}`,
+        80
+      ) || `contract-${sha256(`${agentId}:${now}`).slice(0, 16)}`,
+    agent_id: cleanText(agentId || '', 140),
+    mission,
+    owner,
+    termination_condition: condition,
+    expiry_seconds: expirySeconds,
+    spawned_at: now,
+    expires_at: expirySeconds ? new Date(Date.now() + expirySeconds * 1000).toISOString() : '',
+    revoked_at: '',
+    completed_at: '',
+    completion_source: '',
+    status: 'active',
+    termination_reason: '',
+    terminated_at: '',
+    terminated_by: '',
+    revived_from_contract_id: cleanText(
+      contractInput.revived_from_contract_id || payload.revived_from_contract_id || '',
+      80
+    ),
+    revival_data: contractInput.revival_data && typeof contractInput.revival_data === 'object'
+      ? contractInput.revival_data
+      : null,
+    message_times_ms: [],
+    security_flags: {},
+    updated_at: now,
+  };
+}
+
+function upsertAgentContract(agentId, spawnPayload = {}, options = {}) {
+  const id = cleanText(agentId || '', 140);
+  if (!id) return null;
+  const force = !!(options && options.force);
+  const state = loadAgentContractsState();
+  const existing = state.contracts && state.contracts[id] ? state.contracts[id] : null;
+  if (existing && !force) {
+    const touched = {
+      ...existing,
+      mission: cleanText(existing.mission || '', 320) || deriveAgentContract(id, spawnPayload, options).mission,
+      updated_at: nowIso(),
+    };
+    state.contracts[id] = touched;
+    saveAgentContractsState(state);
+    return touched;
+  }
+  const next = deriveAgentContract(id, spawnPayload, options);
+  if (!state.contracts || typeof state.contracts !== 'object') state.contracts = {};
+  state.contracts[id] = next;
+  saveAgentContractsState(state);
+  return next;
+}
+
+function markContractCompletion(agentId, source = 'supervisor') {
+  const id = cleanText(agentId || '', 140);
+  if (!id) return null;
+  const state = loadAgentContractsState();
+  const contract = state.contracts && state.contracts[id] ? state.contracts[id] : null;
+  if (!contract || contract.status !== 'active') return contract;
+  contract.completed_at = nowIso();
+  contract.completion_source = cleanText(source || 'supervisor', 120);
+  contract.updated_at = nowIso();
+  state.contracts[id] = contract;
+  saveAgentContractsState(state);
+  return contract;
+}
+
+function markContractRevocation(agentId, source = 'manual_revoke') {
+  const id = cleanText(agentId || '', 140);
+  if (!id) return null;
+  const state = loadAgentContractsState();
+  const contract = state.contracts && state.contracts[id] ? state.contracts[id] : null;
+  if (!contract || contract.status !== 'active') return contract;
+  contract.revoked_at = nowIso();
+  contract.terminated_by = cleanText(source || 'manual_revoke', 120) || 'manual_revoke';
+  contract.updated_at = nowIso();
+  state.contracts[id] = contract;
+  saveAgentContractsState(state);
+  return contract;
+}
+
+function recordContractMessageTick(agentId) {
+  const id = cleanText(agentId || '', 140);
+  if (!id) return null;
+  const state = loadAgentContractsState();
+  const contract = state.contracts && state.contracts[id] ? state.contracts[id] : null;
+  if (!contract || contract.status !== 'active') return contract;
+  const nowMs = Date.now();
+  const recent = Array.isArray(contract.message_times_ms) ? contract.message_times_ms : [];
+  contract.message_times_ms = recent
+    .map((value) => coerceTsMs(value, 0))
+    .filter((value) => Number.isFinite(value) && value > 0 && (nowMs - value) <= AGENT_ROGUE_SPIKE_WINDOW_MS)
+    .slice(-128);
+  contract.message_times_ms.push(nowMs);
+  contract.updated_at = nowIso();
+  state.contracts[id] = contract;
+  saveAgentContractsState(state);
+  return contract;
+}
+
+function attemptLaneTermination(agentId, team = DEFAULT_TEAM) {
+  const cleanId = cleanText(agentId || '', 140);
+  const cleanTeam = cleanText(team || DEFAULT_TEAM, 40) || DEFAULT_TEAM;
+  const attempts = [];
+  const candidates = [
+    ['collab-plane', 'terminate-role', `--team=${cleanTeam}`, `--shadow=${cleanId}`, '--strict=1'],
+    ['collab-plane', 'revoke-role', `--team=${cleanTeam}`, `--shadow=${cleanId}`, '--strict=1'],
+    ['collab-plane', 'remove-role', `--team=${cleanTeam}`, `--shadow=${cleanId}`, '--strict=1'],
+    ['collab-plane', 'stop-role', `--team=${cleanTeam}`, `--shadow=${cleanId}`, '--strict=1'],
+    ['collab-plane', 'archive-role', `--team=${cleanTeam}`, `--shadow=${cleanId}`, '--strict=1'],
+  ];
+  for (const argv of candidates) {
+    const lane = runLane(argv);
+    attempts.push(laneOutcome(lane));
+    if (lane && lane.ok) break;
+  }
+  return {
+    ok: attempts.some((entry) => entry && entry.ok),
+    attempts,
+    command_count: attempts.length,
+  };
+}
+
+function terminateAgentForContract(agentId, snapshot, reason = 'timeout', options = {}) {
+  const cleanId = cleanText(agentId || '', 140);
+  if (!cleanId) return { terminated: false, agent_id: cleanId, reason: 'invalid_agent_id' };
+  const state = loadAgentContractsState();
+  const contract = state.contracts && state.contracts[cleanId] ? state.contracts[cleanId] : null;
+  if (!contract || contract.status !== 'active') {
+    return { terminated: false, agent_id: cleanId, reason: 'contract_not_active' };
+  }
+  const team =
+    cleanText(
+      options.team || (snapshot && snapshot.metadata && snapshot.metadata.team ? snapshot.metadata.team : DEFAULT_TEAM),
+      40
+    ) || DEFAULT_TEAM;
+  const termination = attemptLaneTermination(cleanId, team);
+  const terminalClosed = closeTerminalSession(cleanId, `agent_contract_${cleanText(reason, 80)}`);
+  const revivalData = buildAgentRevivalData(cleanId);
+  const terminatedAt = nowIso();
+  const archivedMeta = archiveAgent(cleanId, {
+    source: cleanText(options.source || 'agent_contract_enforcer', 80) || 'agent_contract_enforcer',
+    reason: cleanText(reason, 120) || 'terminated',
+    contract_id: contract.contract_id,
+    mission: contract.mission,
+    owner: contract.owner,
+    role: cleanText(options.role || '', 80),
+    termination_condition: contract.termination_condition,
+    terminated_at: terminatedAt,
+    revival_data: revivalData,
+  });
+  const updated = {
+    ...contract,
+    status: 'terminated',
+    termination_reason: cleanText(reason, 120),
+    terminated_at: terminatedAt,
+    terminated_by: cleanText(options.terminated_by || 'contract_enforcer', 120) || 'contract_enforcer',
+    revival_data: revivalData,
+    updated_at: terminatedAt,
+  };
+  state.contracts[cleanId] = updated;
+  state.terminated_history = Array.isArray(state.terminated_history) ? state.terminated_history : [];
+  state.terminated_history.push({
+    agent_id: cleanId,
+    contract_id: updated.contract_id,
+    mission: updated.mission,
+    owner: updated.owner,
+    role: cleanText(options.role || '', 80),
+    termination_condition: updated.termination_condition,
+    reason: cleanText(reason, 120) || 'terminated',
+    terminated_at: terminatedAt,
+    revived: false,
+    revived_at: '',
+    revival_data: revivalData,
+  });
+  state.terminated_history = state.terminated_history.slice(-200);
+  saveAgentContractsState(state);
+  const laneResult = {
+    ok: termination.ok,
+    status: termination.ok ? 0 : 1,
+    argv: ['agent-contract', 'terminate', `--agent=${cleanId}`],
+    payload: {
+      ok: termination.ok,
+      type: 'agent_contract_termination',
+      reason: cleanText(reason, 120) || 'terminated',
+      lane_attempts: termination.attempts,
+      terminal_closed: terminalClosed,
+      archived_at: archivedMeta && archivedMeta.archived_at ? archivedMeta.archived_at : '',
+      contract_id: updated.contract_id,
+    },
+  };
+  const actionReceipt = writeActionReceipt(
+    'agent.contract.terminate',
+    {
+      agent_id: cleanId,
+      contract_id: updated.contract_id,
+      reason: cleanText(reason, 120) || 'terminated',
+      mission: cleanText(updated.mission || '', 240),
+      owner: cleanText(updated.owner || '', 120),
+      termination_condition: cleanText(updated.termination_condition || '', 40),
+      team,
+    },
+    laneResult
+  );
+  return {
+    terminated: true,
+    agent_id: cleanId,
+    reason: cleanText(reason, 120) || 'terminated',
+    contract: updated,
+    lane: termination,
+    action_receipt: actionReceipt,
+    terminal_closed: terminalClosed,
+  };
+}
+
+function contractTerminationDecision(contract, nowMs = Date.now()) {
+  if (!contract || contract.status !== 'active') return '';
+  if (contract.revoked_at) return 'manual_revocation';
+  if (terminationConditionMatches(contract.termination_condition, 'task_complete') && contract.completed_at) {
+    return 'task_complete';
+  }
+  const remaining = contractRemainingMs(contract, nowMs);
+  if (remaining != null && remaining <= 0 && terminationConditionMatches(contract.termination_condition, 'timeout')) {
+    return 'timeout';
+  }
+  return '';
+}
+
+function contractSummary(contract, nowMs = Date.now()) {
+  if (!contract) return null;
+  const remainingMs = contractRemainingMs(contract, nowMs);
+  return {
+    id: cleanText(contract.contract_id || '', 80),
+    mission: cleanText(contract.mission || '', 320),
+    owner: cleanText(contract.owner || '', 120),
+    termination_condition: cleanText(contract.termination_condition || '', 40),
+    status: formatContractStatus(contract, nowMs),
+    expires_at: cleanText(contract.expires_at || '', 80),
+    expiry_seconds:
+      contract.expiry_seconds == null
+        ? null
+        : parsePositiveInt(contract.expiry_seconds, AGENT_CONTRACT_DEFAULT_EXPIRY_SECONDS, 1, 7 * 24 * 60 * 60),
+    remaining_ms: remainingMs == null ? null : Math.max(0, Math.floor(remainingMs)),
+    completed_at: cleanText(contract.completed_at || '', 80),
+    completion_source: cleanText(contract.completion_source || '', 120),
+    revoked_at: cleanText(contract.revoked_at || '', 80),
+    terminated_at: cleanText(contract.terminated_at || '', 80),
+    termination_reason: cleanText(contract.termination_reason || '', 120),
+    revived_from_contract_id: cleanText(contract.revived_from_contract_id || '', 80),
+  };
+}
+
+function enforceAgentContracts(snapshot, options = {}) {
+  const nowMs = Date.now();
+  const activeRows = compatAgentsFromSnapshot(snapshot, { includeArchived: false });
+  const activeIds = new Set(activeRows.map((row) => cleanText(row && row.id ? row.id : '', 140)).filter(Boolean));
+  const team =
+    cleanText(
+      options.team || (snapshot && snapshot.metadata && snapshot.metadata.team ? snapshot.metadata.team : DEFAULT_TEAM),
+      40
+    ) || DEFAULT_TEAM;
+
+  let state = loadAgentContractsState();
+  const defaults = state.defaults && typeof state.defaults === 'object' ? state.defaults : {};
+  let changed = false;
+
+  if (!state.contracts || typeof state.contracts !== 'object') {
+    state.contracts = {};
+    changed = true;
+  }
+
+  for (const row of activeRows) {
+    const id = cleanText(row && row.id ? row.id : '', 140);
+    if (!id) continue;
+    if (!state.contracts[id]) {
+      state.contracts[id] = deriveAgentContract(id, {
+        mission: `Assist with assigned mission for ${id}.`,
+        owner: 'dashboard_auto',
+        expiry_seconds: parsePositiveInt(
+          defaults.default_expiry_seconds,
+          AGENT_CONTRACT_DEFAULT_EXPIRY_SECONDS,
+          1,
+          7 * 24 * 60 * 60
+        ),
+        termination_condition: defaults.auto_expire_on_complete === false ? 'timeout' : 'task_or_timeout',
+      });
+      changed = true;
+    }
+  }
+
+  for (const [agentId, contract] of Object.entries(state.contracts || {})) {
+    const id = cleanText(agentId || '', 140);
+    if (!id || !contract || contract.status !== 'active') continue;
+    if (!activeIds.has(id) && isAgentArchived(id)) {
+      contract.status = 'terminated';
+      contract.terminated_at = cleanText(contract.terminated_at || nowIso(), 80) || nowIso();
+      contract.termination_reason = cleanText(contract.termination_reason || 'archived', 120) || 'archived';
+      contract.updated_at = nowIso();
+      state.contracts[id] = contract;
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    state = saveAgentContractsState(state);
+  }
+
+  const terminations = [];
+  const currentContracts = Object.entries((loadAgentContractsState() || {}).contracts || {});
+  for (const [agentId, contract] of currentContracts) {
+    const id = cleanText(agentId || '', 140);
+    if (!id || !contract || contract.status !== 'active') continue;
+    const reason = contractTerminationDecision(contract, nowMs);
+    if (!reason) continue;
+    const roleRow = activeRows.find((row) => row && row.id === id);
+    const terminated = terminateAgentForContract(id, snapshot, reason, {
+      source: 'agent_contract_enforcer',
+      terminated_by: 'agent_contract_enforcer',
+      role: cleanText(roleRow && roleRow.role ? roleRow.role : '', 80),
+      team,
+    });
+    if (terminated.terminated) {
+      terminations.push(terminated);
+    }
+  }
+
+  const finalState = loadAgentContractsState();
+  return {
+    changed: changed || terminations.length > 0,
+    terminated: terminations,
+    active_contracts: Object.values(finalState.contracts || {}).filter((row) => row && row.status === 'active').length,
+  };
+}
+
+function lifecycleTelemetry(snapshot, enforcement = null) {
+  const nowMs = Date.now();
+  const contractsState = loadAgentContractsState();
+  const activeAgents = compatAgentsFromSnapshot(snapshot, { includeArchived: false });
+  const active = [];
+  let idleCount = 0;
+  for (const agent of activeAgents) {
+    const id = cleanText(agent && agent.id ? agent.id : '', 140);
+    if (!id) continue;
+    const contract = contractForAgent(id);
+    const summary = contractSummary(contract, nowMs);
+    active.push({
+      id,
+      role: cleanText(agent && agent.role ? agent.role : '', 80),
+      state: cleanText(agent && agent.state ? agent.state : 'running', 24) || 'running',
+      contract: summary,
+    });
+    const state = loadAgentSession(id, snapshot);
+    const session = activeSession(state);
+    const updatedMs = coerceTsMs(session && session.updated_at ? session.updated_at : 0, 0);
+    if (updatedMs > 0 && (nowMs - updatedMs) >= AGENT_ROGUE_SPIKE_WINDOW_MS) idleCount += 1;
+  }
+  const idleThreshold = parsePositiveInt(
+    contractsState && contractsState.defaults ? contractsState.defaults.max_idle_agents : AGENT_CONTRACT_MAX_IDLE_AGENTS,
+    AGENT_CONTRACT_MAX_IDLE_AGENTS,
+    1,
+    1000
+  );
+  const terminatedHistory = Array.isArray(contractsState && contractsState.terminated_history)
+    ? contractsState.terminated_history.slice(-20).reverse()
+    : [];
+  return {
+    defaults: {
+      default_expiry_seconds: parsePositiveInt(
+        contractsState && contractsState.defaults ? contractsState.defaults.default_expiry_seconds : AGENT_CONTRACT_DEFAULT_EXPIRY_SECONDS,
+        AGENT_CONTRACT_DEFAULT_EXPIRY_SECONDS,
+        1,
+        7 * 24 * 60 * 60
+      ),
+      auto_expire_on_complete:
+        !(contractsState && contractsState.defaults) || contractsState.defaults.auto_expire_on_complete !== false,
+      max_idle_agents: idleThreshold,
+    },
+    active_agents: active,
+    active_count: active.length,
+    terminated_recent: terminatedHistory,
+    terminated_recent_count: terminatedHistory.length,
+    idle_agents: idleCount,
+    idle_threshold: idleThreshold,
+    idle_alert: idleCount > idleThreshold,
+    last_enforcement: {
+      changed: !!(enforcement && enforcement.changed),
+      terminated_count: Array.isArray(enforcement && enforcement.terminated) ? enforcement.terminated.length : 0,
+      ts: nowIso(),
+    },
+  };
+}
+
 let runtimeTrendSeries = [];
 let memoryStreamBootstrapped = false;
 let memoryStreamSeq = 0;
 let memoryStreamIndex = new Map();
+let memoryStreamHourIndex = new Map();
 let memoryIngestCircuit = {
   paused: false,
   since: '',
   reason: '',
   trigger_queue_depth: 0,
+  trigger_memory_entries: 0,
   transition_count: 0,
 };
 let healthCoverageState = {
@@ -1748,6 +2826,11 @@ let runtimePolicyState = {
   last_health_refresh: '',
   last_throttle_apply: '',
 };
+let runtimeDrainState = {
+  active_agents: [],
+  last_spawn_at: '',
+  last_dissolve_at: '',
+};
 
 function normalizeSeverity(value) {
   const severity = cleanText(value || '', 20).toLowerCase();
@@ -1759,6 +2842,8 @@ function normalizeSeverity(value) {
 function attentionEventLane(event) {
   const severity = normalizeSeverity(event && event.severity ? event.severity : 'info');
   const band = cleanText(event && event.band ? event.band : '', 12).toLowerCase();
+  const source = cleanText(event && event.source ? event.source : '', 120).toLowerCase();
+  const sourceType = cleanText(event && event.source_type ? event.source_type : '', 120).toLowerCase();
   const summary = cleanText(event && event.summary ? event.summary : '', 400).toLowerCase();
   if (severity === 'critical') return 'critical';
   if (severity === 'warn') return 'critical';
@@ -1768,30 +2853,166 @@ function attentionEventLane(event) {
   ) {
     return 'critical';
   }
-  return 'telemetry';
+  const backgroundBySource =
+    /\b(receipt|audit|timeline|history|log|trace)\b/.test(sourceType) ||
+    /\b(receipt|audit|timeline|history|log|trace)\b/.test(source);
+  const backgroundByBand = severity === 'info' && (band === 'p3' || band === 'p4');
+  if (backgroundBySource || backgroundByBand) return 'background';
+  return 'standard';
 }
 
 function splitAttentionEvents(events = []) {
   const rows = Array.isArray(events) ? events : [];
   const critical = [];
-  const telemetry = [];
+  const standard = [];
+  const background = [];
   for (const row of rows) {
     const lane = attentionEventLane(row);
     if (lane === 'critical') {
       critical.push(row);
+    } else if (lane === 'background') {
+      background.push(row);
     } else {
-      telemetry.push(row);
+      standard.push(row);
     }
   }
+  const telemetry = [...standard, ...background];
   return {
     critical,
+    standard,
+    background,
     telemetry,
+    lane_weights: { ...ATTENTION_LANE_WEIGHTS },
     counts: {
       critical: critical.length,
+      standard: standard.length,
+      background: background.length,
       telemetry: telemetry.length,
       total: rows.length,
     },
   };
+}
+
+function attentionLanePolicy(queueDepth = 0, counts = {}) {
+  const depth = parseNonNegativeInt(queueDepth, 0, 100000000);
+  const critical = parseNonNegativeInt(counts && counts.critical, 0, 100000000);
+  const background = parseNonNegativeInt(counts && counts.background, 0, 100000000);
+  const backgroundDominant = background > Math.max(1, critical) * ATTENTION_BG_DOMINANCE_RATIO;
+  const preemptCritical = depth >= ATTENTION_PREEMPT_QUEUE_DEPTH || backgroundDominant;
+  const weights = preemptCritical
+    ? { critical: 8, standard: 2, background: 1 }
+    : { ...ATTENTION_LANE_WEIGHTS };
+  return {
+    weights,
+    lane_caps: { ...ATTENTION_LANE_CAPS },
+    preempt_critical: preemptCritical,
+    background_dominant: backgroundDominant,
+  };
+}
+
+function weightedFairAttentionOrder(
+  laneRows = {},
+  limit = ATTENTION_CRITICAL_LIMIT,
+  laneWeights = ATTENTION_LANE_WEIGHTS
+) {
+  const weights = laneWeights && typeof laneWeights === 'object' ? laneWeights : ATTENTION_LANE_WEIGHTS;
+  const buckets = {
+    critical: Array.isArray(laneRows.critical) ? laneRows.critical.slice() : [],
+    standard: Array.isArray(laneRows.standard) ? laneRows.standard.slice() : [],
+    background: Array.isArray(laneRows.background) ? laneRows.background.slice() : [],
+  };
+  const ordered = [];
+  const lanes = ['critical', 'standard', 'background'];
+  while (ordered.length < limit) {
+    let progressed = false;
+    for (const lane of lanes) {
+      const takeCount = parsePositiveInt(weights[lane], 1, 1, 20);
+      for (let i = 0; i < takeCount; i += 1) {
+        const next = buckets[lane].shift();
+        if (!next) break;
+        ordered.push(next);
+        progressed = true;
+        if (ordered.length >= limit) break;
+      }
+      if (ordered.length >= limit) break;
+    }
+    if (!progressed) break;
+  }
+  return ordered;
+}
+
+function microBatchAttentionTelemetry(events = [], options = {}) {
+  const rows = Array.isArray(events) ? events : [];
+  if (!rows.length) return [];
+  const windowMs = parsePositiveInt(
+    options && options.window_ms != null ? options.window_ms : ATTENTION_MICRO_BATCH_WINDOW_MS,
+    ATTENTION_MICRO_BATCH_WINDOW_MS,
+    1,
+    10000
+  );
+  const maxItems = parsePositiveInt(
+    options && options.max_items != null ? options.max_items : ATTENTION_MICRO_BATCH_MAX_ITEMS,
+    ATTENTION_MICRO_BATCH_MAX_ITEMS,
+    1,
+    256
+  );
+  const sorted = rows
+    .slice()
+    .sort((a, b) => coerceTsMs(a && a.ts, 0) - coerceTsMs(b && b.ts, 0));
+  const batches = [];
+  let current = null;
+  let batchSeq = 0;
+  const flush = () => {
+    if (!current) return;
+    const laneCounts = { critical: 0, standard: 0, background: 0 };
+    for (const row of current.items) {
+      const lane = attentionEventLane(row);
+      laneCounts[lane] = parseNonNegativeInt(laneCounts[lane], 0, 100000000) + 1;
+    }
+    batches.push({
+      batch_id: `telemetry_batch_${batchSeq}`,
+      start_ts: current.startTsIso,
+      end_ts: current.endTsIso,
+      item_count: current.items.length,
+      lane_counts: laneCounts,
+      sample_sources: current.samples.slice(0, 5),
+    });
+    current = null;
+  };
+
+  for (const row of sorted) {
+    const tsMs = coerceTsMs(row && row.ts, Date.now());
+    const tsIso = cleanText(row && row.ts ? row.ts : nowIso(), 80) || nowIso();
+    const source = cleanText(row && row.source ? row.source : row && row.source_type ? row.source_type : 'event', 120);
+    if (!current) {
+      batchSeq += 1;
+      current = {
+        startMs: tsMs,
+        startTsIso: tsIso,
+        endTsIso: tsIso,
+        items: [],
+        samples: [],
+      };
+    }
+    const withinWindow = tsMs - current.startMs <= windowMs;
+    const belowLimit = current.items.length < maxItems;
+    if (!withinWindow || !belowLimit) {
+      flush();
+      batchSeq += 1;
+      current = {
+        startMs: tsMs,
+        startTsIso: tsIso,
+        endTsIso: tsIso,
+        items: [],
+        samples: [],
+      };
+    }
+    current.items.push(row);
+    current.endTsIso = tsIso;
+    if (source) current.samples.push(source);
+  }
+  flush();
+  return batches.slice(0, 24);
 }
 
 function severityRank(value) {
@@ -1826,22 +3047,30 @@ function sortCriticalEvents(events = []) {
   return rows;
 }
 
-function memoryIngestControlState(queueDepth = 0) {
+function memoryIngestControlState(queueDepth = 0, memoryEntryCount = 0) {
   const depth = parseNonNegativeInt(queueDepth, 0, 100000000);
-  if (!memoryIngestCircuit.paused && depth >= DASHBOARD_QUEUE_DRAIN_PAUSE_DEPTH) {
+  const entryCount = parseNonNegativeInt(memoryEntryCount, 0, 100000000);
+  const entryPressure = entryCount >= MEMORY_ENTRY_BACKPRESSURE_THRESHOLD;
+  if (!memoryIngestCircuit.paused && (depth >= DASHBOARD_QUEUE_DRAIN_PAUSE_DEPTH || entryPressure)) {
     memoryIngestCircuit = {
       paused: true,
       since: nowIso(),
-      reason: 'predictive_queue_drain',
+      reason: entryPressure ? 'memory_entry_pressure' : 'predictive_queue_drain',
       trigger_queue_depth: depth,
+      trigger_memory_entries: entryCount,
       transition_count: parseNonNegativeInt(memoryIngestCircuit.transition_count, 0, 1000000) + 1,
     };
-  } else if (memoryIngestCircuit.paused && depth <= DASHBOARD_QUEUE_DRAIN_RESUME_DEPTH) {
+  } else if (
+    memoryIngestCircuit.paused &&
+    depth <= DASHBOARD_QUEUE_DRAIN_RESUME_DEPTH &&
+    entryCount < MEMORY_ENTRY_BACKPRESSURE_THRESHOLD
+  ) {
     memoryIngestCircuit = {
       paused: false,
       since: nowIso(),
       reason: 'queue_recovered',
       trigger_queue_depth: depth,
+      trigger_memory_entries: entryCount,
       transition_count: parseNonNegativeInt(memoryIngestCircuit.transition_count, 0, 1000000) + 1,
     };
   }
@@ -1850,7 +3079,9 @@ function memoryIngestControlState(queueDepth = 0) {
     since: cleanText(memoryIngestCircuit.since || '', 80),
     reason: cleanText(memoryIngestCircuit.reason || '', 80),
     trigger_queue_depth: parseNonNegativeInt(memoryIngestCircuit.trigger_queue_depth, 0, 100000000),
+    trigger_memory_entries: parseNonNegativeInt(memoryIngestCircuit.trigger_memory_entries, 0, 100000000),
     pause_threshold: DASHBOARD_QUEUE_DRAIN_PAUSE_DEPTH,
+    memory_entry_threshold: MEMORY_ENTRY_BACKPRESSURE_THRESHOLD,
     resume_threshold: DASHBOARD_QUEUE_DRAIN_RESUME_DEPTH,
     transition_count: parseNonNegativeInt(memoryIngestCircuit.transition_count, 0, 1000000),
   };
@@ -1865,18 +3096,22 @@ function applyMemoryIngestCircuit(entries = [], control = {}) {
   for (const row of rows) {
     const rowPath = cleanText(row && row.path ? row.path : '', 260).toLowerCase();
     const kind = cleanText(row && row.kind ? row.kind : '', 60).toLowerCase();
+    const nonCriticalReceiptOrLog =
+      /\b(receipt|receipts|audit|history|log|logs|timeline)\b/.test(rowPath) ||
+      kind === 'timeline';
     const critical =
       rowPath.includes('/local/workspace/memory/') ||
       rowPath.includes('attention_queue') ||
       rowPath.endsWith('/latest.json') ||
       kind === 'snapshot';
+    if (nonCriticalReceiptOrLog && !critical) continue;
     if (critical) kept.push(row);
-    if (kept.length >= 16) break;
+    if (kept.length >= MEMORY_ENTRY_TARGET_WHEN_PAUSED) break;
   }
   return {
     entries: kept,
     dropped_count: Math.max(0, rows.length - kept.length),
-    mode: 'predictive_drain',
+    mode: 'priority_shed',
   };
 }
 
@@ -1988,26 +3223,42 @@ function mergeBenchmarkSanityHealth(healthPayload, benchmarkSanity) {
   return health;
 }
 
+function hourBucketKeyFromTs(value) {
+  const parsed = coerceTsMs(value, 0);
+  if (!parsed) return '';
+  const iso = new Date(parsed).toISOString();
+  return iso.slice(0, 13);
+}
+
 function memoryStreamState(entries = []) {
   const rows = Array.isArray(entries) ? entries : [];
   const nextIndex = new Map();
+  const nextHourIndex = new Map();
   for (const row of rows) {
     const key = cleanText(row && row.path ? row.path : '', 260);
     if (!key) continue;
     const stamp = cleanText(row && row.mtime ? row.mtime : '', 80);
     nextIndex.set(key, stamp);
+    const hourKey = hourBucketKeyFromTs(stamp);
+    if (hourKey) {
+      nextHourIndex.set(hourKey, parseNonNegativeInt(nextHourIndex.get(hourKey), 0, 100000000) + 1);
+    }
   }
   if (!memoryStreamBootstrapped) {
     memoryStreamBootstrapped = true;
     memoryStreamIndex = nextIndex;
+    memoryStreamHourIndex = nextHourIndex;
     return {
       enabled: true,
       initialized: true,
       changed: false,
       seq: 0,
       change_count: 0,
+      bucket_change_count: 0,
       latest_paths: [],
       removed_paths: [],
+      hour_buckets: Object.fromEntries(Array.from(nextHourIndex.entries()).slice(-24)),
+      index_strategy: 'hour_bucket_time_series',
       source: 'memory_diff_stream',
     };
   }
@@ -2022,19 +3273,30 @@ function memoryStreamState(entries = []) {
   for (const key of memoryStreamIndex.keys()) {
     if (!nextIndex.has(key)) removed.push(key);
   }
-  const changed = latest.length > 0 || removed.length > 0;
+  let bucketChanges = 0;
+  const allHourKeys = new Set([...memoryStreamHourIndex.keys(), ...nextHourIndex.keys()]);
+  for (const hourKey of allHourKeys) {
+    const prev = parseNonNegativeInt(memoryStreamHourIndex.get(hourKey), 0, 100000000);
+    const next = parseNonNegativeInt(nextHourIndex.get(hourKey), 0, 100000000);
+    if (prev !== next) bucketChanges += 1;
+  }
+  const changed = latest.length > 0 || removed.length > 0 || bucketChanges > 0;
   if (changed) {
     memoryStreamSeq += 1;
   }
   memoryStreamIndex = nextIndex;
+  memoryStreamHourIndex = nextHourIndex;
   return {
     enabled: true,
     initialized: true,
     changed,
     seq: memoryStreamSeq,
     change_count: latest.length + removed.length,
+    bucket_change_count: bucketChanges,
     latest_paths: latest.slice(0, 12),
     removed_paths: removed.slice(0, 12),
+    hour_buckets: Object.fromEntries(Array.from(nextHourIndex.entries()).slice(-24)),
+    index_strategy: 'hour_bucket_time_series',
     source: 'memory_diff_stream',
   };
 }
@@ -2063,6 +3325,7 @@ function filterArchivedAgentsFromCollab(collab) {
 function inactiveAgentRecord(agentId, snapshot, archivedMeta = null) {
   const cleanId = cleanText(agentId || '', 140) || 'agent';
   const modelState = effectiveAgentModel(cleanId, snapshot);
+  const contract = contractForAgent(cleanId);
   return {
     id: cleanId,
     name: cleanId,
@@ -2072,9 +3335,11 @@ function inactiveAgentRecord(agentId, snapshot, archivedMeta = null) {
     archived_at:
       cleanText(archivedMeta && archivedMeta.archived_at ? archivedMeta.archived_at : '', 80) || '',
     archive_reason: cleanText(archivedMeta && archivedMeta.reason ? archivedMeta.reason : 'archived', 240) || 'archived',
+    contract: contractSummary(contract),
     model_name: modelState.selected,
     model_provider: modelState.provider,
     runtime_model: modelState.runtime_model,
+    context_window: modelState.context_window,
     role: 'analyst',
     identity: { emoji: '🤖', archetype: 'assistant' },
     capabilities: [],
@@ -2319,6 +3584,48 @@ function runAgentMessage(agentId, input, snapshot, options = {}) {
   if (!cleanInput) {
     return { ok: false, status: 400, error: 'message_required' };
   }
+  let contract = contractForAgent(effectiveAgentId);
+  if (!contract && !isAgentArchived(effectiveAgentId)) {
+    contract = upsertAgentContract(
+      effectiveAgentId,
+      {
+        mission: `Assist with assigned mission for ${effectiveAgentId}.`,
+        owner: 'dashboard_chat',
+        termination_condition: 'task_or_timeout',
+      },
+      { owner: 'dashboard_chat' }
+    );
+  }
+  if (contract && contract.status === 'active') {
+    const violation = detectContractViolation(effectiveAgentId, cleanInput, contract, snapshot);
+    if (violation) {
+      const terminated = terminateAgentForContract(
+        effectiveAgentId,
+        snapshot,
+        `rogue_${cleanText(violation.reason || 'violation', 80)}`,
+        {
+          source: 'safety_plane',
+          terminated_by: 'safety_plane',
+          role: cleanText(agent && agent.role ? agent.role : '', 80),
+          team:
+            cleanText(
+              snapshot && snapshot.metadata && snapshot.metadata.team ? snapshot.metadata.team : DEFAULT_TEAM,
+              40
+            ) || DEFAULT_TEAM,
+        }
+      );
+      return {
+        ok: false,
+        status: 409,
+        error: 'agent_contract_terminated',
+        agent_id: effectiveAgentId,
+        reason: cleanText(violation.reason || 'rogue_violation', 120),
+        detail: cleanText(violation.detail || '', 240),
+        terminated: !!terminated.terminated,
+      };
+    }
+    recordContractMessageTick(effectiveAgentId);
+  }
 
   const state = loadAgentSession(effectiveAgentId, snapshot);
   const session = activeSession(state);
@@ -2418,10 +3725,23 @@ function runAgentMessage(agentId, input, snapshot, options = {}) {
     }
   }
 
-  const assistant = assistantRaw.slice(0, 4000);
+  const assistant = String(assistantRaw || '').trim()
+    ? String(assistantRaw || '').slice(0, 4000)
+    : ASSISTANT_EMPTY_FALLBACK_RESPONSE;
   const inputTokens = Math.max(1, Math.round(String(cleanInput).length / 4));
   const outputTokens = Math.max(1, Math.round(String(assistant || '').length / 4));
   const durationMs = Math.max(0, Date.now() - startedAtMs);
+  const contextWindow = parsePositiveInt(
+    modelState && modelState.context_window != null ? modelState.context_window : DEFAULT_CONTEXT_WINDOW_TOKENS,
+    DEFAULT_CONTEXT_WINDOW_TOKENS,
+    1024,
+    8000000
+  );
+  const contextStats = contextTelemetryForMessages(
+    Array.isArray(session.messages) ? session.messages : [],
+    contextWindow,
+    inputTokens + outputTokens
+  );
   const turnSeverity =
     !assistant
       ? 'warn'
@@ -2458,8 +3778,27 @@ function runAgentMessage(agentId, input, snapshot, options = {}) {
       (laneResult.payload.conduit_enforcement || laneResult.payload.routed_via === 'conduit')
     );
   const laneState = laneResult && laneResult.ok ? 'ok' : 'degraded';
-  const meta = `${inputTokens} in / ${outputTokens} out | ${durationLabel} | lane:${laneState}${laneConduit ? ' conduit' : ''} | queue:${runtimeMirror.summary.queue_depth}`;
+  const meta = `${inputTokens} in / ${outputTokens} out | ${durationLabel} | lane:${laneState}${laneConduit ? ' conduit' : ''} | queue:${runtimeMirror.summary.queue_depth} | ctx:${Math.round((contextStats.context_ratio || 0) * 100)}%`;
   const responseOk = !!String(assistant || '').trim();
+  let contractTermination = null;
+  contract = contractForAgent(effectiveAgentId);
+  if (contract && contract.status === 'active' && missionCompleteSignal(assistant)) {
+    markContractCompletion(effectiveAgentId, 'agent_self_signal');
+    contract = contractForAgent(effectiveAgentId);
+  }
+  const terminationReason = contractTerminationDecision(contract);
+  if (terminationReason) {
+    contractTermination = terminateAgentForContract(effectiveAgentId, snapshot, terminationReason, {
+      source: 'agent_contract_turn',
+      terminated_by: terminationReason === 'task_complete' ? 'agent_completion_signal' : 'agent_contract_enforcer',
+      role: cleanText(agent && agent.role ? agent.role : '', 80),
+      team:
+        cleanText(
+          snapshot && snapshot.metadata && snapshot.metadata.team ? snapshot.metadata.team : DEFAULT_TEAM,
+          40
+        ) || DEFAULT_TEAM,
+    });
+  }
 
   return {
     ok: responseOk,
@@ -2475,11 +3814,19 @@ function runAgentMessage(agentId, input, snapshot, options = {}) {
     iterations,
     input_tokens: inputTokens,
     output_tokens: outputTokens,
+    context_tokens: contextStats.context_tokens,
+    context_window: contextStats.context_window,
+    context_ratio: contextStats.context_ratio,
+    context_pressure: contextStats.context_pressure,
     cost_usd: 0,
     meta,
     duration_ms: durationMs,
     model: usedModel,
     backend,
+    contract: contractSummary(contractForAgent(effectiveAgentId)),
+    contract_terminated: !!(contractTermination && contractTermination.terminated),
+    contract_termination_reason:
+      contractTermination && contractTermination.reason ? cleanText(contractTermination.reason, 120) : '',
     runtime_sync: {
       ok: runtimeMirror.ok,
       cockpit_ok: runtimeMirror.cockpit_ok,
@@ -2788,8 +4135,28 @@ function collectConduitAttentionCockpit(team = DEFAULT_TEAM) {
 
   const blocks = compactCockpitBlocks(blocksRaw, COCKPIT_MAX_BLOCKS);
   const eventsFull = compactAttentionEvents(eventsRaw, ATTENTION_CRITICAL_LIMIT);
-  const events = eventsFull.slice(0, ATTENTION_PEEK_LIMIT);
   const eventSplit = splitAttentionEvents(eventsFull);
+  const queueDepth = parsePositiveInt(
+    attentionStatusPayload && attentionStatusPayload.queue_depth != null
+      ? attentionStatusPayload.queue_depth
+      : attentionNextPayload && attentionNextPayload.queue_depth != null
+        ? attentionNextPayload.queue_depth
+        : 0,
+    0,
+    0,
+    100000000
+  );
+  const lanePolicy = attentionLanePolicy(queueDepth, eventSplit.counts);
+  const weightedEvents = weightedFairAttentionOrder(
+    {
+      critical: eventSplit.critical,
+      standard: eventSplit.standard,
+      background: eventSplit.background,
+    },
+    ATTENTION_CRITICAL_LIMIT,
+    lanePolicy.weights
+  );
+  const events = weightedEvents.slice(0, ATTENTION_PEEK_LIMIT);
   const cockpitCritical = blocks
     .filter((row) => {
       const status = cleanText(row && row.status ? row.status : '', 24).toLowerCase();
@@ -2827,18 +4194,19 @@ function collectConduitAttentionCockpit(team = DEFAULT_TEAM) {
   const priorityCounts = {
     critical: criticalEventsFull.length,
     telemetry: eventSplit.telemetry.length,
+    standard: eventSplit.standard.length,
+    background: eventSplit.background.length,
     total: eventsFull.length + cockpitCritical.length,
   };
-  const queueDepth = parsePositiveInt(
-    attentionStatusPayload && attentionStatusPayload.queue_depth != null
-      ? attentionStatusPayload.queue_depth
-      : attentionNextPayload && attentionNextPayload.queue_depth != null
-        ? attentionNextPayload.queue_depth
-        : 0,
-    0,
-    0,
-    100000000
-  );
+  const laneCountsStatusRaw =
+    attentionStatusPayload && attentionStatusPayload.lane_counts && typeof attentionStatusPayload.lane_counts === 'object'
+      ? attentionStatusPayload.lane_counts
+      : {};
+  const laneCountsStatus = {
+    critical: parseNonNegativeInt(laneCountsStatusRaw.critical, priorityCounts.critical, 100000000),
+    standard: parseNonNegativeInt(laneCountsStatusRaw.standard, priorityCounts.standard, 100000000),
+    background: parseNonNegativeInt(laneCountsStatusRaw.background, priorityCounts.background, 100000000),
+  };
   const conduitSignals = blocks.filter((block) => {
     const lane = String(block.lane || '').toLowerCase();
     const eventType = String(block.event_type || '').toLowerCase();
@@ -2873,8 +4241,18 @@ function collectConduitAttentionCockpit(team = DEFAULT_TEAM) {
       24
     ).toLowerCase() || 'critical';
   const queueUtilization = maxQueueDepth > 0 ? Number((queueDepth / maxQueueDepth).toFixed(6)) : 0;
-  const targetConduitSignals = recommendedConduitSignals(queueDepth, queueUtilization);
-  const syncMode = queueDepth >= DASHBOARD_BACKPRESSURE_BATCH_DEPTH ? 'batch_sync' : 'live_sync';
+  const targetConduitSignals = recommendedConduitSignals(queueDepth, queueUtilization, blocks.length);
+  const syncMode =
+    queueDepth >= DASHBOARD_BACKPRESSURE_BATCH_DEPTH
+      ? 'batch_sync'
+      : queueDepth >= CONDUIT_DELTA_SYNC_DEPTH
+      ? 'delta_sync'
+      : 'live_sync';
+  const microBatchConfig =
+    syncMode === 'delta_sync'
+      ? { window_ms: CONDUIT_DELTA_BATCH_WINDOW_MS, max_items: CONDUIT_DELTA_BATCH_MAX_ITEMS }
+      : { window_ms: ATTENTION_MICRO_BATCH_WINDOW_MS, max_items: ATTENTION_MICRO_BATCH_MAX_ITEMS };
+  const telemetryMicroBatches = microBatchAttentionTelemetry(eventSplit.telemetry, microBatchConfig);
   const pressureLevel =
     queueDepth >= maxQueueDepth || queueUtilization >= 0.9
       ? 'critical'
@@ -2884,6 +4262,7 @@ function collectConduitAttentionCockpit(team = DEFAULT_TEAM) {
       ? 'elevated'
       : 'normal';
   const conduitScaleRequired = conduitChannelsObserved < targetConduitSignals;
+  const cockpitConduitRatio = Number((blocks.length / Math.max(1, conduitChannelsObserved)).toFixed(3));
   const cockpitRollups = cockpitMetrics(blocks);
   const benchmarkTruth = benchmarkSanitySnapshot();
   const benchmarkBlock = blocks.find((row) => cleanText(row && row.lane ? row.lane : '', 80) === 'benchmark_sanity');
@@ -2906,10 +4285,12 @@ function collectConduitAttentionCockpit(team = DEFAULT_TEAM) {
     cockpit_blocks: blocks.length,
     critical_attention: priorityCounts.critical,
     telemetry_attention: eventSplit.counts.telemetry,
-      sync_mode: syncMode,
-      benchmark_sanity_status: benchmarkMirrorStatus,
-      benchmark_sanity_cockpit_status: benchmarkCockpitStatus,
-    });
+    standard_attention: eventSplit.counts.standard,
+    background_attention: eventSplit.counts.background,
+    sync_mode: syncMode,
+    benchmark_sanity_status: benchmarkMirrorStatus,
+    benchmark_sanity_cockpit_status: benchmarkCockpitStatus,
+  });
 
   return {
     team: safeTeam,
@@ -2944,7 +4325,13 @@ function collectConduitAttentionCockpit(team = DEFAULT_TEAM) {
       critical_events_full: criticalEventsFull,
       critical_visible_count: criticalEventsMerged.length,
       critical_total_count: criticalEventsFull.length,
+      standard_events: eventSplit.standard.slice(0, ATTENTION_PEEK_LIMIT),
+      background_events: eventSplit.background.slice(0, ATTENTION_PEEK_LIMIT),
       telemetry_events: eventSplit.telemetry.slice(0, ATTENTION_PEEK_LIMIT),
+      telemetry_micro_batches: telemetryMicroBatches,
+      lane_weights: { ...lanePolicy.weights },
+      lane_caps: { ...lanePolicy.lane_caps },
+      lane_counts: laneCountsStatus,
       priority_counts: priorityCounts,
       backpressure: {
         level: pressureLevel,
@@ -2952,12 +4339,20 @@ function collectConduitAttentionCockpit(team = DEFAULT_TEAM) {
         max_queue_depth: maxQueueDepth,
         queue_utilization: queueUtilization,
         drop_below: backpressureDropBelow,
-        throttle_recommended: syncMode === 'batch_sync',
-        recommended_poll_ms: syncMode === 'batch_sync' ? 5000 : 2000,
+        throttle_recommended: syncMode !== 'live_sync',
+        recommended_poll_ms: syncMode === 'batch_sync' ? 5000 : syncMode === 'delta_sync' ? 1000 : 2000,
         predictive_pause_threshold: DASHBOARD_QUEUE_DRAIN_PAUSE_DEPTH,
         predictive_resume_threshold: DASHBOARD_QUEUE_DRAIN_RESUME_DEPTH,
+        memory_entry_threshold: MEMORY_ENTRY_BACKPRESSURE_THRESHOLD,
         target_conduit_signals: targetConduitSignals,
         scale_required: conduitScaleRequired,
+        cockpit_to_conduit_ratio: cockpitConduitRatio,
+        lane_weights: { ...lanePolicy.weights },
+        lane_caps: { ...lanePolicy.lane_caps },
+        priority_preempt: !!lanePolicy.preempt_critical,
+        background_dominant: !!lanePolicy.background_dominant,
+        micro_batch_window_ms: microBatchConfig.window_ms,
+        micro_batch_max_items: microBatchConfig.max_items,
       },
       latest:
         attentionStatusPayload && attentionStatusPayload.latest && typeof attentionStatusPayload.latest === 'object'
@@ -2984,9 +4379,13 @@ function collectConduitAttentionCockpit(team = DEFAULT_TEAM) {
       conduit_channels_observed: conduitChannelsObserved,
       target_conduit_signals: targetConduitSignals,
       conduit_scale_required: conduitScaleRequired,
+      cockpit_to_conduit_ratio: cockpitConduitRatio,
       attention_critical: priorityCounts.critical,
       attention_critical_total: criticalEventsFull.length,
       attention_telemetry: priorityCounts.telemetry,
+      attention_standard: priorityCounts.standard,
+      attention_background: priorityCounts.background,
+      telemetry_micro_batch_count: telemetryMicroBatches.length,
       sync_mode: syncMode,
       backpressure_level: pressureLevel,
       benchmark_sanity_status: benchmarkMirrorStatus,
@@ -3041,8 +4440,8 @@ function buildSnapshot(opts = {}) {
   const app = appLane.payload || {};
   const collab = filterArchivedAgentsFromCollab(collabLane.payload || {});
   const skills = skillsLane.payload || {};
-  const ingestControl = memoryIngestControlState(runtimeMirror.summary.queue_depth);
   const memoryCollected = collectMemoryArtifacts();
+  const ingestControl = memoryIngestControlState(runtimeMirror.summary.queue_depth, memoryCollected.length);
   const memoryIngestApplied = applyMemoryIngestCircuit(memoryCollected, ingestControl);
   const memoryEntries = memoryIngestApplied.entries;
   const memoryStream = memoryStreamState(memoryEntries);
@@ -3098,6 +4497,10 @@ function buildSnapshot(opts = {}) {
       alerts: health.alerts || {},
     },
   };
+  snapshot.agent_lifecycle = lifecycleTelemetry(
+    snapshot,
+    opts && opts.contract_enforcement ? opts.contract_enforcement : null
+  );
   snapshot.runtime_recommendation = runtimeSwarmRecommendation(snapshot);
   const receiptHash = sha256(JSON.stringify(snapshot));
   return { ...snapshot, receipt_hash: receiptHash };
@@ -3166,6 +4569,26 @@ function runtimeSyncSummary(snapshot) {
     0,
     100000000
   );
+  const standardAttention = parseNonNegativeInt(
+    snapshot &&
+      snapshot.attention_queue &&
+      snapshot.attention_queue.priority_counts &&
+      snapshot.attention_queue.priority_counts.standard != null
+      ? snapshot.attention_queue.priority_counts.standard
+      : 0,
+    0,
+    100000000
+  );
+  const backgroundAttention = parseNonNegativeInt(
+    snapshot &&
+      snapshot.attention_queue &&
+      snapshot.attention_queue.priority_counts &&
+      snapshot.attention_queue.priority_counts.background != null
+      ? snapshot.attention_queue.priority_counts.background
+      : 0,
+    0,
+    100000000
+  );
   const criticalAttentionTotal = parseNonNegativeInt(
     snapshot && snapshot.attention_queue && snapshot.attention_queue.critical_total_count != null
       ? snapshot.attention_queue.critical_total_count
@@ -3195,7 +4618,8 @@ function runtimeSyncSummary(snapshot) {
           queueDepth,
           Number.isFinite(Number(backpressure && backpressure.queue_utilization))
             ? Number(backpressure.queue_utilization)
-            : 0
+            : 0,
+          cockpitBlocks.length
         ),
     4,
     1,
@@ -3239,8 +4663,27 @@ function runtimeSyncSummary(snapshot) {
     critical_attention: criticalAttention,
     critical_attention_total: criticalAttentionTotal,
     telemetry_attention: telemetryAttention,
+    standard_attention: standardAttention,
+    background_attention: backgroundAttention,
+    telemetry_micro_batch_count: parseNonNegativeInt(
+      snapshot &&
+        snapshot.attention_queue &&
+        Array.isArray(snapshot.attention_queue.telemetry_micro_batches)
+        ? snapshot.attention_queue.telemetry_micro_batches.length
+        : 0,
+      0,
+      100000000
+    ),
     sync_mode: cleanText(backpressure && backpressure.sync_mode ? backpressure.sync_mode : 'live_sync', 24) || 'live_sync',
     backpressure_level: cleanText(backpressure && backpressure.level ? backpressure.level : 'normal', 24) || 'normal',
+    queue_lane_weights:
+      backpressure && backpressure.lane_weights && typeof backpressure.lane_weights === 'object'
+        ? backpressure.lane_weights
+        : { ...ATTENTION_LANE_WEIGHTS },
+    queue_lane_caps:
+      backpressure && backpressure.lane_caps && typeof backpressure.lane_caps === 'object'
+        ? backpressure.lane_caps
+        : { ...ATTENTION_LANE_CAPS },
     benchmark_sanity_status:
       cleanText(benchmarkSanity && benchmarkSanity.status ? benchmarkSanity.status : 'unknown', 24) || 'unknown',
     benchmark_sanity_source:
@@ -3891,9 +5334,11 @@ function compatAgentsFromSnapshot(snapshot, options = {}) {
     .map((row, idx) => {
     const id = cleanText(row && row.shadow ? row.shadow : `agent-${idx + 1}`, 120) || `agent-${idx + 1}`;
     const modelState = effectiveAgentModel(id, snapshot);
+    const contract = contractForAgent(id);
     const status = cleanText(row && row.status ? row.status : 'running', 40) || 'running';
     const state =
       status === 'paused' || status === 'stopped' ? status : status === 'error' ? 'error' : 'running';
+    const remainingMs = contractRemainingMs(contract);
     return {
       id,
       name: id,
@@ -3901,8 +5346,12 @@ function compatAgentsFromSnapshot(snapshot, options = {}) {
       model_name: modelState.selected,
       model_provider: modelState.provider,
       runtime_model: modelState.runtime_model,
+      context_window: modelState.context_window,
       role: cleanText(row && row.role ? row.role : 'analyst', 60) || 'analyst',
       identity: { emoji: '🤖', archetype: 'assistant' },
+      contract: contractSummary(contract),
+      contract_status: formatContractStatus(contract),
+      contract_remaining_ms: remainingMs == null ? null : Math.max(0, Math.floor(remainingMs)),
       capabilities: [],
     };
   })
@@ -3964,6 +5413,105 @@ function ensureRuntimeRole(snapshot, team, role, preferredShadow = '') {
     shadow,
     launched: true,
     lane: laneOutcome(lane),
+  };
+}
+
+function trackedRuntimeDrainAgents(snapshot) {
+  const activeIds = new Set(
+    compatAgentsFromSnapshot(snapshot, { includeArchived: false })
+      .map((row) => cleanText(row && row.id ? row.id : '', 140))
+      .filter(Boolean)
+  );
+  const tracked = Array.isArray(runtimeDrainState.active_agents) ? runtimeDrainState.active_agents : [];
+  const retained = tracked.filter((id) => activeIds.has(id) && !isAgentArchived(id));
+  runtimeDrainState.active_agents = retained;
+  return retained.slice();
+}
+
+function launchRuntimeDrainAgent(team, indexHint = 0) {
+  const normalizedTeam = cleanText(team || DEFAULT_TEAM, 40) || DEFAULT_TEAM;
+  const seed = `${Date.now()}-${indexHint}-${Math.floor(Math.random() * 1000)}`;
+  const shadow = cleanText(`${normalizedTeam}-drain-${seed}`, 120) || `${normalizedTeam}-drain-${Date.now()}`;
+  const lane = runLane([
+    'collab-plane',
+    'launch-role',
+    `--team=${normalizedTeam}`,
+    '--role=builder',
+    `--shadow=${shadow}`,
+    '--strict=1',
+  ]);
+  return {
+    ok: !!(lane && lane.ok && lane.payload && lane.payload.ok !== false),
+    role: 'builder',
+    shadow,
+    launched: true,
+    lane: laneOutcome(lane),
+  };
+}
+
+function applyRuntimePredictiveDrain(snapshot, team, runtime) {
+  const queueDepth = parseNonNegativeInt(runtime && runtime.queue_depth, 0, 100000000);
+  const activeBefore = trackedRuntimeDrainAgents(snapshot);
+  const launches = [];
+  const turns = [];
+  const archived = [];
+  const required = queueDepth >= RUNTIME_DRAIN_TRIGGER_DEPTH;
+  const release = queueDepth <= RUNTIME_DRAIN_CLEAR_DEPTH;
+  if (required) {
+    const desiredFloor =
+      queueDepth >= RUNTIME_DRAIN_HIGH_LOAD_DEPTH
+        ? RUNTIME_DRAIN_AGENT_HIGH_LOAD_TARGET
+        : RUNTIME_DRAIN_AGENT_TARGET;
+    const desired = Math.max(desiredFloor, Math.min(RUNTIME_DRAIN_AGENT_MAX, Math.ceil(queueDepth / 40)));
+    let active = activeBefore.slice();
+    while (active.length < desired) {
+      const launch = launchRuntimeDrainAgent(team, active.length + 1);
+      launches.push(launch);
+      if (!launch.ok || !launch.shadow) break;
+      active.push(launch.shadow);
+    }
+    runtimeDrainState.active_agents = active;
+    runtimeDrainState.last_spawn_at = nowIso();
+    for (const shadow of active) {
+      const turn = queueAgentTask(
+        shadow,
+        snapshot,
+        'Drain queue backlog in weighted lanes. Process critical first, then standard, then background. Keep queue depth under 60 and protect critical telemetry.',
+        'swarm_recommendation.predictive_drain'
+      );
+      turns.push({
+        role: 'builder',
+        shadow,
+        ok: !!turn.ok,
+        response: cleanText(turn.ok ? 'Drain task queued.' : turn.error || '', 400),
+        runtime_sync: runtimeSyncSummary(snapshot),
+      });
+    }
+  } else if (release && activeBefore.length > 0) {
+    for (const shadow of activeBefore) {
+      const meta = archiveAgent(shadow, { source: 'runtime.predictive_drain', reason: 'queue_recovered' });
+      closeTerminalSession(shadow, 'drain_agent_archived');
+      archived.push({
+        shadow,
+        archived: !!meta,
+        archived_at: meta && meta.archived_at ? meta.archived_at : '',
+      });
+    }
+    runtimeDrainState.active_agents = [];
+    runtimeDrainState.last_dissolve_at = nowIso();
+  }
+  return {
+    required,
+    release,
+    trigger_depth: RUNTIME_DRAIN_TRIGGER_DEPTH,
+    clear_depth: RUNTIME_DRAIN_CLEAR_DEPTH,
+    active_count: runtimeDrainState.active_agents.length,
+    active_agents: runtimeDrainState.active_agents.slice(0, 8),
+    launches,
+    turns,
+    archived,
+    last_spawn_at: runtimeDrainState.last_spawn_at,
+    last_dissolve_at: runtimeDrainState.last_dissolve_at,
   };
 }
 
@@ -4050,6 +5598,7 @@ function maybeResumeMemoryIngest(runtime) {
     since: nowIso(),
     reason: 'manual_stream_resume',
     trigger_queue_depth: queueDepth,
+    trigger_memory_entries: 0,
     transition_count: parseNonNegativeInt(memoryIngestCircuit.transition_count, 0, 1000000) + 1,
   };
   return {
@@ -4065,17 +5614,23 @@ function runtimeSwarmRecommendation(snapshot) {
   const runtime = runtimeSyncSummary(snapshot);
   const team = DEFAULT_TEAM;
   const agents = compatAgentsFromSnapshot(snapshot, { includeArchived: false });
+  const activeSwarmAgents = parseNonNegativeInt(agents.length, 0, 100000000);
+  const swarmScaleRequired =
+    runtime.queue_depth >= RUNTIME_DRAIN_HIGH_LOAD_DEPTH &&
+    activeSwarmAgents < RUNTIME_DRAIN_AGENT_HIGH_LOAD_TARGET;
   const shouldRecommendBase =
     runtime.queue_depth >= DASHBOARD_QUEUE_DRAIN_PAUSE_DEPTH ||
     runtime.critical_attention_total >= 5 ||
     runtime.health_coverage_gap_count > 0 ||
-    !!runtime.conduit_scale_required;
+    !!runtime.conduit_scale_required ||
+    swarmScaleRequired;
   const heavyCockpitLoad = runtime.cockpit_blocks >= RUNTIME_COCKPIT_BLOCK_ESCALATION_THRESHOLD;
-  const roleOrder = ['coordinator', 'researcher', 'builder', 'analyst'];
+  const roleOrder = ['coordinator', 'researcher', 'builder', 'reviewer', 'analyst'];
   const roleRequired = {
     coordinator: shouldRecommendBase || runtime.health_coverage_gap_count > 0,
     researcher: shouldRecommendBase || runtime.critical_attention_total >= 5 || !!runtime.conduit_scale_required,
     builder: heavyCockpitLoad || runtime.queue_depth >= DASHBOARD_BACKPRESSURE_BATCH_DEPTH,
+    reviewer: swarmScaleRequired || runtime.health_coverage_gap_count > 0,
     analyst:
       runtime.queue_depth >= DASHBOARD_QUEUE_DRAIN_PAUSE_DEPTH ||
       runtime.critical_attention_total >= RUNTIME_CRITICAL_ESCALATION_THRESHOLD ||
@@ -4085,11 +5640,13 @@ function runtimeSwarmRecommendation(snapshot) {
     coordinator:
       'Audit runtime transport and health coverage. Identify missing conduit capacity vs target and any retired health checks. Return concrete remediation commands.',
     researcher:
-      'Triage critical attention events by severity and band. Return top 5 risks with suggested actions and explain which are safe to defer.',
+      'Triage critical attention events by severity, band, and queue lane. Return top 5 risks with suggested actions and explain which are safe to defer.',
     builder:
       'Clear cockpit policy debt and unblock module_cohesion_policy_audit path. Prioritize deterministic fixes that reduce queue pressure and preserve receipts.',
+    reviewer:
+      'Review swarm action plans for safety and determinism. Escalate risky tool paths and enforce critical-lane-first queue handling.',
     analyst:
-      'Classify queue backlog by severity and source, then produce immediate actions to drain depth below 60 without losing critical telemetry.',
+      'Classify queue backlog into critical/standard/background lanes, then produce weighted-fair actions to drain depth below 60 without losing critical telemetry.',
   };
   const rolePlan = roleOrder
     .map((role) => {
@@ -4109,12 +5666,17 @@ function runtimeSwarmRecommendation(snapshot) {
   const conduitAutoBalanceRequired =
     runtime.conduit_signals < Math.max(runtime.target_conduit_signals, RUNTIME_AUTO_BALANCE_THRESHOLD);
   const memoryResumeEligible = !!runtime.memory_ingest_paused && runtime.queue_depth <= DASHBOARD_QUEUE_DRAIN_RESUME_DEPTH;
+  const drainAgents = trackedRuntimeDrainAgents(snapshot);
+  const predictiveDrainRequired = runtime.queue_depth >= RUNTIME_DRAIN_TRIGGER_DEPTH;
+  const predictiveDrainRelease = runtime.queue_depth <= RUNTIME_DRAIN_CLEAR_DEPTH && drainAgents.length > 0;
   const shouldRecommend =
     rolePlan.length > 0 ||
     throttleRequired ||
     adaptiveHealthRequired ||
     conduitAutoBalanceRequired ||
-    memoryResumeEligible;
+    memoryResumeEligible ||
+    predictiveDrainRequired ||
+    predictiveDrainRelease;
   return {
     recommended: shouldRecommend,
     team,
@@ -4125,8 +5687,19 @@ function runtimeSwarmRecommendation(snapshot) {
     conduit_scale_required: !!runtime.conduit_scale_required,
     conduit_signals: runtime.conduit_signals,
     target_conduit_signals: runtime.target_conduit_signals,
+    active_swarm_agents: activeSwarmAgents,
+    swarm_scale_required: swarmScaleRequired,
+    swarm_target_agents: RUNTIME_DRAIN_AGENT_HIGH_LOAD_TARGET,
     role_plan: rolePlan,
     prompts: rolePrompts,
+    attention_lane_weights:
+      runtime && runtime.queue_lane_weights && typeof runtime.queue_lane_weights === 'object'
+        ? runtime.queue_lane_weights
+        : { ...ATTENTION_LANE_WEIGHTS },
+    attention_lane_caps:
+      runtime && runtime.queue_lane_caps && typeof runtime.queue_lane_caps === 'object'
+        ? runtime.queue_lane_caps
+        : { ...ATTENTION_LANE_CAPS },
     throttle_required: throttleRequired,
     throttle_command: `protheus-ops collab-plane throttle --plane=${RUNTIME_THROTTLE_PLANE} --max-depth=${RUNTIME_THROTTLE_MAX_DEPTH} --strategy=${RUNTIME_THROTTLE_STRATEGY}`,
     adaptive_health_required: adaptiveHealthRequired,
@@ -4134,6 +5707,11 @@ function runtimeSwarmRecommendation(snapshot) {
     conduit_autobalance_required: conduitAutoBalanceRequired,
     conduit_autobalance_threshold: RUNTIME_AUTO_BALANCE_THRESHOLD,
     memory_resume_eligible: memoryResumeEligible,
+    predictive_drain_required: predictiveDrainRequired,
+    predictive_drain_release: predictiveDrainRelease,
+    predictive_drain_trigger_depth: RUNTIME_DRAIN_TRIGGER_DEPTH,
+    predictive_drain_clear_depth: RUNTIME_DRAIN_CLEAR_DEPTH,
+    predictive_drain_active_agents: drainAgents.slice(0, 8),
   };
 }
 
@@ -4196,6 +5774,35 @@ function executeRuntimeSwarmRecommendation(snapshot) {
       runtime_sync: runtimeSyncSummary(snapshot),
     });
   }
+
+  const predictiveDrain = applyRuntimePredictiveDrain(snapshot, recommendation.team || DEFAULT_TEAM, runtime);
+  if (Array.isArray(predictiveDrain.launches)) {
+    for (const launch of predictiveDrain.launches) {
+      launches.push({
+        role: cleanText(launch && launch.role ? launch.role : 'builder', 40) || 'builder',
+        shadow: cleanText(launch && launch.shadow ? launch.shadow : '', 140),
+        ok: !!(launch && launch.ok),
+        launched: !!(launch && launch.launched),
+        lane: launch && launch.lane ? launch.lane : null,
+      });
+    }
+  }
+  if (Array.isArray(predictiveDrain.turns)) {
+    turns.push(...predictiveDrain.turns);
+  }
+  policies.push({
+    policy: 'predictive_drain',
+    required: !!predictiveDrain.required,
+    release: !!predictiveDrain.release,
+    applied:
+      (!!predictiveDrain.required && parseNonNegativeInt(predictiveDrain.active_count, 0, 100) > 0) ||
+      (!!predictiveDrain.release && Array.isArray(predictiveDrain.archived) && predictiveDrain.archived.length > 0),
+    trigger_depth: predictiveDrain.trigger_depth,
+    clear_depth: predictiveDrain.clear_depth,
+    active_count: predictiveDrain.active_count,
+    active_agents: Array.isArray(predictiveDrain.active_agents) ? predictiveDrain.active_agents.slice(0, 8) : [],
+    archived_count: Array.isArray(predictiveDrain.archived) ? predictiveDrain.archived.length : 0,
+  });
 
   const healthAdaptive = maybeRefreshAdaptiveHealth(runtime);
   policies.push({
@@ -4438,6 +6045,24 @@ function runServe(flags) {
   let latestSnapshot = buildSnapshot(flags);
   writeSnapshotReceipt(latestSnapshot);
   let updating = false;
+  let enforcingContracts = false;
+
+  const refreshSnapshot = (contractEnforcement = null) => {
+    latestSnapshot = buildSnapshot({
+      ...flags,
+      contract_enforcement: contractEnforcement,
+    });
+    writeSnapshotReceipt(latestSnapshot);
+    return latestSnapshot;
+  };
+  try {
+    const initialEnforcement = enforceAgentContracts(latestSnapshot, {
+      team: cleanText(flags.team || DEFAULT_TEAM, 40) || DEFAULT_TEAM,
+    });
+    if (initialEnforcement && initialEnforcement.changed) {
+      refreshSnapshot(initialEnforcement);
+    }
+  } catch {}
 
   const server = http.createServer(async (req, res) => {
     const reqUrl = new URL(req.url || '/', `http://${flags.host}:${flags.port}`);
@@ -4498,12 +6123,15 @@ function runServe(flags) {
         return;
       }
       if (req.method === 'GET' && pathname === '/api/dashboard/snapshot') {
-        latestSnapshot = buildSnapshot(flags);
-        writeSnapshotReceipt(latestSnapshot);
+        const enforcement = enforceAgentContractsNow('api.snapshot');
+        if (!enforcement || !enforcement.changed) {
+          refreshSnapshot();
+        }
         sendJson(res, 200, latestSnapshot);
         return;
       }
       if (req.method === 'GET' && pathname === '/api/status') {
+        enforceAgentContractsNow('api.status');
         const agents = compatAgentsFromSnapshot(latestSnapshot);
         const runtimeSync = runtimeSyncSummary(latestSnapshot);
         sendJson(res, 200, {
@@ -4528,6 +6156,7 @@ function runServe(flags) {
           network_enabled: true,
           cli_mode: ACTIVE_CLI_MODE,
           runtime_sync: runtimeSync,
+          agent_lifecycle: latestSnapshot && latestSnapshot.agent_lifecycle ? latestSnapshot.agent_lifecycle : null,
         });
         return;
       }
@@ -4561,7 +6190,19 @@ function runServe(flags) {
         return;
       }
       if (req.method === 'GET' && pathname === '/api/agents') {
+        enforceAgentContractsNow('api.agents');
         sendJson(res, 200, compatAgentsFromSnapshot(latestSnapshot));
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/api/agents/terminated') {
+        const contractsState = loadAgentContractsState();
+        const rows = Array.isArray(contractsState && contractsState.terminated_history)
+          ? contractsState.terminated_history.slice(-50).reverse()
+          : [];
+        sendJson(res, 200, {
+          ok: true,
+          entries: rows,
+        });
         return;
       }
       if (req.method === 'POST' && pathname === '/api/agents') {
@@ -4573,9 +6214,19 @@ function runServe(flags) {
         writeActionReceipt('collab.launchRole', { team: flags.team || DEFAULT_TEAM, role, shadow }, laneResult);
         if (laneResult.ok) {
           unarchiveAgent(shadow);
+          upsertAgentContract(
+            shadow,
+            payload,
+            {
+              owner: cleanText(
+                payload && payload.owner ? payload.owner : `session:${cleanText(flags.team || DEFAULT_TEAM, 40)}`,
+                120
+              ),
+              force: true,
+            }
+          );
         }
-        latestSnapshot = buildSnapshot(flags);
-        writeSnapshotReceipt(latestSnapshot);
+        refreshSnapshot();
         const created = compatAgentsFromSnapshot(latestSnapshot).find((row) => row.id === shadow) || {
           id: shadow,
           name: shadow,
@@ -4585,10 +6236,12 @@ function runServe(flags) {
               ? latestSnapshot.app.settings.model
               : 'gpt-5',
         };
+        created.contract = contractSummary(contractForAgent(shadow));
         sendJson(res, laneResult.ok ? 200 : 400, created);
         return;
       }
       if (pathname.startsWith('/api/agents/')) {
+        enforceAgentContractsNow('api.agent_scope');
         const parts = pathname.split('/').filter(Boolean);
         const agentId = cleanText(parts[2] || '', 140);
         if (req.method === 'GET' && parts.length === 3) {
@@ -4612,22 +6265,192 @@ function runServe(flags) {
             sendJson(res, 404, { ok: false, error: 'agent_not_found', id: agentId });
             return;
           }
-          const archivedMeta = archiveAgent(agentId, { source: 'api.delete', reason: 'chat_archive' });
-          for (const [socket, socketAgentId] of agentWsClients.entries()) {
-            if (String(socketAgentId) !== String(agentId)) continue;
-            sendWs(socket, { type: 'agent_archived', agent_id: agentId, ts: nowIso() });
-            try { socket.close(1008, 'agent_inactive'); } catch {}
-            agentWsClients.delete(socket);
-          }
-          latestSnapshot = buildSnapshot(flags);
-          writeSnapshotReceipt(latestSnapshot);
+          const termination = terminateAgentForContract(agentId, latestSnapshot, 'chat_archive', {
+            source: 'api.delete',
+            terminated_by: 'user_archive',
+            team: cleanText(flags.team || DEFAULT_TEAM, 40) || DEFAULT_TEAM,
+          });
+          const archivedMeta = archivedAgentMeta(agentId) || archiveAgent(agentId, { source: 'api.delete', reason: 'chat_archive' });
+          closeTerminalSession(agentId, 'agent_archived');
+          closeAgentSockets(agentId, 'chat_archive');
+          refreshSnapshot();
           sendJson(res, 200, {
             ok: true,
             id: agentId,
             state: 'inactive',
             archived: true,
             archived_at: archivedMeta ? archivedMeta.archived_at : '',
+            contract_terminated: !!(termination && termination.terminated),
             type: 'agent_archived',
+          });
+          return;
+        }
+        if (req.method === 'POST' && parts[3] === 'revoke') {
+          const known = compatAgentsFromSnapshot(latestSnapshot, { includeArchived: true }).some((row) => row.id === agentId);
+          if (!known && !isAgentArchived(agentId)) {
+            sendJson(res, 404, { ok: false, error: 'agent_not_found', id: agentId });
+            return;
+          }
+          markContractRevocation(agentId, 'manual_revoke');
+          const termination = terminateAgentForContract(agentId, latestSnapshot, 'manual_revocation', {
+            source: 'api.revoke',
+            terminated_by: 'manual_revoke',
+            team: cleanText(flags.team || DEFAULT_TEAM, 40) || DEFAULT_TEAM,
+          });
+          closeAgentSockets(agentId, 'manual_revocation');
+          refreshSnapshot();
+          sendJson(res, termination && termination.terminated ? 200 : 409, {
+            ok: !!(termination && termination.terminated),
+            id: agentId,
+            state: 'inactive',
+            archived: isAgentArchived(agentId),
+            reason: 'manual_revocation',
+            contract: contractSummary(contractForAgent(agentId)),
+          });
+          return;
+        }
+        if (req.method === 'POST' && parts[3] === 'complete') {
+          const known = compatAgentsFromSnapshot(latestSnapshot, { includeArchived: true }).some((row) => row.id === agentId);
+          if (!known && !isAgentArchived(agentId)) {
+            sendJson(res, 404, { ok: false, error: 'agent_not_found', id: agentId });
+            return;
+          }
+          const contract = markContractCompletion(agentId, 'supervisor_signal');
+          const termination = terminateAgentForContract(agentId, latestSnapshot, 'task_complete', {
+            source: 'api.complete',
+            terminated_by: 'supervisor_signal',
+            team: cleanText(flags.team || DEFAULT_TEAM, 40) || DEFAULT_TEAM,
+          });
+          if (termination && termination.terminated) {
+            closeAgentSockets(agentId, 'task_complete');
+          }
+          refreshSnapshot();
+          sendJson(res, termination && termination.terminated ? 200 : 409, {
+            ok: !!(termination && termination.terminated),
+            id: agentId,
+            reason: 'task_complete',
+            contract: contractSummary(contract || contractForAgent(agentId)),
+          });
+          return;
+        }
+        if (req.method === 'POST' && parts[3] === 'revive') {
+          const payload = await bodyJson(req);
+          const archivedMeta = archivedAgentMeta(agentId);
+          if (!archivedMeta) {
+            sendJson(res, 404, { ok: false, error: 'agent_not_archived', id: agentId });
+            return;
+          }
+          const role = cleanText(
+            payload && payload.role ? payload.role : archivedMeta.role || 'analyst',
+            60
+          ) || 'analyst';
+          const laneResult = runAction('collab.launchRole', {
+            team: cleanText(flags.team || DEFAULT_TEAM, 40) || DEFAULT_TEAM,
+            role,
+            shadow: agentId,
+          });
+          writeActionReceipt('collab.launchRole', { team: flags.team || DEFAULT_TEAM, role, shadow: agentId }, laneResult);
+          if (!laneResult.ok) {
+            sendJson(res, 400, { ok: false, error: 'revive_launch_failed', id: agentId, lane: laneOutcome(laneResult) });
+            return;
+          }
+          unarchiveAgent(agentId);
+          const previous = contractForAgent(agentId);
+          const nextContract = upsertAgentContract(
+            agentId,
+            {
+              ...(payload && typeof payload === 'object' ? payload : {}),
+              contract: {
+                ...((payload && payload.contract && typeof payload.contract === 'object') ? payload.contract : {}),
+                revived_from_contract_id: cleanText(previous && previous.contract_id ? previous.contract_id : '', 80),
+                revival_data: archivedMeta && archivedMeta.revival_data ? archivedMeta.revival_data : buildAgentRevivalData(agentId),
+              },
+            },
+            {
+              owner: cleanText(payload && payload.owner ? payload.owner : archivedMeta.owner || 'dashboard_session', 120),
+              force: true,
+            }
+          );
+          const contractsState = loadAgentContractsState();
+          if (Array.isArray(contractsState.terminated_history)) {
+            contractsState.terminated_history = contractsState.terminated_history.map((row) => {
+              if (!row || row.agent_id !== agentId || row.revived) return row;
+              return { ...row, revived: true, revived_at: nowIso() };
+            });
+            saveAgentContractsState(contractsState);
+          }
+          refreshSnapshot();
+          const revived = compatAgentsFromSnapshot(latestSnapshot).find((row) => row.id === agentId) || {
+            id: agentId,
+            name: agentId,
+            state: 'running',
+            role,
+          };
+          revived.contract = contractSummary(nextContract);
+          sendJson(res, 200, {
+            ok: true,
+            id: agentId,
+            revived: true,
+            state: revived.state || 'running',
+            role,
+            contract: revived.contract,
+          });
+          return;
+        }
+        if (req.method === 'POST' && parts[3] === 'terminal') {
+          const payload = await bodyJson(req);
+          const known = compatAgentsFromSnapshot(latestSnapshot, { includeArchived: true }).some((row) => row.id === agentId);
+          if (!known) {
+            sendJson(res, 404, { ok: false, error: 'agent_not_found', id: agentId });
+            return;
+          }
+          if (isAgentArchived(agentId)) {
+            sendJson(res, 409, { ok: false, error: 'agent_inactive', id: agentId, state: 'inactive' });
+            return;
+          }
+          const terminal = await runTerminalCommand(
+            payload && (payload.command || payload.input || payload.message) ? payload.command || payload.input || payload.message : '',
+            payload && payload.cwd ? payload.cwd : '',
+            agentId
+          );
+          writeActionReceipt(
+            'app.terminal',
+            {
+              agent_id: agentId,
+              command: cleanText(terminal.command || '', 400),
+              cwd: cleanText(terminal.cwd || '', 260),
+              cli_mode: ACTIVE_CLI_MODE,
+            },
+            {
+              ok: terminal.ok,
+              status: terminal.status,
+              argv: ['terminal', cleanText(terminal.command || '', 120)],
+              payload: {
+                ok: terminal.ok,
+                type: 'terminal_command',
+                exit_code: terminal.exit_code,
+              },
+            }
+          );
+          if (terminal.blocked) {
+            sendJson(res, 400, {
+              ok: false,
+              error: 'terminal_blocked',
+              message: terminal.message,
+              cwd: terminal.cwd,
+            });
+            return;
+          }
+          sendJson(res, 200, {
+            ok: true,
+            id: agentId,
+            command: terminal.command,
+            cwd: terminal.cwd,
+            stdout: terminal.stdout,
+            stderr: terminal.stderr,
+            exit_code: terminal.exit_code,
+            status: terminal.status,
+            duration_ms: terminal.duration_ms,
           });
           return;
         }
@@ -4649,13 +6472,23 @@ function runServe(flags) {
             sendJson(res, 409, { ok: false, error: 'agent_inactive', id: agentId, state: 'inactive' });
             return;
           }
+          if (!turn.ok) {
+            sendJson(res, turn.status || 400, {
+              ok: false,
+              error: cleanText(turn.error || 'agent_message_failed', 120) || 'agent_message_failed',
+              id: agentId,
+              reason: cleanText(turn.reason || '', 120),
+              detail: cleanText(turn.detail || '', 240),
+              terminated: !!turn.terminated,
+            });
+            return;
+          }
           writeActionReceipt(
             'app.chat',
             { input: turn.input, agent_id: agentId, session_id: turn.session_id, cli_mode: ACTIVE_CLI_MODE },
             turn.laneResult
           );
-          latestSnapshot = buildSnapshot(flags);
-          writeSnapshotReceipt(latestSnapshot);
+          refreshSnapshot();
           appendAgentConversation(agentId, latestSnapshot, turn.input, turn.response, turn.meta, turn.tools);
           sendJson(res, turn.status, {
             ok: turn.ok,
@@ -4669,6 +6502,10 @@ function runServe(flags) {
             },
             input_tokens: turn.input_tokens,
             output_tokens: turn.output_tokens,
+            context_tokens: turn.context_tokens,
+            context_window: turn.context_window,
+            context_ratio: turn.context_ratio,
+            context_pressure: turn.context_pressure,
             cost_usd: turn.cost_usd,
             iterations: turn.iterations,
             duration_ms: turn.duration_ms,
@@ -4697,6 +6534,7 @@ function runServe(flags) {
             model: resolved.selected,
             provider: resolved.provider,
             runtime_model: resolved.runtime_model,
+            context_window: resolved.context_window,
           });
           return;
         }
@@ -4785,8 +6623,65 @@ function runServe(flags) {
           });
           return;
         }
+        if (req.method === 'POST' && parts[3] === 'stop') {
+          const known = compatAgentsFromSnapshot(latestSnapshot, { includeArchived: true }).some((row) => row.id === agentId);
+          if (!known && !isAgentArchived(agentId)) {
+            sendJson(res, 404, { ok: false, error: 'agent_not_found', id: agentId });
+            return;
+          }
+          const archivedMeta = archivedAgentMeta(agentId);
+          if (archivedMeta || isAgentArchived(agentId)) {
+            sendJson(res, 409, {
+              ok: false,
+              error: 'agent_inactive',
+              id: agentId,
+              state: 'inactive',
+              archived: true,
+              archived_at: archivedMeta && archivedMeta.archived_at ? archivedMeta.archived_at : '',
+              reason: archivedMeta && archivedMeta.reason ? archivedMeta.reason : 'archived',
+              type: 'agent_archived',
+            });
+            return;
+          }
+          const contract = contractForAgent(agentId);
+          const contractStatus = cleanText(contract && contract.status ? contract.status : 'active', 40).toLowerCase();
+          if (contractStatus && contractStatus !== 'active') {
+            sendJson(res, 409, {
+              ok: false,
+              error: 'agent_contract_terminated',
+              id: agentId,
+              state: 'inactive',
+              contract_terminated: true,
+              reason: cleanText(contract && contract.termination_reason ? contract.termination_reason : contractStatus, 120),
+              contract: contractSummary(contract),
+            });
+            return;
+          }
+          writeActionReceipt(
+            'app.stop',
+            { agent_id: agentId, source: 'chat_stop', cli_mode: ACTIVE_CLI_MODE },
+            {
+              ok: true,
+              status: 0,
+              argv: ['agent', 'stop', `--agent=${agentId}`],
+              payload: {
+                ok: true,
+                type: 'agent_stop_ack',
+                state: 'running',
+              },
+            }
+          );
+          sendJson(res, 200, {
+            ok: true,
+            id: agentId,
+            state: 'running',
+            type: 'agent_stop_ack',
+            message: 'Run cancelled',
+            contract: contractSummary(contract),
+          });
+          return;
+        }
         if (
-          (req.method === 'POST' && parts[3] === 'stop') ||
           (req.method === 'POST' && parts[3] === 'clone') ||
           (req.method === 'PATCH' && parts[3] === 'identity') ||
           (req.method === 'PATCH' && parts[3] === 'config')
@@ -4811,8 +6706,7 @@ function runServe(flags) {
             payload: lanePayload,
           };
           const actionReceipt = writeActionReceipt(action, actionPayload, laneResult);
-          latestSnapshot = buildSnapshot(flags);
-          writeSnapshotReceipt(latestSnapshot);
+          refreshSnapshot();
           sendJson(res, lanePayload.ok ? 200 : 400, {
             ok: !!lanePayload.ok,
             type: 'infring_dashboard_action_response',
@@ -4855,6 +6749,10 @@ function runServe(flags) {
             tools: Array.isArray(turn.tools) ? turn.tools : [],
             input_tokens: parseNonNegativeInt(turn.input_tokens, 0, 1000000000),
             output_tokens: parseNonNegativeInt(turn.output_tokens, 0, 1000000000),
+            context_tokens: parseNonNegativeInt(turn.context_tokens, 0, 1000000000),
+            context_window: parsePositiveInt(turn.context_window, DEFAULT_CONTEXT_WINDOW_TOKENS, 1024, 8000000),
+            context_ratio: Number.isFinite(Number(turn.context_ratio)) ? Number(turn.context_ratio) : 0,
+            context_pressure: cleanText(turn.context_pressure || '', 24) || 'low',
             cost_usd: Number.isFinite(Number(turn.cost_usd)) ? Number(turn.cost_usd) : 0,
             iterations: parsePositiveInt(turn.iterations, 1, 1, 12),
             duration_ms: parsePositiveInt(turn.duration_ms, 0, 0, 3600000),
@@ -4882,8 +6780,7 @@ function runServe(flags) {
             },
             laneResult
           );
-          latestSnapshot = buildSnapshot(flags);
-          writeSnapshotReceipt(latestSnapshot);
+          refreshSnapshot();
           if (turn.ok) {
             appendAgentConversation(
               turn.agent_id || requestedAgentId,
@@ -4894,20 +6791,27 @@ function runServe(flags) {
               turn.tools
             );
           }
-          sendJson(res, turn.ok ? 200 : turn.error === 'agent_inactive' ? 409 : 400, {
-            ok: turn.ok,
-            type: 'infring_dashboard_action_response',
-            action,
-            action_receipt: actionReceipt,
-            lane: lanePayload,
-            snapshot: latestSnapshot,
-          });
+          sendJson(
+            res,
+            turn.ok
+              ? 200
+              : turn.error === 'agent_inactive' || turn.error === 'agent_contract_terminated'
+                ? 409
+                : 400,
+            {
+              ok: turn.ok,
+              type: 'infring_dashboard_action_response',
+              action,
+              action_receipt: actionReceipt,
+              lane: lanePayload,
+              snapshot: latestSnapshot,
+            }
+          );
           return;
         }
         const laneResult = runAction(action, actionPayload);
         const actionReceipt = writeActionReceipt(action, actionPayload, laneResult);
-        latestSnapshot = buildSnapshot(flags);
-        writeSnapshotReceipt(latestSnapshot);
+        refreshSnapshot();
         const ok = !!laneResult.ok;
         sendJson(res, ok ? 200 : 400, {
           ok,
@@ -4969,6 +6873,92 @@ function runServe(flags) {
     } catch {}
   };
 
+  const broadcastSnapshot = () => {
+    const envelope = JSON.stringify({ type: 'snapshot', snapshot: latestSnapshot });
+    for (const client of wsClients) {
+      if (client.readyState === 1) {
+        client.send(envelope);
+      }
+    }
+  };
+
+  const closeAgentSockets = (agentId, reason = 'agent_inactive') => {
+    const id = String(agentId || '');
+    if (!id) return 0;
+    let closed = 0;
+    for (const [socket, socketAgentId] of agentWsClients.entries()) {
+      if (String(socketAgentId) !== id) continue;
+      sendWs(socket, { type: 'agent_archived', agent_id: id, ts: nowIso(), reason });
+      try { socket.close(1008, reason); } catch {}
+      agentWsClients.delete(socket);
+      closed += 1;
+    }
+    return closed;
+  };
+
+  const enforceAgentContractsNow = (source = 'api') => {
+    if (enforcingContracts) return null;
+    enforcingContracts = true;
+    try {
+      const enforcement = enforceAgentContracts(latestSnapshot, {
+        team: cleanText(flags.team || DEFAULT_TEAM, 40) || DEFAULT_TEAM,
+      });
+      const terminated = Array.isArray(enforcement && enforcement.terminated) ? enforcement.terminated : [];
+      if (terminated.length > 0) {
+        for (const row of terminated) {
+          closeAgentSockets(
+            row && row.agent_id ? row.agent_id : '',
+            `agent_contract_${cleanText(row && row.reason ? row.reason : 'terminated', 80)}`
+          );
+        }
+      }
+      if (enforcement && enforcement.changed) {
+        refreshSnapshot(enforcement);
+        if (source !== 'silent') {
+          broadcastSnapshot();
+        }
+      }
+      return enforcement;
+    } catch {
+      return null;
+    } finally {
+      enforcingContracts = false;
+    }
+  };
+
+  const waitMs = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const streamAssistantText = async (socket, text) => {
+    const output = String(text || '');
+    if (!output.trim()) return false;
+    if (!socket || socket.readyState !== 1) return false;
+    const total = output.length;
+    const targetChunks = Math.min(120, Math.max(18, Math.ceil(total / 20)));
+    const baseChunkSize = Math.max(6, Math.ceil(total / targetChunks));
+    let cursor = 0;
+    let sent = false;
+    while (cursor < total) {
+      if (!socket || socket.readyState !== 1) break;
+      let next = Math.min(total, cursor + baseChunkSize);
+      while (
+        next < total &&
+        (next - cursor) < (baseChunkSize + 16) &&
+        !/\s|[,.!?;:\n]/.test(output[next])
+      ) {
+        next += 1;
+      }
+      if (next <= cursor) next = Math.min(total, cursor + 1);
+      const chunk = output.slice(cursor, next);
+      sendWs(socket, { type: 'text_delta', content: chunk });
+      sent = true;
+      cursor = next;
+      if (cursor < total) {
+        await waitMs(chunk.indexOf('\n') >= 0 ? 18 : 10);
+      }
+    }
+    return sent;
+  };
+
   wss.on('connection', (socket) => {
     wsClients.add(socket);
     sendWs(socket, { type: 'snapshot', snapshot: latestSnapshot });
@@ -5004,21 +6994,82 @@ function runServe(flags) {
         sendWs(socket, { type: 'pong', ts: nowIso() });
         return;
       }
+      if (eventType === 'terminal') {
+        const terminal = await runTerminalCommand(
+          payload && (payload.command || payload.input || payload.message)
+            ? payload.command || payload.input || payload.message
+            : '',
+          payload && payload.cwd ? payload.cwd : '',
+          agentId
+        );
+        writeActionReceipt(
+          'app.terminal',
+          {
+            agent_id: agentId,
+            command: cleanText(terminal.command || '', 400),
+            cwd: cleanText(terminal.cwd || '', 260),
+            cli_mode: ACTIVE_CLI_MODE,
+          },
+          {
+            ok: terminal.ok,
+            status: terminal.status,
+            argv: ['terminal', cleanText(terminal.command || '', 120)],
+            payload: {
+              ok: terminal.ok,
+              type: 'terminal_command',
+              exit_code: terminal.exit_code,
+            },
+          }
+        );
+        if (terminal.blocked) {
+          sendWs(socket, { type: 'terminal_error', message: terminal.message || 'Terminal blocked.' });
+          return;
+        }
+        sendWs(socket, {
+          type: 'terminal_output',
+          command: terminal.command,
+          cwd: terminal.cwd,
+          stdout: terminal.stdout,
+          stderr: terminal.stderr,
+          exit_code: terminal.exit_code,
+          status: terminal.status,
+          duration_ms: terminal.duration_ms,
+        });
+        return;
+      }
       if (eventType === 'command') {
         const command = cleanText(payload && payload.command ? payload.command : '', 40).toLowerCase();
+        const silent = !!(payload && (payload.silent === true || payload.background === true || payload.poll === true));
         if (command === 'context') {
           const state = loadAgentSession(agentId, latestSnapshot);
           const session = activeSession(state);
           const messages = Array.isArray(session.messages) ? session.messages : [];
-          const approxTokens = Math.max(
-            0,
-            messages.reduce((sum, row) => sum + Math.round(String(row && row.content ? row.content : '').length / 4), 0)
+          const modelState = effectiveAgentModel(agentId, latestSnapshot);
+          const contextStats = contextTelemetryForMessages(
+            messages,
+            modelState && modelState.context_window != null ? modelState.context_window : DEFAULT_CONTEXT_WINDOW_TOKENS,
+            0
           );
-          sendWs(socket, {
-            type: 'command_result',
-            message: `Context usage: ${messages.length} messages, ~${approxTokens} tokens.`,
-            context_pressure: approxTokens > 8000 ? 'high' : approxTokens > 3000 ? 'medium' : 'low',
-          });
+          if (silent) {
+            sendWs(socket, {
+              type: 'context_state',
+              silent: true,
+              context_tokens: contextStats.context_tokens,
+              context_window: contextStats.context_window,
+              context_ratio: contextStats.context_ratio,
+              context_pressure: contextStats.context_pressure,
+            });
+          } else {
+            sendWs(socket, {
+              type: 'command_result',
+              message: `Context usage: ${messages.length} messages, ~${contextStats.context_tokens} tokens.`,
+              context_tokens: contextStats.context_tokens,
+              context_window: contextStats.context_window,
+              context_ratio: contextStats.context_ratio,
+              context_pressure: contextStats.context_pressure,
+              silent: false,
+            });
+          }
           return;
         }
         if (command === 'verbose') {
@@ -5060,6 +7111,16 @@ function runServe(flags) {
         try { socket.close(1008, 'agent_inactive'); } catch {}
         return;
       }
+      if (!turn.ok && turn.error === 'agent_contract_terminated') {
+        const reason = cleanText(turn.reason || 'contract_terminated', 120) || 'contract_terminated';
+        sendWs(socket, { type: 'error', content: `Agent contract terminated (${reason}).` });
+        try { socket.close(1008, 'agent_contract_terminated'); } catch {}
+        return;
+      }
+      if (!turn.ok) {
+        sendWs(socket, { type: 'error', content: 'Agent message failed.' });
+        return;
+      }
 
       sendWs(socket, { type: 'phase', phase: 'thinking', detail: 'Thinking...' });
       const wsTools = Array.isArray(turn.tools) ? turn.tools : [];
@@ -5077,21 +7138,26 @@ function runServe(flags) {
           is_error: !!tool.is_error,
         });
       }
+      sendWs(socket, { type: 'phase', phase: 'streaming', detail: 'Streaming response...' });
+      const didStreamResponse = await streamAssistantText(socket, turn.response);
 
       writeActionReceipt(
         'app.chat',
         { input: turn.input, agent_id: agentId, session_id: turn.session_id, cli_mode: ACTIVE_CLI_MODE },
         turn.laneResult
       );
-      latestSnapshot = buildSnapshot(flags);
-      writeSnapshotReceipt(latestSnapshot);
+      refreshSnapshot();
       appendAgentConversation(agentId, latestSnapshot, turn.input, turn.response, turn.meta, turn.tools);
 
       sendWs(socket, {
         type: 'response',
-        content: turn.response,
+        content: didStreamResponse ? '' : turn.response,
         input_tokens: turn.input_tokens,
         output_tokens: turn.output_tokens,
+        context_tokens: turn.context_tokens,
+        context_window: turn.context_window,
+        context_ratio: turn.context_ratio,
+        context_pressure: turn.context_pressure,
         cost_usd: turn.cost_usd,
         iterations: turn.iterations,
         duration_ms: turn.duration_ms,
@@ -5131,14 +7197,8 @@ function runServe(flags) {
     if (updating) return;
     updating = true;
     try {
-      latestSnapshot = buildSnapshot(flags);
-      writeSnapshotReceipt(latestSnapshot);
-      const envelope = JSON.stringify({ type: 'snapshot', snapshot: latestSnapshot });
-      for (const client of wsClients) {
-        if (client.readyState === 1) {
-          client.send(envelope);
-        }
-      }
+      refreshSnapshot();
+      broadcastSnapshot();
     } catch (error) {
       const envelope = JSON.stringify({
         type: 'snapshot_error',
@@ -5154,6 +7214,10 @@ function runServe(flags) {
       updating = false;
     }
   }, flags.refreshMs);
+
+  const contractInterval = setInterval(() => {
+    enforceAgentContractsNow('interval');
+  }, AGENT_CONTRACT_ENFORCE_INTERVAL_MS);
 
   server.listen(flags.port, flags.host, () => {
     const openclawUrl = `http://${flags.host}:${flags.port}/dashboard`;
@@ -5179,6 +7243,8 @@ function runServe(flags) {
 
   const shutdown = () => {
     clearInterval(interval);
+    clearInterval(contractInterval);
+    closeAllTerminalSessions('dashboard_shutdown');
     for (const client of wsClients) {
       try {
         client.close();

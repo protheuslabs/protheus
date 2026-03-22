@@ -11,12 +11,24 @@ function chatPage() {
     messageQueue: [],    // Queue for messages sent while streaming
     thinkingMode: 'off', // 'off' | 'on' | 'stream'
     _wsAgent: null,
+    showAttachMenu: false,
     showSlashMenu: false,
     slashFilter: '',
     slashIdx: 0,
     attachments: [],
     dragOver: false,
-    contextPressure: 'low', // green/yellow/orange/red indicator
+    contextPressure: 'low',
+    contextWindow: 8192,
+    contextApproxTokens: 0,
+    terminalMode: false,
+    terminalCwd: '/Users/jay/.openclaw/workspace',
+    terminalShortcutHint: 'Ctrl+\\',
+    terminalCursorFocused: false,
+    terminalSelectionStart: 0,
+    _contextTelemetryTimer: null,
+    _lastContextRequestAt: 0,
+    _contextWindowByModel: {},
+    _contextModelsFetchedAt: 0,
     _typingTimeout: null,
     // Multi-session state
     sessions: [],
@@ -44,6 +56,7 @@ function chatPage() {
     _modelCacheTime: 0,
     _chatMapWheelLockInstalled: false,
     conversationCache: {},
+    conversationCacheKey: 'of-chat-conversation-cache-v1',
     _persistTimer: null,
     _responseStartedAt: 0,
     modelNoticeCache: {},
@@ -56,6 +69,8 @@ function chatPage() {
     activeMapPreviewDayKey: '',
     suppressMapPreview: false,
     _mapPreviewSuppressTimer: null,
+    _scrollSyncFrame: 0,
+    _lastInactiveNoticeKey: '',
     collapsedMessageDays: {},
     showAgentDrawer: false,
     agentDrawerLoading: false,
@@ -98,7 +113,7 @@ function chatPage() {
 
     // ── Tip Bar ──
     tipIndex: 0,
-    tips: ['Type / for commands', '/think on for reasoning', 'Ctrl+Shift+F for focus mode', 'Drag files to attach', '/model to switch models', '/context to check usage', '/verbose off to hide tool details'],
+    tips: ['Type / for commands', '/think on for reasoning', 'Ctrl+Shift+F for focus mode', 'Ctrl+T or Ctrl+\\ for terminal mode', 'Ctrl+F to add files', '/model to switch models', '/context to check usage', '/verbose off to hide tool details'],
     tipTimer: null,
     get currentTip() {
       if (localStorage.getItem('of-tips-off') === 'true') return '';
@@ -116,14 +131,96 @@ function chatPage() {
     // Backward compat helper
     get thinkingEnabled() { return this.thinkingMode !== 'off'; },
 
-    // Context pressure dot color
-    get contextDotColor() {
-      switch (this.contextPressure) {
-        case 'critical': return '#ef4444';
-        case 'high': return '#f97316';
-        case 'medium': return '#eab308';
-        default: return '#22c55e';
+    get terminalPromptPath() {
+      return this.terminalCwd || '/Users/jay/.openclaw/workspace';
+    },
+
+    get terminalPromptPrefix() {
+      return this.terminalPromptPath + ' % ';
+    },
+
+    get terminalPromptChars() {
+      var len = this.terminalPromptPrefix.length;
+      if (!Number.isFinite(len)) return 18;
+      if (len < 18) return 18;
+      return len;
+    },
+
+    get terminalCursorIndex() {
+      var text = String(this.inputText || '');
+      var max = text.length;
+      var raw = Number(this.terminalSelectionStart);
+      if (!Number.isFinite(raw)) return max;
+      if (raw < 0) return 0;
+      if (raw > max) return max;
+      return Math.floor(raw);
+    },
+
+    get terminalCursorRow() {
+      var text = String(this.inputText || '');
+      if (!text) return 0;
+      var upto = text.slice(0, this.terminalCursorIndex);
+      var parts = upto.split('\n');
+      return Math.max(0, parts.length - 1);
+    },
+
+    get terminalCursorColumn() {
+      var text = String(this.inputText || '');
+      if (!text) return 0;
+      var upto = text.slice(0, this.terminalCursorIndex);
+      var parts = upto.split('\n');
+      return (parts[parts.length - 1] || '').length;
+    },
+
+    get terminalCursorStyle() {
+      return '--terminal-cursor-ch:' + (this.terminalPromptChars + this.terminalCursorColumn) +
+        '; --terminal-cursor-row:' + this.terminalCursorRow + ';';
+    },
+
+    formatTokenK(value) {
+      var raw = Number(value || 0);
+      if (!Number.isFinite(raw) || raw <= 0) return '0k';
+      var k = raw / 1000;
+      if (k >= 100) return Math.round(k) + 'k';
+      if (k >= 10) return (Math.round(k * 10) / 10).toFixed(1).replace(/\.0$/, '') + 'k';
+      return (Math.round(k * 100) / 100).toFixed(2).replace(/0$/, '').replace(/\.$/, '') + 'k';
+    },
+
+    get contextUsagePercent() {
+      var windowSize = Number(this.contextWindow || 0);
+      var used = Number(this.contextApproxTokens || 0);
+      if (windowSize > 0 && used >= 0) {
+        var ratio = Math.round((used / windowSize) * 100);
+        if (ratio < 0) return 0;
+        if (ratio > 100) return 100;
+        return ratio;
       }
+      switch (this.contextPressure) {
+        case 'critical': return 95;
+        case 'high': return 80;
+        case 'medium': return 55;
+        default: return 25;
+      }
+    },
+
+    get contextRingArcLength() {
+      // 330deg sweep: starts at 1 o'clock and ends at 12 o'clock at 100%.
+      var maxArc = 91.6667;
+      var usage = this.contextUsagePercent;
+      if (!Number.isFinite(usage) || usage <= 0) return 0;
+      if (usage >= 100) return maxArc;
+      return Number(((usage / 100) * maxArc).toFixed(3));
+    },
+
+    get contextRingProgressStyle() {
+      return 'stroke-dasharray: ' + this.contextRingArcLength + ' 100; stroke-dashoffset: 0;';
+    },
+
+    get contextRingTooltip() {
+      return 'Context window\n' +
+        this.contextUsagePercent + '% full\n' +
+        ' ' + this.formatTokenK(this.contextApproxTokens) + ' / ' + this.formatTokenK(this.contextWindow) + ' tokens used\n\n' +
+        ' Infring dynamically prunes its context';
     },
 
     get modelDisplayName() {
@@ -210,6 +307,7 @@ function chatPage() {
         if (appStore && typeof appStore.saveAgentChatPreview === 'function') {
           appStore.saveAgentChatPreview(agentId, this.conversationCache[String(agentId)].messages);
         }
+        this.persistConversationCache();
       } catch {}
     },
 
@@ -233,11 +331,165 @@ function chatPage() {
       try {
         this.messages = this.mergeModelNoticesForAgent(agentId, JSON.parse(JSON.stringify(cached.messages)));
         this.tokenCount = Number(cached.token_count || 0);
+        this.recomputeContextEstimate();
         this.$nextTick(() => this.scrollToBottom());
         return true;
       } catch {
         return false;
       }
+    },
+
+    loadConversationCache() {
+      try {
+        var raw = localStorage.getItem(this.conversationCacheKey);
+        if (!raw) return {};
+        var parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return {};
+        return parsed;
+      } catch {
+        return {};
+      }
+    },
+
+    persistConversationCache() {
+      try {
+        localStorage.setItem(this.conversationCacheKey, JSON.stringify(this.conversationCache || {}));
+      } catch {}
+    },
+
+    estimateTokensFromText(text) {
+      return Math.max(0, Math.round(String(text || '').length / 4));
+    },
+
+    recomputeContextEstimate() {
+      var rows = Array.isArray(this.messages) ? this.messages : [];
+      var total = 0;
+      for (var i = 0; i < rows.length; i++) {
+        total += this.estimateTokensFromText(rows[i] && rows[i].text ? rows[i].text : '');
+      }
+      this.contextApproxTokens = total;
+      this.refreshContextPressure();
+    },
+
+    applyContextTelemetry(data) {
+      if (!data || typeof data !== 'object') return;
+      var approx = Number(data.context_tokens || data.context_used_tokens || data.context_total_tokens || 0);
+      if (Number.isFinite(approx) && approx > 0) {
+        this.contextApproxTokens = approx;
+      } else if (typeof data.message === 'string') {
+        var tokenMatch = data.message.match(/~?\s*([0-9,]+)\s+tokens/i);
+        if (tokenMatch && tokenMatch[1]) {
+          var parsed = Number(String(tokenMatch[1]).replace(/,/g, ''));
+          if (Number.isFinite(parsed) && parsed > 0) this.contextApproxTokens = parsed;
+        }
+      }
+      var windowSize = Number(data.context_window || data.context_window_tokens || 0);
+      if (Number.isFinite(windowSize) && windowSize > 0) {
+        this.contextWindow = windowSize;
+      }
+      var ratio = Number(data.context_ratio || 0);
+      if ((!Number.isFinite(approx) || approx <= 0) && Number.isFinite(ratio) && ratio > 0 && this.contextWindow > 0) {
+        this.contextApproxTokens = Math.round(this.contextWindow * ratio);
+      }
+      if (data.context_pressure) {
+        this.contextPressure = data.context_pressure;
+      } else {
+        this.refreshContextPressure();
+      }
+    },
+
+    inferContextWindowFromModelId(modelId) {
+      var value = String(modelId || '').toLowerCase();
+      if (!value) return 0;
+      var explicitK = value.match(/(?:^|[^0-9])([0-9]{2,4})k(?:[^a-z0-9]|$)/);
+      if (explicitK && explicitK[1]) {
+        var parsedK = Number(explicitK[1]);
+        if (Number.isFinite(parsedK) && parsedK > 0) return parsedK * 1000;
+      }
+      var explicitM = value.match(/(?:^|[^0-9])([0-9]{1,3})m(?:[^a-z0-9]|$)/);
+      if (explicitM && explicitM[1]) {
+        var parsedM = Number(explicitM[1]);
+        if (Number.isFinite(parsedM) && parsedM > 0) return parsedM * 1000000;
+      }
+      if (value.indexOf('qwen2.5') >= 0 || value.indexOf('qwen3') >= 0) return 131072;
+      if (value.indexOf('kimi') >= 0 || value.indexOf('moonshot') >= 0) return 262144;
+      if (value.indexOf('llama-3.3') >= 0 || value.indexOf('llama3.3') >= 0) return 131072;
+      if (value.indexOf('llama-3.2') >= 0 || value.indexOf('llama3.2') >= 0) return 128000;
+      if (value.indexOf('mistral-nemo') >= 0 || value.indexOf('mixtral') >= 0) return 32000;
+      return 0;
+    },
+
+    refreshContextWindowMap(models) {
+      var next = {};
+      var rows = Array.isArray(models) ? models : [];
+      for (var i = 0; i < rows.length; i++) {
+        var row = rows[i] || {};
+        var id = String(row.id || '').trim();
+        if (!id) continue;
+        var windowSize = Number(row.context_window || row.context_window_tokens || 0);
+        if (!Number.isFinite(windowSize) || windowSize <= 0) {
+          windowSize = this.inferContextWindowFromModelId(id);
+        }
+        if (Number.isFinite(windowSize) && windowSize > 0) {
+          next[id] = Math.round(windowSize);
+        }
+      }
+      this._contextWindowByModel = next;
+    },
+
+    setContextWindowFromCurrentAgent() {
+      var agent = this.currentAgent || {};
+      var direct = Number(agent.context_window || agent.context_window_tokens || 0);
+      if (Number.isFinite(direct) && direct > 0) {
+        this.contextWindow = Math.round(direct);
+        this.refreshContextPressure();
+        return;
+      }
+      var modelName = String(agent.model_name || agent.runtime_model || '').trim();
+      var fromMap = Number((this._contextWindowByModel || {})[modelName] || 0);
+      if (Number.isFinite(fromMap) && fromMap > 0) {
+        this.contextWindow = Math.round(fromMap);
+        this.refreshContextPressure();
+        return;
+      }
+      var inferred = this.inferContextWindowFromModelId(modelName);
+      if (Number.isFinite(inferred) && inferred > 0) {
+        this.contextWindow = Math.round(inferred);
+        this.refreshContextPressure();
+      }
+    },
+
+    refreshContextPressure() {
+      var windowSize = Number(this.contextWindow || 0);
+      var used = Number(this.contextApproxTokens || 0);
+      if (!Number.isFinite(windowSize) || windowSize <= 0 || !Number.isFinite(used) || used < 0) return;
+      var ratio = used / windowSize;
+      if (ratio >= 0.96) this.contextPressure = 'critical';
+      else if (ratio >= 0.82) this.contextPressure = 'high';
+      else if (ratio >= 0.55) this.contextPressure = 'medium';
+      else this.contextPressure = 'low';
+    },
+
+    fetchModelContextWindows(force) {
+      var now = Date.now();
+      if (!force && this._contextModelsFetchedAt && (now - this._contextModelsFetchedAt) < 300000) {
+        this.setContextWindowFromCurrentAgent();
+        return Promise.resolve();
+      }
+      var self = this;
+      return OpenFangAPI.get('/api/models').then(function(data) {
+        self.refreshContextWindowMap(data && data.models ? data.models : []);
+        self._contextModelsFetchedAt = Date.now();
+        self.setContextWindowFromCurrentAgent();
+      }).catch(function() {});
+    },
+
+    requestContextTelemetry(force) {
+      if (!this.currentAgent || !OpenFangAPI.isWsConnected()) return false;
+      var now = Date.now();
+      if (!force && (now - Number(this._lastContextRequestAt || 0)) < 2500) return false;
+      this._lastContextRequestAt = now;
+      return !!OpenFangAPI.wsSend({ type: 'command', command: 'context', silent: true });
     },
 
     loadModelNoticeCache: function() {
@@ -339,10 +591,13 @@ function chatPage() {
       var self = this;
       return source.map(function(m) {
         var roleRaw = String((m && (m.role || m.type)) || '').toLowerCase();
-        var role = roleRaw.indexOf('user') >= 0 ? 'user' : (roleRaw.indexOf('system') >= 0 ? 'system' : 'agent');
+        var isTerminal = roleRaw.indexOf('terminal') >= 0 || !!(m && m.terminal);
+        var role = isTerminal
+          ? 'terminal'
+          : (roleRaw.indexOf('user') >= 0 ? 'user' : (roleRaw.indexOf('system') >= 0 ? 'system' : 'agent'));
         var textSource = m && (m.content != null ? m.content : (m.text != null ? m.text : m.message));
         if (role === 'user' && m && m.user != null) textSource = m.user;
-        if (role !== 'user' && m && m.assistant != null) textSource = m.assistant;
+        if (role !== 'user' && !isTerminal && m && m.assistant != null) textSource = m.assistant;
         var text = typeof textSource === 'string' ? textSource : JSON.stringify(textSource || '');
         text = self.sanitizeToolText(text);
         if (role === 'agent') text = self.stripModelPrefix(text);
@@ -383,7 +638,21 @@ function chatPage() {
             text = '';
           }
         }
-        return { id: ++msgId, role: role, text: text, meta: meta, tools: tools, images: images, ts: ts, is_notice: isNotice, notice_label: noticeLabel };
+        return {
+          id: ++msgId,
+          role: role,
+          text: text,
+          meta: meta,
+          tools: tools,
+          images: images,
+          ts: ts,
+          is_notice: isNotice,
+          notice_label: noticeLabel,
+          terminal: isTerminal,
+          cwd: m && m.cwd ? String(m.cwd) : '',
+          agent_id: m && m.agent_id ? String(m.agent_id) : '',
+          agent_name: m && m.agent_name ? String(m.agent_name) : ''
+        };
       });
     },
 
@@ -392,7 +661,10 @@ function chatPage() {
 
       if (typeof window !== 'undefined') {
         window.__infringChatCache = window.__infringChatCache || {};
-        this.conversationCache = window.__infringChatCache;
+        var persistedCache = this.loadConversationCache();
+        var runtimeCache = window.__infringChatCache || {};
+        this.conversationCache = Object.assign({}, persistedCache, runtimeCache);
+        window.__infringChatCache = this.conversationCache;
       }
       this.loadModelNoticeCache();
 
@@ -401,9 +673,17 @@ function chatPage() {
 
       // Fetch dynamic commands from server
       this.fetchCommands();
+      this.fetchModelContextWindows();
 
       // Ctrl+/ keyboard shortcut
       document.addEventListener('keydown', function(e) {
+        var key = String(e && e.key ? e.key : '').toLowerCase();
+        // Ctrl+T or Ctrl+\ toggles terminal compose mode.
+        if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (key === 't' || key === '\\') && self.currentAgent) {
+          e.preventDefault();
+          self.toggleTerminalMode();
+          return;
+        }
         if ((e.ctrlKey || e.metaKey) && e.key === '/') {
           e.preventDefault();
           var input = document.getElementById('msg-input');
@@ -414,8 +694,21 @@ function chatPage() {
           e.preventDefault();
           self.toggleModelSwitcher();
         }
-        // Ctrl+F for chat search
-        if ((e.ctrlKey || e.metaKey) && e.key === 'f' && self.currentAgent) {
+        // Ctrl+F opens file picker from chat compose.
+        if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && key === 'f' && self.currentAgent) {
+          e.preventDefault();
+          if (self.terminalMode) {
+            self.toggleTerminalMode();
+          }
+          self.showAttachMenu = true;
+          self.$nextTick(function() {
+            var input = self.$refs && self.$refs.fileInput ? self.$refs.fileInput : null;
+            if (input && typeof input.click === 'function') input.click();
+          });
+          return;
+        }
+        // Ctrl+G for chat search
+        if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && key === 'g' && self.currentAgent) {
           e.preventDefault();
           self.toggleSearch();
         }
@@ -425,6 +718,8 @@ function chatPage() {
       this.$watch('currentAgent', function(agent) {
         if (agent) {
           self.loadSessions(agent.id);
+          self.setContextWindowFromCurrentAgent();
+          self.requestContextTelemetry(true);
         }
       });
 
@@ -459,6 +754,22 @@ function chatPage() {
       // Auto-select the first available agent in chat mode.
       this.$watch('$store.app.agents', function(agents) {
         var store = Alpine.store('app');
+        var rows = Array.isArray(agents) ? agents : [];
+        self.fetchModelContextWindows();
+        if (self.currentAgent && self.currentAgent.id) {
+          var currentLive = null;
+          for (var ai = 0; ai < rows.length; ai++) {
+            if (rows[ai] && String(rows[ai].id) === String(self.currentAgent.id)) {
+              currentLive = rows[ai];
+              break;
+            }
+          }
+          if (!currentLive) {
+            self.handleAgentInactive(self.currentAgent.id, 'inactive', { silentNotice: true });
+          } else {
+            self.currentAgent = currentLive;
+          }
+        }
         if (store.activeAgentId) {
           var resolved = self.resolveAgent(store.activeAgentId);
           if (resolved) {
@@ -479,6 +790,12 @@ function chatPage() {
 
       // Watch for slash commands + model autocomplete
       this.$watch('inputText', function(val) {
+        if (self.terminalMode) {
+          self.updateTerminalCursor();
+          self.showSlashMenu = false;
+          self.showModelPicker = false;
+          return;
+        }
         var modelMatch = val.match(/^\/model\s+(.*)$/i);
         if (modelMatch) {
           self.showSlashMenu = false;
@@ -507,6 +824,79 @@ function chatPage() {
         self.handleMessagesScroll();
         self.installChatMapWheelLock();
       });
+
+      OpenFangAPI.get('/api/status').then(function(status) {
+        var suggested = status && (status.workspace_dir || status.root_dir || status.home_dir)
+          ? String(status.workspace_dir || status.root_dir || status.home_dir)
+          : '';
+        if (suggested) self.terminalCwd = suggested;
+      }).catch(function() {});
+
+      if (this._contextTelemetryTimer) clearInterval(this._contextTelemetryTimer);
+      this._contextTelemetryTimer = setInterval(function() {
+        self.requestContextTelemetry(false);
+      }, 8000);
+    },
+
+    toggleTerminalMode() {
+      this.terminalMode = !this.terminalMode;
+      this.showSlashMenu = false;
+      this.showModelPicker = false;
+      this.showModelSwitcher = false;
+      this.terminalCursorFocused = false;
+      if (!this.terminalMode) this.terminalSelectionStart = 0;
+      if (this.terminalMode && !this.terminalCwd) {
+        this.terminalCwd = '/Users/jay/.openclaw/workspace';
+      }
+      if (this.terminalMode && this.currentAgent) {
+        this.connectWs(this.currentAgent.id);
+      }
+      if (this.terminalMode && Array.isArray(this.attachments) && this.attachments.length) {
+        for (var i = 0; i < this.attachments.length; i++) {
+          if (this.attachments[i] && this.attachments[i].preview) {
+            try { URL.revokeObjectURL(this.attachments[i].preview); } catch(_) {}
+          }
+        }
+        this.attachments = [];
+      }
+      var self = this;
+      this.$nextTick(function() {
+        var input = document.getElementById('msg-input');
+        if (input) {
+          input.focus();
+          if (self.terminalMode) {
+            self.setTerminalCursorFocus(true, { target: input });
+            self.updateTerminalCursor({ target: input });
+          }
+        }
+        self.scheduleConversationPersist();
+      });
+    },
+
+    setTerminalCursorFocus(active, event) {
+      if (!this.terminalMode) {
+        this.terminalCursorFocused = false;
+        return;
+      }
+      this.terminalCursorFocused = !!active;
+      if (this.terminalCursorFocused) this.updateTerminalCursor(event);
+    },
+
+    updateTerminalCursor(event) {
+      if (!this.terminalMode) {
+        this.terminalSelectionStart = 0;
+        return;
+      }
+      var text = String(this.inputText || '');
+      var active = (typeof document !== 'undefined' && document.activeElement && document.activeElement.id === 'msg-input')
+        ? document.activeElement
+        : null;
+      var el = event && event.target ? event.target : (active || document.getElementById('msg-input'));
+      var pos = text.length;
+      if (el && Number.isFinite(Number(el.selectionStart))) pos = Number(el.selectionStart);
+      if (!Number.isFinite(pos) || pos < 0) pos = text.length;
+      if (pos > text.length) pos = text.length;
+      this.terminalSelectionStart = Math.floor(pos);
     },
 
     installChatMapWheelLock() {
@@ -671,13 +1061,7 @@ function chatPage() {
           }
           break;
         case '/stop':
-          if (self.currentAgent) {
-            OpenFangAPI.post('/api/agents/' + self.currentAgent.id + '/stop', {}).then(function(res) {
-              self.messages.push({ id: ++msgId, role: 'system', text: res.message || 'Run cancelled', meta: '', tools: [] });
-              self.sending = false;
-              self.scrollToBottom();
-            }).catch(function(e) { OpenFangToast.error('Stop failed: ' + e.message); });
-          }
+          self.stopAgent();
           break;
         case '/usage':
           if (self.currentAgent) {
@@ -707,12 +1091,12 @@ function chatPage() {
           self.scrollToBottom();
           break;
         case '/context':
-          // Send via WS command
+          // Visual-only update for context ring; no chat message noise.
           if (self.currentAgent && OpenFangAPI.isWsConnected()) {
-            OpenFangAPI.wsSend({ type: 'command', command: 'context', args: '' });
+            OpenFangAPI.wsSend({ type: 'command', command: 'context', args: '', silent: true });
           } else {
-            self.messages.push({ id: ++msgId, role: 'system', text: 'Not connected. Connect to an agent first.', meta: '', tools: [] });
-            self.scrollToBottom();
+            self.recomputeContextEstimate();
+            self.setContextWindowFromCurrentAgent();
           }
           break;
         case '/verbose':
@@ -818,6 +1202,7 @@ function chatPage() {
       }
       this.currentAgent = resolved;
       Alpine.store('app').activeAgentId = resolved.id || null;
+      this.setContextWindowFromCurrentAgent();
       var restored = this.restoreAgentConversation(resolved.id);
       if (!restored) this.messages = [];
       this.connectWs(resolved.id);
@@ -833,6 +1218,7 @@ function chatPage() {
             '- `/context` shows context window usage\n' +
             '- `/verbose off` hides tool details\n' +
             '- `Ctrl+Shift+F` toggles focus mode\n' +
+            '- `Ctrl+F` opens file picker\n' +
             '- Drag & drop files to attach them\n' +
             '- `Ctrl+/` opens the command palette',
           meta: '',
@@ -842,6 +1228,7 @@ function chatPage() {
       }
       this.loadSession(resolved.id, restored);
       this.loadSessions(resolved.id);
+      this.requestContextTelemetry(true);
       if (this.showAgentDrawer) {
         this.openAgentDrawer();
       }
@@ -865,6 +1252,7 @@ function chatPage() {
             self.clearHoveredMessageHard();
             self.activeMapPreviewDomId = '';
             self.activeMapPreviewDayKey = '';
+            self.recomputeContextEstimate();
           }
           self.cacheAgentConversation(agentId);
           self.$nextTick(function() { self.scrollToBottom(); });
@@ -873,6 +1261,7 @@ function chatPage() {
           self.clearHoveredMessageHard();
           self.activeMapPreviewDomId = '';
           self.activeMapPreviewDayKey = '';
+          self.recomputeContextEstimate();
           self.cacheAgentConversation(agentId);
         }
       } catch(e) { /* silent */ }
@@ -921,18 +1310,27 @@ function chatPage() {
     },
 
     connectWs(agentId) {
-      if (this._wsAgent === agentId) return;
+      if (this._wsAgent === agentId && OpenFangAPI.isWsConnected()) return;
       this._wsAgent = agentId;
       var self = this;
 
       OpenFangAPI.wsConnect(agentId, {
         onOpen: function() {
           Alpine.store('app').wsConnected = true;
+          self.requestContextTelemetry(true);
         },
         onMessage: function(data) { self.handleWsMessage(data); },
         onClose: function() {
           Alpine.store('app').wsConnected = false;
           self._wsAgent = null;
+          if (self.currentAgent && self.currentAgent.id) {
+            Alpine.store('app').refreshAgents().then(function() {
+              var stillLive = self.resolveAgent(self.currentAgent.id);
+              if (!stillLive) {
+                self.handleAgentInactive(self.currentAgent.id, 'inactive');
+              }
+            }).catch(function() {});
+          }
         },
         onError: function() {
           Alpine.store('app').wsConnected = false;
@@ -941,9 +1339,100 @@ function chatPage() {
       });
     },
 
+    formatInactiveReason: function(reason) {
+      var raw = String(reason || '').trim();
+      if (!raw) return 'inactive';
+      raw = raw.replace(/^agent_contract_/, '');
+      raw = raw.replace(/^rogue_/, '');
+      raw = raw.replace(/_/g, ' ').trim();
+      return raw || 'inactive';
+    },
+
+    handleAgentInactive: function(agentId, reason, options) {
+      var opts = options || {};
+      var targetId = String(agentId || (this.currentAgent && this.currentAgent.id) || '').trim();
+      var reasonLabel = this.formatInactiveReason(reason || 'inactive');
+      var noticeKey = targetId + '|' + reasonLabel;
+      var self = this;
+
+      this._clearTypingTimeout();
+      this.messages = this.messages.filter(function(m) { return !m.thinking && !m.streaming; });
+      this.sending = false;
+      this._responseStartedAt = 0;
+      this.tokenCount = 0;
+
+      if (!opts.silentNotice && noticeKey !== this._lastInactiveNoticeKey) {
+        var noticeText = opts.noticeText || '';
+        if (!noticeText) {
+          noticeText = targetId
+            ? ('Agent ' + targetId + ' is now inactive (' + reasonLabel + ').')
+            : ('Agent is now inactive (' + reasonLabel + ').');
+        }
+        this.messages.push({ id: ++msgId, role: 'system', text: noticeText, meta: '', tools: [], ts: Date.now() });
+        this._lastInactiveNoticeKey = noticeKey;
+      }
+
+      if (targetId && this._wsAgent && String(this._wsAgent) === targetId) {
+        OpenFangAPI.wsDisconnect();
+        this._wsAgent = null;
+      }
+
+      if (this.currentAgent && this.currentAgent.id && (!targetId || String(this.currentAgent.id) === targetId)) {
+        this.currentAgent = null;
+        Alpine.store('app').activeAgentId = null;
+        this.showAgentDrawer = false;
+      }
+
+      this.scrollToBottom();
+      this.$nextTick(function() { self._processQueue(); });
+
+      try { Alpine.store('app').refreshAgents(); } catch(_) {}
+    },
+
+    handleStopResponse: function(agentId, payload) {
+      var result = payload && typeof payload === 'object' ? payload : {};
+      var reasonRaw = String(result.reason || result.error || '').trim();
+      var reason = reasonRaw || (result.contract_terminated ? 'contract_terminated' : '');
+      var state = String(result.state || '').trim().toLowerCase();
+      var reasonLower = reason.toLowerCase();
+      var isInactive =
+        !!result.archived ||
+        !!result.contract_terminated ||
+        state === 'inactive' ||
+        state === 'archived' ||
+        state === 'terminated' ||
+        String(result.type || '').toLowerCase() === 'agent_archived' ||
+        reasonLower.indexOf('inactive') >= 0 ||
+        reasonLower.indexOf('terminated') >= 0;
+
+      if (isInactive) {
+        this.handleAgentInactive(
+          agentId,
+          reason || (result.contract_terminated ? 'contract_terminated' : 'inactive'),
+          result.message ? { noticeText: String(result.message) } : {}
+        );
+        return;
+      }
+
+      this._clearTypingTimeout();
+      this.messages = this.messages.filter(function(m) { return !m.thinking && !m.streaming; });
+      this.messages.push({ id: ++msgId, role: 'system', text: result.message || 'Run cancelled', meta: '', tools: [], ts: Date.now() });
+      this.sending = false;
+      this._responseStartedAt = 0;
+      this.tokenCount = 0;
+      this.scrollToBottom();
+      var self = this;
+      this.$nextTick(function() { self._processQueue(); });
+      try { Alpine.store('app').refreshAgents(); } catch(_) {}
+    },
+
     handleWsMessage(data) {
       switch (data.type) {
         case 'connected': break;
+
+        case 'context_state':
+          this.applyContextTelemetry(data);
+          break;
 
         // Legacy thinking event (backward compat)
         case 'thinking':
@@ -1018,14 +1507,39 @@ function chatPage() {
             if (last.thinking) { last.text = ''; last.thinking = false; }
             // If we already detected a text-based tool call, skip further text
             if (last._toolTextDetected) break;
-            last.text += data.content;
+            var deltaText = String(data.content || '');
+            last._streamRawText = String(last._streamRawText || '') + deltaText;
+            var streamingSplit = this.extractThinkingLeak(last._streamRawText);
+            var visibleText = streamingSplit.content || '';
+            last._cleanText = visibleText;
+            last._thoughtText = streamingSplit.thought || '';
+            if (streamingSplit.thought && !visibleText.trim()) {
+              last.isHtml = true;
+              last.thoughtStreaming = true;
+              last.text = this.renderLiveThoughtHtml(streamingSplit.thought);
+            } else {
+              if (last.isHtml) last.isHtml = false;
+              last.thoughtStreaming = false;
+              last.text = visibleText;
+            }
             // Detect function-call patterns streamed as text and convert to tool cards
-            var fcIdx = last.text.search(/\w+<\/function[=,>]/);
-            if (fcIdx === -1) fcIdx = last.text.search(/<function=\w+>/);
+            var toolScanText = String(last._cleanText || '');
+            var fcIdx = toolScanText.search(/\w+<\/function[=,>]/);
+            if (fcIdx === -1) fcIdx = toolScanText.search(/<function=\w+>/);
             if (fcIdx !== -1) {
-              var fcPart = last.text.substring(fcIdx);
+              var fcPart = toolScanText.substring(fcIdx);
               var toolMatch = fcPart.match(/^(\w+)<\/function/) || fcPart.match(/^<function=(\w+)>/);
-              last.text = last.text.substring(0, fcIdx).trim();
+              var trimmedVisible = toolScanText.substring(0, fcIdx).trim();
+              if (streamingSplit.thought && !trimmedVisible) {
+                last.isHtml = true;
+                last.thoughtStreaming = true;
+                last.text = this.renderLiveThoughtHtml(streamingSplit.thought);
+              } else {
+                if (last.isHtml) last.isHtml = false;
+                last.thoughtStreaming = false;
+                last.text = trimmedVisible;
+              }
+              last._cleanText = trimmedVisible;
               last._toolTextDetected = true;
               if (toolMatch) {
                 if (!last.tools) last.tools = [];
@@ -1041,17 +1555,30 @@ function chatPage() {
                 });
               }
             }
-            this.tokenCount = Math.round(last.text.length / 4);
+            this.tokenCount = Math.round(String(last._cleanText || '').length / 4);
           } else {
-            this.messages.push({
+            var firstChunk = this.stripModelPrefix(data.content || '');
+            var firstSplit = this.extractThinkingLeak(firstChunk);
+            var firstVisible = firstSplit.content || '';
+            var firstMessage = {
               id: ++msgId,
               role: 'agent',
-              text: this.stripModelPrefix(data.content || ''),
+              text: firstVisible,
               meta: '',
               streaming: true,
               tools: [],
+              _streamRawText: firstChunk,
+              _cleanText: firstVisible,
+              _thoughtText: firstSplit.thought || '',
+              thoughtStreaming: false,
               ts: Date.now()
-            });
+            };
+            if (firstSplit.thought && !firstVisible.trim()) {
+              firstMessage.isHtml = true;
+              firstMessage.thoughtStreaming = true;
+              firstMessage.text = this.renderLiveThoughtHtml(firstSplit.thought);
+            }
+            this.messages.push(firstMessage);
           }
           this.scrollToBottom();
           break;
@@ -1115,16 +1642,18 @@ function chatPage() {
 
         case 'response':
           this._clearTypingTimeout();
-          // Update context pressure from response
-          if (data.context_pressure) {
-            this.contextPressure = data.context_pressure;
-          }
+          this.applyContextTelemetry(data);
           // Collect streamed text before removing streaming messages
           var streamedText = '';
           var streamedTools = [];
+          var streamedThought = '';
           this.messages.forEach(function(m) {
             if (m.streaming && !m.thinking && m.role === 'agent') {
-              streamedText += m.text || '';
+              streamedText += (typeof m._cleanText === 'string') ? m._cleanText : (m.text || '');
+              if (m._thoughtText) {
+                if (streamedThought) streamedThought += '\n';
+                streamedThought += String(m._thoughtText).trim();
+              }
               streamedTools = streamedTools.concat(m.tools || []);
             }
           });
@@ -1149,12 +1678,24 @@ function chatPage() {
           if (wsDuration) meta += ' | ' + wsDuration;
           // Use server response if non-empty, otherwise preserve accumulated streamed text
           var finalText = (data.content && data.content.trim()) ? data.content : streamedText;
+          finalText = this.stripModelPrefix(finalText);
+          var finalSplit = this.extractThinkingLeak(finalText);
+          if (finalSplit.thought) {
+            if (!streamedThought) {
+              streamedThought = finalSplit.thought;
+            } else if (streamedThought.indexOf(finalSplit.thought) === -1) {
+              streamedThought += '\n' + finalSplit.thought;
+            }
+            finalText = finalSplit.content || '';
+          }
           // Strip raw function-call JSON that some models leak as text
           finalText = this.sanitizeToolText(finalText);
-          finalText = this.stripModelPrefix(finalText);
-          // If text is empty but tools ran, show a summary
-          if (!finalText.trim() && streamedTools.length) {
-            finalText = '';
+          var collapsedThought = String(streamedThought || '').trim();
+          if (collapsedThought) {
+            streamedTools.unshift(this.makeThoughtToolCard(collapsedThought));
+          }
+          if (!finalText.trim()) {
+            finalText = this.defaultAssistantFallback(collapsedThought, streamedTools);
           }
           this.messages.push({ id: ++msgId, role: 'agent', text: finalText, meta: meta, tools: streamedTools, ts: Date.now() });
           this.sending = false;
@@ -1166,24 +1707,51 @@ function chatPage() {
             var el = document.getElementById('msg-input'); if (el) el.focus();
             self3._processQueue();
           });
+          this.requestContextTelemetry(false);
           break;
 
         case 'silent_complete':
           // Agent intentionally chose not to reply (NO_REPLY)
           this._clearTypingTimeout();
           this.messages = this.messages.filter(function(m) { return !m.thinking && !m.streaming; });
+          this.messages.push({
+            id: ++msgId,
+            role: 'agent',
+            text: this.defaultAssistantFallback('', []),
+            meta: '',
+            tools: [],
+            ts: Date.now()
+          });
           this.sending = false;
           this._responseStartedAt = 0;
           this.tokenCount = 0;
-          // No message bubble added — the agent was silent
           var selfSilent = this;
           this.$nextTick(function() { selfSilent._processQueue(); });
           break;
 
         case 'error':
           this._clearTypingTimeout();
+          var rawError = String(data && data.content ? data.content : 'unknown_error');
+          var errorText = 'Error: ' + rawError;
+          var lowerError = rawError.toLowerCase();
+          if (lowerError.indexOf('agent contract terminated') !== -1 || lowerError.indexOf('agent_contract_terminated') !== -1) {
+            this.handleAgentInactive(
+              this.currentAgent && this.currentAgent.id ? this.currentAgent.id : '',
+              'contract_terminated',
+              { noticeText: errorText }
+            );
+            break;
+          }
+          if (lowerError.indexOf('agent is inactive') !== -1 || lowerError.indexOf('agent_inactive') !== -1) {
+            this.handleAgentInactive(
+              this.currentAgent && this.currentAgent.id ? this.currentAgent.id : '',
+              'inactive',
+              { noticeText: errorText }
+            );
+            break;
+          }
           this.messages = this.messages.filter(function(m) { return !m.thinking && !m.streaming; });
-          this.messages.push({ id: ++msgId, role: 'system', text: 'Error: ' + data.content, meta: '', tools: [], ts: Date.now() });
+          this.messages.push({ id: ++msgId, role: 'system', text: errorText, meta: '', tools: [], ts: Date.now() });
           this.sending = false;
           this._responseStartedAt = 0;
           this.tokenCount = 0;
@@ -1195,6 +1763,13 @@ function chatPage() {
           });
           break;
 
+        case 'agent_archived':
+          this.handleAgentInactive(
+            data && data.agent_id ? String(data.agent_id) : (this.currentAgent && this.currentAgent.id ? this.currentAgent.id : ''),
+            data && data.reason ? String(data.reason) : 'archived'
+          );
+          break;
+
         case 'agents_updated':
           if (data.agents) {
             Alpine.store('app').agents = data.agents;
@@ -1203,12 +1778,64 @@ function chatPage() {
           break;
 
         case 'command_result':
-          // Update context pressure if included in command result
-          if (data.context_pressure) {
-            this.contextPressure = data.context_pressure;
+          this.applyContextTelemetry(data);
+          var isContextTelemetryResult = Object.prototype.hasOwnProperty.call(data || {}, 'context_tokens') ||
+            Object.prototype.hasOwnProperty.call(data || {}, 'context_window') ||
+            Object.prototype.hasOwnProperty.call(data || {}, 'context_ratio') ||
+            Object.prototype.hasOwnProperty.call(data || {}, 'context_pressure');
+          if (!data.silent && !isContextTelemetryResult) {
+            this.messages.push({ id: ++msgId, role: 'system', text: data.message || 'Command executed.', meta: '', tools: [] });
+            this.scrollToBottom();
           }
-          this.messages.push({ id: ++msgId, role: 'system', text: data.message || 'Command executed.', meta: '', tools: [] });
+          break;
+
+        case 'terminal_output':
+          this._clearTypingTimeout();
+          this.messages = this.messages.filter(function(m) { return !(m && m.terminal && m.thinking); });
+          var stdout = typeof data.stdout === 'string' ? data.stdout : '';
+          var stderr = typeof data.stderr === 'string' ? data.stderr : '';
+          var termText = '';
+          if (stdout.trim()) termText += stdout;
+          if (stderr.trim()) termText += (termText ? '\n' : '') + stderr;
+          if (!termText.trim()) termText = '(no output)';
+          var termMeta = 'exit ' + (Number.isFinite(Number(data.exit_code)) ? String(Number(data.exit_code)) : '1');
+          var termDuration = this.formatResponseDuration(Number(data.duration_ms || 0));
+          if (termDuration) termMeta += ' | ' + termDuration;
+          var termCwd = this.terminalPromptPath;
+          if (data.cwd) {
+            termCwd = String(data.cwd);
+            this.terminalCwd = termCwd;
+            termMeta += ' | ' + termCwd;
+          }
+          this._appendTerminalMessage({
+            role: 'terminal',
+            text: termText,
+            meta: termMeta,
+            tools: [],
+            ts: Date.now(),
+            cwd: termCwd
+          });
+          this.sending = false;
+          this._responseStartedAt = 0;
           this.scrollToBottom();
+          this.$nextTick(() => this._processQueue());
+          break;
+
+        case 'terminal_error':
+          this._clearTypingTimeout();
+          this.messages = this.messages.filter(function(m) { return !(m && m.terminal && m.thinking); });
+          this._appendTerminalMessage({
+            role: 'terminal',
+            text: 'Terminal error: ' + (data && data.message ? data.message : 'command failed'),
+            meta: '',
+            tools: [],
+            ts: Date.now(),
+            cwd: this.terminalPromptPath
+          });
+          this.sending = false;
+          this._responseStartedAt = 0;
+          this.scrollToBottom();
+          this.$nextTick(() => this._processQueue());
           break;
 
         case 'canvas':
@@ -1269,6 +1896,18 @@ function chatPage() {
       return 'chat-msg-' + suffix;
     },
 
+    messageRoleClass: function(msg) {
+      if (msg && msg.terminal) return 'terminal';
+      if (!msg || !msg.role) return 'agent';
+      return String(msg.role);
+    },
+
+    messageGroupRole: function(msg) {
+      if (!msg) return '';
+      if (msg.terminal) return 'terminal';
+      return String(msg.role || '');
+    },
+
     messagePreview: function(msg) {
       if (!msg) return '';
       if (msg.is_notice && msg.notice_label) {
@@ -1321,7 +1960,7 @@ function chatPage() {
 
       var parts = msg.tools.map(function(tool) {
         if (!tool) return '';
-        var name = tool.name ? String(tool.name) : 'tool';
+        var name = self.toolDisplayName(tool);
         var status = self.toolStatusText(tool);
         var summary = status ? (name + ' [' + status + ']') : name;
         var inputPreview = compactToolText(tool.input, 96);
@@ -1364,14 +2003,51 @@ function chatPage() {
       return this.selectedMessageDomId === this.messageDomId(msg, idx);
     },
 
+    truncateActorLabel: function(label, maxChars) {
+      var text = String(label || '').replace(/\s+/g, ' ').trim();
+      if (!text) return '';
+      var limitRaw = Number(maxChars || 0);
+      var limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.max(8, Math.floor(limitRaw)) : 24;
+      if (text.length <= limit) return text;
+      return text.slice(0, limit - 1) + '\u2026';
+    },
+
+    messageAgentLabel: function(msg) {
+      var name = '';
+      if (msg && msg.agent_name) name = String(msg.agent_name || '');
+      if (!name && msg && msg.agent_id) {
+        var resolved = this.resolveAgent(msg.agent_id);
+        if (resolved && resolved.name) name = String(resolved.name || '');
+      }
+      if (!name && this.currentAgent && this.currentAgent.name) {
+        name = String(this.currentAgent.name || '');
+      }
+      var shortName = this.truncateActorLabel(name, 28);
+      return shortName || 'Agent';
+    },
+
     messageActorLabel: function(msg) {
       if (!msg) return 'Message';
       if (msg.is_notice) return 'Model';
+      if (msg.terminal) return 'Terminal';
       if (Array.isArray(msg.tools) && msg.tools.length && (!msg.text || !String(msg.text).trim())) {
         return 'Tool';
       }
       if (msg.role === 'user') return 'You';
       if (msg.role === 'system') return 'System';
+      if (msg.role === 'agent') {
+        var name = '';
+        if (msg && msg.agent_name) name = String(msg.agent_name || '');
+        if (!name && msg && msg.agent_id) {
+          var resolved = this.resolveAgent(msg.agent_id);
+          if (resolved && resolved.name) name = String(resolved.name || '');
+        }
+        if (!name && this.currentAgent && this.currentAgent.name) {
+          name = String(this.currentAgent.name || '');
+        }
+        var shortName = this.truncateActorLabel(name, 24);
+        if (shortName) return shortName;
+      }
       return 'Agent';
     },
 
@@ -1397,6 +2073,7 @@ function chatPage() {
     messageMapMarkerType: function(msg) {
       if (!msg) return '';
       if (msg.is_notice) return 'model';
+      if (msg.terminal) return 'terminal';
       if (Array.isArray(msg.tools) && msg.tools.length) return 'tool';
       return '';
     },
@@ -1415,6 +2092,9 @@ function chatPage() {
         if (outcome === 'error') return 'Tool call error';
         if (outcome === 'warning') return 'Tool call warning';
         return 'Tool call success';
+      }
+      if (type === 'terminal') {
+        return 'Terminal activity';
       }
       return '';
     },
@@ -1630,8 +2310,9 @@ function chatPage() {
       return this.hoveredMessageDomId === this.messageDomId(msg, idx);
     },
 
-    centerChatMapOnMessage: function(domId) {
+    centerChatMapOnMessage: function(domId, options) {
       if (!domId) return;
+      var immediate = !!(options && options.immediate);
       var map = null;
       var maps = document.querySelectorAll('.chat-map-scroll');
       for (var i = 0; i < maps.length; i++) {
@@ -1653,7 +2334,7 @@ function chatPage() {
       var nextTop = Math.max(0, Math.min(max, desired));
       var diff = Math.abs(map.scrollTop - nextTop);
       if (diff < 3) return;
-      map.scrollTo({ top: nextTop, behavior: this.suppressMapPreview ? 'auto' : 'smooth' });
+      map.scrollTo({ top: nextTop, behavior: (immediate || this.suppressMapPreview) ? 'auto' : 'smooth' });
     },
 
     async openAgentDrawer() {
@@ -1871,9 +2552,20 @@ function chatPage() {
       return true;
     },
 
+    isThoughtTool: function(tool) {
+      return !!(tool && String(tool.name || '').toLowerCase() === 'thought_process');
+    },
+
+    toolDisplayName: function(tool) {
+      if (!tool) return 'tool';
+      if (this.isThoughtTool(tool)) return 'thought';
+      return String(tool.name || 'tool');
+    },
+
     toolStatusText: function(tool) {
       if (!tool) return '';
       if (tool.running) return 'running...';
+      if (this.isThoughtTool(tool)) return 'thought';
       if (this.isBlockedTool(tool)) return 'blocked';
       if (tool.is_error) return 'error';
       if (tool.result) {
@@ -1922,10 +2614,84 @@ function chatPage() {
     _processQueue: function() {
       if (!this.messageQueue.length || this.sending) return;
       var next = this.messageQueue.shift();
+      if (next && next.terminal) {
+        this._sendTerminalPayload(next.command);
+        return;
+      }
       this._sendPayload(next.text, next.files, next.images);
     },
 
+    _terminalPromptLine: function(cwd, command) {
+      var path = String(cwd || this.terminalPromptPath || '/Users/jay/.openclaw/workspace');
+      var cmd = String(command || '').trim();
+      if (!cmd) return path + ' %';
+      return path + ' % ' + cmd;
+    },
+
+    _appendTerminalMessage: function(entry) {
+      var payload = entry || {};
+      var text = String(payload.text || '');
+      var now = Date.now();
+      var ts = Number.isFinite(Number(payload.ts)) ? Number(payload.ts) : now;
+      var role = payload.role ? String(payload.role) : 'terminal';
+      var cwd = payload.cwd ? String(payload.cwd) : this.terminalPromptPath;
+      var meta = payload.meta == null ? '' : String(payload.meta);
+      var tools = Array.isArray(payload.tools) ? payload.tools : [];
+
+      var last = this.messages.length ? this.messages[this.messages.length - 1] : null;
+      if (last && !last.thinking && last.terminal) {
+        if (text) {
+          if (last.text && !/\n$/.test(last.text)) last.text += '\n';
+          last.text += text;
+        }
+        if (meta) last.meta = meta;
+        if (cwd) {
+          last.cwd = cwd;
+          this.terminalCwd = cwd;
+        }
+        last.ts = ts;
+        if (!Array.isArray(last.tools)) last.tools = [];
+        if (tools.length) last.tools = last.tools.concat(tools);
+        return last;
+      }
+
+      var msg = {
+        id: ++msgId,
+        role: role,
+        text: text,
+        meta: meta,
+        tools: tools,
+        ts: ts,
+        terminal: true,
+        cwd: cwd
+      };
+      this.messages.push(msg);
+      if (cwd) this.terminalCwd = cwd;
+      return msg;
+    },
+
+    async sendTerminalMessage() {
+      if (!this.currentAgent || !this.inputText.trim()) return;
+      var command = this.inputText.trim();
+      this.inputText = '';
+      this.terminalSelectionStart = 0;
+
+      var ta = document.getElementById('msg-input');
+      if (ta) ta.style.height = '';
+
+      if (this.sending) {
+        this.messageQueue.push({ terminal: true, command: command });
+        return;
+      }
+
+      this._sendTerminalPayload(command);
+    },
+
     async sendMessage() {
+      if (this.terminalMode) {
+        await this.sendTerminalMessage();
+        return;
+      }
       if (!this.currentAgent || (!this.inputText.trim() && !this.attachments.length)) return;
       var text = this.inputText.trim();
 
@@ -1994,6 +2760,54 @@ function chatPage() {
       this._sendPayload(finalText, uploadedFiles, msgImages);
     },
 
+    async _sendTerminalPayload(command) {
+      this.sending = true;
+      this._responseStartedAt = Date.now();
+      this._appendTerminalMessage({
+        role: 'terminal',
+        text: this._terminalPromptLine(this.terminalPromptPath, command),
+        meta: this.terminalPromptPath,
+        tools: [],
+        ts: Date.now(),
+        cwd: this.terminalPromptPath
+      });
+      this.recomputeContextEstimate();
+      this.scrollToBottom();
+      this.scheduleConversationPersist();
+
+      if (!OpenFangAPI.isWsConnected() && this.currentAgent) {
+        this.connectWs(this.currentAgent.id);
+        var wsWaitStarted = Date.now();
+        while (!OpenFangAPI.isWsConnected() && (Date.now() - wsWaitStarted) < 1500) {
+          await new Promise(function(resolve) { setTimeout(resolve, 75); });
+        }
+      }
+
+      if (OpenFangAPI.wsSend({ type: 'terminal', command: command, cwd: this.terminalPromptPath })) {
+        return;
+      }
+
+      try {
+        var res = await OpenFangAPI.post('/api/agents/' + this.currentAgent.id + '/terminal', {
+          command: command,
+          cwd: this.terminalPromptPath,
+        });
+        this.handleWsMessage({
+          type: 'terminal_output',
+          stdout: res && res.stdout ? String(res.stdout) : '',
+          stderr: res && res.stderr ? String(res.stderr) : '',
+          exit_code: Number(res && res.exit_code != null ? res.exit_code : 1),
+          duration_ms: Number(res && res.duration_ms ? res.duration_ms : 0),
+          cwd: res && res.cwd ? String(res.cwd) : this.terminalPromptPath,
+        });
+      } catch (e) {
+        this.handleWsMessage({
+          type: 'terminal_error',
+          message: e && e.message ? e.message : 'command failed',
+        });
+      }
+    },
+
     async _sendPayload(finalText, uploadedFiles, msgImages) {
       this.sending = true;
 
@@ -2021,6 +2835,7 @@ function chatPage() {
         var httpBody = { message: finalText };
         if (uploadedFiles && uploadedFiles.length) httpBody.attachments = uploadedFiles;
         var res = await OpenFangAPI.post('/api/agents/' + this.currentAgent.id + '/message', httpBody);
+        this.applyContextTelemetry(res);
         this.messages = this.messages.filter(function(m) { return !m.thinking; });
         var httpMeta = (res.input_tokens || 0) + ' in / ' + (res.output_tokens || 0) + ' out';
         if (res.cost_usd != null) httpMeta += ' | $' + res.cost_usd.toFixed(4);
@@ -2040,10 +2855,19 @@ function chatPage() {
               };
             })
           : [];
+        var httpText = this.stripModelPrefix(this.sanitizeToolText(res.response || ''));
+        var httpSplit = this.extractThinkingLeak(httpText);
+        if (httpSplit.thought) {
+          httpTools.unshift(this.makeThoughtToolCard(httpSplit.thought));
+          httpText = httpSplit.content || '';
+        }
+        if (!String(httpText || '').trim()) {
+          httpText = this.defaultAssistantFallback(httpSplit.thought || '', httpTools);
+        }
         this.messages.push({
           id: ++msgId,
           role: 'agent',
-          text: this.stripModelPrefix(this.sanitizeToolText(res.response || '')),
+          text: httpText,
           meta: httpMeta,
           tools: httpTools,
           ts: Date.now()
@@ -2070,11 +2894,28 @@ function chatPage() {
       if (!this.currentAgent) return;
       var self = this;
       OpenFangAPI.post('/api/agents/' + this.currentAgent.id + '/stop', {}).then(function(res) {
-        self.messages.push({ id: ++msgId, role: 'system', text: res.message || 'Run cancelled', meta: '', tools: [], ts: Date.now() });
-        self.sending = false;
-        self.scrollToBottom();
-        self.$nextTick(function() { self._processQueue(); });
-      }).catch(function(e) { OpenFangToast.error('Stop failed: ' + e.message); });
+        self.handleStopResponse(self.currentAgent && self.currentAgent.id ? self.currentAgent.id : '', res || {});
+      }).catch(function(e) {
+        var raw = String(e && e.message ? e.message : 'stop_failed');
+        var lower = raw.toLowerCase();
+        if (lower.indexOf('agent_inactive') >= 0 || lower.indexOf('inactive') >= 0) {
+          self.handleAgentInactive(
+            self.currentAgent && self.currentAgent.id ? self.currentAgent.id : '',
+            'inactive',
+            { noticeText: 'Agent is now inactive.' }
+          );
+          return;
+        }
+        if (lower.indexOf('agent_contract_terminated') >= 0 || lower.indexOf('contract terminated') >= 0) {
+          self.handleAgentInactive(
+            self.currentAgent && self.currentAgent.id ? self.currentAgent.id : '',
+            'contract_terminated',
+            { noticeText: 'Agent contract terminated.' }
+          );
+          return;
+        }
+        OpenFangToast.error('Stop failed: ' + raw);
+      });
     },
 
     killAgent() {
@@ -2098,12 +2939,64 @@ function chatPage() {
     },
 
     _latexTimer: null,
+
+    resolveMessagesScroller: function(preferred) {
+      var candidate = preferred || null;
+      if (candidate && candidate.id === 'messages' && candidate.offsetParent !== null) return candidate;
+      var nodes = document.querySelectorAll('#messages');
+      for (var i = 0; i < nodes.length; i++) {
+        var node = nodes[i];
+        if (node && node.offsetParent !== null) return node;
+      }
+      return candidate && candidate.id === 'messages' ? candidate : null;
+    },
+
+    syncMapSelectionToScroll: function(container) {
+      var el = this.resolveMessagesScroller(container);
+      if (!el || !this.currentAgent || !Array.isArray(this.messages) || !this.messages.length) return;
+      var nodes = el.querySelectorAll('.message[id^="chat-msg-"]');
+      if (!nodes || !nodes.length) return;
+      var viewport = el.getBoundingClientRect();
+      var viewportCenterY = viewport.top + (viewport.height / 2);
+      var bestNode = null;
+      var bestDiff = Number.POSITIVE_INFINITY;
+      for (var i = 0; i < nodes.length; i++) {
+        var node = nodes[i];
+        if (!node || node.offsetParent === null) continue;
+        var rect = node.getBoundingClientRect();
+        if (rect.height <= 0) continue;
+        if (rect.bottom < viewport.top || rect.top > viewport.bottom) continue;
+        var nodeCenter = rect.top + (rect.height / 2);
+        var diff = Math.abs(nodeCenter - viewportCenterY);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestNode = node;
+        }
+      }
+      if (!bestNode || !bestNode.id) return;
+      var domId = String(bestNode.id);
+      if (this.selectedMessageDomId !== domId) {
+        this.selectedMessageDomId = domId;
+      }
+      if (!this.activeMapPreviewDomId) {
+        this.hoveredMessageDomId = domId;
+      }
+      for (var idx = 0; idx < this.messages.length; idx++) {
+        if (this.messageDomId(this.messages[idx], idx) === domId) {
+          this.mapStepIndex = idx;
+          break;
+        }
+      }
+      this.centerChatMapOnMessage(domId, { immediate: true });
+    },
+
     scrollToBottom() {
       var self = this;
-      var el = document.getElementById('messages');
+      var el = this.resolveMessagesScroller();
       if (el) self.$nextTick(function() {
         el.scrollTop = el.scrollHeight;
         self.showScrollDown = false;
+        self.syncMapSelectionToScroll(el);
         // Debounce LaTeX rendering to avoid running on every streaming token
         if (self._latexTimer) clearTimeout(self._latexTimer);
         self._latexTimer = setTimeout(function() { renderLatex(el); }, 150);
@@ -2111,10 +3004,20 @@ function chatPage() {
     },
 
     handleMessagesScroll(e) {
-      var el = e && e.target ? e.target : document.getElementById('messages');
+      var el = this.resolveMessagesScroller(e && e.target ? e.target : null);
       if (!el) return;
       var hiddenBottom = el.scrollHeight - (el.scrollTop + el.clientHeight);
       this.showScrollDown = hiddenBottom > 120;
+      var self = this;
+      if (typeof requestAnimationFrame === 'function') {
+        if (this._scrollSyncFrame) cancelAnimationFrame(this._scrollSyncFrame);
+        this._scrollSyncFrame = requestAnimationFrame(function() {
+          self._scrollSyncFrame = 0;
+          self.syncMapSelectionToScroll(el);
+        });
+      } else {
+        self.syncMapSelectionToScroll(el);
+      }
     },
 
     addFiles(files) {
@@ -2162,7 +3065,7 @@ function chatPage() {
       if (idx === 0) return false;
       var prev = this.messages[idx - 1];
       var curr = this.messages[idx];
-      return prev && curr && prev.role === curr.role && !curr.thinking && !prev.thinking;
+      return prev && curr && this.messageGroupRole(prev) === this.messageGroupRole(curr) && !curr.thinking && !prev.thinking;
     },
 
     // Strip raw function-call text that some models (Llama, Groq, etc.) leak into output.
@@ -2180,6 +3083,74 @@ function chatPage() {
       // Pattern: <|python_tag|> or similar special tokens
       text = text.replace(/<\|[\w_]+\|>/g, '');
       return text.trim();
+    },
+
+    extractThinkingLeak: function(text) {
+      if (!text) return { thought: '', content: '' };
+      var raw = String(text).replace(/\r\n?/g, '\n');
+      var trimmed = raw.replace(/^\s+/, '');
+      if (!trimmed) return { thought: '', content: '' };
+      var thinkingPrefix = /^(thinking(?:\s+out\s+loud)?(?:\.\.\.|:)?|analysis(?:\.\.\.|:)?|reasoning(?:\.\.\.|:)?)/i;
+      if (!thinkingPrefix.test(trimmed)) return { thought: '', content: raw };
+      var splitAt = this.findThinkingBoundary(trimmed);
+      if (splitAt < 0) return { thought: trimmed.trim(), content: '' };
+      return {
+        thought: trimmed.slice(0, splitAt).trim(),
+        content: trimmed.slice(splitAt).trim()
+      };
+    },
+
+    findThinkingBoundary: function(text) {
+      if (!text) return -1;
+      var boundaries = [];
+      var markers = [
+        /\n\s*final answer\s*:/i,
+        /\n\s*answer\s*:/i,
+        /\n\s*response\s*:/i,
+        /\n\s*output\s*:/i,
+        /\n\s*```/i,
+        /\n\s*\n(?=\s*[\{\[])/,
+      ];
+      markers.forEach(function(rx) {
+        var match = text.match(rx);
+        if (match && Number.isFinite(match.index)) {
+          boundaries.push(match.index + 1);
+        }
+      });
+      if (!boundaries.length) return -1;
+      boundaries.sort(function(a, b) { return a - b; });
+      return boundaries[0];
+    },
+
+    makeThoughtToolCard: function(thoughtText) {
+      return {
+        id: 'thought-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
+        name: 'thought_process',
+        running: false,
+        expanded: false,
+        input: String(thoughtText || '').trim(),
+        result: '',
+        is_error: false
+      };
+    },
+
+    renderLiveThoughtHtml: function(thoughtText) {
+      var text = String(thoughtText || '').trim();
+      return '<span class="thinking-live-inline"><em>' + escapeHtml(text) + '</em></span>';
+    },
+
+    defaultAssistantFallback: function(thoughtText, tools) {
+      var thought = String(thoughtText || '').trim();
+      var hasToolError = Array.isArray(tools) && tools.some(function(tool) {
+        return !!(tool && tool.is_error);
+      });
+      if (hasToolError) {
+        return 'I could not finish the request because a required step failed. Please clarify the goal or try again.';
+      }
+      if (thought) {
+        return 'I do not have enough confidence in a final answer yet. Please clarify what outcome you want.';
+      }
+      return 'I do not know yet. Please clarify what you want me to do next.';
     },
 
     // Remove provider/model disclosure prefixes injected by backend responses.

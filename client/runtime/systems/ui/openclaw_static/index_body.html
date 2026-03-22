@@ -302,7 +302,15 @@
       </div>
       <div class="global-topbar-right">
         <div class="global-topbar-controls">
-          <span class="health-indicator" :class="connected ? 'health-ok' : 'health-down'" x-text="connected ? (agentCount + ' agent(s) running') : 'Disconnected'"></span>
+          <button
+            class="health-indicator topbar-agent-indicator"
+            type="button"
+            :class="$store.app.connected ? 'health-ok' : 'health-down'"
+            x-text="$store.app.connected ? ((($store.app.agents && $store.app.agents.length) || $store.app.agentCount || 0) + ' agent(s) running') : 'Disconnected'"
+            @click="location.hash='agents'"
+            title="Open agents"
+            aria-label="Open agents"
+          ></button>
           <button class="btn btn-ghost btn-sm topbar-icon-btn" @click="location.reload()" title="Refresh" aria-label="Refresh">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 2v6h-6"></path>
@@ -937,7 +945,7 @@
                       class="message"
                       x-show="!msg.is_notice"
                       :id="messageDomId(msg, idx)"
-                      :class="msg.role + (msg.thinking ? ' thinking' : '') + (msg.streaming ? ' streaming' : '') + (isGrouped(idx) ? ' grouped' : '') + (isHoveredMessage(msg, idx) ? ' hover-linked' : '')"
+                      :class="messageRoleClass(msg) + (msg.thinking ? ' thinking' : '') + (msg.streaming ? ' streaming' : '') + (isGrouped(idx) ? ' grouped' : '') + (isHoveredMessage(msg, idx) ? ' hover-linked' : '')"
                       @mouseenter="setHoveredMessage(msg, idx)"
                       @mouseleave="clearHoveredMessage()"
                     >
@@ -945,12 +953,13 @@
                         <span class="agent-mark" aria-hidden="true">&infin;</span>
                       </div>
                       <div class="message-body">
+                        <div class="message-agent-name" x-show="msg.role === 'agent'" x-text="messageAgentLabel(msg)"></div>
                         <div class="message-bubble" x-show="msg.thinking" style="background:transparent;border:none;padding:4px 0">
                           <div class="typing-dots"><span></span><span></span><span></span></div>
                         </div>
                         <div
                           class="message-bubble"
-                          :class="{ 'message-error': isErrorMessage(msg), 'markdown-body': (msg.role === 'agent' || msg.role === 'system') && !msg.thinking && !msg.isHtml }"
+                          :class="{ 'message-error': !msg.thoughtStreaming && isErrorMessage(msg), 'thinking-live': !!msg.thoughtStreaming, 'markdown-body': (msg.role === 'agent' || msg.role === 'system') && !msg.thinking && !msg.isHtml }"
                           x-show="msg.text && msg.text.trim() && !msg.thinking"
                           x-html="msg.isHtml ? msg.text : ((msg.role === 'agent' || msg.role === 'system') ? renderMarkdown(msg.text) : escapeHtml(msg.text))"
                         ></div>
@@ -964,7 +973,7 @@
                           </div>
                         </template>
                         <template x-for="tool in (msg.tools || [])" :key="tool.id">
-                          <div class="tool-card" :class="{ 'tool-card-error': tool.is_error && !isBlockedTool(tool), 'tool-card-blocked': isBlockedTool(tool), 'tool-card-success': isToolSuccessful(tool) }" :data-tool="tool.name">
+                          <div class="tool-card" :class="{ 'tool-card-error': tool.is_error && !isBlockedTool(tool), 'tool-card-blocked': isBlockedTool(tool), 'tool-card-success': isToolSuccessful(tool), 'tool-card-thought': isThoughtTool(tool) }" :data-tool="tool.name">
                             <div class="tool-card-header" @click="tool.expanded = !tool.expanded">
                               <template x-if="tool.running"><div class="tool-card-spinner"></div></template>
                               <template x-if="!tool.running && isBlockedTool(tool)">
@@ -977,7 +986,7 @@
                               <template x-if="!tool.running && !isBlockedTool(tool) && !tool.is_error"><span class="tool-icon-ok">&#10003;</span></template>
                               <template x-if="!tool.running && tool.is_error && !isBlockedTool(tool)"><span class="tool-icon-err">&#10007;</span></template>
                               <span class="tool-card-icon" x-html="toolIcon(tool.name)"></span>
-                              <span class="tool-card-name" x-text="tool.name"></span>
+                              <span class="tool-card-name" x-text="toolDisplayName(tool)"></span>
                               <span class="text-xs" :class="{ 'tool-status-blocked': isBlockedTool(tool), 'tool-status-success': isToolSuccessful(tool), 'text-dim': !isBlockedTool(tool) && !isToolSuccessful(tool) }" x-text="toolStatusText(tool)" style="margin-left:auto"></span>
                               <span class="tool-expand-chevron" x-text="tool.expanded ? '▾' : '▸'"></span>
                             </div>
@@ -1037,7 +1046,7 @@
                 </button>
                   </template>
               <button x-show="!isMessageDayCollapsed(msg)" class="chat-map-item" :data-msg-dom-id="messageDomId(msg, idx)" :class="['role-' + (msg.role || 'agent'), isLongMessagePreview(msg) ? 'long-message' : '', isSelectedMessage(msg, idx) ? 'selected-linked' : '', isHoveredMessage(msg, idx) ? 'hover-linked' : '']" @mouseenter="setMapItemHover(msg, idx)" @mouseleave="clearMapItemHover()" @click="jumpToMessage(msg, idx)" :aria-label="'Jump to message ' + (idx + 1)">
-                <span class="chat-map-item-main" x-show="messageMapMarkerType(msg) !== 'model'">
+                <span class="chat-map-item-main" x-show="messageMapMarkerType(msg) === ''">
                   <span class="chat-map-bar"></span>
                 </span>
                 <span class="chat-map-tool-row" x-show="messageMapMarkerType(msg) === 'model'">
@@ -1048,6 +1057,11 @@
                 <span class="chat-map-tool-row" x-show="messageMapMarkerType(msg) === 'tool'">
                   <span class="chat-map-marker chat-map-marker-tool" :class="'state-' + (messageMapToolOutcome(msg) || 'success')" :title="messageMapMarkerTitle(msg)" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                  </span>
+                </span>
+                <span class="chat-map-tool-row" x-show="messageMapMarkerType(msg) === 'terminal'">
+                  <span class="chat-map-marker chat-map-marker-terminal" :title="messageMapMarkerTitle(msg)" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M4 17 10 11 4 5"/><path d="M12 19h8"/></svg>
                   </span>
                 </span>
                 <div class="chat-map-preview" x-show="isMapPreviewVisible(msg, idx)" x-transition.opacity>
@@ -1070,9 +1084,9 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
         </button>
 
-        <div class="input-area" x-show="currentAgent">
+        <div class="input-area" x-show="currentAgent" :class="{ 'terminal-mode': terminalMode }">
           <div class="chat-input-lane">
-            <template x-if="attachments && attachments.length">
+            <template x-if="!terminalMode && attachments && attachments.length">
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
                 <template x-for="(att, aidx) in attachments" :key="aidx">
                   <div style="position:relative;display:inline-flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 10px;max-width:260px">
@@ -1088,21 +1102,51 @@
             </template>
             <div class="input-row">
               <input type="file" x-ref="fileInput" multiple accept="image/*,.txt,.pdf,.md,.json,.csv,.mp3,.wav,.ogg,.webm,.m4a,.flac" @change="addFiles($event.target.files); $event.target.value = ''" style="display:none">
-              <div class="composer-shell">
-                <button class="composer-icon-btn composer-icon-left" @click="$refs.fileInput.click()" title="Attach file">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                </button>
+              <div class="composer-shell" :style="terminalMode ? ('--terminal-prefix-ch:' + terminalPromptChars) : ''">
+                <div class="composer-plus-wrap composer-icon-left" @click.outside="showAttachMenu = false">
+                  <button class="composer-icon-btn" @click="showAttachMenu = !showAttachMenu" title="Add files and more (Ctrl+F)" aria-label="Add files and more" :aria-expanded="showAttachMenu ? 'true' : 'false'">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                  </button>
+                  <div class="composer-plus-menu" x-show="showAttachMenu" x-transition:enter="transition ease-out duration-140" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+                    <button class="composer-plus-menu-item" x-show="!terminalMode" @click="$refs.fileInput.click()">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                      <span>Add files</span>
+                      <span class="composer-plus-hotkey" aria-hidden="true">Ctrl+F</span>
+                    </button>
+                    <button class="composer-plus-menu-item composer-plus-menu-item-toggle" @click="toggleTerminalMode()">
+                      <span class="composer-plus-toggle-label">
+                        <svg x-show="terminalMode" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        <svg x-show="!terminalMode" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17 10 11 4 5"/><path d="M12 19h8"/></svg>
+                        <span x-text="terminalMode ? 'chat mode' : 'terminal mode'"></span>
+                      </span>
+                      <span class="composer-plus-hotkey" aria-hidden="true">Ctrl+T / Ctrl+\</span>
+                      <span class="composer-plus-vtoggle" :class="{ active: terminalMode }" aria-hidden="true">
+                        <span class="composer-plus-vtoggle-knob"></span>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+                <div class="terminal-path-label" x-show="terminalMode" x-text="terminalPromptPrefix"></div>
+                <template x-if="terminalMode && terminalCursorFocused">
+                  <span class="terminal-block-cursor" :style="terminalCursorStyle" aria-hidden="true">█</span>
+                </template>
                 <textarea
                   id="msg-input"
                   rows="1"
                   x-model="inputText"
-                  :placeholder="recording ? 'Recording... release to send' : (currentAgent ? ('Message ' + (currentAgent.name || currentAgent.id || 'agent') + '...') : 'Message agent...')"
+                  :placeholder="terminalMode ? '' : (recording ? 'Recording... release to send' : (currentAgent ? ('Message ' + (currentAgent.name || currentAgent.id || 'agent') + '...') : 'Message agent...'))"
+                  :class="{ 'streaming-active': sending, 'terminal-textarea': terminalMode }"
+                  @focus="if(terminalMode){setTerminalCursorFocus(true, $event)}"
+                  @blur="if(terminalMode){setTerminalCursorFocus(false, $event)}"
+                  @click="if(terminalMode){updateTerminalCursor($event)}"
+                  @keyup="if(terminalMode){updateTerminalCursor($event)}"
+                  @select="if(terminalMode){updateTerminalCursor($event)}"
                   @keydown.enter.prevent="if(!$event.shiftKey && !$event.isComposing && $event.keyCode !== 229){ sendMessage(); }"
-                  @input="$el.style.height='auto';$el.style.height=Math.min($el.scrollHeight,150)+'px'"
+                  @input="$el.style.height='auto';$el.style.height=Math.min($el.scrollHeight,150)+'px'; if(terminalMode){updateTerminalCursor($event)}"
                 ></textarea>
                 <div class="composer-actions-right">
-                  <span class="model-inline-label" x-show="currentAgent" x-text="modelDisplayName"></span>
-                  <div class="model-switcher-inline" x-show="currentAgent" style="position:relative" @click.outside="showModelSwitcher = false" @keydown.escape.window="showModelSwitcher = false">
+                  <span class="model-inline-label" x-show="currentAgent && !terminalMode" x-text="modelDisplayName"></span>
+                  <div class="model-switcher-inline" x-show="currentAgent && !terminalMode" style="position:relative" @click.outside="showModelSwitcher = false" @keydown.escape.window="showModelSwitcher = false">
                     <button class="composer-icon-btn composer-model-btn" :class="{ 'active': showModelSwitcher }" @click="toggleModelSwitcher()" :disabled="sending" title="Switch model (Ctrl+M)">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                     </button>
@@ -1150,21 +1194,34 @@
                       </div>
                     </div>
                   </div>
-                  <button class="composer-icon-btn" :class="{ 'btn-recording': recording }" @mousedown="startRecording()" @mouseup="stopRecording()" @mouseleave="if(recording) stopRecording()" title="Hold to record voice">
+                  <button class="composer-icon-btn" x-show="!terminalMode" :class="{ 'btn-recording': recording }" @mousedown="startRecording()" @mouseup="stopRecording()" @mouseleave="if(recording) stopRecording()" title="Hold to record voice">
                     <svg x-show="!recording" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
                     <span x-show="recording" class="recording-dot"></span>
                   </button>
-                  <template x-if="!sending">
-                    <button class="btn-send" @click="sendMessage()" :disabled="!inputText.trim() && !(attachments && attachments.length)" title="Send">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                  <template x-if="terminalMode">
+                    <button class="btn-send btn-send-terminal" @click="sendMessage()" :disabled="!inputText.trim()" title="Run command">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                     </button>
                   </template>
-                  <template x-if="sending">
+                  <template x-if="!terminalMode && !sending">
+                    <button class="btn-send" @click="sendMessage()" :disabled="!inputText.trim() && !(attachments && attachments.length)" title="Send">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                    </button>
+                  </template>
+                  <template x-if="!terminalMode && sending">
                     <button class="btn-stop" @click="stopAgent()" title="Stop generating">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
                     </button>
                   </template>
                 </div>
+              </div>
+            </div>
+            <div class="context-ring-row">
+              <div class="context-ring" :data-tooltip="contextRingTooltip" tabindex="0">
+                <svg viewBox="0 0 36 36" aria-hidden="true">
+                  <circle class="context-ring-track" cx="18" cy="18" r="14" pathLength="100"></circle>
+                  <circle class="context-ring-progress" cx="18" cy="18" r="14" pathLength="100" :style="contextRingProgressStyle"></circle>
+                </svg>
               </div>
             </div>
           </div>
@@ -1223,7 +1280,7 @@
                     <div class="text-xs text-dim" style="padding:8px 12px;text-align:center" x-show="!sessions.length">No sessions</div>
                   </div>
                 </div>
-                <button class="btn btn-ghost btn-sm" @click="toggleSearch()" title="Search messages (Ctrl+F)">
+                <button class="btn btn-ghost btn-sm" @click="toggleSearch()" title="Search messages (Ctrl+G)">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                 </button>
                 <button class="btn btn-ghost btn-sm" @click="$store.app.toggleFocusMode()" title="Ctrl+Shift+F">
@@ -1274,7 +1331,7 @@
                         class="message"
                         x-show="!msg.is_notice"
                         :id="messageDomId(msg, idx)"
-                        :class="msg.role + (msg.thinking ? ' thinking' : '') + (msg.streaming ? ' streaming' : '') + (isGrouped(idx) ? ' grouped' : '') + (isHoveredMessage(msg, idx) ? ' hover-linked' : '')"
+                        :class="messageRoleClass(msg) + (msg.thinking ? ' thinking' : '') + (msg.streaming ? ' streaming' : '') + (isGrouped(idx) ? ' grouped' : '') + (isHoveredMessage(msg, idx) ? ' hover-linked' : '')"
                         @mouseenter="setHoveredMessage(msg, idx)"
                         @mouseleave="clearHoveredMessage()"
                       >
@@ -1282,12 +1339,13 @@
                           <span class="agent-mark" aria-hidden="true">&infin;</span>
                         </div>
                         <div class="message-body">
+                        <div class="message-agent-name" x-show="msg.role === 'agent'" x-text="messageAgentLabel(msg)"></div>
                         <!-- Thinking indicator with animated dots -->
                         <div class="message-bubble" x-show="msg.thinking" style="background:transparent;border:none;padding:4px 0">
                           <div class="typing-dots"><span></span><span></span><span></span></div>
                         </div>
                         <!-- Normal message content -->
-                        <div class="message-bubble" :class="{ 'markdown-body': (msg.role === 'agent' || msg.role === 'system') && !msg.thinking && !msg.isHtml, 'message-error': isErrorMessage(msg) }" x-show="msg.text && msg.text.trim() && !msg.thinking" x-html="highlightSearch(msg.isHtml ? msg.text : ((msg.role === 'agent' || msg.role === 'system') && !msg.thinking ? renderMarkdown(msg.text) : escapeHtml(msg.text)))"></div>
+                        <div class="message-bubble" :class="{ 'markdown-body': (msg.role === 'agent' || msg.role === 'system') && !msg.thinking && !msg.isHtml, 'message-error': !msg.thoughtStreaming && isErrorMessage(msg), 'thinking-live': !!msg.thoughtStreaming }" x-show="msg.text && msg.text.trim() && !msg.thinking" x-html="highlightSearch(msg.isHtml ? msg.text : ((msg.role === 'agent' || msg.role === 'system') && !msg.thinking ? renderMarkdown(msg.text) : escapeHtml(msg.text)))"></div>
                         <!-- Inline images from uploads (shown above tool cards) -->
                         <template x-if="msg.images && msg.images.length">
                           <div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0">
@@ -1299,7 +1357,7 @@
                           </div>
                         </template>
                         <template x-for="tool in (msg.tools || [])" :key="tool.id">
-                          <div class="tool-card" :class="{ 'tool-card-error': tool.is_error && !isBlockedTool(tool), 'tool-card-blocked': isBlockedTool(tool), 'tool-card-success': isToolSuccessful(tool) }" :data-tool="tool.name">
+                          <div class="tool-card" :class="{ 'tool-card-error': tool.is_error && !isBlockedTool(tool), 'tool-card-blocked': isBlockedTool(tool), 'tool-card-success': isToolSuccessful(tool), 'tool-card-thought': isThoughtTool(tool) }" :data-tool="tool.name">
                             <div class="tool-card-header" @click="tool.expanded = !tool.expanded">
                               <template x-if="tool.running"><div class="tool-card-spinner"></div></template>
                               <template x-if="!tool.running && isBlockedTool(tool)">
@@ -1312,7 +1370,7 @@
                               <template x-if="!tool.running && !isBlockedTool(tool) && !tool.is_error"><span class="tool-icon-ok">&#10003;</span></template>
                               <template x-if="!tool.running && tool.is_error && !isBlockedTool(tool)"><span class="tool-icon-err">&#10007;</span></template>
                               <span class="tool-card-icon" x-html="toolIcon(tool.name)"></span>
-                              <span class="tool-card-name" x-text="tool.name"></span>
+                              <span class="tool-card-name" x-text="toolDisplayName(tool)"></span>
                               <span class="text-xs" :class="{ 'tool-status-blocked': isBlockedTool(tool), 'tool-status-success': isToolSuccessful(tool), 'text-dim': !isBlockedTool(tool) && !isToolSuccessful(tool) }" x-text="toolStatusText(tool)" style="margin-left:auto"></span>
                               <span class="tool-expand-chevron" x-text="tool.expanded ? '▾' : '▸'"></span>
                             </div>
@@ -1390,7 +1448,7 @@
                     </button>
                   </template>
                   <button x-show="!isMessageDayCollapsed(msg)" class="chat-map-item" :data-msg-dom-id="messageDomId(msg, idx)" :class="['role-' + (msg.role || 'agent'), isLongMessagePreview(msg) ? 'long-message' : '', isSelectedMessage(msg, idx) ? 'selected-linked' : '', isHoveredMessage(msg, idx) ? 'hover-linked' : '']" @mouseenter="setMapItemHover(msg, idx)" @mouseleave="clearMapItemHover()" @click="jumpToMessage(msg, idx)" :aria-label="'Jump to message ' + (idx + 1)">
-                    <span class="chat-map-item-main" x-show="messageMapMarkerType(msg) !== 'model'">
+                    <span class="chat-map-item-main" x-show="messageMapMarkerType(msg) === ''">
                       <span class="chat-map-bar"></span>
                     </span>
                     <span class="chat-map-tool-row" x-show="messageMapMarkerType(msg) === 'model'">
@@ -1401,6 +1459,11 @@
                     <span class="chat-map-tool-row" x-show="messageMapMarkerType(msg) === 'tool'">
                       <span class="chat-map-marker chat-map-marker-tool" :class="'state-' + (messageMapToolOutcome(msg) || 'success')" :title="messageMapMarkerTitle(msg)" aria-hidden="true">
                         <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                      </span>
+                    </span>
+                    <span class="chat-map-tool-row" x-show="messageMapMarkerType(msg) === 'terminal'">
+                      <span class="chat-map-marker chat-map-marker-terminal" :title="messageMapMarkerTitle(msg)" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M4 17 10 11 4 5"/><path d="M12 19h8"/></svg>
                       </span>
                     </span>
                     <div class="chat-map-preview" x-show="isMapPreviewVisible(msg, idx)" x-transition.opacity>
@@ -1424,10 +1487,10 @@
             </button>
 
             <!-- Input area -->
-            <div class="input-area" x-show="currentAgent" style="position:relative">
+            <div class="input-area" x-show="currentAgent" style="position:relative" :class="{ 'terminal-mode': terminalMode }">
               <div class="chat-input-lane">
               <!-- Attachment previews -->
-              <div x-show="attachments.length > 0" style="display:flex;gap:8px;flex-wrap:wrap;padding:0 0 8px 0">
+              <div x-show="!terminalMode && attachments.length > 0" style="display:flex;gap:8px;flex-wrap:wrap;padding:0 0 8px 0">
                 <template x-for="(att, aidx) in attachments" :key="aidx">
                   <div style="position:relative;border:1px solid var(--border);border-radius:6px;padding:4px;display:flex;align-items:center;gap:6px;background:var(--surface2);max-width:180px">
                     <img x-show="att.preview" :src="att.preview" style="width:32px;height:32px;object-fit:cover;border-radius:4px">
@@ -1439,7 +1502,7 @@
                 </template>
               </div>
               <!-- Slash command menu -->
-              <div x-show="showSlashMenu && filteredSlashCommands.length" class="slash-menu">
+              <div x-show="!terminalMode && showSlashMenu && filteredSlashCommands.length" class="slash-menu">
                 <template x-for="(cmd, idx) in filteredSlashCommands" :key="cmd.cmd">
                   <div class="slash-menu-item" :class="{ 'slash-active': idx === slashIdx }" @click="executeSlashCommand(cmd.cmd)" @mouseenter="slashIdx = idx">
                     <span class="font-bold" style="font-size:13px" x-text="cmd.cmd"></span>
@@ -1448,7 +1511,7 @@
                 </template>
               </div>
               <!-- Model autocomplete picker -->
-              <div x-show="showModelPicker && filteredModelPicker.length" class="slash-menu" style="max-height:280px;overflow-y:auto">
+              <div x-show="!terminalMode && showModelPicker && filteredModelPicker.length" class="slash-menu" style="max-height:280px;overflow-y:auto">
                 <div class="text-xs text-dim" style="padding:4px 10px;border-bottom:1px solid var(--border)">Available models — pick one or keep typing</div>
                 <template x-for="(m, idx) in filteredModelPicker" :key="m.id">
                   <div class="slash-menu-item" :class="{ 'slash-active': idx === modelPickerIdx }" @click="pickModel(m.id)" @mouseenter="modelPickerIdx = idx">
@@ -1460,21 +1523,50 @@
               <!-- Input row -->
               <div class="input-row">
                 <input type="file" x-ref="fileInput" multiple accept="image/*,.txt,.pdf,.md,.json,.csv,.mp3,.wav,.ogg,.webm,.m4a,.flac" @change="addFiles($event.target.files); $event.target.value = ''" style="display:none">
-                <div class="composer-shell">
-                  <button class="composer-icon-btn composer-icon-left" @click="$refs.fileInput.click()" title="Attach file">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                  </button>
-                  <textarea id="msg-input" rows="1" :placeholder="recording ? 'Recording... release to send' : ((currentAgent ? ('Message ' + (currentAgent.name || currentAgent.id || 'agent')) : 'Message agent') + '... (/ for commands)')"
-                            @keydown.enter.prevent="if(!$event.isComposing && $event.keyCode !== 229 && !$event.shiftKey){if(showModelPicker && filteredModelPicker.length){pickModel(filteredModelPicker[modelPickerIdx].id)}else if(showSlashMenu && filteredSlashCommands.length){executeSlashCommand(filteredSlashCommands[slashIdx].cmd)}else{sendMessage()}}"
+                <div class="composer-shell" :style="terminalMode ? ('--terminal-prefix-ch:' + terminalPromptChars) : ''">
+                  <div class="composer-plus-wrap composer-icon-left" @click.outside="showAttachMenu = false">
+                    <button class="composer-icon-btn" @click="showAttachMenu = !showAttachMenu" title="Add files and more (Ctrl+F)" aria-label="Add files and more" :aria-expanded="showAttachMenu ? 'true' : 'false'">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                    </button>
+                    <div class="composer-plus-menu" x-show="showAttachMenu" x-transition:enter="transition ease-out duration-140" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+                      <button class="composer-plus-menu-item" x-show="!terminalMode" @click="$refs.fileInput.click()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                        <span>Add files</span>
+                        <span class="composer-plus-hotkey" aria-hidden="true">Ctrl+F</span>
+                      </button>
+                      <button class="composer-plus-menu-item composer-plus-menu-item-toggle" @click="toggleTerminalMode()">
+                        <span class="composer-plus-toggle-label">
+                          <svg x-show="terminalMode" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                          <svg x-show="!terminalMode" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17 10 11 4 5"/><path d="M12 19h8"/></svg>
+                          <span x-text="terminalMode ? 'chat mode' : 'terminal mode'"></span>
+                        </span>
+                        <span class="composer-plus-hotkey" aria-hidden="true">Ctrl+T / Ctrl+\</span>
+                        <span class="composer-plus-vtoggle" :class="{ active: terminalMode }" aria-hidden="true">
+                          <span class="composer-plus-vtoggle-knob"></span>
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="terminal-path-label" x-show="terminalMode" x-text="terminalPromptPrefix"></div>
+                  <template x-if="terminalMode && terminalCursorFocused">
+                    <span class="terminal-block-cursor" :style="terminalCursorStyle" aria-hidden="true">█</span>
+                  </template>
+                  <textarea id="msg-input" rows="1" :placeholder="terminalMode ? '' : (recording ? 'Recording... release to send' : ((currentAgent ? ('Message ' + (currentAgent.name || currentAgent.id || 'agent')) : 'Message agent') + '... (/ for commands)'))"
+                            @keydown.enter.prevent="if(!$event.isComposing && $event.keyCode !== 229 && !$event.shiftKey){if(terminalMode){sendMessage()}else if(showModelPicker && filteredModelPicker.length){pickModel(filteredModelPicker[modelPickerIdx].id)}else if(showSlashMenu && filteredSlashCommands.length){executeSlashCommand(filteredSlashCommands[slashIdx].cmd)}else{sendMessage()}}"
                             @keydown.escape="showSlashMenu = false; showModelPicker = false"
-                            @keydown.arrow-up.prevent="if(showModelPicker){modelPickerIdx = Math.max(0, modelPickerIdx - 1)}else if(showSlashMenu){slashIdx = Math.max(0, slashIdx - 1)}"
-                            @keydown.arrow-down.prevent="if(showModelPicker){modelPickerIdx = Math.min(filteredModelPicker.length - 1, modelPickerIdx + 1)}else if(showSlashMenu){slashIdx = Math.min(filteredSlashCommands.length - 1, slashIdx + 1)}"
-                            @input="$el.style.height='auto';$el.style.height=Math.min($el.scrollHeight,150)+'px'"
+                            @keydown.arrow-up.prevent="if(!terminalMode && showModelPicker){modelPickerIdx = Math.max(0, modelPickerIdx - 1)}else if(!terminalMode && showSlashMenu){slashIdx = Math.max(0, slashIdx - 1)}"
+                            @keydown.arrow-down.prevent="if(!terminalMode && showModelPicker){modelPickerIdx = Math.min(filteredModelPicker.length - 1, modelPickerIdx + 1)}else if(!terminalMode && showSlashMenu){slashIdx = Math.min(filteredSlashCommands.length - 1, slashIdx + 1)}"
+                            @focus="if(terminalMode){setTerminalCursorFocus(true, $event)}"
+                            @blur="if(terminalMode){setTerminalCursorFocus(false, $event)}"
+                            @click="if(terminalMode){updateTerminalCursor($event)}"
+                            @keyup="if(terminalMode){updateTerminalCursor($event)}"
+                            @select="if(terminalMode){updateTerminalCursor($event)}"
+                            @input="$el.style.height='auto';$el.style.height=Math.min($el.scrollHeight,150)+'px'; if(terminalMode){updateTerminalCursor($event)}"
                             x-model="inputText"
-                            :class="{ 'streaming-active': sending }"></textarea>
+                            :class="{ 'streaming-active': sending, 'terminal-textarea': terminalMode }"></textarea>
                   <div class="composer-actions-right">
-                    <span class="model-inline-label" x-show="currentAgent" x-text="modelDisplayName"></span>
-                    <div class="model-switcher-inline" x-show="currentAgent" style="position:relative" @click.outside="showModelSwitcher = false" @keydown.escape.window="showModelSwitcher = false">
+                    <span class="model-inline-label" x-show="currentAgent && !terminalMode" x-text="modelDisplayName"></span>
+                    <div class="model-switcher-inline" x-show="currentAgent && !terminalMode" style="position:relative" @click.outside="showModelSwitcher = false" @keydown.escape.window="showModelSwitcher = false">
                       <button class="composer-icon-btn composer-model-btn" :class="{ 'active': showModelSwitcher }" @click="toggleModelSwitcher()" :disabled="sending" title="Switch model (Ctrl+M)">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                       </button>
@@ -1522,16 +1614,21 @@
                         </div>
                       </div>
                     </div>
-                    <button class="composer-icon-btn" :class="{ 'btn-recording': recording }" @mousedown="startRecording()" @mouseup="stopRecording()" @mouseleave="if(recording) stopRecording()" title="Hold to record voice">
+                    <button class="composer-icon-btn" x-show="!terminalMode" :class="{ 'btn-recording': recording }" @mousedown="startRecording()" @mouseup="stopRecording()" @mouseleave="if(recording) stopRecording()" title="Hold to record voice">
                       <svg x-show="!recording" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
                       <span x-show="recording" class="recording-dot"></span>
                     </button>
-                    <template x-if="!sending">
-                      <button class="btn-send" @click="sendMessage()" :disabled="!inputText.trim() && !attachments.length">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    <template x-if="terminalMode">
+                      <button class="btn-send btn-send-terminal" @click="sendMessage()" :disabled="!inputText.trim()" title="Run command">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                       </button>
                     </template>
-                    <template x-if="sending">
+                    <template x-if="!terminalMode && !sending">
+                      <button class="btn-send" @click="sendMessage()" :disabled="!inputText.trim() && !attachments.length">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                      </button>
+                    </template>
+                    <template x-if="!terminalMode && sending">
                       <button class="btn-stop" @click="stopAgent()" title="Stop generating">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
                       </button>
@@ -1539,13 +1636,21 @@
                   </div>
                 </div>
               </div>
+              <div class="context-ring-row">
+                <div class="context-ring" :data-tooltip="contextRingTooltip" tabindex="0">
+                  <svg viewBox="0 0 36 36" aria-hidden="true">
+                    <circle class="context-ring-track" cx="18" cy="18" r="14" pathLength="100"></circle>
+                    <circle class="context-ring-progress" cx="18" cy="18" r="14" pathLength="100" :style="contextRingProgressStyle"></circle>
+                  </svg>
+                </div>
+              </div>
               <!-- Footer: model switcher + tokens + queue + tips -->
               <div class="input-footer">
                 <div class="flex items-center gap-2">
-                  <span class="text-xs text-dim" x-text="tokenCount > 0 ? '~' + tokenCount + ' tokens' : (attachments.length ? attachments.length + ' file(s)' : '')"></span>
+                  <span class="text-xs text-dim" x-text="terminalMode ? ('terminal mode (' + terminalShortcutHint + ')') : (tokenCount > 0 ? '~' + tokenCount + ' tokens' : (attachments.length ? attachments.length + ' file(s)' : ''))"></span>
                   <span class="queue-badge" x-show="messageQueue.length > 0" x-text="messageQueue.length + ' queued'"></span>
                 </div>
-                <div class="tip-bar" x-show="currentTip && !sending">
+                <div class="tip-bar" x-show="currentTip && !sending && !terminalMode">
                   <span class="text-xs" x-text="currentTip"></span>
                   <button class="tip-bar-dismiss" @click="dismissTips()" title="Dismiss">&times;</button>
                 </div>
@@ -1579,11 +1684,45 @@
                   <div style="min-width:0;flex:1">
                     <div class="font-bold" style="font-size:13px" x-text="agent.name"></div>
                     <div class="text-xs text-dim font-mono" style="font-size:11px" x-text="agent.model_name"></div>
+                    <div
+                      class="text-xs text-dim font-mono"
+                      style="font-size:10px"
+                      x-show="formatAgentContractLine(agent)"
+                      x-text="formatAgentContractLine(agent)">
+                    </div>
                   </div>
                   <span class="badge" :class="'badge-' + agent.state.toLowerCase()" x-text="agent.state" style="font-size:10px"></span>
                   <button class="agent-chip-config-btn" @click.stop="showDetail(agent)" title="Agent settings" style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text-dim);transition:all 0.15s;flex-shrink:0" @mouseenter="$el.style.borderColor='var(--accent)';$el.style.color='var(--accent)';$el.style.background='var(--surface2)'" @mouseleave="$el.style.borderColor='var(--border)';$el.style.color='var(--text-dim)';$el.style.background='transparent'">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                   </button>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <div
+            x-show="agentLifecycle && agentLifecycle.idle_alert"
+            style="margin-bottom:20px;padding:10px 12px;border:1px solid rgba(255,179,71,0.45);background:rgba(255,179,71,0.12);border-radius:10px">
+            <div class="text-xs font-bold" style="letter-spacing:0.4px;text-transform:uppercase;color:#ffcf8a">Idle Agent Alert</div>
+            <div class="text-sm" style="margin-top:4px;color:var(--text)" x-text="idleAgentAlertText"></div>
+          </div>
+
+          <div x-show="terminatedAgents.length" style="margin-bottom:24px">
+            <div class="text-sm font-bold mb-2" style="color:var(--text-dim);letter-spacing:0.5px;font-size:11px;text-transform:uppercase">
+              Recently Terminated
+            </div>
+            <div class="card-grid">
+              <template x-for="entry in terminatedAgents" :key="'terminated-' + entry.contract_id + '-' + entry.agent_id">
+                <div class="card" style="padding:12px 14px">
+                  <div class="flex justify-between items-center mb-1" style="gap:10px">
+                    <div class="font-bold truncate" style="font-size:13px;max-width:220px" :title="entry.agent_id" x-text="entry.agent_id"></div>
+                    <button class="btn btn-primary btn-sm" @click="reviveTerminated(entry)">Revive</button>
+                  </div>
+                  <div class="text-xs text-dim" style="line-height:1.45">
+                    <div><span class="text-dim">Reason:</span> <span x-text="entry.reason || 'terminated'"></span></div>
+                    <div x-show="entry.mission"><span class="text-dim">Mission:</span> <span x-text="entry.mission"></span></div>
+                    <div><span class="text-dim">At:</span> <span x-text="formatIsoTimestamp(entry.terminated_at) || entry.terminated_at"></span></div>
+                  </div>
                 </div>
               </template>
             </div>
