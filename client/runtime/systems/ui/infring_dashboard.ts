@@ -31,6 +31,7 @@ const SNAPSHOT_HISTORY_PATH = path.resolve(STATE_DIR, 'snapshot_history.jsonl');
 const ATTENTION_DEFERRED_PATH = path.resolve(STATE_DIR, 'attention_deferred.json');
 const ARCHIVED_AGENTS_PATH = path.resolve(STATE_DIR, 'archived_agents.json');
 const AGENT_CONTRACTS_PATH = path.resolve(STATE_DIR, 'agent_contracts.json');
+const AGENT_PROFILES_PATH = path.resolve(STATE_DIR, 'agent_profiles.json');
 const BENCHMARK_SANITY_STATE_PATH = path.resolve(ROOT, 'core/local/state/ops/benchmark_sanity/latest.json');
 const BENCHMARK_SANITY_GATE_PATH = path.resolve(ROOT, 'core/local/artifacts/benchmark_sanity_gate_current.json');
 const DEFAULT_HOST = '127.0.0.1';
@@ -2223,6 +2224,79 @@ function readJson(filePath, fallback = null) {
   }
 }
 
+function normalizeIdentityColor(value, fallback = '#2563EB') {
+  const raw = cleanText(value || '', 16);
+  if (!raw) return fallback;
+  const normalized = raw.startsWith('#') ? raw : `#${raw}`;
+  if (/^#([0-9a-fA-F]{6})$/.test(normalized)) return normalized.toUpperCase();
+  if (/^#([0-9a-fA-F]{3})$/.test(normalized)) return normalized.toUpperCase();
+  return fallback;
+}
+
+function normalizeAgentFallbackModels(value) {
+  const rows = Array.isArray(value) ? value : [];
+  return rows
+    .map((row) => {
+      const provider = cleanText(row && row.provider ? row.provider : '', 80);
+      const model = cleanText(row && row.model ? row.model : '', 120);
+      if (!provider || !model) return null;
+      return { provider, model };
+    })
+    .filter(Boolean);
+}
+
+function normalizeAgentIdentity(identity = {}, fallback = {}) {
+  const source = identity && typeof identity === 'object' ? identity : {};
+  const prior = fallback && typeof fallback === 'object' ? fallback : {};
+  return {
+    emoji: cleanText(source.emoji != null ? source.emoji : prior.emoji || '🤖', 24) || '🤖',
+    color: normalizeIdentityColor(source.color != null ? source.color : prior.color, '#2563EB'),
+    archetype: cleanText(source.archetype != null ? source.archetype : prior.archetype || 'assistant', 80) || 'assistant',
+    vibe: cleanText(source.vibe != null ? source.vibe : prior.vibe || '', 80),
+  };
+}
+
+function normalizeAgentProfile(agentId, value = {}, fallback = {}) {
+  const id = cleanText(agentId || (value && value.agent_id ? value.agent_id : ''), 140);
+  if (!id) return null;
+  const source = value && typeof value === 'object' ? value : {};
+  const prior = fallback && typeof fallback === 'object' ? fallback : {};
+  const hasFallbackModels = Object.prototype.hasOwnProperty.call(source, 'fallback_models');
+  return {
+    agent_id: id,
+    name: cleanText(source.name != null ? source.name : prior.name || id, 100) || id,
+    role: cleanText(source.role != null ? source.role : prior.role || 'analyst', 60) || 'analyst',
+    system_prompt: cleanText(
+      source.system_prompt != null ? source.system_prompt : prior.system_prompt || '',
+      4000
+    ),
+    identity: normalizeAgentIdentity(
+      source.identity && typeof source.identity === 'object' ? source.identity : source,
+      prior.identity
+    ),
+    fallback_models: normalizeAgentFallbackModels(
+      hasFallbackModels ? source.fallback_models : prior.fallback_models
+    ),
+    updated_at: cleanText(source.updated_at || nowIso(), 80) || nowIso(),
+  };
+}
+
+function normalizeAgentProfilesState(state) {
+  const root = state && typeof state === 'object' ? state : {};
+  const rawAgents = root.agents && typeof root.agents === 'object' ? root.agents : {};
+  const agents = {};
+  for (const [rawId, rawProfile] of Object.entries(rawAgents)) {
+    const normalized = normalizeAgentProfile(rawId, rawProfile);
+    if (!normalized) continue;
+    agents[normalized.agent_id] = normalized;
+  }
+  return {
+    type: 'infring_dashboard_agent_profiles',
+    updated_at: cleanText(root.updated_at || nowIso(), 80) || nowIso(),
+    agents,
+  };
+}
+
 function normalizeArchivedAgentsState(state) {
   const root = state && typeof state === 'object' ? state : {};
   const rawAgents = root.agents && typeof root.agents === 'object' ? root.agents : {};
@@ -2254,9 +2328,56 @@ function normalizeArchivedAgentsState(state) {
 
 let archivedAgentsCache = null;
 let agentContractsCache = null;
+let agentProfilesCache = null;
 let agentTerminationSweepState = {
   last_run_ms: 0,
 };
+
+function loadAgentProfilesState() {
+  if (agentProfilesCache) return agentProfilesCache;
+  agentProfilesCache = normalizeAgentProfilesState(readJson(AGENT_PROFILES_PATH, null));
+  return agentProfilesCache;
+}
+
+function saveAgentProfilesState(state) {
+  const normalized = normalizeAgentProfilesState(state);
+  normalized.updated_at = nowIso();
+  agentProfilesCache = normalized;
+  writeJson(AGENT_PROFILES_PATH, normalized);
+  return normalized;
+}
+
+function agentProfileFor(agentId) {
+  const key = cleanText(agentId || '', 140);
+  if (!key) return null;
+  const state = loadAgentProfilesState();
+  return state && state.agents && state.agents[key] ? state.agents[key] : null;
+}
+
+function upsertAgentProfile(agentId, patch = {}) {
+  const key = cleanText(agentId || '', 140);
+  if (!key) return null;
+  const state = loadAgentProfilesState();
+  const existing = state && state.agents && state.agents[key] ? state.agents[key] : null;
+  const source = patch && typeof patch === 'object' ? patch : {};
+  const next = normalizeAgentProfile(
+    key,
+    {
+      ...(existing || {}),
+      ...(source || {}),
+      identity: {
+        ...((existing && existing.identity) || {}),
+        ...((source && source.identity && typeof source.identity === 'object') ? source.identity : {}),
+      },
+      updated_at: nowIso(),
+    },
+    existing || {}
+  );
+  if (!next) return null;
+  state.agents[key] = next;
+  saveAgentProfilesState(state);
+  return next;
+}
 
 function loadArchivedAgentsState() {
   if (archivedAgentsCache) return archivedAgentsCache;
@@ -3917,9 +4038,16 @@ function inactiveAgentRecord(agentId, snapshot, archivedMeta = null) {
   const cleanId = cleanText(agentId || '', 140) || 'agent';
   const modelState = effectiveAgentModel(cleanId, snapshot);
   const contract = contractForAgent(cleanId);
+  const profile = agentProfileFor(cleanId);
+  const identity = normalizeAgentIdentity(
+    profile && profile.identity ? profile.identity : {},
+    { emoji: '🤖', archetype: 'assistant', color: '#2563EB' }
+  );
+  const fallbackModels =
+    profile && Array.isArray(profile.fallback_models) ? profile.fallback_models : [];
   return {
     id: cleanId,
-    name: cleanId,
+    name: cleanText(profile && profile.name ? profile.name : cleanId, 100) || cleanId,
     state: 'inactive',
     status: 'archived',
     archived: true,
@@ -3931,8 +4059,10 @@ function inactiveAgentRecord(agentId, snapshot, archivedMeta = null) {
     model_provider: modelState.provider,
     runtime_model: modelState.runtime_model,
     context_window: modelState.context_window,
-    role: 'analyst',
-    identity: { emoji: '🤖', archetype: 'assistant' },
+    role: cleanText(profile && profile.role ? profile.role : 'analyst', 60) || 'analyst',
+    identity,
+    system_prompt: cleanText(profile && profile.system_prompt ? profile.system_prompt : '', 4000),
+    fallback_models: fallbackModels,
     capabilities: [],
   };
 }
@@ -6249,21 +6379,32 @@ function compatAgentsFromSnapshot(snapshot, options = {}) {
     const id = cleanText(row && row.shadow ? row.shadow : `agent-${idx + 1}`, 120) || `agent-${idx + 1}`;
     const modelState = effectiveAgentModel(id, snapshot);
     const contract = contractForAgent(id);
+    const profile = agentProfileFor(id);
     const status = cleanText(row && row.status ? row.status : 'running', 40) || 'running';
     const state =
       status === 'paused' || status === 'stopped' ? status : status === 'error' ? 'error' : 'running';
     const remainingMs = contractRemainingMs(contract);
+    const identity = normalizeAgentIdentity(
+      profile && profile.identity ? profile.identity : {},
+      { emoji: '🤖', archetype: 'assistant', color: '#2563EB' }
+    );
+    const fallbackModels =
+      profile && Array.isArray(profile.fallback_models) ? profile.fallback_models : [];
+    const profileRole = cleanText(profile && profile.role ? profile.role : '', 60);
+    const runtimeRole = cleanText(row && row.role ? row.role : 'analyst', 60) || 'analyst';
     return {
       id,
-      name: id,
+      name: cleanText(profile && profile.name ? profile.name : id, 100) || id,
       state,
       activated_at: cleanText(row && row.activated_at ? row.activated_at : '', 80),
       model_name: modelState.selected,
       model_provider: modelState.provider,
       runtime_model: modelState.runtime_model,
       context_window: modelState.context_window,
-      role: cleanText(row && row.role ? row.role : 'analyst', 60) || 'analyst',
-      identity: { emoji: '🤖', archetype: 'assistant' },
+      role: profileRole || runtimeRole,
+      identity,
+      system_prompt: cleanText(profile && profile.system_prompt ? profile.system_prompt : '', 4000),
+      fallback_models: fallbackModels,
       contract: contractSummary(contract),
       contract_status: formatContractStatus(contract),
       contract_remaining_ms: remainingMs == null ? null : Math.max(0, Math.floor(remainingMs)),
@@ -8028,10 +8169,100 @@ function runServe(flags) {
           return;
         }
         if (
-          (req.method === 'POST' && parts[3] === 'clone') ||
-          (req.method === 'PATCH' && parts[3] === 'identity') ||
-          (req.method === 'PATCH' && parts[3] === 'config')
+          req.method === 'PATCH' &&
+          (parts[3] === 'identity' || parts[3] === 'config')
         ) {
+          const payload = await bodyJson(req);
+          const known = compatAgentsFromSnapshot(latestSnapshot, { includeArchived: true }).some((row) => row.id === agentId);
+          if (!known && !isAgentArchived(agentId)) {
+            sendJson(res, 404, { ok: false, error: 'agent_not_found', id: agentId });
+            return;
+          }
+          const raw = payload && typeof payload === 'object' ? payload : {};
+          const identitySource =
+            raw.identity && typeof raw.identity === 'object' ? raw.identity : raw;
+          const patch = {};
+
+          if (Object.prototype.hasOwnProperty.call(raw, 'name')) {
+            patch.name = cleanText(raw.name, 100);
+          }
+          if (
+            parts[3] === 'config' &&
+            Object.prototype.hasOwnProperty.call(raw, 'system_prompt')
+          ) {
+            patch.system_prompt = cleanText(raw.system_prompt, 4000);
+          }
+          if (
+            parts[3] === 'config' &&
+            Object.prototype.hasOwnProperty.call(raw, 'role')
+          ) {
+            patch.role = cleanText(raw.role, 60);
+          }
+          if (
+            parts[3] === 'config' &&
+            Object.prototype.hasOwnProperty.call(raw, 'fallback_models')
+          ) {
+            patch.fallback_models = normalizeAgentFallbackModels(raw.fallback_models);
+          }
+
+          const identityPatch = {};
+          if (Object.prototype.hasOwnProperty.call(identitySource, 'emoji')) {
+            identityPatch.emoji = cleanText(identitySource.emoji, 24);
+          }
+          if (Object.prototype.hasOwnProperty.call(identitySource, 'color')) {
+            identityPatch.color = normalizeIdentityColor(identitySource.color, '#2563EB');
+          }
+          if (Object.prototype.hasOwnProperty.call(identitySource, 'archetype')) {
+            identityPatch.archetype = cleanText(identitySource.archetype, 80);
+          }
+          if (Object.prototype.hasOwnProperty.call(identitySource, 'vibe')) {
+            identityPatch.vibe = cleanText(identitySource.vibe, 80);
+          }
+          if (Object.keys(identityPatch).length > 0) {
+            patch.identity = identityPatch;
+          }
+
+          const profile = upsertAgentProfile(agentId, patch);
+          writeActionReceipt(
+            `app.agent.${parts[3]}`,
+            {
+              agent_id: agentId,
+              payload_keys: Object.keys(raw || {}),
+              cli_mode: ACTIVE_CLI_MODE,
+            },
+            {
+              ok: !!profile,
+              status: profile ? 0 : 1,
+              argv: ['agent', parts[3], `--agent=${agentId}`],
+              payload: {
+                ok: !!profile,
+                type: 'agent_profile_update',
+                section: parts[3],
+              },
+            }
+          );
+          if (!profile) {
+            sendJson(res, 500, { ok: false, error: 'agent_profile_update_failed', id: agentId });
+            return;
+          }
+
+          refreshSnapshot();
+          const archivedMeta = archivedAgentMeta(agentId);
+          const updated =
+            archivedMeta
+              ? inactiveAgentRecord(agentId, latestSnapshot, archivedMeta)
+              : compatAgentsFromSnapshot(latestSnapshot, { includeArchived: true }).find((row) => row.id === agentId) || null;
+          sendJson(res, 200, {
+            ok: true,
+            id: agentId,
+            type: 'agent_profile_update',
+            section: parts[3],
+            profile,
+            agent: updated,
+          });
+          return;
+        }
+        if (req.method === 'POST' && parts[3] === 'clone') {
           sendJson(res, 200, { ok: true, id: agentId, type: 'infring_external_compat_stub' });
           return;
         }
@@ -8446,11 +8677,16 @@ function runServe(flags) {
         return;
       }
       const eventType = cleanText(payload && payload.type ? payload.type : '', 40).toLowerCase();
+      const isTerminalEvent =
+        eventType === 'terminal' ||
+        eventType === 'terminal_command' ||
+        eventType === 'terminal_input' ||
+        eventType === 'terminal-input';
       if (eventType === 'ping') {
         sendWs(socket, { type: 'pong', ts: nowIso() });
         return;
       }
-      if (eventType === 'terminal') {
+      if (isTerminalEvent) {
         const terminal = await runTerminalCommand(
           payload && (payload.command || payload.input || payload.message)
             ? payload.command || payload.input || payload.message

@@ -1250,6 +1250,11 @@ tr:hover td { background: var(--surface2); }
 }
 
 .chat-map-marker-terminal {
+  color: #2f8d2f;
+  background: color-mix(in srgb, #2f8d2f 16%, transparent);
+}
+
+body[data-theme='dark'] .chat-map-marker-terminal {
   color: #99ff72;
   background: color-mix(in srgb, #99ff72 16%, transparent);
 }
@@ -1276,7 +1281,7 @@ tr:hover td { background: var(--surface2); }
 
 .chat-map-item.role-agent.selected-linked .chat-map-bar,
 .chat-map-item.role-system.selected-linked .chat-map-bar {
-  background: #fff;
+  background: var(--accent);
 }
 
 .chat-map-preview {
@@ -2125,6 +2130,12 @@ mark.search-highlight {
 
 .input-area.terminal-mode .composer-plus-wrap > .composer-icon-btn:hover {
   color: #fff;
+  background: transparent;
+  transform: scale(1.08);
+}
+
+.input-area.terminal-mode .composer-plus-wrap > .composer-icon-btn:hover svg {
+  stroke-width: 2.25;
 }
 
 .composer-icon-btn:active {
@@ -2794,7 +2805,7 @@ mark.search-highlight {
   left: 0;
   right: 0;
   top: 0;
-  z-index: 140;
+  z-index: 700;
 }
 
 .global-topbar-left {
@@ -2864,6 +2875,7 @@ mark.search-highlight {
 .notif-wrap {
   position: relative;
   display: inline-flex;
+  z-index: 12000;
 }
 
 .notif-btn {
@@ -2899,7 +2911,7 @@ mark.search-highlight {
   background: color-mix(in srgb, var(--surface) 94%, transparent);
   box-shadow: var(--shadow-md);
   overflow: hidden;
-  z-index: 180;
+  z-index: 12000;
   backdrop-filter: blur(10px) saturate(1.08);
   -webkit-backdrop-filter: blur(10px) saturate(1.08);
 }
@@ -3061,6 +3073,14 @@ mark.search-highlight {
 .notif-bubble-close:hover {
   color: var(--text);
   background: color-mix(in srgb, var(--surface2) 80%, transparent);
+}
+
+body[data-theme='dark'] .message.user .message-bubble {
+  box-shadow: -6px 0 12px -14px rgba(0, 0, 0, 0.32), 6px 0 12px -14px rgba(0, 0, 0, 0.32), 0 10px 18px -18px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.2), 0 0 10px rgba(78, 139, 255, 0.22);
+}
+
+body[data-theme='dark'] .message.terminal .message-bubble {
+  box-shadow: 0 0 0 0.5px rgba(114, 255, 92, 0.12) inset, 0 0 10px rgba(114, 255, 92, 0.2);
 }
 
 .sidebar-nav {

@@ -360,6 +360,20 @@
             <div class="notif-bubble-msg" x-text="$store.app.notificationBubble ? $store.app.notificationBubble.message : ''"></div>
           </div>
         </div>
+        <button
+          class="btn btn-ghost btn-sm topbar-icon-btn auth-key-btn"
+          type="button"
+          @click.prevent
+          title="Authentication (coming soon)"
+          aria-label="Authentication"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8.5" cy="15.5" r="3.5"></circle>
+            <path d="M12 15.5h9"></path>
+            <path d="M18 12.5v6"></path>
+            <path d="M21 14.5v2"></path>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -1222,11 +1236,11 @@
                   <circle class="context-ring-track" cx="18" cy="18" r="14" pathLength="100"></circle>
                   <circle class="context-ring-progress" cx="18" cy="18" r="14" pathLength="100" :style="contextRingProgressStyle"></circle>
                 </svg>
-              </div>
             </div>
           </div>
         </div>
       </div>
+    </div>
     </template>
 
     <!-- Page: Agents -->
